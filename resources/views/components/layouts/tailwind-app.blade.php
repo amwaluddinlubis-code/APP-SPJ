@@ -24,7 +24,7 @@
         collapsed: true,
         groups: {
             finance: {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
-            documents: {{ request()->routeIs('spj.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
+            documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
         },
@@ -65,9 +65,10 @@
             </div>
 
             <div>
-                <button type="button" @click="toggleGroup('documents')" :aria-expanded="groups.documents.toString()" aria-controls="nav-documents" class="app-nav w-full text-left {{ request()->routeIs('spj.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'text-white' : '' }}" title="Dokumen & Laporan"><x-ui-icon name="document" /><span x-show="!collapsed || open" class="nav-label flex-1">Dokumen & Laporan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.documents ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('documents')" :aria-expanded="groups.documents.toString()" aria-controls="nav-documents" class="app-nav w-full text-left {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'text-white' : '' }}" title="Dokumen & Laporan"><x-ui-icon name="document" /><span x-show="!collapsed || open" class="nav-label flex-1">Dokumen & Laporan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.documents ? 'rotate-180' : ''">⌄</span></button>
                 <div id="nav-documents" x-show="(!collapsed || open) && groups.documents" x-collapse class="ml-5 space-y-1 border-l border-white/10 pl-2">
                     <a class="app-nav {{ request()->routeIs('spj.*') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index') }}"><x-ui-icon name="document" /><span class="nav-label">Ruang Kerja SPJ</span></a>
+                    <a class="app-nav {{ request()->routeIs('reconciliation.*') ? 'app-nav-active' : '' }}" href="{{ route('reconciliation.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Rekonsiliasi</span></a>
                     <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui-icon name="report" /><span class="nav-label">Laporan SPJ</span></a>
                     <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}" href="{{ route('audit-reports.index') }}"><x-ui-icon name="audit" /><span class="nav-label">Laporan Audit</span></a>
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('document-templates.*') ? 'app-nav-active' : '' }}" href="{{ route('document-templates.index') }}"><x-ui-icon name="document" /><span class="nav-label">Template Dokumen</span></a>@endif
