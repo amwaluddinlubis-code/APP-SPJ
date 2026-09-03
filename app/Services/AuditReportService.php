@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 /** Builds read-only audit reports from the active year and fund source context. */
 class AuditReportService
 {
+    public function __construct(private SpjProcurementPolicyService $procurementPolicy) {}
+
     /**
      * @return array{
      *     year:FiscalYear,
@@ -122,6 +124,8 @@ class AuditReportService
 
         $completenessRows = $transactions->map(function (Transaction $transaction): object {
             $issues = [];
+            $policy = $this->procurementPolicy->forTransaction($transaction);
+
             if ($transaction->items->isEmpty()) {
                 $issues[] = 'Rincian transaksi belum tersedia';
             }
@@ -130,9 +134,13 @@ class AuditReportService
             } elseif (! $transaction->spjPackage->document_number) {
                 $issues[] = 'Nomor SPJ belum ditetapkan';
             }
+            if (blank($transaction->effective_receipt_recipient_name)) {
+                $issues[] = 'Penerima kuitansi/A2 belum diisi';
+            }
+            if (blank($transaction->payment_description ?: $transaction->description)) {
+                $issues[] = 'Uraian pembayaran untuk kuitansi/A2 belum diisi';
+            }
             foreach ([
-                'recipient_name' => 'Penerima belum diisi',
-                'description' => 'Uraian belum diisi',
                 'activity_code' => 'Kegiatan belum diisi',
                 'account_code' => 'Rekening belum diisi',
             ] as $field => $message) {
@@ -140,13 +148,22 @@ class AuditReportService
                     $issues[] = $message;
                 }
             }
+            if ($policy['channel'] === 'SIPLAH') {
+                if (blank($transaction->payment_reference) && blank($transaction->invoice_number)) {
+                    $issues[] = 'Referensi pesanan/invoice SIPLah belum tersedia';
+                }
+                if (blank($transaction->vendor_name)) {
+                    $issues[] = 'Penyedia SIPLah belum tersedia';
+                }
+            }
 
             return (object) [
                 'id' => $transaction->id,
                 'no_bukti' => $transaction->no_bukti,
                 'transaction_date' => $transaction->transaction_date,
-                'recipient_name' => $transaction->recipient_name,
+                'recipient_name' => $transaction->effective_receipt_recipient_name,
                 'amount' => (float) $transaction->gross_amount,
+                'channel' => $policy['channel_label'],
                 'issue_count' => count($issues),
                 'issues' => $issues,
                 'status' => $issues === [] ? 'LENGKAP' : 'PERLU TINDAKAN',
@@ -155,6 +172,7 @@ class AuditReportService
 
         $reconciliationByNumber = $reconciliationRows->keyBy('no_bukti');
         $inspectionIndex = $transactions->values()->map(function (Transaction $transaction, int $index) use ($reconciliationByNumber): object {
+            $policy = $this->procurementPolicy->forTransaction($transaction);
             $documents = $this->inspectionDocuments($transaction, $reconciliationByNumber->get((string) $transaction->no_bukti));
             $applicable = collect($documents)->where('status', '!=', 'TIDAK BERLAKU');
             $ready = $applicable->where('status', 'TERSEDIA')->count();
@@ -167,6 +185,8 @@ class AuditReportService
                 'description' => $transaction->payment_description ?: $transaction->description,
                 'recipient_name' => $transaction->effective_receipt_recipient_name,
                 'category' => strtoupper((string) ($transaction->spj_category ?: 'LAINNYA')),
+                'procurement_channel' => $policy['channel'],
+                'procurement_channel_label' => $policy['channel_label'],
                 'amount' => (float) $transaction->gross_amount,
                 'package_number' => $transaction->spjPackage?->document_number,
                 'package_status' => $transaction->spjPackage?->status ?: 'BELUM ADA',
@@ -201,6 +221,7 @@ class AuditReportService
         $spjPackaged = $transactions->filter(fn (Transaction $transaction): bool => (bool) $transaction->spjPackage)->count();
         $spjNumbered = $transactions->filter(fn (Transaction $transaction): bool => (bool) $transaction->spjPackage?->document_number)->count();
         $mismatchCount = $reconciliationRows->reject(fn (object $row): bool => $row->status === 'SESUAI')->count();
+        $siplahCount = $transactions->filter(fn (Transaction $transaction): bool => $this->procurementPolicy->isSiplah($transaction))->count();
 
         return [
             'year' => $year,
@@ -214,6 +235,8 @@ class AuditReportService
                 'bkuCount' => $bkuBelanja->count(),
                 'spjPackaged' => $spjPackaged,
                 'spjNumbered' => $spjNumbered,
+                'siplahCount' => $siplahCount,
+                'nonSiplahCount' => $transactions->count() - $siplahCount,
                 'mismatchCount' => $mismatchCount,
                 'exceptionCount' => $completenessRows->where('status', 'PERLU TINDAKAN')->count(),
                 'inspectionReadyCount' => $inspectionIndex->where('is_ready', true)->count(),
@@ -233,6 +256,7 @@ class AuditReportService
                 'Nominal BKU diringkas per nomor bukti; baris pajak tidak dihitung sebagai transaksi belanja kedua.',
                 'Nilai RKAS pada baris rekonsiliasi hanya terhubung jika BKU menyediakan ID_RAPBS; total RKAS tetap ditampilkan pada ringkasan.',
                 'Kelengkapan SPJ memeriksa rincian transaksi, paket, nomor SPJ, dan metadata utama; tidak menggantikan pemeriksaan dokumen fisik.',
+                'Transaksi SIPLah mempertahankan bukti pengadaan dari platform, tetapi Kuitansi/Bukti Kas Pengeluaran (A2) tetap wajib dibuat dan dicetak dari aplikasi.',
                 'Daftar isi pemeriksaan per transaksi adalah alat bantu kesiapan dokumen. Status bukti pajak tidak menyatakan bahwa berkas bukti setor fisik/digital sudah terunggah.',
                 Schema::connection('school')->hasTable('operational_audit_logs')
                     ? 'Riwayat operasional berasal dari log aplikasi yang tersedia.'
@@ -245,6 +269,8 @@ class AuditReportService
     private function inspectionDocuments(Transaction $transaction, ?object $reconciliation): array
     {
         $documents = [];
+        $policy = $this->procurementPolicy->forTransaction($transaction);
+        $isSiplah = $policy['channel'] === 'SIPLAH';
         $add = function (string $label, string $source, bool $available, bool $applicable = true, ?string $note = null) use (&$documents): void {
             $documents[] = (object) [
                 'label' => $label,
@@ -265,11 +291,22 @@ class AuditReportService
         $add('Paket SPJ', 'Paket SPJ', (bool) $transaction->spjPackage, true, $transaction->spjPackage?->status ? 'Status paket: '.$transaction->spjPackage->status : null);
         $add('Nomor paket SPJ', 'Penomoran', filled($transaction->spjPackage?->document_number));
         $add(
-            'Kuitansi / bukti pengeluaran',
-            'Data SPJ',
-            filled($transaction->effective_receipt_recipient_name) && filled($transaction->payment_description ?: $transaction->description) && filled($transaction->payment_method)
+            'Kuitansi / Bukti Kas Pengeluaran (A2)',
+            'Wajib dari aplikasi',
+            filled($transaction->effective_receipt_recipient_name)
+                && filled($transaction->payment_description ?: $transaction->description)
+                && (float) $transaction->gross_amount > 0,
+            true,
+            'Wajib untuk transaksi SIPLah maupun non-SIPLah dan harus masuk paket cetak SPJ.'
         );
-        $add('Bukti pembayaran / referensi bayar', 'Pembayaran', $transaction->payments->isNotEmpty() || filled($transaction->payment_reference));
+        $add('Bukti pembayaran / referensi bayar', $isSiplah ? 'SIPLah/Bank' : 'Pembayaran', $transaction->payments->isNotEmpty() || filled($transaction->payment_reference));
+
+        if ($isSiplah) {
+            $add('Referensi pesanan SIPLah', 'SIPLah', filled($transaction->payment_reference) || filled($transaction->invoice_number), true, 'Gunakan nomor pesanan atau invoice dari SIPLah sebagai jejak pengadaan.');
+            $add('Identitas penyedia SIPLah', 'SIPLah', filled($transaction->vendor_name));
+            $add('Invoice/tagihan SIPLah', 'SIPLah', filled($transaction->invoice_number));
+        }
+
         $add(
             'Bukti pajak / setor pajak',
             'Pajak',
@@ -281,8 +318,14 @@ class AuditReportService
         $category = strtoupper((string) $transaction->spj_category);
         $goodsCategory = in_array($category, ['BARANG', 'BELANJA_MODAL', 'KONSUMSI'], true);
         $firstGoods = $transaction->goods->first();
-        $add('Surat pesanan', 'Belanja barang', filled($firstGoods?->order_number) && filled($firstGoods?->order_date), $goodsCategory);
-        $add('Faktur / invoice', 'Belanja barang', filled($transaction->invoice_number), $goodsCategory);
+        $add(
+            $isSiplah ? 'Pesanan dari SIPLah' : 'Surat pesanan',
+            $isSiplah ? 'SIPLah' : 'Belanja barang',
+            $isSiplah ? (filled($transaction->payment_reference) || filled($transaction->invoice_number)) : (filled($firstGoods?->order_number) && filled($firstGoods?->order_date)),
+            $goodsCategory,
+            $isSiplah ? 'Tidak perlu membuat ulang surat pesanan internal jika dokumen pesanan SIPLah sudah menjadi bukti sumber.' : null
+        );
+        $add('Faktur / invoice', $isSiplah ? 'SIPLah/Penyedia' : 'Belanja barang', filled($transaction->invoice_number), $goodsCategory);
         $add('Berita acara pemeriksaan/penerimaan', 'Belanja barang', filled($firstGoods?->bap_number) && filled($firstGoods?->bap_date), $goodsCategory);
         $add('Berita acara serah terima', 'Belanja barang', filled($firstGoods?->bast_number) && filled($firstGoods?->bast_date), $goodsCategory);
         $add('Penerimaan barang tercatat', 'Belanja barang', $transaction->goodsReceipts->isNotEmpty(), $goodsCategory);
