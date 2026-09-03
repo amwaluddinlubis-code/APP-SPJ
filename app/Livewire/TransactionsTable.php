@@ -168,13 +168,22 @@ class TransactionsTable extends Component
 
     public function getStatusesProperty(): Collection
     {
-        return Cache::remember($this->cacheKey('transaction-statuses'), 60, fn () => (clone $this->baseQuery())->whereNotNull('status')->distinct()->orderBy('status')->pluck('status'));
+        return Cache::remember($this->cacheKey('transaction-status-labels'), 60, function (): Collection {
+            return (clone $this->baseQuery())
+                ->whereNotNull('status')
+                ->distinct()
+                ->pluck('status')
+                ->map(fn ($status) => $this->transactionStatusLabel((string) $status))
+                ->unique()
+                ->sort()
+                ->values();
+        });
     }
 
     public function getTransactionsProperty(): LengthAwarePaginator
     {
         $query = $this->filteredQuery()
-            ->with('spjPackage:id,transaction_id,document_number,status')
+            ->with('spjPackage:id,transaction_id,document_number,status,finalized_at')
             ->withCount('items');
 
         if (trim($this->q) !== '') {
@@ -191,13 +200,17 @@ class TransactionsTable extends Component
         }
 
         if ($this->status !== '') {
-            $query->where('status', $this->status);
+            $databaseStatuses = $this->databaseStatusesForFilter($this->status);
+            $query->whereIn('status', $databaseStatuses);
         }
 
         $perPage = $this->perPage === 'all' ? 10000 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100, 10000], true) ? $perPage : 15;
 
+        // Paket SPJ yang sudah final/arsip selalu ditempatkan paling belakang.
+        // Transaksi yang masih perlu dikerjakan tetap mengikuti urutan status lalu ID.
         $paginator = $query
+            ->orderByRaw("CASE WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND (spj_packages.finalized_at IS NOT NULL OR spj_packages.status IN ('FINAL', 'ARCHIVED', 'ARSIP'))) THEN 1 ELSE 0 END ASC")
             ->orderBy('status')
             ->orderBy('id')
             ->paginate($perPage);
@@ -267,6 +280,35 @@ class TransactionsTable extends Component
     private function cacheKey(string $reference): string
     {
         return implode(':', ['school', session('active_school_id'), 'year', session('active_fiscal_year_id'), $reference]);
+    }
+
+    private function transactionStatusLabel(string $status): string
+    {
+        return match (strtoupper(trim($status))) {
+            'DRAFT', 'BELUM_LENGKAP' => 'Belum lengkap',
+            'READY', 'SIAP', 'DISIAPKAN' => 'Siap diproses',
+            'NUMBERED', 'BERNOMOR' => 'Sudah bernomor',
+            'PRINTED', 'DICETAK' => 'Sudah dicetak',
+            'FINAL', 'ARCHIVED', 'ARSIP' => 'Final',
+            'CANCELLED', 'CANCELED' => 'Dibatalkan',
+            default => str($status)->replace('_', ' ')->lower()->ucfirst()->toString(),
+        };
+    }
+
+    /** @return array<int,string> */
+    private function databaseStatusesForFilter(string $filter): array
+    {
+        $normalized = trim($filter);
+        $map = [
+            'Belum lengkap' => ['DRAFT', 'BELUM_LENGKAP'],
+            'Siap diproses' => ['READY', 'SIAP', 'DISIAPKAN'],
+            'Sudah bernomor' => ['NUMBERED', 'BERNOMOR'],
+            'Sudah dicetak' => ['PRINTED', 'DICETAK'],
+            'Final' => ['FINAL', 'ARCHIVED', 'ARSIP'],
+            'Dibatalkan' => ['CANCELLED', 'CANCELED'],
+        ];
+
+        return $map[$normalized] ?? [$normalized];
     }
 
     public function paymentMethodFor(Transaction $transaction): string
