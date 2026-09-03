@@ -174,3 +174,84 @@ const tableObserver = new MutationObserver((mutations) => {
     }));
 });
 tableObserver.observe(document.querySelector('main') || document.body, { childList: true, subtree: true });
+
+const initializeTransactionOperatorWorkspace = () => {
+    const spjBuilder = document.getElementById('modul-buat-spj');
+    if (!spjBuilder || spjBuilder.dataset.operatorWorkspaceReady === 'true') return;
+
+    const workspaceRoot = spjBuilder.closest('.flex.flex-col.gap-6');
+    if (!workspaceRoot) return;
+
+    const referenceHeading = Array.from(workspaceRoot.querySelectorAll('h2'))
+        .find((heading) => heading.textContent.trim() === 'Informasi Referensi');
+    const sourceSection = referenceHeading?.closest('section');
+
+    if (sourceSection) {
+        sourceSection.id = 'data-arkas-bku';
+        sourceSection.classList.add('relative', 'rounded-2xl', 'ring-1', 'ring-slate-200', 'scroll-mt-32');
+
+        const sourceIntro = document.createElement('div');
+        sourceIntro.className = 'mb-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:px-5';
+        sourceIntro.innerHTML = `
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Data ARKAS / BKU</span>
+                        <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700">Hanya dibaca</span>
+                    </div>
+                    <p class="mt-2 text-sm font-semibold text-slate-800">Referensi transaksi dari sumber sinkronisasi</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Gunakan data ini sebagai pembanding. Operator tidak mengubah nilai sumber dari halaman Detail Transaksi.</p>
+                </div>
+                <span class="text-xs font-semibold text-slate-400">Sumber resmi transaksi</span>
+            </div>`;
+        sourceSection.insertAdjacentElement('beforebegin', sourceIntro);
+    }
+
+    spjBuilder.id = 'data-spj-operator';
+    spjBuilder.dataset.operatorWorkspaceReady = 'true';
+    spjBuilder.classList.add('ring-1', 'ring-indigo-200', 'scroll-mt-32');
+
+    const operatorIntro = document.createElement('div');
+    operatorIntro.className = 'mb-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 sm:px-5';
+    operatorIntro.innerHTML = `
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Data SPJ Operator</span>
+                    <span class="inline-flex rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">Dapat diedit</span>
+                </div>
+                <p class="mt-2 text-sm font-semibold text-indigo-950">Lengkapi data yang akan digunakan pada dokumen SPJ</p>
+                <p class="mt-1 text-xs leading-5 text-indigo-700">Isi kategori, uraian pembayaran, penerima kuitansi, metode pembayaran, dan rincian sesuai jenis SPJ.</p>
+            </div>
+            <span class="text-xs font-semibold text-indigo-500">Area kerja operator</span>
+        </div>`;
+    spjBuilder.insertAdjacentElement('beforebegin', operatorIntro);
+
+    const heroSection = Array.from(workspaceRoot.children).find((child) =>
+        child instanceof HTMLElement && child.tagName === 'SECTION' && child.querySelector('h1')
+    );
+
+    const navigator = document.createElement('nav');
+    navigator.className = 'sticky top-16 z-20 -mx-1 overflow-x-auto rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur';
+    navigator.setAttribute('aria-label', 'Navigasi ruang kerja transaksi');
+    navigator.innerHTML = `
+        <div class="flex min-w-max items-center gap-1">
+            <span class="px-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Ruang kerja</span>
+            <a href="#data-arkas-bku" class="rounded-lg px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">1. Data ARKAS / BKU</a>
+            <a href="#data-spj-operator" class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100">2. Data SPJ Operator</a>
+            <a href="#data-spj-operator" class="rounded-lg px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">3. Lengkapi & buat paket</a>
+        </div>`;
+
+    if (heroSection) {
+        heroSection.insertAdjacentElement('afterend', navigator);
+    } else {
+        workspaceRoot.prepend(navigator);
+    }
+
+    workspaceRoot.querySelectorAll('a[href="#modul-buat-spj"]').forEach((link) => {
+        link.setAttribute('href', '#data-spj-operator');
+    });
+};
+
+initializeTransactionOperatorWorkspace();
+document.addEventListener('livewire:navigated', initializeTransactionOperatorWorkspace);
