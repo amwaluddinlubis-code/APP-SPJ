@@ -4,47 +4,100 @@
             <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-6 text-white sm:px-7">
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-3xl">
-                        <p class="text-[11px] font-bold uppercase tracking-[.18em] text-sky-200">Priority #10 · Checklist paket SPJ</p>
-                        <h1 class="mt-2 text-2xl font-bold tracking-tight">Apa yang masih kurang sebelum READY?</h1>
-                        <p class="mt-2 text-sm leading-6 text-indigo-100">Periksa satu per satu. Item hijau sudah aman, item kuning masih harus dilengkapi operator.</p>
+                        <p class="text-[11px] font-bold uppercase tracking-[.18em] text-sky-200">Checklist paket SPJ</p>
+                        <h1 class="mt-2 text-2xl font-bold tracking-tight">Apa yang masih kurang sebelum siap diberi nomor?</h1>
+                        <p class="mt-2 text-sm leading-6 text-indigo-100">Aplikasi menentukan dokumen berdasarkan jalur SIPLah/Non-SIPLah dan jenis SPJ. Operator cukup melengkapi bagian yang masih kurang.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white">Buka paket lengkap</a>
-                        <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-indigo-950">Edit transaksi</a>
+                        <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
                     </div>
                 </div>
             </div>
 
             <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="bg-white px-5 py-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Jalur pengadaan</p>
+                    <p class="mt-1 text-xl font-bold text-indigo-700">{{ $requirementSummary['channel'] }}</p>
+                </div>
+                <div class="bg-white px-5 py-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Dokumen wajib siap</p>
+                    <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $requirementSummary['required_ready'] }} / {{ $requirementSummary['required_total'] }}</p>
+                </div>
+                <div class="bg-white px-5 py-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Masih wajib dilengkapi</p>
+                    <p class="mt-1 text-2xl font-bold {{ $requirementSummary['missing_required'] > 0 ? 'text-amber-700' : 'text-emerald-700' }}">{{ $requirementSummary['missing_required'] }}</p>
+                </div>
+                <div class="bg-white px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Status paket</p>
                     <div class="mt-2"><x-ui.status-badge :status="$package->status" size="xs" /></div>
                 </div>
-                <div class="bg-white px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Checklist selesai</p>
-                    <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $completedChecks }} / {{ $totalChecks }}</p>
-                </div>
-                <div class="bg-white px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Masih kurang</p>
-                    <p class="mt-1 text-2xl font-bold {{ $remainingChecks > 0 ? 'text-amber-700' : 'text-emerald-700' }}">{{ $remainingChecks }}</p>
-                </div>
-                <div class="bg-white px-5 py-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Kesiapan</p>
-                        <span class="text-sm font-bold text-indigo-700">{{ $progress }}%</span>
-                    </div>
-                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full bg-indigo-600" style="width: {{ $progress }}%"></div>
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+            <div class="border-b border-indigo-100 bg-indigo-50/70 px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wide text-indigo-500">Mesin kebutuhan dokumen</p>
+                        <h2 class="mt-1 font-bold text-slate-900">Dokumen yang harus disiapkan untuk transaksi ini</h2>
+                        <p class="mt-1 text-sm text-slate-600">Wajib = harus lengkap sebelum paket siap. Opsional = disiapkan jika dibutuhkan. Tidak berlaku = tidak diperlukan untuk transaksi ini.</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Dokumen / Data</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kelompok</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Sumber</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kebutuhan</th>
+                            <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        @foreach($documentRequirements as $item)
+                            <tr class="align-top">
+                                <td class="px-5 py-4">
+                                    <p class="font-bold text-slate-900">{{ $item['label'] }}</p>
+                                    <p class="mt-1 max-w-xl text-xs leading-5 {{ $item['status'] === 'WAJIB_BELUM_LENGKAP' ? 'text-amber-800' : 'text-slate-500' }}">{{ $item['message'] }}</p>
+                                </td>
+                                <td class="px-4 py-4 text-slate-600">{{ $item['group'] }}</td>
+                                <td class="px-4 py-4 text-slate-600">{{ $item['source'] }}</td>
+                                <td class="px-4 py-4">
+                                    @if(!$item['applicable'])
+                                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">Tidak berlaku</span>
+                                    @elseif($item['required'])
+                                        <span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">Wajib</span>
+                                    @else
+                                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">Opsional</span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4">
+                                    @if(!$item['applicable'])
+                                        <span class="text-xs font-bold text-slate-400">—</span>
+                                    @elseif($item['available'])
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">✓ Tersedia</span>
+                                    @elseif($item['required'])
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">! Belum lengkap</span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">Belum tersedia</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
             <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-                    <h2 class="font-bold text-slate-900">Checklist kelengkapan</h2>
-                    <p class="mt-1 text-sm text-slate-500">Aturan checklist ini sama dengan validasi yang digunakan saat paket ditandai READY.</p>
+                    <h2 class="font-bold text-slate-900">Pemeriksaan isi data</h2>
+                    <p class="mt-1 text-sm text-slate-500">Bagian ini memeriksa isi transaksi dan dokumen wajib sebelum status paket dapat dilanjutkan.</p>
                 </div>
 
                 <div class="divide-y divide-slate-100">
@@ -71,25 +124,26 @@
             </article>
 
             <aside class="space-y-4">
-                <section class="rounded-2xl border {{ $remainingChecks > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5 shadow-sm">
-                    @if($remainingChecks > 0)
-                        <p class="text-xs font-bold uppercase tracking-wide text-amber-600">Belum dapat READY</p>
-                        <h2 class="mt-2 text-lg font-bold text-amber-950">Selesaikan {{ $remainingChecks }} item lagi</h2>
-                        <p class="mt-2 text-sm leading-6 text-amber-800">Gunakan tombol “Perbaiki sekarang” pada checklist. Setelah data disimpan, kembali ke halaman ini untuk memeriksa ulang.</p>
+                @php($blockingCount = max($remainingChecks, $requirementSummary['missing_required']))
+                <section class="rounded-2xl border {{ $blockingCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5 shadow-sm">
+                    @if($blockingCount > 0)
+                        <p class="text-xs font-bold uppercase tracking-wide text-amber-600">Belum siap diberi nomor</p>
+                        <h2 class="mt-2 text-lg font-bold text-amber-950">Masih ada data atau dokumen wajib yang kurang</h2>
+                        <p class="mt-2 text-sm leading-6 text-amber-800">Lengkapi item bertanda wajib atau gunakan tombol “Perbaiki sekarang”. Setelah disimpan, kembali ke halaman ini untuk memeriksa ulang.</p>
                     @else
-                        <p class="text-xs font-bold uppercase tracking-wide text-emerald-600">Checklist lengkap</p>
-                        <h2 class="mt-2 text-lg font-bold text-emerald-950">Paket siap menjadi READY</h2>
+                        <p class="text-xs font-bold uppercase tracking-wide text-emerald-600">Semua kebutuhan wajib lengkap</p>
+                        <h2 class="mt-2 text-lg font-bold text-emerald-950">Paket siap dilanjutkan</h2>
                         <p class="mt-2 text-sm leading-6 text-emerald-800">Semua pemeriksaan wajib sudah lolos. Paket dapat dilanjutkan ke tahap penomoran.</p>
 
                         @if($canMarkReady)
                             <form method="POST" action="{{ route('spj.ready', $package->id) }}" class="mt-4">
                                 @csrf
-                                <button class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-800">Tandai READY →</button>
+                                <button class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-800">Tandai siap diproses →</button>
                             </form>
                         @elseif($package->status !== 'DRAFT')
                             <div class="mt-4"><x-ui.status-badge :status="$package->status" /></div>
                         @elseif(!$canEdit)
-                            <p class="mt-4 rounded-lg border border-slate-200 bg-white/70 p-3 text-sm font-semibold text-slate-600">Mode pemeriksa: checklist dapat dilihat, tetapi status paket tidak dapat diubah.</p>
+                            <p class="mt-4 rounded-lg border border-slate-200 bg-white/70 p-3 text-sm font-semibold text-slate-600">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
                         @endif
                     @endif
                 </section>
@@ -99,6 +153,7 @@
                     <p class="mt-2 font-mono text-sm font-bold text-indigo-700">{{ $package->transaction->no_bukti ?: 'Tanpa nomor bukti' }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-800">{{ $package->transaction->payment_description ?: $package->transaction->description ?: 'Uraian belum tersedia' }}</p>
                     <p class="mt-2 text-xs text-slate-500">Kategori: {{ str_replace('_', ' ', (string) $package->transaction->spj_category) }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Pengadaan: {{ $requirementSummary['channel'] }}</p>
                 </section>
             </aside>
         </section>
