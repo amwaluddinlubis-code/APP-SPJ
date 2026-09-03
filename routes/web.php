@@ -12,6 +12,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\OperationalDashboardController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\RkasBudgetController;
 use App\Http\Controllers\SchoolBackupController;
@@ -69,7 +70,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/impersonate/{userId}', [ImpersonationController::class, 'start'])->name('impersonation.start');
     });
     Route::middleware(['active-school', 'active-year'])->group(function () {
-        Route::get('/', DashboardController::class)->name('dashboard');
+        Route::get('/', OperationalDashboardController::class)->name('dashboard');
+        Route::get('/dashboard-v2', DashboardController::class)->name('dashboard.v2');
         Route::get('/transaksi', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('/rekonsiliasi', [ReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::get('/pegawai', [EmployeeController::class, 'index'])->name('employees.index');
