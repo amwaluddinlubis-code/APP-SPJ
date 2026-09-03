@@ -1,0 +1,267 @@
+/* Humanized global UI layer.
+   Purpose: make the whole application calmer, clearer, and more comfortable
+   without rewriting every Blade view one by one. */
+
+:root {
+    --ui-page-bg: #f6f8fb;
+    --ui-surface: #ffffff;
+    --ui-surface-soft: #f8fafc;
+    --ui-border: #dbe3ec;
+    --ui-border-strong: #cbd5e1;
+    --ui-text: #172033;
+    --ui-muted: #64748b;
+    --ui-radius: 1rem;
+    --ui-radius-sm: .75rem;
+    --ui-shadow: 0 8px 24px rgb(15 23 42 / .06), 0 1px 3px rgb(15 23 42 / .05);
+    --ui-shadow-hover: 0 14px 34px rgb(15 23 42 / .10), 0 3px 8px rgb(15 23 42 / .06);
+}
+
+html { scroll-behavior: smooth; }
+body {
+    background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 34%, transparent) 0, transparent 30rem),
+        var(--ui-page-bg);
+    color: var(--ui-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+main {
+    min-width: 0;
+    background: transparent;
+}
+
+main > header {
+    border-color: color-mix(in srgb, var(--theme-accent, #14b8a6) 12%, #dbe3ec) !important;
+    background: rgb(255 255 255 / .88) !important;
+    box-shadow: 0 4px 18px rgb(15 23 42 / .05) !important;
+    backdrop-filter: blur(14px) saturate(130%);
+}
+
+/* Main content rhythm */
+main > div:not([class*="fixed"]),
+main > section {
+    min-width: 0;
+}
+
+main .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.35rem; }
+
+/* Generic surfaces: cards, panels and sections */
+main section.rounded-2xl,
+main .card,
+main .audit-panel,
+main .ui-form-section,
+main [class*="rounded-2xl"][class*="bg-white"] {
+    border-color: var(--ui-border) !important;
+    box-shadow: var(--ui-shadow) !important;
+}
+
+main section.rounded-2xl,
+main .card,
+main .audit-panel,
+main .ui-form-section {
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+main section.rounded-2xl:hover,
+main .card:hover,
+main .audit-panel:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #14b8a6) 18%, var(--ui-border));
+}
+
+/* Humanized section headers */
+main .card-header,
+main .audit-panel-heading,
+main .ui-form-section-heading,
+main section > div:first-child.border-b:not([class*="bg-gradient"]),
+main section > header:not([class*="bg-gradient"]) {
+    position: relative;
+    border-bottom-color: color-mix(in srgb, var(--theme-accent, #14b8a6) 16%, var(--ui-border)) !important;
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 46%, white) 0%,
+        #ffffff 58%,
+        #f8fafc 100%) !important;
+}
+
+main .card-header::before,
+main .audit-panel-heading::before,
+main .ui-form-section-heading::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: .75rem;
+    bottom: .75rem;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--theme-accent, #14b8a6);
+}
+
+main .audit-panel-heading,
+main .ui-form-section-heading { padding-left: 1.4rem; }
+
+/* Typography hierarchy */
+main h1 { letter-spacing: -.025em; line-height: 1.15; }
+main h2, main h3 { letter-spacing: -.012em; }
+main p { line-height: 1.6; }
+main .text-slate-400,
+main .text-slate-500 { color: #6b778c; }
+
+/* Buttons: softer radius, clear weight, comfortable targets */
+main button:not(.app-nav),
+main a[class*="rounded-lg"][class*="px-"],
+main a[class*="rounded-xl"][class*="px-"],
+main .btn,
+main .ui-btn {
+    min-height: 2.5rem;
+    border-radius: .75rem;
+    transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+
+main button:not(.app-nav):hover:not(:disabled),
+main a[class*="rounded-lg"][class*="px-"]:hover,
+main a[class*="rounded-xl"][class*="px-"]:hover,
+main .btn:hover,
+main .ui-btn:hover {
+    transform: translateY(-1px);
+}
+
+main button:not(.app-nav):focus-visible,
+main a:focus-visible,
+main input:focus-visible,
+main select:focus-visible,
+main textarea:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--theme-accent, #14b8a6) 22%, transparent);
+    outline-offset: 2px;
+}
+
+/* Inputs */
+main input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
+main select,
+main textarea {
+    border-color: var(--ui-border-strong) !important;
+    background-color: #fff;
+    box-shadow: inset 0 1px 1px rgb(15 23 42 / .02), 0 1px 2px rgb(15 23 42 / .035);
+}
+
+main input:not([type='checkbox']):not([type='radio']):not([type='hidden']):hover,
+main select:hover,
+main textarea:hover { border-color: #94a3b8 !important; }
+
+main input:not([type='checkbox']):not([type='radio']):not([type='hidden']):focus,
+main select:focus,
+main textarea:focus {
+    border-color: var(--theme-accent, #14b8a6) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #14b8a6) 14%, transparent) !important;
+}
+
+/* Tables: less harsh and easier to scan */
+main table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+main table thead {
+    background: color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 46%, #f8fafc) !important;
+}
+main table thead th {
+    color: color-mix(in srgb, var(--theme-accent-strong, #0f766e) 72%, #334155) !important;
+    letter-spacing: .045em;
+}
+main table tbody tr { transition: background-color .14s ease; }
+main table tbody td { border-color: #edf1f5 !important; }
+main table tbody tr:hover { background: color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 34%, white) !important; }
+
+/* Badges and pills */
+main .rounded-full { box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); }
+
+/* Empty states */
+main [class*="border-dashed"] {
+    border-width: 1.5px;
+    border-color: color-mix(in srgb, var(--theme-accent, #14b8a6) 18%, #cbd5e1) !important;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+/* Navigation */
+.app-sidebar {
+    box-shadow: 10px 0 30px rgb(15 23 42 / .10);
+}
+.app-nav {
+    min-height: 2.65rem;
+    border: 1px solid transparent;
+    border-radius: .75rem !important;
+}
+.app-nav:hover {
+    border-color: rgb(255 255 255 / .08);
+    background: rgb(255 255 255 / .075) !important;
+}
+.app-nav-active {
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--theme-accent, #14b8a6) 28%, transparent);
+}
+
+/* Strong module hero headers remain expressive, but calmer. */
+main .bg-gradient-to-br.from-slate-950,
+main .bg-gradient-to-r.from-slate-950,
+main .bg-gradient-to-r.from-slate-900,
+main .theme-header,
+main .spj-builder-header {
+    box-shadow: inset 0 -1px 0 rgb(255 255 255 / .08), 0 10px 30px rgb(15 23 42 / .10);
+}
+
+/* Sticky action areas */
+main .ui-form-actions {
+    border-color: color-mix(in srgb, var(--theme-accent, #14b8a6) 14%, var(--ui-border));
+    box-shadow: 0 -8px 28px rgb(15 23 42 / .07);
+}
+
+/* Responsive density */
+@media (max-width: 1024px) {
+    main section.rounded-2xl,
+    main .card,
+    main .audit-panel,
+    main .ui-form-section { border-radius: .9rem; }
+}
+
+@media (max-width: 640px) {
+    body { background: #f8fafc; }
+    main > header { padding-left: 1rem !important; padding-right: 1rem !important; }
+    main h1 { font-size: 1.45rem !important; }
+    main section.rounded-2xl,
+    main .card,
+    main .audit-panel,
+    main .ui-form-section { box-shadow: 0 3px 14px rgb(15 23 42 / .055) !important; }
+    main button:not(.app-nav),
+    main .btn,
+    main .ui-btn { min-height: 2.75rem; }
+}
+
+/* Dark mode */
+.dark {
+    --ui-page-bg: #07111f;
+    --ui-surface: #0f172a;
+    --ui-surface-soft: #111c2f;
+    --ui-border: #29364a;
+    --ui-border-strong: #3b4b63;
+    --ui-text: #e7edf5;
+    --ui-muted: #9aa8ba;
+}
+.dark body {
+    background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--theme-accent, #14b8a6) 8%, transparent) 0, transparent 30rem),
+        var(--ui-page-bg);
+}
+.dark main > header { background: rgb(15 23 42 / .88) !important; }
+.dark main .card-header,
+.dark main .audit-panel-heading,
+.dark main .ui-form-section-heading,
+.dark main section > div:first-child.border-b:not([class*="bg-gradient"]),
+.dark main section > header:not([class*="bg-gradient"]) {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-accent, #14b8a6) 10%, #0f172a),
+        #0f172a 62%,
+        #111827) !important;
+}
+.dark main table thead {
+    background: color-mix(in srgb, var(--theme-accent, #14b8a6) 10%, #111827) !important;
+}
+.dark main table tbody td { border-color: #263449 !important; }
+.dark main table tbody tr:hover { background: color-mix(in srgb, var(--theme-accent, #14b8a6) 9%, #0f172a) !important; }
+.dark main [class*="border-dashed"] { background: #0f172a; }
