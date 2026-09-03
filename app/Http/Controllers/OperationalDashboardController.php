@@ -155,7 +155,7 @@ class OperationalDashboardController extends Controller
 
         $nextActions = $nextActions->take(4)->values();
 
-        return view('dashboard-operational-v2', compact(
+        return view('dashboard-operational-v3', compact(
             'school', 'year', 'summary', 'attentionCount', 'quarterSummary', 'workQueue',
             'latestSync', 'latestOperation', 'nextActions'
         ));
