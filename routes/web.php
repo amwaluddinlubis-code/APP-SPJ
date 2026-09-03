@@ -20,6 +20,7 @@ use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
 use App\Http\Controllers\SpjController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
+use App\Http\Controllers\SpjPackageChecklistController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SyncedDataController;
 use App\Http\Controllers\TaxController;
@@ -95,6 +96,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
+        Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
         Route::post('/spj/{transactionId}/siapkan', [SpjController::class, 'prepare'])->name('spj.prepare');
         Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
         Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
