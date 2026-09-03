@@ -154,10 +154,12 @@ class OperationalDashboardController extends Controller
         }
 
         $nextActions = $nextActions->take(4)->values();
+        $startHere = $nextActions->first();
+        $otherActions = $nextActions->skip(1)->values();
 
         return view('dashboard-operational-v3', compact(
             'school', 'year', 'summary', 'attentionCount', 'quarterSummary', 'workQueue',
-            'latestSync', 'latestOperation', 'nextActions'
+            'latestSync', 'latestOperation', 'nextActions', 'startHere', 'otherActions'
         ));
     }
 }
