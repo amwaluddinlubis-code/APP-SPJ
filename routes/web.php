@@ -18,6 +18,7 @@ use App\Http\Controllers\SchoolBackupController;
 use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
 use App\Http\Controllers\SpjController;
+use App\Http\Controllers\SpjNumberingWorkflowController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SyncedDataController;
 use App\Http\Controllers\TaxController;
@@ -53,7 +54,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/tahun', [SchoolConfigurationController::class, 'storeYear'])->name('years.store');
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
-        // Modul Manajemen Database Aktif - terpusat untuk maintenance koneksi school
         Route::get('/pengaturan/database-aktif', [DatabaseManagerController::class, 'index'])->name('database-manager.index');
         Route::post('/pengaturan/database-aktif/{schoolId}/activate', [DatabaseManagerController::class, 'activate'])->name('database-manager.activate');
         Route::post('/pengaturan/database-aktif/{schoolId}/migrate', [DatabaseManagerController::class, 'migrate'])->name('database-manager.migrate');
@@ -92,6 +92,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/transaksi/{transactionId}/uraian-manual', [TransactionController::class, 'updateManualDescription'])->name('transactions.manual-description.update');
         Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
+        Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::post('/spj/{transactionId}/siapkan', [SpjController::class, 'prepare'])->name('spj.prepare');
         Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
         Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
@@ -129,8 +130,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('/pengaturan/template-dokumen/{templateId}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
         });
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
-        // Gunakan ID biasa, bukan implicit model binding. Konteks database sekolah
-        // harus diaktifkan oleh middleware sebelum transaksi dicari.
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');
         Route::get('/data-sinkron/{type}', [SyncedDataController::class, 'index'])->name('synced-data.show');
