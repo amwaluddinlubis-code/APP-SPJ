@@ -28,11 +28,24 @@
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
         },
+        init() {
+            const savedState = localStorage.getItem('spj-sidebar-collapsed');
+
+            // Default untuk user baru: sidebar dalam keadaan collapse.
+            // Setelah user memilih expand/collapse, pilihan terakhir dipertahankan.
+            this.collapsed = savedState === null ? true : savedState === 'true';
+        },
+        setSidebarCollapsed(value) {
+            this.collapsed = value;
+            localStorage.setItem('spj-sidebar-collapsed', String(value));
+        },
         toggleSidebar() {
-            this.collapsed = !this.collapsed;
+            this.setSidebarCollapsed(!this.collapsed);
         },
         toggleGroup(group) {
-            if (this.collapsed && !this.open) this.toggleSidebar();
+            // Saat user memilih grup dari sidebar yang collapse, anggap sebagai
+            // pilihan untuk memperluas sidebar dan simpan preferensinya.
+            if (this.collapsed && !this.open) this.setSidebarCollapsed(false);
             this.groups[group] = !this.groups[group];
         }
     }" :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17rem_1fr]'" class="min-h-screen lg:grid">
