@@ -70,7 +70,6 @@ class OperationalDashboardController extends Controller
 
         $firstDraftPackage = (clone $packages)
             ->where('status', 'DRAFT')
-            ->whereHas('transaction', fn ($query) => $query->orderBy('transaction_date')->orderBy('id'))
             ->orderBy('id')
             ->first();
 
@@ -114,15 +113,6 @@ class OperationalDashboardController extends Controller
             ]);
         }
 
-        if ($summary['without_package'] > 0) {
-            $nextActions->push([
-                'priority' => 'Kerjakan berikutnya', 'tone' => 'amber',
-                'title' => $summary['without_package'].' transaksi belum memiliki paket SPJ',
-                'description' => 'Buka transaksi, lengkapi data SPJ operator, lalu siapkan paket dokumennya.',
-                'action' => 'Siapkan paket SPJ', 'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']),
-            ]);
-        }
-
         if ($summary['draft'] > 0) {
             $nextActions->push([
                 'priority' => 'Kerjakan berikutnya', 'tone' => 'amber',
@@ -130,6 +120,15 @@ class OperationalDashboardController extends Controller
                 'description' => 'Buka checklist paket untuk melihat persis data apa yang masih kurang sebelum status dapat menjadi READY.',
                 'action' => 'Buka checklist paket',
                 'url' => $firstDraftPackage ? route('spj.checklist', $firstDraftPackage->id) : route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']),
+            ]);
+        }
+
+        if ($summary['without_package'] > 0) {
+            $nextActions->push([
+                'priority' => 'Kerjakan berikutnya', 'tone' => 'amber',
+                'title' => $summary['without_package'].' transaksi belum memiliki paket SPJ',
+                'description' => 'Buka transaksi, lengkapi data SPJ operator, lalu siapkan paket dokumennya.',
+                'action' => 'Siapkan paket SPJ', 'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']),
             ]);
         }
 
