@@ -1,21 +1,27 @@
 <x-layouts.tailwind-app title="Siswa">
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <nav class="module-breadcrumb flex items-center gap-2 text-sm" aria-label="Breadcrumb"><a href="{{ route('dashboard') }}" class="font-medium">Dashboard</a><span class="text-slate-400">/</span><span class="module-breadcrumb-current font-semibold">Siswa</span></nav>
+        <x-page-header
+            title="Siswa"
+            subtitle="Kelola identitas peserta didik, rombongan belajar, dan data orang tua dalam satu sumber terstruktur."
+            kicker="Master Dapodik & Manual"
+        >
+            <x-slot:actions>
+                @if(auth()->user()->isAdministrator())
+                    <a href="{{ route('dapodik.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/25">Sinkron Dapodik</a>
+                @endif
+                @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))
+                    <a href="{{ route('students.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[var(--theme-700)] shadow"><span class="text-lg leading-none">+</span> Tambah siswa</a>
+                @endif
+            </x-slot:actions>
 
-        <section class="overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--theme-700)] to-[var(--theme-500)] p-6 text-white shadow-lg">
-            <div class="flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-white/75">Master Dapodik & manual</p><h1 class="mt-2 text-2xl font-bold">Siswa</h1><p class="mt-1 max-w-3xl text-sm text-white/85">Kelola identitas peserta didik, rombongan belajar, dan data orang tua dalam satu sumber terstruktur.</p></div><div class="flex flex-wrap gap-2"><a href="{{ route('dapodik.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-bold hover:bg-white/25">Sinkron Dapodik</a><a href="{{ route('students.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[var(--theme-700)] shadow"><span class="text-lg leading-none">+</span> Tambah siswa</a></div></div>
-        </section>
-        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach([['Total data',$summary['total'],'database'],['Siswa aktif',$summary['active'],'employee'],['Dari Dapodik',$summary['dapodik'],'sync'],['Data manual',$summary['manual'],'edit']] as [$label,$value,$icon])
-                <div class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><span class="grid h-11 w-11 place-items-center rounded-xl theme-bg-soft theme-text"><x-ui-icon :name="$icon" /></span><div><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p><p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($value,0,',','.') }}</p></div></div>
-            @endforeach
-        </section>
-                </div>
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                <x-stat-item label="Total Data" :value="number_format($summary['total'], 0, ',', '.')" hint="Seluruh data siswa" />
+                <x-stat-item label="Siswa Aktif" :value="number_format($summary['active'], 0, ',', '.')" hint="Berstatus aktif" value-class="text-emerald-700" />
+                <x-stat-item label="Dari Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Berasal dari sinkronisasi" value-class="text-indigo-700" />
+                <x-stat-item label="Data Manual" :value="number_format($summary['manual'], 0, ',', '.')" hint="Diinput oleh operator" value-class="text-amber-700" />
             </div>
-        </section>
+        </x-page-header>
+
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-5 py-4"><h2 class="font-bold text-slate-900">Daftar siswa</h2><p class="mt-1 text-xs text-slate-500">Gunakan pencarian dan filter untuk menemukan data secara cepat.</p></div>
             <form method="GET" class="grid gap-3 border-b border-slate-200 bg-slate-50/60 p-4 md:grid-cols-12">
