@@ -15,7 +15,7 @@ class ArkasSourceController
     public function index(Request $request, ArkasBridgeClient $bridgeClient): View
     {
         $schools = School::query()->orderBy('name')->get();
-        $sources = ArkasSource::query()->get()->keyBy('school_id');
+        $sources = ArkasSource::query()->with('school')->get()->keyBy('school_id');
         $selectedSchoolId = (int) old('school_id', $request->integer('school_id', session('active_school_id')));
         $selectedSource = $sources->get($selectedSchoolId);
         $resolvedBridge = $bridgeClient->resolveBridgeExecutable($selectedSource);
