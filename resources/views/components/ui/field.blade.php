@@ -6,19 +6,19 @@
     'required' => false,
 ])
 
-<div {{ $attributes->class(['ui-field']) }}>
+<div {{ $attributes->class(['space-y-1.5']) }}>
     @if($label)
-        <label @if($for) for="{{ $for }}" @endif class="ui-label">
+        <label @if($for) for="{{ $for }}" @endif class="block text-sm font-semibold text-slate-700">
             {{ $label }}
-            @if($required)<span class="ui-required" aria-hidden="true">*</span>@endif
+            @if($required)<span class="text-rose-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span>@endif
         </label>
     @endif
 
     {{ $slot }}
 
     @if($error)
-        <p class="ui-error">{{ $error }}</p>
+        <p class="text-xs font-medium text-rose-600">{{ $error }}</p>
     @elseif($hint)
-        <p class="ui-hint">{{ $hint }}</p>
+        <p class="text-xs leading-5 text-slate-500">{{ $hint }}</p>
     @endif
 </div>
