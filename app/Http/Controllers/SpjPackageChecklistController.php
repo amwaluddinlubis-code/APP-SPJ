@@ -4,20 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Models\SpjPackage;
 use App\Models\User;
+use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class SpjPackageChecklistController extends Controller
 {
-    public function __invoke(string $packageId, SpjPackageValidationService $validator): View|RedirectResponse
-    {
+    public function __invoke(
+        string $packageId,
+        SpjPackageValidationService $validator,
+        SpjDocumentRequirementService $requirements,
+    ): View|RedirectResponse {
         $package = SpjPackage::query()
             ->with([
                 'transaction.items',
                 'transaction.goods',
-                'transaction.goodsReceipts.items',
+                'transaction.workOrder',
+                'transaction.workers',
+                'transaction.participants',
+                'transaction.travels',
                 'transaction.honors',
+                'transaction.payments',
+                'transaction.goodsReceipts',
             ])
             ->find($packageId);
 
@@ -34,8 +43,15 @@ class SpjPackageChecklistController extends Controller
         $completedChecks = $checklist->where('passed', true)->count();
         $remainingChecks = $totalChecks - $completedChecks;
         $progress = $totalChecks > 0 ? (int) round(($completedChecks / $totalChecks) * 100) : 100;
+
+        $documentRequirements = collect($requirements->forTransaction($package->transaction));
+        $requirementSummary = $requirements->summary($package->transaction);
+
         $canEdit = in_array(auth()->user()?->role, [User::ROLE_ADMIN, User::ROLE_OPERATOR], true);
-        $canMarkReady = $canEdit && $package->status === 'DRAFT' && $remainingChecks === 0;
+        $canMarkReady = $canEdit
+            && $package->status === 'DRAFT'
+            && $remainingChecks === 0
+            && $requirementSummary['missing_required'] === 0;
 
         return view('spj.checklist', compact(
             'package',
@@ -44,6 +60,8 @@ class SpjPackageChecklistController extends Controller
             'completedChecks',
             'remainingChecks',
             'progress',
+            'documentRequirements',
+            'requirementSummary',
             'canEdit',
             'canMarkReady',
         ));
