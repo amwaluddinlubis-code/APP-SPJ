@@ -162,14 +162,84 @@ const initializeNativeDateInputs = (root = document) => {
     });
 };
 
+const humanStatusLabels = new Map([
+    ['DRAFT', 'Belum lengkap'],
+    ['BELUM_LENGKAP', 'Belum lengkap'],
+    ['READY', 'Siap diproses'],
+    ['SIAP', 'Siap diproses'],
+    ['DISIAPKAN', 'Siap diproses'],
+    ['NUMBERED', 'Sudah bernomor'],
+    ['BERNOMOR', 'Sudah bernomor'],
+    ['PRINTED', 'Sudah dicetak'],
+    ['DICETAK', 'Sudah dicetak'],
+    ['FINAL', 'Final'],
+    ['ARCHIVED', 'Final'],
+    ['ARSIP', 'Final'],
+    ['CANCELLED', 'Dibatalkan'],
+    ['CANCELED', 'Dibatalkan'],
+    ['SOURCE_MISSING', 'Tidak muncul di sinkronisasi'],
+    ['REQUIRES_RECONCILIATION', 'Perlu rekonsiliasi'],
+    ['RECONCILIATION', 'Perlu rekonsiliasi'],
+    ['ACTIVE', 'Aktif'],
+    ['INACTIVE', 'Tidak aktif'],
+    ['DITETAPKAN', 'Sudah ditetapkan'],
+    ['PENDING', 'Menunggu diproses'],
+    ['PROCESSING', 'Sedang diproses'],
+    ['RUNNING', 'Sedang diproses'],
+    ['COMPLETED', 'Selesai'],
+    ['SUCCESS', 'Selesai'],
+    ['SUCCEEDED', 'Selesai'],
+    ['FAILED', 'Gagal'],
+    ['ERROR', 'Gagal'],
+    ['LOCKED', 'Terkunci'],
+    ['UNLOCKED', 'Dapat diedit'],
+    ['REPLACED', 'Diganti'],
+    ['GENERATED', 'Dokumen dibuat'],
+]);
+
+const humanizeStatusText = (value) => {
+    const normalized = String(value || '').trim().toUpperCase();
+    return humanStatusLabels.get(normalized) || null;
+};
+
+const initializeHumanStatuses = (root = document) => {
+    const elements = [
+        ...(root instanceof Element ? [root] : []),
+        ...root.querySelectorAll('option, span, small, p, td, dd, button, a'),
+    ];
+
+    elements.forEach((element) => {
+        if (!(element instanceof HTMLElement) || element.dataset.statusHumanized === 'true') {
+            return;
+        }
+
+        if (element.children.length > 0 && element.tagName !== 'OPTION') {
+            return;
+        }
+
+        const original = element.textContent?.trim();
+        const humanized = humanizeStatusText(original);
+
+        if (!humanized) {
+            return;
+        }
+
+        element.textContent = humanized;
+        element.dataset.statusHumanized = 'true';
+        element.title ||= `Status sistem: ${String(original).trim().toUpperCase()}`;
+    });
+};
+
 initializeHtmlTablePagination();
 initializeNativeDateInputs();
+initializeHumanStatuses();
 
 const tableObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
         if (node instanceof Element) {
             initializeHtmlTablePagination(node.matches('table') ? node.parentElement || node : node);
             initializeNativeDateInputs(node);
+            initializeHumanStatuses(node);
         }
     }));
 });
@@ -254,4 +324,7 @@ const initializeTransactionOperatorWorkspace = () => {
 };
 
 initializeTransactionOperatorWorkspace();
-document.addEventListener('livewire:navigated', initializeTransactionOperatorWorkspace);
+document.addEventListener('livewire:navigated', () => {
+    initializeHumanStatuses();
+    initializeTransactionOperatorWorkspace();
+});
