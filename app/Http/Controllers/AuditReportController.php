@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\School;
 use App\Services\AuditReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -33,7 +34,16 @@ class AuditReportController extends Controller
     public function export(string $format): Response|BinaryFileResponse
     {
         $report = $this->reports->build();
-        abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
+        abort_unless(in_array($format, ['pdf', 'xlsx', 'bpk'], true), 404);
+
+        if ($format === 'bpk') {
+            $report['school'] = School::query()->findOrFail((int) session('active_school_id'));
+            $report['generatedAt'] = now();
+
+            return Pdf::loadView('audit-reports.bpk-package', $report)
+                ->setPaper('a4', 'portrait')
+                ->stream('PAKET-PEMERIKSAAN-BPK-'.$report['year']->year.'.pdf');
+        }
 
         if ($format === 'pdf') {
             return Pdf::loadView('audit-reports.pdf', $report)
