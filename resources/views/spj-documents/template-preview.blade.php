@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pratinjau {{ $template->name }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script>
+        // Tautan pratinjau lama masih memakai target="_blank".
+        // Alihkan pratinjau ke tab asal lalu tutup tab sementara agar operator
+        // tetap bekerja pada halaman browser yang sama.
+        if (window.opener && !window.opener.closed) {
+            window.opener.location.assign(window.location.href);
+            window.close();
+        }
+    </script>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
     <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
@@ -15,8 +24,8 @@
                 <p class="text-xs text-slate-500">{{ $package->document_number ?: 'Nomor SPJ belum ditetapkan' }} · {{ $package->transaction->no_bukti }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="window.print()" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cetak / Simpan PDF</button>
-                <button type="button" onclick="window.close()" class="rounded-md bg-slate-800 px-3 py-2 text-sm font-bold text-white hover:bg-slate-950">Tutup</button>
+                <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">← Kembali ke Paket</a>
+                <button type="button" onclick="window.print()" class="rounded-md bg-slate-800 px-3 py-2 text-sm font-bold text-white hover:bg-slate-950">Cetak / Simpan PDF</button>
             </div>
         </div>
         @if($validationIssues)
