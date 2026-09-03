@@ -6,7 +6,10 @@ use App\Models\SpjPackage;
 
 class SpjPackageValidationService
 {
-    public function __construct(private SpjProcurementPolicyService $procurementPolicy) {}
+    public function __construct(
+        private SpjProcurementPolicyService $procurementPolicy,
+        private SpjDocumentRequirementService $documentRequirements,
+    ) {}
 
     /**
      * @return array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}>
@@ -147,6 +150,24 @@ class SpjPackageValidationService
                 ? 'Total honor sesuai dengan nilai bruto transaksi.'
                 : sprintf('Total honor Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($honorTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
             $this->addCheck($checks, 'honor_total', 'Honor pegawai', 'Total honor', $honorTotalMatches, $honorMessage, $honorMessage, $url.'#modul-buat-spj');
+        }
+
+        $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'goods_receipt', 'honor'];
+        foreach ($this->documentRequirements->forTransaction($transaction) as $requirement) {
+            if (! $requirement['applicable'] || ! $requirement['required'] || in_array($requirement['key'], $alreadyCovered, true)) {
+                continue;
+            }
+
+            $this->addCheck(
+                $checks,
+                'document_'.$requirement['key'],
+                'Dokumen wajib · '.$requirement['group'],
+                $requirement['label'],
+                $requirement['available'],
+                $requirement['message'],
+                $requirement['message'],
+                $url.'#modul-buat-spj'
+            );
         }
 
         return $checks;
