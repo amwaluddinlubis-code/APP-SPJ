@@ -160,8 +160,6 @@ form input[type='radio'] {
 
 .ui-form-section-body { padding: 1.25rem; }
 
-/* Fieldset headers use the same visual language when a form does not use
-   .ui-form-section yet. This keeps older forms from looking plain white. */
 form fieldset {
     border-color: #dbe3ee;
     box-shadow: 0 2px 8px rgb(15 23 42 / .035);
@@ -233,9 +231,113 @@ form fieldset > legend {
 }
 .ui-choice-card:hover { border-color: #cbd5e1; background: #fff; }
 
+/* Focused polish for the five operator-heavy pages. Modern browsers used by
+   the app support :has(), letting us scope improvements without rewriting
+   large legacy Blade views. */
+main:has(#modul-buat-spj) > div,
+main:has(.spj-builder) > div,
+main:has(a[href*="document-number-formats"]) > div,
+main:has(form[action*="document-templates"]) > div,
+main:has(form[action*="schools/profile"]) > div {
+    max-width: 1600px;
+    margin-inline: auto;
+}
+
+/* Detail Transaksi */
+main:has(#modul-buat-spj) section.rounded-2xl {
+    border-color: color-mix(in srgb, var(--theme-accent) 14%, #dbe3ee) !important;
+}
+main:has(#modul-buat-spj) section > div[class*="bg-slate-900"] {
+    min-height: 11rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 1rem 1rem 0 0;
+}
+main:has(#modul-buat-spj) form:not(.app-nav) {
+    scroll-margin-top: 7rem;
+}
+main:has(#modul-buat-spj) .grid > .rounded-xl[class*="bg-slate-50"] {
+    border: 1px solid #e2e8f0;
+    background: #fbfcfe !important;
+}
+
+/* Ruang Kerja SPJ */
+main:has(.spj-builder) .spj-builder {
+    box-shadow: 0 12px 32px rgb(15 23 42 / .07);
+}
+main:has(.spj-builder) .spj-builder-form {
+    background: linear-gradient(180deg, #fff, #fbfcfe);
+}
+main:has(.spj-builder) .spj-builder-accent-panel {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .7);
+}
+main:has(.spj-builder) [role="tablist"],
+main:has(.spj-builder) nav[class*="border"] {
+    background: #f8fafc;
+    border-radius: .85rem;
+    padding: .25rem;
+}
+
+/* Penomoran */
+main:has(a[href*="document-number-formats"]) .ui-form-section,
+main:has(a[href*="document-number-formats"]) section.rounded-2xl {
+    overflow: hidden;
+}
+main:has(a[href*="document-number-formats"]) a.rounded-2xl.border {
+    box-shadow: 0 3px 10px rgb(15 23 42 / .045);
+}
+main:has(a[href*="document-number-formats"]) a.rounded-2xl.border:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(15 23 42 / .08);
+}
+main:has(a[href*="document-number-formats"]) form[class*="bg-indigo-50"] {
+    border-width: 1.5px;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent) 10%, transparent);
+}
+
+/* Template Dokumen */
+main:has(form[action*="document-templates"]) fieldset {
+    background: linear-gradient(180deg, #fbfcff, #f8fafc) !important;
+}
+main:has(form[action*="document-templates"]) .ui-choice-card {
+    min-height: 2.8rem;
+    align-items: center;
+    background: #fff;
+}
+main:has(form[action*="document-templates"]) details {
+    border-color: #dbe3ee !important;
+    box-shadow: 0 4px 14px rgb(15 23 42 / .05);
+}
+main:has(form[action*="document-templates"]) details > summary {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--theme-accent-soft) 42%, white), #fff);
+}
+
+/* Pengaturan Sekolah */
+main:has(form[action*="schools/profile"]) form[action*="schools/profile"] > section:first-of-type {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, #dbe3ee) !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--theme-accent-soft) 70%, white), #fff) !important;
+    box-shadow: 0 6px 18px rgb(15 23 42 / .05);
+}
+main:has(form[action*="schools/profile"]) img[alt^="Kop surat"] {
+    width: 100%;
+    min-height: 5rem;
+    padding: .5rem;
+    border: 1px solid #dbe3ee;
+}
+main:has(form[action*="schools/profile"]) .ui-form-section-body {
+    background: linear-gradient(180deg, #fff, #fcfdff);
+}
+main:has(form[action*="schools/profile"]) .ui-form-actions {
+    margin-top: .25rem;
+}
+
 @media (max-width: 640px) {
     .ui-form-section-heading { padding: .875rem 1rem .875rem 1.35rem; }
     .ui-form-section-heading::before { left: .45rem; }
     .ui-form-section-body { padding: 1rem; }
     .ui-form-actions > * { flex: 1 1 auto; }
+
+    main:has(#modul-buat-spj) section > div[class*="bg-slate-900"] { min-height: 9rem; }
+    main:has(form[action*="document-templates"]) .ui-choice-card { min-height: 2.6rem; }
 }
