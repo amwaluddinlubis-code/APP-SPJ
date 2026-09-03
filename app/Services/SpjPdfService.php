@@ -25,11 +25,16 @@ class SpjPdfService
             ->setPaper('a4', 'portrait');
 
         $fileName = 'PAKET-SPJ-'.$this->safeFileName($package->document_number).'.pdf';
-        $response = $pdf->download($fileName);
+        $contents = $pdf->output();
 
         $package->forceFill(['generated_at' => now(), 'status' => 'DICETAK'])->save();
 
-        return $response;
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+            'Content-Length' => (string) strlen($contents),
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
     }
 
     private function letterheadDataUri(?string $path): ?string
