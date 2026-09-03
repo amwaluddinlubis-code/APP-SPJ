@@ -1,14 +1,26 @@
 <x-layouts.tailwind-app>
     @php
         $labels = ['BARANG'=>'Barang','BELANJA_MODAL'=>'Belanja Modal','KONSUMSI'=>'Konsumsi','JASA_HONORARIUM'=>'Jasa/Honorarium','HONOR_PEGAWAI'=>'Honor Pegawai','UPAH'=>'Upah','PEMELIHARAAN'=>'Pemeliharaan','JASA'=>'Jasa','PERJALANAN_DINAS'=>'Perjalanan Dinas','LAINNYA'=>'Lainnya'];
+        $placeholderCount = collect($placeholderGroups)->flatten()->count();
     @endphp
-    <div class="space-y-5">
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <header class="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-violet-700 to-indigo-700 px-5 py-5 text-white">
-                <div><p class="text-[11px] font-bold tracking-[.16em] text-violet-100">PENGATURAN DOKUMEN</p><h1 class="mt-1 text-xl font-bold">Template Word dan Excel</h1><p class="mt-1 text-sm text-violet-100">Kelola berkas dan kategori SPJ yang menggunakan setiap template.</p></div>
-                <div class="flex gap-2"><a href="{{ route('document-templates.sample', 'docx') }}" class="rounded-md border border-white/30 bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20">Contoh Word</a><a href="{{ route('document-templates.sample', 'xlsx') }}" class="rounded-md border border-white/30 bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/20">Contoh Excel</a></div>
-            </header>
+    <div class="space-y-6">
+        <x-page-header
+            title="Template Word dan Excel"
+            subtitle="Kelola berkas template dan kategori SPJ yang menggunakan setiap template dokumen."
+            kicker="Pengaturan Dokumen"
+        >
+            <x-slot:actions>
+                <a href="{{ route('document-templates.sample', 'docx') }}" class="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">Contoh Word</a>
+                <a href="{{ route('document-templates.sample', 'xlsx') }}" class="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">Contoh Excel</a>
+            </x-slot:actions>
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <x-stat-item label="Template" :value="number_format($templates->total(), 0, ',', '.')" hint="Sesuai filter saat ini" value-class="text-indigo-700" />
+                <x-stat-item label="Kategori SPJ" :value="number_format(count($categories), 0, ',', '.')" hint="Kategori yang dapat dipetakan" value-class="text-emerald-700" />
+                <x-stat-item label="Penanda Data" :value="number_format($placeholderCount, 0, ',', '.')" hint="Placeholder tersedia" value-class="text-slate-800" />
+            </div>
+        </x-page-header>
 
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <details class="group border-b border-slate-100" @if($errors->any()) open @endif>
                 <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold text-violet-700 hover:bg-violet-50"><span>+ Unggah atau ganti template</span><span class="transition group-open:rotate-180">⌄</span></summary>
                 <form method="POST" action="{{ route('document-templates.store') }}" enctype="multipart/form-data" class="grid gap-4 border-t border-slate-100 bg-slate-50/60 p-5 lg:grid-cols-2">@csrf
@@ -19,6 +31,11 @@
                     <div class="lg:col-span-2"><button class="rounded-md bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700">Simpan Template</button></div>
                 </form>
             </details>
+
+            <div class="border-b border-slate-100 px-5 py-4">
+                <h2 class="font-bold text-slate-800">Daftar Template Dokumen</h2>
+                <p class="mt-1 text-sm text-slate-500">Atur status dan kategori SPJ untuk setiap template.</p>
+            </div>
 
             <form method="GET" class="flex flex-wrap items-end gap-3 border-b border-slate-100 px-5 py-4">
                 <div><label for="status" class="text-[11px] font-bold uppercase text-slate-500">Status</label><select id="status" name="status" class="mt-1 form-select min-w-36"><option value="all" @selected(($filters['status'] ?? 'all')==='all')>Semua</option><option value="active" @selected(($filters['status'] ?? '')==='active')>Aktif</option><option value="inactive" @selected(($filters['status'] ?? '')==='inactive')>Tidak Aktif</option></select></div>
@@ -40,6 +57,6 @@
             @if($templates->hasPages())<div class="border-t border-slate-100 px-5 py-4">{{ $templates->links() }}</div>@endif
         </section>
 
-        <details class="rounded-xl border border-slate-200 bg-white shadow-sm"><summary class="cursor-pointer px-5 py-4 text-sm font-bold text-slate-700">Semua penanda yang dapat digunakan ({{ collect($placeholderGroups)->flatten()->count() }})</summary><div class="space-y-5 border-t border-slate-100 px-5 py-4"><p class="text-xs text-slate-500">Gunakan kurung kurawal ganda, misalnya <code>&#123;&#123;NOMOR_SPJ&#125;&#125;</code>. Penanda pada kelompok baris rincian harus ditempatkan pada satu baris tabel contoh agar baris dapat digandakan otomatis.</p>@foreach($placeholderGroups as $group => $markers)<section><h3 class="text-xs font-bold uppercase tracking-wide text-slate-600">{{ $group }}</h3><div class="mt-2 flex flex-wrap gap-1.5">@foreach($markers as $marker)<code class="rounded bg-slate-100 px-2 py-1 text-[11px] text-indigo-700">&#123;&#123;{{ $marker }}&#125;&#125;</code>@endforeach</div></section>@endforeach</div></details>
+        <details class="rounded-xl border border-slate-200 bg-white shadow-sm"><summary class="cursor-pointer px-5 py-4 text-sm font-bold text-slate-700">Semua penanda yang dapat digunakan ({{ $placeholderCount }})</summary><div class="space-y-5 border-t border-slate-100 px-5 py-4"><p class="text-xs text-slate-500">Gunakan kurung kurawal ganda, misalnya <code>&#123;&#123;NOMOR_SPJ&#125;&#125;</code>. Penanda pada kelompok baris rincian harus ditempatkan pada satu baris tabel contoh agar baris dapat digandakan otomatis.</p>@foreach($placeholderGroups as $group => $markers)<section><h3 class="text-xs font-bold uppercase tracking-wide text-slate-600">{{ $group }}</h3><div class="mt-2 flex flex-wrap gap-1.5">@foreach($markers as $marker)<code class="rounded bg-slate-100 px-2 py-1 text-[11px] text-indigo-700">&#123;&#123;{{ $marker }}&#125;&#125;</code>@endforeach</div></section>@endforeach</div></details>
     </div>
 </x-layouts.tailwind-app>
