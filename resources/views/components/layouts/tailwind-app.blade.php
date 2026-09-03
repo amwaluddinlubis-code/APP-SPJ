@@ -52,6 +52,7 @@
         </div>
         <nav class="space-y-1 text-base" aria-label="Navigasi utama">
             <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
+            <a class="app-nav {{ request()->routeIs('dashboard.v2') ? 'app-nav-active' : '' }}" href="{{ route('dashboard.v2') }}" title="Dashboard v.2"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard v.2</span></a>
 
             <div class="pt-3">
                 <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'text-white' : '' }}" title="Keuangan"><x-ui-icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.finance ? 'rotate-180' : ''">⌄</span></button>
@@ -69,6 +70,7 @@
                 <div id="nav-documents" x-show="(!collapsed || open) && groups.documents" x-collapse class="ml-5 space-y-1 border-l border-white/10 pl-2">
                     <a class="app-nav {{ request()->routeIs('spj.*') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index') }}"><x-ui-icon name="document" /><span class="nav-label">Ruang Kerja SPJ</span></a>
                     <a class="app-nav {{ request()->routeIs('reconciliation.*') ? 'app-nav-active' : '' }}" href="{{ route('reconciliation.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Rekonsiliasi</span></a>
+                    <a class="app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}" href="{{ route('spj.numbering-workflow') }}"><span class="app-nav-icon">№</span><span class="nav-label">Penomoran SPJ</span></a>
                     <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui-icon name="report" /><span class="nav-label">Laporan SPJ</span></a>
                     <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}" href="{{ route('audit-reports.index') }}"><x-ui-icon name="audit" /><span class="nav-label">Laporan Audit</span></a>
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('document-templates.*') ? 'app-nav-active' : '' }}" href="{{ route('document-templates.index') }}"><x-ui-icon name="document" /><span class="nav-label">Template Dokumen</span></a>@endif
