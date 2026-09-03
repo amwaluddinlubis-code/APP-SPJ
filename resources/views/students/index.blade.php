@@ -22,21 +22,89 @@
             </div>
         </x-page-header>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4"><h2 class="font-bold text-slate-900">Daftar siswa</h2><p class="mt-1 text-xs text-slate-500">Gunakan pencarian dan filter untuk menemukan data secara cepat.</p></div>
-            <form method="GET" class="grid gap-3 border-b border-slate-200 bg-slate-50/60 p-4 md:grid-cols-12">
-                <label class="md:col-span-5"><span class="mb-1 block text-xs font-semibold text-slate-600">Pencarian</span><input name="q" value="{{ $filters['q']??'' }}" placeholder="Nama, NISN, NIPD, atau kelas" class="w-full rounded-lg border-slate-300 text-sm"></label>
-                <label class="md:col-span-2"><span class="mb-1 block text-xs font-semibold text-slate-600">Rombel</span><select name="class" class="w-full rounded-lg border-slate-300 text-sm"><option value="">Semua kelas</option>@foreach($classes as $class)<option value="{{ $class }}" @selected(($filters['class']??'')===$class)>{{ $class }}</option>@endforeach</select></label>
-                <label class="md:col-span-2"><span class="mb-1 block text-xs font-semibold text-slate-600">Sumber</span><select name="source" class="w-full rounded-lg border-slate-300 text-sm"><option value="">Semua sumber</option><option value="DAPODIK" @selected(($filters['source']??'')==='DAPODIK')>Dapodik</option><option value="MANUAL" @selected(($filters['source']??'')==='MANUAL')>Manual</option></select></label>
-                <label class="md:col-span-1"><span class="mb-1 block text-xs font-semibold text-slate-600">Baris</span><select name="perPage" class="w-full rounded-lg border-slate-300 text-sm">@foreach([15,25,50,100] as $size)<option value="{{ $size }}" @selected($students->perPage()===$size)>{{ $size }}</option>@endforeach</select></label>
-                <div class="flex items-end gap-2 md:col-span-2"><button class="rounded-lg bg-[var(--theme-600)] px-4 py-2 text-sm font-bold text-white">Terapkan</button><a href="{{ route('students.index') }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600">Reset</a></div>
+        <x-ui.form-section
+            title="Daftar siswa"
+            description="Gunakan pencarian dan filter seperlunya. Data Dapodik tetap dapat dibedakan dari data manual."
+            class="overflow-hidden"
+        >
+            <form method="GET" class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:grid-cols-12">
+                <x-ui.field label="Pencarian" for="student-search" hint="Nama, NISN, NIPD, atau kelas." class="lg:col-span-5">
+                    <x-ui.input id="student-search" name="q" :value="$filters['q'] ?? ''" placeholder="Contoh: Ahmad atau 1234567890" />
+                </x-ui.field>
+
+                <x-ui.field label="Rombel" for="student-class" class="lg:col-span-2">
+                    <x-ui.select id="student-class" name="class">
+                        <option value="">Semua kelas</option>
+                        @foreach($classes as $class)
+                            <option value="{{ $class }}" @selected(($filters['class'] ?? '') === $class)>{{ $class }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Sumber data" for="student-source" class="lg:col-span-2">
+                    <x-ui.select id="student-source" name="source">
+                        <option value="">Semua sumber</option>
+                        <option value="DAPODIK" @selected(($filters['source'] ?? '') === 'DAPODIK')>Dapodik</option>
+                        <option value="MANUAL" @selected(($filters['source'] ?? '') === 'MANUAL')>Manual</option>
+                    </x-ui.select>
+                </x-ui.field>
+
+                <x-ui.field label="Baris" for="student-per-page" class="lg:col-span-1">
+                    <x-ui.select id="student-per-page" name="perPage">
+                        @foreach([15,25,50,100] as $size)
+                            <option value="{{ $size }}" @selected($students->perPage() === $size)>{{ $size }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </x-ui.field>
+
+                <div class="flex items-end gap-2 lg:col-span-2">
+                    <x-ui.button type="submit" class="flex-1">Terapkan</x-ui.button>
+                    <x-ui.button variant="secondary" :href="route('students.index')">Reset</x-ui.button>
+                </div>
             </form>
-            <div class="hidden overflow-x-auto md:block"><table class="min-w-full text-sm"><thead class="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600"><tr><th class="px-5 py-3">Siswa</th><th class="px-5 py-3">Identitas</th><th class="px-5 py-3">Rombel</th><th class="px-5 py-3">Orang tua/Wali</th><th class="px-5 py-3 text-right">Aksi</th></tr></thead><tbody class="divide-y divide-slate-200">
-                @forelse($students as $student)<tr class="odd:bg-white even:bg-slate-50 hover:bg-[var(--theme-50)]"><td class="px-5 py-3"><div class="font-semibold text-slate-900">{{ $student->name }}</div><div class="mt-1 flex gap-1"><span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->source_type==='DAPODIK'?'bg-blue-100 text-blue-700':'bg-amber-100 text-amber-700' }}">{{ $student->source_type }}</span><span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Tidak aktif' }}</span></div></td><td class="px-5 py-3 text-slate-600"><div>NISN: <span class="font-medium text-slate-800">{{ $student->nisn?:'—' }}</span></div><div>NIPD: {{ $student->nipd?:'—' }}</div></td><td class="px-5 py-3"><div class="font-medium">{{ $student->class_name?:'Belum ditempatkan' }}</div><div class="text-xs text-slate-500">Tingkat {{ $student->grade_level?:'—' }}</div></td><td class="px-5 py-3"><div>{{ $student->father_name?:$student->mother_name?:$student->guardian_name?:'—' }}</div></td><td class="px-5 py-3 text-right"><a href="{{ route('students.show',$student) }}" class="inline-flex items-center gap-1 rounded-lg border border-[var(--theme-300)] px-3 py-2 text-xs font-bold text-[var(--theme-700)]"><x-ui-icon name="edit" class="h-4 w-4" /> Detail</a></td></tr>
-                @empty<tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-700">Data siswa tidak ditemukan.</p><p class="mt-1 text-sm text-slate-500">Sinkronkan Dapodik atau ubah kriteria pencarian.</p></td></tr>@endforelse
-            </tbody></table></div>
-            <div class="divide-y divide-slate-200 md:hidden">@forelse($students as $student)<article class="p-4"><div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">{{ $student->name }}</h3><p class="mt-1 text-xs text-slate-500">NISN {{ $student->nisn?:'—' }} · {{ $student->class_name?:'Tanpa rombel' }}</p></div><span class="rounded-full px-2 py-1 text-xs font-bold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Nonaktif' }}</span></div><div class="mt-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-500">{{ $student->source_type }}</span><a href="{{ route('students.show',$student) }}" class="rounded-lg theme-bg-soft px-3 py-2 text-xs font-bold theme-text">Lihat detail</a></div></article>@empty<div class="p-10 text-center text-sm text-slate-500">Data siswa tidak ditemukan.</div>@endforelse</div>
-            @if($students->hasPages())<div class="border-t border-slate-200 p-4" data-pagination="server">{{ $students->links() }}</div>@endif
-        </section>
+
+            <div class="mt-5 hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
+                        <tr><th class="px-5 py-3">Siswa</th><th class="px-5 py-3">Identitas</th><th class="px-5 py-3">Rombel</th><th class="px-5 py-3">Orang tua/Wali</th><th class="px-5 py-3 text-right">Aksi</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @forelse($students as $student)
+                            <tr class="bg-white transition hover:bg-slate-50">
+                                <td class="px-5 py-4">
+                                    <div class="font-semibold text-slate-900">{{ $student->name }}</div>
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                        <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->source_type==='DAPODIK'?'bg-blue-100 text-blue-700':'bg-amber-100 text-amber-700' }}">{{ $student->source_type }}</span>
+                                        <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Tidak aktif' }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 text-slate-600"><div>NISN: <span class="font-medium text-slate-800">{{ $student->nisn?:'—' }}</span></div><div class="mt-1 text-xs">NIPD: {{ $student->nipd?:'—' }}</div></td>
+                                <td class="px-5 py-4"><div class="font-medium text-slate-800">{{ $student->class_name?:'Belum ditempatkan' }}</div><div class="mt-1 text-xs text-slate-500">Tingkat {{ $student->grade_level?:'—' }}</div></td>
+                                <td class="px-5 py-4 text-slate-700">{{ $student->father_name?:$student->mother_name?:$student->guardian_name?:'—' }}</td>
+                                <td class="px-5 py-4 text-right"><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-700">Data siswa tidak ditemukan.</p><p class="mt-1 text-sm text-slate-500">Sinkronkan Dapodik atau ubah kriteria pencarian.</p></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white md:hidden">
+                @forelse($students as $student)
+                    <article class="border-b border-slate-100 p-4 last:border-b-0">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0"><h3 class="truncate font-bold text-slate-900">{{ $student->name }}</h3><p class="mt-1 text-xs text-slate-500">NISN {{ $student->nisn?:'—' }} · {{ $student->class_name?:'Tanpa rombel' }}</p></div>
+                            <span class="rounded-full px-2 py-1 text-xs font-bold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Nonaktif' }}</span>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-3"><span class="text-xs font-semibold text-slate-500">{{ $student->source_type }}</span><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></div>
+                    </article>
+                @empty
+                    <div class="p-10 text-center text-sm text-slate-500">Data siswa tidak ditemukan.</div>
+                @endforelse
+            </div>
+
+            @if($students->hasPages())<div class="mt-5 border-t border-slate-200 pt-4" data-pagination="server">{{ $students->links() }}</div>@endif
+        </x-ui.form-section>
     </div>
 </x-layouts.tailwind-app>
