@@ -1,5 +1,5 @@
 <x-layouts.tailwind-app title="Integrasi Dapodik">
-    <div class="mx-auto max-w-5xl space-y-6">
+    <div class="mx-auto max-w-6xl space-y-6">
         <x-page-header
             title="Integrasi Dapodik"
             subtitle="Sinkronisasi satu arah GTK dan Peserta Didik. Token disimpan terenkripsi."
@@ -27,39 +27,68 @@
             </div>
         </x-page-header>
 
-        <section class="grid gap-5 lg:grid-cols-2">
-            <form method="POST" action="{{ route('dapodik.store') }}" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+            <form method="POST" action="{{ route('dapodik.store') }}" class="space-y-6">
                 @csrf
                 @method('PUT')
-                <h2 class="font-bold text-slate-900">Konfigurasi koneksi</h2>
-                <p class="mt-1 text-sm text-slate-500">Atur alamat layanan, NPSN, dan token akses Dapodik.</p>
-                <div class="mt-4 space-y-4">
-                    <label><span class="mb-1 block text-sm font-semibold">Alamat Dapodik</span><input name="base_url" value="{{ old('base_url',$connection?->base_url??'http://localhost:5774') }}" required class="w-full rounded-lg border-slate-300"></label>
-                    <label><span class="mb-1 block text-sm font-semibold">NPSN</span><input name="npsn" value="{{ old('npsn',$connection?->npsn??'10260756') }}" required class="w-full rounded-lg border-slate-300"></label>
-                    <label><span class="mb-1 block text-sm font-semibold">Bearer token {{ $connection?'(kosongkan bila tidak diganti)':'*' }}</span><input type="password" name="token" autocomplete="new-password" class="w-full rounded-lg border-slate-300"></label>
-                </div>
-                <button class="mt-5 rounded-lg bg-[var(--theme-600)] px-5 py-2 font-bold text-white">Simpan konfigurasi</button>
+
+                <x-ui.form-section title="Konfigurasi koneksi" description="Gunakan alamat layanan Dapodik lokal sekolah. Token tidak pernah ditampilkan kembali setelah disimpan.">
+                    <div class="grid gap-5">
+                        <x-ui.field label="Alamat Dapodik" for="base_url" required hint="Biasanya menggunakan layanan lokal pada komputer server Dapodik." :error="$errors->first('base_url')">
+                            <x-ui.input id="base_url" name="base_url" :value="old('base_url',$connection?->base_url??'http://localhost:5774')" placeholder="http://localhost:5774" required />
+                        </x-ui.field>
+
+                        <x-ui.field label="NPSN" for="npsn" required hint="Pastikan sama dengan sekolah yang sedang aktif." :error="$errors->first('npsn')">
+                            <x-ui.input id="npsn" name="npsn" :value="old('npsn',$connection?->npsn??'10260756')" inputmode="numeric" required />
+                        </x-ui.field>
+
+                        <x-ui.field
+                            :label="$connection ? 'Bearer token baru' : 'Bearer token'"
+                            for="token"
+                            :required="!$connection"
+                            :hint="$connection ? 'Kosongkan jika token tidak ingin diganti.' : 'Token diperlukan pada konfigurasi pertama.'"
+                            :error="$errors->first('token')"
+                        >
+                            <x-ui.input id="token" type="password" name="token" autocomplete="new-password" :required="!$connection" />
+                        </x-ui.field>
+                    </div>
+
+                    <div class="mt-6 flex justify-end border-t border-slate-100 pt-5">
+                        <x-ui.button type="submit">Simpan konfigurasi</x-ui.button>
+                    </div>
+                </x-ui.form-section>
             </form>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="font-bold text-slate-900">Status sinkronisasi</h2>
-                <p class="mt-1 text-sm text-slate-500">Pantau hasil koneksi dan jalankan sinkronisasi saat diperlukan.</p>
-                <dl class="mt-4 space-y-3 text-sm">
-                    <div><dt class="text-slate-500">Status terakhir</dt><dd class="font-semibold">{{ $connection?->last_status??'Belum dikonfigurasi' }}</dd></div>
-                    <div><dt class="text-slate-500">Waktu terakhir</dt><dd class="font-semibold">{{ $connection?->last_synced_at?->translatedFormat('d F Y H:i')??'—' }}</dd></div>
-                    <div><dt class="text-slate-500">Keterangan</dt><dd>{{ $connection?->last_message??'—' }}</dd></div>
-                </dl>
-                @if($connection)
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        <form method="POST" action="{{ route('dapodik.test') }}">@csrf<button class="rounded-lg border border-[var(--theme-300)] px-4 py-2 font-bold text-[var(--theme-700)]">Tes semua layanan</button></form>
-                        <form method="POST" action="{{ route('dapodik.sync') }}" data-confirm="Sinkronisasi akan mengambil seluruh GTK dan Peserta Didik dari Dapodik. Data manual dipadankan berdasarkan identitas dan tidak dihapus. Lanjutkan?">@csrf<button class="rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white">Sinkronkan sekarang</button></form>
-                    </div>
-                @endif
-            </div>
-        </section>
+            <div class="space-y-6">
+                <x-ui.form-section title="Status sinkronisasi" description="Pantau hasil koneksi terakhir sebelum menjalankan sinkronisasi data.">
+                    <dl class="grid gap-4 text-sm">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Status terakhir</dt>
+                            <dd class="mt-1 font-semibold text-slate-900">{{ $connection?->last_status??'Belum dikonfigurasi' }}</dd>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu terakhir</dt>
+                            <dd class="mt-1 font-semibold text-slate-900">{{ $connection?->last_synced_at?->translatedFormat('d F Y H:i')??'—' }}</dd>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Keterangan</dt>
+                            <dd class="mt-1 leading-6 text-slate-700">{{ $connection?->last_message??'Belum ada hasil sinkronisasi.' }}</dd>
+                        </div>
+                    </dl>
 
-        <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-            <strong>Aturan pemadanan:</strong> Pegawai menggunakan NUPTK, lalu nama ternormalisasi jika NUPTK kosong. Siswa menggunakan NISN, lalu ID Dapodik. Record Dapodik yang tidak lagi dikirim akan dinonaktifkan, bukan dihapus.
-        </section>
+                    @if($connection)
+                        <div class="mt-6 grid gap-2 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                            <form method="POST" action="{{ route('dapodik.test') }}">@csrf<x-ui.button type="submit" variant="secondary" class="w-full">Tes layanan</x-ui.button></form>
+                            <form method="POST" action="{{ route('dapodik.sync') }}" data-confirm="Sinkronisasi akan mengambil seluruh GTK dan Peserta Didik dari Dapodik. Data manual dipadankan berdasarkan identitas dan tidak dihapus. Lanjutkan?">@csrf<x-ui.button type="submit" variant="success" class="w-full">Sinkronkan sekarang</x-ui.button></form>
+                        </div>
+                    @endif
+                </x-ui.form-section>
+
+                <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+                    <p class="font-bold">Cara pemadanan data</p>
+                    <p class="mt-1">Pegawai menggunakan NUPTK, lalu nama ternormalisasi jika NUPTK kosong. Siswa menggunakan NISN, lalu ID Dapodik. Data yang tidak lagi dikirim akan dinonaktifkan, bukan dihapus.</p>
+                </section>
+            </div>
+        </div>
     </div>
 </x-layouts.tailwind-app>
