@@ -2,6 +2,13 @@
     @php
         $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
         $packageStatus = fn ($transaction) => $transaction->spjPackage?->status;
+        $nextActionTone = fn ($tone) => match ($tone) {
+            'rose' => ['card' => 'border-rose-200 bg-rose-50/70', 'badge' => 'border-rose-200 bg-white text-rose-700', 'button' => 'bg-rose-600 text-white hover:bg-rose-700'],
+            'orange' => ['card' => 'border-orange-200 bg-orange-50/70', 'badge' => 'border-orange-200 bg-white text-orange-700', 'button' => 'bg-orange-600 text-white hover:bg-orange-700'],
+            'amber' => ['card' => 'border-amber-200 bg-amber-50/70', 'badge' => 'border-amber-200 bg-white text-amber-700', 'button' => 'bg-amber-600 text-white hover:bg-amber-700'],
+            'sky' => ['card' => 'border-sky-200 bg-sky-50/70', 'badge' => 'border-sky-200 bg-white text-sky-700', 'button' => 'bg-sky-600 text-white hover:bg-sky-700'],
+            default => ['card' => 'border-emerald-200 bg-emerald-50/70', 'badge' => 'border-emerald-200 bg-white text-emerald-700', 'button' => 'bg-emerald-600 text-white hover:bg-emerald-700'],
+        };
     @endphp
 
     <div class="space-y-6">
@@ -41,6 +48,38 @@
                     <p class="mt-1 text-2xl font-bold text-orange-700">{{ number_format($summary['reconciliation'] + $summary['source_missing'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Perubahan sumber atau data tidak muncul lagi</p>
                 </a>
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[.16em] text-indigo-500">Langkah berikutnya</p>
+                        <h2 class="mt-1 text-lg font-bold text-slate-900">Prioritas kerja yang disarankan</h2>
+                    </div>
+                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">Diurutkan dari yang paling penting</span>
+                </div>
+                <p class="text-sm text-slate-500">Dashboard menyusun tindakan berdasarkan kondisi sinkronisasi, rekonsiliasi, kelengkapan paket, dan kesiapan penomoran.</p>
+            </div>
+
+            <div class="grid gap-3 p-4 lg:grid-cols-2 lg:p-5">
+                @foreach($nextActions as $index => $action)
+                    @php($tone = $nextActionTone($action['tone']))
+                    <article class="rounded-2xl border p-4 {{ $tone['card'] }}">
+                        <div class="flex items-start gap-3">
+                            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/70 bg-white text-sm font-extrabold text-slate-700 shadow-sm">{{ $index + 1 }}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold {{ $tone['badge'] }}">{{ $action['priority'] }}</span>
+                                </div>
+                                <h3 class="mt-2 font-bold leading-6 text-slate-900">{{ $action['title'] }}</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $action['description'] }}</p>
+                                <a href="{{ $action['url'] }}" class="mt-4 inline-flex min-h-10 items-center justify-center rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition {{ $tone['button'] }}">{{ $action['action'] }} →</a>
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
             </div>
         </section>
 
