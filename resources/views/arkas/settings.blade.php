@@ -12,21 +12,58 @@
             </div>
         </x-page-header>
 
-        <section class="grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4"><div><h2 class="font-bold text-slate-800">Sumber ARKAS per Sekolah</h2><p class="mt-1 text-base text-slate-500">Path dipakai hanya pada komputer ini. Kata sandi tidak pernah ditampilkan kembali.</p></div><a href="{{ route('schools.settings') }}" class="whitespace-nowrap rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Profil Sekolah</a></div>
-                <form method="POST" action="{{ route('arkas.settings.store') }}" class="mt-5 space-y-4">@csrf
-                    <div><label class="text-xs font-bold uppercase tracking-wide text-slate-600">Sekolah</label><select class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base" name="school_id" onchange="if(this.value) window.location='{{ route('arkas.settings') }}?school_id='+this.value" required><option value="">Pilih sekolah</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected((int) $selectedSchoolId === $school->id)>{{ $school->name }} — NPSN {{ $school->npsn }}</option>@endforeach</select></div>
-                    <div><label class="text-xs font-bold uppercase tracking-wide text-slate-600">Lokasi database ARKAS</label><input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-base" name="database_path" value="{{ old('database_path', $selectedSource?->database_path) }}" placeholder="D:\Folder ARKAS\database_arkas.db" required><p class="mt-1 text-xs text-slate-500">Pilih file database ARKAS sekolah yang bersangkutan, bukan database SPJ lokal.</p></div>
-                    <div><label class="text-xs font-bold uppercase tracking-wide text-slate-600">Lokasi ARKASBridge.exe</label><input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-base" name="bridge_path" value="{{ old('bridge_path', $selectedSource?->bridge_path ?? 'D:\Aplikasi SPJ-BOS\Engine\ARKASBridge.exe') }}" required></div>
-                    <div><label class="text-xs font-bold uppercase tracking-wide text-slate-600">Kata sandi database ARKAS</label><input type="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base" name="database_password" autocomplete="new-password" placeholder="{{ $selectedSource ? 'Kosongkan bila tidak diubah' : 'Wajib saat pertama kali disimpan' }}"><p class="mt-1 text-xs text-slate-500">{{ $selectedSource ? 'Kata sandi sebelumnya tetap digunakan jika kolom ini dikosongkan.' : 'Kata sandi disimpan dengan enkripsi aplikasi.' }}</p></div>
-                    <div class="border-t border-slate-100 pt-4"><button class="rounded-lg bg-sky-600 px-4 py-2.5 text-base font-bold text-white shadow hover:bg-sky-700">Simpan Integrasi</button></div>
+        <section class="grid gap-6 lg:grid-cols-[1.25fr_.75fr] lg:items-start">
+            <x-ui.form-section title="Sumber ARKAS per Sekolah" description="Path hanya digunakan pada komputer ini. Kata sandi tidak pernah ditampilkan kembali.">
+                <x-slot:actions>
+                    <x-ui.button variant="secondary" :href="route('schools.settings')">Profil Sekolah</x-ui.button>
+                </x-slot:actions>
+
+                <form method="POST" action="{{ route('arkas.settings.store') }}" class="space-y-5">
+                    @csrf
+
+                    <x-ui.field label="Sekolah" for="arkas-school" hint="Pilih sekolah yang sumber ARKAS-nya ingin dikonfigurasi." required>
+                        <x-ui.select id="arkas-school" name="school_id" onchange="if(this.value) window.location='{{ route('arkas.settings') }}?school_id='+this.value" required>
+                            <option value="">Pilih sekolah</option>
+                            @foreach($schools as $school)
+                                <option value="{{ $school->id }}" @selected((int) $selectedSchoolId === $school->id)>{{ $school->name }} — NPSN {{ $school->npsn }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+
+                    <x-ui.field label="Lokasi database ARKAS" for="database_path" hint="Gunakan file database ARKAS sekolah, bukan database SPJ lokal." :error="$errors->first('database_path')" required>
+                        <x-ui.input id="database_path" name="database_path" :value="old('database_path', $selectedSource?->database_path)" placeholder="D:\Folder ARKAS\database_arkas.db" class="font-mono" required />
+                    </x-ui.field>
+
+                    <x-ui.field label="Lokasi ARKASBridge.exe" for="bridge_path" hint="Engine dipakai untuk membaca database ARKAS dari aplikasi." :error="$errors->first('bridge_path')" required>
+                        <x-ui.input id="bridge_path" name="bridge_path" :value="old('bridge_path', $selectedSource?->bridge_path ?? 'D:\Aplikasi SPJ-BOS\Engine\ARKASBridge.exe')" class="font-mono" required />
+                    </x-ui.field>
+
+                    <x-ui.field label="Kata sandi database ARKAS" for="database_password" :hint="$selectedSource ? 'Kosongkan jika kata sandi lama tetap digunakan.' : 'Wajib saat konfigurasi pertama. Kata sandi disimpan terenkripsi.'" :error="$errors->first('database_password')">
+                        <x-ui.input id="database_password" type="password" name="database_password" autocomplete="new-password" :placeholder="$selectedSource ? 'Kosongkan bila tidak diubah' : 'Masukkan kata sandi database'" />
+                    </x-ui.field>
+
+                    <div class="ui-form-actions">
+                        <x-ui.button type="submit">Simpan Integrasi</x-ui.button>
+                    </div>
                 </form>
-            </article>
-            <aside class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            </x-ui.form-section>
+
+            <aside class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
                 <h2 class="font-bold text-slate-800">Status Sinkronisasi</h2>
-                @if($selectedSource)<dl class="mt-4 space-y-4 text-base"><div><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah</dt><dd class="mt-1 font-semibold text-slate-800">{{ $selectedSource->school?->name }}</dd></div><div><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sinkronisasi terakhir</dt><dd class="mt-1 text-slate-700">{{ $selectedSource->last_synced_at?->translatedFormat('d F Y H:i') ?: 'Belum pernah disinkronkan' }}</dd></div><div><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Identitas database</dt><dd class="mt-1 break-all font-mono text-xs text-slate-600">{{ $selectedSource->last_identity ?: 'Belum tersedia' }}</dd></div></dl>@else<p class="mt-4 text-base text-slate-500">Pilih sekolah untuk melihat dan mengatur sumber ARKAS.</p>@endif
-                <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-base text-amber-900"><p class="font-bold">Urutan aman</p><ol class="mt-2 list-decimal space-y-1 pl-4 text-xs"><li>Pastikan sekolah aktif dan tahun anggaran telah dipilih.</li><li>Simpan database ARKAS, engine, dan kata sandi.</li><li>Periksa tiga status hijau, lalu jalankan Sinkron Semua ARKAS.</li></ol></div>
+                <p class="mt-1 text-sm text-slate-500">Ringkasan konfigurasi sekolah yang sedang dipilih.</p>
+                @if($selectedSource)
+                    <dl class="mt-5 space-y-4 text-sm">
+                        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah</dt><dd class="mt-1 font-semibold text-slate-800">{{ $selectedSource->school?->name }}</dd></div>
+                        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sinkronisasi terakhir</dt><dd class="mt-1 text-slate-700">{{ $selectedSource->last_synced_at?->translatedFormat('d F Y H:i') ?: 'Belum pernah disinkronkan' }}</dd></div>
+                        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Identitas database</dt><dd class="mt-1 break-all font-mono text-xs text-slate-600">{{ $selectedSource->last_identity ?: 'Belum tersedia' }}</dd></div>
+                    </dl>
+                @else
+                    <p class="mt-4 text-sm text-slate-500">Pilih sekolah untuk melihat dan mengatur sumber ARKAS.</p>
+                @endif
+                <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <p class="font-bold">Urutan aman</p>
+                    <ol class="mt-2 list-decimal space-y-1 pl-4 text-xs"><li>Pastikan sekolah aktif dan tahun anggaran telah dipilih.</li><li>Simpan database ARKAS, engine, dan kata sandi.</li><li>Periksa tiga status hijau, lalu jalankan Sinkron Semua ARKAS.</li></ol>
+                </div>
             </aside>
         </section>
     </div>
