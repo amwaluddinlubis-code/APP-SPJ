@@ -9,7 +9,6 @@
     'spjTypes' => [],
     'additionalFilters' => null,
 ])
-@php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
 <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50 shadow">
     <form method="GET" class="grid gap-3 border-b border-indigo-100 px-5 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-5">
         <div>
@@ -51,10 +50,10 @@
         </div>
         <div class="flex items-end">
             <input type="hidden" name="q" value="{{ $search }}">
-            <button class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Terapkan Filter</button>
+            <button class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Tampilkan</button>
         </div>
         @if($month || $quarter || $semester || $search || $status)
-            <a href="{{ request()->url() }}" class="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Reset Periode</a>
+            <a href="{{ request()->url() }}" class="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Hapus Saringan</a>
         @endif
     </form>
     @if(isset($additionalFilters))
