@@ -1,0 +1,187 @@
+/* Priority #3 — global form standardization.
+   Loaded from resources/js/app.js so every authenticated/public form gets
+   the same control sizing without adding another Vite entry point. */
+
+:root {
+    --ui-control-height: 2.625rem;
+    --ui-control-radius: .625rem;
+}
+
+form label:not(.inline-flex):not(.flex),
+.ui-label {
+    display: block;
+    margin-bottom: .375rem;
+    color: #475569;
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+}
+
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']),
+form select,
+form textarea,
+.ui-input,
+.ui-select,
+.ui-textarea {
+    width: 100%;
+    min-height: var(--ui-control-height);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--ui-control-radius);
+    background: #fff;
+    padding: .5625rem .75rem;
+    color: #0f172a;
+    font-size: .875rem !important;
+    line-height: 1.35rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / .04);
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+form textarea,
+.ui-textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+}
+
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):hover,
+form select:hover,
+form textarea:hover,
+.ui-input:hover,
+.ui-select:hover,
+.ui-textarea:hover {
+    border-color: #94a3b8;
+}
+
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+form select:focus,
+form textarea:focus,
+.ui-input:focus,
+.ui-select:focus,
+.ui-textarea:focus {
+    outline: none;
+    border-color: var(--theme-accent, #4f46e5) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #4f46e5) 16%, transparent);
+}
+
+form input::placeholder,
+form textarea::placeholder,
+.ui-input::placeholder,
+.ui-textarea::placeholder {
+    color: #94a3b8;
+}
+
+form input[readonly],
+form textarea[readonly],
+form input:disabled,
+form select:disabled,
+form textarea:disabled,
+.ui-input-readonly {
+    cursor: default;
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    box-shadow: none;
+}
+
+form input[type='file'] {
+    width: 100%;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--ui-control-radius);
+    background: #f8fafc;
+    padding: .625rem .75rem;
+    color: #475569;
+    font-size: .875rem;
+}
+
+form input[type='checkbox'],
+form input[type='radio'] {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    accent-color: var(--theme-accent, #4f46e5);
+}
+
+.ui-field { min-width: 0; }
+.ui-hint { margin-top: .375rem; color: #64748b; font-size: .75rem; line-height: 1rem; }
+.ui-error { margin-top: .375rem; color: #e11d48; font-size: .75rem; font-weight: 700; line-height: 1rem; }
+.ui-required { color: #e11d48; }
+
+.ui-form-section {
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(15 23 42 / .07);
+}
+.ui-form-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fff;
+    padding: 1rem 1.25rem;
+}
+.ui-form-section-heading h2 { color: #0f172a; font-size: .9375rem; font-weight: 800; }
+.ui-form-section-heading p { margin-top: .25rem; color: #64748b; font-size: .8125rem; line-height: 1.2rem; }
+.ui-form-section-body { padding: 1.25rem; }
+
+.ui-btn {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    border-radius: .625rem;
+    padding: .5625rem 1rem;
+    font-size: .875rem;
+    font-weight: 750;
+    line-height: 1.25rem;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.ui-btn:active { transform: translateY(1px); }
+.ui-btn:disabled { cursor: not-allowed; opacity: .55; }
+.ui-btn-primary { border: 1px solid transparent; background: var(--theme-accent, #4f46e5); color: #fff; box-shadow: 0 1px 2px rgb(15 23 42 / .12); }
+.ui-btn-primary:hover { background: var(--theme-accent-strong, #4338ca); }
+.ui-btn-secondary { border: 1px solid #cbd5e1; background: #fff; color: #475569; }
+.ui-btn-secondary:hover { background: #f8fafc; color: #0f172a; }
+.ui-btn-success { border: 1px solid transparent; background: #059669; color: #fff; }
+.ui-btn-success:hover { background: #047857; }
+.ui-btn-danger { border: 1px solid #fecdd3; background: #fff1f2; color: #be123c; }
+.ui-btn-danger:hover { background: #ffe4e6; }
+.ui-btn-ghost { border: 1px solid transparent; background: transparent; color: #475569; }
+.ui-btn-ghost:hover { background: #f1f5f9; color: #0f172a; }
+
+.ui-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .625rem;
+    border: 1px solid #e2e8f0;
+    border-radius: .875rem;
+    background: rgb(255 255 255 / .94);
+    padding: .75rem;
+    box-shadow: 0 -4px 18px rgb(15 23 42 / .06);
+    backdrop-filter: blur(10px);
+}
+
+.ui-choice-card {
+    display: flex;
+    align-items: flex-start;
+    gap: .625rem;
+    border: 1px solid #e2e8f0;
+    border-radius: .75rem;
+    background: #f8fafc;
+    padding: .75rem;
+    color: #334155;
+}
+.ui-choice-card:hover { border-color: #cbd5e1; background: #fff; }
+
+@media (max-width: 640px) {
+    .ui-form-section-heading { padding: .875rem 1rem; }
+    .ui-form-section-body { padding: 1rem; }
+    .ui-form-actions > * { flex: 1 1 auto; }
+}
