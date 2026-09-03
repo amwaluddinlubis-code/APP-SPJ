@@ -4,7 +4,7 @@
         <div class="flex items-start gap-3">
             <span class="text-xl">{{ $type === 'error' ? '⚠️' : '⚡' }}</span>
             <div class="flex-1">
-                <p class="font-semibold">{{ $type === 'error' ? 'Terjadi Kesalahan' : 'Perhatian' }}</p>
+                <p class="font-semibold">{{ $type === 'error' ? 'Ada yang perlu diperbaiki' : 'Perhatian' }}</p>
                 <p class="mt-1 text-sm">{{ $message }}</p>
             </div>
             <button type="button" class="rounded-full p-1 hover:bg-white/50" onclick="this.parentElement.parentElement.remove()">
