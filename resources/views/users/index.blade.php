@@ -1,12 +1,17 @@
 <x-layouts.tailwind-app>
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <p class="text-xs font-bold uppercase tracking-[.16em] text-sky-200">ADMINISTRATOR</p>
-                <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Manajemen User & Role</h1>
-                <p class="mt-1 max-w-3xl text-sm text-indigo-100">Kelola akun pengguna, role, dan sekolah asal user. Role menentukan menu dan aksi yang dapat dibuka user.</p>
+        <x-page-header
+            title="Manajemen User & Role"
+            subtitle="Kelola akun pengguna, role, dan sekolah asal user. Role menentukan menu dan aksi yang dapat dibuka user."
+            kicker="Administrator"
+        >
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Total User" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" />
+                <x-stat-item label="Administrator" :value="number_format($users->where('role', \App\Models\User::ROLE_ADMIN)->count(), 0, ',', '.')" hint="Akses administrasi" value-class="text-indigo-700" />
+                <x-stat-item label="Operator" :value="number_format($users->where('role', \App\Models\User::ROLE_OPERATOR)->count(), 0, ',', '.')" hint="Pengelola operasional" value-class="text-emerald-700" />
+                <x-stat-item label="Viewer" :value="number_format($users->where('role', \App\Models\User::ROLE_VIEWER)->count(), 0, ',', '.')" hint="Akses baca" value-class="text-slate-700" />
             </div>
-        </section>
+        </x-page-header>
 
         @if($errors->any())
             <section class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
