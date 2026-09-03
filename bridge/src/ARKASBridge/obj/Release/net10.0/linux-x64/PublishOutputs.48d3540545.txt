@@ -1,0 +1,2 @@
+D:\lrvProject\spj-bosp-web\bridge\bin\linux-x64\ARKASBridge.pdb
+D:\lrvProject\spj-bosp-web\bridge\bin\linux-x64\ARKASBridge

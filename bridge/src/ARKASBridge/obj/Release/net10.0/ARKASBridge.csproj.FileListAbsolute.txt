@@ -1,0 +1,5 @@
+D:\lrvProject\spj-bosp-web\bridge\src\ARKASBridge\obj\Release\net10.0\ARKASBridge.csproj.AssemblyReference.cache
+D:\lrvProject\spj-bosp-web\bridge\src\ARKASBridge\obj\Release\net10.0\ARKASBridge.GeneratedMSBuildEditorConfig.editorconfig
+D:\lrvProject\spj-bosp-web\bridge\src\ARKASBridge\obj\Release\net10.0\ARKASBridge.AssemblyInfoInputs.cache
+D:\lrvProject\spj-bosp-web\bridge\src\ARKASBridge\obj\Release\net10.0\ARKASBridge.AssemblyInfo.cs
+D:\lrvProject\spj-bosp-web\bridge\src\ARKASBridge\obj\Release\net10.0\ARKASBridge.csproj.CoreCompileInputs.cache

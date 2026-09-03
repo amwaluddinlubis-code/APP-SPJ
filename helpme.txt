@@ -1,0 +1,83 @@
+Optimasi lanjutan sudah diterapkan.
+
+- Livewire:
+  - tahun aktif tidak lagi dikueri berulang pada setiap computed property;
+  - pilihan status transaksi di-cache singkat;
+  - pencarian tetap memakai debounce 400 ms;
+  - pagination dan agregasi tetap dijalankan database.
+
+- Cache referensi:
+  - profil sekolah: 5 menit;
+  - daftar tahun pada header: 5 menit;
+  - tahun aktif Livewire: 5 menit;
+  - pilihan status transaksi: 1 menit;
+  - cache terkait otomatis dibersihkan setelah sinkronisasi ARKAS.
+
+- Queue:
+  - sinkronisasi ARKAS sekarang berjalan di queue `operations`;
+  - status disimpan sebagai `QUEUED`, `RUNNING`, `COMPLETED`, atau `FAILED`;
+  - progres ditampilkan pada dashboard;
+  - pesan kegagalan tidak mengekspos kredensial;
+  - worker lokal sudah dijalankan tersembunyi dengan PID `27340`.
+
+Setelah komputer restart, jalankan:
+
+```bash
+php artisan queue:work --queue=operations,default --tries=2 --timeout=900
+```
+
+- Pengukuran otomatis:
+  - request lebih dari 1.000 ms dicatat;
+  - query lebih dari 200 ms dicatat;
+  - log berada di `storage/logs/performance-*.log`;
+  - SQL dicatat tanpa nilai binding sensitif;
+  - setiap respons memiliki header `Server-Timing`.
+  - Verifikasi langsung menghasilkan `Server-Timing: app;dur=52.14`.
+
+- Migrasi pusat `background_operations` sudah diterapkan.
+- Dokumentasi operasional sudah diperbarui.
+- Halaman transaksi diuji tanpa server/console error.
+- Queue `operations`: sehat dan kosong.
+- Seluruh test: **35 lulus, 137 assertions**.
+
+Perintah tersebut menjalankan “pekerja latar belakang” Laravel:
+
+```bash
+php artisan queue:work --queue=operations,default --tries=2 --timeout=900
+```
+
+Fungsinya:
+
+- mengambil pekerjaan dari tabel `jobs`;
+- menjalankan sinkronisasi ARKAS tanpa membuat browser menunggu;
+- memperbarui status `QUEUED → RUNNING → COMPLETED/FAILED`;
+- memproses queue `operations` lebih dahulu, kemudian `default`;
+- mencoba ulang pekerjaan maksimal 2 kali;
+- memberi batas maksimal 900 detik atau 15 menit per pekerjaan.
+
+Ya, worker harus aktif selama aplikasi digunakan. Setelah Windows atau server restart, proses worker berhenti dan perlu dijalankan kembali. Jika worker tidak aktif, aplikasi tetap dapat dibuka, tetapi sinkronisasi akan terus berstatus `QUEUED` dan tidak diproses.
+
+Untuk lingkungan pengembangan, jalankan terminal terpisah:
+
+```bash
+php artisan queue:work --queue=operations,default --tries=2 --timeout=900
+```
+
+Biarkan terminal tersebut tetap terbuka.
+
+Untuk penggunaan produksi di Windows, sebaiknya dijadikan proses otomatis menggunakan salah satu pilihan:
+
+- Windows Task Scheduler dengan trigger “At startup”; atau
+- Windows Service menggunakan NSSM/WinSW.
+
+Konfigurasi yang disarankan:
+
+- program: lokasi `php.exe`;
+- working directory: `D:\lrvProject\spj-bosp-web`;
+- arguments:
+
+```text
+artisan queue:work --queue=operations,default --tries=2 --timeout=900 --sleep=2
+```
+
+Dengan cara ini worker otomatis hidup kembali setelah komputer restart tanpa perlu menjalankan perintah manual. Worker yang saya jalankan sebelumnya hanya berlaku untuk sesi Windows saat ini.
