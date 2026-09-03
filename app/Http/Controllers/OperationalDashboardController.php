@@ -68,6 +68,12 @@ class OperationalDashboardController extends Controller
             ->limit(8)
             ->get();
 
+        $firstDraftPackage = (clone $packages)
+            ->where('status', 'DRAFT')
+            ->whereHas('transaction', fn ($query) => $query->orderBy('transaction_date')->orderBy('id'))
+            ->orderBy('id')
+            ->first();
+
         $latestSync = DB::connection('school')->table('sync_runs')
             ->where('fiscal_year_id', $year->id)
             ->latest('started_at')
@@ -121,8 +127,9 @@ class OperationalDashboardController extends Controller
             $nextActions->push([
                 'priority' => 'Kerjakan berikutnya', 'tone' => 'amber',
                 'title' => $summary['draft'].' paket masih belum lengkap',
-                'description' => 'Lengkapi isian paket dan selesaikan validasi sampai statusnya Siap diproses.',
-                'action' => 'Lanjutkan paket draft', 'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']),
+                'description' => 'Buka checklist paket untuk melihat persis data apa yang masih kurang sebelum status dapat menjadi READY.',
+                'action' => 'Buka checklist paket',
+                'url' => $firstDraftPackage ? route('spj.checklist', $firstDraftPackage->id) : route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']),
             ]);
         }
 
