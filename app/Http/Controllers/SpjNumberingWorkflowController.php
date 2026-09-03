@@ -8,8 +8,8 @@ use App\Models\QuarterNumberingRun;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 
 class SpjNumberingWorkflowController extends Controller
 {
@@ -30,7 +30,7 @@ class SpjNumberingWorkflowController extends Controller
         $quarterSummaries = collect(range(1, 4))->mapWithKeys(function (int $quarter) use ($closures): array {
             $transactionQuery = $this->quarterTransactions($quarter);
             $packageQuery = SpjPackage::query()
-                ->whereHas('transaction', fn ($query) => $this->applyQuarterScope($query->activeContext(), $quarter));
+                ->whereHas('transaction', fn (Builder $query): Builder => $this->applyQuarterScope($query->activeContext(), $quarter));
 
             $transactionsWithItems = (clone $transactionQuery)->has('items')->count();
             $withoutPackage = (clone $transactionQuery)->has('items')->doesntHave('spjPackage')->count();
@@ -52,7 +52,7 @@ class SpjNumberingWorkflowController extends Controller
 
         $previewPackages = SpjPackage::query()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id', 'documents:id,spj_package_id,document_type,document_number,status'])
-            ->whereHas('transaction', fn ($query) => $this->applyQuarterScope($query->activeContext(), $selectedQuarter))
+            ->whereHas('transaction', fn (Builder $query): Builder => $this->applyQuarterScope($query->activeContext(), $selectedQuarter))
             ->whereIn('status', ['READY', 'NUMBERED', 'FINAL'])
             ->orderByRaw("CASE status WHEN 'READY' THEN 0 WHEN 'NUMBERED' THEN 1 ELSE 2 END")
             ->orderBy('id')
@@ -84,12 +84,12 @@ class SpjNumberingWorkflowController extends Controller
         ]);
     }
 
-    private function quarterTransactions(int $quarter)
+    private function quarterTransactions(int $quarter): Builder
     {
         return $this->applyQuarterScope(Transaction::query()->activeContext(), $quarter);
     }
 
-    private function applyQuarterScope($query, int $quarter)
+    private function applyQuarterScope(Builder $query, int $quarter): Builder
     {
         $startMonth = (($quarter - 1) * 3) + 1;
         $endMonth = $quarter * 3;
