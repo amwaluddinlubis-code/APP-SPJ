@@ -1,4 +1,5 @@
 import './bootstrap';
+import '../css/forms-standardization.css';
 import Alpine from 'alpinejs';
 import persist from '@alpinejs/persist';
 import Chart from 'chart.js/auto';
