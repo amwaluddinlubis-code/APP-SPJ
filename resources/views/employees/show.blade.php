@@ -1,8 +1,21 @@
 <x-layouts.tailwind-app title="Detail Pegawai">
     @php($mask = fn ($value) => $value ? '••••'.substr($value, -4) : '—')
     <div class="space-y-6">
-        <nav class="text-sm text-slate-500"><a href="{{ route('dashboard') }}">Dashboard</a><span class="mx-2">/</span><a href="{{ route('employees.index') }}">Pegawai</a><span class="mx-2">/</span><span class="font-semibold text-slate-800">{{ $employee->name }}</span></nav>
-        <section class="rounded-2xl bg-gradient-to-r from-[var(--theme-700)] to-[var(--theme-500)] p-6 text-white shadow-lg"><div class="flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-white/75">{{ $employee->source_type }} · {{ $employee->is_active ? 'Aktif' : 'Tidak aktif' }}</p><h1 class="mt-2 text-2xl font-bold">{{ $employee->name }}</h1><p class="mt-1 text-sm text-white/85">{{ $employee->position ?: 'Jabatan belum tercatat' }}</p></div><div class="flex gap-2"><a href="{{ route('employees.edit',$employee) }}" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-700)]">Ubah</a><a href="{{ route('employees.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold hover:bg-white/25">Kembali</a></div></div></section>
+        <x-page-header
+            :title="$employee->name"
+            :subtitle="$employee->position ?: 'Jabatan belum tercatat'"
+            :kicker="$employee->source_type.' · '.($employee->is_active ? 'Aktif' : 'Tidak aktif')"
+        >
+            <x-slot:actions>
+                <a href="{{ route('employees.edit',$employee) }}" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-700)]">Ubah</a>
+                <a href="{{ route('employees.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/25">Kembali</a>
+            </x-slot:actions>
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <x-stat-item label="Sumber Data" :value="$employee->source_type" hint="Asal data pegawai" value-class="text-indigo-700" />
+                <x-stat-item label="Status" :value="$employee->is_active ? 'Aktif' : 'Tidak aktif'" hint="Status kepegawaian di aplikasi" :value-class="$employee->is_active ? 'text-emerald-700' : 'text-rose-700'" />
+                <x-stat-item label="Honor Tahun Aktif" :value="'Rp '.number_format($honors->sum('net_amount'), 0, ',', '.')" :hint="number_format($honors->count(), 0, ',', '.').' rincian honor'" value-class="text-amber-700" />
+            </div>
+        </x-page-header>
 
         <div class="grid gap-5 lg:grid-cols-3">
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2"><h2 class="font-bold text-slate-900">Identitas dan kepegawaian</h2><dl class="mt-4 grid gap-4 sm:grid-cols-2">@foreach ([['NIP',$employee->nip],['NUPTK',$employee->nuptk],['NIK',$mask($employee->nik)],['Jenis kelamin',$employee->gender],['Jenis PTK',$employee->staff_type],['Status pegawai',$employee->employment_status],['Jabatan',$employee->position],['NPWP',$mask($employee->npwp)]] as [$label,$value])<div><dt class="text-xs font-semibold uppercase text-slate-500">{{ $label }}</dt><dd class="mt-1 font-medium text-slate-800">{{ $value ?: '—' }}</dd></div>@endforeach</dl></section>
