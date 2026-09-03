@@ -2,44 +2,47 @@
     @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
 
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <p class="text-xs font-bold tracking-[.16em] text-amber-100">HASIL SINKRONISASI ARKAS</p>
-                <h1 class="mt-2 text-2xl font-bold">Pajak</h1>
-                <p class="mt-1 text-base text-amber-100">Rekap pajak dari transaksi BKU pada konteks tahun dan sumber dana aktif.</p>
+        <x-page-header
+            title="Pajak"
+            subtitle="Rekap pajak dari transaksi BKU pada konteks tahun dan sumber dana aktif."
+            kicker="Hasil Sinkronisasi ARKAS"
+        >
+            <div class="border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400 sm:px-6">Total Tahunan {{ $year->year }}</div>
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Transaksi Pajak" :value="number_format($summary->count, 0, ',', '.')" hint="Transaksi mengandung pajak" />
+                <x-stat-item label="PPN" :value="$rupiah($summary->ppn)" hint="Total PPN tahunan" value-class="text-indigo-700" />
+                <x-stat-item label="PPh" :value="$rupiah($summary->pph21 + $summary->pph22 + $summary->pph23 + $summary->pph4)" hint="Gabungan PPh" value-class="text-rose-700" />
+                <x-stat-item label="Total Pajak" :value="$rupiah($summary->total)" hint="Total seluruh pajak" value-class="text-amber-700" />
             </div>
-            <div class="border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400">Total Tahunan {{ $year->year }}</div><div class="grid divide-y divide-slate-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi Pajak</p><p class="mt-1 text-xl font-bold text-slate-800">{{ number_format($summary->count, 0, ',', '.') }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">PPN</p><p class="mt-1 text-xl font-bold text-indigo-700">{{ $rupiah($summary->ppn) }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">PPh</p><p class="mt-1 text-xl font-bold text-rose-700">{{ $rupiah($summary->pph21 + $summary->pph22 + $summary->pph23 + $summary->pph4) }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Total Pajak</p><p class="mt-1 text-xl font-bold text-amber-700">{{ $rupiah($summary->total) }}</p></div>
-            </div>
-        </section>
+        </x-page-header>
+
         <x-page-filter :month="$month" :quarter="$quarter" :semester="$semester" :search="$search">
-            <div class="border-b border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Subtotal Periode Terpilih</div><div class="grid divide-y divide-indigo-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Transaksi</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ number_format($filteredSummary->count, 0, ',', '.') }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">PPN</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredSummary->ppn) }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">PPh</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredSummary->pph21 + $filteredSummary->pph22 + $filteredSummary->pph23 + $filteredSummary->pph4) }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Total Pajak</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredSummary->total) }}</p></div>
+            <div class="border-b border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Subtotal Periode Terpilih</div>
+            <div class="grid divide-y divide-indigo-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Transaksi" :value="number_format($filteredSummary->count, 0, ',', '.')" value-class="text-indigo-900" />
+                <x-stat-item label="PPN" :value="$rupiah($filteredSummary->ppn)" value-class="text-indigo-900" />
+                <x-stat-item label="PPh" :value="$rupiah($filteredSummary->pph21 + $filteredSummary->pph22 + $filteredSummary->pph23 + $filteredSummary->pph4)" value-class="text-indigo-900" />
+                <x-stat-item label="Total Pajak" :value="$rupiah($filteredSummary->total)" value-class="text-indigo-900" />
             </div>
         </x-page-filter>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-                <x-breadcrumb :items="[['label' => 'Pajak Sinkronisasi']]" />
                 <form method="GET" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div><h2 class="font-bold text-slate-800">Daftar Pajak Tersinkron</h2><p class="mt-1 text-sm text-slate-500">Satu nomor bukti ditampilkan satu kali.</p></div>
-                <div class="flex flex-col gap-2 sm:flex-row">
-                    <input name="q" value="{{ $search }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Cari nomor bukti atau penerima">
-                    <select name="month" onchange="this.form.submit()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Semua bulan</option>
-                        @foreach([1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'] as $number => $name)
-                            <option value="{{ $number }}" @selected($month === $number)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    @if($search !== '' || $month)<a href="{{ route('taxes.index') }}" class="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-semibold text-slate-600">Reset</a>@endif
-                </div>
-            </form>
+                    <div><h2 class="font-bold text-slate-800">Daftar Pajak Tersinkron</h2><p class="mt-1 text-sm text-slate-500">Satu nomor bukti ditampilkan satu kali.</p></div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <input name="q" value="{{ $search }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Cari nomor bukti atau penerima">
+                        <select name="month" onchange="this.form.submit()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">Semua bulan</option>
+                            @foreach([1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'] as $number => $name)
+                                <option value="{{ $number }}" @selected($month === $number)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @if($search !== '' || $month)<a href="{{ route('taxes.index') }}" class="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-semibold text-slate-600">Reset</a>@endif
+                    </div>
+                </form>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50"><tr>
