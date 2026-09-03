@@ -2,7 +2,7 @@
 
 Dokumen ini menjadi acuan visual dan pengalaman pengguna untuk seluruh halaman aplikasi SPJ BOSP Web. Tujuannya adalah menjaga tampilan seragam, mudah dipahami operator sekolah, dan konsisten dengan pendekatan TALL Stack.
 
-Terakhir diperbarui: 2026-09-03
+Terakhir diperbarui: 2026-09-04
 
 ---
 
@@ -200,24 +200,65 @@ Workspace boleh memiliki navigasi sticky internal untuk membantu operator berpin
 
 ---
 
-## 7. Status manusiawi
+## 7. Status dan badge manusiawi
 
-Status teknis harus diterjemahkan menjadi istilah kerja operator.
+Status teknis tidak boleh menjadi bahasa utama yang dibaca operator. Nilai teknis tetap disimpan di backend untuk aturan bisnis, tetapi UI menampilkan istilah kerja yang mudah dipahami.
 
-Contoh:
+Mapping utama:
 
 ```text
-DRAFT          -> Belum lengkap
-READY          -> Siap diproses
-NUMBERED       -> Sudah bernomor
-PRINTED        -> Sudah dicetak
-FINAL          -> Final
-CANCELLED      -> Dibatalkan
-SOURCE_MISSING -> Tidak muncul di sinkronisasi
-requires_reconciliation -> Perlu rekonsiliasi
+DRAFT / BELUM_LENGKAP            -> Belum lengkap
+READY / SIAP / DISIAPKAN         -> Siap diproses
+NUMBERED / BERNOMOR              -> Sudah bernomor
+PRINTED / DICETAK                -> Sudah dicetak
+FINAL / ARCHIVED / ARSIP         -> Final
+CANCELLED / CANCELED             -> Dibatalkan
+SOURCE_MISSING                   -> Tidak muncul di sinkronisasi
+requires_reconciliation          -> Perlu rekonsiliasi
+DITETAPKAN                       -> Sudah ditetapkan
+PENDING                          -> Menunggu diproses
+PROCESSING / RUNNING             -> Sedang diproses
+COMPLETED / SUCCESS / SUCCEEDED  -> Selesai
+FAILED / ERROR                   -> Gagal
+LOCKED                           -> Terkunci
+UNLOCKED                         -> Dapat diedit
+REPLACED                         -> Diganti
+GENERATED                        -> Dokumen dibuat
 ```
 
-Jangan menampilkan istilah teknis database bila tidak dibutuhkan pengguna.
+Warna badge mengikuti makna, bukan nama teknis:
+
+- slate: netral/tidak aktif/terkunci;
+- amber: belum lengkap atau menunggu;
+- sky: siap atau sedang diproses;
+- indigo/violet: bernomor, dicetak, atau dokumen dibuat;
+- emerald: selesai/final/aktif;
+- orange: perlu perhatian/rekonsiliasi;
+- rose: gagal, dibatalkan, atau data sumber hilang.
+
+Komponen standar baru:
+
+```blade
+<x-ui.status-badge :status="$package->status" />
+<x-ui.status-badge status="SOURCE_MISSING" size="xs" />
+```
+
+Komponen berada di:
+
+```text
+resources/views/components/ui/status-badge.blade.php
+```
+
+Selama migrasi seluruh view belum selesai, `resources/js/app.js` memiliki compatibility layer yang mengubah label teknis yang tampil persis sebagai status menjadi bahasa operator, termasuk option filter dan hasil render Livewire. Compatibility layer bukan pengganti komponen; view baru dan view yang sedang disentuh harus memakai `<x-ui.status-badge>` secara eksplisit.
+
+Aturan penting:
+
+- jangan mengubah nilai `value` pada `<option>` atau status yang dikirim ke backend;
+- jangan mengubah enum/string bisnis hanya demi tampilan;
+- label manusiawi hanya lapisan presentasi;
+- technical status boleh tersedia sebagai `title`/tooltip untuk debugging, tetapi bukan teks utama;
+- filter harus menampilkan label manusiawi walaupun nilai submit tetap teknis;
+- dashboard, transaksi, detail transaksi, SPJ, rekonsiliasi, audit, dan proses background harus mengikuti mapping yang sama.
 
 ---
 
@@ -232,7 +273,7 @@ Sebuah halaman dianggap konsisten jika:
 - input/select/textarea mengikuti standar Priority #3;
 - action utama mudah ditemukan;
 - readonly dan editable dapat dibedakan sekilas;
-- status menggunakan bahasa operator;
+- status menggunakan bahasa operator dan badge semantik;
 - layout tetap nyaman pada mobile;
 - tidak ada Alpine dan Livewire yang berebut state UI yang sama;
 - perubahan visual tidak mengubah aturan bisnis tanpa alasan eksplisit.
@@ -247,7 +288,7 @@ Status roadmap GUI:
 2. Header + summary + breadcrumb global — diterapkan dan terus diseragamkan.
 3. Standardisasi Form & Input — diterapkan sebagai fondasi dan sedang dimigrasikan ke seluruh form.
 4. Detail Transaksi sebagai workspace operator — sedang dikembangkan.
-5. Status & badge manusiawi.
+5. Status & badge manusiawi — fondasi diterapkan, migrasi view berlangsung.
 6. UI Rekonsiliasi.
 7. Workflow SPJ & Penomoran.
 8. Dashboard operasional.
@@ -268,5 +309,6 @@ Sebelum mengubah Blade, Livewire, CSS, atau layout:
 6. jangan membungkus seluruh `{{ $slot }}` dalam satu card global;
 7. gunakan komponen `x-ui.*` untuk form baru atau form yang sedang disentuh;
 8. bedakan data sumber readonly dan data operator editable;
-9. lakukan perubahan dalam batch kecil dan cek browser setelah build;
-10. jalankan `npm run build` setelah perubahan frontend dan test Laravel yang relevan setelah perubahan backend.
+9. jangan tampilkan status teknis mentah jika mapping manusiawi tersedia; gunakan `<x-ui.status-badge>` untuk badge baru;
+10. lakukan perubahan dalam batch kecil dan cek browser setelah build;
+11. jalankan `npm run build` setelah perubahan frontend dan test Laravel yang relevan setelah perubahan backend.
