@@ -10,6 +10,16 @@ Fondasi migrasi aplikasi Excel/VBA SPJ BOSP ke Laravel. Workbook `.xlsm` tetap m
 - Log sinkronisasi dan adapter aman ke ARKASBridge yang ada.
 - Dashboard serta daftar/detail transaksi awal.
 
+## Panduan pengembangan
+
+Dokumen utama yang perlu dibaca sebelum melanjutkan pengembangan:
+
+- `AGENTS.md` — aturan kerja agent/coder pada repository ini.
+- `docs/SPJ_DESIGN_DECISIONS.md` — keputusan bisnis dan arsitektur SPJ.
+- `docs/USER_SCENARIOS.md` — skenario pengguna dan alur kerja operator.
+- `docs/CURRENT_PROGRESS.md` — status implementasi terakhir.
+- `docs/GUI_STANDARDIZATION.md` — standar GUI, breadcrumb sticky, header + summary, form/input, dan workspace Detail Transaksi.
+
 ## Menjalankan (setelah Composer tersedia)
 
 ```powershell
