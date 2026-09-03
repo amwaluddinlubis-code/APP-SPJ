@@ -79,6 +79,98 @@ class OperationalDashboardController extends Controller
             ->latest('id')
             ->first();
 
+        $nextActions = collect();
+
+        if ($latestSync?->status === 'FAILED' || $latestOperation?->status === 'FAILED') {
+            $nextActions->push([
+                'priority' => 'Mendesak',
+                'tone' => 'rose',
+                'title' => 'Periksa proses sinkronisasi yang gagal',
+                'description' => 'Data operasional sebaiknya tidak diproses lebih lanjut sebelum kegagalan sinkronisasi diperiksa.',
+                'action' => 'Periksa integrasi ARKAS',
+                'url' => route('arkas.settings'),
+            ]);
+        }
+
+        if ($summary['source_missing'] > 0) {
+            $nextActions->push([
+                'priority' => 'Mendesak',
+                'tone' => 'rose',
+                'title' => $summary['source_missing'].' transaksi tidak muncul lagi di sinkronisasi',
+                'description' => 'Tinjau transaksi sumber yang hilang sebelum melanjutkan finalisasi dokumen terkait.',
+                'action' => 'Tinjau data yang hilang',
+                'url' => route('reconciliation.index', ['filter' => 'missing']),
+            ]);
+        }
+
+        if ($summary['reconciliation'] > 0) {
+            $nextActions->push([
+                'priority' => 'Perlu perhatian',
+                'tone' => 'orange',
+                'title' => $summary['reconciliation'].' transaksi perlu rekonsiliasi',
+                'description' => 'Data ARKAS/BKU berubah setelah transaksi pernah diproses. Bandingkan dengan data SPJ operator.',
+                'action' => 'Buka rekonsiliasi',
+                'url' => route('reconciliation.index', ['filter' => 'changed']),
+            ]);
+        }
+
+        if ($summary['without_package'] > 0) {
+            $nextActions->push([
+                'priority' => 'Kerjakan berikutnya',
+                'tone' => 'amber',
+                'title' => $summary['without_package'].' transaksi belum memiliki paket SPJ',
+                'description' => 'Buka transaksi, lengkapi data SPJ operator, lalu siapkan paket dokumennya.',
+                'action' => 'Siapkan paket SPJ',
+                'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']),
+            ]);
+        }
+
+        if ($summary['draft'] > 0) {
+            $nextActions->push([
+                'priority' => 'Kerjakan berikutnya',
+                'tone' => 'amber',
+                'title' => $summary['draft'].' paket masih belum lengkap',
+                'description' => 'Lengkapi isian paket dan selesaikan validasi sampai statusnya Siap diproses.',
+                'action' => 'Lanjutkan paket draft',
+                'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']),
+            ]);
+        }
+
+        $readyQuarters = $quarterSummary->filter(fn (array $row) => $row['blocked'] === 0 && $row['ready'] > 0);
+        if ($readyQuarters->isNotEmpty()) {
+            $quarter = $readyQuarters->first();
+            $nextActions->push([
+                'priority' => 'Siap diproses',
+                'tone' => 'sky',
+                'title' => 'Triwulan '.$quarter['quarter'].' siap ditinjau untuk penomoran',
+                'description' => $quarter['ready'].' paket berstatus Siap diproses dan tidak ada paket draft yang menghambat triwulan ini.',
+                'action' => 'Preview penomoran',
+                'url' => route('spj.numbering-workflow', ['quarter' => $quarter['quarter']]),
+            ]);
+        } elseif ($summary['ready'] > 0) {
+            $nextActions->push([
+                'priority' => 'Siap diproses',
+                'tone' => 'sky',
+                'title' => $summary['ready'].' paket sudah siap, tetapi triwulan masih memiliki kendala',
+                'description' => 'Buka workspace penomoran untuk melihat paket mana yang masih menghambat proses batch.',
+                'action' => 'Periksa kesiapan triwulan',
+                'url' => route('spj.numbering-workflow'),
+            ]);
+        }
+
+        if ($nextActions->isEmpty()) {
+            $nextActions->push([
+                'priority' => 'Terkendali',
+                'tone' => 'emerald',
+                'title' => 'Tidak ada pekerjaan prioritas yang tertunda',
+                'description' => 'Antrean utama bersih. Anda dapat memeriksa transaksi terbaru, laporan, atau menunggu sinkronisasi berikutnya.',
+                'action' => 'Lihat semua transaksi',
+                'url' => route('transactions.index'),
+            ]);
+        }
+
+        $nextActions = $nextActions->take(4)->values();
+
         return view('dashboard-operational', compact(
             'school',
             'year',
@@ -88,6 +180,7 @@ class OperationalDashboardController extends Controller
             'workQueue',
             'latestSync',
             'latestOperation',
+            'nextActions',
         ));
     }
 }
