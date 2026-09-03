@@ -12,6 +12,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\RkasBudgetController;
 use App\Http\Controllers\SchoolBackupController;
 use App\Http\Controllers\SchoolConfigurationController;
@@ -70,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['active-school', 'active-year'])->group(function () {
         Route::get('/', DashboardController::class)->name('dashboard');
         Route::get('/transaksi', [TransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/rekonsiliasi', [ReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::get('/pegawai', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/siswa', [StudentController::class, 'index'])->name('students.index');
         Route::middleware('operator-or-administrator')->group(function () {
