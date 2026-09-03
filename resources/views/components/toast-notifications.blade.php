@@ -22,12 +22,14 @@
                     x-text="item.type==='success'?'✓':(item.type==='error'?'!':(item.type==='warning'?'⚠':'i'))"></span>
                 <div class="min-w-0 flex-1">
                     <p class="text-base font-extrabold" :class="{'text-emerald-800':item.type==='success','text-rose-800':item.type==='error','text-amber-800':item.type==='warning','theme-text':!['success','error','warning'].includes(item.type)}"
-                        x-text="item.type==='success'?'Berhasil':(item.type==='error'?'Terjadi kesalahan':(item.type==='warning'?'Perhatian':'Informasi'))"></p>
+                        x-text="item.type==='success'?'Berhasil':(item.type==='error'?'Ada yang perlu diperbaiki':(item.type==='warning'?'Perhatian':'Informasi'))"></p>
                     <p class="mt-1 text-sm leading-6 text-slate-700" x-text="item.message"></p>
                 </div>
-                <button type="button" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" @click="remove(item.id)" aria-label="Tutup notifikasi">✕</button>
+                <button type="button" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" @click="remove(item.id)" aria-label="Tutup pemberitahuan">✕</button>
             </div>
             <div class="h-1" :class="{'bg-emerald-500':item.type==='success','bg-rose-500':item.type==='error','bg-amber-400':item.type==='warning','theme-bg':!['success','error','warning'].includes(item.type)}"></div>
         </div>
     </template>
 </div>
+
+<x-ui-language />
