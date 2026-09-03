@@ -161,4 +161,48 @@ Before relying on a package's API, confirm its installed version:
 - Rerun a test after each change to it.
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
+=== project/gui rules ===
+
+# SPJ BOSP GUI Standardization
+
+Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend interaction, read `docs/GUI_STANDARDIZATION.md` and preserve the decisions documented there.
+
+## Page Structure
+
+- Use one global breadcrumb source. Do not add page-local breadcrumbs inside page headers or sections.
+- The global breadcrumb must remain humanized, bordered, and sticky below the global header while scrolling.
+- Sticky breadcrumb offset must follow the actual global header height; do not hard-code a fragile top offset.
+- Page header and directly related summary/statistics may share one bordered card.
+- Do not wrap the whole page slot in a global card. Forms, filters, tables, and detailed sections remain separate cards.
+
+## Forms
+
+- Reuse `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, and `x-ui.form-section` before introducing new form primitives.
+- Keep control sizing medium and consistent, with visible labels, hints/errors below controls, clear focus state, and muted readonly/disabled states.
+- Split long forms into meaningful workflow sections rather than one giant grid.
+- A sticky action bar is allowed for long forms when it improves access to Save/Cancel actions.
+- Preserve the global fallback form styling for legacy forms until they are explicitly migrated.
+
+## Transaction Workspace
+
+- Treat Transaction Detail as an operator workspace, not a generic detail page.
+- Visually separate `Data ARKAS/BKU` from `Data SPJ Operator`.
+- ARKAS/BKU source fields are readonly reference data and should never look editable.
+- SPJ operator fields are editable and should be grouped as Data Umum SPJ, Detail Kategori, Kelengkapan, then Buat Paket.
+- Do not let frontend cleanup silently change sync, locking, numbering, validation, or document lifecycle business rules.
+
+## TALL Ownership
+
+- Tailwind owns visual styling.
+- Alpine owns lightweight client-only UI interaction.
+- Livewire owns reactive server-backed state/data.
+- Laravel owns routes, authorization, validation, persistence, and business rules.
+- Avoid Alpine and Livewire owning the same state.
+
+## Frontend Verification
+
+- After frontend changes, run `npm run build` or instruct the user to do so.
+- After backend changes, run the narrowest relevant Laravel tests.
+- Browser-check representative desktop and mobile pages after structural UI changes.
+
 </laravel-boost-guidelines>
