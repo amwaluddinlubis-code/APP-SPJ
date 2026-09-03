@@ -6,62 +6,65 @@ use App\Models\SpjPackage;
 
 class SpjPackageValidationService
 {
-    /** @return array<int,array{label:string,message:string,url:string}> */
-    public function validate(SpjPackage $package): array
+    /**
+     * @return array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}>
+     */
+    public function checklist(SpjPackage $package): array
     {
         $transaction = $package->transaction;
         $url = route('transactions.show', $transaction->id);
-        $issues = [];
-        $required = [
-            ['Penerima kuitansi', $transaction->effective_receipt_recipient_name],
-            ['Kode kegiatan', $transaction->activity_code],
-            ['Nama kegiatan', $transaction->activity_name],
-            ['Kode rekening', $transaction->account_code],
-            ['Nama rekening', $transaction->account_name],
-            ['Cara bayar', $transaction->payment_method],
-        ];
-        foreach ($required as [$label, $value]) {
-            if (blank($value)) {
-                $issues[] = ['label' => $label, 'message' => $label.' belum tersedia.', 'url' => $url];
-            }
-        }
-        if ($transaction->items->isEmpty() && $transaction->goods->isEmpty()) {
-            $issues[] = ['label' => 'Rincian barang/jasa', 'message' => 'Transaksi belum memiliki rincian barang atau jasa.', 'url' => $url];
-        }
+        $checks = [];
+
+        $this->addCheck($checks, 'recipient', 'Umum', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi belum tersedia.', $url);
+        $this->addCheck($checks, 'activity_code', 'Umum', 'Kode kegiatan', filled($transaction->activity_code), 'Kode kegiatan sudah tersedia.', 'Kode kegiatan belum tersedia.', $url);
+        $this->addCheck($checks, 'activity_name', 'Umum', 'Nama kegiatan', filled($transaction->activity_name), 'Nama kegiatan sudah tersedia.', 'Nama kegiatan belum tersedia.', $url);
+        $this->addCheck($checks, 'account_code', 'Umum', 'Kode rekening', filled($transaction->account_code), 'Kode rekening sudah tersedia.', 'Kode rekening belum tersedia.', $url);
+        $this->addCheck($checks, 'account_name', 'Umum', 'Nama rekening', filled($transaction->account_name), 'Nama rekening sudah tersedia.', 'Nama rekening belum tersedia.', $url);
+        $this->addCheck($checks, 'payment_method', 'Umum', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar belum tersedia.', $url.'#modul-buat-spj');
+
+        $hasDetails = $transaction->items->isNotEmpty() || $transaction->goods->isNotEmpty();
+        $this->addCheck($checks, 'details', 'Rincian transaksi', 'Rincian barang/jasa', $hasDetails, 'Transaksi memiliki rincian barang/jasa.', 'Transaksi belum memiliki rincian barang atau jasa.', $url.'#rincian-transaksi');
+
         $grossAmount = (float) $transaction->gross_amount;
         $itemTotal = (float) $transaction->items->sum('amount');
-        if ($transaction->items->isNotEmpty() && abs($itemTotal - $grossAmount) > 0.01) {
-            $issues[] = [
-                'label' => 'Total rincian transaksi',
-                'message' => sprintf('Total rincian Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($itemTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.')),
-                'url' => $url.'#rincian-transaksi',
-            ];
-        }
-        if (strtoupper((string) $transaction->spj_category) === 'BARANG') {
-            if ($transaction->items->isEmpty()) {
-                $issues[] = ['label' => 'Barang pesanan', 'message' => 'Pesanan wajib memiliki minimal satu barang.', 'url' => $url.'#rincian-transaksi'];
-            }
+        $itemTotalMatches = $transaction->items->isEmpty() || abs($itemTotal - $grossAmount) <= 0.01;
+        $itemTotalMessage = $itemTotalMatches
+            ? 'Total rincian sesuai dengan nilai bruto transaksi.'
+            : sprintf('Total rincian Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($itemTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
+        $this->addCheck($checks, 'item_total', 'Rincian transaksi', 'Total rincian transaksi', $itemTotalMatches, $itemTotalMessage, $itemTotalMessage, $url.'#rincian-transaksi');
+
+        $category = strtoupper((string) $transaction->spj_category);
+
+        if ($category === 'BARANG') {
+            $hasItems = $transaction->items->isNotEmpty();
+            $this->addCheck($checks, 'goods_items', 'Belanja barang', 'Barang pesanan', $hasItems, 'Pesanan memiliki rincian barang.', 'Pesanan wajib memiliki minimal satu barang.', $url.'#rincian-transaksi');
 
             $incompleteItems = $transaction->items->filter(fn ($item) => blank($item->item_description) || (float) $item->quantity <= 0 || (float) $item->unit_price < 0);
-            if ($incompleteItems->isNotEmpty()) {
-                $issues[] = ['label' => 'Kelengkapan barang', 'message' => 'Setiap barang wajib memiliki uraian, jumlah lebih dari nol, dan harga yang valid.', 'url' => $url.'#rincian-transaksi'];
-            }
+            $itemsComplete = $hasItems && $incompleteItems->isEmpty();
+            $this->addCheck($checks, 'goods_completeness', 'Belanja barang', 'Kelengkapan barang', $itemsComplete, 'Uraian, jumlah, dan harga setiap barang sudah lengkap.', 'Setiap barang wajib memiliki uraian, jumlah lebih dari nol, dan harga yang valid.', $url.'#rincian-transaksi');
 
             $invalidAmounts = $transaction->items->filter(fn ($item) => abs(((float) $item->quantity * (float) $item->unit_price) - (float) $item->amount) > 0.01);
-            if ($invalidAmounts->isNotEmpty()) {
-                $names = $invalidAmounts->map(fn ($item) => $item->item_description ?: $item->description ?: '#'.$item->id)->implode(', ');
-                $issues[] = ['label' => 'Nilai item barang', 'message' => 'Jumlah × harga tidak sama dengan nilai item: '.$names.'.', 'url' => $url.'#rincian-transaksi'];
-            }
+            $amountsValid = $hasItems && $invalidAmounts->isEmpty();
+            $invalidNames = $invalidAmounts->map(fn ($item) => $item->item_description ?: $item->description ?: '#'.$item->id)->implode(', ');
+            $this->addCheck(
+                $checks,
+                'goods_amounts',
+                'Belanja barang',
+                'Nilai item barang',
+                $amountsValid,
+                'Perhitungan jumlah × harga setiap barang sudah konsisten.',
+                $invalidNames !== '' ? 'Jumlah × harga tidak sama dengan nilai item: '.$invalidNames.'.' : 'Perhitungan nilai item barang belum lengkap.',
+                $url.'#rincian-transaksi'
+            );
 
-            if ($transaction->goods->isEmpty()) {
-                $issues[] = ['label' => 'Dokumen barang', 'message' => 'Data pesanan, BAP, dan BAST belum dibuat.', 'url' => $url.'#modul-buat-spj'];
-            }
+            $hasGoodsDocuments = $transaction->goods->isNotEmpty();
+            $this->addCheck($checks, 'goods_documents', 'Belanja barang', 'Dokumen barang', $hasGoodsDocuments, 'Data pesanan/BAP/BAST sudah dibuat.', 'Data pesanan, BAP, dan BAST belum dibuat.', $url.'#modul-buat-spj');
 
             $hasBapOrBast = $transaction->goods->contains(fn ($goods) => filled($goods->bap_number) || filled($goods->bap_date) || filled($goods->bast_number) || filled($goods->bast_date));
-            if ($hasBapOrBast && ($incompleteItems->isNotEmpty() || $invalidAmounts->isNotEmpty())) {
-                $issues[] = ['label' => 'Kelengkapan BAP/BAST', 'message' => 'BAP dan BAST belum dapat diterbitkan sebelum rincian barang lengkap dan konsisten.', 'url' => $url.'#modul-buat-spj'];
-            }
+            $bapBastReady = ! $hasBapOrBast || ($itemsComplete && $amountsValid);
+            $this->addCheck($checks, 'goods_bap_bast', 'Belanja barang', 'Kelengkapan BAP/BAST', $bapBastReady, 'Rincian barang konsisten untuk BAP/BAST.', 'BAP dan BAST belum dapat diterbitkan sebelum rincian barang lengkap dan konsisten.', $url.'#modul-buat-spj');
 
+            $duplicateExists = false;
             if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
                 $duplicateExists = $transaction->newQuery()
                     ->where('fiscal_year_id', $transaction->fiscal_year_id)
@@ -69,26 +72,51 @@ class SpjPackageValidationService
                     ->whereRaw('LOWER(TRIM(invoice_number)) = ?', [mb_strtolower(trim((string) $transaction->invoice_number))])
                     ->whereRaw('LOWER(TRIM(vendor_name)) = ?', [mb_strtolower(trim((string) $transaction->vendor_name))])
                     ->exists();
-                if ($duplicateExists) {
-                    $issues[] = ['label' => 'Duplikasi invoice', 'message' => 'Nomor invoice ini sudah digunakan oleh vendor yang sama pada tahun anggaran aktif.', 'url' => $url.'#modul-buat-spj'];
-                }
             }
-        }
-        if (strtoupper((string) $transaction->spj_category) === 'HONOR_PEGAWAI') {
-            if ($transaction->honors->isEmpty()) {
-                $issues[] = ['label' => 'Rincian penerima honorarium', 'message' => 'Honor Pegawai memerlukan minimal satu penerima.', 'url' => $url.'#modul-buat-spj'];
-            } else {
-                $honorTotal = (float) $transaction->honors->sum('gross_amount');
-                if (abs($honorTotal - $grossAmount) > 0.01) {
-                    $issues[] = [
-                        'label' => 'Total honor',
-                        'message' => sprintf('Total honor Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($honorTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.')),
-                        'url' => $url.'#modul-buat-spj',
-                    ];
-                }
-            }
+            $this->addCheck($checks, 'invoice_duplicate', 'Belanja barang', 'Keunikan invoice', ! $duplicateExists, 'Nomor invoice tidak terdeteksi sebagai duplikat.', 'Nomor invoice ini sudah digunakan oleh vendor yang sama pada tahun anggaran aktif.', $url.'#modul-buat-spj');
         }
 
-        return $issues;
+        if ($category === 'HONOR_PEGAWAI') {
+            $hasHonors = $transaction->honors->isNotEmpty();
+            $this->addCheck($checks, 'honor_recipients', 'Honor pegawai', 'Rincian penerima honorarium', $hasHonors, 'Daftar penerima honorarium sudah tersedia.', 'Honor Pegawai memerlukan minimal satu penerima.', $url.'#modul-buat-spj');
+
+            $honorTotal = (float) $transaction->honors->sum('gross_amount');
+            $honorTotalMatches = $hasHonors && abs($honorTotal - $grossAmount) <= 0.01;
+            $honorMessage = $honorTotalMatches
+                ? 'Total honor sesuai dengan nilai bruto transaksi.'
+                : sprintf('Total honor Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($honorTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
+            $this->addCheck($checks, 'honor_total', 'Honor pegawai', 'Total honor', $honorTotalMatches, $honorMessage, $honorMessage, $url.'#modul-buat-spj');
+        }
+
+        return $checks;
+    }
+
+    /** @return array<int,array{label:string,message:string,url:string}> */
+    public function validate(SpjPackage $package): array
+    {
+        return collect($this->checklist($package))
+            ->where('passed', false)
+            ->map(fn (array $check) => [
+                'label' => $check['label'],
+                'message' => $check['message'],
+                'url' => $check['url'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}> $checks
+     */
+    private function addCheck(array &$checks, string $key, string $group, string $label, bool $passed, string $passedMessage, string $failedMessage, string $url): void
+    {
+        $checks[] = [
+            'key' => $key,
+            'group' => $group,
+            'label' => $label,
+            'passed' => $passed,
+            'message' => $passed ? $passedMessage : $failedMessage,
+            'url' => $url,
+        ];
     }
 }
