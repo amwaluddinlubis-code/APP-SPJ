@@ -1,3 +1,5 @@
+@import './human-ui.css';
+
 /* Priority #3 — global form standardization.
    Loaded from resources/js/app.js so every authenticated/public form gets
    the same control sizing without adding another Vite entry point. */
