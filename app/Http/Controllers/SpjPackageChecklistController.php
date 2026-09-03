@@ -16,6 +16,7 @@ class SpjPackageChecklistController extends Controller
             ->with([
                 'transaction.items',
                 'transaction.goods',
+                'transaction.goodsReceipts.items',
                 'transaction.honors',
             ])
             ->find($packageId);
