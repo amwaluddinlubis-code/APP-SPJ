@@ -1,7 +1,5 @@
 <x-layouts.tailwind-app title="Pegawai">
     <div class="space-y-6">
-        <nav class="text-sm text-slate-500"><a href="{{ route('dashboard') }}" class="hover:text-[var(--theme-600)]">Dashboard</a><span class="mx-2">/</span><span class="font-semibold text-slate-800">Pegawai</span></nav>
-
         <section class="overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--theme-700)] to-[var(--theme-500)] p-6 text-white shadow-lg">
             <div class="flex flex-wrap items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-white/75">Master Dapodik, ARKAS & manual</p><h1 class="mt-2 text-2xl font-bold">Pegawai</h1><p class="mt-1 max-w-3xl text-sm text-white/85">Kelola identitas GTK serta keterkaitannya dengan honorarium tahun anggaran aktif.</p></div><div class="flex flex-wrap gap-2">@if(auth()->user()->isAdministrator())<a href="{{ route('dapodik.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-bold hover:bg-white/25">Sinkron Dapodik</a>@endif @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))<a href="{{ route('employees.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[var(--theme-700)] shadow"><span class="text-lg leading-none">+</span> Tambah pegawai</a>@endif</div></div>
         </section>
