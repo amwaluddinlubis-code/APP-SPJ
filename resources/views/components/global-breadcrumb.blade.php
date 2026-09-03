@@ -41,6 +41,11 @@
     } elseif (request()->routeIs('reconciliation.*')) {
         $group = 'Dokumen & Laporan';
         $page = 'Rekonsiliasi';
+    } elseif (request()->routeIs('spj.numbering-workflow')) {
+        $group = 'Dokumen & Laporan';
+        $page = 'Ruang Kerja SPJ';
+        $pageUrl = route('spj.index');
+        $detail = 'Penomoran SPJ';
     } elseif (request()->routeIs('spj.*')) {
         $group = 'Dokumen & Laporan';
         $page = request('tab') === 'laporan' ? 'Laporan SPJ' : 'Ruang Kerja SPJ';
