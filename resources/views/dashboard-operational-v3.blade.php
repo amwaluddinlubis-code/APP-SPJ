@@ -39,34 +39,57 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-                <p class="text-xs font-bold uppercase tracking-[.16em] text-indigo-500">Langkah berikutnya</p>
-                <h2 class="mt-1 text-lg font-bold text-slate-900">Prioritas kerja yang disarankan</h2>
-                <p class="mt-1 text-sm text-slate-500">Kerjakan dari urutan pertama agar pekerjaan operator lebih terarah.</p>
-            </div>
-            <div class="divide-y divide-slate-100">
-                @foreach($nextActions as $index => $action)
-                    <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex min-w-0 gap-3">
-                            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-sm font-extrabold text-slate-700">{{ $index + 1 }}</span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ $action['priority'] }}</p>
-                                <h3 class="mt-1 font-bold text-slate-900">{{ $action['title'] }}</h3>
-                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $action['description'] }}</p>
-                            </div>
-                        </div>
-                        <a href="{{ $action['url'] }}" class="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-bold text-white shadow-sm hover:bg-slate-800">{{ $action['action'] }} →</a>
+        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+            <div class="grid lg:grid-cols-[1.15fr_.85fr]">
+                <div class="bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 px-5 py-6 text-white sm:px-6 lg:px-7 lg:py-7">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[.14em] text-indigo-100">Mulai dari sini</span>
+                        <span class="text-xs font-semibold text-indigo-200">Prioritas utama operator</span>
                     </div>
-                @endforeach
+                    <h2 class="mt-4 text-xl font-bold leading-8 sm:text-2xl">{{ $startHere['title'] }}</h2>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-indigo-100">{{ $startHere['description'] }}</p>
+                    <div class="mt-5 flex flex-wrap items-center gap-3">
+                        <a href="{{ $startHere['url'] }}" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold text-indigo-950 shadow-sm transition hover:bg-indigo-50">{{ $startHere['action'] }} →</a>
+                        <span class="text-xs font-semibold text-indigo-200">{{ $startHere['priority'] }}</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-indigo-100 bg-indigo-50/40 px-5 py-5 sm:px-6 lg:border-l lg:border-t-0">
+                    <p class="text-xs font-bold uppercase tracking-[.14em] text-indigo-500">Sesudah itu</p>
+                    <h3 class="mt-1 font-bold text-slate-900">Langkah lanjutan yang sudah menunggu</h3>
+
+                    @if($otherActions->isNotEmpty())
+                        <div class="mt-4 space-y-3">
+                            @foreach($otherActions as $index => $action)
+                                <a href="{{ $action['url'] }}" class="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-indigo-200 hover:bg-indigo-50/50">
+                                    <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-700">{{ $index + 2 }}</span>
+                                    <span class="min-w-0">
+                                        <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ $action['priority'] }}</span>
+                                        <span class="mt-0.5 block text-sm font-bold leading-5 text-slate-800">{{ $action['title'] }}</span>
+                                    </span>
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <p class="text-sm font-bold text-emerald-800">Tidak ada antrean lanjutan.</p>
+                            <p class="mt-1 text-xs leading-5 text-emerald-700">Selesaikan prioritas utama lalu lanjutkan pekerjaan rutin dari antrean operator.</p>
+                        </div>
+                    @endif
+                </div>
             </div>
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
             <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-5 py-4">
-                    <h2 class="font-bold text-slate-900">Antrean kerja operator</h2>
-                    <p class="mt-1 text-sm text-slate-500">Transaksi yang masih membutuhkan tindakan.</p>
+                <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="font-bold text-slate-900">Antrean kerja operator</h2>
+                        <p class="mt-1 text-sm text-slate-500">Transaksi yang masih membutuhkan tindakan.</p>
+                    </div>
+                    @if($attentionCount > 0)
+                        <span class="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">{{ number_format($attentionCount, 0, ',', '.') }} pekerjaan perlu perhatian</span>
+                    @endif
                 </div>
                 <div class="divide-y divide-slate-100">
                     @forelse($workQueue as $transaction)
