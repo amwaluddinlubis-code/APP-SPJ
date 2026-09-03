@@ -302,7 +302,7 @@ const initializeTransactionOperatorWorkspace = () => {
     );
 
     const navigator = document.createElement('nav');
-    navigator.className = 'sticky top-16 z-20 -mx-1 overflow-x-auto rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur';
+    navigator.className = '-mx-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm';
     navigator.setAttribute('aria-label', 'Navigasi ruang kerja transaksi');
     navigator.innerHTML = `
         <div class="flex min-w-max items-center gap-1">
@@ -324,7 +324,4 @@ const initializeTransactionOperatorWorkspace = () => {
 };
 
 initializeTransactionOperatorWorkspace();
-document.addEventListener('livewire:navigated', () => {
-    initializeHumanStatuses();
-    initializeTransactionOperatorWorkspace();
-});
+document.addEventListener('livewire:navigated', initializeTransactionOperatorWorkspace);
