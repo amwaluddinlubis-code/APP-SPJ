@@ -6,6 +6,8 @@ use App\Models\SpjPackage;
 
 class SpjPackageValidationService
 {
+    public function __construct(private SpjProcurementPolicyService $procurementPolicy) {}
+
     /**
      * @return array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}>
      */
@@ -14,13 +16,55 @@ class SpjPackageValidationService
         $transaction = $package->transaction;
         $url = route('transactions.show', $transaction->id);
         $checks = [];
+        $policy = $this->procurementPolicy->forTransaction($transaction);
+        $channel = $policy['channel_label'];
 
+        $this->addCheck($checks, 'procurement_channel', 'Cara pengadaan', 'Jalur transaksi', true, 'Transaksi dikenali sebagai '.$channel.'.', 'Jalur transaksi belum dapat dikenali.', $url.'#modul-buat-spj');
         $this->addCheck($checks, 'recipient', 'Umum', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi belum tersedia.', $url);
         $this->addCheck($checks, 'activity_code', 'Umum', 'Kode kegiatan', filled($transaction->activity_code), 'Kode kegiatan sudah tersedia.', 'Kode kegiatan belum tersedia.', $url);
         $this->addCheck($checks, 'activity_name', 'Umum', 'Nama kegiatan', filled($transaction->activity_name), 'Nama kegiatan sudah tersedia.', 'Nama kegiatan belum tersedia.', $url);
         $this->addCheck($checks, 'account_code', 'Umum', 'Kode rekening', filled($transaction->account_code), 'Kode rekening sudah tersedia.', 'Kode rekening belum tersedia.', $url);
         $this->addCheck($checks, 'account_name', 'Umum', 'Nama rekening', filled($transaction->account_name), 'Nama rekening sudah tersedia.', 'Nama rekening belum tersedia.', $url);
         $this->addCheck($checks, 'payment_method', 'Umum', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar belum tersedia.', $url.'#modul-buat-spj');
+
+        $a2Ready = filled($transaction->effective_receipt_recipient_name)
+            && filled($transaction->payment_description ?: $transaction->description)
+            && (float) $transaction->gross_amount > 0;
+        $this->addCheck(
+            $checks,
+            'receipt_a2',
+            'Dokumen wajib',
+            'Kuitansi / Bukti Kas Pengeluaran (A2)',
+            $a2Ready,
+            'Data Kuitansi/A2 lengkap dan wajib dicetak untuk transaksi '.$channel.'.',
+            'Kuitansi/A2 wajib untuk transaksi '.$channel.'. Lengkapi penerima, uraian pembayaran, dan nilai transaksi agar dapat dicetak.',
+            $url.'#modul-buat-spj'
+        );
+
+        if ($policy['channel'] === 'SIPLAH') {
+            $hasSiplahReference = filled($transaction->payment_reference) || filled($transaction->invoice_number);
+            $this->addCheck(
+                $checks,
+                'siplah_reference',
+                'Dokumen SIPLah',
+                'Referensi pesanan/invoice SIPLah',
+                $hasSiplahReference,
+                'Referensi SIPLah tersedia.',
+                'Transaksi SIPLah perlu memiliki referensi pesanan atau nomor invoice agar mudah ditelusuri.',
+                $url.'#modul-buat-spj'
+            );
+
+            $this->addCheck(
+                $checks,
+                'siplah_vendor',
+                'Dokumen SIPLah',
+                'Identitas penyedia SIPLah',
+                filled($transaction->vendor_name),
+                'Penyedia SIPLah sudah tercatat.',
+                'Nama penyedia SIPLah belum tersedia.',
+                $url.'#modul-buat-spj'
+            );
+        }
 
         $hasDetails = $transaction->items->isNotEmpty() || $transaction->goods->isNotEmpty();
         $this->addCheck($checks, 'details', 'Rincian transaksi', 'Rincian barang/jasa', $hasDetails, 'Transaksi memiliki rincian barang/jasa.', 'Transaksi belum memiliki rincian barang atau jasa.', $url.'#rincian-transaksi');
@@ -58,7 +102,24 @@ class SpjPackageValidationService
             );
 
             $hasGoodsDocuments = $transaction->goods->isNotEmpty();
-            $this->addCheck($checks, 'goods_documents', 'Belanja barang', 'Dokumen barang', $hasGoodsDocuments, 'Data pesanan/BAP/BAST sudah dibuat.', 'Data pesanan, BAP, dan BAST belum dibuat.', $url.'#modul-buat-spj');
+            $goodsDocumentLabel = $policy['channel'] === 'SIPLAH' ? 'Data penerimaan barang' : 'Dokumen barang';
+            $goodsDocumentPass = $policy['channel'] === 'SIPLAH'
+                ? $transaction->goodsReceipts->isNotEmpty() || $hasGoodsDocuments
+                : $hasGoodsDocuments;
+            $this->addCheck(
+                $checks,
+                'goods_documents',
+                'Belanja barang',
+                $goodsDocumentLabel,
+                $goodsDocumentPass,
+                $policy['channel'] === 'SIPLAH'
+                    ? 'Data penerimaan barang SIPLah sudah tersedia; dokumen pesanan platform tetap dipertahankan sebagai bukti sumber.'
+                    : 'Data pesanan/BAP/BAST sudah dibuat.',
+                $policy['channel'] === 'SIPLAH'
+                    ? 'Transaksi SIPLah tetap memerlukan bukti penerimaan barang/jasa yang dapat ditelusuri.'
+                    : 'Data pesanan, BAP, dan BAST belum dibuat.',
+                $url.'#modul-buat-spj'
+            );
 
             $hasBapOrBast = $transaction->goods->contains(fn ($goods) => filled($goods->bap_number) || filled($goods->bap_date) || filled($goods->bast_number) || filled($goods->bast_date));
             $bapBastReady = ! $hasBapOrBast || ($itemsComplete && $amountsValid);
