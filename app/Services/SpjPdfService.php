@@ -24,9 +24,12 @@ class SpjPdfService
         $pdf = Pdf::loadView('spj-documents.pdf.package', compact('package', 'transaction', 'year', 'school', 'profile', 'letterhead'))
             ->setPaper('a4', 'portrait');
 
+        $fileName = 'PAKET-SPJ-'.$this->safeFileName($package->document_number).'.pdf';
+        $response = $pdf->download($fileName);
+
         $package->forceFill(['generated_at' => now(), 'status' => 'DICETAK'])->save();
 
-        return $pdf->stream('PAKET-SPJ-'.$this->safeFileName($package->document_number).'.pdf');
+        return $response;
     }
 
     private function letterheadDataUri(?string $path): ?string
