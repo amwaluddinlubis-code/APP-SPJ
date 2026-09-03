@@ -30,9 +30,6 @@
         },
         init() {
             const savedState = localStorage.getItem('spj-sidebar-collapsed');
-
-            // Default untuk user baru: sidebar dalam keadaan collapse.
-            // Setelah user memilih expand/collapse, pilihan terakhir dipertahankan.
             this.collapsed = savedState === null ? true : savedState === 'true';
         },
         setSidebarCollapsed(value) {
@@ -43,8 +40,6 @@
             this.setSidebarCollapsed(!this.collapsed);
         },
         toggleGroup(group) {
-            // Saat user memilih grup dari sidebar yang collapse, anggap sebagai
-            // pilihan untuk memperluas sidebar dan simpan preferensinya.
             if (this.collapsed && !this.open) this.setSidebarCollapsed(false);
             this.groups[group] = !this.groups[group];
         }
@@ -128,34 +123,7 @@
             </div>
         </header>
         <div class="mx-auto max-w-screen-2xl p-5 lg:p-8">
-            @php
-                $embeddedBreadcrumb = request()->routeIs('spj.*', 'transactions.*', 'taxes.*', 'document-number-formats.*');
-                $moduleBreadcrumb = match (true) {
-                    request()->routeIs('rkas-budget.*') => 'Penganggaran RKAS',
-                    request()->routeIs('audit-reports.*') => 'Laporan Audit',
-                    request()->routeIs('synced-data.*') => 'Data Hasil Sinkron',
-                    request()->routeIs('schools.*') => 'Profil Sekolah & Tahun',
-                    request()->routeIs('arkas.*') => 'Integrasi ARKAS',
-                    request()->routeIs('users.*') => 'Manajemen User',
-                    request()->routeIs('school-backups.*') => 'Backup & Pemulihan',
-                    request()->routeIs('database-manager.*') => 'Database Aktif',
-                    request()->routeIs('impersonation.*') => 'Uji Sebagai User',
-                    request()->routeIs('document-templates.*') => 'Template Dokumen',
-                    request()->routeIs('spj-documents.*') => 'Dokumen SPJ',
-                    request()->routeIs('spj-reports.*') => 'Laporan SPJ',
-                    default => null,
-                };
-            @endphp
-            @if(!$embeddedBreadcrumb && $moduleBreadcrumb && !request()->routeIs('dashboard'))
-                <nav class="module-breadcrumb mb-4 flex items-center gap-2 text-sm" aria-label="Breadcrumb">
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 font-medium transition">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 011-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                        Dashboard
-                    </a>
-                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                    <span class="module-breadcrumb-current font-semibold" aria-current="page">{{ $moduleBreadcrumb }}</span>
-                </nav>
-            @endif
+            <x-global-breadcrumb />
             @if(session('impersonator_user_id'))
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
                     <div>
