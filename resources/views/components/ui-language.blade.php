@@ -51,15 +51,15 @@
             [/\bdraft\b/gi, 'belum lengkap'],
         ];
 
-        const simplify = (value) => {
+        const simplifyExact = (value) => {
             if (!value || typeof value !== 'string') return value;
             const trimmed = value.trim();
-            if (exact.has(trimmed)) {
-                const replacement = exact.get(trimmed);
-                return value.replace(trimmed, replacement);
-            }
+            if (!exact.has(trimmed)) return value;
+            return value.replace(trimmed, exact.get(trimmed));
+        };
 
-            let result = value;
+        const simplifyUiTerm = (value) => {
+            let result = simplifyExact(value);
             phrases.forEach(([pattern, replacement]) => {
                 result = result.replace(pattern, replacement);
             });
@@ -67,14 +67,18 @@
         };
 
         const excluded = 'script, style, code, pre, textarea, [contenteditable="true"], [data-preserve-ui-copy]';
+        const uiTextContext = 'button, a, label, option, th, summary, legend, h1, h2, h3, h4, nav, [role="tab"], [role="button"], [role="menuitem"]';
 
         const simplifyNode = (root) => {
             if (!root) return;
             const scope = root.nodeType === Node.ELEMENT_NODE ? root : root.parentElement;
             if (scope?.matches?.(excluded) || scope?.closest?.(excluded)) return;
 
+            const walkerRoot = root.nodeType === Node.TEXT_NODE ? root.parentElement : root;
+            if (!walkerRoot) return;
+
             const walker = document.createTreeWalker(
-                root.nodeType === Node.TEXT_NODE ? root.parentElement : root,
+                walkerRoot,
                 NodeFilter.SHOW_TEXT,
                 {
                     acceptNode(node) {
@@ -90,8 +94,12 @@
             while (walker.nextNode()) nodes.push(walker.currentNode);
 
             nodes.forEach((node) => {
-                const changed = simplify(node.nodeValue);
-                if (changed !== node.nodeValue) node.nodeValue = changed;
+                const parent = node.parentElement;
+                const original = node.nodeValue;
+                const changed = parent?.closest(uiTextContext)
+                    ? simplifyUiTerm(original)
+                    : simplifyExact(original);
+                if (changed !== original) node.nodeValue = changed;
             });
 
             const elementRoot = root.nodeType === Node.ELEMENT_NODE ? root : root.parentElement;
@@ -102,7 +110,7 @@
                 ['title', 'aria-label', 'placeholder'].forEach((attribute) => {
                     if (!element.hasAttribute(attribute)) return;
                     const original = element.getAttribute(attribute);
-                    const changed = simplify(original);
+                    const changed = simplifyUiTerm(original);
                     if (changed !== original) element.setAttribute(attribute, changed);
                 });
             });
