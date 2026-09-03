@@ -162,5 +162,16 @@
             const observer = new ResizeObserver(syncStickyOffset);
             observer.observe(header);
         }
+
+        const documentNav = document.getElementById('nav-documents');
+        if (documentNav && !documentNav.querySelector('[data-spj-numbering-workflow-link]')) {
+            const reconciliationLink = documentNav.querySelector('a[href="{{ route('reconciliation.index') }}"]');
+            const numberingLink = document.createElement('a');
+            numberingLink.href = @js(route('spj.numbering-workflow'));
+            numberingLink.dataset.spjNumberingWorkflowLink = 'true';
+            numberingLink.className = 'app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}';
+            numberingLink.innerHTML = '<span class="app-nav-icon">№</span><span class="nav-label">Penomoran SPJ</span>';
+            reconciliationLink?.insertAdjacentElement('afterend', numberingLink);
+        }
     })();
 </script>
