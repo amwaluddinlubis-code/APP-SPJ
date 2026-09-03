@@ -16,81 +16,72 @@
         @if($errors->any())
             <section class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                 <p class="font-bold">Periksa kembali isian berikut:</p>
-                <ul class="mt-2 list-disc pl-5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+                <ul class="mt-2 list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
             </section>
         @endif
 
-        <section class="rounded-2xl border border-indigo-100 bg-white p-5 shadow">
-            <h2 class="font-bold text-slate-800">Tambah User</h2>
-            <p class="mt-1 text-sm text-slate-500">Buat akun untuk operator, viewer/pemeriksa, atau administrator tambahan.</p>
-            <form method="POST" action="{{ route('users.store') }}" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <x-ui.form-section title="Tambah User" description="Buat akun operator, viewer/pemeriksa, atau administrator tambahan.">
+            <form method="POST" action="{{ route('users.store') }}" class="space-y-5">
                 @csrf
-                <div class="xl:col-span-2"><label class="text-xs font-bold text-slate-600">Nama</label><input name="name" value="{{ old('name') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required></div>
-                <div class="xl:col-span-2"><label class="text-xs font-bold text-slate-600">Email</label><input type="email" name="email" value="{{ old('email') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required></div>
-                <div><label class="text-xs font-bold text-slate-600">Role</label><select name="role" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" required>@foreach($roles as $value => $label)<option value="{{ $value }}" @selected(old('role', \App\Models\User::ROLE_OPERATOR) === $value)>{{ $label }}</option>@endforeach</select></div>
-                <div><label class="text-xs font-bold text-slate-600">Sekolah</label><select name="school_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Lintas sekolah / belum ditetapkan</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected((string) old('school_id') === (string) $school->id)>{{ $school->name }}</option>@endforeach</select></div>
-                <div class="xl:col-span-2"><label class="text-xs font-bold text-slate-600">Password</label><input type="password" name="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required></div>
-                <div class="xl:col-span-2"><label class="text-xs font-bold text-slate-600">Ulangi Password</label><input type="password" name="password_confirmation" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required></div>
-                <div class="flex items-end xl:col-span-2"><button class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-indigo-700">Buat User</button></div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <x-ui.field label="Nama" for="new-user-name" :error="$errors->first('name')" required>
+                        <x-ui.input id="new-user-name" name="name" :value="old('name')" autocomplete="name" required />
+                    </x-ui.field>
+                    <x-ui.field label="Email" for="new-user-email" :error="$errors->first('email')" required>
+                        <x-ui.input id="new-user-email" type="email" name="email" :value="old('email')" autocomplete="email" required />
+                    </x-ui.field>
+                    <x-ui.field label="Role" for="new-user-role" hint="Hak akses utama pengguna." required>
+                        <x-ui.select id="new-user-role" name="role" required>@foreach($roles as $value => $label)<option value="{{ $value }}" @selected(old('role', \App\Models\User::ROLE_OPERATOR) === $value)>{{ $label }}</option>@endforeach</x-ui.select>
+                    </x-ui.field>
+                    <x-ui.field label="Sekolah" for="new-user-school" hint="Boleh kosong untuk akun lintas sekolah.">
+                        <x-ui.select id="new-user-school" name="school_id"><option value="">Lintas sekolah / belum ditetapkan</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected((string) old('school_id') === (string) $school->id)>{{ $school->name }}</option>@endforeach</x-ui.select>
+                    </x-ui.field>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <x-ui.field label="Password" for="new-user-password" :error="$errors->first('password')" required>
+                        <x-ui.input id="new-user-password" type="password" name="password" autocomplete="new-password" required />
+                    </x-ui.field>
+                    <x-ui.field label="Ulangi Password" for="new-user-password-confirmation" hint="Masukkan password yang sama sekali lagi." required>
+                        <x-ui.input id="new-user-password-confirmation" type="password" name="password_confirmation" autocomplete="new-password" required />
+                    </x-ui.field>
+                </div>
+                <div class="ui-form-actions"><x-ui.button type="submit">Buat User</x-ui.button></div>
             </form>
-        </section>
+        </x-ui.form-section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="border-b border-slate-100 px-5 py-4">
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-800">Daftar User</h2>
-                <p class="mt-1 text-sm text-slate-500">{{ $users->count() }} akun terdaftar.</p>
+                <p class="mt-1 text-sm text-slate-500">{{ $users->count() }} akun terdaftar. Ubah data langsung pada baris user lalu simpan.</p>
             </div>
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">User</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Role & Sekolah</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Reset Password</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
-                        </tr>
-                    </thead>
+                <table class="min-w-[980px] w-full divide-y divide-slate-200 text-sm" data-pagination="none">
+                    <thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">User</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Role & Sekolah</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Password</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th></tr></thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
                         @forelse($users as $user)
-                            <tr class="align-top hover:bg-indigo-50/40">
+                            <tr class="align-top hover:bg-slate-50/70">
                                 <td class="px-5 py-4">
-                                    <form id="user-form-{{ $user->id }}" method="POST" action="{{ route('users.update', $user->id) }}" class="grid gap-2">
-                                        @csrf
-                                        @method('PUT')
-                                        <div><label class="text-xs font-bold text-slate-600">Nama</label><input name="name" value="{{ old("users.{$user->id}.name", $user->name) }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" required></div>
-                                        <div><label class="text-xs font-bold text-slate-600">Email</label><input type="email" name="email" value="{{ old("users.{$user->id}.email", $user->email) }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" required></div>
+                                    <form id="user-form-{{ $user->id }}" method="POST" action="{{ route('users.update', $user->id) }}" class="grid gap-3">@csrf @method('PUT')
+                                        <x-ui.field label="Nama"><x-ui.input name="name" :value="old("users.{$user->id}.name", $user->name)" required /></x-ui.field>
+                                        <x-ui.field label="Email"><x-ui.input type="email" name="email" :value="old("users.{$user->id}.email", $user->email)" required /></x-ui.field>
                                     </form>
                                 </td>
-                                <td class="px-4 py-4">
-                                    <div class="grid gap-2">
-                                        <div><label class="text-xs font-bold text-slate-600">Role</label><select form="user-form-{{ $user->id }}" name="role" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm">@foreach($roles as $value => $label)<option value="{{ $value }}" @selected($user->role === $value)>{{ $label }}</option>@endforeach</select></div>
-                                        <div><label class="text-xs font-bold text-slate-600">Sekolah</label><select form="user-form-{{ $user->id }}" name="school_id" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm"><option value="">Lintas sekolah / belum ditetapkan</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected((int) $user->school_id === (int) $school->id)>{{ $school->name }}</option>@endforeach</select></div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4">
-                                    <div class="grid gap-2">
-                                        <div><label class="text-xs font-bold text-slate-600">Password Baru</label><input form="user-form-{{ $user->id }}" type="password" name="password" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Kosongkan jika tidak diganti"></div>
-                                        <div><label class="text-xs font-bold text-slate-600">Ulangi Password</label><input form="user-form-{{ $user->id }}" type="password" name="password_confirmation" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"></div>
-                                    </div>
-                                </td>
-                                <td class="px-5 py-4 text-right">
-                                    <div class="flex flex-col items-end gap-2">
-                                        <button form="user-form-{{ $user->id }}" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow hover:bg-indigo-700">Simpan</button>
-                                        @if($user->is(auth()->user()))
-                                            <span class="text-xs font-semibold text-slate-400">Akun aktif tidak bisa dihapus</span>
-                                        @else
-                                            <form method="POST" action="{{ route('users.destroy', $user->id) }}" data-confirm="Hapus user {{ $user->name }}?">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Hapus</button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
+                                <td class="px-4 py-4"><div class="grid gap-3">
+                                    <x-ui.field label="Role"><x-ui.select form="user-form-{{ $user->id }}" name="role">@foreach($roles as $value => $label)<option value="{{ $value }}" @selected($user->role === $value)>{{ $label }}</option>@endforeach</x-ui.select></x-ui.field>
+                                    <x-ui.field label="Sekolah"><x-ui.select form="user-form-{{ $user->id }}" name="school_id"><option value="">Lintas sekolah / belum ditetapkan</option>@foreach($schools as $school)<option value="{{ $school->id }}" @selected((int) $user->school_id === (int) $school->id)>{{ $school->name }}</option>@endforeach</x-ui.select></x-ui.field>
+                                </div></td>
+                                <td class="px-4 py-4"><div class="grid gap-3">
+                                    <x-ui.field label="Password baru" hint="Kosongkan jika tidak diganti."><x-ui.input form="user-form-{{ $user->id }}" type="password" name="password" autocomplete="new-password" /></x-ui.field>
+                                    <x-ui.field label="Ulangi password"><x-ui.input form="user-form-{{ $user->id }}" type="password" name="password_confirmation" autocomplete="new-password" /></x-ui.field>
+                                </div></td>
+                                <td class="px-5 py-4 text-right"><div class="flex flex-col items-end gap-2">
+                                    <x-ui.button type="submit" form="user-form-{{ $user->id }}">Simpan</x-ui.button>
+                                    @if($user->is(auth()->user()))
+                                        <span class="text-xs font-semibold text-slate-400">Akun aktif tidak bisa dihapus</span>
+                                    @else
+                                        <form method="POST" action="{{ route('users.destroy', $user->id) }}" data-confirm="Hapus user {{ $user->name }}?">@csrf @method('DELETE')<x-ui.button type="submit" variant="danger">Hapus</x-ui.button></form>
+                                    @endif
+                                </div></td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="px-5 py-12 text-center text-slate-500">Belum ada user.</td></tr>
