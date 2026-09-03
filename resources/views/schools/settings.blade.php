@@ -1,12 +1,17 @@
 <x-layouts.tailwind-app>
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <p class="text-xs font-bold tracking-[.16em] text-violet-200">PENGATURAN IDENTITAS</p>
-                <h1 class="mt-2 text-2xl font-bold">Profil Sekolah dan Tahun Anggaran</h1>
-                <p class="mt-1 text-base text-violet-100">Identitas dipakai pada dokumen, template, kop surat, dan database lokal setiap sekolah.</p>
+        <x-page-header
+            title="Profil Sekolah dan Tahun Anggaran"
+            subtitle="Identitas dipakai pada dokumen, template, kop surat, dan database lokal setiap sekolah."
+            kicker="Pengaturan Identitas"
+        >
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Sekolah Aktif" :value="$activeSchool?->name ?? 'Belum dipilih'" :hint="$activeSchool ? 'NPSN '.$activeSchool->npsn : 'Pilih sekolah aktif'" value-class="text-indigo-700" />
+                <x-stat-item label="Tahun Aktif" :value="$activeYear?->year ?? '—'" :hint="$activeYear?->fund_source ?? 'Belum ada konteks tahun'" value-class="text-emerald-700" />
+                <x-stat-item label="Total Sekolah" :value="number_format($schools->count(), 0, ',', '.')" hint="Database sekolah terdaftar" />
+                <x-stat-item label="Kode Sekolah" :value="$activeSchool?->school_code ?: '—'" hint="Dipakai pada penomoran dokumen" value-class="text-slate-800" />
             </div>
-        </section>
+        </x-page-header>
 
         @if ($activeSchool)
             <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow">
