@@ -2,20 +2,18 @@
     @php($labels = ['SPJ' => 'SPJ Utama', 'PESANAN' => 'Surat Pesanan', 'BAP' => 'Berita Acara Pemeriksaan', 'BAST' => 'Berita Acara Serah Terima', 'SPK' => 'Surat Perintah Kerja', 'RAB' => 'Rencana Anggaran Biaya', 'SURAT_TUGAS_PERJALANAN_DINAS' => 'Surat Tugas Perjalanan Dinas', 'KUITANSI' => 'Kuitansi', 'RINCIAN_BELANJA' => 'Rincian Belanja', 'CHECKLIST' => 'Checklist', 'REKAP_PAJAK' => 'Rekap Pajak', 'INVOICE_PESANAN' => 'Invoice / Pesanan'])
     @php($romanMonth = [1 => 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][now()->month])
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7">
-                <x-breadcrumb :items="[['label' => 'Format Penomoran']]" :on-dark="true" />
-                <p class="mt-5 text-[11px] font-bold uppercase tracking-[.2em] text-sky-200">Pengaturan dokumen</p>
-                <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Format Penomoran SPJ</h1>
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-indigo-100">Atur susunan nomor untuk setiap jenis dokumen pada tahun {{ $year->year }}. Perubahan hanya berlaku untuk nomor yang belum diterbitkan.</p>
+        <x-page-header
+            title="Format Penomoran SPJ"
+            subtitle="Atur susunan nomor untuk setiap jenis dokumen pada tahun {{ $year->year }}. Perubahan hanya berlaku untuk nomor yang belum diterbitkan."
+            kicker="Pengaturan Dokumen"
+        >
+            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Tahun Aktif" :value="$year->year" hint="Konteks penomoran" />
+                <x-stat-item label="Kode Sekolah" :value="$school->school_code ?: $school->npsn" hint="Placeholder {SCHOOL}" value-class="text-indigo-700" />
+                <x-stat-item label="NPSN" :value="$school->npsn" hint="Placeholder {NPSN}" value-class="text-slate-800" />
+                <x-stat-item label="Hak Akses" value="Admin & Operator" hint="Dapat mengubah format" value-class="text-emerald-700" />
             </div>
-            <div class="grid gap-px bg-slate-200 sm:grid-cols-4">
-                <div class="bg-white px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Tahun aktif</p><p class="mt-1 font-bold text-slate-900">{{ $year->year }}</p></div>
-                <div class="bg-white px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Kode sekolah</p><p class="mt-1 font-mono font-bold text-slate-900">{{ $school->school_code ?: $school->npsn }}</p></div>
-                <div class="bg-white px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-500">NPSN</p><p class="mt-1 font-mono font-bold text-slate-900">{{ $school->npsn }}</p></div>
-                <div class="bg-white px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Hak akses</p><p class="mt-1 font-bold text-emerald-700">Admin & Operator</p></div>
-            </div>
-        </section>
+        </x-page-header>
 
         <section class="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-900">
             <h2 class="font-bold">Placeholder yang tersedia</h2>
