@@ -1,5 +1,5 @@
-/* Priority #3 — global form standardization.
-   This file is loaded from the single application CSS entrypoint. */
+/* Legacy/generic form compatibility layer.
+   Canonical .ui-* controls and sections are owned by token-native-components.css. */
 
 :root {
     --ui-control-height: 2.625rem;
@@ -9,36 +9,177 @@
     --ui-form-header-accent: var(--theme-accent, #4f46e5);
 }
 
-form label:not(.inline-flex):not(.flex), .ui-label { display:block; margin-bottom:.375rem; color:#475569; font-size:.8125rem; font-weight:700; line-height:1.25rem; }
-form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']), form select, form textarea, .ui-input, .ui-select, .ui-textarea { width:100%; min-height:var(--ui-control-height); border:1px solid #cbd5e1; border-radius:var(--ui-control-radius); background:#fff; padding:.5625rem .75rem; color:#0f172a; font-size:.875rem !important; line-height:1.35rem; box-shadow:0 1px 2px rgb(15 23 42 / .04); transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease; }
-form textarea,.ui-textarea { min-height:5.5rem; resize:vertical; }
-form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):hover, form select:hover, form textarea:hover, .ui-input:hover, .ui-select:hover, .ui-textarea:hover { border-color:#94a3b8; }
-form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):focus, form select:focus, form textarea:focus, .ui-input:focus, .ui-select:focus, .ui-textarea:focus { outline:none; border-color:var(--theme-accent,#4f46e5)!important; box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-accent,#4f46e5) 16%,transparent); }
-form input::placeholder,form textarea::placeholder,.ui-input::placeholder,.ui-textarea::placeholder { color:#94a3b8; }
-form input[readonly],form textarea[readonly],form input:disabled,form select:disabled,form textarea:disabled,.ui-input-readonly { cursor:default; border-color:#e2e8f0; background:#f8fafc; color:#64748b; box-shadow:none; }
-form input[type='file'] { width:100%; border:1px dashed #cbd5e1; border-radius:var(--ui-control-radius); background:#f8fafc; padding:.625rem .75rem; color:#475569; font-size:.875rem; }
-form input[type='checkbox'],form input[type='radio'] { width:1rem; height:1rem; flex:0 0 auto; accent-color:var(--theme-accent,#4f46e5); }
-.ui-field{min-width:0}.ui-hint{margin-top:.375rem;color:#64748b;font-size:.75rem;line-height:1rem}.ui-error{margin-top:.375rem;color:#e11d48;font-size:.75rem;font-weight:700;line-height:1rem}.ui-required{color:#e11d48}
-.ui-form-section{overflow:hidden;border:1px solid #dbe3ee;border-radius:1rem;background:#fff;box-shadow:0 4px 14px rgb(15 23 42 / .06),0 1px 3px rgb(15 23 42 / .05)}
-.ui-form-section-heading{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;border-bottom:1px solid var(--ui-form-header-border);background:var(--ui-form-header-bg);padding:1rem 1.25rem 1rem 1.5rem;box-shadow:inset 0 -1px 0 rgb(255 255 255 / .75),0 2px 8px rgb(15 23 42 / .04)}
-.ui-form-section-heading::before{position:absolute;top:.8rem;bottom:.8rem;left:.55rem;width:3px;border-radius:999px;background:var(--ui-form-header-accent);content:'';opacity:.9}
-.ui-form-section-heading h2,.ui-form-section-heading h3,.ui-form-section-heading legend{color:#0f172a;font-size:.9375rem;font-weight:800;letter-spacing:-.01em}.ui-form-section-heading p{margin-top:.25rem;color:#64748b;font-size:.8125rem;line-height:1.2rem}.ui-form-section-body{padding:1.25rem}
-form fieldset{border-color:#dbe3ee;box-shadow:0 2px 8px rgb(15 23 42 / .035)}form fieldset>legend{border:1px solid #dbe3ee;border-radius:.65rem;background:var(--ui-form-header-bg);padding:.4rem .7rem;color:#334155;font-size:.8125rem;font-weight:800;box-shadow:0 1px 3px rgb(15 23 42 / .06)}
-.ui-btn{display:inline-flex;min-height:2.5rem;align-items:center;justify-content:center;gap:.5rem;border-radius:.625rem;padding:.5625rem 1rem;font-size:.875rem;font-weight:750;line-height:1.25rem;transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .15s ease}.ui-btn:active{transform:translateY(1px)}.ui-btn:disabled{cursor:not-allowed;opacity:.55}.ui-btn-primary{border:1px solid transparent;background:var(--theme-accent,#4f46e5);color:#fff;box-shadow:0 1px 2px rgb(15 23 42 / .12)}.ui-btn-primary:hover{background:var(--theme-accent-strong,#4338ca)}.ui-btn-secondary{border:1px solid #cbd5e1;background:#fff;color:#475569}.ui-btn-secondary:hover{background:#f8fafc;color:#0f172a}.ui-btn-success{border:1px solid transparent;background:#059669;color:#fff}.ui-btn-success:hover{background:#047857}.ui-btn-danger{border:1px solid #fecdd3;background:#fff1f2;color:#be123c}.ui-btn-danger:hover{background:#ffe4e6}.ui-btn-ghost{border:1px solid transparent;background:transparent;color:#475569}.ui-btn-ghost:hover{background:#f1f5f9;color:#0f172a}
-.ui-form-actions{position:sticky;bottom:0;z-index:15;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:.625rem;border:1px solid #e2e8f0;border-radius:.875rem;background:rgb(255 255 255 / .94);padding:.75rem;box-shadow:0 -4px 18px rgb(15 23 42 / .06);backdrop-filter:blur(10px)}
-.ui-choice-card{display:flex;align-items:flex-start;gap:.625rem;border:1px solid #e2e8f0;border-radius:.75rem;background:#f8fafc;padding:.75rem;color:#334155}.ui-choice-card:hover{border-color:#cbd5e1;background:#fff}
+form label:not(.inline-flex):not(.flex),
+.ui-label {
+    display: block;
+    margin-bottom: .375rem;
+    color: var(--text-comfort-secondary, #526174);
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+}
 
-/* Dark overrides for standardized form primitives */
-.dark .ui-form-section{background:#111827;border-color:#1f2937}.dark .ui-form-section-heading{background:var(--ui-form-header-bg);border-color:#374151;box-shadow:inset 0 -1px 0 rgb(255 255 255 / .03)}.dark .ui-form-section-heading h2,.dark .ui-form-section-heading h3,.dark .ui-form-section-heading legend{color:#f9fafb}.dark .ui-form-section-heading p{color:#9ca3af}.dark .ui-form-section-body{background:#111827}.dark form fieldset{border-color:#374151}.dark form fieldset>legend{background:#0f172a;border-color:#374151;color:#e5e7eb}.dark .ui-btn-secondary{background:#111827;border-color:#374151;color:#e5e7eb}.dark .ui-btn-secondary:hover{background:#1f2937;color:#fff}.dark .ui-btn-danger{background:rgb(127 29 29 / .28);border-color:#7f1d1d;color:#fecdd3}.dark .ui-btn-ghost{color:#d1d5db}.dark .ui-btn-ghost:hover{background:#1f2937;color:#fff}.dark .ui-form-actions{background:rgb(17 24 39 / .94);border-color:#374151;box-shadow:0 -8px 28px rgb(0 0 0 / .22)}.dark .ui-choice-card{background:#0f172a;border-color:#374151;color:#d1d5db}.dark .ui-choice-card:hover{background:#111827;border-color:#4b5563}
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not(.ui-input),
+form select:not(.ui-select),
+form textarea:not(.ui-textarea) {
+    width: 100%;
+    min-height: var(--profile-control-height, var(--ui-control-height));
+    border: 1px solid var(--ui-component-border-strong, #cbd5e1);
+    border-radius: var(--profile-control-radius, var(--ui-control-radius));
+    background: var(--ui-component-surface, #fff);
+    padding: .5625rem .75rem;
+    color: var(--ui-component-text-strong, #0f172a);
+    font-size: .875rem !important;
+    line-height: 1.35rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / .04);
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
 
-main:has(#modul-buat-spj)>div,main:has(.spj-builder)>div,main:has(a[href*="document-number-formats"])>div,main:has(form[action*="document-templates"])>div,main:has(form[action*="schools/profile"])>div{max-width:1600px;margin-inline:auto}
-main:has(#modul-buat-spj) section.rounded-2xl{border-color:color-mix(in srgb,var(--theme-accent) 14%,#dbe3ee)!important}main:has(#modul-buat-spj) section>div[class*="bg-slate-900"]{min-height:11rem;display:flex;flex-direction:column;justify-content:center;border-radius:1rem 1rem 0 0}main:has(#modul-buat-spj) form:not(.app-nav){scroll-margin-top:7rem}main:has(#modul-buat-spj) .grid>.rounded-xl[class*="bg-slate-50"]{border:1px solid #e2e8f0;background:#fbfcfe!important}
-main:has(.spj-builder) .spj-builder{box-shadow:0 12px 32px rgb(15 23 42 / .07)}main:has(.spj-builder) .spj-builder-form{background:linear-gradient(180deg,#fff,#fbfcfe)}main:has(.spj-builder) .spj-builder-accent-panel{box-shadow:inset 0 1px 0 rgb(255 255 255 / .7)}main:has(.spj-builder) [role="tablist"],main:has(.spj-builder) nav[class*="border"]{background:#f8fafc;border-radius:.85rem;padding:.25rem}
-main:has(a[href*="document-number-formats"]) .ui-form-section,main:has(a[href*="document-number-formats"]) section.rounded-2xl{overflow:hidden}main:has(a[href*="document-number-formats"]) a.rounded-2xl.border{box-shadow:0 3px 10px rgb(15 23 42 / .045)}main:has(a[href*="document-number-formats"]) a.rounded-2xl.border:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgb(15 23 42 / .08)}main:has(a[href*="document-number-formats"]) form[class*="bg-indigo-50"]{border-width:1.5px;box-shadow:0 6px 18px color-mix(in srgb,var(--theme-accent) 10%,transparent)}
-main:has(form[action*="document-templates"]) fieldset{background:linear-gradient(180deg,#fbfcff,#f8fafc)!important}main:has(form[action*="document-templates"]) .ui-choice-card{min-height:2.8rem;align-items:center;background:#fff}main:has(form[action*="document-templates"]) details{border-color:#dbe3ee!important;box-shadow:0 4px 14px rgb(15 23 42 / .05)}main:has(form[action*="document-templates"]) details>summary{background:linear-gradient(135deg,color-mix(in srgb,var(--theme-accent-soft) 42%,white),#fff)}
-main:has(form[action*="schools/profile"]) form[action*="schools/profile"]>section:first-of-type{border-color:color-mix(in srgb,var(--theme-accent) 28%,#dbe3ee)!important;background:linear-gradient(135deg,color-mix(in srgb,var(--theme-accent-soft) 70%,white),#fff)!important;box-shadow:0 6px 18px rgb(15 23 42 / .05)}main:has(form[action*="schools/profile"]) img[alt^="Kop surat"]{width:100%;min-height:5rem;padding:.5rem;border:1px solid #dbe3ee}main:has(form[action*="schools/profile"]) .ui-form-section-body{background:linear-gradient(180deg,#fff,#fcfdff)}main:has(form[action*="schools/profile"]) .ui-form-actions{margin-top:.25rem}
+form textarea:not(.ui-textarea) {
+    min-height: 5.5rem;
+    resize: vertical;
+}
 
-/* Page-specific dark corrections */
-.dark main:has(#modul-buat-spj) .grid>.rounded-xl[class*="bg-slate-50"]{background:#0f172a!important;border-color:#374151}.dark main:has(.spj-builder) .spj-builder-form{background:#111827}.dark main:has(.spj-builder) [role="tablist"],.dark main:has(.spj-builder) nav[class*="border"]{background:#0f172a}.dark main:has(form[action*="document-templates"]) fieldset{background:#0f172a!important}.dark main:has(form[action*="document-templates"]) .ui-choice-card{background:#111827}.dark main:has(form[action*="document-templates"]) details{border-color:#374151!important}.dark main:has(form[action*="document-templates"]) details>summary{background:#0f172a}.dark main:has(form[action*="schools/profile"]) form[action*="schools/profile"]>section:first-of-type{background:#111827!important;border-color:#374151!important}.dark main:has(form[action*="schools/profile"]) .ui-form-section-body{background:#111827}
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not(.ui-input):hover,
+form select:not(.ui-select):hover,
+form textarea:not(.ui-textarea):hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--ui-component-border-strong, #94a3b8));
+}
 
-@media(max-width:640px){.ui-form-section-heading{padding:.875rem 1rem .875rem 1.35rem}.ui-form-section-heading::before{left:.45rem}.ui-form-section-body{padding:1rem}.ui-form-actions>*{flex:1 1 auto}main:has(#modul-buat-spj) section>div[class*="bg-slate-900"]{min-height:9rem}main:has(form[action*="document-templates"]) .ui-choice-card{min-height:2.6rem}}
+form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not(.ui-input):focus,
+form select:not(.ui-select):focus,
+form textarea:not(.ui-textarea):focus {
+    outline: none;
+    border-color: var(--theme-focus-ring, var(--theme-accent, #4f46e5)) !important;
+    box-shadow: 0 0 0 3px var(--theme-focus-halo, color-mix(in srgb, var(--theme-accent, #4f46e5) 16%, transparent));
+}
+
+form input:not(.ui-input)::placeholder,
+form textarea:not(.ui-textarea)::placeholder {
+    color: var(--text-comfort-subtle, #8793a5);
+}
+
+form input:not(.ui-input)[readonly],
+form textarea:not(.ui-textarea)[readonly],
+form input:not(.ui-input):disabled,
+form select:not(.ui-select):disabled,
+form textarea:not(.ui-textarea):disabled {
+    cursor: default;
+    border-color: var(--ui-component-border, #e2e8f0);
+    background: var(--ui-component-surface-soft, #f8fafc);
+    color: var(--ui-component-text-muted, #64748b);
+    box-shadow: none;
+}
+
+form input[type='file'] {
+    width: 100%;
+    border: 1px dashed var(--ui-component-border-strong, #cbd5e1);
+    border-radius: var(--profile-control-radius, var(--ui-control-radius));
+    background: var(--ui-component-surface-soft, #f8fafc);
+    padding: .625rem .75rem;
+    color: var(--ui-component-text, #475569);
+    font-size: .875rem;
+}
+
+form input[type='checkbox'],
+form input[type='radio'] {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    accent-color: var(--theme-accent, #4f46e5);
+}
+
+.ui-field { min-width: 0; }
+.ui-hint { margin-top: .375rem; color: var(--ui-component-text-muted, #64748b); font-size: .75rem; line-height: 1rem; }
+.ui-error { margin-top: .375rem; color: var(--text-comfort-danger, #9a4d5d); font-size: .75rem; font-weight: 700; line-height: 1rem; }
+.ui-required { color: var(--text-comfort-danger, #9a4d5d); }
+
+form fieldset {
+    border-color: var(--ui-component-border, #dbe3ee);
+    box-shadow: 0 2px 8px rgb(15 23 42 / .035);
+}
+
+form fieldset > legend {
+    border: 1px solid var(--ui-component-border, #dbe3ee);
+    border-radius: var(--profile-control-radius, .65rem);
+    background: var(--ui-component-surface-soft, #f8fafc);
+    padding: .4rem .7rem;
+    color: var(--ui-component-text, #334155);
+    font-size: .8125rem;
+    font-weight: 800;
+    box-shadow: 0 1px 3px rgb(15 23 42 / .06);
+}
+
+.ui-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .625rem;
+    border: 1px solid var(--ui-component-border, #e2e8f0);
+    border-radius: var(--profile-card-radius, .875rem);
+    background: color-mix(in srgb, var(--ui-component-surface, #fff) 94%, transparent);
+    padding: .75rem;
+    box-shadow: 0 -4px 18px rgb(15 23 42 / .06);
+    backdrop-filter: blur(10px);
+}
+
+.ui-choice-card {
+    display: flex;
+    align-items: flex-start;
+    gap: .625rem;
+    border: 1px solid var(--ui-component-border, #e2e8f0);
+    border-radius: var(--profile-control-radius, .75rem);
+    background: var(--ui-component-surface-soft, #f8fafc);
+    padding: .75rem;
+    color: var(--ui-component-text, #334155);
+}
+
+.ui-choice-card:hover {
+    border-color: var(--ui-component-border-strong, #cbd5e1);
+    background: var(--ui-component-surface, #fff);
+}
+
+html[data-ui-appearance='dark'] .ui-form-actions {
+    box-shadow: 0 -8px 28px rgb(0 0 0 / .22);
+}
+
+main:has(#modul-buat-spj)>div,
+main:has(.spj-builder)>div,
+main:has(a[href*="document-number-formats"])>div,
+main:has(form[action*="document-templates"])>div,
+main:has(form[action*="schools/profile"])>div {
+    max-width: 1600px;
+    margin-inline: auto;
+}
+
+main:has(#modul-buat-spj) section.rounded-2xl { border-color: color-mix(in srgb, var(--theme-accent) 14%, var(--ui-component-border, #dbe3ee)) !important; }
+main:has(#modul-buat-spj) section>div[class*="bg-slate-900"] { min-height: 11rem; display: flex; flex-direction: column; justify-content: center; border-radius: 1rem 1rem 0 0; }
+main:has(#modul-buat-spj) form:not(.app-nav) { scroll-margin-top: 7rem; }
+main:has(#modul-buat-spj) .grid>.rounded-xl[class*="bg-slate-50"] { border: 1px solid var(--ui-component-border, #e2e8f0); background: var(--ui-component-surface-soft, #fbfcfe) !important; }
+main:has(.spj-builder) .spj-builder { box-shadow: 0 12px 32px rgb(15 23 42 / .07); }
+main:has(.spj-builder) .spj-builder-form { background: linear-gradient(180deg, var(--ui-component-surface, #fff), var(--ui-component-surface-soft, #fbfcfe)); }
+main:has(.spj-builder) .spj-builder-accent-panel { box-shadow: inset 0 1px 0 rgb(255 255 255 / .7); }
+main:has(.spj-builder) [role="tablist"],
+main:has(.spj-builder) nav[class*="border"] { background: var(--ui-component-surface-soft, #f8fafc); border-radius: .85rem; padding: .25rem; }
+main:has(a[href*="document-number-formats"]) .ui-form-section,
+main:has(a[href*="document-number-formats"]) section.rounded-2xl { overflow: hidden; }
+main:has(a[href*="document-number-formats"]) a.rounded-2xl.border { box-shadow: 0 3px 10px rgb(15 23 42 / .045); }
+main:has(a[href*="document-number-formats"]) a.rounded-2xl.border:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgb(15 23 42 / .08); }
+main:has(a[href*="document-number-formats"]) form[class*="bg-indigo-50"] { border-width: 1.5px; box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent) 10%, transparent); }
+main:has(form[action*="document-templates"]) fieldset { background: var(--ui-component-surface-soft, #f8fafc) !important; }
+main:has(form[action*="document-templates"]) .ui-choice-card { min-height: 2.8rem; align-items: center; }
+main:has(form[action*="document-templates"]) details { border-color: var(--ui-component-border, #dbe3ee) !important; box-shadow: 0 4px 14px rgb(15 23 42 / .05); }
+main:has(form[action*="document-templates"]) details>summary { background: color-mix(in srgb, var(--theme-accent-soft) 42%, var(--ui-component-surface, #fff)); }
+main:has(form[action*="schools/profile"]) form[action*="schools/profile"]>section:first-of-type { border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--ui-component-border, #dbe3ee)) !important; background: color-mix(in srgb, var(--theme-accent-soft) 70%, var(--ui-component-surface, #fff)) !important; box-shadow: 0 6px 18px rgb(15 23 42 / .05); }
+main:has(form[action*="schools/profile"]) img[alt^="Kop surat"] { width: 100%; min-height: 5rem; padding: .5rem; border: 1px solid var(--ui-component-border, #dbe3ee); }
+main:has(form[action*="schools/profile"]) .ui-form-actions { margin-top: .25rem; }
+
+@media(max-width:640px) {
+    .ui-form-actions>* { flex: 1 1 auto; }
+    main:has(#modul-buat-spj) section>div[class*="bg-slate-900"] { min-height: 9rem; }
+    main:has(form[action*="document-templates"]) .ui-choice-card { min-height: 2.6rem; }
+}
