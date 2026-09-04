@@ -1,3 +1,5 @@
+import '../css/theme-profiles.css';
+
 const profile = (config) => Object.freeze(config);
 
 export const themeProfiles = Object.freeze({
@@ -42,7 +44,6 @@ export const applyThemeProfile = (theme, root = document.documentElement) => {
     root.dataset.uiSidebar = selected.sidebar;
     root.dataset.uiTable = selected.table;
     root.dataset.uiControls = selected.controls;
-
     root.classList.toggle('dark', selected.appearance === 'dark');
     root.style.colorScheme = selected.appearance;
 
@@ -60,17 +61,25 @@ export const initializeThemeProfiles = () => {
 
     applyThemeProfile(storedTheme, root);
 
-    if (!select) return;
+    if (!select || select.dataset.profileInitialized === 'true') return;
 
     Object.entries(themeProfiles).forEach(([value, item]) => {
         const option = select.querySelector(`option[value="${value}"]`);
-        if (option) {
-            option.textContent = item.label;
-        }
+        if (option) option.textContent = item.label;
     });
 
     select.value = themeProfiles[storedTheme] ? storedTheme : 'light';
-    select.addEventListener('change', () => {
-        applyThemeProfile(select.value, root);
-    });
+    select.dataset.profileInitialized = 'true';
+    select.addEventListener('change', () => applyThemeProfile(select.value, root));
 };
+
+const bootThemeProfiles = () => {
+    initializeThemeProfiles();
+    document.addEventListener('livewire:navigated', initializeThemeProfiles);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootThemeProfiles, { once: true });
+} else {
+    bootThemeProfiles();
+}
