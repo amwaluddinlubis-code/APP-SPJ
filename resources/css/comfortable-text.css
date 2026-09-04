@@ -1,0 +1,178 @@
+/* Global comfortable text palette.
+   Typography colors stay calm and readable across every visual theme.
+   Themes may change surfaces/accent treatments, but text contrast follows this shared hierarchy. */
+
+:root {
+    --text-comfort-strong: #1f2937;
+    --text-comfort-primary: #334155;
+    --text-comfort-secondary: #526174;
+    --text-comfort-muted: #718096;
+    --text-comfort-subtle: #8793a5;
+    --text-comfort-on-dark: #e2e8f0;
+    --text-comfort-on-dark-soft: #c3cedc;
+    --text-comfort-on-dark-muted: #9aa8ba;
+
+    --text-comfort-link: #365f84;
+    --text-comfort-success: #35705a;
+    --text-comfort-warning: #91662d;
+    --text-comfort-danger: #9a4d5d;
+    --text-comfort-info: #416d86;
+}
+
+html[data-ui-appearance='dark'],
+html.dark {
+    --text-comfort-strong: #dce3ec;
+    --text-comfort-primary: #c4cfdd;
+    --text-comfort-secondary: #aeb9c8;
+    --text-comfort-muted: #8f9bad;
+    --text-comfort-subtle: #788598;
+    --text-comfort-link: #9bb9d4;
+    --text-comfort-success: #8fc4ad;
+    --text-comfort-warning: #d2b07a;
+    --text-comfort-danger: #d7a0ab;
+    --text-comfort-info: #9dbdce;
+}
+
+body {
+    color: var(--text-comfort-primary) !important;
+}
+
+/* Main reading hierarchy */
+main :is(h1,h2,h3,h4,h5,h6,.page-header-title,.ui-title,.ui-modal-title,.ui-section-card-title,.ui-form-section-title,.card-title) {
+    color: var(--text-comfort-strong) !important;
+}
+
+main :is(p,li,dd,dt,td,label,legend,.ui-detail-value,.ui-action-menu-item) {
+    color: var(--text-comfort-primary);
+}
+
+main :is(.ui-hint,.ui-description,.ui-empty-description,.ui-alert-body,.ui-stat-hint,.ui-detail-label,.ui-loading,.empty-cell,.module-breadcrumb,.ui-pagination,.app-table-pagination) {
+    color: var(--text-comfort-muted) !important;
+}
+
+/* Neutral Tailwind utilities are normalized to the same calm hierarchy. */
+main :is(.text-slate-950,.text-slate-900,.text-gray-950,.text-gray-900,.text-zinc-950,.text-zinc-900,.text-neutral-950,.text-neutral-900) {
+    color: var(--text-comfort-strong) !important;
+}
+main :is(.text-slate-800,.text-slate-700,.text-gray-800,.text-gray-700,.text-zinc-800,.text-zinc-700,.text-neutral-800,.text-neutral-700) {
+    color: var(--text-comfort-primary) !important;
+}
+main :is(.text-slate-600,.text-gray-600,.text-zinc-600,.text-neutral-600) {
+    color: var(--text-comfort-secondary) !important;
+}
+main :is(.text-slate-500,.text-gray-500,.text-zinc-500,.text-neutral-500) {
+    color: var(--text-comfort-muted) !important;
+}
+main :is(.text-slate-400,.text-gray-400,.text-zinc-400,.text-neutral-400) {
+    color: var(--text-comfort-subtle) !important;
+}
+
+/* Accent text is intentionally restrained. */
+main :is(.theme-text,.text-blue-600,.text-blue-700,.text-blue-800,.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-violet-600,.text-violet-700,.text-violet-800,.text-cyan-600,.text-cyan-700,.text-sky-600,.text-sky-700) {
+    color: var(--text-comfort-link) !important;
+}
+
+/* Semantic colors remain distinguishable, but use softer low-saturation text. */
+main :is(.text-emerald-600,.text-emerald-700,.text-emerald-800,.text-green-600,.text-green-700,.text-green-800) {
+    color: var(--text-comfort-success) !important;
+}
+main :is(.text-amber-600,.text-amber-700,.text-amber-800,.text-yellow-600,.text-yellow-700,.text-yellow-800,.text-orange-600,.text-orange-700,.text-orange-800) {
+    color: var(--text-comfort-warning) !important;
+}
+main :is(.text-rose-600,.text-rose-700,.text-rose-800,.text-red-600,.text-red-700,.text-red-800) {
+    color: var(--text-comfort-danger) !important;
+}
+
+/* Controls use the same hierarchy and subdued placeholder color. */
+main :is(input,select,textarea,.ui-input,.ui-select,.ui-textarea,.form-control,.form-select) {
+    color: var(--text-comfort-strong) !important;
+}
+main :is(input,textarea)::placeholder {
+    color: var(--text-comfort-subtle) !important;
+    opacity: 1;
+}
+main :is(input,select,textarea,[readonly]):disabled {
+    color: var(--text-comfort-subtle) !important;
+}
+
+/* Tables should be comfortable for long reading sessions. */
+main table:not(.fi-ta-table):not([data-ui-table='off']) {
+    color: var(--text-comfort-primary) !important;
+}
+main table:not(.fi-ta-table):not([data-ui-table='off']) thead th {
+    color: var(--text-comfort-muted) !important;
+}
+main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td {
+    color: var(--text-comfort-secondary) !important;
+}
+main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td :is(.font-bold,.font-semibold,.font-extrabold) {
+    color: var(--text-comfort-primary) !important;
+}
+
+/* Page headers on dark/colored surfaces use off-white, never pure white. */
+.page-header-main:not(:has(+ .page-header-summary[data-force-light])) .page-header-title,
+.page-header-main:not(:has(+ .page-header-summary[data-force-light])) .page-header-kicker {
+    color: var(--text-comfort-on-dark) !important;
+}
+.page-header-main .page-header-description {
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+.page-header-main :is(a,button):not(.ui-btn-danger):not(.btn-danger) {
+    color: var(--text-comfort-on-dark) !important;
+}
+
+/* Flat/classic/soft headers are light surfaces, so use the normal reading palette. */
+html[data-ui-header='flat'] .page-header-main :is(.page-header-title,.page-header-kicker),
+html[data-ui-header='classic'] .page-header-main :is(.page-header-title,.page-header-kicker),
+html[data-ui-header='soft'] .page-header-main :is(.page-header-title,.page-header-kicker) {
+    color: var(--text-comfort-strong) !important;
+}
+html[data-ui-header='flat'] .page-header-description,
+html[data-ui-header='classic'] .page-header-description,
+html[data-ui-header='soft'] .page-header-description {
+    color: var(--text-comfort-secondary) !important;
+}
+
+/* Sidebar/top chrome: calm off-white hierarchy, no pure white glare. */
+.app-sidebar,
+.app-sidebar :is(a,button,span,.nav-label) {
+    color: var(--text-comfort-on-dark-soft);
+}
+.app-sidebar .app-nav-active,
+.app-sidebar .app-nav-active :is(span,.nav-label) {
+    color: var(--text-comfort-on-dark) !important;
+}
+.app-sidebar :is(.text-white,.text-slate-100,.text-slate-200,.text-slate-300) {
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+
+/* Buttons on strong filled surfaces use off-white instead of #fff. */
+main :is(.ui-btn-primary,.btn-primary,.theme-btn,.bg-indigo-600,.bg-indigo-700,.bg-blue-600,.bg-violet-600,.bg-emerald-600,.bg-rose-600,.bg-red-600) {
+    color: var(--text-comfort-on-dark) !important;
+}
+
+/* Avoid pure-white utility text anywhere in the application chrome/content. */
+main .text-white,
+.app-sidebar .text-white {
+    color: var(--text-comfort-on-dark) !important;
+}
+
+/* Status primitives keep semantic meaning with softened text tones. */
+.ui-badge-success,.ui-alert-success,.ui-alert-success .ui-alert-title { color: var(--text-comfort-success) !important; }
+.ui-badge-warning,.ui-alert-warning,.ui-alert-warning .ui-alert-title { color: var(--text-comfort-warning) !important; }
+.ui-badge-danger,.ui-alert-danger,.ui-alert-danger .ui-alert-title,.ui-danger-zone-title,.ui-danger-zone-description { color: var(--text-comfort-danger) !important; }
+.ui-alert-info,.ui-alert-info .ui-alert-title { color: var(--text-comfort-info) !important; }
+
+/* Filament text also follows the calm dark/light hierarchy where possible. */
+.fi-body,
+.fi-main {
+    color: var(--text-comfort-primary);
+}
+.fi-ta-header-cell {
+    color: var(--text-comfort-muted) !important;
+}
+
+/* Never add glow or text shadow: crisp text is easier on the eyes. */
+body * {
+    text-shadow: none !important;
+}
