@@ -12,61 +12,6 @@ main:has(a[href*="/data-sinkron/bku"]) {
     --transactions-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
 }
 
-/* Filter panel */
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) {
-    overflow: hidden;
-    border-color: color-mix(in srgb, var(--theme-accent) 18%, var(--transactions-border)) !important;
-    border-radius: var(--profile-card-radius) !important;
-    background: var(--transactions-surface) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > div:first-child,
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > div:nth-last-child(2) {
-    border-color: var(--transactions-border) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--transactions-surface-soft)) !important;
-    color: var(--theme-content-accent) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) :is(input,select) {
-    border-color: var(--transactions-border-strong) !important;
-    border-radius: var(--profile-control-radius) !important;
-    background: var(--transactions-surface) !important;
-    color: var(--transactions-text-strong) !important;
-    box-shadow: none !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) button[type="button"] {
-    border-color: var(--transactions-border-strong) !important;
-    border-radius: var(--profile-control-radius) !important;
-    background: var(--transactions-surface) !important;
-    color: var(--transactions-text) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) button[type="button"]:hover {
-    background: var(--transactions-surface-soft) !important;
-    color: var(--transactions-text-strong) !important;
-}
-
-/* Period subtotal remains one panel with simple dividers, not separate floating cards. */
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child {
-    gap: 1px !important;
-    background: var(--transactions-border) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child > div {
-    border: 0 !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 10%, var(--transactions-surface)) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child p:first-child {
-    color: var(--transactions-text-muted) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child p:last-child {
-    color: var(--transactions-text-strong) !important;
-}
-
 /* Transaction list shell */
 main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) {
     overflow: hidden;
@@ -74,21 +19,6 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
     border-radius: var(--profile-card-radius) !important;
     background: var(--transactions-surface) !important;
     box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:first-child {
-    border-color: var(--transactions-border) !important;
-    background: var(--transactions-surface-soft) !important;
-}
-
-/* The only select in the list header is the per-page control. Avoid escaped
-   Livewire attribute selectors because Vite's CSS parser rejects the colon. */
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:first-child select {
-    border-color: var(--transactions-border-strong) !important;
-    border-radius: var(--profile-control-radius) !important;
-    background: var(--transactions-surface) !important;
-    color: var(--transactions-text) !important;
-    box-shadow: none !important;
 }
 
 /* Mobile transaction cards */
