@@ -1,4 +1,4 @@
-@vite('resources/css/table-standardization.css')
+@vite(['resources/css/table-standardization.css', 'resources/css/ui-generalization.css'])
 
 @php
     $initialNotifications = collect([
