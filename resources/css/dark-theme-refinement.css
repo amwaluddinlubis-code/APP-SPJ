@@ -1,0 +1,164 @@
+/* Final dark-theme refinement layer.
+   Loaded after forms-standardization.css so legacy utilities and generalized
+   components share one softer typography hierarchy and restrained table hover. */
+
+.dark {
+    --ui-dark-text-strong: #e5e7eb;
+    --ui-dark-text: #cbd5e1;
+    --ui-dark-text-soft: #aeb8c7;
+    --ui-dark-muted: #8b98aa;
+    --ui-dark-subtle: #748196;
+    --ui-dark-surface: #111827;
+    --ui-dark-surface-alt: #0f172a;
+    --ui-dark-surface-hover: #141d2c;
+    --ui-dark-border: #263244;
+}
+
+/* Global text hierarchy. Keep headings readable without making every label white. */
+.dark body,
+.dark main {
+    color: var(--ui-dark-text) !important;
+}
+
+.dark main :is(h1,h2,h3,h4,h5,h6,.card-title,.ui-title,.font-extrabold,.font-black) {
+    color: var(--ui-dark-text-strong) !important;
+}
+
+.dark main :is(p,li,dd,dt,span:not(.text-white):not([class*="text-emerald"]):not([class*="text-green"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-rose"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-indigo"])) {
+    text-shadow: none;
+}
+
+/* Neutral Tailwind text compatibility. */
+.dark main :is(.text-slate-950,.text-slate-900,.text-gray-950,.text-gray-900,.text-zinc-950,.text-zinc-900) {
+    color: var(--ui-dark-text-strong) !important;
+}
+.dark main :is(.text-slate-800,.text-slate-700,.text-gray-800,.text-gray-700,.text-zinc-800,.text-zinc-700) {
+    color: var(--ui-dark-text) !important;
+}
+.dark main :is(.text-slate-600,.text-gray-600,.text-zinc-600) {
+    color: var(--ui-dark-text-soft) !important;
+}
+.dark main :is(.text-slate-500,.text-gray-500,.text-zinc-500) {
+    color: var(--ui-dark-muted) !important;
+}
+.dark main :is(.text-slate-400,.text-gray-400,.text-zinc-400) {
+    color: var(--ui-dark-subtle) !important;
+}
+
+.dark main :is(.ui-hint,.empty-cell,.module-breadcrumb,[aria-label*="Breadcrumb"],[aria-label*="breadcrumb"]) {
+    color: var(--ui-dark-muted) !important;
+}
+
+/* Labels and controls. */
+.dark main :is(label,.ui-label,legend) {
+    color: var(--ui-dark-text) !important;
+}
+.dark main :is(input,select,textarea,.ui-input,.ui-select,.ui-textarea) {
+    color: var(--ui-dark-text-strong) !important;
+}
+.dark main :is(input,textarea)::placeholder {
+    color: var(--ui-dark-subtle) !important;
+    opacity: 1;
+}
+.dark main :is(input,select,textarea,[readonly]):disabled {
+    color: var(--ui-dark-subtle) !important;
+}
+
+/* Neutral buttons and links should not flare to pure white on hover. */
+.dark main :is(a:not(.app-nav):not(.ui-btn-primary):not(.btn-primary),button:not(.ui-btn-primary):not(.btn-primary):not(.ui-btn-danger)) {
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.dark main :is(.ui-btn-secondary,.ui-btn-ghost,.btn-outline-secondary,.theme-btn-outline) {
+    color: var(--ui-dark-text) !important;
+}
+.dark main :is(.ui-btn-secondary,.ui-btn-ghost,.btn-outline-secondary,.theme-btn-outline):hover {
+    color: var(--ui-dark-text-strong) !important;
+}
+
+/* Generalized tables: subtle row separation and very low-contrast hover. */
+.dark {
+    --ui-table-border: var(--ui-dark-border);
+    --ui-table-border-soft: #1c2736;
+    --ui-table-head-bg: #0d1522;
+    --ui-table-head-text: #9eabbc;
+    --ui-table-row-alt: #0f172a;
+    --ui-table-row-hover: var(--ui-dark-surface-hover);
+}
+
+.dark main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not(.fi-ta-table):not([data-ui-table="off"])) {
+    background: var(--ui-dark-surface) !important;
+    border-color: var(--ui-dark-border) !important;
+}
+
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) {
+    color: var(--ui-dark-text-soft) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead[class*="bg-"] {
+    background: var(--ui-table-head-bg) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th {
+    color: var(--ui-table-head-text) !important;
+    border-color: var(--ui-dark-border) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
+    color: var(--ui-dark-text-soft) !important;
+    border-color: var(--ui-table-border-soft) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-odd {
+    background: var(--ui-dark-surface) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:nth-child(even),
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-even {
+    background: var(--ui-dark-surface-alt) !important;
+}
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:hover,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:nth-child(even):hover,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-even:hover,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-odd:hover {
+    background: var(--ui-dark-surface-hover) !important;
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--theme-accent) 30%, transparent);
+}
+
+/* Legacy and audit tables follow the same restrained hover. */
+.dark main :is(.table,.audit-table) tbody tr:hover {
+    background: var(--ui-dark-surface-hover) !important;
+}
+.dark main :is(.table,.audit-table) tbody td {
+    color: var(--ui-dark-text-soft) !important;
+}
+
+/* Pagination stays visible but visually secondary to table data. */
+.dark main .app-table-pagination {
+    background: #0d1522 !important;
+    border-color: var(--ui-dark-border) !important;
+    color: var(--ui-dark-muted) !important;
+}
+.dark main .app-table-pagination :is(button,select) {
+    background: var(--ui-dark-surface) !important;
+    border-color: var(--ui-dark-border) !important;
+    color: var(--ui-dark-text) !important;
+}
+.dark main .app-table-pagination button:not(:disabled):hover {
+    background: var(--ui-dark-surface-hover) !important;
+    color: var(--ui-dark-text-strong) !important;
+}
+
+/* Filament tables receive the same softer contrast without overriding semantic colors. */
+.dark .fi-ta-header,
+.dark .fi-ta-header-cell {
+    background: #0d1522 !important;
+    color: var(--ui-dark-muted) !important;
+}
+.dark .fi-ta-row {
+    border-color: var(--ui-dark-border) !important;
+}
+.dark .fi-ta-row:hover {
+    background: var(--ui-dark-surface-hover) !important;
+}
+
+/* Keep semantic colors intact, but avoid pure-white text unless explicitly requested. */
+.dark main .text-white {
+    color: #f3f4f6 !important;
+}
