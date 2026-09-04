@@ -166,6 +166,7 @@
 
 @layer base {
     :root { --theme-accent: #14b8a6; --theme-accent-strong: #0f766e; --theme-accent-soft: #ccfbf1; --theme-sidebar: #134e4a; --theme-sidebar-deep: #042f2e; }
+    html[data-theme='dark'] { --theme-accent: #64748b; --theme-accent-strong: #94a3b8; --theme-accent-soft: #1f2937; --theme-sidebar: #111827; --theme-sidebar-deep: #030712; }
     html[data-theme='slate'] { --theme-accent: #64748b; --theme-accent-strong: #475569; --theme-accent-soft: #e2e8f0; --theme-sidebar: #334155; --theme-sidebar-deep: #0f172a; }
     html[data-theme='gray'] { --theme-accent: #6b7280; --theme-accent-strong: #4b5563; --theme-accent-soft: #e5e7eb; --theme-sidebar: #374151; --theme-sidebar-deep: #111827; }
     html[data-theme='zinc'] { --theme-accent: #71717a; --theme-accent-strong: #52525b; --theme-accent-soft: #e4e4e7; --theme-sidebar: #3f3f46; --theme-sidebar-deep: #18181b; }
@@ -259,45 +260,4 @@
     html[data-theme] nav[aria-label="Pagination"] button[aria-current="page"], html[data-theme] .pagination .active span {
         background-color: var(--theme-accent) !important; color: white !important; border-color: var(--theme-accent) !important;
     }
-    html[data-theme] .rounded-full.bg-slate-100 { background-color: var(--theme-accent-soft) !important; color: var(--theme-accent-strong) !important; }
-    .dark body { background: #020617; color: #e2e8f0; }
-    .dark .bg-white { background-color: #0f172a; }
-    .dark .bg-slate-50 { background-color: #111827; }
-    .dark .bg-slate-100 { background-color: #1e293b; }
-    .dark .bg-slate-200 { background-color: #334155; }
-    .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: #334155; }
-    .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]), .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
-    .dark .text-slate-800, .dark .text-slate-700 { color: #e2e8f0; }
-    .dark .text-slate-600, .dark .text-slate-500, .dark .text-slate-400 { color: #94a3b8; }
-    .dark input:not([type='checkbox']), .dark select, .dark textarea { background-color: #172033; border-color: #475569; color: #e2e8f0; }
-    .dark select option { background: #172033; color: #e2e8f0; }
-    .dark .bg-amber-50, .dark .bg-amber-50\/40, .dark .bg-amber-50\/60 { background-color: #422006; }
-    .dark .bg-sky-50 { background-color: #082f49; }
-    .dark .bg-emerald-50 { background-color: #052e2b; }
-    .dark .bg-violet-50 { background-color: #2e1065; }
-    .dark main table tbody > tr:nth-child(odd), .dark main table tbody > tr.app-table-row-odd { background-color: #0f172a; }
-    .dark main table tbody > tr:nth-child(even), .dark main table tbody > tr.app-table-row-even { background-color: #172033; }
-    .dark .app-table-pagination { border-color: #334155; background: #111827; color: #cbd5e1; }
-    .dark .app-table-pagination button, .dark .app-table-pagination select { border-color: #475569; background: #172033; color: #e2e8f0; }
-    .dark .bg-rose-50 { background-color: #4c0519; }
-    .dark .border-amber-100, .dark .border-amber-200, .dark .border-amber-300 { border-color: #854d0e; }
-    .dark .border-sky-200, .dark .border-sky-300 { border-color: #0369a1; }
-    .dark .app-nav-active, .dark .bg-teal-500, .dark .bg-teal-600 { background-color: var(--theme-accent); }
-    .dark .hover\:bg-teal-700:hover { background-color: var(--theme-accent-strong); }
-    .dark .text-teal-700, .dark .text-teal-600 { color: var(--theme-accent); }
-    .dark .border-teal-200, .dark .border-teal-500 { border-color: var(--theme-accent); }
-    .dark .bg-teal-50 { background-color: color-mix(in srgb, var(--theme-accent) 18%, #020617); }
-    .dark .spj-builder { border-color: color-mix(in srgb, var(--theme-accent) 42%, #0f172a); }
-    .dark .spj-builder-form { border-color: color-mix(in srgb, var(--theme-accent) 34%, #334155); }
-    .dark .spj-builder-accent-panel {
-        border-color: color-mix(in srgb, var(--theme-accent) 42%, #334155);
-        background: color-mix(in srgb, var(--theme-accent) 14%, #0f172a);
-    }
-    .dark .spj-builder .border-violet-100,
-    .dark .spj-builder .border-sky-100,
-    .dark .spj-builder .border-violet-200,
-    .dark .spj-builder .border-sky-200,
-    .dark .spj-builder .border-sky-300 { border-color: color-mix(in srgb, var(--theme-accent) 42%, #334155); }
-    .dark .spj-builder .bg-violet-50\/60,
-    .dark .spj-builder .bg-sky-50 { background-color: color-mix(in srgb, var(--theme-accent) 14%, #0f172a); }
 }
