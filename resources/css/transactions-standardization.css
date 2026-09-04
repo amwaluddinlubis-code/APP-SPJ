@@ -1,15 +1,12 @@
 /* Transaction workspace compatibility layer.
-   The Livewire view is still legacy-heavy; keep business markup untouched while
-   resolving its structural surfaces through the canonical theme contract. */
+   Header, filters, toolbar, actions, badges, and primary text are canonical now.
+   Keep only the remaining list/card/table surface normalization until those
+   structural shells are migrated physically. */
 
 main:has(a[href*="/data-sinkron/bku"]) {
     --transactions-surface: var(--ui-component-surface, var(--ui-surface, #fff));
-    --transactions-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
     --transactions-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
-    --transactions-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
     --transactions-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
-    --transactions-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
-    --transactions-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
 }
 
 /* Transaction list shell */
@@ -37,9 +34,4 @@ main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody {
 
 main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody tr:hover {
     background: var(--ui-table-row-hover) !important;
-}
-
-/* Human-readable payment method labels are injected visually only when legacy values remain. */
-main:has(a[href*="/data-sinkron/bku"]) [data-payment-method-label] {
-    color: var(--transactions-text-muted);
 }
