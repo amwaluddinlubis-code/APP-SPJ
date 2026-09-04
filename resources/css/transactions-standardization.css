@@ -86,7 +86,9 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
     display: none !important;
 }
 
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) select[wire\\:model\.live="perPage"] {
+/* The only select in the list header is the per-page control. Avoid escaped
+   Livewire attribute selectors because Vite's CSS parser rejects the colon. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:first-child select {
     border-color: var(--transactions-border-strong) !important;
     border-radius: var(--profile-control-radius) !important;
     background: var(--transactions-surface) !important;
