@@ -1,0 +1,127 @@
+/* Document settings compatibility layer.
+   Covers numbering formats and document templates without changing configuration logic. */
+
+main:has(form[action*="document-number-formats"]) ,
+main:has(form[action*="document-templates"]) {
+    --doc-settings-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --doc-settings-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --doc-settings-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --doc-settings-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --doc-settings-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --doc-settings-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --doc-settings-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #64748b));
+}
+
+/* Header actions in Document Templates must use readable semantic pairing. */
+main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a {
+    border: 1px solid color-mix(in srgb, var(--theme-action-fg) 24%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 78%, transparent) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a:hover {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+/* Numbering placeholder information becomes a theme-aware informational surface. */
+main:has(form[action*="document-number-formats"]) section.border-sky-200 {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--doc-settings-border)) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--doc-settings-surface)) !important;
+    color: var(--doc-settings-text) !important;
+}
+
+main:has(form[action*="document-number-formats"]) section.border-sky-200 :is(h2,strong) {
+    color: var(--doc-settings-text-strong) !important;
+}
+
+main:has(form[action*="document-number-formats"]) section.border-sky-200 code {
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 22%, var(--doc-settings-border)) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+/* Numbering format cards */
+main:has(form[action*="document-number-formats"]) article:has(form[action*="document-number-formats"]) {
+    border-color: var(--doc-settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(form[action*="document-number-formats"]) article:has(form[action*="document-number-formats"]) > div:first-child {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+main:has(form[action*="document-number-formats"]) article:has(form[action*="document-number-formats"]) > div:first-child p:first-child,
+main:has(form[action*="document-number-formats"]) article:has(form[action*="document-number-formats"]) .font-mono.text-indigo-700 {
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(form[action*="document-number-formats"]) article:has(form[action*="document-number-formats"]) .bg-slate-50 {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+/* Document Templates form/list panels */
+main:has(form[action*="document-templates"]) .ui-form-section,
+main:has(form[action*="document-templates"]) section:has(table[data-pagination="server"]),
+main:has(form[action*="document-templates"]) details {
+    border-color: var(--doc-settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(form[action*="document-templates"]) fieldset,
+main:has(form[action*="document-templates"]) form[method="GET"],
+main:has(form[action*="document-templates"]) details > div {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+main:has(form[action*="document-templates"]) :is(fieldset legend, section:has(table[data-pagination="server"]) h2, details summary) {
+    color: var(--doc-settings-text-strong) !important;
+}
+
+main:has(form[action*="document-templates"]) :is(.text-slate-500,.text-slate-600,.text-slate-700,.text-slate-800) {
+    color: var(--doc-settings-text) !important;
+}
+
+main:has(form[action*="document-templates"]) :is(.text-violet-700,.text-indigo-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr {
+    background: var(--doc-settings-surface) !important;
+}
+
+main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr:nth-child(even) {
+    background: var(--ui-table-row-alt) !important;
+}
+
+main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+/* Placeholder reference panel */
+main:has(form[action*="document-templates"]) details code {
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+/* Choice cards should remain clearly interactive across themes. */
+main:has(form[action*="document-templates"]) .ui-choice-card {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+}
+
+main:has(form[action*="document-templates"]) .ui-choice-card:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--doc-settings-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
+}
