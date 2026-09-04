@@ -1,137 +1,198 @@
-/* Unified page header treatment.
-   The description and summary stats belong to the same visual surface as the header.
-   Summary cards use a dark-hard to dark-soft progression while staying theme-aware. */
+/* Canonical page header.
+   The active operational Dashboard is the visual source of truth:
+   gradient hero on top, summary surface below, inside one rounded shell. */
 
 .page-header-shell {
-    border-color: color-mix(in srgb, var(--theme-accent, #64748b) 24%, #cbd5e1) !important;
-    background: transparent !important;
-    box-shadow: 0 10px 28px rgb(15 23 42 / .08);
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #64748b) 20%, var(--ui-border, #cbd5e1)) !important;
+    border-radius: 1rem;
+    background: var(--ui-surface, #fff) !important;
+    box-shadow: 0 8px 24px rgb(15 23 42 / .07);
 }
 
 .page-header-main {
+    position: relative;
+    overflow: hidden;
+    padding: 1.75rem 1.25rem !important;
     background: linear-gradient(
         135deg,
         var(--theme-sidebar-deep, #0f172a) 0%,
-        var(--theme-sidebar, #334155) 46%,
-        color-mix(in srgb, var(--theme-accent, #64748b) 74%, var(--theme-sidebar, #334155)) 100%
+        var(--theme-sidebar, #312e81) 52%,
+        color-mix(in srgb, var(--theme-accent, #6366f1) 74%, var(--theme-sidebar, #312e81)) 100%
     ) !important;
+    color: #fff !important;
+}
+
+.page-header-kicker {
+    color: #bae6fd !important;
+    font-size: .6875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .2em !important;
+    line-height: 1.25rem !important;
+    text-transform: uppercase !important;
+}
+
+.page-header-title {
+    color: #fff !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.025em !important;
+    line-height: 2rem !important;
 }
 
 .page-header-description {
-    color: rgb(255 255 255 / .78) !important;
+    max-width: 48rem;
+    color: rgb(224 231 255 / .90) !important;
+    font-size: .875rem !important;
+    line-height: 1.5rem !important;
+}
+
+.page-header-actions {
+    align-items: center;
 }
 
 .page-header-summary {
-    margin-inline: -.15rem;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: var(--ui-surface, #fff) !important;
 }
 
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
-    gap: .65rem !important;
+    gap: 1px !important;
+    background: var(--ui-border, #e2e8f0) !important;
+}
+
+.page-header-summary .ui-stat,
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+    min-width: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--ui-surface, #fff) !important;
+    box-shadow: none !important;
+    color: var(--ui-text, #172033) !important;
 }
 
 .page-header-summary .ui-stat {
-    border-color: rgb(255 255 255 / .10) !important;
-    background: rgb(2 6 23 / .28) !important;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .035), 0 8px 18px rgb(0 0 0 / .10) !important;
-    backdrop-filter: blur(10px);
-}
-
-.page-header-summary .ui-stat:nth-child(1) {
-    background: rgb(2 6 23 / .48) !important;
-}
-.page-header-summary .ui-stat:nth-child(2) {
-    background: rgb(15 23 42 / .43) !important;
-}
-.page-header-summary .ui-stat:nth-child(3) {
-    background: rgb(30 41 59 / .36) !important;
-}
-.page-header-summary .ui-stat:nth-child(4) {
-    background: rgb(51 65 85 / .30) !important;
+    padding: 1rem 1.25rem !important;
 }
 
 .page-header-summary .ui-stat::before {
-    background: rgb(255 255 255 / .34) !important;
-    opacity: 1 !important;
+    display: none !important;
 }
 
 .page-header-summary .ui-stat-label,
-.page-header-summary .ui-stat-hint {
-    color: rgb(255 255 255 / .66) !important;
+.page-header-summary .ui-stat-hint,
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
+    color: var(--ui-muted, #64748b) !important;
 }
 
-.page-header-summary .ui-stat-value {
-    color: rgb(255 255 255 / .94) !important;
+.page-header-summary .ui-stat-value,
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
+    color: var(--ui-text, #172033) !important;
 }
 
-/* Fallback for summary cards that are not yet using x-stat-item/ui-stat. */
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
-    border-color: rgb(255 255 255 / .10) !important;
-    background: rgb(15 23 42 / .34) !important;
-    color: rgb(255 255 255 / .88) !important;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .09) !important;
+/* Legacy migration layer.
+   JS adds these classes only to the first H1 hero inside the application main area.
+   This keeps large/Livewire views visually identical without rewriting business markup. */
+.page-header-legacy.page-header-shell > .page-header-main,
+.page-header-legacy .page-header-main {
+    padding: 1.75rem 1.25rem !important;
 }
 
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(1):not(.ui-stat) { background: rgb(2 6 23 / .48) !important; }
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(2):not(.ui-stat) { background: rgb(15 23 42 / .43) !important; }
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(3):not(.ui-stat) { background: rgb(30 41 59 / .36) !important; }
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(4):not(.ui-stat) { background: rgb(51 65 85 / .30) !important; }
+.page-header-legacy .page-header-main h1 {
+    margin-top: .5rem !important;
+    color: #fff !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.025em !important;
+    line-height: 2rem !important;
+}
 
-/* Dark mode keeps the same hierarchy but softens borders and shadows further. */
+.page-header-legacy .page-header-main .page-header-description {
+    margin-top: .5rem !important;
+}
+
+.page-header-legacy .page-header-summary > :is(.grid,[class*="grid-cols-"]) > * {
+    padding: 1rem 1.25rem !important;
+}
+
+/* Detail pages sometimes use a photographic hero. The page-header contract wins so
+   all H1 headers remain identical regardless of the old inline background. */
+.page-header-legacy .page-header-main[style*="background-image"] {
+    background-image: linear-gradient(
+        135deg,
+        var(--theme-sidebar-deep, #0f172a) 0%,
+        var(--theme-sidebar, #312e81) 52%,
+        color-mix(in srgb, var(--theme-accent, #6366f1) 74%, var(--theme-sidebar, #312e81)) 100%
+    ) !important;
+}
+
 .dark .page-header-shell {
     border-color: #263244 !important;
-    box-shadow: 0 12px 30px rgb(0 0 0 / .18);
+    background: #0b1220 !important;
+    box-shadow: 0 10px 28px rgb(0 0 0 / .20);
 }
 
 .dark .page-header-main {
-    background: linear-gradient(135deg, #030712 0%, #0b1220 44%, #111827 100%) !important;
+    background: linear-gradient(135deg, #030712 0%, #0b1220 48%, #111827 100%) !important;
+}
+
+.dark .page-header-kicker {
+    color: #bae6fd !important;
 }
 
 .dark .page-header-description {
-    color: #aeb8c7 !important;
+    color: #c7d2e2 !important;
 }
 
-.dark .page-header-summary {
-    border-color: rgb(255 255 255 / .065) !important;
-}
-
+.dark .page-header-summary,
 .dark .page-header-summary .ui-stat,
 .dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
-    border-color: rgb(255 255 255 / .065) !important;
+    background: #0b1220 !important;
 }
 
-.dark .page-header-summary .ui-stat:nth-child(1),
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(1):not(.ui-stat) {
-    background: #060b14 !important;
-}
-.dark .page-header-summary .ui-stat:nth-child(2),
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(2):not(.ui-stat) {
-    background: #0a111c !important;
-}
-.dark .page-header-summary .ui-stat:nth-child(3),
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(3):not(.ui-stat) {
-    background: #0e1724 !important;
-}
-.dark .page-header-summary .ui-stat:nth-child(4),
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(4):not(.ui-stat) {
-    background: #131d2b !important;
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
+    background: #263244 !important;
 }
 
 .dark .page-header-summary .ui-stat-label,
-.dark .page-header-summary .ui-stat-hint {
+.dark .page-header-summary .ui-stat-hint,
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
     color: #8f9bad !important;
 }
 
-.dark .page-header-summary .ui-stat-value {
+.dark .page-header-summary .ui-stat-value,
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
     color: #dce3ec !important;
 }
 
+@media (min-width: 640px) {
+    .page-header-main,
+    .page-header-legacy.page-header-shell > .page-header-main,
+    .page-header-legacy .page-header-main {
+        padding-inline: 1.75rem !important;
+    }
+
+    .page-header-title,
+    .page-header-legacy .page-header-main h1 {
+        font-size: 1.875rem !important;
+        line-height: 2.25rem !important;
+    }
+
+    .page-header-description {
+        font-size: 1rem !important;
+    }
+}
+
 @media (max-width: 640px) {
-    .page-header-main {
+    .page-header-main,
+    .page-header-legacy.page-header-shell > .page-header-main,
+    .page-header-legacy .page-header-main {
         padding-block: 1.4rem !important;
     }
 
-    .page-header-summary {
-        margin-top: 1.15rem !important;
-        padding-top: 1rem !important;
+    .page-header-actions {
+        width: 100%;
     }
 }
