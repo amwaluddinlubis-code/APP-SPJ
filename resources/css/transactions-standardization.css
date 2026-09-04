@@ -30,30 +30,6 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-/* Theme/accent actions should use semantic pairing instead of violet/indigo assumptions. */
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:not(:disabled) {
-    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--transactions-border)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--transactions-surface)) !important;
-    color: var(--theme-content-accent) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:not(:disabled):hover {
-    border-color: color-mix(in srgb, var(--theme-accent) 42%, var(--transactions-border)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 76%, var(--transactions-surface)) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article a[class*="bg-indigo-600"] {
-    background: var(--theme-action-bg) !important;
-    color: var(--theme-action-fg) !important;
-}
-
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:disabled {
-    border-color: var(--transactions-border) !important;
-    background: var(--transactions-surface-soft) !important;
-    color: var(--transactions-text-muted) !important;
-    box-shadow: none !important;
-}
-
 /* Desktop table: leave geometry to table-standardization.css; only neutralize legacy surface classes. */
 main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody {
     background: transparent !important;
