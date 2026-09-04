@@ -1,0 +1,142 @@
+/* Transaction workspace compatibility layer.
+   The Livewire view is still legacy-heavy; keep business markup untouched while
+   resolving its structural surfaces through the canonical theme contract. */
+
+main:has(a[href*="/data-sinkron/bku"]) {
+    --transactions-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --transactions-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --transactions-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --transactions-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --transactions-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --transactions-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --transactions-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
+}
+
+/* Filter panel */
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) {
+    overflow: hidden;
+    border-color: color-mix(in srgb, var(--theme-accent) 18%, var(--transactions-border)) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--transactions-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > div:first-child,
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > div:nth-last-child(2) {
+    border-color: var(--transactions-border) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--transactions-surface-soft)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) :is(input,select) {
+    border-color: var(--transactions-border-strong) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: var(--transactions-surface) !important;
+    color: var(--transactions-text-strong) !important;
+    box-shadow: none !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) button[type="button"] {
+    border-color: var(--transactions-border-strong) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: var(--transactions-surface) !important;
+    color: var(--transactions-text) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) button[type="button"]:hover {
+    background: var(--transactions-surface-soft) !important;
+    color: var(--transactions-text-strong) !important;
+}
+
+/* Period subtotal remains one panel with simple dividers, not separate floating cards. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child {
+    gap: 1px !important;
+    background: var(--transactions-border) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child > div {
+    border: 0 !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 10%, var(--transactions-surface)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child p:first-child {
+    color: var(--transactions-text-muted) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(input[placeholder^="Cari nomor bukti"]) > .grid:last-child p:last-child {
+    color: var(--transactions-text-strong) !important;
+}
+
+/* Transaction list shell */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) {
+    overflow: hidden;
+    border-color: var(--transactions-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--transactions-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:first-child {
+    border-color: var(--transactions-border) !important;
+    background: var(--transactions-surface-soft) !important;
+}
+
+/* Local breadcrumb duplicates the application breadcrumb and is intentionally hidden. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) .module-breadcrumb {
+    display: none !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) select[wire\\:model\.live="perPage"] {
+    border-color: var(--transactions-border-strong) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: var(--transactions-surface) !important;
+    color: var(--transactions-text) !important;
+    box-shadow: none !important;
+}
+
+/* Mobile transaction cards */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article {
+    border-color: var(--transactions-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--transactions-surface) !important;
+    color: var(--transactions-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+/* Theme/accent actions should use semantic pairing instead of violet/indigo assumptions. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:not(:disabled) {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--transactions-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--transactions-surface)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:not(:disabled):hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 42%, var(--transactions-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 76%, var(--transactions-surface)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article a[class*="bg-indigo-600"] {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article button:disabled {
+    border-color: var(--transactions-border) !important;
+    background: var(--transactions-surface-soft) !important;
+    color: var(--transactions-text-muted) !important;
+    box-shadow: none !important;
+}
+
+/* Desktop table: leave geometry to table-standardization.css; only neutralize legacy surface classes. */
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody {
+    background: transparent !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+/* Human-readable payment method labels are injected visually only when legacy values remain. */
+main:has(a[href*="/data-sinkron/bku"]) [data-payment-method-label] {
+    color: var(--transactions-text-muted);
+}
