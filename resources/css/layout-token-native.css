@@ -1,0 +1,250 @@
+/* Token-native contract for the authenticated application layout.
+   The global chrome consumes semantic theme/profile/comfort tokens directly.
+   No structural color in this file depends on Tailwind palette names. */
+
+:root {
+    --app-sidebar-text: #cbd5e1;
+    --app-sidebar-text-strong: #f1f5f9;
+    --app-sidebar-text-muted: #aab6c5;
+    --app-sidebar-hover: rgb(255 255 255 / .075);
+    --app-sidebar-line: rgb(255 255 255 / .11);
+    --app-sidebar-danger: #e7a3ad;
+    --app-overlay-bg: color-mix(in srgb, var(--theme-sidebar-deep) 62%, transparent);
+}
+
+.app-body {
+    min-height: 100%;
+    color: var(--comfort-text-primary, #334155);
+    font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
+}
+
+.app-sidebar-overlay {
+    background: var(--app-overlay-bg) !important;
+}
+
+.app-sidebar {
+    color: var(--app-sidebar-text) !important;
+}
+
+.app-sidebar-brand {
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-sidebar-brand-mark {
+    border-radius: var(--profile-control-radius);
+    background: color-mix(in srgb, var(--theme-accent) 84%, var(--theme-sidebar)) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+}
+
+.app-sidebar-toggle {
+    border-radius: var(--profile-control-radius) !important;
+    color: var(--app-sidebar-text) !important;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.app-sidebar-toggle:hover {
+    background: var(--app-sidebar-hover) !important;
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-sidebar .app-nav {
+    color: var(--app-sidebar-text) !important;
+    border-radius: var(--profile-sidebar-item-radius, var(--profile-control-radius)) !important;
+}
+
+.app-sidebar .app-nav:hover {
+    background: var(--app-sidebar-hover) !important;
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-sidebar .app-nav-active {
+    background: var(--theme-accent) !important;
+    color: #f8fafc !important;
+}
+
+.app-nav-section-active {
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-nav-submenu {
+    border-color: var(--app-sidebar-line) !important;
+}
+
+.app-nav-danger {
+    color: var(--app-sidebar-danger) !important;
+}
+
+.app-nav-danger:hover {
+    background: color-mix(in srgb, var(--app-sidebar-danger) 11%, transparent) !important;
+    color: color-mix(in srgb, var(--app-sidebar-danger) 82%, #f8fafc) !important;
+}
+
+.app-topbar {
+    border-bottom: 1px solid var(--theme-topbar-border) !important;
+    background: color-mix(in srgb, var(--theme-topbar-bg) 96%, transparent) !important;
+    color: var(--comfort-text-primary, #334155) !important;
+    box-shadow: var(--theme-topbar-shadow) !important;
+    backdrop-filter: blur(16px) saturate(112%);
+    transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.app-topbar-school {
+    color: var(--comfort-text-primary, #334155) !important;
+}
+
+.app-topbar-title {
+    color: var(--comfort-text-strong, #1f2937) !important;
+}
+
+.app-topbar-meta {
+    color: var(--comfort-text-muted, #718096) !important;
+}
+
+.app-topbar-menu,
+.app-topbar-select {
+    min-height: var(--profile-control-height);
+    border: 1px solid var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: color-mix(in srgb, var(--ui-component-surface, #fff) 88%, var(--theme-accent-soft)) !important;
+    color: var(--comfort-text-primary, #334155) !important;
+    box-shadow: var(--profile-card-shadow);
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.app-topbar-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-topbar-menu:hover,
+.app-topbar-select:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--ui-component-border-strong, #cbd5e1)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 32%, var(--ui-component-surface, #fff)) !important;
+}
+
+.app-topbar-select:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--theme-accent) 58%, var(--ui-component-border-strong, #cbd5e1)) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent) !important;
+}
+
+.app-fiscal-year-select {
+    max-width: min(28rem, 60vw);
+}
+
+.app-theme-select {
+    min-width: 10.5rem;
+}
+
+.app-runtime-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 18%, var(--ui-component-border, #dbe3ec));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--ui-component-surface, #fff));
+    color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--comfort-text-primary, #334155));
+}
+
+.app-main-content {
+    color: var(--comfort-text-primary, #334155);
+}
+
+/* Global confirmation dialog also belongs to application chrome. */
+.app-dialog-backdrop {
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 58%, transparent) !important;
+}
+
+.app-dialog-panel {
+    border: 1px solid var(--ui-component-border, var(--ui-border, #dbe3ec));
+    border-radius: var(--profile-card-radius);
+    background: var(--ui-component-surface, var(--ui-surface, #fff));
+    color: var(--comfort-text-primary, #334155);
+    box-shadow: var(--profile-floating-shadow);
+}
+
+.app-dialog-header,
+.app-dialog-actions {
+    border-color: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    background: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+}
+
+.app-dialog-title {
+    color: var(--comfort-text-strong, #1f2937);
+}
+
+.app-dialog-message {
+    color: var(--comfort-text-primary, #334155);
+}
+
+html[data-ui-personality='minimal'] .app-topbar {
+    box-shadow: none !important;
+}
+
+html[data-ui-personality='premium'] .app-topbar {
+    box-shadow: 0 5px 20px color-mix(in srgb, var(--theme-accent) 9%, transparent) !important;
+}
+
+html[data-ui-sidebar='soft'] {
+    --app-sidebar-text: #e1e7ef;
+    --app-sidebar-text-strong: #f8fafc;
+    --app-sidebar-text-muted: #c1cad6;
+    --app-sidebar-hover: rgb(255 255 255 / .09);
+}
+
+html[data-ui-appearance='dark'] {
+    --app-sidebar-text: #c3cedb;
+    --app-sidebar-text-strong: #e5ebf2;
+    --app-sidebar-text-muted: #96a4b6;
+    --app-sidebar-hover: rgb(255 255 255 / .055);
+    --app-sidebar-line: rgb(255 255 255 / .08);
+    --app-sidebar-danger: #d69aa5;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-school,
+html[data-ui-appearance='dark'] .app-topbar-title {
+    color: var(--comfort-text-strong, #dce3ec) !important;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-meta {
+    color: var(--comfort-text-muted, #8f9bad) !important;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-menu,
+html[data-ui-appearance='dark'] .app-topbar-select {
+    background: color-mix(in srgb, var(--ui-component-surface, #111827) 92%, var(--theme-accent-soft)) !important;
+    color: var(--comfort-text-primary, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] .app-runtime-badge {
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--ui-component-surface, #111827));
+    color: var(--comfort-text-primary, #c4cfdd);
+}
+
+html[data-ui-appearance='dark'] .app-dialog-title {
+    color: var(--comfort-text-strong, #dce3ec);
+}
+
+html[data-ui-appearance='dark'] .app-dialog-message {
+    color: var(--comfort-text-primary, #c4cfdd);
+}
+
+@media (max-width: 640px) {
+    .app-fiscal-year-select {
+        max-width: 72vw;
+    }
+
+    .app-theme-select {
+        min-width: 8.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-topbar,
+    .app-sidebar-toggle,
+    .app-topbar-menu,
+    .app-topbar-select {
+        transition: none !important;
+    }
+}
