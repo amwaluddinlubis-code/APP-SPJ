@@ -10,7 +10,7 @@
                     <a href="{{ route('dapodik.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/25">Sinkron Dapodik</a>
                 @endif
                 @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))
-                    <a href="{{ route('students.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[var(--theme-700)] shadow"><span class="text-lg leading-none">+</span> Tambah siswa</a>
+                    <x-ui.button :href="route('students.create')"><span class="text-lg leading-none">+</span> Tambah siswa</x-ui.button>
                 @endif
             </x-slot:actions>
 
