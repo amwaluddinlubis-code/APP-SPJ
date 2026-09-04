@@ -1,30 +1,30 @@
 /* Canonical page header.
-   The active operational Dashboard is the visual source of truth:
-   gradient hero on top, summary surface below, inside one rounded shell. */
+   Typography is fixed globally; theme profiles may change only surfaces,
+   borders, shadow, radius and contrast-safe colors through tokens. */
 
 .page-header-shell {
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #64748b) 20%, var(--ui-border, #cbd5e1)) !important;
-    border-radius: 1rem;
-    background: var(--ui-surface, #fff) !important;
-    box-shadow: 0 8px 24px rgb(15 23 42 / .07);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 16%, var(--ui-component-border, var(--ui-border, #dbe3ec))) !important;
+    border-radius: var(--profile-header-radius, 1rem) !important;
+    background: var(--ui-component-surface, var(--ui-surface, #fff)) !important;
+    box-shadow: var(--profile-card-shadow, 0 8px 24px rgb(15 23 42 / .07)) !important;
 }
 
 .page-header-main {
     position: relative;
     overflow: hidden;
-    padding: 1.75rem 1.25rem !important;
+    padding: var(--profile-header-padding-y, 1.75rem) var(--profile-header-padding-x, 1.25rem) !important;
     background: linear-gradient(
         135deg,
-        var(--theme-sidebar-deep, #0f172a) 0%,
-        var(--theme-sidebar, #312e81) 52%,
-        color-mix(in srgb, var(--theme-accent, #6366f1) 74%, var(--theme-sidebar, #312e81)) 100%
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 52%,
+        color-mix(in srgb, var(--theme-accent) 72%, var(--theme-sidebar)) 100%
     ) !important;
-    color: #fff !important;
+    color: var(--comfort-on-dark-strong, #e8edf4) !important;
 }
 
 .page-header-kicker {
-    color: #bae6fd !important;
+    color: var(--comfort-on-dark-muted, #c3ccd8) !important;
     font-size: .6875rem !important;
     font-weight: 700 !important;
     letter-spacing: .2em !important;
@@ -33,7 +33,7 @@
 }
 
 .page-header-title {
-    color: #fff !important;
+    color: var(--comfort-on-dark-strong, #e8edf4) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
     letter-spacing: -.025em !important;
@@ -42,7 +42,7 @@
 
 .page-header-description {
     max-width: 48rem;
-    color: rgb(224 231 255 / .90) !important;
+    color: var(--comfort-on-dark, #d1d9e4) !important;
     font-size: .875rem !important;
     line-height: 1.5rem !important;
 }
@@ -55,12 +55,12 @@
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
-    background: var(--ui-surface, #fff) !important;
+    background: var(--ui-component-surface, var(--ui-surface, #fff)) !important;
 }
 
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
     gap: 1px !important;
-    background: var(--ui-border, #e2e8f0) !important;
+    background: var(--ui-component-border, var(--ui-border, #e2e8f0)) !important;
 }
 
 .page-header-summary .ui-stat,
@@ -68,13 +68,13 @@
     min-width: 0;
     border: 0 !important;
     border-radius: 0 !important;
-    background: var(--ui-surface, #fff) !important;
+    background: var(--ui-component-surface, var(--ui-surface, #fff)) !important;
     box-shadow: none !important;
-    color: var(--ui-text, #172033) !important;
+    color: var(--comfort-text-primary, #334155) !important;
 }
 
 .page-header-summary .ui-stat {
-    padding: 1rem 1.25rem !important;
+    padding: var(--profile-content-padding, 1rem) !important;
 }
 
 .page-header-summary .ui-stat::before {
@@ -84,25 +84,24 @@
 .page-header-summary .ui-stat-label,
 .page-header-summary .ui-stat-hint,
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
-    color: var(--ui-muted, #64748b) !important;
+    color: var(--comfort-text-muted, #718096) !important;
 }
 
 .page-header-summary .ui-stat-value,
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
-    color: var(--ui-text, #172033) !important;
+    color: var(--comfort-text-strong, #1f2937) !important;
 }
 
-/* Legacy migration layer.
-   JS adds these classes only to the first H1 hero inside the application main area.
-   This keeps large/Livewire views visually identical without rewriting business markup. */
+/* Legacy migration layer. Legacy palette class names may still exist in Blade,
+   but they no longer own any color; all visual values resolve through tokens. */
 .page-header-legacy.page-header-shell > .page-header-main,
 .page-header-legacy .page-header-main {
-    padding: 1.75rem 1.25rem !important;
+    padding: var(--profile-header-padding-y, 1.75rem) var(--profile-header-padding-x, 1.25rem) !important;
 }
 
 .page-header-legacy .page-header-main h1 {
     margin-top: .5rem !important;
-    color: #fff !important;
+    color: var(--comfort-on-dark-strong, #e8edf4) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
     letter-spacing: -.025em !important;
@@ -114,64 +113,59 @@
 }
 
 .page-header-legacy .page-header-summary > :is(.grid,[class*="grid-cols-"]) > * {
-    padding: 1rem 1.25rem !important;
+    padding: var(--profile-content-padding, 1rem) !important;
 }
 
-/* Detail pages sometimes use a photographic hero. The page-header contract wins so
-   all H1 headers remain identical regardless of the old inline background. */
 .page-header-legacy .page-header-main[style*="background-image"] {
     background-image: linear-gradient(
         135deg,
-        var(--theme-sidebar-deep, #0f172a) 0%,
-        var(--theme-sidebar, #312e81) 52%,
-        color-mix(in srgb, var(--theme-accent, #6366f1) 74%, var(--theme-sidebar, #312e81)) 100%
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 52%,
+        color-mix(in srgb, var(--theme-accent) 72%, var(--theme-sidebar)) 100%
     ) !important;
 }
 
-.dark .page-header-shell {
-    border-color: #263244 !important;
-    background: #0b1220 !important;
-    box-shadow: 0 10px 28px rgb(0 0 0 / .20);
+html[data-ui-appearance='dark'] .page-header-shell {
+    border-color: var(--ui-component-border, var(--ui-border, #263244)) !important;
+    background: var(--ui-component-surface, var(--ui-surface, #111827)) !important;
+    box-shadow: var(--profile-card-shadow, 0 10px 28px rgb(0 0 0 / .20)) !important;
 }
 
-.dark .page-header-main {
-    background: linear-gradient(135deg, #030712 0%, #0b1220 48%, #111827 100%) !important;
+html[data-ui-appearance='dark'] .page-header-main {
+    background: linear-gradient(
+        135deg,
+        var(--theme-sidebar-deep) 0%,
+        color-mix(in srgb, var(--theme-sidebar) 88%, var(--theme-sidebar-deep)) 52%,
+        color-mix(in srgb, var(--theme-accent) 22%, var(--theme-sidebar)) 100%
+    ) !important;
 }
 
-.dark .page-header-kicker {
-    color: #bae6fd !important;
+html[data-ui-appearance='dark'] .page-header-summary,
+html[data-ui-appearance='dark'] .page-header-summary .ui-stat,
+html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+    background: var(--ui-component-surface, var(--ui-surface, #111827)) !important;
 }
 
-.dark .page-header-description {
-    color: #c7d2e2 !important;
+html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
+    background: var(--ui-component-border, var(--ui-border, #263244)) !important;
 }
 
-.dark .page-header-summary,
-.dark .page-header-summary .ui-stat,
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
-    background: #0b1220 !important;
+html[data-ui-appearance='dark'] .page-header-summary .ui-stat-label,
+html[data-ui-appearance='dark'] .page-header-summary .ui-stat-hint,
+html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
+    color: var(--comfort-text-muted, #8f9bad) !important;
 }
 
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
-    background: #263244 !important;
-}
-
-.dark .page-header-summary .ui-stat-label,
-.dark .page-header-summary .ui-stat-hint,
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
-    color: #8f9bad !important;
-}
-
-.dark .page-header-summary .ui-stat-value,
-.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
-    color: #dce3ec !important;
+html[data-ui-appearance='dark'] .page-header-summary .ui-stat-value,
+html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
+    color: var(--comfort-text-strong, #dce3ec) !important;
 }
 
 @media (min-width: 640px) {
     .page-header-main,
     .page-header-legacy.page-header-shell > .page-header-main,
     .page-header-legacy .page-header-main {
-        padding-inline: 1.75rem !important;
+        padding-inline: var(--profile-header-padding-x, 1.75rem) !important;
     }
 
     .page-header-title,
@@ -189,7 +183,7 @@
     .page-header-main,
     .page-header-legacy.page-header-shell > .page-header-main,
     .page-header-legacy .page-header-main {
-        padding-block: 1.4rem !important;
+        padding-block: var(--profile-header-padding-y, 1.4rem) !important;
     }
 
     .page-header-actions {
