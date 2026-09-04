@@ -146,14 +146,10 @@ html[data-ui-header='soft'] .page-header-description {
     color: var(--text-comfort-on-dark-soft) !important;
 }
 
-/* Buttons on strong filled surfaces use off-white instead of #fff. */
+/* Only strong filled surfaces force an off-white foreground. Do not normalize
+   every .text-white utility globally because legacy links/buttons may use a
+   light surface such as bg-white. */
 main :is(.ui-btn-primary,.btn-primary,.theme-btn,.bg-indigo-600,.bg-indigo-700,.bg-blue-600,.bg-violet-600,.bg-emerald-600,.bg-rose-600,.bg-red-600) {
-    color: var(--text-comfort-on-dark) !important;
-}
-
-/* Avoid pure-white utility text anywhere in the application chrome/content. */
-main .text-white,
-.app-sidebar .text-white {
     color: var(--text-comfort-on-dark) !important;
 }
 
