@@ -1,0 +1,191 @@
+/* SPJ workspace compatibility layer.
+   Keep numbering/finalization workflow markup untouched while normalizing legacy
+   structural colors through the canonical theme/component contract. */
+
+main:has(#spj-main-tabs) {
+    --spj-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --spj-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --spj-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --spj-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --spj-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --spj-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --spj-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
+}
+
+/* Legacy hero: preserve the Page Header visual contract until the Blade is migrated. */
+main:has(#spj-main-tabs) > div > section:first-of-type {
+    overflow: hidden;
+    border-color: var(--spj-border) !important;
+    border-radius: var(--profile-header-radius, var(--profile-card-radius)) !important;
+    background: var(--spj-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child {
+    background: linear-gradient(118deg,
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 46%,
+        color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 100%) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child > div.relative {
+    align-items: center !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type .module-breadcrumb {
+    display: none !important;
+}
+
+/* Header actions: explicit theme-safe background/foreground pairs. */
+main:has(#spj-main-tabs) > div > section:first-of-type a[href*="transactions"] {
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 28%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 54%, transparent) !important;
+    color: var(--text-comfort-on-dark) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type a[href*="transactions"]:hover {
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 72%, transparent) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type button[data-tab="monitoring"] {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 62%, var(--spj-border)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+/* Header summary remains one panel with non-rounded inner divisions. */
+main:has(#spj-main-tabs) > div > section:first-of-type > .grid {
+    gap: 1px !important;
+    background: var(--spj-border) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > .grid > * {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 10%, var(--spj-surface)) !important;
+    color: var(--spj-text) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > .grid p:first-child {
+    color: var(--spj-text-muted) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > .grid > :nth-child(1) p:nth-child(2) {
+    color: var(--spj-text-strong) !important;
+}
+
+main:has(#spj-main-tabs) > div > section:first-of-type > .grid > :nth-child(2) p:nth-child(2) {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Main tab workspace shell */
+main:has(#spj-main-tabs) section:has(> #spj-main-tabs) {
+    overflow: hidden;
+    border-color: var(--spj-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(#spj-main-tabs) #spj-main-tabs {
+    border-bottom: 1px solid var(--spj-border);
+    background: var(--spj-surface-soft);
+}
+
+/* Preparation filter */
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) {
+    border-color: var(--spj-border) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--spj-surface-soft)) !important;
+}
+
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) label,
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) label > span {
+    color: var(--spj-text-muted) !important;
+}
+
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) select {
+    border-color: var(--spj-border-strong) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) button {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) a {
+    color: var(--spj-text) !important;
+}
+
+main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) a:hover {
+    background: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+/* Preparation and package tables keep geometry from table-standardization.css. */
+main:has(#spj-main-tabs) table tbody {
+    background: transparent !important;
+}
+
+main:has(#spj-main-tabs) table tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+main:has(#spj-main-tabs) table a[class*="bg-violet-600"],
+main:has(#spj-main-tabs) table button[class*="bg-violet-600"],
+main:has(#spj-main-tabs) table a[class*="bg-indigo-600"],
+main:has(#spj-main-tabs) table button[class*="bg-indigo-600"] {
+    border-color: transparent !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(#spj-main-tabs) table a[class*="bg-violet-50"],
+main:has(#spj-main-tabs) table button[class*="bg-violet-50"] {
+    border-color: color-mix(in srgb, var(--theme-accent) 26%, var(--spj-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--spj-surface)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+/* Legacy cards/panels inside package, report and monitoring tabs. */
+main:has(#spj-main-tabs) :is(section,article,aside,div)[class*="bg-white"][class*="border-"][class*="rounded-"] {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+main:has(#spj-main-tabs) :is(section,article,aside,div)[class*="bg-slate-50"][class*="rounded-"] {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+/* Keep semantic success/warning/danger surfaces recognizable; only accent-purple/indigo is theme-replaced. */
+main:has(#spj-main-tabs) :is(.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-violet-600,.text-violet-700,.text-violet-800):not([class*="bg-"]) {
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(#spj-main-tabs) :is(.border-indigo-100,.border-indigo-200,.border-violet-100,.border-violet-200) {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--spj-border)) !important;
+}
+
+main:has(#spj-main-tabs) :is(.bg-indigo-50,.bg-violet-50) {
+    background-color: color-mix(in srgb, var(--theme-accent-soft) 46%, var(--spj-surface)) !important;
+}
+
+/* Footer/pagination bands should remain subordinate to the work area. */
+main:has(#spj-main-tabs) div:has(> .page-table-per-page),
+main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface-soft) !important;
+}
+
+@media (max-width: 640px) {
+    main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child > div.relative {
+        align-items: flex-start !important;
+    }
+}
