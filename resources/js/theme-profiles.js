@@ -1,5 +1,3 @@
-import '../css/theme-system.css';
-
 const profile = (config) => Object.freeze({
     ...config,
     palette: Object.freeze(config.palette),
