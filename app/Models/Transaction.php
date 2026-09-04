@@ -53,6 +53,7 @@ class Transaction extends Model
         'tax_total',
         'net_amount',
         'is_siplah',
+        'siplah_order_number',
         'status',
         'source_key',
         'source_hash',
