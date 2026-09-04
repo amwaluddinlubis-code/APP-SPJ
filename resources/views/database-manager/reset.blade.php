@@ -46,7 +46,12 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('database-manager.reset', $active['school']->id) }}" class="mt-5 space-y-4">
+                <form
+                    method="POST"
+                    action="{{ route('database-manager.reset', $active['school']->id) }}"
+                    class="mt-5 space-y-4"
+                    data-confirm="Reset akan menghapus permanen seluruh data database sekolah {{ $active['school']->name }} (NPSN {{ $active['school']->npsn }}). Tindakan ini tidak dapat dibatalkan tanpa backup. Lanjutkan?"
+                >
                     @csrf
                     <x-ui.field label="Konfirmasi reset" for="confirmation" hint="Ketik tepat: RESET {{ $active['school']->npsn }}">
                         <x-ui.input
