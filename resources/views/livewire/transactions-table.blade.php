@@ -25,18 +25,16 @@
         default => str_replace('_', ' ', (string) $value),
     })
 
+    <x-page-header
+        title="Transaksi & SPJ"
+        subtitle="Mulai dari transaksi, lengkapi data SPJ, lalu lanjutkan ke paket dokumen tanpa berpindah alur."
+        kicker="BUKU KAS & SPJ"
+    >
+        <x-slot:actions>
+            <x-ui.button variant="secondary" :href="route('synced-data.show', 'bku')" wire:navigate>Lihat BKU Mentah</x-ui.button>
+            <x-ui.button :href="route('spj.index')">Buka ruang kerja SPJ →</x-ui.button>
+        </x-slot:actions>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-        <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <p class="text-xs font-bold tracking-[.16em] text-sky-200">BUKU KAS & SPJ</p>
-                    <h1 class="mt-2 text-2xl font-bold">Transaksi & SPJ</h1>
-                    <p class="mt-1 text-base text-slate-300">Mulai dari transaksi, lengkapi data SPJ, lalu lanjutkan ke paket dokumen tanpa berpindah alur.</p>
-                </div>
-                <div class="flex flex-wrap gap-2"><a href="{{ route('synced-data.show', 'bku') }}" wire:navigate class="inline-flex w-fit rounded-xl bg-white/10 px-4 py-2.5 text-base font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/20">Lihat BKU Mentah</a><a href="{{ route('spj.index') }}" class="inline-flex w-fit rounded-xl bg-white px-4 py-2.5 text-base font-bold text-indigo-900 shadow transition hover:bg-indigo-50">Buka ruang kerja SPJ →</a></div>
-            </div>
-        </div>
         <div class="border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400">Total Tahunan {{ $activeYear->year }}</div>
         <div class="grid divide-y divide-slate-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi</p><p class="mt-1 text-xl font-bold text-slate-800">{{ number_format($stats->count, 0, ',', '.') }}</p></div>
@@ -44,7 +42,7 @@
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Pajak</p><p class="mt-1 text-xl font-bold text-amber-600">{{ $rupiah($stats->tax) }}</p></div>
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Dibayarkan</p><p class="mt-1 text-xl font-bold text-emerald-700">{{ $rupiah($stats->net) }}</p></div>
         </div>
-    </section>
+    </x-page-header>
 
     <section class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow">
         <div class="border-b border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Filter Periode</div>
@@ -74,7 +72,6 @@
 
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
         <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-            <x-breadcrumb :items="[['label' => 'Transaksi & SPJ']]" />
             <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div><h2 class="font-bold text-slate-800">Daftar Transaksi SPJ</h2><p class="mt-1 text-base text-slate-500">Pilih satu transaksi untuk membuka detail.</p></div>
                 <select wire:model.live="perPage" class="w-fit rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow focus:border-indigo-500 focus:ring-indigo-500">
