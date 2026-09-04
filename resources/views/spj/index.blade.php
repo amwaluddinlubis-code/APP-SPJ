@@ -144,6 +144,23 @@
                         </div>
                     </section>
 
+                    @if(strtolower((string) $transaction->payment_method) === 'siplah' || $transaction->is_siplah)
+                        <section class="mx-5 mt-5 rounded-xl border p-4 shadow-sm" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
+                            <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="text-base font-bold" style="color: var(--ui-fg)">Metode Pembelian: SiPLah</h2><x-ui.badge>Pembelian SiPLah</x-ui.badge></div>
+                            <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                                @foreach([
+                                    'Penyedia' => $transaction->vendor_name,
+                                    'Nomor Pesanan SiPLah' => $transaction->siplah_order_number,
+                                    'Nomor Invoice' => $transaction->invoice_number,
+                                    'Tanggal Invoice' => $transaction->invoice_date?->translatedFormat('d F Y'),
+                                    'Referensi Pembayaran' => $transaction->payment_reference,
+                                ] as $label => $value)
+                                    @if(filled($value))<div><dt class="text-xs font-semibold" style="color: var(--ui-fg-muted)">{{ $label }}</dt><dd class="mt-1 font-semibold" style="color: var(--ui-fg)">{{ $value }}</dd></div>@endif
+                                @endforeach
+                            </dl>
+                        </section>
+                    @endif
+
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border {{ $validationIssues ? 'border-amber-200' : 'border-emerald-200' }} bg-white shadow">
                         <div class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Validasi Sebelum Cetak</h2><p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">{{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi sebelum PDF dibuat.' : 'Semua data wajib lengkap. Paket siap diunduh sebagai PDF.' }}</p></div>

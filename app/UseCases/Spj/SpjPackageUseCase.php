@@ -45,7 +45,7 @@ class SpjPackageUseCase
             $transaction->update(collect($data)->only([
                 'spj_category', 'payment_description', 'payment_reference', 'payment_method',
                 'receipt_recipient_name', 'signatory_name', 'signatory_role', 'vendor_name', 'vendor_owner', 'vendor_npwp',
-                'invoice_number', 'invoice_date', 'invoice_status',
+                'siplah_order_number', 'invoice_number', 'invoice_date', 'invoice_status',
                 'ppn_rate', 'pph21_rate', 'pph22_rate', 'pph23_rate', 'pph4_rate', 'sspd_rate',
             ])->all());
             $this->updateTaxAmounts($transaction);
@@ -93,7 +93,7 @@ class SpjPackageUseCase
         $package->transaction->fill(collect($data)->only([
             'payment_description', 'payment_reference', 'payment_method',
             'receipt_recipient_name', 'signatory_name', 'signatory_role', 'vendor_name', 'vendor_owner', 'vendor_npwp',
-            'invoice_number', 'invoice_date', 'invoice_status',
+            'siplah_order_number', 'invoice_number', 'invoice_date', 'invoice_status',
             'ppn_rate', 'pph21_rate', 'pph22_rate', 'pph23_rate', 'pph4_rate', 'sspd_rate',
         ])->all())->save();
         $this->updateTaxAmounts($package->transaction);
@@ -168,6 +168,7 @@ class SpjPackageUseCase
             'vendor_name' => ['nullable', 'string', 'max:180'],
             'vendor_owner' => ['nullable', 'string', 'max:180'],
             'vendor_npwp' => ['nullable', 'string', 'max:32'],
+            'siplah_order_number' => ['nullable', 'string', 'max:100'],
             'ppn_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'pph21_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'pph22_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -246,6 +247,7 @@ class SpjPackageUseCase
             'invoice_number' => ['nullable', 'string', 'max:80'],
             'invoice_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'invoice_status' => ['nullable', 'string', 'max:30'],
+            'siplah_order_number' => ['nullable', 'string', 'max:100'],
             'work_description' => ['nullable', 'string', 'max:4000'],
             'work_location' => ['nullable', 'string', 'max:180'],
             'work_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
@@ -374,10 +376,12 @@ class SpjPackageUseCase
         foreach ($amountByRate as $rateField => $amountField) {
             if (array_key_exists($rateField, $data)) {
                 $rateTotal += (float) $data[$rateField];
+
                 continue;
             }
             if ($transaction->{$rateField} !== null) {
                 $rateTotal += (float) $transaction->{$rateField};
+
                 continue;
             }
             $rateTotal += $gross > 0 ? (float) $transaction->{$amountField} / $gross * 100 : 0;
@@ -398,6 +402,7 @@ class SpjPackageUseCase
     private function quarter(Transaction $transaction): string
     {
         $month = (int) $transaction->transaction_date?->format('n');
+
         return 'TW-'.(int) ceil(max(1, $month) / 3);
     }
 

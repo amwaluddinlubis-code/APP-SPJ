@@ -22,6 +22,14 @@ Dokumen ini adalah referensi penanda yang didukung oleh `SpjTemplateService` unt
 
 `NOMOR_PESANAN`, `TANGGAL_PESANAN`, `NOMOR_INVOICE`, `TANGGAL_INVOICE`, `STATUS_INVOICE`, `NOMOR_SPK`, `TANGGAL_SPK`, `TANGGAL_RAB`, `URAIAN_PEKERJAAN`, `LOKASI_PEKERJAAN`, `TANGGAL_MULAI`, `TANGGAL_SELESAI`, `TANGGAL_TANDA_TANGAN`, `TANGGAL_PENYERAHAN`, `TEMPAT_PENYERAHAN`.
 
+`NOMOR_PESANAN` adalah Nomor Surat Pesanan SPJ yang dibuat oleh aplikasi. Nilai ini berbeda dari nomor pesanan marketplace SiPLah.
+
+## Pembelian SiPLah
+
+`SIPLAH_NOMOR_PESANAN`, `SIPLAH_PENYEDIA`, `SIPLAH_NOMOR_INVOICE`, `SIPLAH_TANGGAL_INVOICE`, `SIPLAH_REFERENSI_BAYAR`.
+
+`SIPLAH_NOMOR_PESANAN` adalah nomor marketplace/order dari SiPLah. Gunakan `NOMOR_PESANAN` untuk Nomor Surat Pesanan SPJ yang diterbitkan aplikasi.
+
 ## Nilai dan pajak
 
 `NILAI_BRUTO`, `NILAI_PEKERJAAN`, `NILAI_PEKERJAAN_TERBILANG`, `PPN`, `PPH21`, `PPH22`, `PPH23`, `PPH4`, `SSPD`, `TOTAL_PAJAK`, `POTONGAN_PAJAK`, `NILAI_DIBAYARKAN`, `TERBILANG_NETO`.

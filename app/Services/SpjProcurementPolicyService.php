@@ -18,7 +18,7 @@ class SpjProcurementPolicyService
      */
     public function forTransaction(Transaction $transaction): array
     {
-        $isSiplah = (bool) $transaction->is_siplah || $transaction->payment_method === 'siplah';
+        $isSiplah = (bool) $transaction->is_siplah || strtolower((string) $transaction->payment_method) === 'siplah';
 
         if ($isSiplah) {
             return [

@@ -118,6 +118,15 @@
             ],
             default => [],
         };
+        $isSiplah = strtolower((string) $paymentMethod) === 'siplah' || (bool) $transaction->is_siplah;
+        if ($isSiplah) {
+            $categoryChecklist = array_merge($categoryChecklist, [
+                ['label' => 'Penyedia SiPLah', 'ready' => filled($transaction->vendor_name), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
+                ['label' => 'Nomor Pesanan SiPLah', 'ready' => filled($transaction->siplah_order_number), 'hint' => 'Nomor order marketplace, bukan Nomor Surat Pesanan SPJ.'],
+                ['label' => 'Invoice SiPLah', 'ready' => filled($transaction->invoice_number), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
+                ['label' => 'Referensi pembayaran', 'ready' => filled($transaction->payment_reference), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
+            ]);
+        }
         $readinessChecklist = array_merge($manualChecklist, $categoryChecklist);
         $readyCount = collect($readinessChecklist)->where('ready', true)->count();
         $sourceStatus = strtoupper((string) ($transaction->source_status ?: 'ACTIVE'));
@@ -126,7 +135,7 @@
     <div class="flex flex-col gap-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <a href="{{ route('transactions.index') }}" class="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-700 shadow transition hover:bg-slate-50">← Kembali ke transaksi</a>
-        <div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-3 py-1.5 text-xs font-bold {{ $transaction->status === 'DITETAPKAN' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ $transaction->status }}</span><span class="rounded-full px-3 py-1.5 text-xs font-bold {{ $sourceStatus === 'SOURCE_MISSING' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $sourceStatus === 'SOURCE_MISSING' ? 'Tidak muncul di sync terakhir' : 'Data ARKAS aktif' }}</span>@if($transaction->requires_reconciliation)<span class="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">Perlu rekonsiliasi</span>@endif @if($transaction->spj_category)<span class="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">SPJ: {{ $spjTypeLabel($transaction->spj_category) }}</span>@endif @if($transaction->spjPackage?->document_number)<span class="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">{{ $transaction->spjPackage->document_number }}</span>@elseif($transaction->items->isNotEmpty())<a href="#modul-buat-spj" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-violet-700">Buat SPJ</a>@endif</div>
+        <div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-3 py-1.5 text-xs font-bold {{ $transaction->status === 'DITETAPKAN' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ $transaction->status }}</span><span class="rounded-full px-3 py-1.5 text-xs font-bold {{ $sourceStatus === 'SOURCE_MISSING' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }}">{{ $sourceStatus === 'SOURCE_MISSING' ? 'Tidak muncul di sync terakhir' : 'Data ARKAS aktif' }}</span>@if($transaction->requires_reconciliation)<span class="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700">Perlu rekonsiliasi</span>@endif @if($transaction->spj_category)<span class="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">SPJ: {{ $spjTypeLabel($transaction->spj_category) }}</span>@endif @if($isSiplah)<x-ui.badge>Pembelian SiPLah</x-ui.badge>@endif @if($transaction->spjPackage?->document_number)<span class="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">{{ $transaction->spjPackage->document_number }}</span>@elseif($transaction->items->isNotEmpty())<a href="#modul-buat-spj" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-violet-700">Buat SPJ</a>@endif</div>
         </div>
 
         @if($needsAttention)
@@ -207,7 +216,7 @@
             </article>
         </section>
 
-        <section id="modul-buat-spj" class="spj-builder order-2 overflow-hidden rounded-2xl border bg-white shadow-sm" x-data="{ category: '{{ $selectedSpjType }}' }">
+        <section id="modul-buat-spj" class="spj-builder order-2 overflow-hidden rounded-2xl border bg-white shadow-sm" x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod) }">
             <div class="spj-builder-header border-b px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -262,7 +271,7 @@
                         <div class="mt-2 grid gap-2 lg:grid-cols-4">
                             <div class="lg:col-span-2"><label class="text-[11px] font-semibold text-slate-700">Uraian dari ARKAS</label><textarea name="description" rows="2" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm">{{ $transaction->description }}</textarea></div>
                             <div class="lg:col-span-2"><label class="text-[11px] font-semibold text-slate-700">Uraian dokumen / pembayaran <span class="text-rose-600">*</span></label><textarea name="payment_description" rows="2" required class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea></div>
-                            <div><label class="text-[11px] font-semibold text-slate-700">Metode Pembayaran <span class="text-rose-600">*</span></label><select name="payment_method" required class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm"><option value="transfer_bank" @selected($paymentMethod === 'transfer_bank')>Transfer Bank (CMS / Non Tunai)</option><option value="siplah" @selected($paymentMethod === 'siplah')>SiPLah Kemdikbud</option><option value="tunai" @selected($paymentMethod === 'tunai')>Tunai Kas BOS</option></select></div>
+                            <div><label class="text-[11px] font-semibold text-slate-700">Metode Pembayaran <span class="text-rose-600">*</span></label><select name="payment_method" x-model="paymentMethod" required class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm"><option value="transfer_bank" @selected($paymentMethod === 'transfer_bank')>Transfer Bank (CMS / Non Tunai)</option><option value="siplah" @selected($paymentMethod === 'siplah')>SiPLah Kemdikbud</option><option value="tunai" @selected($paymentMethod === 'tunai')>Tunai Kas BOS</option></select></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Referensi Pembayaran</label><input name="payment_reference" value="{{ $transaction->payment_reference }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="No. cek/CMS/kuitansi"></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Penerima Kuitansi <span class="text-rose-600">*</span></label><input name="receipt_recipient_name" required value="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Boleh berbeda dari penerima BKU"></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Nama Penandatangan</label><input name="signatory_name" value="{{ $transaction->signatory_name }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Nama penerima/penanggung jawab"></div>
@@ -270,11 +279,23 @@
                         </div>
                     </div>
 
+                    <fieldset x-show="paymentMethod === 'siplah'" :disabled="paymentMethod !== 'siplah'" x-cloak class="mt-3 rounded-lg border p-3" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
+                        <p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--theme-content-accent)">Data Pembelian SiPLah</p>
+                        <p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">Nomor Pesanan SiPLah adalah nomor order marketplace dan berbeda dari Nomor Surat Pesanan SPJ yang diterbitkan aplikasi.</p>
+                        <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Penyedia SiPLah</label><input name="vendor_name" value="{{ $transaction->vendor_name }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Nama penyedia"></div>
+                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Pemilik/Penanggung Jawab Penyedia</label><input name="vendor_owner" value="{{ $transaction->vendor_owner }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Opsional"></div>
+                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">NPWP Penyedia</label><input name="vendor_npwp" value="{{ $transaction->vendor_npwp }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="NPWP penyedia"></div>
+                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Nomor Pesanan SiPLah</label><input name="siplah_order_number" value="{{ $transaction->siplah_order_number }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Nomor order marketplace"></div>
+                        </div>
+                    </fieldset>
+
                     <div x-show="['BARANG','KONSUMSI'].includes(category)" x-cloak x-data="{ orderDate: @js($purchaseOrderDate), bapDate: @js($purchaseBapDate), bastDate: @js($purchaseBastDate), invoiceDate: @js($purchaseInvoiceDate) }" class="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-sky-900">Data pembelian barang/konsumsi</p>
                         <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-4">
                             <div><label class="text-[11px] font-semibold text-sky-900">No. Invoice/Faktur</label><input name="invoice_number" value="{{ $transaction->invoice_number }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="No. invoice"></div>
                             <div><label class="text-[11px] font-semibold text-sky-900">Tgl Invoice</label><input type="date" name="invoice_date" x-model="invoiceDate" :min="bastDate || null" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm"></div>
+                            <div><label class="text-[11px] font-semibold text-sky-900">Status Invoice</label><input name="invoice_status" value="{{ $transaction->invoice_status }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="Contoh: Lunas"></div>
                             <div><label class="text-[11px] font-semibold text-sky-900">No. Pesanan <span class="text-emerald-700">(otomatis)</span></label><input readonly name="order_number" value="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}" class="mt-1 w-full rounded-md border border-sky-200 bg-slate-100 px-2.5 py-1.5 text-sm"></div>
                             <div><label class="text-[11px] font-semibold text-sky-900">Tgl Pesanan</label><input type="date" name="order_date" x-model="orderDate" :max="bapDate || @js($transactionDateLimit)" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm"></div>
                             <div><label class="text-[11px] font-semibold text-sky-900">No. BAP <span class="text-emerald-700">(otomatis)</span></label><input readonly name="bap_number" value="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}" class="mt-1 w-full rounded-md border border-sky-200 bg-slate-100 px-2.5 py-1.5 text-sm" placeholder="Terbit setelah penomoran"></div>

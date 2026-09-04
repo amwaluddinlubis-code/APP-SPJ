@@ -40,7 +40,14 @@ class SafeArkasSynchronizationTest extends TestCase
 
         $method->invoke($service, $year, [$this->sourceRecord(100000)], $this->createSyncRun($year));
         $transaction = Transaction::query()->with('items')->firstOrFail();
-        $transaction->update(['payment_description' => 'Uraian pembayaran manual']);
+        $transaction->update([
+            'payment_description' => 'Uraian pembayaran manual',
+            'payment_method' => 'siplah',
+            'siplah_order_number' => 'SIPL-2026-12345',
+            'payment_reference' => 'PAY-7788',
+            'invoice_number' => 'INV-88231',
+            'vendor_name' => 'Penyedia SiPLah Manual',
+        ]);
         $transaction->items->first()->update(['item_description' => 'Uraian item manual']);
         $transaction->spjPackage()->create(['status' => 'DRAFT']);
 
@@ -48,6 +55,11 @@ class SafeArkasSynchronizationTest extends TestCase
         $transaction->refresh()->load(['items', 'spjPackage']);
 
         $this->assertSame('Uraian pembayaran manual', $transaction->payment_description);
+        $this->assertSame('siplah', $transaction->payment_method);
+        $this->assertSame('SIPL-2026-12345', $transaction->siplah_order_number);
+        $this->assertSame('PAY-7788', $transaction->payment_reference);
+        $this->assertSame('INV-88231', $transaction->invoice_number);
+        $this->assertSame('Penyedia SiPLah Manual', $transaction->vendor_name);
         $this->assertSame('Uraian item manual', $transaction->items->first()->item_description);
         $this->assertNotNull($transaction->spjPackage);
         $this->assertTrue($transaction->requires_reconciliation);

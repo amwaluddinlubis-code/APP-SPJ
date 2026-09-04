@@ -44,31 +44,6 @@ class SpjPackageValidationService
             $url.'#modul-buat-spj'
         );
 
-        if ($policy['channel'] === 'SIPLAH') {
-            $hasSiplahReference = filled($transaction->payment_reference) || filled($transaction->invoice_number);
-            $this->addCheck(
-                $checks,
-                'siplah_reference',
-                'Dokumen SIPLah',
-                'Referensi pesanan/invoice SIPLah',
-                $hasSiplahReference,
-                'Referensi SIPLah tersedia.',
-                'Transaksi SIPLah perlu memiliki referensi pesanan atau nomor invoice agar mudah ditelusuri.',
-                $url.'#modul-buat-spj'
-            );
-
-            $this->addCheck(
-                $checks,
-                'siplah_vendor',
-                'Dokumen SIPLah',
-                'Identitas penyedia SIPLah',
-                filled($transaction->vendor_name),
-                'Penyedia SIPLah sudah tercatat.',
-                'Nama penyedia SIPLah belum tersedia.',
-                $url.'#modul-buat-spj'
-            );
-        }
-
         $hasDetails = $transaction->items->isNotEmpty() || $transaction->goods->isNotEmpty();
         $this->addCheck($checks, 'details', 'Rincian transaksi', 'Rincian barang/jasa', $hasDetails, 'Transaksi memiliki rincian barang/jasa.', 'Transaksi belum memiliki rincian barang atau jasa.', $url.'#rincian-transaksi');
 
@@ -188,7 +163,7 @@ class SpjPackageValidationService
     }
 
     /**
-     * @param array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}> $checks
+     * @param  array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}>  $checks
      */
     private function addCheck(array &$checks, string $key, string $group, string $label, bool $passed, string $passedMessage, string $failedMessage, string $url): void
     {
