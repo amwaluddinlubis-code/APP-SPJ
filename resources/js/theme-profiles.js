@@ -69,7 +69,7 @@ export const applyThemeProfile = (theme, root = document.documentElement) => {
     return selected;
 };
 
-const renderThemeSelector = (select, selectedTheme) => {
+export const renderThemeSelector = (select, selectedTheme) => {
     const options = Object.entries(themeProfiles).map(([value, item]) => {
         const option = document.createElement('option');
         option.value = value;
@@ -83,20 +83,21 @@ const renderThemeSelector = (select, selectedTheme) => {
 
 export const initializeThemeProfiles = () => {
     const root = document.documentElement;
-    const select = document.getElementById('theme-select');
     const storedTheme = localStorage.getItem('spj-theme') || root.dataset.theme || 'light';
     const selectedTheme = themeProfiles[storedTheme] ? storedTheme : 'light';
 
     applyThemeProfile(selectedTheme, root);
 
-    if (!select) return;
+    document.querySelectorAll('[data-theme-selector]').forEach((select) => {
+        if (!(select instanceof HTMLSelectElement)) return;
 
-    renderThemeSelector(select, selectedTheme);
+        renderThemeSelector(select, selectedTheme);
 
-    if (select.dataset.profileInitialized === 'true') return;
+        if (select.dataset.profileInitialized === 'true') return;
 
-    select.dataset.profileInitialized = 'true';
-    select.addEventListener('change', () => applyThemeProfile(select.value, root));
+        select.dataset.profileInitialized = 'true';
+        select.addEventListener('change', () => applyThemeProfile(select.value, root));
+    });
 };
 
 const bootThemeProfiles = () => {

@@ -10,7 +10,7 @@
             const saved = localStorage.getItem('spj-theme');
             const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             document.documentElement.dataset.theme = theme;
-            document.documentElement.classList.toggle('dark', theme === 'dark');
+            document.documentElement.classList.toggle('dark', saved ? saved === 'dark' : theme === 'dark');
         })();
     </script>
     @filamentStyles
@@ -122,7 +122,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <label class="sr-only" for="theme-select">Tema tampilan</label>
-                <select id="theme-select" class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold" aria-label="Tema tampilan"></select>
+                <select id="theme-select" data-theme-selector class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold" aria-label="Tema tampilan"></select>
                 <span class="app-runtime-badge hidden px-3 py-1 text-xs font-semibold sm:inline-flex">Livewire + Filament</span>
             </div>
         </header>
