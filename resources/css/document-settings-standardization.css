@@ -12,16 +12,24 @@ main:has(form[action*="document-templates"]) {
     --doc-settings-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #64748b));
 }
 
-/* Header actions in Document Templates must use readable semantic pairing. */
+/* Header actions in Document Templates use the same solid semantic pairing as
+   canonical primary actions. Translucent action fills are unsafe on flat/soft
+   light headers such as Slate Minimal and Yellow Bright. */
 main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a {
-    border: 1px solid color-mix(in srgb, var(--theme-action-fg) 24%, transparent) !important;
-    background: color-mix(in srgb, var(--theme-action-bg) 78%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 72%, var(--theme-action-fg)) !important;
+    background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
+    box-shadow: none !important;
 }
 
 main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a:hover {
-    background: var(--theme-action-bg) !important;
+    border-color: color-mix(in srgb, var(--theme-action-bg) 58%, var(--theme-action-fg)) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
     color: var(--theme-action-fg) !important;
+}
+
+main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a :is(svg,.app-nav-icon) {
+    color: currentColor !important;
 }
 
 /* Numbering placeholder information becomes a theme-aware informational surface. */
