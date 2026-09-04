@@ -1,43 +1,38 @@
 <x-layouts.tailwind-app>
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="max-w-3xl">
-                        <p class="text-[11px] font-bold uppercase tracking-[.2em] text-sky-200">Dashboard operasional</p>
-                        <h1 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Apa yang perlu dikerjakan hari ini?</h1>
-                        <p class="mt-2 text-sm leading-6 text-indigo-100 sm:text-base">Pantau antrean transaksi, kesiapan paket SPJ, rekonsiliasi, dan penomoran dari satu halaman kerja.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('transactions.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm">Buka transaksi</a>
-                        <a href="{{ route('spj.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white">Ruang Kerja SPJ</a>
-                    </div>
-                </div>
-            </div>
+        <x-page-header
+            title="Apa yang perlu dikerjakan hari ini?"
+            subtitle="Pantau antrean transaksi, kesiapan paket SPJ, rekonsiliasi, dan penomoran dari satu halaman kerja."
+            kicker="Dashboard operasional"
+        >
+            <x-slot:actions>
+                <a href="{{ route('transactions.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm">Buka transaksi</a>
+                <a href="{{ route('spj.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white">Ruang Kerja SPJ</a>
+            </x-slot:actions>
 
-            <div class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-                <a href="{{ route('transactions.index') }}" class="bg-white px-5 py-4">
+            <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+                <a href="{{ route('transactions.index') }}" class="px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi aktif</p>
                     <p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($summary['transactions'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Dalam konteks aktif</p>
                 </a>
-                <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="bg-white px-5 py-4">
+                <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-amber-600">Perlu dilengkapi</p>
                     <p class="mt-1 text-2xl font-bold text-amber-700">{{ number_format($summary['without_package'] + $summary['draft'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Belum punya paket atau masih draft</p>
                 </a>
-                <a href="{{ route('spj.numbering-workflow') }}" class="bg-white px-5 py-4">
+                <a href="{{ route('spj.numbering-workflow') }}" class="px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-sky-600">Siap diproses</p>
                     <p class="mt-1 text-2xl font-bold text-sky-700">{{ number_format($summary['ready'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Paket siap masuk penomoran</p>
                 </a>
-                <a href="{{ route('reconciliation.index') }}" class="bg-white px-5 py-4">
+                <a href="{{ route('reconciliation.index') }}" class="px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-orange-600">Perlu perhatian</p>
                     <p class="mt-1 text-2xl font-bold text-orange-700">{{ number_format($summary['reconciliation'] + $summary['source_missing'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Rekonsiliasi atau data sumber hilang</p>
                 </a>
             </div>
-        </section>
+        </x-page-header>
 
         <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
             <div class="grid lg:grid-cols-[1.15fr_.85fr]">
