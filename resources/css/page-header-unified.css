@@ -1,0 +1,137 @@
+/* Unified page header treatment.
+   The description and summary stats belong to the same visual surface as the header.
+   Summary cards use a dark-hard to dark-soft progression while staying theme-aware. */
+
+.page-header-shell {
+    border-color: color-mix(in srgb, var(--theme-accent, #64748b) 24%, #cbd5e1) !important;
+    background: transparent !important;
+    box-shadow: 0 10px 28px rgb(15 23 42 / .08);
+}
+
+.page-header-main {
+    background: linear-gradient(
+        135deg,
+        var(--theme-sidebar-deep, #0f172a) 0%,
+        var(--theme-sidebar, #334155) 46%,
+        color-mix(in srgb, var(--theme-accent, #64748b) 74%, var(--theme-sidebar, #334155)) 100%
+    ) !important;
+}
+
+.page-header-description {
+    color: rgb(255 255 255 / .78) !important;
+}
+
+.page-header-summary {
+    margin-inline: -.15rem;
+}
+
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) {
+    gap: .65rem !important;
+}
+
+.page-header-summary .ui-stat {
+    border-color: rgb(255 255 255 / .10) !important;
+    background: rgb(2 6 23 / .28) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .035), 0 8px 18px rgb(0 0 0 / .10) !important;
+    backdrop-filter: blur(10px);
+}
+
+.page-header-summary .ui-stat:nth-child(1) {
+    background: rgb(2 6 23 / .48) !important;
+}
+.page-header-summary .ui-stat:nth-child(2) {
+    background: rgb(15 23 42 / .43) !important;
+}
+.page-header-summary .ui-stat:nth-child(3) {
+    background: rgb(30 41 59 / .36) !important;
+}
+.page-header-summary .ui-stat:nth-child(4) {
+    background: rgb(51 65 85 / .30) !important;
+}
+
+.page-header-summary .ui-stat::before {
+    background: rgb(255 255 255 / .34) !important;
+    opacity: 1 !important;
+}
+
+.page-header-summary .ui-stat-label,
+.page-header-summary .ui-stat-hint {
+    color: rgb(255 255 255 / .66) !important;
+}
+
+.page-header-summary .ui-stat-value {
+    color: rgb(255 255 255 / .94) !important;
+}
+
+/* Fallback for summary cards that are not yet using x-stat-item/ui-stat. */
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+    border-color: rgb(255 255 255 / .10) !important;
+    background: rgb(15 23 42 / .34) !important;
+    color: rgb(255 255 255 / .88) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .09) !important;
+}
+
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(1):not(.ui-stat) { background: rgb(2 6 23 / .48) !important; }
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(2):not(.ui-stat) { background: rgb(15 23 42 / .43) !important; }
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(3):not(.ui-stat) { background: rgb(30 41 59 / .36) !important; }
+.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(4):not(.ui-stat) { background: rgb(51 65 85 / .30) !important; }
+
+/* Dark mode keeps the same hierarchy but softens borders and shadows further. */
+.dark .page-header-shell {
+    border-color: #263244 !important;
+    box-shadow: 0 12px 30px rgb(0 0 0 / .18);
+}
+
+.dark .page-header-main {
+    background: linear-gradient(135deg, #030712 0%, #0b1220 44%, #111827 100%) !important;
+}
+
+.dark .page-header-description {
+    color: #aeb8c7 !important;
+}
+
+.dark .page-header-summary {
+    border-color: rgb(255 255 255 / .065) !important;
+}
+
+.dark .page-header-summary .ui-stat,
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+    border-color: rgb(255 255 255 / .065) !important;
+}
+
+.dark .page-header-summary .ui-stat:nth-child(1),
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(1):not(.ui-stat) {
+    background: #060b14 !important;
+}
+.dark .page-header-summary .ui-stat:nth-child(2),
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(2):not(.ui-stat) {
+    background: #0a111c !important;
+}
+.dark .page-header-summary .ui-stat:nth-child(3),
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(3):not(.ui-stat) {
+    background: #0e1724 !important;
+}
+.dark .page-header-summary .ui-stat:nth-child(4),
+.dark .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :nth-child(4):not(.ui-stat) {
+    background: #131d2b !important;
+}
+
+.dark .page-header-summary .ui-stat-label,
+.dark .page-header-summary .ui-stat-hint {
+    color: #8f9bad !important;
+}
+
+.dark .page-header-summary .ui-stat-value {
+    color: #dce3ec !important;
+}
+
+@media (max-width: 640px) {
+    .page-header-main {
+        padding-block: 1.4rem !important;
+    }
+
+    .page-header-summary {
+        margin-top: 1.15rem !important;
+        padding-top: 1rem !important;
+    }
+}
