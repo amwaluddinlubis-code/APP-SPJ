@@ -2,7 +2,7 @@
    Covers numbering formats and document templates without changing configuration logic. */
 
 main:has(form[action*="document-number-formats"]) ,
-main:has(form[action*="document-templates"]) {
+main:has(#template_file) {
     --doc-settings-surface: var(--ui-component-surface, var(--ui-surface, #fff));
     --doc-settings-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
     --doc-settings-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
@@ -12,23 +12,24 @@ main:has(form[action*="document-templates"]) {
     --doc-settings-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #64748b));
 }
 
-/* Header actions in Document Templates use the same solid semantic pairing as
-   canonical primary actions. Translucent action fills are unsafe on flat/soft
-   light headers such as Slate Minimal and Yellow Bright. */
-main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a {
+/* Header actions in Document Templates use the stable #template_file page marker.
+   The generated action URLs are localized, so form[action*="document-templates"]
+   does not exist at runtime. The ID marker also gives this contract enough
+   specificity to beat legacy bg-white/10 + text-white utilities. */
+main:has(#template_file) .page-header-main .page-header-actions a {
     border: 1px solid color-mix(in srgb, var(--theme-action-bg) 72%, var(--theme-action-fg)) !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
     box-shadow: none !important;
 }
 
-main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a:hover {
+main:has(#template_file) .page-header-main .page-header-actions a:hover {
     border-color: color-mix(in srgb, var(--theme-action-bg) 58%, var(--theme-action-fg)) !important;
     background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
     color: var(--theme-action-fg) !important;
 }
 
-main:has(form[action*="document-templates"]) .page-header-main .page-header-actions a :is(svg,.app-nav-icon) {
+main:has(#template_file) .page-header-main .page-header-actions a :is(svg,.app-nav-icon) {
     color: currentColor !important;
 }
 
@@ -75,9 +76,9 @@ main:has(form[action*="document-number-formats"]) article:has(form[action*="docu
 }
 
 /* Document Templates form/list panels */
-main:has(form[action*="document-templates"]) .ui-form-section,
-main:has(form[action*="document-templates"]) section:has(table[data-pagination="server"]),
-main:has(form[action*="document-templates"]) details {
+main:has(#template_file) .ui-form-section,
+main:has(#template_file) section:has(table[data-pagination="server"]),
+main:has(#template_file) details {
     border-color: var(--doc-settings-border) !important;
     border-radius: var(--profile-card-radius) !important;
     background: var(--doc-settings-surface) !important;
@@ -85,51 +86,51 @@ main:has(form[action*="document-templates"]) details {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(form[action*="document-templates"]) fieldset,
-main:has(form[action*="document-templates"]) form[method="GET"],
-main:has(form[action*="document-templates"]) details > div {
+main:has(#template_file) fieldset,
+main:has(#template_file) form[method="GET"],
+main:has(#template_file) details > div {
     border-color: var(--doc-settings-border) !important;
     background: var(--doc-settings-surface-soft) !important;
 }
 
-main:has(form[action*="document-templates"]) :is(fieldset legend, section:has(table[data-pagination="server"]) h2, details summary) {
+main:has(#template_file) :is(fieldset legend, section:has(table[data-pagination="server"]) h2, details summary) {
     color: var(--doc-settings-text-strong) !important;
 }
 
-main:has(form[action*="document-templates"]) :is(.text-slate-500,.text-slate-600,.text-slate-700,.text-slate-800) {
+main:has(#template_file) :is(.text-slate-500,.text-slate-600,.text-slate-700,.text-slate-800) {
     color: var(--doc-settings-text) !important;
 }
 
-main:has(form[action*="document-templates"]) :is(.text-violet-700,.text-indigo-700) {
+main:has(#template_file) :is(.text-violet-700,.text-indigo-700) {
     color: var(--theme-content-accent) !important;
 }
 
-main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr {
+main:has(#template_file) table[data-pagination="server"] tbody tr {
     background: var(--doc-settings-surface) !important;
 }
 
-main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr:nth-child(even) {
+main:has(#template_file) table[data-pagination="server"] tbody tr:nth-child(even) {
     background: var(--ui-table-row-alt) !important;
 }
 
-main:has(form[action*="document-templates"]) table[data-pagination="server"] tbody tr:hover {
+main:has(#template_file) table[data-pagination="server"] tbody tr:hover {
     background: var(--ui-table-row-hover) !important;
 }
 
 /* Placeholder reference panel */
-main:has(form[action*="document-templates"]) details code {
+main:has(#template_file) details code {
     background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
     color: var(--theme-content-accent) !important;
 }
 
 /* Choice cards should remain clearly interactive across themes. */
-main:has(form[action*="document-templates"]) .ui-choice-card {
+main:has(#template_file) .ui-choice-card {
     border-color: var(--doc-settings-border) !important;
     background: var(--doc-settings-surface) !important;
     color: var(--doc-settings-text) !important;
 }
 
-main:has(form[action*="document-templates"]) .ui-choice-card:hover {
+main:has(#template_file) .ui-choice-card:hover {
     border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--doc-settings-border)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
 }
