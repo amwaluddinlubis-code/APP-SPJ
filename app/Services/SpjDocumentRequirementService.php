@@ -85,32 +85,32 @@ class SpjDocumentRequirementService
         $taxApplies = (float) $transaction->tax_total > 0;
         $add(
             'tax_evidence', 'Pajak', 'Bukti setor / bukti pajak', 'Dokumen sumber pajak',
-            $taxApplies, $taxApplies, false,
+            false, $taxApplies, false,
             'Bukti pajak tersedia.',
-            'Nilai pajak sudah tercatat, tetapi berkas bukti setor/pajak belum dapat diverifikasi oleh aplikasi.'
+            'Nilai pajak sudah tercatat. Bukti setor/pajak perlu dicocokkan secara manual sampai fitur unggah bukti tersedia.'
         );
 
-        $procurementCategory = in_array($category, ['BARANG', 'BELANJA_MODAL', 'KONSUMSI', 'JASA', 'JASA_LAINNYA', 'PEMELIHARAAN', 'UPAH'], true);
+        $purchaseCategory = in_array($category, ['BARANG', 'BELANJA_MODAL', 'KONSUMSI', 'JASA', 'JASA_LAINNYA'], true);
         $goodsCategory = in_array($category, ['BARANG', 'BELANJA_MODAL', 'KONSUMSI'], true);
         $firstGoods = $transaction->goods->first();
 
         $add(
             'siplah_order', 'Pengadaan', 'Pesanan / referensi transaksi SIPLah', 'SIPLah',
-            true, $isSiplah && $procurementCategory,
+            true, $isSiplah && $purchaseCategory,
             filled($transaction->payment_reference) || filled($transaction->invoice_number) || filled($firstGoods?->order_number),
             'Referensi pengadaan SIPLah tersedia.',
             'Referensi pesanan/transaksi SIPLah belum tersedia.'
         );
         $add(
             'vendor', 'Pengadaan', 'Identitas penyedia', $isSiplah ? 'SIPLah' : 'Dokumen pengadaan',
-            $procurementCategory, $procurementCategory,
+            $purchaseCategory, $purchaseCategory,
             filled($transaction->vendor_name),
             'Identitas penyedia tersedia.',
             'Nama penyedia belum tersedia.'
         );
         $add(
             'invoice', 'Pengadaan', 'Invoice / faktur / tagihan', $isSiplah ? 'SIPLah / penyedia' : 'Penyedia',
-            $procurementCategory, $procurementCategory,
+            $purchaseCategory, $purchaseCategory,
             filled($transaction->invoice_number),
             'Invoice/faktur/tagihan tersedia.',
             'Nomor invoice/faktur/tagihan belum tersedia.'
