@@ -1,0 +1,9 @@
+/* Single ordered entrypoint for the application theme system.
+   Keep cascade order explicit here; feature code should import only this file. */
+@import './theme-profiles.css';
+@import './theme-profile-components.css';
+@import './comfortable-text.css';
+@import './theme-soft-surfaces.css';
+@import './token-native-components.css';
+@import './layout-token-native.css';
+@import './theme-accessibility.css';
