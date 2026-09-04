@@ -35,7 +35,7 @@ class TransactionsTable extends Component
     public ?int $semester = null;
 
     #[Url(except: 15)]
-    public int|string $perPage = 15;
+    public int $perPage = 15;
 
     public bool $showEditor = false;
 
@@ -57,9 +57,10 @@ class TransactionsTable extends Component
         $this->month = request()->integer('month') ?: null;
         $this->quarter = request()->integer('quarter') ?: null;
         $this->semester = request()->integer('semester') ?: null;
-        $requestedPerPage = request('perPage');
-        if ($requestedPerPage === 'all' || in_array((int) $requestedPerPage, [15, 25, 50, 100], true)) {
-            $this->perPage = $requestedPerPage === 'all' ? 'all' : (int) $requestedPerPage;
+        $requestedPerPage = request()->integer('perPage');
+
+        if (in_array($requestedPerPage, [15, 25, 50, 100], true)) {
+            $this->perPage = $requestedPerPage;
         }
     }
 
@@ -186,26 +187,7 @@ class TransactionsTable extends Component
             ->with('spjPackage:id,transaction_id,document_number,status,finalized_at')
             ->withCount('items');
 
-        if (trim($this->q) !== '') {
-            $search = trim($this->q);
-            $query->where(function (Builder $query) use ($search): void {
-                $query->where('no_bukti', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('payment_description', 'like', "%{$search}%")
-                    ->orWhere('recipient_name', 'like', "%{$search}%")
-                    ->orWhere('receipt_recipient_name', 'like', "%{$search}%")
-                    ->orWhere('activity_code', 'like', "%{$search}%")
-                    ->orWhere('account_code', 'like', "%{$search}%");
-            });
-        }
-
-        if ($this->status !== '') {
-            $databaseStatuses = $this->databaseStatusesForFilter($this->status);
-            $query->whereIn('status', $databaseStatuses);
-        }
-
-        $perPage = $this->perPage === 'all' ? 10000 : (int) $this->perPage;
-        $perPage = in_array($perPage, [15, 25, 50, 100, 10000], true) ? $perPage : 15;
+        $perPage = in_array($this->perPage, [15, 25, 50, 100], true) ? $this->perPage : 15;
 
         // Paket SPJ yang sudah final/arsip selalu ditempatkan paling belakang.
         // Transaksi yang masih perlu dikerjakan tetap mengikuti urutan status lalu ID.
@@ -258,6 +240,23 @@ class TransactionsTable extends Component
                 now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 1 : 7)->startOfMonth(),
                 now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 6 : 12)->endOfMonth(),
             ]);
+        }
+
+        if (trim($this->q) !== '') {
+            $search = trim($this->q);
+            $query->where(function (Builder $query) use ($search): void {
+                $query->where('no_bukti', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('payment_description', 'like', "%{$search}%")
+                    ->orWhere('recipient_name', 'like', "%{$search}%")
+                    ->orWhere('receipt_recipient_name', 'like', "%{$search}%")
+                    ->orWhere('activity_code', 'like', "%{$search}%")
+                    ->orWhere('account_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($this->status !== '') {
+            $query->whereIn('status', $this->databaseStatusesForFilter($this->status));
         }
 
         return $query;
