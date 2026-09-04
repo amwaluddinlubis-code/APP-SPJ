@@ -81,11 +81,6 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
     background: var(--transactions-surface-soft) !important;
 }
 
-/* Local breadcrumb duplicates the application breadcrumb and is intentionally hidden. */
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) .module-breadcrumb {
-    display: none !important;
-}
-
 /* The only select in the list header is the per-page control. Avoid escaped
    Livewire attribute selectors because Vite's CSS parser rejects the colon. */
 main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:first-child select {
@@ -141,24 +136,4 @@ main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody tr:
 /* Human-readable payment method labels are injected visually only when legacy values remain. */
 main:has(a[href*="/data-sinkron/bku"]) [data-payment-method-label] {
     color: var(--transactions-text-muted);
-}
-
-/* High-specificity fallback for the legacy secondary hero action. The final
-   accessibility layer also normalizes this class pair, but these explicit
-   profile selectors prevent a stale on-dark foreground from winning at rest. */
-html[data-theme='slate'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10,
-html[data-theme='indigo'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10,
-html[data-theme='violet'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10 {
-    border: 1px solid color-mix(in srgb, var(--theme-content-accent) 46%, var(--theme-accent-soft)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 68%, white) !important;
-    color: #0f172a !important;
-    box-shadow: none !important;
-}
-
-html[data-theme='slate'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10:hover,
-html[data-theme='indigo'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10:hover,
-html[data-theme='violet'][data-ui-appearance='light'] body main:has(a[href*="/data-sinkron/bku"]) a[href*="/data-sinkron/bku"].bg-white\/10:hover {
-    border-color: color-mix(in srgb, var(--theme-content-accent) 62%, var(--theme-accent-soft)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 50%, white) !important;
-    color: #0f172a !important;
 }
