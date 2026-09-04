@@ -109,7 +109,8 @@ main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td :is(.font-bold,
     color: var(--text-comfort-primary) !important;
 }
 
-/* Page headers on dark/colored surfaces use off-white, never pure white. */
+/* Page-header copy may use the calm on-dark hierarchy, but interactive actions
+   own their foreground through semantic button/link contracts. */
 .page-header-main:not(:has(+ .page-header-summary[data-force-light])) .page-header-title,
 .page-header-main:not(:has(+ .page-header-summary[data-force-light])) .page-header-kicker {
     color: var(--text-comfort-on-dark) !important;
@@ -117,7 +118,7 @@ main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td :is(.font-bold,
 .page-header-main .page-header-description {
     color: var(--text-comfort-on-dark-soft) !important;
 }
-.page-header-main :is(a,button):not(.ui-btn-danger):not(.btn-danger) {
+.page-header-main :is(a,button):not(.ui-btn):not(.btn):not(.ui-btn-danger):not(.btn-danger) {
     color: var(--text-comfort-on-dark) !important;
 }
 
@@ -146,10 +147,10 @@ html[data-ui-header='soft'] .page-header-description {
     color: var(--text-comfort-on-dark-soft) !important;
 }
 
-/* Only strong filled surfaces force an off-white foreground. Do not normalize
-   every .text-white utility globally because legacy links/buttons may use a
-   light surface such as bg-white. */
-main :is(.ui-btn-primary,.btn-primary,.theme-btn,.bg-indigo-600,.bg-indigo-700,.bg-blue-600,.bg-violet-600,.bg-emerald-600,.bg-rose-600,.bg-red-600) {
+/* Legacy strong filled utilities retain an off-white foreground. Canonical
+   semantic buttons are excluded because --theme-action-fg can intentionally be
+   dark on bright accents such as Yellow Bright. */
+main :is(.theme-btn,.bg-indigo-600,.bg-indigo-700,.bg-blue-600,.bg-violet-600,.bg-emerald-600,.bg-rose-600,.bg-red-600) {
     color: var(--text-comfort-on-dark) !important;
 }
 
