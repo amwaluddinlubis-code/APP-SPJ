@@ -2,6 +2,7 @@ import '../css/theme-profiles.css';
 import '../css/theme-profile-components.css';
 import '../css/comfortable-text.css';
 import '../css/theme-soft-surfaces.css';
+import '../css/token-native-components.css';
 
 const profile = (config) => Object.freeze(config);
 
