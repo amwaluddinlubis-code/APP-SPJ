@@ -79,6 +79,16 @@ html[data-theme] .fi-ta-header-ctn th {
     color: var(--theme-content-accent) !important;
 }
 
+/* Soft page headers sit on pale surfaces, so decorative accent shades are not
+   safe as text for bright themes such as yellow/amber. Use content contrast. */
+html[data-ui-header='soft'] .page-header-main :is(.page-header-title, .page-header-kicker) {
+    color: var(--theme-content-accent) !important;
+}
+
+html[data-ui-header='soft'] .page-header-description {
+    color: var(--comfort-text-primary, #334155) !important;
+}
+
 /* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
 :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--theme-focus-ring) !important;
