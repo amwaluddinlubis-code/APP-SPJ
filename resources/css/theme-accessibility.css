@@ -164,6 +164,39 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[
     color: currentColor !important;
 }
 
+/* Deterministic Yellow Bright fallback for legacy action class pairs that are
+   still emitted by Transactions/SPJ Blade. This intentionally keys off the
+   concrete legacy utility combinations instead of href shape or wrapper depth. */
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a.bg-white\/10.text-white {
+    border: 1px solid color-mix(in srgb, var(--theme-sidebar) 48%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a.bg-white\/10.text-white:hover {
+    border-color: color-mix(in srgb, var(--theme-sidebar) 62%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
+    color: #0f172a !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button.bg-white.text-indigo-900 {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 66%, #0f172a) !important;
+    background: var(--theme-action-bg) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button.bg-white.text-indigo-900:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 48%, #0f172a) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 84%, white) !important;
+    color: #0f172a !important;
+}
+
 /* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
 :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--theme-focus-ring) !important;
