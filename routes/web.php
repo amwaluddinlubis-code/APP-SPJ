@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/database-aktif/{schoolId}/vacuum', [DatabaseManagerController::class, 'vacuum'])->name('database-manager.vacuum');
         Route::post('/pengaturan/database-aktif/{schoolId}/integrity', [DatabaseManagerController::class, 'integrity'])->name('database-manager.integrity');
         Route::post('/pengaturan/database-aktif/{schoolId}/provision', [DatabaseManagerController::class, 'provision'])->name('database-manager.provision');
+        Route::post('/pengaturan/database-aktif/{schoolId}/reset', [DatabaseManagerController::class, 'reset'])->name('database-manager.reset');
         Route::get('/pengaturan/user', [UserManagementController::class, 'index'])->name('users.index');
         Route::post('/pengaturan/user', [UserManagementController::class, 'store'])->name('users.store');
         Route::put('/pengaturan/user/{userId}', [UserManagementController::class, 'update'])->name('users.update');
