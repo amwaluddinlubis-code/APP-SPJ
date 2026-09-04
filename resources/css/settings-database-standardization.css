@@ -1,0 +1,199 @@
+/* Phase 3 settings/database compatibility layer.
+   Scope is visual only: database operations, reset confirmation, migration and
+   activation behavior remain owned by the existing controllers/views. */
+
+main:has(a[href*="database-manager"]),
+main:has(form[action*="database-manager"]) {
+    --settings-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --settings-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --settings-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --settings-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --settings-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --settings-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --settings-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
+}
+
+/* Database Manager hero and its summary strip follow the same theme language. */
+main:has(#db-tabs) > div > section:first-of-type {
+    border-color: var(--settings-border) !important;
+    border-radius: var(--profile-header-radius) !important;
+    background: var(--settings-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > div:first-child {
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--theme-sidebar-deep) 96%, #020617) 0%,
+            color-mix(in srgb, var(--theme-sidebar) 88%, var(--theme-accent-strong)) 58%,
+            color-mix(in srgb, var(--theme-accent-soft) 78%, var(--settings-surface)) 100%
+        ) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid {
+    gap: 1px !important;
+    background: var(--settings-border) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-slate-800,.text-slate-900) {
+    color: var(--settings-text-strong) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-slate-400,.text-slate-500) {
+    color: var(--settings-text-muted) !important;
+}
+
+/* Main database tabs. */
+main #db-tabs {
+    border-color: var(--settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main #db-tabs > div:first-child {
+    border-color: var(--settings-border) !important;
+    background: var(--settings-surface-soft) !important;
+}
+
+main #db-tabs .tab-btn {
+    border-color: transparent !important;
+    border-radius: var(--profile-control-radius) !important;
+    color: var(--settings-text-muted) !important;
+}
+
+main #db-tabs .tab-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent-soft) 28%, var(--settings-surface)) !important;
+    color: var(--settings-text-strong) !important;
+}
+
+main #db-tabs .tab-btn[data-active="true"],
+main #db-tabs .tab-btn[data-active=true] {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--settings-border)) !important;
+    background: var(--settings-surface) !important;
+    color: var(--theme-content-accent) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+/* Generic database panels, table-manager chrome and neutral surfaces. */
+main #db-tabs :is(.bg-white,.bg-slate-50,.bg-slate-50\/20,.bg-slate-50\/30,.bg-slate-50\/40,.bg-slate-50\/60,.bg-slate-50\/70) {
+    background-color: var(--settings-surface) !important;
+}
+
+main #db-tabs :is(.border-slate-100,.border-slate-200,.border-slate-300) {
+    border-color: var(--settings-border) !important;
+}
+
+main #db-tabs :is(.text-slate-900,.text-slate-800,.text-slate-700) {
+    color: var(--settings-text-strong) !important;
+}
+
+main #db-tabs :is(.text-slate-600,.text-slate-500,.text-slate-400) {
+    color: var(--settings-text-muted) !important;
+}
+
+main #db-tabs :is(input,select,textarea) {
+    border-color: var(--settings-border-strong) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text-strong) !important;
+}
+
+/* Primary database actions use contrast-safe theme action tokens. */
+main #db-tabs :is(button,a)[class*="bg-indigo-600"],
+main #db-tabs :is(button,a)[class*="bg-indigo-700"] {
+    border-color: transparent !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main #db-tabs :is(button,a)[class*="bg-indigo-600"]:hover,
+main #db-tabs :is(button,a)[class*="bg-indigo-700"]:hover {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main #db-tabs :is(button,a)[class*="bg-white"] {
+    border-color: var(--settings-border-strong) !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text) !important;
+}
+
+main #db-tabs :is(button,a)[class*="bg-white"]:hover {
+    background: var(--settings-surface-soft) !important;
+    color: var(--settings-text-strong) !important;
+}
+
+/* Keep the diagnostic code block intentionally dark, but soften glare. */
+main #db-tabs .bg-slate-900 {
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 94%, #020617) !important;
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+
+/* Reset page hero. */
+main:has(form[action*="database-manager/reset"]) section:first-of-type,
+main:has(form[action*="database-manager"][data-confirm]) section:first-of-type {
+    border-color: color-mix(in srgb, #e11d48 28%, var(--settings-border)) !important;
+    border-radius: var(--profile-header-radius) !important;
+    background: var(--settings-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:first-of-type > div:first-child {
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--theme-sidebar-deep) 90%, #020617) 0%,
+            color-mix(in srgb, #881337 74%, var(--theme-sidebar)) 60%,
+            color-mix(in srgb, #ffe4e6 70%, var(--settings-surface)) 100%
+        ) !important;
+}
+
+/* Active-school information panel. */
+main:has(form[action*="database-manager"][data-confirm]) section:has(.font-mono):not(:has(form)) {
+    border-color: var(--settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+/* Destructive reset zone stays semantically rose, but uses canonical geometry and readable surfaces. */
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) {
+    border-color: color-mix(in srgb, #e11d48 42%, var(--settings-border)) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: color-mix(in srgb, #ffe4e6 32%, var(--settings-surface)) !important;
+    color: var(--settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) h2 {
+    color: color-mix(in srgb, #9f1239 82%, var(--settings-text-strong)) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) p {
+    color: color-mix(in srgb, #9f1239 68%, var(--settings-text)) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) form > div:last-child {
+    border-color: color-mix(in srgb, #e11d48 24%, var(--settings-border)) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) a[class*="bg-white"] {
+    border-color: var(--settings-border-strong) !important;
+    background: var(--settings-surface) !important;
+    color: var(--settings-text) !important;
+}
+
+main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) a[class*="text-indigo"] {
+    color: var(--theme-content-accent) !important;
+}
