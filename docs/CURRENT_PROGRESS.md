@@ -15,17 +15,18 @@ Jenis project:
 - arah stack TALL: Tailwind, Alpine, Laravel, Livewire;
 - Filament dipakai pada level komponen tertentu, bukan sebagai admin panel generik utama;
 - database multi-koneksi: database utama + database tenant/sekolah;
-- sinkronisasi ARKAS/BKU sudah menjadi sumber data operasional utama;
-- GUI sedang distandarkan pada branch `gui-standardization`;
-- dark component theme sudah dimuat secara global.
+- sinkronisasi ARKAS/BKU menjadi sumber data operasional utama;
+- `SpjController` sudah direduksi menjadi adapter HTTP tipis dan domain SPJ dipisahkan ke use case;
+- GUI memiliki design system global dengan primitive tema-aware;
+- dark mode dan pilihan tema dimuat secara global.
 
 Fokus pengembangan saat ini:
 
-1. menyelesaikan standardisasi GUI lintas halaman;
-2. menjadikan Detail Transaksi sebagai workspace operator;
-3. menuntaskan workflow SPJ end-to-end;
-4. menstabilkan generator/preview dokumen;
-5. memfinalkan lifecycle, penomoran, locking, revisi, dan authorization;
+1. menuntaskan workflow SPJ end-to-end;
+2. menstabilkan generator/preview dokumen;
+3. memfinalkan lifecycle, penomoran, locking, revisi, dan authorization;
+4. menyelesaikan rekonsiliasi ARKAS dengan snapshot/diff;
+5. memigrasikan view tersisa ke primitive UI yang sudah digeneralisasi;
 6. menyiapkan test dan hardening menuju release candidate.
 
 ---
@@ -116,29 +117,31 @@ Proteksi utama:
 - admin tidak dapat impersonate admin lain;
 - konteks sekolah user target dapat diaktifkan saat impersonation.
 
-Test impersonation dan user management tersedia.
+### 4.3 Database sekolah, backup, dan reset bersih
 
-### 4.3 Database sekolah dan backup
-
-Sudah tersedia fondasi untuk:
+Sudah tersedia:
 
 - provision database sekolah;
 - aktivasi koneksi tenant;
 - migrasi tenant;
 - integrity check/vacuum/checkpoint;
-- backup dan restore database sekolah.
+- backup dan restore database sekolah;
+- menu administrator **Reset Database** untuk sekolah aktif;
+- konfirmasi reset menggunakan `RESET <NPSN>`;
+- rebuild database tenant dengan menghapus file SQLite tenant dan membuat ulang migration;
+- pembersihan file `-wal` / `-shm` terkait;
+- reset `sqlite_sequence` sehingga auto-increment kembali dari awal;
+- pembersihan session tahun anggaran/sumber dana aktif setelah reset.
 
-`SchoolDatabaseManagerTest` tersedia untuk area ini.
+Database utama/global tidak ikut dihapus.
+
+Test khusus reset database tersedia dan memverifikasi insert setelah reset kembali menghasilkan ID awal.
 
 ### 4.4 Proteksi database testing
 
-Test diarahkan ke database testing terpisah (`database/testing.sqlite`) agar tidak mengosongkan database utama.
-
-Aturan ini tidak boleh dilemahkan.
+Test diarahkan ke database testing terpisah (`database/testing.sqlite`) agar tidak mengosongkan database utama. Aturan ini tidak boleh dilemahkan.
 
 ### 4.5 Sinkronisasi ARKAS/BKU
-
-Sinkronisasi ARKAS sudah memiliki controller/service dan adapter ARKASBridge.
 
 Prinsip safe sync yang sudah diterapkan:
 
@@ -147,9 +150,7 @@ Prinsip safe sync yang sudah diterapkan:
 - transaksi dapat ditandai perlu rekonsiliasi;
 - data manual/operator tetap dipertahankan.
 
-Test `SafeArkasSynchronizationTest` dan test entitas hasil sync tersedia.
-
-Pengembangan lanjutan yang masih diperlukan:
+Pengembangan lanjutan:
 
 - snapshot sebelum/sesudah;
 - diff rekonsiliasi yang mudah dibaca;
@@ -158,50 +159,9 @@ Pengembangan lanjutan yang masih diperlukan:
 
 ### 4.6 Modul transaksi
 
-Modul transaksi sudah mulai modular menggunakan Livewire:
+Modul transaksi menggunakan Livewire dan mencakup pencarian/filter, status sumber, penerima BKU/ARKAS, penerima kuitansi manual, metode pembayaran canonical, modal perubahan data SPJ, dan navigasi ke workspace detail transaksi.
 
-```text
-app/Livewire/TransactionsTable.php
-resources/views/livewire/transactions-table.blade.php
-resources/views/transactions/index.blade.php
-```
-
-Fungsi yang sudah tersedia mencakup:
-
-- pencarian transaksi;
-- filter/status;
-- urutan status lalu ID;
-- penerima BKU/ARKAS;
-- penerima kuitansi manual;
-- status data sumber;
-- indikator rekonsiliasi;
-- metode pembayaran canonical;
-- modal perubahan data SPJ;
-- navigasi ke detail transaksi.
-
-Test Livewire transaksi tersedia.
-
-### 4.7 Metode pembayaran canonical
-
-Nilai backend:
-
-```text
-transfer_bank
-siplah
-tunai
-```
-
-Label operator:
-
-```text
-Transfer Bank (CMS / Non Tunai)
-SiPLah Kemdikbud
-Tunai Kas BOS
-```
-
-Default ditentukan dari data sumber seperti `IS_SIPLAH`, `NO_BUKTI`, dan `KODE_BKU`.
-
-### 4.8 Penerima kuitansi manual
+### 4.7 Penerima kuitansi manual
 
 Field utama:
 
@@ -209,20 +169,11 @@ Field utama:
 transactions.receipt_recipient_name
 ```
 
-Prinsip:
+`recipient_name` tetap sumber BKU/ARKAS, sedangkan `receipt_recipient_name` adalah data operator. Sinkronisasi tidak boleh menimpanya.
 
-- `recipient_name` tetap merupakan data sumber BKU/ARKAS;
-- `receipt_recipient_name` merupakan data operator untuk kuitansi;
-- sinkronisasi tidak boleh menimpanya;
-- accessor penerima efektif menggunakan fallback bila field manual kosong.
+### 4.8 Detail transaksi sebagai workspace operator
 
-Generator/template dan validasi paket sudah diarahkan memakai penerima kuitansi efektif.
-
-### 4.9 Detail transaksi sebagai workspace operator
-
-Halaman Detail Transaksi sedang diposisikan sebagai pusat kerja operator, bukan hanya halaman read-only.
-
-Struktur target yang sudah mulai diterapkan:
+Struktur kerja:
 
 ```text
 Data ARKAS/BKU (readonly)
@@ -233,15 +184,7 @@ Data ARKAS/BKU (readonly)
 → Penomoran / preview / cetak / final
 ```
 
-Status sumber yang tampil mencakup:
-
-- data ARKAS aktif;
-- tidak muncul pada sinkronisasi terakhir;
-- perlu rekonsiliasi.
-
-Checklist menggunakan bahasa operator.
-
-### 4.10 Kategori SPJ
+### 4.9 Kategori SPJ
 
 Kategori utama:
 
@@ -252,121 +195,119 @@ Kategori utama:
 - `HONOR_PEGAWAI`;
 - `JASA_LAINNYA`.
 
-Detail kategori yang sudah mulai didukung:
+`SpjTransactionDetailsService` tetap menjadi bagian penting penyimpanan detail kategori.
 
-- Barang: invoice/faktur, pesanan, BAP, BAST, item barang;
-- Konsumsi: pembelian, acara, peserta/porsi;
-- Pemeliharaan: work order dan banyak pekerja;
-- SPPD: banyak pelaksana dan tanggal perjalanan;
-- Honor Pegawai: banyak penerima honor;
-- Jasa Lainnya: isian jasa ringkas.
+### 4.10 Refactor `SpjController`
 
-`SpjTransactionDetailsService` menangani penyimpanan detail kategori secara lebih terstruktur.
+`SpjController` tidak lagi menjadi God Controller. Route dan nama action tetap dipertahankan, tetapi tanggung jawab dipisahkan ke:
 
-### 4.11 Paket SPJ dan checklist
+```text
+app/UseCases/Spj/
+├── SpjWorkspaceUseCase.php
+├── SpjPackageUseCase.php
+├── SpjNumberingUseCase.php
+├── SpjDocumentUseCase.php
+└── SpjReportUseCase.php
+```
 
-Sudah tersedia fondasi untuk:
+Pembagian tanggung jawab:
 
-- membuat/menyiapkan paket SPJ;
-- mengecek kelengkapan;
-- memisahkan workflow paket dari transaksi sumber;
-- mengarahkan operator pada kekurangan data.
+- `SpjWorkspaceUseCase`: query/tab workspace, metrics, roster peserta;
+- `SpjPackageUseCase`: prepare/edit paket, validasi kategori, pajak, detail paket;
+- `SpjNumberingUseCase`: numbering, lifecycle, quarter workflow, settlement;
+- `SpjDocumentUseCase`: preview/download/generator integration;
+- `SpjReportUseCase`: laporan dan export.
 
-Validasi sebelum READY/penomoran tetap perlu terus diperketat agar konsisten antar kategori.
+Refactor ini bertujuan mengubah organisasi kode tanpa mengubah aturan bisnis atau kontrak HTTP.
 
-### 4.12 Penomoran dokumen
+### 4.11 Paket SPJ, checklist, numbering, dan dokumen
 
-Sudah tersedia:
-
-- `SpjNumberingWorkflowController`;
-- pengaturan format nomor dokumen;
-- workflow numbering;
-- test format nomor;
-- test workflow penomoran;
-- critical document workflow test.
-
-Target final yang belum dianggap selesai:
-
-- simulasi nomor sebelum commit;
-- penomoran triwulan atomik;
-- domain urutan per jenis dokumen;
-- pencegahan nomor ganda;
-- audit lengkap;
-- tidak ada numbering implisit saat preview/download.
-
-### 4.13 Template dan generator dokumen
-
-Sudah tersedia:
-
-- `DocumentTemplateController`;
-- `SpjDocumentController`;
-- `SpjTemplateService`;
-- DomPDF;
-- PHPWord;
-- PhpSpreadsheet;
-- placeholder template terpusat;
-- katalog placeholder di UI;
-- dokumentasi `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.
-
-`REFERENSI_BAYAR` sudah terhubung ke referensi pembayaran transaksi sehingga placeholder terkait cara bayar dapat diproses konsisten.
-
-Status saat ini:
-
-- fondasi generator sudah ada;
-- Word/Excel/PDF bukan lagi fitur yang “belum tersedia”;
-- namun generator dan preview lintas format masih perlu stabilisasi end-to-end dari browser.
-
-### 4.14 Audit dan laporan
-
-Sudah terdapat controller/service audit dan log operasional.
-
-Laporan audit sudah memiliki fondasi export.
-
-Laporan BOS lengkap seperti K7/K7A/K8/SPTJM/K7B/K7C dan buku pembantu masih termasuk tahap lanjutan setelah workflow inti stabil.
-
-### 4.15 Dashboard operasional
-
-Dashboard dan operational dashboard sudah tersedia sebagai fondasi monitoring.
-
-Penyempurnaan berikutnya adalah menyelaraskan dashboard dengan status operator, triwulan, kelengkapan SPJ, dan rekonsiliasi.
+Fondasi paket/checklist, workflow numbering, format nomor, template dokumen, placeholder, PDF/Word/Excel, serta audit sudah tersedia. Area ini belum dianggap final sampai alur browser end-to-end stabil.
 
 ---
 
 ## 5. Standardisasi GUI — kondisi terbaru
 
-Dokumen acuan: `docs/GUI_STANDARDIZATION.md`.
+Acuan: `docs/GUI_STANDARDIZATION.md`.
 
-### Sudah diterapkan
+### Fondasi global yang sudah diterapkan
 
 - sidebar persisten;
 - breadcrumb global sticky;
-- page header + summary pattern;
-- fondasi komponen `x-ui.*`;
-- status badge dengan bahasa operator;
-- compatibility layer untuk status lama;
-- pemisahan readonly ARKAS/BKU dan editable SPJ;
-- dark component layer;
-- dark theme dimuat secara global.
+- sticky footer/control `Ke atas` untuk halaman panjang;
+- page header + summary;
+- form/input/select/textarea/button primitives;
+- table standardization global;
+- client/server pagination yang diseragamkan secara visual;
+- responsive horizontal table wrapper;
+- status badge manusiawi;
+- compatibility layer status lama;
+- visual readonly ARKAS/BKU vs editable SPJ;
+- dark mode global;
+- dynamic accent theme.
 
-### Sedang berlangsung
+### Primitive UI yang tersedia
 
-- migrasi form lama ke `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`;
-- standardisasi spacing, section, tabel, filter, dan empty state;
-- Detail Transaksi sebagai workspace operator;
-- migrasi semua badge/status teknis ke label manusiawi;
-- penyelarasan halaman user management dan workspace SPJ.
+```text
+<x-ui.page-shell>
+<x-ui.alert>
+<x-ui.empty-state>
+<x-ui.badge>
+<x-ui.detail-list>
+<x-ui.detail-item>
+<x-ui.toolbar>
+<x-ui.modal>
+<x-ui.action-menu>
+<x-ui.loading>
+<x-ui.sticky-actions>
+<x-ui.danger-zone>
+<x-ui.table>
+<x-ui.field>
+<x-ui.input>
+<x-ui.select>
+<x-ui.textarea>
+<x-ui.button>
+<x-ui.form-section>
+<x-ui.status-badge>
+```
 
-### Belum dianggap selesai
+Komponen legacy yang sudah diarahkan ke sistem baru antara lain:
 
-- UI rekonsiliasi;
-- workflow SPJ & penomoran yang sepenuhnya konsisten;
+- `page-filter`;
+- `tabs`;
+- `stat-item`;
+- `error-alert`;
+- `loading-spinner`;
+- `page-table-per-page`.
+
+### Aturan tema
+
+Accent non-semantik memakai:
+
+```text
+--theme-accent
+--theme-accent-strong
+--theme-accent-soft
+--theme-sidebar
+--theme-sidebar-deep
+```
+
+Surface/text/border memakai token `--ui-*`. Success/warning/danger tetap warna semantik agar makna tindakan tidak berubah saat tema diganti.
+
+### Pekerjaan GUI yang masih tersisa
+
+- migrasi view yang masih menulis kelas Tailwind panjang/hard-coded;
+- UI rekonsiliasi final;
+- workflow SPJ/numbering final;
 - dashboard operasional final;
-- authorization/safety audit dari sisi UI + backend;
+- authorization/safety audit;
 - lifecycle dokumen dan revisi final.
+
+Design system dasar tidak perlu dibangun ulang; halaman baru harus memakai primitive yang sudah ada.
 
 ---
 
-## 6. Test suite yang sudah tersedia
+## 6. Test suite
 
 Feature test mencakup antara lain:
 
@@ -376,72 +317,55 @@ Feature test mencakup antara lain:
 - `ImpersonationTest`;
 - `SafeArkasSynchronizationTest`;
 - `SchoolDatabaseManagerTest`;
+- `SchoolDatabaseResetServiceTest`;
 - `SchoolYearSelectionFlowTest`;
 - `SecurityHardeningTest`;
 - `SyncedDataSpjEntitiesTest`;
 - `TransactionsTableLivewireTest`;
 - `UserManagementTest`.
 
-Catatan penting:
-
-- keberadaan test tidak berarti seluruh test pasti lulus pada setiap commit;
-- setelah perubahan backend jalankan test relevan atau `php artisan test`;
-- setelah perubahan frontend jalankan `npm run build`.
+Catatan: keberadaan test bukan klaim bahwa seluruh suite sedang hijau. Jalankan `php artisan test` dan `npm run build` pada environment project sebelum release.
 
 ---
 
 ## 7. Technical debt / area perhatian
 
-### Controller SPJ terlalu besar
+### Controller SPJ
 
-`SpjController.php` telah menjadi controller besar dan perlu terus diarahkan ke service/use-case terpisah agar domain tidak semakin sulit dipelihara.
+Masalah controller besar sudah ditangani pada tingkat utama melalui use case extraction. Technical debt berikutnya adalah menjaga use case tetap kecil, menghindari duplikasi service, dan memastikan aturan domain tidak kembali masuk ke controller.
 
-Gunakan service yang sudah tersedia sebelum menambah logika baru langsung ke controller.
+### Route web
 
-### Route web semakin besar
+`routes/web.php` masih besar dan dapat dipisahkan per domain setelah workflow inti stabil.
 
-`routes/web.php` sudah memuat banyak domain. Pemisahan route per domain dapat dipertimbangkan setelah workflow inti stabil agar tidak menambah risiko saat fase GUI aktif.
+### Migrasi UI legacy
 
-### Dokumentasi historis
-
-Dokumen yang masih memakai istilah/field lama harus dianggap historis jika bertentangan dengan:
-
-1. `SPJ_DESIGN_DECISIONS.md`;
-2. `CURRENT_PROGRESS.md`;
-3. implementasi kode aktif.
-
-Jangan menghidupkan kembali `manual_description` atau workflow numbering lama hanya karena masih disebut di catatan historis.
+Compatibility layer masih diperlukan selama seluruh Blade belum dimigrasikan. Kode baru tidak boleh memperbanyak hard-coded accent color.
 
 ---
 
 ## 8. Prioritas pengembangan berikutnya
 
-Urutan utama:
-
 1. stabilkan generator PDF/Excel/Word;
-2. preview terpadu di browser yang sama tanpa side effect;
+2. preview terpadu tanpa side effect;
 3. finalisasi lifecycle/status paket SPJ;
 4. finalisasi penomoran triwulan;
 5. finalisasi locking, revisi, pembatalan, dan audit;
 6. rekonsiliasi ARKAS dengan snapshot/diff;
 7. hardening role/authorization;
 8. end-to-end test operator seluruh kategori;
-9. UX produktivitas (filter persisten, pencarian, simpan & berikutnya);
+9. migrasi view tersisa ke primitive UI dan UX produktivitas;
 10. laporan BOS lengkap dan release hardening.
-
-Ikuti `docs/DEVELOPMENT_ROADMAP.md` sebagai urutan kerja resmi.
 
 ---
 
 ## 9. Definisi kondisi project saat ini
 
-Project sudah melewati tahap prototype dasar. Fondasi domain utama sudah tersedia, tetapi belum layak dianggap release final.
+Project sudah melewati tahap prototype dasar. Fondasi domain, tenancy, use case SPJ, dan design system utama sudah terbentuk, tetapi aplikasi belum layak dianggap release final.
 
-Posisi saat ini paling tepat disebut:
+Posisi saat ini:
 
-> Fondasi bisnis dan arsitektur sudah terbentuk; pengembangan sedang menuntaskan standardisasi GUI dan workflow SPJ end-to-end sebelum production hardening.
-
-Jangan membangun ulang arsitektur dari nol kecuali ditemukan blocker struktural yang dapat dibuktikan.
+> Fondasi bisnis, arsitektur, dan design system sudah terbentuk; pengembangan sedang menuntaskan workflow SPJ end-to-end, rekonsiliasi, lifecycle dokumen, dan production hardening.
 
 ---
 
