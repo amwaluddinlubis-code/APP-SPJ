@@ -88,6 +88,43 @@ main aside.rounded-2xl.border.bg-white {
     transition: padding .2s ease, background .25s ease, border-radius .2s ease;
 }
 
+/* Header typography is intentionally theme-invariant.
+   Profiles may change color/surface/layout treatment, never font family, size,
+   weight, tracking, or line-height. This keeps reading comfort predictable. */
+.page-header-main,
+.page-header-main :is(.page-header-kicker, .page-header-title, .page-header-description, .page-header-actions) {
+    font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif) !important;
+}
+
+.page-header-kicker {
+    font-size: .6875rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    letter-spacing: .2em !important;
+}
+
+.page-header-title {
+    font-size: 1.875rem !important;
+    font-weight: 700 !important;
+    line-height: 2.25rem !important;
+    letter-spacing: -.025em !important;
+}
+
+.page-header-description {
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    line-height: 1.625rem !important;
+    letter-spacing: 0 !important;
+}
+
+.page-header-actions :is(.ui-btn, .btn, button, a) {
+    font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif) !important;
+    font-size: .875rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    letter-spacing: 0 !important;
+}
+
 html[data-ui-header='flat'] .page-header-main {
     background: var(--profile-surface-bg) !important;
     color: var(--profile-text) !important;
@@ -133,7 +170,6 @@ html[data-ui-header='bold'] .page-header-main {
     display: flex;
     align-items: flex-end;
 }
-html[data-ui-header='bold'] .page-header-title { font-size: clamp(1.85rem, 2.4vw, 2.65rem) !important; }
 
 html[data-ui-header='deep'] .page-header-main {
     background: linear-gradient(135deg, #020617 0%, var(--theme-sidebar-deep) 55%, var(--theme-sidebar) 100%) !important;
@@ -337,12 +373,10 @@ html[data-ui-appearance='light'] main table:not(.fi-ta-table):not([data-ui-table
 html[data-ui-personality='minimal'] .ui-modal { box-shadow: 0 10px 30px rgb(15 23 42 / .12) !important; }
 html[data-ui-personality='premium'] .ui-modal { box-shadow: var(--profile-floating-shadow) !important; }
 
-/* Personality-specific typography hierarchy. */
-html[data-ui-personality='office'] :is(.page-header-title,.ui-section-card-title,.ui-form-section-title) { letter-spacing: -.01em; }
-html[data-ui-personality='executive'] .page-header-title,
-html[data-ui-personality='command'] .page-header-title { font-weight: 900 !important; letter-spacing: -.035em !important; }
-html[data-ui-personality='airy'] :is(.ui-section-card-description,.ui-form-section-description,.page-header-description),
-html[data-ui-personality='soft'] :is(.ui-section-card-description,.ui-form-section-description,.page-header-description) { line-height: 1.75 !important; }
+/* Personality typography may vary outside the page header only. */
+html[data-ui-personality='office'] :is(.ui-section-card-title,.ui-form-section-title) { letter-spacing: -.01em; }
+html[data-ui-personality='airy'] :is(.ui-section-card-description,.ui-form-section-description),
+html[data-ui-personality='soft'] :is(.ui-section-card-description,.ui-form-section-description) { line-height: 1.75 !important; }
 
 /* Dark profile keeps structural personality while inheriting the existing dark palette. */
 html[data-ui-appearance='dark'] {
@@ -366,6 +400,21 @@ html[data-ui-appearance='dark'] :is(.ui-section-card-header,.ui-form-section-hea
         --profile-header-padding-x: 1.1rem;
         --profile-header-padding-y: 1.3rem;
         --profile-content-padding: 1rem;
+    }
+
+    .page-header-kicker {
+        font-size: .6875rem !important;
+        line-height: 1.25rem !important;
+    }
+
+    .page-header-title {
+        font-size: 1.5rem !important;
+        line-height: 2rem !important;
+    }
+
+    .page-header-description {
+        font-size: .875rem !important;
+        line-height: 1.5rem !important;
     }
 
     html[data-ui-header='bold'] .page-header-main { min-height: auto; }
