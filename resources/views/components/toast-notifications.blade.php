@@ -1,5 +1,3 @@
-@vite(['resources/css/table-standardization.css', 'resources/css/ui-generalization.css'])
-
 @php
     $initialNotifications = collect([
         ['type' => 'success', 'message' => session('success')],
