@@ -96,7 +96,8 @@
                         <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*') ? 'app-nav-active' : '' }}" href="{{ route('schools.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Profil Sekolah</span></a>
                         <a class="app-nav {{ request()->routeIs('users.*') ? 'app-nav-active' : '' }}" href="{{ route('users.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Manajemen User</span></a>
                         <a class="app-nav {{ request()->routeIs('school-backups.*') ? 'app-nav-active' : '' }}" href="{{ route('school-backups.index') }}"><x-ui-icon name="archive" /><span class="nav-label">Backup & Pemulihan</span></a>
-                        <a class="app-nav {{ request()->routeIs('database-manager.*') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.index') }}"><x-ui-icon name="server" /><span class="nav-label">Database Aktif</span></a>
+                        <a class="app-nav {{ request()->routeIs('database-manager.index') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.index') }}"><x-ui-icon name="server" /><span class="nav-label">Database Aktif</span></a>
+                        <a class="app-nav {{ request()->routeIs('database-manager.reset-form') ? 'app-nav-active' : '' }} text-rose-300" href="{{ route('database-manager.reset-form') }}"><span class="app-nav-icon">↺</span><span class="nav-label">Reset Database</span></a>
                         <a class="app-nav {{ request()->routeIs('impersonation.*') ? 'app-nav-active' : '' }}" href="{{ route('impersonation.index') }}"><span class="app-nav-icon">◎</span><span class="nav-label">Uji Sebagai User</span></a>
                     @endif
                 </div>
