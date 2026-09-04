@@ -1,0 +1,159 @@
+/* Cross-theme accessibility contract.
+   This layer is intentionally loaded last. It provides contrast-safe semantic
+   foregrounds and visible keyboard focus without changing each theme's identity. */
+
+:root {
+    --theme-action-bg: var(--theme-accent);
+    --theme-action-fg: #0f172a;
+    --theme-content-accent: var(--theme-sidebar);
+    --theme-focus-ring: var(--theme-sidebar);
+    --theme-focus-halo: color-mix(in srgb, var(--theme-accent) 24%, transparent);
+}
+
+/* Neutral/dark accents are dark enough to carry light foreground text. */
+html[data-theme='dark'],
+html[data-theme='slate'],
+html[data-theme='gray'],
+html[data-theme='zinc'],
+html[data-theme='neutral'],
+html[data-theme='stone'] {
+    --theme-action-fg: #f8fafc;
+}
+
+/* Indigo and violet sit in the WCAG AA no-man's-land on their base accent:
+   neither white nor slate-950 reaches 4.5:1, so use the stronger shade. */
+html[data-theme='indigo'],
+html[data-theme='violet'] {
+    --theme-action-bg: var(--theme-accent-strong);
+    --theme-action-fg: #f8fafc;
+}
+
+html[data-theme='dark'] {
+    --theme-content-accent: #cbd5e1;
+    --theme-focus-ring: #cbd5e1;
+    --theme-focus-halo: rgb(203 213 225 / .24);
+}
+
+/* Primary/accent surfaces must use the semantic foreground instead of assuming white. */
+.ui-btn-primary,
+.btn-primary,
+.theme-btn,
+.app-sidebar .app-nav-active,
+html[data-theme] nav[aria-label='Pagination'] button[aria-current='page'],
+html[data-theme] .pagination .active span {
+    background-color: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.ui-btn-primary:hover,
+.btn-primary:hover,
+.theme-btn:hover,
+.app-sidebar .app-nav-active:hover {
+    background-color: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-action-fg) 14%, transparent),
+                0 5px 14px color-mix(in srgb, var(--theme-action-bg) 22%, transparent);
+}
+
+.app-sidebar-brand-mark {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+/* Accent used as content text must be darker than decorative accent tokens. */
+.theme-text,
+.module-breadcrumb a,
+.ui-badge-theme,
+.app-runtime-badge,
+main :is(.text-indigo-500,.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-indigo-900,
+         .text-violet-500,.text-violet-600,.text-violet-700,.text-violet-800,.text-violet-900,
+         .text-blue-500,.text-blue-600,.text-blue-700,.text-blue-800,.text-blue-900,
+         .text-sky-500,.text-sky-600,.text-sky-700,.text-sky-800,.text-sky-900,
+         .text-cyan-500,.text-cyan-600,.text-cyan-700,.text-cyan-800,.text-cyan-900) {
+    color: var(--theme-content-accent) !important;
+}
+
+html[data-theme] table thead th,
+html[data-theme] .table th,
+html[data-theme] .fi-ta-header-ctn th {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--theme-focus-ring) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px var(--theme-focus-halo) !important;
+}
+
+:is(.ui-input,.ui-select,.ui-textarea,.app-topbar-select):focus-visible {
+    border-color: var(--theme-focus-ring) !important;
+}
+
+/* Never communicate disabled state by opacity alone: retain readable text and cursor cue. */
+.ui-btn:disabled,
+[aria-disabled='true'].ui-btn,
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+    opacity: .64;
+}
+
+/* Underline text links in content on interaction so color is not the only cue. */
+main a:not(.ui-btn):not(.btn):not(.app-nav):not([class*='button']):focus-visible,
+main a:not(.ui-btn):not(.btn):not(.app-nav):not([class*='button']):hover {
+    text-decoration-thickness: .09em;
+    text-underline-offset: .18em;
+}
+
+/* Users requesting stronger contrast receive clearer boundaries. */
+@media (prefers-contrast: more) {
+    :root {
+        --ui-component-border: var(--ui-component-border-strong, #94a3b8);
+        --profile-card-shadow: none;
+    }
+
+    .app-topbar,
+    .ui-section-card,
+    .ui-form-section,
+    .ui-modal,
+    .ui-toolbar,
+    .ui-table-container,
+    .page-header-shell {
+        border-width: 2px !important;
+    }
+
+    .app-sidebar .app-nav-active {
+        outline: 2px solid var(--theme-action-fg);
+        outline-offset: -3px;
+    }
+}
+
+/* Respect operating-system high-contrast palettes. */
+@media (forced-colors: active) {
+    :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid Highlight !important;
+        box-shadow: none !important;
+    }
+
+    .ui-btn-primary,
+    .btn-primary,
+    .theme-btn,
+    .app-sidebar .app-nav-active,
+    .app-sidebar-brand-mark {
+        forced-color-adjust: auto;
+        border: 1px solid ButtonText !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
