@@ -15,6 +15,7 @@
     --profile-sidebar-item-radius: .625rem;
     --profile-table-head-transform: uppercase;
     --profile-table-head-spacing: .04em;
+    --profile-table-hover-mix: 3.5%;
     --profile-toolbar-bg: var(--profile-surface-bg);
     --profile-toolbar-border: var(--profile-border-color);
 }
@@ -215,8 +216,12 @@ main textarea {
 }
 
 .ui-btn,
-main button:not(.app-nav):not([class*="rounded-full"]),
-main a.ui-btn {
+.theme-btn,
+.theme-btn-outline,
+.btn,
+.btn-primary,
+.btn-outline-primary,
+.btn-outline-secondary {
     min-height: var(--profile-control-height) !important;
 }
 
@@ -278,6 +283,13 @@ html[data-ui-personality='premium'] .app-nav-active {
 }
 
 /* Tables */
+html[data-ui-table='dense'] { --profile-table-hover-mix: 2.5%; }
+html[data-ui-table='minimal'] { --profile-table-hover-mix: 1.8%; }
+html[data-ui-table='lined'] { --profile-table-hover-mix: 3%; }
+html[data-ui-table='soft'] { --profile-table-hover-mix: 4.5%; }
+html[data-ui-table='airy'] { --profile-table-hover-mix: 3%; }
+html[data-ui-table='quiet'] { --profile-table-hover-mix: 1.5%; }
+
 main table:not(.fi-ta-table):not([data-ui-table='off']) th,
 main table:not(.fi-ta-table):not([data-ui-table='off']) td {
     padding-top: var(--profile-table-row-y) !important;
@@ -317,7 +329,7 @@ html[data-ui-table='dense'] main table:not(.fi-ta-table):not([data-ui-table='off
 }
 
 html[data-ui-appearance='light'] main table:not(.fi-ta-table):not([data-ui-table='off']) tbody tr:hover {
-    background: color-mix(in srgb, var(--theme-accent) calc(var(--profile-table-hover-strength) * 100%), white) !important;
+    background: color-mix(in srgb, var(--theme-accent) var(--profile-table-hover-mix), white) !important;
 }
 
 /* Modals */
