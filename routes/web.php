@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
         Route::get('/pengaturan/database-aktif', [DatabaseManagerController::class, 'index'])->name('database-manager.index');
+        Route::get('/pengaturan/database-reset', [DatabaseManagerController::class, 'resetForm'])->name('database-manager.reset-form');
         Route::post('/pengaturan/database-aktif/{schoolId}/activate', [DatabaseManagerController::class, 'activate'])->name('database-manager.activate');
         Route::post('/pengaturan/database-aktif/{schoolId}/migrate', [DatabaseManagerController::class, 'migrate'])->name('database-manager.migrate');
         Route::post('/pengaturan/database-aktif/{schoolId}/checkpoint', [DatabaseManagerController::class, 'checkpoint'])->name('database-manager.checkpoint');
