@@ -35,7 +35,7 @@ class TransactionsTable extends Component
     public ?int $semester = null;
 
     #[Url(except: 15)]
-    public int $perPage = 15;
+    public int|string $perPage = 15;
 
     public bool $showEditor = false;
 
@@ -57,10 +57,12 @@ class TransactionsTable extends Component
         $this->month = request()->integer('month') ?: null;
         $this->quarter = request()->integer('quarter') ?: null;
         $this->semester = request()->integer('semester') ?: null;
-        $requestedPerPage = request()->integer('perPage');
+        $requestedPerPage = request('perPage');
 
-        if (in_array($requestedPerPage, [15, 25, 50, 100], true)) {
-            $this->perPage = $requestedPerPage;
+        if ($requestedPerPage === 'all') {
+            $this->perPage = 'all';
+        } elseif (in_array((int) $requestedPerPage, [15, 25, 50, 100], true)) {
+            $this->perPage = (int) $requestedPerPage;
         }
     }
 
@@ -187,7 +189,8 @@ class TransactionsTable extends Component
             ->with('spjPackage:id,transaction_id,document_number,status,finalized_at')
             ->withCount('items');
 
-        $perPage = in_array($this->perPage, [15, 25, 50, 100], true) ? $this->perPage : 15;
+        $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
+        $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
         // Paket SPJ yang sudah final/arsip selalu ditempatkan paling belakang.
         // Transaksi yang masih perlu dikerjakan tetap mengikuti urutan status lalu ID.
