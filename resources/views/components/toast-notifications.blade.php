@@ -1,3 +1,5 @@
+@vite('resources/js/theme-profiles.js')
+
 @php
     $initialNotifications = collect([
         ['type' => 'success', 'message' => session('success')],
