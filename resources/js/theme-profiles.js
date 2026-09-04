@@ -1,4 +1,5 @@
 import '../css/theme-profiles.css';
+import '../css/theme-profile-components.css';
 
 const profile = (config) => Object.freeze(config);
 
