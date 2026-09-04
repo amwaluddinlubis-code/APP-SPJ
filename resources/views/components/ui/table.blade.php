@@ -4,11 +4,11 @@
     'compact' => false,
 ])
 
-<div data-table-container class="overflow-x-auto">
+<div data-table-container class="ui-table-container">
     <table
         {{ $attributes->class([
-            'app-data-table w-full',
-            'text-xs' => $compact,
+            'app-data-table ui-table w-full',
+            'ui-table-compact' => $compact,
         ]) }}
         data-pagination="{{ $pagination }}"
         @if($minWidth) style="min-width: {{ $minWidth }}" @endif
