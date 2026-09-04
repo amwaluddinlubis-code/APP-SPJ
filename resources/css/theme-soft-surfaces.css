@@ -8,6 +8,13 @@
     --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 12%, #ffffff);
     --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 14%, #dbe3ec);
     --theme-topbar-shadow: 0 1px 10px rgb(15 23 42 / .045);
+    --theme-legacy-surface: var(--ui-component-surface, var(--ui-surface, #ffffff));
+    --theme-legacy-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --theme-legacy-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --theme-legacy-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --theme-legacy-text: var(--comfort-text-primary, #334155);
+    --theme-legacy-text-strong: var(--comfort-text-strong, #1f2937);
+    --theme-legacy-text-muted: var(--comfort-text-muted, #718096);
 }
 
 body {
@@ -82,6 +89,101 @@ html[data-ui-personality='command'] {
     --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 9%, #f8fafc);
     --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 5%, #eef2f7);
     --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 8%, #ffffff);
+}
+
+/* Legacy structural color bridge.
+   Old Blade views may still carry Tailwind palette names, but structural colors
+   must now resolve through the selected theme. Semantic success/warning/danger
+   colors are deliberately excluded from this bridge. */
+main :is(
+    .bg-indigo-50,.bg-indigo-100,.bg-violet-50,.bg-violet-100,
+    .bg-blue-50,.bg-blue-100,.bg-sky-50,.bg-sky-100,.bg-cyan-50,.bg-cyan-100
+) {
+    background-color: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--theme-legacy-surface)) !important;
+}
+
+main :is(
+    .bg-indigo-600,.bg-indigo-700,.bg-violet-600,.bg-violet-700,
+    .bg-blue-600,.bg-blue-700,.bg-sky-600,.bg-sky-700,.bg-cyan-600,.bg-cyan-700
+) {
+    background-color: var(--theme-accent) !important;
+}
+
+main :is(
+    .text-indigo-500,.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-indigo-900,
+    .text-violet-500,.text-violet-600,.text-violet-700,.text-violet-800,.text-violet-900,
+    .text-blue-500,.text-blue-600,.text-blue-700,.text-blue-800,.text-blue-900,
+    .text-sky-500,.text-sky-600,.text-sky-700,.text-sky-800,.text-sky-900,
+    .text-cyan-500,.text-cyan-600,.text-cyan-700,.text-cyan-800,.text-cyan-900
+) {
+    color: color-mix(in srgb, var(--theme-accent-strong) 68%, var(--theme-legacy-text)) !important;
+}
+
+main :is(
+    .border-indigo-100,.border-indigo-200,.border-indigo-300,.border-indigo-400,
+    .border-violet-100,.border-violet-200,.border-violet-300,.border-violet-400,
+    .border-blue-100,.border-blue-200,.border-blue-300,.border-blue-400,
+    .border-sky-100,.border-sky-200,.border-sky-300,.border-sky-400,
+    .border-cyan-100,.border-cyan-200,.border-cyan-300,.border-cyan-400
+) {
+    border-color: color-mix(in srgb, var(--theme-accent) 22%, var(--theme-legacy-border)) !important;
+}
+
+main :is(
+    .ring-indigo-500,.ring-violet-500,.ring-blue-500,.ring-sky-500,.ring-cyan-500
+) {
+    --tw-ring-color: color-mix(in srgb, var(--theme-accent) 28%, transparent) !important;
+}
+
+main :is(
+    .from-indigo-950,.from-indigo-900,.from-violet-950,.from-violet-900,
+    .from-blue-950,.from-blue-900,.from-sky-950,.from-sky-900,.from-cyan-950,.from-cyan-900
+) {
+    --tw-gradient-from: var(--theme-sidebar-deep) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in srgb, var(--theme-sidebar-deep) 0%, transparent) var(--tw-gradient-to-position) !important;
+}
+
+main :is(
+    .via-indigo-950,.via-indigo-900,.via-violet-950,.via-violet-900,
+    .via-blue-950,.via-blue-900,.via-sky-950,.via-sky-900,.via-cyan-950,.via-cyan-900
+) {
+    --tw-gradient-via: var(--theme-sidebar) var(--tw-gradient-via-position) !important;
+}
+
+main :is(
+    .to-indigo-900,.to-indigo-800,.to-violet-900,.to-violet-800,
+    .to-blue-900,.to-blue-800,.to-sky-900,.to-sky-800,.to-cyan-900,.to-cyan-800
+) {
+    --tw-gradient-to: var(--theme-accent) var(--tw-gradient-to-position) !important;
+}
+
+/* Neutral hard-coded utilities become token-native surfaces/text. */
+main :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-zinc-50) {
+    background-color: var(--theme-legacy-surface) !important;
+}
+
+main :is(.bg-slate-100,.bg-gray-100,.bg-zinc-100) {
+    background-color: var(--theme-legacy-surface-soft) !important;
+}
+
+main :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200,.border-zinc-100,.border-zinc-200) {
+    border-color: var(--theme-legacy-border) !important;
+}
+
+main :is(.border-slate-300,.border-gray-300,.border-zinc-300) {
+    border-color: var(--theme-legacy-border-strong) !important;
+}
+
+main :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-gray-950,.text-gray-900,.text-gray-800,.text-zinc-950,.text-zinc-900,.text-zinc-800) {
+    color: var(--theme-legacy-text-strong) !important;
+}
+
+main :is(.text-slate-700,.text-slate-600,.text-gray-700,.text-gray-600,.text-zinc-700,.text-zinc-600) {
+    color: var(--theme-legacy-text) !important;
+}
+
+main :is(.text-slate-500,.text-slate-400,.text-gray-500,.text-gray-400,.text-zinc-500,.text-zinc-400) {
+    color: var(--theme-legacy-text-muted) !important;
 }
 
 /* Dark appearance uses tinted charcoal instead of pure black or saturated accent. */
