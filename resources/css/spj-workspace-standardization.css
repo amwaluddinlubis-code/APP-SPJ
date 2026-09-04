@@ -34,32 +34,6 @@ main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiap
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--spj-surface-soft)) !important;
 }
 
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) label,
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) label > span {
-    color: var(--spj-text-muted) !important;
-}
-
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) select {
-    border-color: var(--spj-border-strong) !important;
-    border-radius: var(--profile-control-radius) !important;
-    background: var(--spj-surface) !important;
-    color: var(--spj-text-strong) !important;
-}
-
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) button {
-    background: var(--theme-action-bg) !important;
-    color: var(--theme-action-fg) !important;
-}
-
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) a {
-    color: var(--spj-text) !important;
-}
-
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) a:hover {
-    background: var(--spj-surface) !important;
-    color: var(--spj-text-strong) !important;
-}
-
 /* Preparation and package tables keep geometry from table-standardization.css. */
 main:has(#spj-main-tabs) table tbody {
     background: transparent !important;
