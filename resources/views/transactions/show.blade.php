@@ -143,21 +143,20 @@
             </div>
         @endif
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-            <div class="bg-slate-900 bg-cover bg-center px-5 py-6 text-white sm:px-6" style="background-image:{{ $headerVisual['image'] ? "linear-gradient(90deg,rgba(15,23,42,.96) 0%,rgba(15,23,42,.80) 42%,rgba(15,23,42,.38) 100%),url('".asset($headerVisual['image'])."')" : 'linear-gradient(135deg,#0f172a 0%,#312e81 55%,#0369a1 100%)' }}">
-                <div class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xl font-bold text-sky-100 ring-1 ring-inset ring-white/20">{{ $headerVisual['label'] }}</div>
-                <p class="mt-4 text-xs font-bold tracking-[.16em] text-sky-200">DETAIL TRANSAKSI / PAKET SPJ</p>
-                <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><h1 class="font-mono text-3xl font-bold">{{ $transaction->no_bukti }}</h1><p class="mt-2 max-w-3xl text-base text-slate-300">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.' }}</p></div><div class="text-base text-slate-300">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }} · {{ ['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Cara bayar belum diisi' }}</div></div>
+        <x-page-header
+            :title="$transaction->no_bukti"
+            :subtitle="$transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.'"
+            kicker="{{ $headerVisual['label'] }} · Detail transaksi / paket SPJ"
+        >
+            <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+                <x-stat-item label="Nilai bruto" :value="$rupiah($transaction->gross_amount)" :hint="$transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" />
+                <x-stat-item label="Total pajak" :value="$rupiah($transaction->tax_total)" hint="PPN, PPh, dan pajak daerah" />
+                <x-stat-item label="Nilai dibayarkan" :value="$rupiah($transaction->net_amount)" :hint="['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Cara bayar belum diisi'" />
+                <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item" :hint="'Akumulasi: '.$rupiah($totalItems)" />
             </div>
-        </section>
+        </x-page-header>
 
-        <section class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)]">
-            <div class="grid gap-4 sm:grid-cols-2 xl:order-1">
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Nilai Bruto</p><p class="mt-2 text-xl font-bold text-slate-900">{{ $rupiah($transaction->gross_amount) }}</p></article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Total Pajak</p><p class="mt-2 text-xl font-bold text-amber-600">{{ $rupiah($transaction->tax_total) }}</p></article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Nilai Dibayarkan</p><p class="mt-2 text-xl font-bold text-emerald-700">{{ $rupiah($transaction->net_amount) }}</p></article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Rincian Barang/Jasa</p><p class="mt-2 text-xl font-bold text-indigo-700">{{ $transaction->items->count() }} item</p><p class="mt-1 text-xs text-slate-500">Akumulasi: {{ $rupiah($totalItems) }}</p></article>
-            </div>
+        <section>
             <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow xl:order-2">
                 <div class="border-b border-slate-100 px-5 py-3.5"><h2 class="font-bold text-slate-800">Informasi Referensi</h2></div>
                 <div class="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">

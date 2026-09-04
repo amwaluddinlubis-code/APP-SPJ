@@ -6,8 +6,14 @@
             kicker="Dashboard operasional"
         >
             <x-slot:actions>
-                <a href="{{ route('transactions.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm">Buka transaksi</a>
-                <a href="{{ route('spj.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white">Ruang Kerja SPJ</a>
+                <x-ui.button :href="route('transactions.index')">
+                    <x-ui-icon name="transaction" class="h-4 w-4" />
+                    <span>Buka transaksi</span>
+                </x-ui.button>
+                <x-ui.button :href="route('spj.index')" variant="secondary">
+                    <x-ui-icon name="document" class="h-4 w-4" />
+                    <span>Ruang Kerja SPJ</span>
+                </x-ui.button>
             </x-slot:actions>
 
             <div class="grid sm:grid-cols-2 xl:grid-cols-4">

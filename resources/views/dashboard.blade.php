@@ -7,26 +7,32 @@
         $hierarchyPayload = json_encode($hierarchyChart->map(fn($h)=>['code'=>$h->account_code,'name'=>$h->account_name,'budget'=>(float)$h->budget,'realization'=>(float)$h->realization,'level'=>(int)$h->level])->values(), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT);
     @endphp
     <div class="space-y-6">
-        {{-- Hero — theme --}}
-        <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white shadow-sm sm:px-7 lg:py-8">
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <p class="text-xs font-bold tracking-[0.16em] text-white/70">DASHBOARD SPJ BOSP</p>
-                    <h1 class="mt-2 text-2xl font-bold sm:text-3xl">{{ $school?->name ?? 'Sekolah belum dipilih' }}</h1>
-                    <p class="mt-1 text-base text-white/80">Tahun Anggaran {{ $year->year }} · {{ $year->fund_source }} @if($school?->npsn) · NPSN {{ $school->npsn }} @endif</p>
-                    <div class="mt-3 flex flex-wrap gap-2 text-xs"><span class="rounded-full bg-white/15 px-2.5 py-1 ring-1 ring-white/20">{{ number_format($transactionCount,0,',','.') }} transaksi</span><span class="rounded-full bg-white/15 px-2.5 py-1 ring-1 ring-white/20">{{ $hierarchyTotalCount }} kelompok rekening</span></div>
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('rkas-budget.index') }}" class="rounded-xl bg-white px-4 py-2.5 text-base font-bold text-slate-800 shadow hover:bg-slate-50">Penganggaran RKAS</a>
-                    <form method="POST" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="rounded-xl theme-btn px-4 py-2.5 text-base font-bold">Sinkron Semua ARKAS</button></form>
-                </div>
+        <x-page-header
+            :title="$school?->name ?? 'Sekolah belum dipilih'"
+            subtitle="Tahun Anggaran {{ $year->year }} · {{ $year->fund_source }} @if($school?->npsn) · NPSN {{ $school->npsn }} @endif"
+            kicker="Dashboard SPJ BOSP"
+        >
+            <x-slot:actions>
+                <x-ui.button :href="route('rkas-budget.index')" variant="secondary">
+                    <x-ui-icon name="budget" class="h-4 w-4" />
+                    <span>Penganggaran RKAS</span>
+                </x-ui.button>
+                <form method="POST" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Lanjutkan?">
+                    @csrf
+                    <input type="hidden" name="confirm_sync" value="1">
+                    <x-ui.button type="submit">
+                        <x-ui-icon name="sync" class="h-4 w-4" />
+                        <span>Sinkron Semua ARKAS</span>
+                    </x-ui.button>
+                </form>
+            </x-slot:actions>
+
+            <div class="grid sm:grid-cols-3">
+                <x-stat-item label="Status sinkronisasi" :value="$latestSync?->status === 'SUCCESS' ? 'Berhasil' : ($latestSync?->status ?? 'Belum pernah')" hint="{{ number_format($transactionCount, 0, ',', '.') }} transaksi" />
+                <x-stat-item label="Sinkronisasi terakhir" :value="$latestSync?->finished_at ? \Illuminate\Support\Carbon::parse($latestSync->finished_at)->translatedFormat('d F Y H:i') : '—'" hint="{{ $hierarchyTotalCount }} kelompok rekening" />
+                <x-stat-item label="Daya serap" value="{{ number_format($absorption, 1, ',', '.') }}%" :hint="$rupiah($realization)" />
             </div>
-            <div class="mt-6 grid gap-3 border-t border-white/15 pt-4 sm:grid-cols-3">
-                <div class="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15"><p class="text-xs text-white/70">Status sinkronisasi</p><p class="mt-1 font-semibold">{{ $latestSync?->status === 'SUCCESS' ? 'Berhasil' : ($latestSync?->status ?? 'Belum pernah') }}</p></div>
-                <div class="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15"><p class="text-xs text-white/70">Sinkronisasi terakhir</p><p class="mt-1 font-semibold">{{ $latestSync?->finished_at ? \Illuminate\Support\Carbon::parse($latestSync->finished_at)->translatedFormat('d F Y H:i') : '—' }}</p></div>
-                <div class="rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15"><p class="text-xs text-white/70">Daya serap</p><p class="mt-1 font-semibold">{{ number_format($absorption,1,',','.') }}% · {{ $rupiah($realization) }}</p></div>
-            </div>
-        </section>
+        </x-page-header>
 
         @if($latestOperation && in_array($latestOperation->status, ['QUEUED', 'RUNNING', 'FAILED'], true))
             <section class="rounded-2xl border px-5 py-4 {{ $latestOperation->status === 'FAILED' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-sky-200 bg-sky-50 text-sky-800' }}">
