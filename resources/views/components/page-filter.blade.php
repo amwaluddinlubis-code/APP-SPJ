@@ -9,54 +9,56 @@
     'spjTypes' => [],
     'additionalFilters' => null,
 ])
-<section class="overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50 shadow">
-    <form method="GET" class="grid gap-3 border-b border-indigo-100 px-5 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-5">
+<section class="ui-filter-panel">
+    <form method="GET" class="ui-filter-grid">
         <div>
-            <label class="block text-xs font-bold uppercase tracking-wide text-indigo-700" for="filter-month">Bulan</label>
-            <select id="filter-month" name="month" class="mt-1.5 w-full rounded-lg border-indigo-200 bg-white px-3 py-2 text-sm">
+            <label class="ui-filter-label" for="filter-month">Bulan</label>
+            <x-ui.select id="filter-month" name="month">
                 <option value="">Semua bulan</option>
                 @foreach(range(1, 12) as $option)
                     <option value="{{ $option }}" @selected($month === $option)>{{ \Carbon\Carbon::create()->month($option)->translatedFormat('F') }}</option>
                 @endforeach
-            </select>
+            </x-ui.select>
         </div>
         <div>
-            <label class="block text-xs font-bold uppercase tracking-wide text-indigo-700" for="filter-quarter">Triwulan</label>
-            <select id="filter-quarter" name="quarter" class="mt-1.5 w-full rounded-lg border-indigo-200 bg-white px-3 py-2 text-sm">
+            <label class="ui-filter-label" for="filter-quarter">Triwulan</label>
+            <x-ui.select id="filter-quarter" name="quarter">
                 <option value="">Semua triwulan</option>
                 @foreach(range(1, 4) as $option)
                     <option value="{{ $option }}" @selected($quarter === $option)>Triwulan {{ $option }}</option>
                 @endforeach
-            </select>
+            </x-ui.select>
         </div>
         <div>
-            <label class="block text-xs font-bold uppercase tracking-wide text-indigo-700" for="filter-semester">Semester</label>
-            <select id="filter-semester" name="semester" class="mt-1.5 w-full rounded-lg border-indigo-200 bg-white px-3 py-2 text-sm">
+            <label class="ui-filter-label" for="filter-semester">Semester</label>
+            <x-ui.select id="filter-semester" name="semester">
                 <option value="">Semua semester</option>
                 <option value="1" @selected($semester === 1)>Semester 1</option>
                 <option value="2" @selected($semester === 2)>Semester 2</option>
-            </select>
+            </x-ui.select>
         </div>
         <div>
-            <label class="block text-xs font-bold uppercase tracking-wide text-indigo-700" for="filter-status">Status</label>
-            <select id="filter-status" name="status" class="mt-1.5 w-full rounded-lg border-indigo-200 bg-white px-3 py-2 text-sm">
+            <label class="ui-filter-label" for="filter-status">Status</label>
+            <x-ui.select id="filter-status" name="status">
                 <option value="">Semua status</option>
                 @if($status)
                     @foreach($status as $option)
                         <option value="{{ $option }}" @selected(request('status') === $option)>{{ $option }}</option>
                     @endforeach
                 @endif
-            </select>
+            </x-ui.select>
         </div>
-        <div class="flex items-end">
+        <div class="flex items-end gap-2">
             <input type="hidden" name="q" value="{{ $search }}">
-            <button class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Tampilkan</button>
+            <x-ui.button type="submit" class="w-full">Tampilkan</x-ui.button>
         </div>
         @if($month || $quarter || $semester || $search || $status)
-            <a href="{{ request()->url() }}" class="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700">Hapus Saringan</a>
+            <div class="flex items-center">
+                <a href="{{ request()->url() }}" class="ui-btn ui-btn-secondary">Hapus Saringan</a>
+            </div>
         @endif
     </form>
     @if(isset($additionalFilters))
-        {{ $additionalFilters }}
+        <div class="border-t border-[var(--ui-line)] p-4">{{ $additionalFilters }}</div>
     @endif
 </section>
