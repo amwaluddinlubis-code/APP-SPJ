@@ -14,22 +14,21 @@
     x-init="notifications=notifications.map(item=>({...item,id:Date.now()+Math.random()})); notifications.forEach((item,index)=>window.setTimeout(()=>remove(item.id),6500+(index*350)))"
     x-on:app-notify.window="push($event.detail)" aria-live="polite" aria-atomic="true">
     <template x-for="item in notifications" :key="item.id">
-        <div class="pointer-events-auto w-full overflow-hidden rounded-2xl border bg-white shadow-2xl ring-1 ring-black/5"
+        <div class="ui-toast pointer-events-auto w-full overflow-hidden"
+            :class="{'ui-toast-success':item.type==='success','ui-toast-danger':item.type==='error','ui-toast-warning':item.type==='warning','ui-toast-theme':!['success','error','warning'].includes(item.type)}"
             x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="translate-x-8 opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
-            x-transition:leave="transition duration-200 ease-in" x-transition:leave-start="translate-x-0 opacity-100" x-transition:leave-end="translate-x-8 opacity-0"
-            :class="{'border-emerald-300':item.type==='success','border-rose-300':item.type==='error','border-amber-300':item.type==='warning','theme-border':!['success','error','warning'].includes(item.type)}" role="alert">
+            x-transition:leave="transition duration-200 ease-in" x-transition:leave-start="translate-x-0 opacity-100" x-transition:leave-end="translate-x-8 opacity-0" role="alert">
             <div class="flex items-start gap-4 p-5">
-                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl font-black text-white shadow-sm"
-                    :class="{'bg-emerald-600':item.type==='success','bg-rose-600':item.type==='error','bg-amber-500':item.type==='warning','theme-bg':!['success','error','warning'].includes(item.type)}"
+                <span class="ui-toast-icon grid h-11 w-11 shrink-0 place-items-center text-xl font-black"
                     x-text="item.type==='success'?'✓':(item.type==='error'?'!':(item.type==='warning'?'⚠':'i'))"></span>
                 <div class="min-w-0 flex-1">
-                    <p class="text-base font-extrabold" :class="{'text-emerald-800':item.type==='success','text-rose-800':item.type==='error','text-amber-800':item.type==='warning','theme-text':!['success','error','warning'].includes(item.type)}"
+                    <p class="ui-toast-title text-base font-extrabold"
                         x-text="item.type==='success'?'Berhasil':(item.type==='error'?'Ada yang perlu diperbaiki':(item.type==='warning'?'Perhatian':'Informasi'))"></p>
-                    <p class="mt-1 text-sm leading-6 text-slate-700" x-text="item.message"></p>
+                    <p class="ui-toast-message mt-1 text-sm leading-6" x-text="item.message"></p>
                 </div>
-                <button type="button" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" @click="remove(item.id)" aria-label="Tutup pemberitahuan">✕</button>
+                <button type="button" class="ui-toast-close" @click="remove(item.id)" aria-label="Tutup pemberitahuan">✕</button>
             </div>
-            <div class="h-1" :class="{'bg-emerald-500':item.type==='success','bg-rose-500':item.type==='error','bg-amber-400':item.type==='warning','theme-bg':!['success','error','warning'].includes(item.type)}"></div>
+            <div class="ui-toast-progress h-1"></div>
         </div>
     </template>
 </div>
