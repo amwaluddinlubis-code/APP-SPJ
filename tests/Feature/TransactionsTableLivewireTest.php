@@ -122,7 +122,7 @@ class TransactionsTableLivewireTest extends TestCase
             ->assertSee('BKU-030')
             ->assertDontSee('BKU-001');
 
-        Livewire::withQueryParams(['page' => 2, 'perPage' => 'all'])
+        Livewire::withQueryParams(['perPage' => 100])
             ->test(TransactionsTable::class)
             ->assertSee('BKU-001')
             ->assertSee('BKU-031');
@@ -188,6 +188,7 @@ class TransactionsTableLivewireTest extends TestCase
             $table->foreignId('transaction_id');
             $table->string('status')->default('DRAFT');
             $table->string('document_number')->nullable();
+            $table->timestamp('finalized_at')->nullable();
             $table->timestamps();
         });
 
