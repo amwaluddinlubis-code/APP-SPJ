@@ -4,6 +4,7 @@ import '../css/comfortable-text.css';
 import '../css/theme-soft-surfaces.css';
 import '../css/token-native-components.css';
 import '../css/layout-token-native.css';
+import '../css/theme-accessibility.css';
 
 const profile = (config) => Object.freeze(config);
 
