@@ -10,8 +10,8 @@
             kicker="PENGATURAN TEMPLATE DOKUMEN"
         >
             <x-slot:actions>
-                <a href="{{ route('document-templates.sample', 'docx') }}" class="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">Unduh Contoh Word</a>
-                <a href="{{ route('document-templates.sample', 'xlsx') }}" class="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20">Unduh Contoh Excel</a>
+                <x-ui.button variant="secondary" :href="route('document-templates.sample', 'docx')">Unduh Contoh Word</x-ui.button>
+                <x-ui.button variant="secondary" :href="route('document-templates.sample', 'xlsx')">Unduh Contoh Excel</x-ui.button>
             </x-slot:actions>
             <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Jumlah Template" :value="number_format($templates->total(), 0, ',', '.')" hint="Sesuai filter yang sedang digunakan" value-class="text-indigo-700" />
