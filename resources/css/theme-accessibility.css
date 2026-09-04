@@ -127,39 +127,40 @@ html[data-theme='yellow'][data-ui-header='soft'] .page-header-main {
 }
 
 /* Legacy transaction/SPJ heroes predate the canonical .page-header-actions
-   wrapper. On Yellow Bright their old on-dark foregrounds disappear over the
-   pale end of the soft header. Give those actions explicit light-surface and
-   semantic primary pairings until the Blade markup is migrated. */
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) > div > section:first-of-type > div:first-child a[href*='/data-sinkron/bku'],
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) > div > section:first-of-type a[href*='transactions'] {
-    border: 1px solid color-mix(in srgb, var(--theme-sidebar) 34%, var(--theme-accent-soft)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 84%, white) !important;
+   wrapper. Scope by stable page markers rather than wrapper depth so Livewire
+   and localized routes cannot break the contrast safety net. */
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku'],
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a[href='/transaksi'] {
+    border: 1px solid color-mix(in srgb, var(--theme-sidebar) 42%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 76%, white) !important;
     color: #0f172a !important;
     box-shadow: none !important;
 }
 
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) > div > section:first-of-type > div:first-child a[href*='/data-sinkron/bku']:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) > div > section:first-of-type a[href*='transactions']:hover {
-    border-color: color-mix(in srgb, var(--theme-sidebar) 48%, var(--theme-accent-soft)) !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 68%, white) !important;
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku']:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a[href='/transaksi']:hover {
+    border-color: color-mix(in srgb, var(--theme-sidebar) 58%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 58%, white) !important;
     color: #0f172a !important;
 }
 
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) > div > section:first-of-type > div:first-child a[href*='/spj'],
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) > div > section:first-of-type button[data-tab='monitoring'] {
-    border-color: color-mix(in srgb, var(--theme-action-bg) 72%, #0f172a) !important;
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj'],
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button[data-tab='monitoring'] {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, #0f172a) !important;
     background: var(--theme-action-bg) !important;
-    color: var(--theme-action-fg) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
 }
 
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) > div > section:first-of-type > div:first-child a[href*='/spj']:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) > div > section:first-of-type button[data-tab='monitoring']:hover {
-    background: color-mix(in srgb, var(--theme-action-bg) 88%, #0f172a) !important;
-    color: var(--theme-action-fg) !important;
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj']:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button[data-tab='monitoring']:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 52%, #0f172a) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 86%, white) !important;
+    color: #0f172a !important;
 }
 
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) > div > section:first-of-type > div:first-child a :is(svg,.app-nav-icon),
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) > div > section:first-of-type :is(a,button) :is(svg,.app-nav-icon) {
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) :is(a[href*='/data-sinkron/bku'],a[href='/spj']) :is(svg,.app-nav-icon),
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[href='/transaksi'],button[data-tab='monitoring']) :is(svg,.app-nav-icon) {
     color: currentColor !important;
 }
 
