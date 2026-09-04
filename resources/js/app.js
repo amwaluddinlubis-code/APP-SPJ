@@ -325,3 +325,43 @@ const initializeTransactionOperatorWorkspace = () => {
 
 initializeTransactionOperatorWorkspace();
 document.addEventListener('livewire:navigated', initializeTransactionOperatorWorkspace);
+
+const initializeStickyScrollTop = () => {
+    if (document.getElementById('app-scroll-top-footer')) return;
+
+    const footer = document.createElement('div');
+    footer.id = 'app-scroll-top-footer';
+    footer.className = 'pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 opacity-0 translate-y-3 transition duration-200';
+    footer.setAttribute('aria-hidden', 'true');
+    footer.innerHTML = `
+        <button type="button"
+            class="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2.5 text-sm font-bold text-slate-700 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            aria-label="Kembali ke atas halaman"
+            title="Kembali ke atas">
+            <span class="grid h-7 w-7 place-items-center rounded-full bg-slate-900 text-base leading-none text-white" aria-hidden="true">↑</span>
+            <span class="hidden sm:inline">Ke atas</span>
+        </button>`;
+
+    document.body.appendChild(footer);
+    const button = footer.querySelector('button');
+
+    const updateVisibility = () => {
+        const visible = window.scrollY > 320;
+        footer.classList.toggle('opacity-0', !visible);
+        footer.classList.toggle('translate-y-3', !visible);
+        footer.classList.toggle('opacity-100', visible);
+        footer.classList.toggle('translate-y-0', visible);
+        footer.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        button.tabIndex = visible ? 0 : -1;
+    };
+
+    button.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    updateVisibility();
+};
+
+initializeStickyScrollTop();
+document.addEventListener('livewire:navigated', initializeStickyScrollTop);
