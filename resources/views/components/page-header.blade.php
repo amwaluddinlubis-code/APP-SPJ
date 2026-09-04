@@ -1,6 +1,6 @@
 @props(['title', 'subtitle' => null, 'kicker' => null, 'gradient' => 'theme', 'icon' => null])
-<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="relative overflow-hidden {{ $gradient === 'theme' ? 'theme-header' : 'bg-gradient-to-br '.$gradient }} px-5 py-7 text-white sm:px-7 lg:py-8">
+<section class="page-header-shell overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="page-header-main relative overflow-hidden {{ $gradient === 'theme' ? 'theme-header' : 'bg-gradient-to-br '.$gradient }} px-5 py-7 text-white sm:px-7 lg:py-8">
         <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl"></div>
         <div class="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rounded-full bg-black/10 blur-3xl"></div>
 
@@ -17,7 +17,7 @@
                     <div class="min-w-0">
                         <h1 class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{{ $title }}</h1>
                         @if($subtitle)
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-white/80 sm:text-base">{{ $subtitle }}</p>
+                            <p class="page-header-description mt-2 max-w-3xl text-sm leading-6 text-white/80 sm:text-base">{{ $subtitle }}</p>
                         @endif
                     </div>
                 </div>
@@ -27,9 +27,9 @@
                 <div class="flex shrink-0 flex-wrap gap-2 lg:justify-end">{{ $actions }}</div>
             @endif
         </div>
-    </div>
 
-    @if(isset($slot) && trim($slot) !== '')
-        <div class="border-t border-slate-100 bg-gradient-to-b from-white to-slate-50/60">{{ $slot }}</div>
-    @endif
+        @if(isset($slot) && trim($slot) !== '')
+            <div class="page-header-summary relative mt-6 border-t border-white/10 pt-5">{{ $slot }}</div>
+        @endif
+    </div>
 </section>
