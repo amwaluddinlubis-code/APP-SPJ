@@ -6,7 +6,7 @@
         this.editorAction = button.dataset.action || '';
         this.editor = {
             spj_category: button.dataset.spjCategory || '',
-            payment_description: button.datasetPaymentDescription || button.dataset.description || '',
+            payment_description: button.dataset.paymentDescription || button.dataset.description || '',
             payment_method: button.dataset.paymentMethod || '',
             payment_reference: button.dataset.paymentReference || '',
             receipt_recipient_name: button.dataset.receiptRecipient || '',
