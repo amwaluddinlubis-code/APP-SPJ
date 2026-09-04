@@ -28,6 +28,25 @@ main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\
         var(--theme-sidebar) 54%,
         color-mix(in srgb, var(--theme-accent-soft) 80%, var(--theme-sidebar) 20%) 100%
     ) !important;
+    color: var(--text-comfort-on-dark) !important;
+}
+
+/* The left workflow panel is always a deep sidebar-derived gradient, including
+   Yellow Bright. Keep all non-interactive copy on the on-dark hierarchy instead
+   of allowing global light-surface text normalization to leak into it. */
+main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child h2 {
+    color: var(--text-comfort-on-dark, #e2e8f0) !important;
+}
+
+main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child p,
+main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child span:not(a span) {
+    color: var(--text-comfort-on-dark-soft, #c3cedc) !important;
+}
+
+main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child > div:first-child span:first-child {
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 24%, transparent) !important;
+    background: color-mix(in srgb, var(--text-comfort-on-dark) 10%, transparent) !important;
+    color: var(--text-comfort-on-dark, #e2e8f0) !important;
 }
 
 main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child a {
