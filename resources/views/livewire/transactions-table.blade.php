@@ -6,7 +6,7 @@
         this.editorAction = button.dataset.action || '';
         this.editor = {
             spj_category: button.dataset.spjCategory || '',
-            payment_description: button.dataset.paymentDescription || button.dataset.description || '',
+            payment_description: button.datasetPaymentDescription || button.dataset.description || '',
             payment_method: button.dataset.paymentMethod || '',
             payment_reference: button.dataset.paymentReference || '',
             receipt_recipient_name: button.dataset.receiptRecipient || '',
@@ -44,45 +44,57 @@
         </div>
     </x-page-header>
 
-    <section class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow">
-        <div class="border-b border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Filter Periode</div>
-        <div class="grid gap-3 p-5 md:grid-cols-5">
-            <input wire:model.live.debounce.400ms="q" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow focus:border-indigo-500 focus:ring-indigo-500 md:col-span-2" placeholder="Cari nomor bukti, uraian, penerima...">
-            <select wire:model.live="status" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">Semua status</option>
-                @foreach($statuses as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
-            </select>
-            <select wire:model.live="quarter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">Semua triwulan</option>
-                <option value="1">Triwulan 1</option>
-                <option value="2">Triwulan 2</option>
-                <option value="3">Triwulan 3</option>
-                <option value="4">Triwulan 4</option>
-            </select>
-            <button type="button" wire:click="clearFilters" class="rounded-lg border border-slate-300 px-3 py-2 text-center text-base font-semibold text-slate-600 hover:bg-slate-50">Reset</button>
+    <section class="ui-filter-panel">
+        <div class="border-b border-[var(--ui-line)] px-5 py-3 text-xs font-bold uppercase tracking-wide" style="color: var(--theme-content-accent)">Filter Periode</div>
+        <div class="grid gap-3 p-5 md:grid-cols-5 md:items-end">
+            <x-ui.field label="Cari transaksi" for="transaction-search" class="md:col-span-2">
+                <x-ui.input id="transaction-search" wire:model.live.debounce.400ms="q" placeholder="Nomor bukti, uraian, penerima..." />
+            </x-ui.field>
+            <x-ui.field label="Status" for="transaction-status">
+                <x-ui.select id="transaction-status" wire:model.live="status">
+                    <option value="">Semua status</option>
+                    @foreach($statuses as $option)<option value="{{ $option }}">{{ $option }}</option>@endforeach
+                </x-ui.select>
+            </x-ui.field>
+            <x-ui.field label="Triwulan" for="transaction-quarter">
+                <x-ui.select id="transaction-quarter" wire:model.live="quarter">
+                    <option value="">Semua triwulan</option>
+                    <option value="1">Triwulan 1</option>
+                    <option value="2">Triwulan 2</option>
+                    <option value="3">Triwulan 3</option>
+                    <option value="4">Triwulan 4</option>
+                </x-ui.select>
+            </x-ui.field>
+            <x-ui.button type="button" variant="secondary" wire:click="clearFilters">Reset</x-ui.button>
         </div>
-        <div class="border-t border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Subtotal Periode Terpilih</div>
-        <div class="grid divide-y divide-indigo-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
-            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Transaksi</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ number_format($filteredStats->count, 0, ',', '.') }}</p></div>
-            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Nilai Bruto</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredStats->gross) }}</p></div>
-            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Pajak</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredStats->tax) }}</p></div>
-            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Dibayarkan</p><p class="mt-1 text-xl font-bold text-indigo-900">{{ $rupiah($filteredStats->net) }}</p></div>
+        <div class="border-y border-[var(--ui-line)] px-5 py-3 text-xs font-bold uppercase tracking-wide" style="color: var(--theme-content-accent)">Subtotal Periode Terpilih</div>
+        <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
+            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Transaksi</p><p class="mt-1 text-xl font-bold" style="color: var(--ui-fg)">{{ number_format($filteredStats->count, 0, ',', '.') }}</p></div>
+            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Nilai Bruto</p><p class="mt-1 text-xl font-bold" style="color: var(--ui-fg)">{{ $rupiah($filteredStats->gross) }}</p></div>
+            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Pajak</p><p class="mt-1 text-xl font-bold" style="color: var(--ui-fg)">{{ $rupiah($filteredStats->tax) }}</p></div>
+            <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Dibayarkan</p><p class="mt-1 text-xl font-bold" style="color: var(--ui-fg)">{{ $rupiah($filteredStats->net) }}</p></div>
         </div>
     </section>
 
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-        <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div><h2 class="font-bold text-slate-800">Daftar Transaksi SPJ</h2><p class="mt-1 text-base text-slate-500">Pilih satu transaksi untuk membuka detail.</p></div>
-                <select wire:model.live="perPage" class="w-fit rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="15">15 baris</option>
-                    <option value="25">25 baris</option>
-                    <option value="50">50 baris</option>
-                    <option value="100">100 baris</option>
-                    <option value="all">Semua</option>
-                </select>
+        <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
+            <div>
+                <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Transaksi SPJ</h2>
+                <p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Pilih satu transaksi untuk membuka detail.</p>
             </div>
-        </div>
+            <x-slot:actions>
+                <div class="min-w-[9rem]">
+                    <label for="transaction-per-page" class="sr-only">Baris per halaman</label>
+                    <x-ui.select id="transaction-per-page" wire:model.live="perPage" class="!w-auto">
+                        <option value="15">15 baris</option>
+                        <option value="25">25 baris</option>
+                        <option value="50">50 baris</option>
+                        <option value="100">100 baris</option>
+                        <option value="all">Semua</option>
+                    </x-ui.select>
+                </div>
+            </x-slot:actions>
+        </x-ui.toolbar>
 
         <div class="grid gap-3 p-4 lg:hidden">
             @forelse($transactions as $transaction)
