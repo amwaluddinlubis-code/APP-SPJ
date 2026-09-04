@@ -119,68 +119,68 @@
                     @php($bapDate = $purchaseDetails?->bap_date?->format('Y-m-d') ?: $transaction->bap_date?->format('Y-m-d') ?: $transactionDateLimit)
                     @php($bastDate = $purchaseDetails?->bast_date?->format('Y-m-d') ?: $transaction->bast_date?->format('Y-m-d') ?: $transactionDateLimit)
                     <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
-                        <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-base font-semibold text-slate-700 shadow hover:bg-slate-50">← Semua paket</a>
-                        <a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-base font-semibold text-indigo-700 hover:bg-indigo-100">Lihat transaksi</a>
+                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'persiapan'])">← Semua paket</x-ui.button>
+                        <x-ui.button variant="secondary" :href="route('transactions.show', $transaction->id)">Lihat transaksi</x-ui.button>
                     </div>
 
-                    <section class="mx-5 mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow">
-                        <div class="bg-gradient-to-r from-violet-950 via-indigo-900 to-sky-800 px-4 py-5 text-white sm:px-5">
-                            <p class="text-[11px] font-bold tracking-[.16em] text-sky-200">PAKET DOKUMEN SPJ</p>
+                    <section class="mx-5 mt-4 overflow-hidden rounded-xl border shadow" style="border-color: var(--ui-line); background: var(--ui-surface-base); color: var(--ui-fg)">
+                        <div class="px-4 py-5 sm:px-5" style="background: linear-gradient(115deg, var(--theme-sidebar-deep), var(--theme-sidebar)); color: var(--text-comfort-on-dark)">
+                            <p class="text-[11px] font-bold tracking-[.16em]" style="color: var(--text-comfort-on-dark-muted)">PAKET DOKUMEN SPJ</p>
                             <div class="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                                 <div>
-                                    <h1 class="font-mono text-2xl font-bold sm:text-3xl">{{ $transaction->no_bukti }}</h1>
-                                    <p class="mt-1.5 text-base text-indigo-100 line-clamp-2">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.' }}</p>
+                                    <h1 class="font-mono text-2xl font-bold sm:text-3xl" style="color: var(--text-comfort-on-dark) !important">{{ $transaction->no_bukti }}</h1>
+                                    <p class="mt-1.5 text-base line-clamp-2" style="color: var(--text-comfort-on-dark-muted)">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.' }}</p>
                                 </div>
-                                <div class="rounded-lg bg-white/10 px-3 py-2.5 text-left lg:text-right ring-1 ring-white/20">
-                                    <p class="text-[11px] font-semibold {{ $package->status === 'CANCELLED' ? 'text-rose-200' : 'text-indigo-200' }}">{{ $package->status === 'CANCELLED' ? 'Nomor SPJ dibatalkan' : 'Nomor Dokumen SPJ' }}</p>
-                                    <p class="mt-0.5 font-mono text-base font-bold {{ $package->status === 'CANCELLED' ? 'text-rose-100 line-through' : '' }}">{{ $hasActiveSpjNumber ? $activeSpjDocument->document_number : ($package->status === 'CANCELLED' ? ($cancelledSpjDocument?->document_number ?: $package->document_number) : 'Belum ditetapkan') }}</p>
+                                <div class="rounded-lg px-3 py-2.5 text-left ring-1 lg:text-right" style="background: color-mix(in srgb, var(--ui-surface-base) 10%, transparent); --tw-ring-color: color-mix(in srgb, var(--text-comfort-on-dark) 24%, transparent)">
+                                    <p class="text-[11px] font-semibold {{ $package->status === 'CANCELLED' ? 'text-rose-200' : '' }}" @if($package->status !== 'CANCELLED') style="color: var(--text-comfort-on-dark-muted)" @endif>{{ $package->status === 'CANCELLED' ? 'Nomor SPJ dibatalkan' : 'Nomor Dokumen SPJ' }}</p>
+                                    <p class="mt-0.5 font-mono text-base font-bold {{ $package->status === 'CANCELLED' ? 'text-rose-100 line-through' : '' }}" @if($package->status !== 'CANCELLED') style="color: var(--text-comfort-on-dark) !important" @endif>{{ $hasActiveSpjNumber ? $activeSpjDocument->document_number : ($package->status === 'CANCELLED' ? ($cancelledSpjDocument?->document_number ?: $package->document_number) : 'Belum ditetapkan') }}</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="grid divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Periode</p><p class="mt-1 text-base font-semibold text-slate-800">{{ $package->quarter_code }} · {{ $package->semester_code }}</p></div>
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Penerima</p><p class="mt-1 text-base font-semibold text-slate-800">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p></div>
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Nilai Dibayarkan</p><p class="mt-1 text-base font-semibold text-emerald-700">{{ $rupiah($transaction->net_amount) }}</p></div>
+                        <div class="grid divide-y md:grid-cols-3 md:divide-x md:divide-y-0" style="border-color: var(--ui-line)">
+                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Periode</p><p class="mt-1 text-base font-semibold" style="color: var(--ui-fg)">{{ $package->quarter_code }} · {{ $package->semester_code }}</p></div>
+                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Penerima</p><p class="mt-1 text-base font-semibold" style="color: var(--ui-fg)">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p></div>
+                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Nilai Dibayarkan</p><p class="mt-1 text-base font-semibold text-emerald-700">{{ $rupiah($transaction->net_amount) }}</p></div>
                         </div>
                     </section>
 
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border {{ $validationIssues ? 'border-amber-200' : 'border-emerald-200' }} bg-white shadow">
                         <div class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                            <div><h2 class="text-base font-bold text-slate-800">Validasi Sebelum Cetak</h2><p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">{{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi sebelum PDF dibuat.' : 'Semua data wajib lengkap. Paket siap diunduh sebagai PDF.' }}</p></div>
+                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Validasi Sebelum Cetak</h2><p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">{{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi sebelum PDF dibuat.' : 'Semua data wajib lengkap. Paket siap diunduh sebagai PDF.' }}</p></div>
                             @if($validationIssues)
-                                <span class="w-fit rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-700">Belum siap cetak</span>
+                                <x-ui.status-badge status="BELUM_LENGKAP" label="Belum siap cetak" />
                             @elseif($package->status === 'CANCELLED')
-                                <span class="w-fit rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700">Penomoran dibatalkan</span>
+                                <x-ui.status-badge status="CANCELLED" label="Penomoran dibatalkan" />
                             @elseif($package->status === 'DRAFT')
-                                <form method="POST" action="{{ route('spj.ready', $package->id) }}">@csrf<button class="rounded-md bg-indigo-600 px-3.5 py-1.5 text-base font-bold text-white shadow hover:bg-indigo-700">Tandai siap dinomori</button></form>
+                                <form method="POST" action="{{ route('spj.ready', $package->id) }}">@csrf<x-ui.button type="submit">Tandai siap dinomori</x-ui.button></form>
                             @else
-                                <span class="w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700">Siap dicetak</span>
+                                <x-ui.status-badge status="READY" label="Siap dicetak" />
                             @endif
                         </div>
-                        @if($validationIssues)<div class="divide-y divide-amber-100 border-t border-amber-100 bg-amber-50/40">@foreach($validationIssues as $issue)<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-base"><div><span class="font-bold text-amber-800">{{ $issue['label'] }}</span><span class="ml-1.5 text-amber-700">{{ $issue['message'] }}</span></div><a href="{{ $issue['url'] }}" class="text-xs font-bold text-indigo-700 hover:text-indigo-900">Buka transaksi →</a></div>@endforeach</div>@endif
+                        @if($validationIssues)<div class="divide-y divide-amber-100 border-t border-amber-100 bg-amber-50/40">@foreach($validationIssues as $issue)<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-base"><div><span class="font-bold text-amber-800">{{ $issue['label'] }}</span><span class="ml-1.5 text-amber-700">{{ $issue['message'] }}</span></div><x-ui.button variant="secondary" :href="$issue['url']" class="min-h-0 px-3 py-1.5 text-xs">Buka transaksi →</x-ui.button></div>@endforeach</div>@endif
                     </section>
 
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-                            <div><h2 class="text-base font-bold text-slate-800">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs text-slate-500">PDF paket dibuat oleh aplikasi. Template Word/Excel diunduh dalam format sumbernya.</p></div>
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5" style="border-color: var(--ui-line)">
+                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">PDF paket dibuat oleh aplikasi. Template Word/Excel diunduh dalam format sumbernya.</p></div>
                             @unless($validationIssues || $package->status === 'CANCELLED')
-                                <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<button class="rounded-md bg-rose-600 px-3.5 py-2 text-sm font-bold text-white shadow hover:bg-rose-700">Unduh Paket PDF</button></form>
+                                <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<x-ui.button type="submit">Unduh Paket PDF</x-ui.button></form>
                             @endunless
                         </div>
                         @if($templates->isNotEmpty())
                             <div class="divide-y divide-slate-100">
                                 @foreach($templates as $template)
                                     <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 odd:bg-white even:bg-slate-50/70">
-                                        <div><p class="font-semibold text-slate-800">{{ $template->name }}</p><p class="mt-0.5 font-mono text-[11px] text-violet-700">{{ $template->document_type }} · {{ strtoupper($template->format) }}</p></div>
+                                        <div><p class="font-semibold" style="color: var(--ui-fg)">{{ $template->name }}</p><p class="mt-0.5 font-mono text-[11px]" style="color: var(--theme-content-accent)">{{ $template->document_type }} · {{ strtoupper($template->format) }}</p></div>
                                         <div class="flex items-center gap-2">
-                                            @if(strtolower($template->format) === 'xlsx')<a href="{{ route('spj.preview-template', [$package->id, $template->id]) }}" target="_blank" class="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 hover:bg-sky-100">Pratinjau</a>@endif
-                                            @if($validationIssues)<span class="rounded-md bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">Lengkapi validasi dahulu</span>@elseif($package->status === 'CANCELLED')<span class="rounded-md bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Nomor dibatalkan</span>@else<form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<button class="rounded-md bg-violet-600 px-3 py-2 text-xs font-bold text-white hover:bg-violet-700">Unduh {{ strtoupper($template->format) }}</button></form>@endif
+                                            @if(strtolower($template->format) === 'xlsx')<x-ui.button variant="secondary" :href="route('spj.preview-template', [$package->id, $template->id])" target="_blank">Pratinjau</x-ui.button>@endif
+                                            @if($validationIssues)<x-ui.status-badge status="BELUM_LENGKAP" label="Lengkapi validasi dahulu" />@elseif($package->status === 'CANCELLED')<x-ui.status-badge status="CANCELLED" label="Nomor dibatalkan" />@else<form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<x-ui.button type="submit">Unduh {{ strtoupper($template->format) }}</x-ui.button></form>@endif
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="px-4 py-6 text-center text-sm text-slate-500">Belum ada template aktif yang sesuai dengan kategori {{ $spjTypeLabel($packageCategory) }}.</div>
+                            <div class="px-4 py-6 text-center text-sm" style="color: var(--ui-fg-muted)">Belum ada template aktif yang sesuai dengan kategori {{ $spjTypeLabel($packageCategory) }}.</div>
                         @endif
                     </section>
 
