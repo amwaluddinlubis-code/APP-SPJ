@@ -1,8 +1,8 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Project ini merupakan arah pengembangan utama dari aplikasi SPJ berbasis Excel/VBA menuju aplikasi web multi-sekolah dengan sinkronisasi data ARKAS, workflow SPJ, penomoran dokumen, template dokumen, audit, dan standardisasi GUI.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Project ini merupakan arah pengembangan utama dari aplikasi SPJ berbasis Excel/VBA menuju aplikasi web multi-sekolah dengan sinkronisasi data ARKAS, workflow SPJ, penomoran dokumen, template dokumen, audit, dan design system internal.
 
-Branch pengembangan GUI aktif: `gui-standardization`.
+Branch pengembangan aktif: `gui-standardization`.
 
 ## Stack utama
 
@@ -13,7 +13,7 @@ Branch pengembangan GUI aktif: `gui-standardization`.
 - Alpine.js 3 + Alpine Persist
 - Vite 6
 - Filament 4 components
-- SQLite multi-koneksi pada fase pengembangan (`main` + database tenant/sekolah)
+- SQLite multi-koneksi (`main` + database tenant/sekolah)
 - DomPDF untuk PDF
 - PhpSpreadsheet untuk Excel
 - PHPWord untuk Word
@@ -35,6 +35,7 @@ Data hasil ARKAS/BKU diperlakukan sebagai **data sumber resmi/read-only**, sedan
 - manajemen user dan impersonation administrator;
 - konfigurasi sekolah dan database tenant;
 - backup/restore database sekolah;
+- **reset database sekolah secara penuh** dengan rebuild file SQLite tenant dan reset sequence/auto-increment;
 - konfigurasi sumber ARKAS dan sinkronisasi ARKAS/BKU;
 - penganggaran/RKAS;
 - daftar dan detail transaksi BKU;
@@ -47,7 +48,22 @@ Data hasil ARKAS/BKU diperlakukan sebagai **data sumber resmi/read-only**, sedan
 - generator/pratinjau/unduh dokumen yang sedang difinalisasi;
 - audit operasional dan laporan audit;
 - dashboard operasional;
-- standardisasi GUI dan dark component theme.
+- standardisasi GUI menyeluruh dan tema dinamis.
+
+## Struktur use case SPJ
+
+`SpjController` sudah direduksi menjadi adapter HTTP tipis. Tanggung jawab utamanya dipisahkan ke use case:
+
+```text
+app/UseCases/Spj/
+├── SpjWorkspaceUseCase.php
+├── SpjPackageUseCase.php
+├── SpjNumberingUseCase.php
+├── SpjDocumentUseCase.php
+└── SpjReportUseCase.php
+```
+
+Route dan kontrak HTTP lama tetap dipertahankan agar refactor tidak mengubah aturan aplikasi.
 
 ## Workflow target operator
 
@@ -70,26 +86,45 @@ Preview tidak boleh membuat nomor atau mengubah status secara diam-diam. Dokumen
 
 ## Status GUI
 
-Branch `gui-standardization` sedang menyatukan tampilan seluruh aplikasi dengan pola:
+Branch `gui-standardization` sekarang memakai design system global dengan pola:
 
 ```text
 Header global
 Breadcrumb sticky
 Header halaman + summary
-Form / filter / section
+Toolbar / filter
+Form / section
 Tabel / workspace
+Sticky actions / footer utilitas
 ```
 
 Fondasi yang sudah diterapkan:
 
 - sidebar persisten;
-- breadcrumb global;
-- komponen page header, section, form/input, button, dan status badge;
-- bahasa status yang lebih mudah dipahami operator;
+- breadcrumb global sticky;
+- sticky control `Ke atas` untuk halaman panjang;
+- form/input/button primitives;
+- table standardization global;
+- pagination dan per-page control yang seragam;
+- page shell, toolbar, filter, tabs, stat card;
+- alert, empty state, modal, badge, detail list;
+- action menu, loading/skeleton, sticky actions, danger zone;
+- status badge dengan bahasa operator;
 - pemisahan visual data ARKAS/BKU (readonly) dan data SPJ operator (editable);
-- dark component layer yang dimuat secara global.
+- compatibility layer untuk markup lama;
+- dark mode dan seluruh accent non-semantik mengikuti tema aktif.
 
-Migrasi view ke komponen standar masih berlangsung.
+Token tema utama:
+
+```text
+--theme-accent
+--theme-accent-strong
+--theme-accent-soft
+--theme-sidebar
+--theme-sidebar-deep
+```
+
+Primitive UI baru tidak boleh hard-code accent color jika bukan warna semantik. Warna success/warning/danger tetap mengikuti makna tindakan.
 
 ## Menjalankan project
 
@@ -112,36 +147,34 @@ Pada fase awal gunakan SQLite. Konfigurasikan `DB_CONNECTION` dan path database 
 
 Database test dipisahkan dari database utama. Jangan mengubah proteksi ini.
 
-Jalankan test yang relevan setelah perubahan backend, misalnya:
+Jalankan test yang relevan setelah perubahan backend:
 
 ```powershell
 php artisan test
 ```
 
-Setelah perubahan frontend jalankan:
+Setelah perubahan frontend:
 
 ```powershell
 npm run build
 ```
 
-Test suite saat ini mencakup antara lain sinkronisasi ARKAS aman, database tenant, pemilihan sekolah/tahun, transaksi Livewire, user management, impersonation, security hardening, penomoran, dan critical document workflow.
+Test suite mencakup antara lain sinkronisasi ARKAS aman, database tenant, pemilihan sekolah/tahun, transaksi Livewire, user management, impersonation, security hardening, penomoran, critical document workflow, serta test reset database sekolah yang memverifikasi auto-increment kembali ke awal setelah rebuild tenant.
 
 ## Dokumentasi utama
 
-Baca dokumen berikut sebelum mengubah domain atau workflow:
-
 - `AGENTS.md` — aturan kerja agent/coder.
 - `docs/CURRENT_PROGRESS.md` — snapshot implementasi terkini.
-- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan pembagian modul.
+- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan pembagian modul/use case.
 - `docs/SPJ_DESIGN_DECISIONS.md` — keputusan bisnis yang harus dipertahankan.
 - `docs/USER_SCENARIOS.md` — skenario operator dan peran pengguna.
-- `docs/GUI_STANDARDIZATION.md` — design system dan aturan UX.
+- `docs/GUI_STANDARDIZATION.md` — design system dan aturan UX/tema.
 - `docs/DEVELOPMENT_ROADMAP.md` — prioritas pengembangan menuju release.
 - `docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md` — placeholder template dokumen.
 
 ## Fokus berikutnya
 
-Prioritas saat ini bukan menambah menu besar baru, tetapi menuntaskan workflow SPJ end-to-end:
+Prioritas utama tetap menuntaskan workflow SPJ end-to-end:
 
 1. stabilisasi generator dan preview PDF/Excel/Word;
 2. lifecycle status SPJ dan locking/revisi;
@@ -151,4 +184,4 @@ Prioritas saat ini bukan menambah menu besar baru, tetapi menuntaskan workflow S
 6. end-to-end test seluruh kategori SPJ;
 7. penyempurnaan laporan BOS dan readiness release.
 
-Lihat `docs/DEVELOPMENT_ROADMAP.md` untuk detail prioritas dan definisi siap rilis.
+Generalisasi GUI utama sudah menjadi fondasi; pekerjaan berikutnya adalah migrasi view tersisa dan konsistensi penggunaan primitive yang sudah ada, bukan membuat design system baru lagi.
