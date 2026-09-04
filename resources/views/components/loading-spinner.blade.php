@@ -1,13 +1,14 @@
-@props(['size' => 'md'])
+@props(['size' => 'md', 'label' => 'Memuat...'])
+@php
+    $spinnerSize = match ($size) {
+        'sm' => '.8rem',
+        'lg' => '1.5rem',
+        default => '1rem',
+    };
+@endphp
 <div class="flex items-center justify-center">
-    @php
-        $spinnerSize = match ($size) {
-            'sm' => 'h-4 w-4',
-            'lg' => 'h-8 w-8',
-            default => 'h-6 w-6',
-        };
-    @endphp
-    <div class="animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600 {{ $spinnerSize }}" role="status" aria-label="Loading">
-        <span class="sr-only">Loading...</span>
-    </div>
+    <span class="ui-loading" role="status" aria-live="polite">
+        <span class="ui-spinner" style="width: {{ $spinnerSize }}; height: {{ $spinnerSize }}" aria-hidden="true"></span>
+        <span class="sr-only">{{ $label }}</span>
+    </span>
 </div>
