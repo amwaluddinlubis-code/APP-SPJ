@@ -36,9 +36,11 @@ export const themeProfiles = Object.freeze({
 export const resolveThemeProfile = (theme) => themeProfiles[theme] ?? themeProfiles.light;
 
 export const applyThemeProfile = (theme, root = document.documentElement) => {
-    const selected = resolveThemeProfile(theme);
+    const selectedTheme = themeProfiles[theme] ? theme : 'light';
+    const selected = resolveThemeProfile(selectedTheme);
 
-    root.dataset.themeProfile = themeProfiles[theme] ? theme : 'light';
+    root.dataset.theme = selectedTheme;
+    root.dataset.themeProfile = selectedTheme;
     root.dataset.uiAppearance = selected.appearance;
     root.dataset.uiPersonality = selected.personality;
     root.dataset.uiDensity = selected.density;
@@ -50,9 +52,10 @@ export const applyThemeProfile = (theme, root = document.documentElement) => {
     root.dataset.uiControls = selected.controls;
     root.classList.toggle('dark', selected.appearance === 'dark');
     root.style.colorScheme = selected.appearance;
+    localStorage.setItem('spj-theme', selectedTheme);
 
     window.dispatchEvent(new CustomEvent('app-theme-profile-changed', {
-        detail: { theme, profile: selected },
+        detail: { theme: selectedTheme, profile: selected },
     }));
 
     return selected;
