@@ -122,7 +122,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <label class="sr-only" for="theme-select">Tema tampilan</label>
-                <select id="theme-select" class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold"><option value="light">☀ Terang</option><option value="dark">◐ Gelap</option><option value="slate">● Slate</option><option value="blue">● Blue</option><option value="indigo">● Indigo</option><option value="violet">● Violet</option><option value="cyan">● Cyan</option><option value="emerald">● Emerald</option><option value="amber">● Amber</option><option value="rose">● Rose</option><option value="fuchsia">● Fuchsia</option></select>
+                <select id="theme-select" class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold" aria-label="Tema tampilan"></select>
                 <span class="app-runtime-badge hidden px-3 py-1 text-xs font-semibold sm:inline-flex">Livewire + Filament</span>
             </div>
         </header>
@@ -193,20 +193,6 @@
             dialog.classList.remove('flex');
             form.requestSubmit(submitter || undefined);
         });
-    })();
-
-    (() => {
-        const select = document.getElementById('theme-select');
-        const palettes = ['gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'yellow', 'lime', 'green', 'teal', 'sky', 'purple', 'pink'];
-        palettes.forEach((palette) => {
-            if (!select?.querySelector(`option[value="${palette}"]`)) {
-                const option = document.createElement('option');
-                option.value = palette;
-                option.textContent = '● ' + palette[0].toUpperCase() + palette.slice(1);
-                select?.append(option);
-            }
-        });
-        if (select) select.value = document.documentElement.dataset.theme || 'light';
     })();
 </script>
 </body>
