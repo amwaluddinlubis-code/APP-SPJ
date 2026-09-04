@@ -1,12 +1,12 @@
 /* Soft theme-aware application chrome.
-   Themes may tint the body canvas and top application header, but only with
+   Themes tint the body canvas and top application header with visible but
    restrained mixes so long sessions remain comfortable to read. */
 
 :root {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 16%, #f8fafc);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 9%, #f1f5f9);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 12%, #ffffff);
-    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 14%, #dbe3ec);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 34%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 22%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 42%, #ffffff);
+    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 18%, #dbe3ec);
     --theme-topbar-shadow: 0 1px 10px rgb(15 23 42 / .045);
     --theme-legacy-surface: var(--ui-component-surface, var(--ui-surface, #ffffff));
     --theme-legacy-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
@@ -19,7 +19,7 @@
 
 body {
     background:
-        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent-soft) 20%, transparent) 0, transparent 38rem),
+        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent-soft) 38%, transparent) 0, transparent 38rem),
         linear-gradient(180deg, var(--theme-body-bg), var(--theme-body-bg-deep)) !important;
     background-attachment: fixed;
     transition: background .3s ease, color .2s ease;
@@ -30,7 +30,7 @@ main {
 }
 
 main > header.sticky.top-0 {
-    background: color-mix(in srgb, var(--theme-topbar-bg) 94%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-topbar-bg) 96%, transparent) !important;
     border-color: var(--theme-topbar-border) !important;
     box-shadow: var(--theme-topbar-shadow) !important;
     backdrop-filter: blur(16px) saturate(112%);
@@ -49,52 +49,52 @@ main > header.sticky.top-0 :is(.text-slate-500,.text-slate-400) {
     color: var(--comfort-text-muted, #718096) !important;
 }
 
-/* Profile personalities may alter the strength slightly, never the text hierarchy. */
+/* Profile personalities alter tint strength only, never the text hierarchy. */
 html[data-ui-personality='minimal'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 7%, #f8fafc);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 4%, #f1f5f9);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 6%, #ffffff);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 20%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 12%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 26%, #ffffff);
 }
 
 html[data-ui-personality='modern'],
 html[data-ui-personality='school'],
 html[data-ui-personality='operational'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 14%, #f8fafc);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 8%, #f1f5f9);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 11%, #ffffff);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 34%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 22%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 42%, #ffffff);
 }
 
 html[data-ui-personality='premium'],
 html[data-ui-personality='creative'],
 html[data-ui-personality='expressive'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 19%, #f8fafc);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 11%, #f1f5f9);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 15%, #ffffff);
-    --theme-topbar-shadow: 0 4px 18px color-mix(in srgb, var(--theme-accent) 7%, transparent);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 40%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 27%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 48%, #ffffff);
+    --theme-topbar-shadow: 0 4px 18px color-mix(in srgb, var(--theme-accent) 8%, transparent);
 }
 
 html[data-ui-personality='warm'],
 html[data-ui-personality='soft'],
 html[data-ui-personality='bright'],
 html[data-ui-personality='fresh'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 18%, #fafafa);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 10%, #f5f5f4);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 14%, #ffffff);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 38%, #fafafa);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 24%, #f5f5f4);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 46%, #ffffff);
 }
 
 html[data-ui-personality='office'],
 html[data-ui-personality='classic'],
 html[data-ui-personality='tech'],
 html[data-ui-personality='command'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 9%, #f8fafc);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 5%, #eef2f7);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 8%, #ffffff);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 26%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 16%, #eef2f7);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 34%, #ffffff);
 }
 
 /* Legacy structural color bridge.
    Old Blade views may still carry Tailwind palette names, but structural colors
-   must now resolve through the selected theme. Semantic success/warning/danger
-   colors are deliberately excluded from this bridge. */
+   resolve through the selected theme. Semantic success/warning/danger colors are
+   deliberately excluded from this bridge. */
 main :is(
     .bg-indigo-50,.bg-indigo-100,.bg-violet-50,.bg-violet-100,
     .bg-blue-50,.bg-blue-100,.bg-sky-50,.bg-sky-100,.bg-cyan-50,.bg-cyan-100
@@ -129,9 +129,7 @@ main :is(
     border-color: color-mix(in srgb, var(--theme-accent) 22%, var(--theme-legacy-border)) !important;
 }
 
-main :is(
-    .ring-indigo-500,.ring-violet-500,.ring-blue-500,.ring-sky-500,.ring-cyan-500
-) {
+main :is(.ring-indigo-500,.ring-violet-500,.ring-blue-500,.ring-sky-500,.ring-cyan-500) {
     --tw-ring-color: color-mix(in srgb, var(--theme-accent) 28%, transparent) !important;
 }
 
@@ -188,16 +186,16 @@ main :is(.text-slate-500,.text-slate-400,.text-gray-500,.text-gray-400,.text-zin
 
 /* Dark appearance uses tinted charcoal instead of pure black or saturated accent. */
 html[data-ui-appearance='dark'] {
-    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 5%, #0b1220);
-    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 3%, #060b14);
-    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 6%, #111827);
-    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 10%, #263244);
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 14%, #0b1220);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 8%, #060b14);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 18%, #111827);
+    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 12%, #263244);
     --theme-topbar-shadow: 0 2px 14px rgb(0 0 0 / .16);
 }
 
 html[data-ui-appearance='dark'] body {
     background:
-        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent) 5%, transparent) 0, transparent 34rem),
+        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent) 9%, transparent) 0, transparent 34rem),
         linear-gradient(180deg, var(--theme-body-bg), var(--theme-body-bg-deep)) !important;
 }
 
