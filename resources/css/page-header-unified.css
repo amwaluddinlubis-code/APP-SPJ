@@ -20,11 +20,11 @@
         var(--theme-sidebar) 52%,
         color-mix(in srgb, var(--theme-accent) 72%, var(--theme-sidebar)) 100%
     ) !important;
-    color: var(--comfort-on-dark-strong, #e8edf4) !important;
+    color: var(--text-comfort-on-dark, #e8edf4) !important;
 }
 
 .page-header-kicker {
-    color: var(--comfort-on-dark-muted, #c3ccd8) !important;
+    color: var(--text-comfort-on-dark-muted, #c3ccd8) !important;
     font-size: .6875rem !important;
     font-weight: 700 !important;
     letter-spacing: .2em !important;
@@ -33,7 +33,7 @@
 }
 
 .page-header-title {
-    color: var(--comfort-on-dark-strong, #e8edf4) !important;
+    color: var(--text-comfort-on-dark, #e8edf4) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
     letter-spacing: -.025em !important;
@@ -42,7 +42,7 @@
 
 .page-header-description {
     max-width: 48rem;
-    color: var(--comfort-on-dark, #d1d9e4) !important;
+    color: var(--text-comfort-on-dark-soft, #d1d9e4) !important;
     font-size: .875rem !important;
     line-height: 1.5rem !important;
 }
@@ -70,7 +70,7 @@
     border-radius: 0 !important;
     background: var(--ui-component-surface, var(--ui-surface, #fff)) !important;
     box-shadow: none !important;
-    color: var(--comfort-text-primary, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
 }
 
 .page-header-summary .ui-stat {
@@ -84,12 +84,12 @@
 .page-header-summary .ui-stat-label,
 .page-header-summary .ui-stat-hint,
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
-    color: var(--comfort-text-muted, #718096) !important;
+    color: var(--text-comfort-muted, #718096) !important;
 }
 
 .page-header-summary .ui-stat-value,
 .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
-    color: var(--comfort-text-strong, #1f2937) !important;
+    color: var(--text-comfort-strong, #1f2937) !important;
 }
 
 /* Legacy migration layer. Legacy palette class names may still exist in Blade,
@@ -101,7 +101,7 @@
 
 .page-header-legacy .page-header-main h1 {
     margin-top: .5rem !important;
-    color: var(--comfort-on-dark-strong, #e8edf4) !important;
+    color: var(--text-comfort-on-dark, #e8edf4) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
     letter-spacing: -.025em !important;
@@ -153,12 +153,12 @@ html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-c
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-label,
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-hint,
 html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
-    color: var(--comfort-text-muted, #8f9bad) !important;
+    color: var(--text-comfort-muted, #8f9bad) !important;
 }
 
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-value,
 html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
-    color: var(--comfort-text-strong, #dce3ec) !important;
+    color: var(--text-comfort-strong, #dce3ec) !important;
 }
 
 @media (min-width: 640px) {

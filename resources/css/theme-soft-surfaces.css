@@ -12,9 +12,9 @@
     --theme-legacy-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
     --theme-legacy-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
     --theme-legacy-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
-    --theme-legacy-text: var(--comfort-text-primary, #334155);
-    --theme-legacy-text-strong: var(--comfort-text-strong, #1f2937);
-    --theme-legacy-text-muted: var(--comfort-text-muted, #718096);
+    --theme-legacy-text: var(--text-comfort-primary, #334155);
+    --theme-legacy-text-strong: var(--text-comfort-strong, #1f2937);
+    --theme-legacy-text-muted: var(--text-comfort-muted, #718096);
 }
 
 body {
@@ -38,15 +38,15 @@ main > header.sticky.top-0 {
 }
 
 main > header.sticky.top-0 :is(.text-slate-950,.text-slate-900,.text-slate-800) {
-    color: var(--comfort-text-strong, #1f2937) !important;
+    color: var(--text-comfort-strong, #1f2937) !important;
 }
 
 main > header.sticky.top-0 :is(.text-slate-700,.text-slate-600) {
-    color: var(--comfort-text, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
 }
 
 main > header.sticky.top-0 :is(.text-slate-500,.text-slate-400) {
-    color: var(--comfort-text-muted, #718096) !important;
+    color: var(--text-comfort-muted, #718096) !important;
 }
 
 /* Profile personalities alter tint strength only, never the text hierarchy. */
@@ -200,15 +200,15 @@ html[data-ui-appearance='dark'] body {
 }
 
 html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-950,.text-slate-900,.text-slate-800) {
-    color: var(--comfort-text-strong, #dce3ec) !important;
+    color: var(--text-comfort-strong, #dce3ec) !important;
 }
 
 html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-700,.text-slate-600) {
-    color: var(--comfort-text, #c4cfdd) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
 }
 
 html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-500,.text-slate-400) {
-    color: var(--comfort-text-muted, #8f9bad) !important;
+    color: var(--text-comfort-muted, #8f9bad) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

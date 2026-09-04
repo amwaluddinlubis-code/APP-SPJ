@@ -98,7 +98,7 @@
     .theme-btn { background: var(--theme-action-bg, var(--theme-accent)); color: var(--theme-action-fg, #f8fafc); }
     .btn-primary:hover,
     .theme-btn:hover { background: var(--theme-action-hover-bg, var(--theme-accent-strong)); }
-    .btn-success { background: #4d7f6a; color: var(--comfort-on-dark-strong, #e8edf4); }
+    .btn-success { background: #4d7f6a; color: var(--text-comfort-on-dark, #e8edf4); }
     .btn-success:hover { background: #3e6c59; }
     .btn-outline-primary,
     .theme-btn-outline { border: 1px solid var(--theme-content-accent, var(--theme-accent-strong)); background: var(--ui-component-surface, #fff); color: var(--theme-content-accent, var(--theme-accent-strong)); }

@@ -14,7 +14,7 @@
 
 .app-body {
     min-height: 100%;
-    color: var(--comfort-text-primary, #334155);
+    color: var(--text-comfort-primary, #334155);
     font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
 }
 
@@ -83,22 +83,22 @@
 .app-topbar {
     border-bottom: 1px solid var(--theme-topbar-border) !important;
     background: color-mix(in srgb, var(--theme-topbar-bg) 96%, transparent) !important;
-    color: var(--comfort-text-primary, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
     box-shadow: var(--theme-topbar-shadow) !important;
     backdrop-filter: blur(16px) saturate(112%);
     transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
 .app-topbar-school {
-    color: var(--comfort-text-primary, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
 }
 
 .app-topbar-title {
-    color: var(--comfort-text-strong, #1f2937) !important;
+    color: var(--text-comfort-strong, #1f2937) !important;
 }
 
 .app-topbar-meta {
-    color: var(--comfort-text-muted, #718096) !important;
+    color: var(--text-comfort-muted, #718096) !important;
 }
 
 .app-topbar-menu,
@@ -107,7 +107,7 @@
     border: 1px solid var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)) !important;
     border-radius: var(--profile-control-radius) !important;
     background: color-mix(in srgb, var(--ui-component-surface, #fff) 88%, var(--theme-accent-soft)) !important;
-    color: var(--comfort-text-primary, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
     box-shadow: var(--profile-card-shadow);
     transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
@@ -144,11 +144,11 @@
     border: 1px solid color-mix(in srgb, var(--theme-accent) 18%, var(--ui-component-border, #dbe3ec));
     border-radius: 999px;
     background: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--ui-component-surface, #fff));
-    color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--comfort-text-primary, #334155));
+    color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--text-comfort-primary, #334155));
 }
 
 .app-main-content {
-    color: var(--comfort-text-primary, #334155);
+    color: var(--text-comfort-primary, #334155);
 }
 
 /* Global confirmation dialog also belongs to application chrome. */
@@ -160,7 +160,7 @@
     border: 1px solid var(--ui-component-border, var(--ui-border, #dbe3ec));
     border-radius: var(--profile-card-radius);
     background: var(--ui-component-surface, var(--ui-surface, #fff));
-    color: var(--comfort-text-primary, #334155);
+    color: var(--text-comfort-primary, #334155);
     box-shadow: var(--profile-floating-shadow);
 }
 
@@ -171,11 +171,11 @@
 }
 
 .app-dialog-title {
-    color: var(--comfort-text-strong, #1f2937);
+    color: var(--text-comfort-strong, #1f2937);
 }
 
 .app-dialog-message {
-    color: var(--comfort-text-primary, #334155);
+    color: var(--text-comfort-primary, #334155);
 }
 
 html[data-ui-personality='minimal'] .app-topbar {
@@ -204,30 +204,30 @@ html[data-ui-appearance='dark'] {
 
 html[data-ui-appearance='dark'] .app-topbar-school,
 html[data-ui-appearance='dark'] .app-topbar-title {
-    color: var(--comfort-text-strong, #dce3ec) !important;
+    color: var(--text-comfort-strong, #dce3ec) !important;
 }
 
 html[data-ui-appearance='dark'] .app-topbar-meta {
-    color: var(--comfort-text-muted, #8f9bad) !important;
+    color: var(--text-comfort-muted, #8f9bad) !important;
 }
 
 html[data-ui-appearance='dark'] .app-topbar-menu,
 html[data-ui-appearance='dark'] .app-topbar-select {
     background: color-mix(in srgb, var(--ui-component-surface, #111827) 92%, var(--theme-accent-soft)) !important;
-    color: var(--comfort-text-primary, #c4cfdd) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
 }
 
 html[data-ui-appearance='dark'] .app-runtime-badge {
     background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--ui-component-surface, #111827));
-    color: var(--comfort-text-primary, #c4cfdd);
+    color: var(--text-comfort-primary, #c4cfdd);
 }
 
 html[data-ui-appearance='dark'] .app-dialog-title {
-    color: var(--comfort-text-strong, #dce3ec);
+    color: var(--text-comfort-strong, #dce3ec);
 }
 
 html[data-ui-appearance='dark'] .app-dialog-message {
-    color: var(--comfort-text-primary, #c4cfdd);
+    color: var(--text-comfort-primary, #c4cfdd);
 }
 
 @media (max-width: 640px) {
