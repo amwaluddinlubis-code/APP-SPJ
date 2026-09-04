@@ -1,0 +1,119 @@
+/* Soft theme-aware application chrome.
+   Themes may tint the body canvas and top application header, but only with
+   restrained mixes so long sessions remain comfortable to read. */
+
+:root {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 16%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 9%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 12%, #ffffff);
+    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 14%, #dbe3ec);
+    --theme-topbar-shadow: 0 1px 10px rgb(15 23 42 / .045);
+}
+
+body {
+    background:
+        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent-soft) 20%, transparent) 0, transparent 38rem),
+        linear-gradient(180deg, var(--theme-body-bg), var(--theme-body-bg-deep)) !important;
+    background-attachment: fixed;
+    transition: background .3s ease, color .2s ease;
+}
+
+main {
+    background: transparent !important;
+}
+
+main > header.sticky.top-0 {
+    background: color-mix(in srgb, var(--theme-topbar-bg) 94%, transparent) !important;
+    border-color: var(--theme-topbar-border) !important;
+    box-shadow: var(--theme-topbar-shadow) !important;
+    backdrop-filter: blur(16px) saturate(112%);
+    transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+main > header.sticky.top-0 :is(.text-slate-950,.text-slate-900,.text-slate-800) {
+    color: var(--comfort-text-strong, #1f2937) !important;
+}
+
+main > header.sticky.top-0 :is(.text-slate-700,.text-slate-600) {
+    color: var(--comfort-text, #334155) !important;
+}
+
+main > header.sticky.top-0 :is(.text-slate-500,.text-slate-400) {
+    color: var(--comfort-text-muted, #718096) !important;
+}
+
+/* Profile personalities may alter the strength slightly, never the text hierarchy. */
+html[data-ui-personality='minimal'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 7%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 4%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 6%, #ffffff);
+}
+
+html[data-ui-personality='modern'],
+html[data-ui-personality='school'],
+html[data-ui-personality='operational'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 14%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 8%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 11%, #ffffff);
+}
+
+html[data-ui-personality='premium'],
+html[data-ui-personality='creative'],
+html[data-ui-personality='expressive'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 19%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 11%, #f1f5f9);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 15%, #ffffff);
+    --theme-topbar-shadow: 0 4px 18px color-mix(in srgb, var(--theme-accent) 7%, transparent);
+}
+
+html[data-ui-personality='warm'],
+html[data-ui-personality='soft'],
+html[data-ui-personality='bright'],
+html[data-ui-personality='fresh'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 18%, #fafafa);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 10%, #f5f5f4);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 14%, #ffffff);
+}
+
+html[data-ui-personality='office'],
+html[data-ui-personality='classic'],
+html[data-ui-personality='tech'],
+html[data-ui-personality='command'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 9%, #f8fafc);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 5%, #eef2f7);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 8%, #ffffff);
+}
+
+/* Dark appearance uses tinted charcoal instead of pure black or saturated accent. */
+html[data-ui-appearance='dark'] {
+    --theme-body-bg: color-mix(in srgb, var(--theme-accent-soft) 5%, #0b1220);
+    --theme-body-bg-deep: color-mix(in srgb, var(--theme-accent-soft) 3%, #060b14);
+    --theme-topbar-bg: color-mix(in srgb, var(--theme-accent-soft) 6%, #111827);
+    --theme-topbar-border: color-mix(in srgb, var(--theme-accent) 10%, #263244);
+    --theme-topbar-shadow: 0 2px 14px rgb(0 0 0 / .16);
+}
+
+html[data-ui-appearance='dark'] body {
+    background:
+        radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--theme-accent) 5%, transparent) 0, transparent 34rem),
+        linear-gradient(180deg, var(--theme-body-bg), var(--theme-body-bg-deep)) !important;
+}
+
+html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-950,.text-slate-900,.text-slate-800) {
+    color: var(--comfort-text-strong, #dce3ec) !important;
+}
+
+html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-700,.text-slate-600) {
+    color: var(--comfort-text, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] main > header.sticky.top-0 :is(.text-slate-500,.text-slate-400) {
+    color: var(--comfort-text-muted, #8f9bad) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body,
+    main > header.sticky.top-0 {
+        transition: none !important;
+    }
+}
