@@ -10,7 +10,7 @@
     --ui-dark-subtle: #748196;
     --ui-dark-surface: #111827;
     --ui-dark-surface-alt: #0f172a;
-    --ui-dark-surface-hover: #141d2c;
+    --ui-dark-surface-hover: #131b28;
     --ui-dark-border: #263244;
 }
 
@@ -75,7 +75,7 @@
     color: var(--ui-dark-text-strong) !important;
 }
 
-/* Generalized tables: subtle row separation and very low-contrast hover. */
+/* Generalized tables: subtle row separation and extremely low-contrast hover. */
 .dark {
     --ui-table-border: var(--ui-dark-border);
     --ui-table-border-soft: #1c2736;
@@ -113,18 +113,37 @@
 .dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-even {
     background: var(--ui-dark-surface-alt) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:hover,
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:nth-child(even):hover,
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-even:hover,
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-odd:hover {
-    background: var(--ui-dark-surface-hover) !important;
-    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--theme-accent) 30%, transparent);
+
+/* Force every application table hover away from light/white legacy utilities. */
+html.dark[data-theme='dark'] body main table tbody tr:hover,
+html.dark[data-theme='dark'] body main table tbody tr:nth-child(odd):hover,
+html.dark[data-theme='dark'] body main table tbody tr:nth-child(even):hover,
+html.dark[data-theme='dark'] body main table tbody tr.app-table-row-odd:hover,
+html.dark[data-theme='dark'] body main table tbody tr.app-table-row-even:hover,
+html.dark[data-theme='dark'] body main .table tbody tr:hover,
+html.dark[data-theme='dark'] body main .audit-table tbody tr:hover,
+html.dark[data-theme='dark'] body .fi-ta-row:hover {
+    background-color: var(--ui-dark-surface-hover) !important;
+    background-image: none !important;
 }
 
-/* Legacy and audit tables follow the same restrained hover. */
-.dark main :is(.table,.audit-table) tbody tr:hover {
-    background: var(--ui-dark-surface-hover) !important;
+/* A row may contain cells with their own bg/hover utility. Keep cells transparent
+   so the super-soft row hover remains visible instead of turning white. */
+html.dark[data-theme='dark'] body main table tbody tr:hover > td,
+html.dark[data-theme='dark'] body main table tbody tr:hover > th,
+html.dark[data-theme='dark'] body main table tbody tr:hover > td[class*="bg-"],
+html.dark[data-theme='dark'] body main table tbody tr:hover > th[class*="bg-"],
+html.dark[data-theme='dark'] body main table tbody tr:hover > td[class*="hover:bg-"],
+html.dark[data-theme='dark'] body main table tbody tr:hover > th[class*="hover:bg-"] {
+    background-color: transparent !important;
+    background-image: none !important;
 }
+
+html.dark[data-theme='dark'] body main table tbody tr:hover {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--theme-accent) 18%, transparent) !important;
+}
+
+/* Legacy and audit tables follow the same restrained typography. */
 .dark main :is(.table,.audit-table) tbody td {
     color: var(--ui-dark-text-soft) !important;
 }
@@ -153,9 +172,6 @@
 }
 .dark .fi-ta-row {
     border-color: var(--ui-dark-border) !important;
-}
-.dark .fi-ta-row:hover {
-    background: var(--ui-dark-surface-hover) !important;
 }
 
 /* Keep semantic colors intact, but avoid pure-white text unless explicitly requested. */
