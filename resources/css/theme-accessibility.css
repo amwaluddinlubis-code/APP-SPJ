@@ -60,6 +60,29 @@ html[data-theme] .pagination .active span {
     color: var(--theme-action-fg) !important;
 }
 
+/* Legacy safety net: a light/white interactive surface must never keep a white
+   foreground. Scope this to light appearance so bg-white remapped to dark
+   surfaces in dark mode is not accidentally given a dark foreground. */
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-slate-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-gray-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-zinc-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/80.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/90.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/95.text-white {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-slate-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-gray-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-zinc-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/80 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/90 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/95 .text-white {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
 /* Accent used as content text must be darker than decorative accent tokens. */
 .theme-text,
 .module-breadcrumb a,
@@ -86,7 +109,7 @@ html[data-ui-header='soft'] .page-header-main :is(.page-header-title, .page-head
 }
 
 html[data-ui-header='soft'] .page-header-description {
-    color: var(--comfort-text-primary, #334155) !important;
+    color: var(--text-comfort-primary, #334155) !important;
 }
 
 /* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
