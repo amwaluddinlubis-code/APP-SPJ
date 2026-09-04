@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "theme:qa": "node scripts/theme-contrast-qa.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
