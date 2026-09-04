@@ -117,7 +117,7 @@ class SpjDocumentRequirementService
         );
         $add(
             'internal_order', 'Pengadaan', 'Surat pesanan internal', 'Dibuat aplikasi',
-            !$isSiplah && $goodsCategory, !$isSiplah && $goodsCategory,
+            ! $isSiplah && $goodsCategory, $goodsCategory,
             filled($firstGoods?->order_number) && filled($firstGoods?->order_date),
             'Surat pesanan internal tersedia.',
             'Surat pesanan internal belum lengkap.'

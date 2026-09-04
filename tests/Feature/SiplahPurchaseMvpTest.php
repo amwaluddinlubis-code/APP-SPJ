@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
 use App\Models\Transaction;
+use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjProcurementPolicyService;
 use App\Services\SpjTemplateService;
@@ -154,6 +155,65 @@ class SiplahPurchaseMvpTest extends TestCase
 
         $this->assertNotContains('Referensi pesanan/invoice SIPLah', $labels);
         $this->assertNotContains('Identitas penyedia SIPLah', $labels);
+    }
+
+    public function test_siplah_goods_purchase_does_not_require_internal_purchase_order(): void
+    {
+        $transaction = $this->goodsTransaction(['payment_method' => 'siplah']);
+        $package = $transaction->spjPackage()->create(['quarter_code' => 'TW1', 'semester_code' => 'S1', 'status' => 'DRAFT']);
+        $requirements = app(SpjDocumentRequirementService::class);
+
+        $internalOrder = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])))
+            ->firstWhere('key', 'internal_order');
+        $blockingLabels = collect($requirements->blockingRequirements($transaction))->pluck('label');
+        $validationIssues = collect(app(SpjPackageValidationService::class)->validate(
+            $package->load(['transaction.items', 'transaction.goods'])
+        ));
+
+        $this->assertTrue($internalOrder['applicable']);
+        $this->assertFalse($internalOrder['required']);
+        $this->assertSame('OPSIONAL_BELUM_LENGKAP', $internalOrder['status']);
+        $this->assertNotContains('Surat pesanan internal', $blockingLabels);
+        $this->assertFalse($validationIssues->contains('label', 'Surat pesanan internal'));
+        $this->assertFalse($validationIssues->contains('message', 'Surat pesanan internal belum lengkap.'));
+        $this->assertTrue($validationIssues->contains('label', 'Data penerimaan barang'));
+    }
+
+    public function test_non_siplah_goods_purchase_still_requires_internal_purchase_order(): void
+    {
+        $transaction = $this->goodsTransaction(['payment_method' => 'tunai', 'is_siplah' => false]);
+        $package = $transaction->spjPackage()->create(['quarter_code' => 'TW1', 'semester_code' => 'S1', 'status' => 'DRAFT']);
+        $requirements = app(SpjDocumentRequirementService::class);
+
+        $internalOrder = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])))
+            ->firstWhere('key', 'internal_order');
+        $validationIssues = collect(app(SpjPackageValidationService::class)->validate(
+            $package->load(['transaction.items', 'transaction.goods'])
+        ));
+
+        $this->assertTrue($internalOrder['applicable']);
+        $this->assertTrue($internalOrder['required']);
+        $this->assertSame('WAJIB_BELUM_LENGKAP', $internalOrder['status']);
+        $this->assertTrue($validationIssues->contains('label', 'Surat pesanan internal'));
+        $this->assertTrue($validationIssues->contains('message', 'Surat pesanan internal belum lengkap.'));
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function goodsTransaction(array $overrides = []): Transaction
+    {
+        $transaction = $this->transaction(array_merge([
+            'spj_category' => 'BARANG', 'recipient_name' => 'Penyedia',
+            'receipt_recipient_name' => 'Penyedia', 'payment_description' => 'Pembelian barang',
+            'payment_reference' => 'PAY-001', 'vendor_name' => 'Penyedia',
+            'invoice_number' => 'INV-001', 'activity_code' => '01',
+            'activity_name' => 'Kegiatan', 'account_code' => '5.1', 'account_name' => 'Barang',
+        ], $overrides));
+        $transaction->items()->create([
+            'description' => 'Barang', 'item_description' => 'Barang', 'quantity' => 1,
+            'unit' => 'paket', 'unit_price' => 1000, 'amount' => 1000,
+        ]);
+
+        return $transaction;
     }
 
     /** @param array<string, mixed> $overrides */
