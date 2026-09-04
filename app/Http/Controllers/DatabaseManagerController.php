@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\School;
 use App\Services\OperationalAuditService;
 use App\Services\SchoolDatabaseManager;
+use App\Services\SchoolDatabaseResetService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -133,6 +134,45 @@ class DatabaseManagerController extends Controller
             Log::error('School database provisioning failed.', ['school_id' => $school->id, 'exception' => $e]);
 
             return back()->with('error', 'Provision database gagal. Periksa log aplikasi.');
+        }
+    }
+
+    public function reset(string $schoolId, Request $request, SchoolDatabaseResetService $resetter): RedirectResponse
+    {
+        $school = School::findOrFail($schoolId);
+        $data = $request->validate([
+            'confirmation' => ['required', 'string', 'max:80'],
+        ]);
+        $expectedConfirmation = 'RESET '.$school->npsn;
+
+        if (trim((string) $data['confirmation']) !== $expectedConfirmation) {
+            return back()->withErrors([
+                'confirmation' => 'Konfirmasi tidak sesuai. Ketik tepat: '.$expectedConfirmation,
+            ])->withInput();
+        }
+
+        try {
+            $resetter->reset($school);
+            if ((int) session('active_school_id') === (int) $school->id) {
+                session()->forget(['active_fiscal_year_id', 'active_fund_source_id']);
+            }
+
+            Log::warning('School database reset completed.', [
+                'school_id' => $school->id,
+                'npsn' => $school->npsn,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('database-manager.index', ['#' => 'maintenance'])
+                ->with('success', 'Database '.$school->name.' berhasil direset total. Semua data tenant, sequence, dan auto-increment telah dimulai ulang.');
+        } catch (\Throwable $e) {
+            Log::error('School database reset failed.', [
+                'school_id' => $school->id,
+                'user_id' => auth()->id(),
+                'exception' => $e,
+            ]);
+
+            return back()->with('error', 'Reset database gagal. Database tidak boleh digunakan sampai statusnya diperiksa kembali.');
         }
     }
 }
