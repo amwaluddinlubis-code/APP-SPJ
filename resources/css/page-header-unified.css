@@ -73,15 +73,52 @@ html[data-ui-header] .page-header-description {
     align-self: center !important;
 }
 
+/* Header actions own their semantic foreground/background pairing. Primary
+   actions must never inherit the generic on-dark foreground because bright
+   themes intentionally use a dark --theme-action-fg. */
+.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn) {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 74%, var(--theme-action-fg)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn):hover {
+    background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn):focus-visible {
+    color: var(--theme-action-fg) !important;
+}
+
+.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn) :is(svg,.app-nav-icon),
+.page-header-actions :is(.ui-btn-secondary,a.bg-white,button.bg-white) :is(svg,.app-nav-icon) {
+    color: currentColor !important;
+}
+
+/* Secondary actions use a translucent header-safe surface and a stable on-dark
+   foreground. This avoids white-on-white and keeps the border visible against
+   both hard and soft ends of the gradient. */
 .page-header-actions :is(.ui-btn-secondary, a.bg-white, button.bg-white) {
-    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 24%, transparent) !important;
-    background: color-mix(in srgb, var(--text-comfort-on-dark) 12%, transparent) !important;
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 34%, var(--theme-sidebar-deep)) !important;
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 58%, transparent) !important;
     color: var(--text-comfort-on-dark, #e8edf4) !important;
     box-shadow: none !important;
 }
 
 .page-header-actions :is(.ui-btn-secondary, a.bg-white, button.bg-white):hover {
-    background: color-mix(in srgb, var(--text-comfort-on-dark) 20%, transparent) !important;
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 48%, var(--theme-sidebar-deep)) !important;
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 72%, transparent) !important;
+    color: var(--text-comfort-on-dark, #e8edf4) !important;
+}
+
+.page-header-actions :is(.ui-btn-secondary, a.bg-white, button.bg-white):focus-visible {
+    color: var(--text-comfort-on-dark, #e8edf4) !important;
+}
+
+.page-header-actions :is(.ui-btn-primary,.ui-btn-secondary,.btn-primary,.theme-btn,a.bg-white,button.bg-white):disabled,
+.page-header-actions :is(.ui-btn-primary,.ui-btn-secondary,.btn-primary,.theme-btn,a.bg-white,button.bg-white)[aria-disabled='true'] {
+    opacity: .72 !important;
 }
 
 html[data-ui-personality] .page-header-summary {
