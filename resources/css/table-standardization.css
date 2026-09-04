@@ -1,0 +1,210 @@
+/* Global table UI standardization.
+   Applies to application-owned tables while leaving Filament internals alone.
+   Opt out for a special table with data-ui-table="off". */
+
+:root {
+    --ui-table-border: #dbe3ec;
+    --ui-table-border-soft: #edf1f5;
+    --ui-table-head-bg: color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 44%, #f8fafc);
+    --ui-table-head-text: color-mix(in srgb, var(--theme-accent-strong, #0f766e) 70%, #334155);
+    --ui-table-row-alt: #fbfcfe;
+    --ui-table-row-hover: color-mix(in srgb, var(--theme-accent-soft, #ccfbf1) 32%, white);
+    --ui-table-radius: .9rem;
+    --ui-table-shadow: 0 3px 12px rgb(15 23 42 / .045);
+}
+
+/* Table containers become one visual family without requiring markup rewrites. */
+main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not(.fi-ta-table):not([data-ui-table="off"])) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    border: 1px solid var(--ui-table-border);
+    border-radius: var(--ui-table-radius);
+    background: #fff;
+    box-shadow: var(--ui-table-shadow);
+    scrollbar-gutter: stable;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: #334155;
+    font-size: .875rem;
+    line-height: 1.35rem;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) thead {
+    background: var(--ui-table-head-bg) !important;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th {
+    border-bottom: 1px solid var(--ui-table-border) !important;
+    padding: .72rem .8rem;
+    color: var(--ui-table-head-text) !important;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .055em;
+    line-height: 1rem;
+    text-transform: uppercase;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
+    border-bottom: 1px solid var(--ui-table-border-soft) !important;
+    padding: .72rem .8rem;
+    vertical-align: top;
+    color: #475569;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:last-child > td {
+    border-bottom: 0 !important;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr {
+    background: #fff;
+    transition: background-color .14s ease, box-shadow .14s ease;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:nth-child(even) {
+    background: var(--ui-table-row-alt);
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+/* Preserve explicit semantic alignment while making numeric columns easier to scan. */
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td).text-right,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td)[data-align="number"],
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td).app-table-number {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td).text-center,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td)[data-align="center"],
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td).app-table-status {
+    text-align: center !important;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td)[data-column="actions"],
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td).app-table-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td.wrap,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td[data-wrap="true"],
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td.app-table-wrap {
+    min-width: 14rem;
+    max-width: 34rem;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td:first-child,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) th:first-child {
+    padding-left: 1rem;
+}
+
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td:last-child,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) th:last-child {
+    padding-right: 1rem;
+}
+
+/* Empty rows and loading rows should read as intentional states, not broken tables. */
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td[colspan].text-center,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td.empty-cell,
+main table:not(.fi-ta-table):not([data-ui-table="off"]) td.app-table-empty {
+    padding: 2.5rem 1rem !important;
+    color: #64748b;
+    background: linear-gradient(180deg, #fff, #f8fafc);
+    text-align: center !important;
+    white-space: normal;
+}
+
+/* Actions inside a table should stay compact even though normal page buttons are larger. */
+main table:not(.fi-ta-table):not([data-ui-table="off"]) :is(a,button)[class*="rounded-"][class*="px-"] {
+    min-height: 2rem;
+}
+
+/* Existing client pagination gets the same surface language as the table. */
+main .app-table-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    border: 1px solid var(--ui-table-border);
+    border-top: 0;
+    border-radius: 0 0 var(--ui-table-radius) var(--ui-table-radius);
+    background: #f8fafc;
+    padding: .7rem .85rem;
+    color: #64748b;
+}
+
+main .app-table-pagination button,
+main .app-table-pagination select {
+    min-height: 2.25rem !important;
+    border: 1px solid #cbd5e1;
+    border-radius: .6rem;
+    background: #fff;
+    color: #475569;
+    font-size: .8rem !important;
+    font-weight: 700;
+}
+
+main .app-table-pagination button { padding: .4rem .7rem; }
+main .app-table-pagination select { width: auto; padding: .35rem 1.8rem .35rem .55rem; }
+main .app-table-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+main .app-table-pagination button:not(:disabled):hover { border-color: var(--theme-accent, #14b8a6); color: var(--theme-accent-strong, #0f766e); }
+
+/* Server pagination directly following a standardized table follows the same rhythm. */
+main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not(.fi-ta-table):not([data-ui-table="off"])) + nav[role="navigation"] {
+    margin-top: .75rem;
+}
+
+.dark {
+    --ui-table-border: #29364a;
+    --ui-table-border-soft: #1f2937;
+    --ui-table-head-bg: color-mix(in srgb, var(--theme-accent, #14b8a6) 10%, #0b1220);
+    --ui-table-head-text: #cbd5e1;
+    --ui-table-row-alt: #0f172a;
+    --ui-table-row-hover: color-mix(in srgb, var(--theme-accent, #14b8a6) 9%, #111827);
+    --ui-table-shadow: 0 8px 22px rgb(0 0 0 / .14);
+}
+
+.dark main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not(.fi-ta-table):not([data-ui-table="off"])) {
+    background: #111827;
+}
+
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) { color: #d1d5db; }
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr { background: #111827; }
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td { color: #d1d5db; }
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) td[colspan].text-center,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) td.empty-cell,
+.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) td.app-table-empty {
+    background: #0f172a;
+    color: #9ca3af;
+}
+.dark main .app-table-pagination { background: #0b1220; border-color: #29364a; color: #9ca3af; }
+.dark main .app-table-pagination button,
+.dark main .app-table-pagination select { background: #111827; border-color: #374151; color: #e5e7eb; }
+
+@media (max-width: 640px) {
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) {
+        font-size: .8125rem;
+    }
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th,
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
+        padding: .62rem .68rem;
+    }
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) td:first-child,
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) th:first-child { padding-left: .8rem; }
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) td:last-child,
+    main table:not(.fi-ta-table):not([data-ui-table="off"]) th:last-child { padding-right: .8rem; }
+    main .app-table-pagination { align-items: stretch; }
+    main .app-table-pagination > * { width: 100%; justify-content: space-between; }
+}
