@@ -12,72 +12,6 @@ main:has(#spj-main-tabs) {
     --spj-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
 }
 
-/* Legacy hero: preserve the Page Header visual contract until the Blade is migrated. */
-main:has(#spj-main-tabs) > div > section:first-of-type {
-    overflow: hidden;
-    border-color: var(--spj-border) !important;
-    border-radius: var(--profile-header-radius, var(--profile-card-radius)) !important;
-    background: var(--spj-surface) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child {
-    background: linear-gradient(118deg,
-        var(--theme-sidebar-deep) 0%,
-        var(--theme-sidebar) 46%,
-        color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 100%) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child > div.relative {
-    align-items: center !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type .module-breadcrumb {
-    display: none !important;
-}
-
-/* Header actions: explicit theme-safe background/foreground pairs. */
-main:has(#spj-main-tabs) > div > section:first-of-type a[href*="transactions"] {
-    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 28%, transparent) !important;
-    background: color-mix(in srgb, var(--theme-sidebar-deep) 54%, transparent) !important;
-    color: var(--text-comfort-on-dark) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type a[href*="transactions"]:hover {
-    background: color-mix(in srgb, var(--theme-sidebar-deep) 72%, transparent) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type button[data-tab="monitoring"] {
-    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 62%, var(--spj-border)) !important;
-    background: var(--theme-action-bg) !important;
-    color: var(--theme-action-fg) !important;
-}
-
-/* Header summary remains one panel with non-rounded inner divisions. */
-main:has(#spj-main-tabs) > div > section:first-of-type > .grid {
-    gap: 1px !important;
-    background: var(--spj-border) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > .grid > * {
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: color-mix(in srgb, var(--theme-accent-soft) 10%, var(--spj-surface)) !important;
-    color: var(--spj-text) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > .grid p:first-child {
-    color: var(--spj-text-muted) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > .grid > :nth-child(1) p:nth-child(2) {
-    color: var(--spj-text-strong) !important;
-}
-
-main:has(#spj-main-tabs) > div > section:first-of-type > .grid > :nth-child(2) p:nth-child(2) {
-    color: var(--theme-content-accent) !important;
-}
-
 /* Main tab workspace shell */
 main:has(#spj-main-tabs) section:has(> #spj-main-tabs) {
     overflow: hidden;
@@ -182,10 +116,4 @@ main:has(#spj-main-tabs) div:has(> .page-table-per-page),
 main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     border-color: var(--spj-border) !important;
     background: var(--spj-surface-soft) !important;
-}
-
-@media (max-width: 640px) {
-    main:has(#spj-main-tabs) > div > section:first-of-type > div:first-child > div.relative {
-        align-items: flex-start !important;
-    }
 }
