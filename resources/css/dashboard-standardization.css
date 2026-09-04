@@ -1,0 +1,119 @@
+/* Operational dashboard visual standardization.
+   Keep dashboard business markup intact while resolving legacy slate/indigo surfaces
+   through the canonical theme contract. */
+
+main:has(a[href*="/spj/numbering-workflow"]) {
+    --dashboard-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --dashboard-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --dashboard-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --dashboard-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --dashboard-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --dashboard-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --dashboard-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
+}
+
+/* Primary operator recommendation panel */
+main:has(a[href*="/spj/numbering-workflow"]) section:has(a[href*="/transactions"]):has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) {
+    overflow: hidden;
+    border-color: var(--dashboard-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--dashboard-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child {
+    background: linear-gradient(
+        118deg,
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 54%,
+        color-mix(in srgb, var(--theme-accent-soft) 80%, var(--theme-sidebar) 20%) 100%
+    ) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child a {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child {
+    border-color: var(--dashboard-border) !important;
+    background: var(--dashboard-surface-soft) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child > p {
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child h3 {
+    color: var(--dashboard-text-strong) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child a {
+    border-color: var(--dashboard-border) !important;
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-text) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child a:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--dashboard-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 24%, var(--dashboard-surface)) !important;
+}
+
+/* Queue and side panels */
+main:has(a[href*="/spj/numbering-workflow"]) article,
+main:has(a[href*="/spj/numbering-workflow"]) aside > section,
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) {
+    border-color: var(--dashboard-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) article > div:first-child,
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) > div:first-child {
+    border-color: var(--dashboard-border) !important;
+    background: var(--dashboard-surface-soft) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) article h2,
+main:has(a[href*="/spj/numbering-workflow"]) article p.font-semibold,
+main:has(a[href*="/spj/numbering-workflow"]) aside h2,
+main:has(a[href*="/spj/numbering-workflow"]) aside h3,
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) h2,
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) h3 {
+    color: var(--dashboard-text-strong) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) article :is(.text-slate-400,.text-slate-500),
+main:has(a[href*="/spj/numbering-workflow"]) aside :is(.text-slate-400,.text-slate-500),
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) :is(.text-slate-400,.text-slate-500) {
+    color: var(--dashboard-text-muted) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) article a[class*="bg-white"] {
+    border-color: var(--dashboard-border-strong) !important;
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-text) !important;
+}
+
+/* Progress cards keep semantic meaning while avoiding theme-breaking pale utility surfaces. */
+main:has(a[href*="/spj/numbering-workflow"]) aside section .grid.grid-cols-3 > div {
+    border: 1px solid var(--dashboard-border) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 14%, var(--dashboard-surface-soft)) !important;
+}
+
+/* Quarter readiness behaves as one unified panel with simple dividers. */
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) > div:last-child {
+    gap: 1px !important;
+    background: var(--dashboard-border) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) > div:last-child > a {
+    background: var(--dashboard-surface) !important;
+    color: var(--dashboard-text) !important;
+}
+
+main:has(a[href*="/spj/numbering-workflow"]) section:has(> div > a[href*="quarter"]) > div:last-child > a:hover {
+    background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--dashboard-surface)) !important;
+}
