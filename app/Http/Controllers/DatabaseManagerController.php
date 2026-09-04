@@ -148,6 +148,10 @@ class DatabaseManagerController extends Controller
     public function reset(string $schoolId, Request $request, SchoolDatabaseResetService $resetter): RedirectResponse
     {
         $school = School::findOrFail($schoolId);
+        if ((int) session('active_school_id') !== (int) $school->id) {
+            return back()->with('error', 'Reset hanya dapat dijalankan untuk sekolah yang sedang aktif. Aktifkan sekolah tersebut terlebih dahulu.');
+        }
+
         $data = $request->validate([
             'confirmation' => ['required', 'string', 'max:80'],
         ]);
@@ -161,9 +165,7 @@ class DatabaseManagerController extends Controller
 
         try {
             $resetter->reset($school);
-            if ((int) session('active_school_id') === (int) $school->id) {
-                session()->forget(['active_fiscal_year_id', 'active_fund_source_id']);
-            }
+            session()->forget(['active_fiscal_year_id', 'active_fund_source_id']);
 
             Log::warning('School database reset completed.', [
                 'school_id' => $school->id,
