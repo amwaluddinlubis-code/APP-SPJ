@@ -197,6 +197,44 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button
     color: #0f172a !important;
 }
 
+/* All light themes need the same semantic treatment for these legacy hero
+   utility pairs. Secondary actions use a pale theme surface with dark content
+   accent; primary actions use the canonical action background/foreground pair. */
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) a.bg-white\/10.text-white {
+    border: 1px solid color-mix(in srgb, var(--theme-content-accent) 34%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
+    color: var(--theme-content-accent) !important;
+    box-shadow: none !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) a.bg-white\/10.text-white:hover {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 48%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.text-indigo-900 {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, var(--theme-action-fg)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+    box-shadow: none !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.text-indigo-900:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 54%, var(--theme-action-fg)) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) :is(a.bg-white\/10.text-white,a.bg-white.text-indigo-900) :is(svg,.app-nav-icon),
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) :is(a.bg-white\/10.text-white,button.bg-white.text-indigo-900) :is(svg,.app-nav-icon) {
+    color: currentColor !important;
+}
+
 /* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
 :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--theme-focus-ring) !important;
