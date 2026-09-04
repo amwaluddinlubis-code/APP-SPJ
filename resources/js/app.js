@@ -120,6 +120,86 @@ new MutationObserver((mutations) => {
     });
 }).observe(document.body, { childList: true, subtree: true });
 
+const findLegacyHero = (title, section) => {
+    let element = title.parentElement;
+
+    while (element && element !== section) {
+        const className = typeof element.className === 'string' ? element.className : '';
+        const style = element.getAttribute?.('style') || '';
+        if (
+            className.includes('bg-gradient')
+            || className.includes('theme-header')
+            || className.includes('bg-slate-900')
+            || style.includes('background-image')
+        ) {
+            return element;
+        }
+        element = element.parentElement;
+    }
+
+    return section.firstElementChild instanceof HTMLElement ? section.firstElementChild : null;
+};
+
+const normalizeLegacyPageHeader = (title) => {
+    if (!(title instanceof HTMLElement) || title.dataset.pageHeaderNormalized === 'true') return;
+    if (title.closest('.page-header-shell')) {
+        title.dataset.pageHeaderNormalized = 'true';
+        return;
+    }
+
+    const section = title.closest('section');
+    if (!(section instanceof HTMLElement)) return;
+
+    const hero = findLegacyHero(title, section);
+    if (!(hero instanceof HTMLElement)) return;
+
+    section.classList.add('page-header-shell', 'page-header-legacy');
+    hero.classList.add('page-header-main');
+    title.classList.add('page-header-title');
+    title.dataset.pageHeaderNormalized = 'true';
+
+    const paragraphs = Array.from(hero.querySelectorAll('p'));
+    const beforeTitle = paragraphs.filter((paragraph) => Boolean(paragraph.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const afterTitle = paragraphs.filter((paragraph) => Boolean(title.compareDocumentPosition(paragraph) & Node.DOCUMENT_POSITION_FOLLOWING));
+
+    const kicker = beforeTitle.at(-1);
+    if (kicker instanceof HTMLElement) kicker.classList.add('page-header-kicker');
+
+    const description = afterTitle.find((paragraph) => !paragraph.closest('nav'));
+    if (description instanceof HTMLElement) description.classList.add('page-header-description');
+
+    const heroChild = Array.from(section.children).find((child) => child === hero || child.contains(hero));
+    if (heroChild) {
+        const summary = Array.from(section.children)
+            .slice(Array.from(section.children).indexOf(heroChild) + 1)
+            .find((child) => child.matches('.grid,[class*="grid-cols-"]') || child.querySelector(':scope > .grid,:scope > [class*="grid-cols-"]'));
+
+        if (summary instanceof HTMLElement) summary.classList.add('page-header-summary');
+    }
+};
+
+const normalizePageHeaders = (root = document) => {
+    const appMain = document.querySelector('main');
+    if (!appMain) return;
+
+    const candidates = [];
+    if (root instanceof HTMLElement && root.matches('h1')) candidates.push(root);
+    if (root.querySelectorAll) candidates.push(...root.querySelectorAll('h1'));
+
+    const firstPageTitle = candidates.find((title) => appMain.contains(title) && !title.closest('[role="dialog"]'));
+    if (firstPageTitle) normalizeLegacyPageHeader(firstPageTitle);
+};
+
+normalizePageHeaders();
+new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) normalizePageHeaders(node);
+        });
+    });
+}).observe(document.body, { childList: true, subtree: true });
+document.addEventListener('livewire:navigated', () => normalizePageHeaders());
+
 const initializeClientTablePagination = (root = document) => {
     root.querySelectorAll('table').forEach((table) => {
         if (table.dataset.paginationInitialized === 'true') return;
