@@ -1,9 +1,12 @@
 /* Single ordered entrypoint for the application theme system.
-   Keep cascade order explicit here; feature code should import only this file. */
+   Keep cascade order explicit here; feature/runtime JavaScript must not import CSS. */
 @import './theme-profiles.css';
 @import './theme-profile-components.css';
 @import './comfortable-text.css';
 @import './theme-soft-surfaces.css';
+@import './full-dark.css';
+@import './dark-theme-refinement.css';
 @import './token-native-components.css';
 @import './layout-token-native.css';
+@import './page-header-unified.css';
 @import './theme-accessibility.css';
