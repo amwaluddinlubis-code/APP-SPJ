@@ -112,6 +112,20 @@ html[data-ui-header='soft'] .page-header-description {
     color: var(--text-comfort-primary, #334155) !important;
 }
 
+/* Yellow Bright is a true soft header: keep the hard→soft visual direction,
+   but use bright accent → pale accent-soft so dark header copy remains readable
+   across the entire gradient. This intentionally overrides the generic dark
+   sidebar gradient used by non-soft page headers. */
+html[data-theme='yellow'][data-ui-header='soft'] .page-header-main {
+    background: linear-gradient(
+        112deg,
+        var(--theme-accent) 0%,
+        color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 46%,
+        color-mix(in srgb, var(--theme-accent) 26%, var(--theme-accent-soft)) 76%,
+        var(--theme-accent-soft) 100%
+    ) !important;
+}
+
 /* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
 :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--theme-focus-ring) !important;
