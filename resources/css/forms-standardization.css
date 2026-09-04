@@ -1,9 +1,5 @@
-@import './human-ui.css';
-@import './full-dark.css';
-
 /* Priority #3 — global form standardization.
-   Loaded from resources/js/app.js so every authenticated/public form gets
-   the same control sizing without adding another Vite entry point. */
+   This file is loaded from the single application CSS entrypoint. */
 
 :root {
     --ui-control-height: 2.625rem;
