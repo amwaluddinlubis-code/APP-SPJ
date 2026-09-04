@@ -100,32 +100,32 @@
             @forelse($transactions as $transaction)
                 <article class="rounded-xl border border-slate-200 bg-white p-4 shadow transition hover:shadow-md" wire:key="transaction-card-{{ $transaction->id }}">
                     <div class="flex items-start justify-between gap-2">
-                        <a href="{{ route('transactions.show', $transaction) }}" wire:navigate class="font-mono text-base font-bold text-indigo-700">{{ $transaction->no_bukti }}</a>
+                        <a href="{{ route('transactions.show', $transaction) }}" wire:navigate class="font-mono text-base font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</a>
                         @if($transaction->spjPackage?->status === 'CANCELLED')
-                            <span class="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">Nomor dibatalkan</span>
+                            <x-ui.status-badge status="CANCELLED" label="Nomor dibatalkan" size="xs" />
                         @elseif($transaction->spjPackage?->document_number)
-                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">Bernomor</span>
-                            <p class="mt-1 font-mono text-[11px] font-bold theme-text">{{ $transaction->spjPackage->document_number }}</p>
+                            <x-ui.status-badge status="NUMBERED" label="Bernomor" size="xs" />
+                            <p class="mt-1 font-mono text-[11px] font-bold" style="color: var(--ui-fg)">{{ $transaction->spjPackage->document_number }}</p>
                         @elseif($transaction->spjPackage)
-                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">Draft paket</span>
+                            <x-ui.status-badge status="DRAFT" label="Draft paket" size="xs" />
                         @elseif($transaction->items_count > 0)
-                            <span class="rounded-full border theme-border theme-bg-soft px-2 py-0.5 text-[11px] font-bold theme-text">Siap dibuat</span>
+                            <x-ui.status-badge status="READY" label="Siap dibuat" size="xs" />
                         @else
-                            <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600">Belum lengkap</span>
+                            <x-ui.status-badge status="DRAFT" label="Belum lengkap" size="xs" />
                         @endif
                     </div>
-                    <p class="mt-1.5 line-clamp-2 text-base font-semibold text-slate-800">{{ $transaction->description ?: $transaction->payment_description ?: 'Tanpa uraian' }}</p>
-                    @if($transaction->spj_category)<p class="mt-1 text-xs font-semibold text-indigo-600">SPJ: {{ $spjTypeLabel($transaction->spj_category) }}</p>@endif
+                    <p class="mt-1.5 line-clamp-2 text-base font-semibold" style="color: var(--ui-fg)">{{ $transaction->description ?: $transaction->payment_description ?: 'Tanpa uraian' }}</p>
+                    @if($transaction->spj_category)<p class="mt-1 text-xs font-semibold" style="color: var(--theme-content-accent)">SPJ: {{ $spjTypeLabel($transaction->spj_category) }}</p>@endif
                     <x-ui.button type="button" variant="secondary" x-on:click="openEditorFromButton($el)" :disabled="$transaction->spjPackage && !$transaction->spjPackage->isEditable()" data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" class="mt-2"><x-ui-icon name="edit" class="h-3.5 w-3.5" />{{ $transaction->payment_description || $transaction->spj_category || $transaction->description ? 'Ubah data SPJ' : 'Isi data SPJ' }}</x-ui.button>
-                    <p class="mt-1 truncate text-xs text-slate-500">BKU: {{ $transaction->recipient_name ?: 'Penerima belum diisi' }} · Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p>
-                    <div class="mt-2 flex flex-wrap gap-1.5">@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<span class="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">Tidak muncul di sync terakhir</span>@endif @if($transaction->requires_reconciliation)<span class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-700">Perlu rekonsiliasi</span>@endif</div>
+                    <p class="mt-1 truncate text-xs" style="color: var(--ui-fg-muted)">BKU: {{ $transaction->recipient_name ?: 'Penerima belum diisi' }} · Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p>
+                    <div class="mt-2 flex flex-wrap gap-1.5">@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" label="Tidak muncul di sync terakhir" size="xs" />@endif @if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" label="Perlu rekonsiliasi" size="xs" />@endif</div>
                     <div class="mt-3 flex items-center justify-between border-t pt-3">
-                        <div><p class="text-xs text-slate-400">Bruto</p><p class="text-base font-bold text-slate-800">{{ $rupiah($transaction->gross_amount) }}</p></div>
+                        <div><p class="text-xs" style="color: var(--ui-fg-muted)">Bruto</p><p class="text-base font-bold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</p></div>
                         <x-ui.button :href="route('transactions.show', $transaction)" wire:navigate>Buka</x-ui.button>
                     </div>
                 </article>
             @empty
-                <div class="rounded-xl border border-dashed p-8 text-center"><p class="font-semibold text-slate-700">Transaksi belum ditemukan.</p><p class="mt-1 text-base text-slate-500">Coba ubah filter atau sinkron ARKAS.</p></div>
+                <div class="rounded-xl border border-dashed p-8 text-center"><p class="font-semibold" style="color: var(--ui-fg)">Transaksi belum ditemukan.</p><p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Coba ubah filter atau sinkron ARKAS.</p></div>
             @endforelse
         </div>
 
@@ -146,33 +146,33 @@
                 <tbody class="divide-y divide-slate-100 bg-white">
                     @forelse($transactions as $transaction)
                         <tr class="transition hover:bg-indigo-50/50" wire:key="transaction-row-{{ $transaction->id }}">
-                            <td class="px-5 py-4"><a href="{{ route('transactions.show', $transaction) }}" wire:navigate class="font-mono text-base font-bold text-indigo-700 hover:text-indigo-900">{{ $transaction->no_bukti }}</a><p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }} · {{ $transaction->payment_method ?: 'Cara bayar belum diisi' }}</p></td>
-                            <td class="max-w-sm px-4 py-4"><p class="truncate font-semibold text-slate-800">{{ $transaction->description ?: 'Tanpa uraian' }}</p><p class="mt-1 truncate text-xs text-slate-500">BKU: {{ $transaction->recipient_name ?: 'Penerima belum diisi' }}</p><p class="mt-1 truncate text-xs text-violet-600">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p>@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING' || $transaction->requires_reconciliation)<div class="mt-2 flex flex-wrap gap-1.5">@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<span class="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">Tidak muncul di sync</span>@endif @if($transaction->requires_reconciliation)<span class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-700">Rekonsiliasi</span>@endif</div>@endif</td>
-                            <td class="min-w-[220px] max-w-sm px-4 py-4"><p class="line-clamp-2 text-sm {{ $transaction->payment_description || $transaction->description ? 'font-medium text-violet-800' : 'text-slate-400' }}">{{ $transaction->payment_description ?: $transaction->description ?: 'Belum diisi' }}</p>@if($transaction->spj_category)<p class="mt-1 text-xs font-semibold text-indigo-600">{{ $spjTypeLabel($transaction->spj_category) }}</p>@endif<x-ui.button type="button" variant="secondary" x-on:click="openEditorFromButton($el)" :disabled="$transaction->spjPackage && !$transaction->spjPackage->isEditable()" data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" class="mt-2"><x-ui-icon name="edit" class="h-3.5 w-3.5" />{{ $transaction->payment_description || $transaction->spj_category || $transaction->description ? 'Ubah data SPJ' : 'Isi data SPJ' }}</x-ui.button></td>
-                            <td class="max-w-xs px-4 py-4"><p class="font-mono text-xs font-semibold text-sky-700">{{ $transaction->activity_code ?: '—' }}</p><p class="mt-1 truncate text-xs text-slate-500">{{ $transaction->account_code ?: 'Rekening belum tersedia' }}</p></td>
+                            <td class="px-5 py-4"><a href="{{ route('transactions.show', $transaction) }}" wire:navigate class="font-mono text-base font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</a><p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }} · {{ $transaction->payment_method ?: 'Cara bayar belum diisi' }}</p></td>
+                            <td class="max-w-sm px-4 py-4"><p class="truncate font-semibold" style="color: var(--ui-fg)">{{ $transaction->description ?: 'Tanpa uraian' }}</p><p class="mt-1 truncate text-xs" style="color: var(--ui-fg-muted)">BKU: {{ $transaction->recipient_name ?: 'Penerima belum diisi' }}</p><p class="mt-1 truncate text-xs" style="color: var(--theme-content-accent)">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p>@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING' || $transaction->requires_reconciliation)<div class="mt-2 flex flex-wrap gap-1.5">@if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" label="Tidak muncul di sync" size="xs" />@endif @if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" label="Rekonsiliasi" size="xs" />@endif</div>@endif</td>
+                            <td class="min-w-[220px] max-w-sm px-4 py-4"><p class="line-clamp-2 text-sm {{ $transaction->payment_description || $transaction->description ? 'font-medium' : '' }}" style="color: {{ $transaction->payment_description || $transaction->description ? 'var(--ui-fg)' : 'var(--ui-fg-muted)' }}">{{ $transaction->payment_description ?: $transaction->description ?: 'Belum diisi' }}</p>@if($transaction->spj_category)<p class="mt-1 text-xs font-semibold" style="color: var(--theme-content-accent)">{{ $spjTypeLabel($transaction->spj_category) }}</p>@endif<x-ui.button type="button" variant="secondary" x-on:click="openEditorFromButton($el)" :disabled="$transaction->spjPackage && !$transaction->spjPackage->isEditable()" data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" class="mt-2"><x-ui-icon name="edit" class="h-3.5 w-3.5" />{{ $transaction->payment_description || $transaction->spj_category || $transaction->description ? 'Ubah data SPJ' : 'Isi data SPJ' }}</x-ui.button></td>
+                            <td class="max-w-xs px-4 py-4"><p class="font-mono text-xs font-semibold" style="color: var(--theme-content-accent)">{{ $transaction->activity_code ?: '—' }}</p><p class="mt-1 truncate text-xs" style="color: var(--ui-fg-muted)">{{ $transaction->account_code ?: 'Rekening belum tersedia' }}</p></td>
                             <td class="px-4 py-4 text-center">
-                                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{{ $transaction->items_count }} item</span>
+                                <x-ui.badge variant="neutral">{{ $transaction->items_count }} item</x-ui.badge>
                                 <div class="mt-1.5">
                                     @if($transaction->spjPackage?->status === 'CANCELLED')
-                                        <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">Nomor dibatalkan</span>
+                                        <x-ui.status-badge status="CANCELLED" label="Nomor dibatalkan" size="xs" />
                                     @elseif($transaction->spjPackage?->document_number)
-                                        <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">Bernomor</span>
-                                        <p class="mt-1 font-mono text-[11px] font-bold theme-text">{{ $transaction->spjPackage->document_number }}</p>
+                                        <x-ui.status-badge status="NUMBERED" label="Bernomor" size="xs" />
+                                        <p class="mt-1 font-mono text-[11px] font-bold" style="color: var(--ui-fg)">{{ $transaction->spjPackage->document_number }}</p>
                                     @elseif($transaction->spjPackage)
-                                        <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">Draft paket</span>
+                                        <x-ui.status-badge status="DRAFT" label="Draft paket" size="xs" />
                                     @elseif($transaction->items_count > 0)
-                                        <span class="inline-flex rounded-full border theme-border theme-bg-soft px-2 py-0.5 text-[11px] font-bold theme-text">Siap dibuat</span>
+                                        <x-ui.status-badge status="READY" label="Siap dibuat" size="xs" />
                                     @else
-                                        <span class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600">Belum lengkap</span>
+                                        <x-ui.status-badge status="DRAFT" label="Belum lengkap" size="xs" />
                                     @endif
                                 </div>
                             </td>
-                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-slate-800">{{ $rupiah($transaction->gross_amount) }}</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</td>
                             <td class="whitespace-nowrap px-4 py-4 text-right font-medium text-amber-700">{{ $rupiah($transaction->tax_total) }}</td>
                             <td class="px-5 py-4 text-right"><x-ui.button variant="secondary" :href="route('transactions.show', $transaction)" wire:navigate>Buka detail</x-ui.button></td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="px-5 py-14 text-center"><p class="font-semibold text-slate-700">Transaksi belum ditemukan.</p><p class="mt-1 text-base text-slate-500">Jalankan Sinkron Semua ARKAS atau ubah filter pencarian.</p></td></tr>
+                        <tr><td colspan="8" class="px-5 py-14 text-center"><p class="font-semibold" style="color: var(--ui-fg)">Transaksi belum ditemukan.</p><p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Jalankan Sinkron Semua ARKAS atau ubah filter pencarian.</p></td></tr>
                     @endforelse
                 </tbody>
             </table>
