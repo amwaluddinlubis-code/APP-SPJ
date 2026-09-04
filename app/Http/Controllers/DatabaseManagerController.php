@@ -49,6 +49,14 @@ class DatabaseManagerController extends Controller
         return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'schema', 'tableData', 'tableError'));
     }
 
+    public function resetForm(SchoolDatabaseManager $manager): View
+    {
+        $active = $manager->activeInfo();
+        $activeStatus = $active['school'] ? $manager->status($active['school']) : null;
+
+        return view('database-manager.reset', compact('active', 'activeStatus'));
+    }
+
     public function activate(string $schoolId, Request $request, SchoolDatabaseManager $manager, OperationalAuditService $audit): RedirectResponse
     {
         $school = School::findOrFail($schoolId);
@@ -163,7 +171,7 @@ class DatabaseManagerController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            return redirect()->route('database-manager.index', ['#' => 'maintenance'])
+            return redirect()->route('database-manager.reset-form')
                 ->with('success', 'Database '.$school->name.' berhasil direset total. Semua data tenant, sequence, dan auto-increment telah dimulai ulang.');
         } catch (\Throwable $e) {
             Log::error('School database reset failed.', [
