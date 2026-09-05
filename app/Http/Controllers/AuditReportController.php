@@ -22,10 +22,10 @@ class AuditReportController extends Controller
     public function index(Request $request): View
     {
         $report = $this->reports->build();
-        $report['reconciliationRows'] = $this->paginate($report['reconciliationRows'], $request, 'reconciliation_page', 15, 'reconciliation');
-        $report['register'] = $this->paginate($report['register'], $request, 'register_page', 15, 'register');
-        $report['completenessRows'] = $this->paginate($report['completenessRows'], $request, 'completeness_page', 15, 'completeness');
-        $report['syncRuns'] = $this->paginate($report['syncRuns'], $request, 'history_page', 15, 'history');
+        $report['reconciliationRows'] = $this->paginate($report['reconciliationRows'], $request, 'reconciliation_page', $this->pageSize($request, 'reconciliation_perPage'), 'reconciliation');
+        $report['register'] = $this->paginate($report['register'], $request, 'register_page', $this->pageSize($request, 'register_perPage'), 'register');
+        $report['completenessRows'] = $this->paginate($report['completenessRows'], $request, 'completeness_page', $this->pageSize($request, 'completeness_perPage'), 'completeness');
+        $report['syncRuns'] = $this->paginate($report['syncRuns'], $request, 'history_page', $this->pageSize($request, 'history_perPage'), 'history');
         $report['auditLogs'] = collect($report['auditLogs']);
 
         return view('audit-reports.index', $report);
@@ -125,5 +125,12 @@ class AuditReportController extends Controller
                 'pageName' => $pageName,
             ],
         ))->appends([...$request->query(), 'tab' => $tab]);
+    }
+
+    private function pageSize(Request $request, string $name): int
+    {
+        $size = $request->integer($name, 15);
+
+        return in_array($size, [10, 15, 25, 50, 100], true) ? $size : 15;
     }
 }
