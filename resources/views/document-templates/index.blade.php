@@ -20,10 +20,16 @@
             </div>
         </x-page-header>
 
-        <x-ui.form-section title="Tambah atau Ganti Template" description="Pilih jenis dokumen, unggah file DOCX/XLSX, lalu tentukan kategori SPJ yang menggunakan template ini.">
+        <x-ui.form-section title="Tambah atau Ganti Template" description="Pilih jenis dokumen canonical, unggah file DOCX/XLSX, lalu tentukan kategori SPJ yang menggunakan template ini.">
             <form method="POST" action="{{ route('document-templates.store') }}" enctype="multipart/form-data" class="space-y-5">@csrf
                 <div class="grid gap-4 lg:grid-cols-2">
-                    <x-ui.field label="Jenis Dokumen" for="document_type" :error="$errors->first('document_type')" required><x-ui.select id="document_type" name="document_type" required>@foreach(['KUITANSI'=>'Kuitansi','RINCIAN_BELANJA'=>'Rincian Belanja','DAFTAR_PEMBAYARAN'=>'Daftar Pembayaran','DAFTAR_HADIR'=>'Daftar Hadir','CHECKLIST'=>'Checklist SPJ','REKAP_PAJAK'=>'Rekap Pajak','INVOICE_PESANAN'=>'Pesanan/Invoice','BAP'=>'BAP','BAST'=>'BAST','SPK'=>'SPK','SURAT_TUGAS'=>'Surat Tugas','SPPD'=>'SPPD'] as $value=>$label)<option value="{{ $value }}" @selected(old('document_type') === $value)>{{ $label }}</option>@endforeach</x-ui.select></x-ui.field>
+                    <x-ui.field label="Jenis Dokumen" for="document_type" :error="$errors->first('document_type')" required>
+                        <x-ui.select id="document_type" name="document_type" required>
+                            @foreach($documentTypes as $value => $label)
+                                <option value="{{ $value }}" @selected(old('document_type') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
                     <x-ui.field label="Nama Template" for="template_name" :error="$errors->first('name')" required><x-ui.input id="template_name" name="name" :value="old('name')" placeholder="Contoh: Kuitansi BOSP 2026" required /></x-ui.field>
                     <x-ui.field label="File Template" for="template_file" hint="Gunakan file DOCX atau XLSX dengan ukuran maksimal 10 MB." :error="$errors->first('template')" required><input id="template_file" type="file" name="template" accept=".docx,.xlsx" required></x-ui.field>
                     <fieldset class="rounded-xl border border-slate-200 bg-slate-50/70 p-4"><legend class="px-1 text-xs font-bold text-slate-700">Digunakan untuk Kategori SPJ</legend><div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($categories as $category)<label class="ui-choice-card text-xs"><input type="checkbox" name="applicable_categories[]" value="{{ $category }}" @checked(in_array($category, old('applicable_categories', []), true))><span>{{ $labels[$category] ?? str_replace('_',' ',$category) }}</span></label>@endforeach</div><p class="mt-3 text-xs text-slate-500">Jika tidak ada kategori yang dipilih, template akan tersedia untuk semua kategori SPJ.</p></fieldset>
@@ -33,7 +39,7 @@
         </x-ui.form-section>
 
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6"><h2 class="font-bold text-slate-800">Template yang Tersedia</h2><p class="mt-1 text-sm text-slate-500">Aktifkan template dan tentukan kategori SPJ yang boleh menggunakannya.</p></div>
+            <div class="border-b border-slate-100 px-5 py-4 sm:px-6"><h2 class="font-bold text-slate-800">Template yang Tersedia</h2><p class="mt-1 text-sm text-slate-500">Template baru memakai document type canonical. Data legacy yang belum dapat dinormalisasi tetap ditampilkan agar tidak hilang.</p></div>
             <form method="GET" class="grid gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 sm:grid-cols-[12rem_minmax(12rem,1fr)_auto_auto] sm:items-end">
                 <x-ui.field label="Status Template" for="status"><x-ui.select id="status" name="status"><option value="all" @selected(($filters['status'] ?? 'all')==='all')>Semua Status</option><option value="active" @selected(($filters['status'] ?? '')==='active')>Aktif</option><option value="inactive" @selected(($filters['status'] ?? '')==='inactive')>Tidak Aktif</option></x-ui.select></x-ui.field>
                 <x-ui.field label="Kategori SPJ" for="category"><x-ui.select id="category" name="category"><option value="">Semua Kategori</option>@foreach($categories as $category)<option value="{{ $category }}" @selected(($filters['category'] ?? '')===$category)>{{ $labels[$category] ?? str_replace('_',' ',$category) }}</option>@endforeach</x-ui.select></x-ui.field>
@@ -42,8 +48,25 @@
 
             <div class="overflow-x-auto"><table class="min-w-full text-sm" data-pagination="server"><thead class="bg-slate-100"><tr class="text-left text-[11px] font-bold uppercase tracking-wide text-slate-600"><th class="px-4 py-3">Template</th><th class="px-4 py-3">Format</th><th class="px-4 py-3">Digunakan untuk</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-right">Tindakan</th></tr></thead><tbody class="divide-y divide-slate-100">
                 @forelse($templates as $template)
+                    @php
+                        $canonicalType = \App\Services\SpjDocumentTypeRegistry::canonical((string) $template->document_type);
+                        $isCanonical = array_key_exists((string) $template->document_type, $documentTypes);
+                    @endphp
                     <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-violet-50/60">
-                        <td class="px-4 py-3 align-top"><p class="font-semibold text-slate-800">{{ $template->name }}</p><p class="mt-1 font-mono text-[11px] text-violet-700">{{ $template->document_type }}</p></td>
+                        <td class="px-4 py-3 align-top">
+                            <p class="font-semibold text-slate-800">{{ $template->name }}</p>
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <span class="font-mono text-[11px] text-violet-700">{{ $template->document_type }}</span>
+                                @if(! $isCanonical)
+                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">Legacy</span>
+                                @endif
+                            </div>
+                            @if(! $isCanonical && $canonicalType)
+                                <p class="mt-1 text-[11px] text-amber-700">Alias lama untuk <span class="font-mono font-semibold">{{ $canonicalType }}</span>. Jika terjadi benturan dengan template canonical, data legacy dipertahankan dalam keadaan nonaktif.</p>
+                            @elseif(! $isCanonical)
+                                <p class="mt-1 text-[11px] text-slate-500">Belum memiliki padanan pada registry document type canonical v1.</p>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 align-top"><span class="rounded bg-slate-200 px-2 py-1 text-[11px] font-bold uppercase text-slate-700">{{ $template->format }}</span></td>
                         <td class="min-w-[320px] px-4 py-3 align-top"><form id="mapping-{{ $template->id }}" method="POST" action="{{ route('document-templates.mapping.update',$template->id) }}">@csrf @method('PUT')<div class="grid gap-2 sm:grid-cols-2">@foreach($categories as $category)<label class="ui-choice-card text-xs"><input type="checkbox" name="applicable_categories[]" value="{{ $category }}" @checked(in_array($category,$template->applicable_categories ?? [],true))><span>{{ $labels[$category] ?? str_replace('_',' ',$category) }}</span></label>@endforeach</div></form>@if(empty($template->applicable_categories))<p class="mt-2 text-[11px] font-semibold text-emerald-700">Template ini dapat digunakan untuk semua kategori SPJ.</p>@endif</td>
                         <td class="px-4 py-3 text-center align-top"><input form="mapping-{{ $template->id }}" type="hidden" name="is_active" value="0"><label class="inline-flex items-center gap-2 text-xs font-bold {{ $template->is_active ? 'text-emerald-700':'text-slate-500' }}"><input form="mapping-{{ $template->id }}" type="checkbox" name="is_active" value="1" @checked($template->is_active)>{{ $template->is_active ? 'Aktif':'Tidak aktif' }}</label></td>
