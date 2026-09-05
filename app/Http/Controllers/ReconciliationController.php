@@ -12,6 +12,9 @@ class ReconciliationController extends Controller
     {
         $filter = $request->string('filter')->toString();
         $search = trim($request->string('q')->toString());
+        $perPageRaw = $request->input('perPage', 15);
+        $perPage = $perPageRaw === 'all' ? 100 : (int) $perPageRaw;
+        $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
         $baseQuery = Transaction::query()
             ->activeContext()
@@ -46,9 +49,9 @@ class ReconciliationController extends Controller
             ->orderByDesc('requires_reconciliation')
             ->orderBy('transaction_date')
             ->orderBy('id')
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
-        return view('reconciliation.index', compact('transactions', 'summary', 'filter', 'search'));
+        return view('reconciliation.index', compact('transactions', 'summary', 'filter', 'search', 'perPage'));
     }
 }
