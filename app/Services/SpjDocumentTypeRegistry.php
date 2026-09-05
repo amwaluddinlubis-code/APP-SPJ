@@ -255,10 +255,11 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['PEMELIHARAAN'],
                 'required' => [
-                    'NOMOR_RAB', 'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN',
-                    'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                    'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'NILAI_PEKERJAAN',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
+                    'NOMOR_RAB', 'LOKASI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'KODE_KEGIATAN', 'NAMA_KEGIATAN',
                 ],
                 'repeat_required' => [
