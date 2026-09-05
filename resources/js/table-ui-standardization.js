@@ -1,4 +1,11 @@
 const pageSizeOptions = [10, 15, 25, 50, 100];
+const supportedGeneratedServerPageNames = new Set([
+    'package_page',
+    'reconciliation_page',
+    'register_page',
+    'completeness_page',
+    'history_page',
+]);
 
 const buttonClass = 'inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40';
 
@@ -18,7 +25,23 @@ const applyButtonTheme = (button, active = false) => {
     button.style.color = 'var(--ui-fg-muted)';
 };
 
+const localContainerFor = (table) => table.parentElement?.parentElement instanceof HTMLElement
+    ? table.parentElement.parentElement
+    : table.closest('section, .card, .audit-panel');
+
 const toolbarTargetFor = (table) => {
+    const localContainer = localContainerFor(table);
+    if (localContainer instanceof HTMLElement) {
+        const directToolbar = Array.from(localContainer.children).find((child) => child.matches?.('.ui-toolbar, .audit-panel-heading, div.border-b'));
+        if (directToolbar instanceof HTMLElement) {
+            if (directToolbar.classList.contains('ui-toolbar')) {
+                const groups = directToolbar.querySelectorAll(':scope > .ui-toolbar-group');
+                return groups.length > 1 ? groups[groups.length - 1] : directToolbar;
+            }
+            return directToolbar;
+        }
+    }
+
     const section = table.closest('section, .card, .audit-panel');
     if (!(section instanceof HTMLElement)) return null;
 
@@ -32,9 +55,9 @@ const toolbarTargetFor = (table) => {
     return heading instanceof HTMLElement ? heading : null;
 };
 
-const createPageSizeControl = (table, perPage, onChange) => {
+const createPageSizeControl = (table, perPage, onChange, marker = 'client') => {
     const control = document.createElement('div');
-    control.dataset.clientPageSize = 'true';
+    control.dataset.tablePageSize = marker;
     control.className = 'flex items-center gap-2 text-xs';
 
     const label = document.createElement('label');
@@ -53,9 +76,7 @@ const createPageSizeControl = (table, perPage, onChange) => {
         select.appendChild(option);
     });
 
-    if (!pageSizeOptions.includes(perPage)) {
-        perPage = pageSizeOptions[0];
-    }
+    if (!pageSizeOptions.includes(perPage)) perPage = 15;
     select.value = String(perPage);
     select.addEventListener('change', () => onChange(Number(select.value)));
 
@@ -64,6 +85,8 @@ const createPageSizeControl = (table, perPage, onChange) => {
     const target = toolbarTargetFor(table);
     if (target) {
         target.classList.add('flex', 'items-center', 'gap-2');
+        if (!target.classList.contains('ui-toolbar-group')) target.classList.add('flex-wrap');
+        control.classList.add('ml-auto');
         target.appendChild(control);
         return control;
     }
@@ -79,23 +102,85 @@ const createPageSizeControl = (table, perPage, onChange) => {
     return control;
 };
 
-const serverPaginationNearby = (table) => {
-    const section = table.closest('section, .card, .audit-panel');
-    if (!(section instanceof HTMLElement)) return false;
+const nearbyServerNav = (table) => {
+    const localContainer = localContainerFor(table);
+    if (localContainer instanceof HTMLElement) {
+        const nav = localContainer.querySelector('nav[role="navigation"]');
+        if (nav instanceof HTMLElement) return nav;
+    }
 
-    return Boolean(section.querySelector('nav[role="navigation"]'));
+    const section = table.closest('section, .card, .audit-panel');
+    const nav = section?.querySelector('nav[role="navigation"]');
+    return nav instanceof HTMLElement ? nav : null;
+};
+
+const pageNameFromNav = (nav) => {
+    const links = nav.querySelectorAll('a[href]');
+    for (const link of links) {
+        try {
+            const url = new URL(link.href, window.location.href);
+            for (const name of url.searchParams.keys()) {
+                if (name === 'page' || name.endsWith('_page')) return name;
+            }
+        } catch {
+            // Ignore malformed pagination links.
+        }
+    }
+    return null;
+};
+
+const promoteExistingServerPageSize = (table) => {
+    const wrapper = table.parentElement;
+    const footer = wrapper?.nextElementSibling;
+    const select = footer?.querySelector?.('select[aria-label*="Baris"]');
+    const control = select?.closest('.ui-toolbar-group, [data-table-page-size]');
+    if (!(control instanceof HTMLElement)) return false;
+
+    const target = toolbarTargetFor(table);
+    if (!(target instanceof HTMLElement)) return true;
+
+    control.dataset.tablePageSize = 'server-existing';
+    control.classList.add('ml-auto');
+    target.classList.add('flex', 'items-center', 'gap-2', 'flex-wrap');
+    target.appendChild(control);
+    return true;
+};
+
+const initializeServerTable = (table, nav) => {
+    table.dataset.pagination = 'server';
+    if (table.dataset.serverPaginationUiInitialized === 'true') return;
+    table.dataset.serverPaginationUiInitialized = 'true';
+
+    if (promoteExistingServerPageSize(table)) return;
+    if (!(nav instanceof HTMLElement)) return;
+
+    const pageName = pageNameFromNav(nav);
+    if (!pageName || !supportedGeneratedServerPageNames.has(pageName)) return;
+
+    const perPageName = pageName.replace(/_page$/, '_perPage');
+    const url = new URL(window.location.href);
+    const current = Number(url.searchParams.get(perPageName) || 15);
+
+    createPageSizeControl(table, current, (value) => {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set(perPageName, String(value));
+        nextUrl.searchParams.delete(pageName);
+        window.location.assign(nextUrl.toString());
+    }, 'server-generated');
 };
 
 const initializeStandardClientTable = (table) => {
     if (!(table instanceof HTMLTableElement)) return;
-    if (table.dataset.paginationInitialized === 'true') return;
-    if (table.dataset.pagination === 'none' || table.dataset.pagination === 'server') return;
+    if (table.dataset.pagination === 'none') return;
     if (table.closest('[wire\\:id]')) return;
 
-    if (serverPaginationNearby(table)) {
-        table.dataset.pagination = 'server';
+    const serverNav = nearbyServerNav(table);
+    if (table.dataset.pagination === 'server' || serverNav) {
+        initializeServerTable(table, serverNav);
         return;
     }
+
+    if (table.dataset.paginationInitialized === 'true') return;
 
     const body = table.tBodies[0];
     if (!body) return;
