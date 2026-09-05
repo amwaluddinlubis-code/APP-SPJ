@@ -129,6 +129,7 @@ class SpjDocumentNumberService
         ?string $npsn = null,
     ): SpjDocument {
         $documentType = strtoupper(trim($documentType));
+        $documentDate = $this->canonicalDocumentDate($package, $documentType, $documentDate);
 
         return DB::connection('school')->transaction(function () use ($package, $documentType, $documentDate, $schoolCode, $scopeKey, $templateId, $npsn): SpjDocument {
             $identity = [
@@ -247,6 +248,26 @@ class SpjDocumentNumberService
 
             return $document;
         });
+    }
+
+    private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback): CarbonInterface
+    {
+        $package->loadMissing(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
+        $transaction = $package->transaction;
+        $value = match ($documentType) {
+            'SPJ' => $transaction->transaction_date,
+            'ORDER', 'PESANAN', 'SURAT_PESANAN' => $transaction->goods->pluck('order_date')->filter()->sort()->first(),
+            'BAP' => $transaction->goods->pluck('bap_date')->filter()->sort()->first(),
+            'BAST', 'RECEIPT', 'PENERIMAAN' => $transaction->goods->pluck('bast_date')->filter()->sort()->first(),
+            'SPK', 'WORK_ORDER' => $transaction->workOrder?->spk_date,
+            'RAB' => $transaction->workOrder?->rab_date,
+            'SURAT_TUGAS_PERJALANAN_DINAS' => $transaction->travels->pluck('assignment_letter_date')->filter()->sort()->first()
+                ?: $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
+            'SPPD' => $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
+            default => null,
+        };
+
+        return filled($value) ? Carbon::parse($value) : $fallback;
     }
 
     /** @return array<string, mixed> */
