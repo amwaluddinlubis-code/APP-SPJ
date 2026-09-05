@@ -1,0 +1,98 @@
+/* ARKAS-inspired semantic theme profiles.
+   These are application themes, not official ARKAS brand specifications.
+   They extend the shared semantic contract without changing component geometry. */
+
+html[data-theme='arkas_light'] {
+    --theme-action-bg: #22c7d6;
+    --theme-action-fg: #06212b;
+    --theme-action-hover-bg: #3ad3e0;
+    --theme-action-hover-fg: #06212b;
+    --theme-content-accent: #0b4f6c;
+    --theme-focus-ring: #0f5f7a;
+    --theme-focus-halo: rgb(34 199 214 / .24);
+    --theme-highlight: #facc15;
+}
+
+html[data-theme='arkas_dark'] {
+    --ui-page-bg: #07111f;
+    --ui-surface: #0b1728;
+    --ui-surface-soft: #102238;
+    --ui-border: #22374c;
+    --ui-border-strong: #31506a;
+    --ui-text: #e7eef6;
+    --ui-muted: #91a4b8;
+
+    --theme-action-bg: #22c7d6;
+    --theme-action-fg: #06212b;
+    --theme-action-hover-bg: #3ad3e0;
+    --theme-action-hover-fg: #06212b;
+    --theme-content-accent: #67d6e5;
+    --theme-focus-ring: #67d6e5;
+    --theme-focus-halo: rgb(103 214 229 / .24);
+    --theme-highlight: #facc15;
+}
+
+html[data-theme='arkas_dark'] body,
+html[data-theme='arkas_dark'] main {
+    background: var(--ui-page-bg) !important;
+}
+
+html[data-theme='arkas_dark'] main > header {
+    background: rgb(11 23 40 / .92) !important;
+    border-color: var(--ui-border) !important;
+}
+
+html[data-theme='arkas_dark'] .app-sidebar {
+    background: linear-gradient(
+        180deg,
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 58%,
+        color-mix(in srgb, var(--theme-accent) 22%, var(--theme-sidebar-deep)) 100%
+    ) !important;
+    border-right-color: color-mix(in srgb, var(--theme-accent) 30%, var(--ui-border)) !important;
+}
+
+html[data-theme='arkas_light'][data-ui-header='gradient'] .page-header-main {
+    background: linear-gradient(
+        120deg,
+        var(--theme-sidebar-deep) 0%,
+        var(--theme-sidebar) 52%,
+        var(--theme-accent) 100%
+    ) !important;
+}
+
+html[data-theme='arkas_dark'][data-ui-header='deep'] .page-header-main {
+    background: linear-gradient(
+        135deg,
+        #07111f 0%,
+        var(--theme-sidebar-deep) 48%,
+        var(--theme-sidebar) 78%,
+        color-mix(in srgb, var(--theme-accent) 42%, var(--theme-sidebar)) 100%
+    ) !important;
+}
+
+html[data-theme='arkas_light'] .app-sidebar-brand-mark,
+html[data-theme='arkas_dark'] .app-sidebar-brand-mark,
+html[data-theme='arkas_light'] .app-nav-active,
+html[data-theme='arkas_dark'] .app-nav-active {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn),
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn) {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover,
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover {
+    background: var(--theme-action-hover-bg) !important;
+    color: var(--theme-action-hover-fg) !important;
+}
+
+html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg,
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg {
+    color: currentColor;
+    stroke: currentColor;
+}
