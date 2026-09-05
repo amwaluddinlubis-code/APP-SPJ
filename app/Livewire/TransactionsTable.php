@@ -192,11 +192,18 @@ class TransactionsTable extends Component
         $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
-        // Paket SPJ yang sudah final/arsip selalu ditempatkan paling belakang.
-        // Transaksi yang masih perlu dikerjakan tetap mengikuti urutan status lalu ID.
+        // Work queue operator: transaksi yang belum memiliki deskripsi SPJ selalu
+        // tampil paling atas. Setelah itu transaksi yang siap dibuka, draft paket,
+        // bernomor, final, lalu yang dibatalkan. ID menjaga urutan stabil di tiap grup.
         $paginator = $query
-            ->orderByRaw("CASE WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND (spj_packages.finalized_at IS NOT NULL OR spj_packages.status IN ('FINAL', 'ARCHIVED', 'ARSIP'))) THEN 1 ELSE 0 END ASC")
-            ->orderBy('status')
+            ->orderByRaw("CASE
+                WHEN payment_description IS NULL OR TRIM(payment_description) = '' THEN 0
+                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.status IN ('CANCELLED', 'CANCELED')) THEN 5
+                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND (spj_packages.finalized_at IS NOT NULL OR spj_packages.status IN ('FINAL', 'ARCHIVED', 'ARSIP'))) THEN 4
+                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.document_number IS NOT NULL) THEN 3
+                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id) THEN 2
+                ELSE 1
+            END ASC")
             ->orderBy('id')
             ->paginate($perPage);
 
@@ -219,6 +226,35 @@ class TransactionsTable extends Component
             'statuses' => $this->statuses,
             'transactions' => $this->transactions,
         ]);
+    }
+
+    /** @return array{status:string,label:string} */
+    public function workStatusFor(Transaction $transaction): array
+    {
+        if (blank($transaction->payment_description)) {
+            return ['status' => 'DRAFT', 'label' => 'Perlu deskripsi'];
+        }
+
+        $package = $transaction->spjPackage;
+        $packageStatus = strtoupper((string) ($package?->status ?? ''));
+
+        if (in_array($packageStatus, ['CANCELLED', 'CANCELED'], true)) {
+            return ['status' => 'CANCELLED', 'label' => 'Dibatalkan'];
+        }
+
+        if ($package?->finalized_at || in_array($packageStatus, ['FINAL', 'ARCHIVED', 'ARSIP'], true)) {
+            return ['status' => 'FINAL', 'label' => 'Final'];
+        }
+
+        if (filled($package?->document_number)) {
+            return ['status' => 'NUMBERED', 'label' => 'Bernomor'];
+        }
+
+        if ($package) {
+            return ['status' => 'DRAFT', 'label' => 'Draft paket'];
+        }
+
+        return ['status' => 'READY', 'label' => 'Siap detail'];
     }
 
     private function baseQuery(): Builder
