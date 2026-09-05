@@ -27,24 +27,42 @@
         </x-page-filter>
 
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-                <form method="GET" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div><h2 class="font-bold text-slate-800">Daftar Pajak Tersinkron</h2><p class="mt-1 text-sm text-slate-500">Satu nomor bukti ditampilkan satu kali.</p></div>
-                    <div class="flex flex-col gap-2 sm:flex-row">
-                        <input name="q" value="{{ $search }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Cari nomor bukti atau penerima">
-                        <select name="month" onchange="this.form.submit()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">Semua bulan</option>
-                            @foreach([1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'] as $number => $name)
-                                <option value="{{ $number }}" @selected($month === $number)>{{ $name }}</option>
-                            @endforeach
-                        </select>
-                        @if($search !== '' || $month)<a href="{{ route('taxes.index') }}" class="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-semibold text-slate-600">Reset</a>@endif
-                    </div>
-                </form>
-            </div>
+            <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3 sm:px-6">
+                <div>
+                    <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Pajak Tersinkron</h2>
+                    <p class="mt-0.5 text-sm" style="color: var(--ui-fg-muted)">Satu nomor bukti ditampilkan satu kali.</p>
+                </div>
+                <x-slot:actions>
+                    <form method="GET" class="flex items-center gap-2">
+                        <input type="hidden" name="month" value="{{ $month }}">
+                        <input type="hidden" name="quarter" value="{{ $quarter }}">
+                        <input type="hidden" name="semester" value="{{ $semester }}">
+                        <input type="hidden" name="perPage" value="{{ request('perPage', 15) }}">
+                        <x-ui.search-group name="q" :value="$search" placeholder="Cari bukti atau penerima" width="w-72" />
+                    </form>
+                    <x-page-table-per-page :total="$transactions->total()" name="perPage" :current="request('perPage', 15)" />
+                </x-slot:actions>
+            </x-ui.toolbar>
+
+            <form method="GET" class="flex flex-wrap items-center gap-2 border-b border-[var(--ui-line)] px-5 py-3" style="background: var(--ui-bg-subtle)">
+                <input type="hidden" name="q" value="{{ $search }}">
+                <input type="hidden" name="quarter" value="{{ $quarter }}">
+                <input type="hidden" name="semester" value="{{ $semester }}">
+                <input type="hidden" name="perPage" value="{{ request('perPage', 15) }}">
+                <label for="tax-month" class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Bulan</label>
+                <x-ui.select id="tax-month" name="month" onchange="this.form.submit()" class="!w-auto">
+                    <option value="">Semua bulan</option>
+                    @foreach([1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'] as $number => $name)
+                        <option value="{{ $number }}" @selected($month === $number)>{{ $name }}</option>
+                    @endforeach
+                </x-ui.select>
+                @if($search !== '' || $month || $quarter || $semester)
+                    <x-ui.button variant="secondary" :href="route('taxes.index')">Reset</x-ui.button>
+                @endif
+            </form>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table data-pagination="server" class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50"><tr>
                         <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti / Tanggal</th>
                         <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Penerima</th>
@@ -73,10 +91,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <x-page-table-per-page :total="$transactions->total()" />
-                <div>{{ $transactions->links() }}</div>
-            </div>
+
+            <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
         </section>
     </div>
 </x-layouts.tailwind-app>
