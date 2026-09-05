@@ -14,5 +14,6 @@
 @import './spj-workspace-standardization.css';
 @import './dashboard-standardization.css';
 @import './settings-database-standardization.css';
+@import './database-header-generalization.css';
 @import './document-settings-standardization.css';
 @import './theme-accessibility.css';
