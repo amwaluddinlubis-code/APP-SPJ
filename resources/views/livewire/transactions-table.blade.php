@@ -87,7 +87,7 @@
         <x-ui.toolbar class="border-b-0 bg-slate-50 px-4 py-3 sm:px-5">
             <div>
                 <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Transaksi SPJ</h2>
-                <p class="mt-0.5 text-sm" style="color: var(--ui-fg-muted)">Urutan kerja: perlu deskripsi → siap detail → draft paket → bernomor → final.</p>
+                <p class="mt-0.5 text-sm" style="color: var(--ui-fg-muted)">Semua transaksi yang belum bernomor tetap di depan; yang sudah bernomor dipindahkan ke belakang.</p>
             </div>
             <x-slot:actions>
                 <div class="min-w-[8.5rem]">
@@ -140,15 +140,20 @@
             @endif
         </div>
 
-        <div class="hidden overflow-x-auto border-t border-slate-200 lg:block">
-            <table data-pagination="server" class="min-w-full text-sm">
+        <div class="hidden overflow-hidden border-t border-slate-200 lg:block">
+            <table data-pagination="server" class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col class="w-[165px]">
+                    <col>
+                    <col class="w-[135px]">
+                    <col class="w-[78px]">
+                </colgroup>
                 <thead class="bg-slate-50">
                     <tr class="border-b border-slate-200">
-                        <th class="w-[180px] px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">ID / Status</th>
-                        <th class="px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">Uraian & SPJ</th>
-                        <th class="w-[180px] px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">Kegiatan / Rekening</th>
-                        <th class="w-[150px] px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wide text-slate-500">Nilai</th>
-                        <th class="w-[92px] px-4 py-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                        <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">ID / Status</th>
+                        <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">Uraian / Referensi</th>
+                        <th class="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide text-slate-500">Nilai</th>
+                        <th class="px-2 py-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -156,31 +161,36 @@
                         @foreach($transactions as $transaction)
                             @php($workStatus = $this->workStatusFor($transaction))
                             <tr class="transition hover:bg-indigo-50/40" wire:key="transaction-row-{{ $transaction->id }}">
-                                <td class="px-4 py-2.5 align-middle">
-                                    <div class="flex items-center gap-2"><span class="font-mono text-xs font-bold text-slate-500">#{{ $transaction->id }}</span><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" /></div>
-                                    <div class="mt-1 flex items-center gap-1.5 text-[11px]" style="color: var(--ui-fg-muted)"><span class="font-mono font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</span><span>·</span><span>{{ $transaction->transaction_date?->format('d/m/Y') ?? '—' }}</span><span>{{ $this->paymentMethodFor($transaction) === 'siplah' ? '· SiPLah' : '' }}</span></div>
+                                <td class="px-3 py-2 align-middle">
+                                    <div class="flex min-w-0 items-center gap-1.5">
+                                        <span class="shrink-0 font-mono text-[11px] font-bold text-slate-500">#{{ $transaction->id }}</span>
+                                        <div class="min-w-0"><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" /></div>
+                                    </div>
+                                    <p class="mt-0.5 truncate text-[10px]" style="color: var(--ui-fg-muted)"><span class="font-mono font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</span> · {{ $transaction->transaction_date?->format('d/m/Y') ?? '—' }}{{ $this->paymentMethodFor($transaction) === 'siplah' ? ' · SiPLah' : '' }}</p>
                                 </td>
-                                <td class="max-w-0 px-4 py-2.5 align-middle">
-                                    <p class="truncate font-semibold" style="color: var(--ui-fg)">{{ $transaction->description ?: 'Tanpa uraian ARKAS' }}</p>
-                                    <p class="mt-0.5 truncate text-xs" style="color: {{ filled($transaction->payment_description) ? 'var(--theme-content-accent)' : 'var(--ui-fg-muted)' }}">SPJ: {{ $transaction->payment_description ?: 'Deskripsi belanja belum diisi' }}</p>
-                                    <p class="mt-0.5 truncate text-[11px]" style="color: var(--ui-fg-muted)">{{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category).' · ' : '' }}{{ $transaction->items_count }} item · Penerima: {{ $transaction->effective_receipt_recipient_name ?: $transaction->recipient_name ?: 'Belum diisi' }}{{ $transaction->requires_reconciliation ? ' · Rekonsiliasi' : '' }}</p>
+                                <td class="min-w-0 px-3 py-2 align-middle">
+                                    <p class="truncate text-xs font-semibold" style="color: var(--ui-fg)" title="{{ $transaction->description }}">{{ $transaction->description ?: 'Tanpa uraian ARKAS' }}</p>
+                                    <p class="mt-0.5 truncate text-[11px]" style="color: {{ filled($transaction->payment_description) ? 'var(--theme-content-accent)' : 'var(--ui-fg-muted)' }}" title="{{ $transaction->payment_description }}">SPJ: {{ $transaction->payment_description ?: 'Deskripsi belanja belum diisi' }}</p>
+                                    <p class="mt-0.5 truncate text-[10px]" style="color: var(--ui-fg-muted)">{{ $transaction->activity_code ?: '—' }} · {{ $transaction->account_code ?: 'Rekening belum tersedia' }} · {{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category).' · ' : '' }}{{ $transaction->items_count }} item · {{ $transaction->effective_receipt_recipient_name ?: $transaction->recipient_name ?: 'Penerima belum diisi' }}{{ $transaction->requires_reconciliation ? ' · Rekonsiliasi' : '' }}</p>
                                 </td>
-                                <td class="px-4 py-2.5 align-middle"><p class="truncate font-mono text-xs font-semibold" style="color: var(--theme-content-accent)">{{ $transaction->activity_code ?: '—' }}</p><p class="mt-0.5 truncate text-[11px]" style="color: var(--ui-fg-muted)">{{ $transaction->account_code ?: 'Rekening belum tersedia' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-2.5 text-right align-middle"><p class="font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</p><p class="mt-0.5 text-[11px] text-amber-700">Pajak {{ $rupiah($transaction->tax_total) }}</p></td>
-                                <td class="px-4 py-2.5 align-middle">
-                                    <div class="flex items-center justify-center gap-1.5" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
-                                        <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-4 w-4" /></button>
+                                <td class="whitespace-nowrap px-3 py-2 text-right align-middle">
+                                    <p class="text-xs font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</p>
+                                    <p class="mt-0.5 text-[10px] text-amber-700">Pjk {{ $rupiah($transaction->tax_total) }}</p>
+                                </td>
+                                <td class="px-2 py-2 align-middle">
+                                    <div class="flex items-center justify-center gap-1" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
+                                        <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-3.5 w-3.5" /></button>
                                         @if(filled($transaction->payment_description))
-                                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-4 w-4" /></a>
+                                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-3.5 w-3.5" /></a>
                                         @else
-                                            <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-4 w-4" /></button>
+                                            <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-3.5 w-3.5" /></button>
                                         @endif
                                     </div>
                                 </td>
                             </tr>
                         @endforeach
                     @else
-                        <tr><td colspan="5" class="px-5 py-12 text-center"><p class="font-semibold" style="color: var(--ui-fg)">Transaksi belum ditemukan.</p><p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Jalankan Sinkron Semua ARKAS atau ubah filter pencarian.</p></td></tr>
+                        <tr><td colspan="4" class="px-5 py-12 text-center"><p class="font-semibold" style="color: var(--ui-fg)">Transaksi belum ditemukan.</p><p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Jalankan Sinkron Semua ARKAS atau ubah filter pencarian.</p></td></tr>
                     @endif
                 </tbody>
             </table>
