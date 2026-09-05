@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/spj/paket/{packageId}/buka-kunci', [SpjController::class, 'unlockPackage'])->name('spj.unlock');
             Route::get('/pengaturan/template-dokumen', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
             Route::get('/pengaturan/template-dokumen/contoh/{format}', [DocumentTemplateController::class, 'sample'])->name('document-templates.sample');
+            Route::get('/pengaturan/template-dokumen/{templateId}/unduh', [DocumentTemplateController::class, 'downloadStored'])->name('document-templates.download');
             Route::post('/pengaturan/template-dokumen', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
             Route::put('/pengaturan/template-dokumen/{templateId}/pemetaan', [DocumentTemplateController::class, 'updateMapping'])->name('document-templates.mapping.update');
             Route::delete('/pengaturan/template-dokumen/{templateId}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
