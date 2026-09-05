@@ -223,8 +223,8 @@ final class SpjDocumentTypeRegistry
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA',
                     'TELEPON_PENYEDIA', 'NILAI_BRUTO',
                 ],
-                'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN'],
-                'repeat_optional' => ['ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
+                'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME'],
+                'repeat_optional' => ['ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
                 'image' => ['KOP_SURAT'],
             ],
 
