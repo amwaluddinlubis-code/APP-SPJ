@@ -58,8 +58,15 @@ class DocumentTemplateController extends Controller
         ]);
     }
 
-    public function store(Request $request, SpjTemplateValidator $validator): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        SpjTemplateValidator $validator,
+        SpjTemplatePackageImporter $packageImporter
+    ): RedirectResponse {
+        if ($request->hasFile('template_package')) {
+            return $this->importPackage($request, $packageImporter);
+        }
+
         $categories = SpjDocumentTypeRegistry::categories();
         $data = $request->validate([
             'document_type' => ['required', 'string', 'in:'.implode(',', SpjDocumentTypeRegistry::codes())],
@@ -129,7 +136,7 @@ class DocumentTemplateController extends Controller
     /** Mengimpor workbook master menjadi seluruh template canonical XLSX. */
     public function importPackage(Request $request, SpjTemplatePackageImporter $importer): RedirectResponse
     {
-        $data = $request->validate([
+        $request->validate([
             'template_package' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
             'replace_existing' => ['nullable', 'boolean'],
         ]);
