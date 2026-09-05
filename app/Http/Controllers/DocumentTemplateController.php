@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\DocumentTemplate;
 use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjTemplateService;
+use App\Services\SpjTemplateValidator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpWord\IOFactory as WordWriter;
 use PhpOffice\PhpWord\PhpWord;
+use Throwable;
 
 class DocumentTemplateController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, SpjTemplateValidator $validator): View
     {
         $categories = SpjDocumentTypeRegistry::categories();
         $filters = $request->validate([
@@ -38,16 +41,23 @@ class DocumentTemplateController extends Controller
             });
         }
 
+        $templates = $query->orderBy('document_type')->orderBy('name')->paginate(15)->withQueryString();
+        $validationResults = [];
+        foreach ($templates->getCollection() as $template) {
+            $validationResults[$template->id] = $this->validateStoredTemplate($template, $validator);
+        }
+
         return view('document-templates.index', [
-            'templates' => $query->orderBy('document_type')->orderBy('name')->paginate(15)->withQueryString(),
+            'templates' => $templates,
             'categories' => $categories,
             'filters' => $filters,
             'placeholderGroups' => SpjTemplateService::placeholderGroups(),
             'documentTypes' => SpjDocumentTypeRegistry::options(),
+            'validationResults' => $validationResults,
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, SpjTemplateValidator $validator): RedirectResponse
     {
         $categories = SpjDocumentTypeRegistry::categories();
         $data = $request->validate([
@@ -58,8 +68,36 @@ class DocumentTemplateController extends Controller
             'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
         ]);
         $documentType = strtoupper($data['document_type']);
-        $extension = strtolower($request->file('template')->getClientOriginalExtension());
-        $path = $request->file('template')->storeAs(
+        $uploaded = $request->file('template');
+        $extension = strtolower($uploaded->getClientOriginalExtension());
+        $temporaryPath = $uploaded->getRealPath();
+        if (! is_string($temporaryPath) || $temporaryPath === '') {
+            throw ValidationException::withMessages([
+                'template' => 'File template tidak dapat dibaca untuk proses validasi.',
+            ]);
+        }
+
+        try {
+            $validation = $validator->validateFile($documentType, $temporaryPath, $extension);
+        } catch (Throwable $exception) {
+            throw ValidationException::withMessages([
+                'template' => 'Template tidak dapat divalidasi: '.$exception->getMessage(),
+            ]);
+        }
+
+        if (! $validation['valid']) {
+            $messages = collect($validation['errors'])
+                ->pluck('message')
+                ->filter()
+                ->values()
+                ->all();
+
+            throw ValidationException::withMessages([
+                'template' => $messages ?: ['Template tidak memenuhi kontrak dokumen yang dipilih.'],
+            ]);
+        }
+
+        $path = $uploaded->storeAs(
             'document-templates/'.session('active_fiscal_year_id'),
             uniqid('tpl_', true).'.'.$extension
         );
@@ -76,7 +114,15 @@ class DocumentTemplateController extends Controller
             ['name' => $data['name'], 'file_path' => $path, 'applicable_categories' => $data['applicable_categories'] ?? [], 'is_active' => true]
         );
 
-        return back()->with('success', 'Template '.$data['name'].' berhasil disimpan.');
+        $response = back()->with('success', 'Template '.$data['name'].' berhasil disimpan.');
+        if ($validation['warnings']) {
+            $response->with(
+                'template_validation_warnings',
+                collect($validation['warnings'])->pluck('message')->filter()->values()->all()
+            );
+        }
+
+        return $response;
     }
 
     /** Memperbarui status aktif dan kategori yang memakai suatu template. */
@@ -153,5 +199,45 @@ class DocumentTemplateController extends Controller
         }
 
         return response()->download($path, 'CONTOH-TEMPLATE-SPJ.'.$format)->deleteFileAfterSend(true);
+    }
+
+    /** @return array<string,mixed> */
+    private function validateStoredTemplate(DocumentTemplate $template, SpjTemplateValidator $validator): array
+    {
+        try {
+            if (! Storage::exists($template->file_path)) {
+                return [
+                    'valid' => false,
+                    'document_type' => SpjDocumentTypeRegistry::canonical((string) $template->document_type),
+                    'sheet' => null,
+                    'markers' => [],
+                    'errors' => [[
+                        'code' => 'TEMPLATE_FILE_MISSING',
+                        'message' => 'Berkas template tidak ditemukan pada penyimpanan. Unggah ulang template ini.',
+                        'markers' => [],
+                    ]],
+                    'warnings' => [],
+                ];
+            }
+
+            return $validator->validateFile(
+                (string) $template->document_type,
+                Storage::path($template->file_path),
+                (string) $template->format,
+            );
+        } catch (Throwable $exception) {
+            return [
+                'valid' => false,
+                'document_type' => SpjDocumentTypeRegistry::canonical((string) $template->document_type),
+                'sheet' => null,
+                'markers' => [],
+                'errors' => [[
+                    'code' => 'VALIDATION_FAILED',
+                    'message' => 'Template tidak dapat divalidasi: '.$exception->getMessage(),
+                    'markers' => [],
+                ]],
+                'warnings' => [],
+            ];
+        }
     }
 }
