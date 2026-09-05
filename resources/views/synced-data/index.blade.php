@@ -67,14 +67,20 @@
             @endforeach
         @else
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
-                <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div><div class="flex items-center gap-2"><span class="rounded-md px-2.5 py-1 text-xs font-bold {{ ($groupStyles[$table['group']] ?? $groupStyles['REFERENSI / MASTER'])['badge'] }}">{{ $table['group'] }}</span><span class="text-xs font-medium text-slate-400">{{ number_format($counts[$type], 0, ',', '.') }} baris</span></div><h2 class="mt-2 text-lg font-bold text-slate-800">{{ $table['label'] }}</h2><p class="mt-1 text-base text-slate-500">Periksa hasil sinkronisasi sebelum melanjutkan proses SPJ.</p></div>
-                        <a href="{{ route('synced-data.index') }}" class="inline-flex w-fit rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-700 transition hover:bg-slate-50">← Kembali ke ringkasan</a>
+                <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3 sm:px-6">
+                    <div>
+                        <div class="flex items-center gap-2"><span class="rounded-md px-2.5 py-1 text-xs font-bold {{ ($groupStyles[$table['group']] ?? $groupStyles['REFERENSI / MASTER'])['badge'] }}">{{ $table['group'] }}</span><span class="text-xs font-medium" style="color: var(--ui-fg-muted)">{{ number_format($counts[$type], 0, ',', '.') }} baris</span></div>
+                        <h2 class="mt-2 text-lg font-bold" style="color: var(--ui-fg)">{{ $table['label'] }}</h2>
+                        <p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Periksa hasil sinkronisasi sebelum melanjutkan proses SPJ.</p>
                     </div>
-                </div>
+                    <x-slot:actions>
+                        <x-page-table-per-page :total="$rows->total()" name="perPage" :current="request('perPage', 15)" />
+                        <a href="{{ route('synced-data.index') }}" class="inline-flex w-fit rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)">← Kembali ke ringkasan</a>
+                    </x-slot:actions>
+                </x-ui.toolbar>
+
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-base">
+                    <table data-pagination="server" class="min-w-full divide-y divide-slate-200 text-base">
                         <thead class="bg-slate-50"><tr><th class="sticky left-0 z-10 w-14 bg-slate-50 px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
                             @foreach($table['select'] as $column)
                                 @php($parts = preg_split('/\s+as\s+/i', $column))
@@ -105,10 +111,8 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 px-5 py-4 bg-slate-50/30">
-                    <x-page-table-per-page :total="$rows->total()" />
-                    <div class="w-full sm:w-auto">{{ $rows->links() }}</div>
-                </div>
+
+                <x-ui.server-pagination :paginator="$rows" noun="data" />
             </section>
         @endif
     </div>
