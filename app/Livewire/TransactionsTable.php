@@ -192,17 +192,18 @@ class TransactionsTable extends Component
         $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
-        // Work queue operator: transaksi yang belum memiliki deskripsi SPJ selalu
-        // tampil paling atas. Setelah itu transaksi yang siap dibuka, draft paket,
-        // bernomor, final, lalu yang dibatalkan. ID menjaga urutan stabil di tiap grup.
+        // Semua transaksi yang BELUM bernomor tetap merupakan pekerjaan aktif dan
+        // harus berada di depan. Hanya transaksi yang sudah memiliki nomor dokumen
+        // (termasuk final/arsip) yang dipindahkan ke belakang. ID menjaga urutan stabil.
         $paginator = $query
             ->orderByRaw("CASE
-                WHEN payment_description IS NULL OR TRIM(payment_description) = '' THEN 0
-                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.status IN ('CANCELLED', 'CANCELED')) THEN 5
-                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND (spj_packages.finalized_at IS NOT NULL OR spj_packages.status IN ('FINAL', 'ARCHIVED', 'ARSIP'))) THEN 4
-                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.document_number IS NOT NULL) THEN 3
-                WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id) THEN 2
-                ELSE 1
+                WHEN EXISTS (
+                    SELECT 1 FROM spj_packages
+                    WHERE spj_packages.transaction_id = transactions.id
+                    AND spj_packages.document_number IS NOT NULL
+                    AND TRIM(spj_packages.document_number) <> ''
+                ) THEN 1
+                ELSE 0
             END ASC")
             ->orderBy('id')
             ->paginate($perPage);
