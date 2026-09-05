@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const source = fs.readFileSync(new URL('../resources/js/theme-profiles.js', import.meta.url), 'utf8');
-const representativeThemes = ['dark', 'slate', 'yellow', 'indigo', 'violet', 'arkas_light', 'arkas_dark'];
+const representativeThemes = ['dark', 'slate', 'yellow', 'indigo', 'violet', 'arkas_light', 'arkas_dark', 'arkas_dark_v2'];
 const minimumContrast = 4.5;
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,14 +53,12 @@ const extractTheme = (theme) => {
 const semanticsFor = (theme, tokens) => {
     const neutralLightForeground = ['dark', 'slate', 'gray', 'zinc', 'neutral', 'stone'].includes(theme);
     const strongerAction = ['indigo', 'violet'].includes(theme);
-    const isArkasLight = theme === 'arkas_light';
-    const isArkasDark = theme === 'arkas_dark';
 
-    if (isArkasLight) {
+    if (theme === 'arkas_light') {
         return {
-            actionBackground: '#22c7d6',
-            actionForeground: '#06212b',
-            contentAccent: '#0b4f6c',
+            actionBackground: '#1f63e9',
+            actionForeground: '#ffffff',
+            contentAccent: '#284393',
             contentSurface: '#ffffff',
             sidebarText: '#cbd5e1',
             topbarText: '#334155',
@@ -68,7 +66,7 @@ const semanticsFor = (theme, tokens) => {
         };
     }
 
-    if (isArkasDark) {
+    if (theme === 'arkas_dark') {
         return {
             actionBackground: '#22c7d6',
             actionForeground: '#06212b',
@@ -77,6 +75,18 @@ const semanticsFor = (theme, tokens) => {
             sidebarText: '#c3cedb',
             topbarText: '#c4cfdd',
             topbarSurface: '#0b1728',
+        };
+    }
+
+    if (theme === 'arkas_dark_v2') {
+        return {
+            actionBackground: '#1769e8',
+            actionForeground: '#ffffff',
+            contentAccent: '#38c5d6',
+            contentSurface: '#0d1a31',
+            sidebarText: '#cbd5e1',
+            topbarText: '#c4cfdd',
+            topbarSurface: '#0d1a31',
         };
     }
 
@@ -146,7 +156,7 @@ for (const theme of representativeThemes) {
         checks.push(['soft page header', semantics.contentAccent, tokens.accentSoft]);
     }
 
-    console.log(theme.toUpperCase().replace('_', ' '));
+    console.log(theme.toUpperCase().replaceAll('_', ' '));
 
     for (const [label, foreground, background] of checks) {
         const ratio = contrast(foreground, background);
