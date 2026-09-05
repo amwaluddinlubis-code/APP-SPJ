@@ -60,15 +60,25 @@
             :padding="false"
         >
             <x-slot:actions>
-                <form method="GET" class="flex">
+                <form method="GET" class="flex min-w-0 items-stretch">
                     <input type="hidden" name="per_page" value="{{ $perPage }}">
+                    <label for="rkas-search" class="sr-only">Cari rekening atau kegiatan</label>
                     <input
+                        id="rkas-search"
                         name="q"
                         value="{{ $search }}"
-                        class="w-64 rounded-l-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-72 min-w-0 rounded-l-lg border border-r-0 px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2"
+                        style="border-color: var(--ui-line); background: var(--ui-bg); color: var(--ui-fg); --tw-ring-color: var(--theme-content-accent)"
                         placeholder="Cari rekening atau kegiatan"
                     >
-                    <button class="rounded-r-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white">Cari</button>
+                    <button
+                        type="submit"
+                        class="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-r-lg px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none focus:ring-2"
+                        style="background: var(--theme-content-accent); --tw-ring-color: var(--theme-content-accent)"
+                    >
+                        <x-ui-icon name="search" class="h-4 w-4" />
+                        <span>Cari</span>
+                    </button>
                 </form>
 
                 <form method="GET" class="flex items-center gap-2">
@@ -87,7 +97,7 @@
                     </select>
                 </form>
 
-                <a class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" href="{{ route('synced-data.show', 'rkas') }}">
+                <a class="rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('synced-data.show', 'rkas') }}">
                     Data Mentah
                 </a>
             </x-slot:actions>
