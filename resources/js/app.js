@@ -271,6 +271,17 @@ const initializeClientTablePagination = (root = document) => {
 initializeClientTablePagination();
 document.addEventListener('livewire:navigated', () => initializeClientTablePagination());
 
+const removeDeprecatedTransactionSignatoryFields = (root = document) => {
+    ['signatory_name', 'signatory_role'].forEach((name) => {
+        const field = root.querySelector?.(`[name="${name}"]`) || document.querySelector(`[name="${name}"]`);
+        const wrapper = field?.closest('div');
+        if (wrapper instanceof HTMLElement) wrapper.remove();
+    });
+};
+
+removeDeprecatedTransactionSignatoryFields();
+document.addEventListener('livewire:navigated', () => removeDeprecatedTransactionSignatoryFields());
+
 const initializeSiplahPurchaseUi = (root = document) => {
     const paymentMethod = root.querySelector?.('select[name="payment_method"]') || document.querySelector('select[name="payment_method"]');
     if (!(paymentMethod instanceof HTMLSelectElement)) return;
