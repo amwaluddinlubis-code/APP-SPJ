@@ -142,6 +142,7 @@ class ArkasSynchronizationServiceV2
             $sourceItemIds = $this->ids($items, 'ID_KAS_UMUM');
             sort($sourceItemIds);
             $sourceKey = hash('sha256', implode('|', $sourceItemIds));
+            $isSiplah = (bool) ($first['IS_SIPLAH'] ?? false);
             $data = ['fund_source_id' => $first['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                 'id_kas_umum' => $first['ID_KAS_UMUM'], 'transaction_date' => $first['TANGGAL_TRANSAKSI'],
                 'description' => $first['URAIAN'] ?? null, 'payment_method' => $this->paymentMethod($first),
@@ -151,9 +152,19 @@ class ArkasSynchronizationServiceV2
                 'ppn' => $taxes['ppn'], 'pph21' => $taxes['pph21'], 'pph22' => $taxes['pph22'],
                 'pph23' => $taxes['pph23'], 'pph4' => $taxes['pph4'], 'sspd' => $taxes['sspd'],
                 'tax_total' => $taxTotal, 'net_amount' => $gross - $taxTotal,
-                'is_siplah' => (bool) ($first['IS_SIPLAH'] ?? false), 'source_key' => $sourceKey,
+                'is_siplah' => $isSiplah, 'source_key' => $sourceKey,
                 'source_status' => 'ACTIVE', 'last_seen_sync_run_id' => $runId,
                 'source_missing_since' => null, 'updated_at' => now()];
+            if ($isSiplah) {
+                $vendorName = $this->firstText($first, ['NAMA_TOKO']);
+                $vendorNpwp = $this->firstText($first, ['NPWP_REKANAN']);
+                if ($vendorName !== null) {
+                    $data['vendor_name'] = $vendorName;
+                }
+                if ($vendorNpwp !== null) {
+                    $data['vendor_npwp'] = $vendorNpwp;
+                }
+            }
             $hashPayload = $data;
             unset($hashPayload['last_seen_sync_run_id'], $hashPayload['source_missing_since'], $hashPayload['source_status'], $hashPayload['updated_at']);
             $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR));
@@ -174,6 +185,12 @@ class ArkasSynchronizationServiceV2
             }
             if ($existing && filled($existing->payment_method)) {
                 unset($data['payment_method']);
+            }
+            if ($existing && filled($existing->vendor_name)) {
+                unset($data['vendor_name']);
+            }
+            if ($existing && filled($existing->vendor_npwp)) {
+                unset($data['vendor_npwp']);
             }
             if (! $existing || blank($existing->spj_category)) {
                 $accountCode = $first['KODE_REKENING'] ?? $reference?->account_code;
