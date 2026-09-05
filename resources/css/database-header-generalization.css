@@ -1,0 +1,148 @@
+/* Database Manager header + summary generalization.
+   Scope: visual/structural normalization only. Existing Blade actions and data stay unchanged. */
+
+main:has(#db-tabs) {
+    --db-header-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
+    --db-header-surface-soft: var(--ui-surface-muted, var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc)));
+    --db-header-line: var(--ui-line, var(--ui-component-border, var(--ui-border, #dbe3ec)));
+    --db-header-line-strong: var(--ui-line-strong, var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)));
+    --db-header-fg: var(--ui-fg, var(--ui-component-text, var(--text-comfort-primary, #334155)));
+    --db-header-fg-strong: var(--ui-fg-strong, var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937)));
+    --db-header-fg-muted: var(--ui-fg-muted, var(--ui-component-text-muted, var(--text-comfort-muted, #718096)));
+}
+
+/* Match the shared page-header shell geometry. */
+main:has(#db-tabs) > div > section:first-of-type {
+    overflow: hidden !important;
+    border: 1px solid var(--db-header-line) !important;
+    border-radius: var(--profile-header-radius) !important;
+    background: var(--db-header-surface) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+/* Match page-header-main spacing and typography invariants. */
+main:has(#db-tabs) > div > section:first-of-type > div:first-child {
+    position: relative;
+    overflow: hidden;
+    padding: var(--profile-header-padding-y) var(--profile-header-padding-x) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > div:first-child > p:first-child {
+    margin: 0 0 .5rem !important;
+    color: var(--text-comfort-on-dark-soft) !important;
+    font-size: .6875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .2em !important;
+    line-height: 1.25rem !important;
+    text-transform: uppercase;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 {
+    margin: 0 !important;
+    color: var(--text-comfort-on-dark) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.025em !important;
+    line-height: 2rem !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
+    margin: .5rem 0 0 !important;
+    max-width: 48rem;
+    color: var(--text-comfort-on-dark-soft) !important;
+    font-size: .875rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+    main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 {
+        font-size: 1.875rem !important;
+        line-height: 2.25rem !important;
+    }
+
+    main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
+        font-size: 1rem !important;
+    }
+}
+
+/* Summary now follows the shared ui-stat language instead of a custom flat strip. */
+main:has(#db-tabs) > div > section:first-of-type > .grid {
+    display: grid !important;
+    gap: .75rem !important;
+    border-top: 1px solid var(--db-header-line) !important;
+    background: var(--db-header-surface) !important;
+    padding: var(--profile-content-padding) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    border: 1px solid var(--db-header-line) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--db-header-surface-soft) !important;
+    color: var(--db-header-fg) !important;
+    padding: 1rem 1.1rem !important;
+    box-shadow: none !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div + div {
+    border-top: 1px solid var(--db-header-line) !important;
+    border-left: 1px solid var(--db-header-line) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div::before {
+    position: absolute;
+    inset-block: .85rem;
+    left: 0;
+    width: 3px;
+    border-radius: 0 999px 999px 0;
+    background: var(--theme-content-accent, var(--theme-accent));
+    content: '';
+    opacity: .8;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:first-child {
+    margin: 0 !important;
+    color: var(--db-header-fg-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .07em !important;
+    line-height: 1rem !important;
+    text-transform: uppercase;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(2) {
+    margin-top: .2rem !important;
+    color: var(--db-header-fg-strong) !important;
+    font-size: 1rem !important;
+    font-weight: 750 !important;
+    line-height: 1.4rem !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(n+3) {
+    margin-top: .3rem !important;
+    color: var(--db-header-fg-muted) !important;
+    font-size: .75rem !important;
+    line-height: 1.15rem !important;
+}
+
+/* Preserve semantic health states inside the generalized cards. */
+main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-emerald-600,.text-emerald-700) {
+    color: var(--text-comfort-success) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-amber-600,.text-amber-700) {
+    color: var(--text-comfort-warning) !important;
+}
+
+main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-rose-600,.text-rose-700) {
+    color: var(--text-comfort-danger) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main:has(#db-tabs) > div > section:first-of-type * {
+        transition: none !important;
+    }
+}
