@@ -13,18 +13,26 @@ use Illuminate\Support\Facades\DB;
 class SpjDocumentNumberService
 {
     /**
-     * Terbitkan seluruh nomor domain paket berdasarkan tanggal peristiwanya.
+     * Terbitkan nomor domain paket berdasarkan tanggal peristiwanya.
      * Nomor yang sudah tersedia tidak pernah ditimpa.
      *
+     * @param  array<int, string>|null  $onlyDocumentTypes
      * @return array{created:int,skipped:int,documents:Collection<int, SpjDocument>}
      */
-    public function assignAutomaticNumbers(SpjPackage $package, string $schoolCode, ?string $npsn = null): array
+    public function assignAutomaticNumbers(SpjPackage $package, string $schoolCode, ?string $npsn = null, ?array $onlyDocumentTypes = null): array
     {
         $package->loadMissing(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
         $transaction = $package->transaction;
         $documents = collect();
         $created = 0;
         $skipped = 0;
+        $selectedTypes = $onlyDocumentTypes === null
+            ? null
+            : collect($onlyDocumentTypes)
+                ->map(fn (string $type): string => strtoupper(trim($type)))
+                ->filter()
+                ->values();
+        $shouldAssign = fn (string $type): bool => $selectedTypes === null || $selectedTypes->contains($type);
 
         $assign = function (string $type, CarbonInterface $date, string $scopeKey = 'MAIN') use ($package, $schoolCode, $npsn, $documents, &$created, &$skipped): SpjDocument {
             $alreadyNumbered = $package->documents()
@@ -39,7 +47,7 @@ class SpjDocumentNumberService
             return $document;
         };
 
-        if ($transaction->transaction_date) {
+        if ($shouldAssign('SPJ') && $transaction->transaction_date) {
             $assign('SPJ', Carbon::parse($transaction->transaction_date));
         }
 
@@ -48,6 +56,9 @@ class SpjDocumentNumberService
             'BAP' => ['date' => 'bap_date', 'number' => 'bap_number'],
             'BAST' => ['date' => 'bast_date', 'number' => 'bast_number'],
         ] as $type => $mapping) {
+            if (! $shouldAssign($type)) {
+                continue;
+            }
             $date = $transaction->goods->pluck($mapping['date'])->filter()->sort()->first();
             if (! $date) {
                 continue;
@@ -68,6 +79,9 @@ class SpjDocumentNumberService
             'SPK' => ['date' => 'spk_date', 'number' => 'spk_number'],
             'RAB' => ['date' => 'rab_date', 'number' => 'rab_number'],
         ] as $type => $mapping) {
+            if (! $shouldAssign($type)) {
+                continue;
+            }
             if (! $workOrder?->{$mapping['date']}) {
                 continue;
             }
@@ -80,21 +94,26 @@ class SpjDocumentNumberService
             $workOrder->forceFill([$mapping['number'] => $document->document_number])->save();
         }
 
-        foreach ($transaction->travels as $travel) {
-            $eventDate = $travel->assignment_letter_date ?: $travel->departure_date;
-            if (! $eventDate) {
-                continue;
-            }
-            if (filled($travel->assignment_letter_number)) {
-                $skipped++;
+        if ($shouldAssign('SURAT_TUGAS_PERJALANAN_DINAS')) {
+            $travels = $transaction->travels
+                ->sortBy(fn ($travel): string => Carbon::parse($travel->assignment_letter_date ?: $travel->departure_date ?: '9999-12-31')->format('Y-m-d').'-'.str_pad((string) ($travel->sort_order ?? 0), 8, '0', STR_PAD_LEFT).'-'.str_pad((string) $travel->id, 12, '0', STR_PAD_LEFT));
 
-                continue;
+            foreach ($travels as $travel) {
+                $eventDate = $travel->assignment_letter_date ?: $travel->departure_date;
+                if (! $eventDate) {
+                    continue;
+                }
+                if (filled($travel->assignment_letter_number)) {
+                    $skipped++;
+
+                    continue;
+                }
+                $document = $assign('SURAT_TUGAS_PERJALANAN_DINAS', Carbon::parse($eventDate), 'TRAVEL-'.$travel->id);
+                $travel->forceFill([
+                    'assignment_letter_number' => $document->document_number,
+                    'assignment_letter_date' => $travel->assignment_letter_date ?: $eventDate,
+                ])->save();
             }
-            $document = $assign('SURAT_TUGAS_PERJALANAN_DINAS', Carbon::parse($eventDate), 'TRAVEL-'.$travel->id);
-            $travel->forceFill([
-                'assignment_letter_number' => $document->document_number,
-                'assignment_letter_date' => $travel->assignment_letter_date ?: $eventDate,
-            ])->save();
         }
 
         return compact('created', 'skipped', 'documents');
