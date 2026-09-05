@@ -60,42 +60,23 @@
             :padding="false"
         >
             <x-slot:actions>
-                <form method="GET" class="flex overflow-hidden rounded-lg border shadow-sm focus-within:ring-2" style="border-color: var(--ui-line); --tw-ring-color: var(--theme-content-accent)">
+                <form method="GET">
                     <input type="hidden" name="per_page" value="{{ $perPage }}">
-                    <label for="rkas-search" class="sr-only">Cari rekening atau kegiatan</label>
-                    <input
+                    <x-ui.search-group
                         id="rkas-search"
                         name="q"
-                        value="{{ $search }}"
-                        class="w-80 min-w-0 border-0 bg-transparent px-3 py-2 text-sm outline-none focus:ring-0"
-                        style="background: var(--ui-bg); color: var(--ui-fg)"
+                        :value="$search"
                         placeholder="Cari rekening atau kegiatan"
-                    >
-                    <button
-                        type="submit"
-                        class="inline-flex min-w-[7.5rem] items-center justify-center gap-2 border-l px-5 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none dark:bg-orange-500 dark:hover:bg-orange-400"
-                        style="border-color: var(--ui-line); background-color: var(--theme-content-accent)"
-                    >
-                        <x-ui-icon name="search" class="h-4 w-4" />
-                        <span>Cari</span>
-                    </button>
+                        width="w-80"
+                    />
                 </form>
 
-                <form method="GET" class="flex items-center gap-2">
-                    <input type="hidden" name="q" value="{{ $search }}">
-                    <label for="rkas-per-page" class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Baris</label>
-                    <select
-                        id="rkas-per-page"
-                        name="per_page"
-                        onchange="this.form.submit()"
-                        class="rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm"
-                        style="border-color: var(--ui-line); background: var(--ui-bg); color: var(--ui-fg)"
-                    >
-                        @foreach([10, 15, 30, 50, 100] as $size)
-                            <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }} baris</option>
-                        @endforeach
-                    </select>
-                </form>
+                <x-page-table-per-page
+                    :total="$items->total()"
+                    name="per_page"
+                    :current="$perPage"
+                    :options="[10, 15, 30, 50, 100]"
+                />
 
                 <a class="rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('synced-data.show', 'rkas') }}">
                     Data Mentah
@@ -144,13 +125,7 @@
                 </table>
             </div>
 
-            <div
-                class="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-                style="border-color: var(--ui-line); background: var(--ui-bg-subtle)"
-            >
-                <span class="text-sm" style="color: var(--ui-fg-muted)">Menampilkan {{ $items->firstItem() ?: 0 }}–{{ $items->lastItem() ?: 0 }} dari {{ $items->total() }} data</span>
-                <div class="[&>nav]:text-sm">{{ $items->links() }}</div>
-            </div>
+            <x-ui.server-pagination :paginator="$items" noun="data" />
         </x-section-card>
     </div>
 </x-layouts.tailwind-app>
