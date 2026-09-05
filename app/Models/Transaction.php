@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Transaction extends Model
 {
@@ -134,6 +135,24 @@ class Transaction extends Model
         return $this->receipt_recipient_name
             ?: $this->spj_recipient_name
             ?: $this->recipient_name;
+    }
+
+    /**
+     * Legacy template alias. Penandatangan transaksi tidak lagi disimpan;
+     * template lama selalu mengambil Kepala Sekolah dari profil tahun aktif.
+     */
+    public function getSignatoryNameAttribute(): ?string
+    {
+        return DB::connection('school')
+            ->table('school_profiles')
+            ->where('fiscal_year_id', $this->fiscal_year_id)
+            ->value('principal_name');
+    }
+
+    /** Legacy template alias untuk template lama yang masih memakai placeholder jabatan penandatangan. */
+    public function getSignatoryRoleAttribute(): string
+    {
+        return 'Kepala Sekolah';
     }
 
     public function payments(): HasMany
