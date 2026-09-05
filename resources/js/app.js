@@ -29,7 +29,7 @@ if (chartDataElement) {
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero,
+                    beginAtZero: true,
                     ticks: {
                         callback: (value) => money(value),
                     },
