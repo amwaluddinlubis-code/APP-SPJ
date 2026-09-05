@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 
 class ArkasPipePayload
 {
-    public static function decode(string $output): array
+    public static function decode(string $output, string $command = 'unknown'): array
     {
         $fields = [];
         $records = [];
@@ -15,7 +15,7 @@ class ArkasPipePayload
             $tag = array_shift($parts);
             if ($tag === 'FIELDS') {
                 $fields = array_map(
-                    fn (string $field, int $index): string => self::normalizeText($field, 'FIELDS', $lineNumber + 1, 'field_'.$index),
+                    fn (string $field, int $index): string => self::normalizeText($field, $command, $lineNumber + 1, 'field_'.$index),
                     $parts,
                     array_keys($parts),
                 );
@@ -26,7 +26,7 @@ class ArkasPipePayload
                 foreach ($fields as $index => $field) {
                     $normalized[$field] = self::normalizeText(
                         (string) ($values[$index] ?? ''),
-                        'DATA',
+                        $command,
                         $lineNumber + 1,
                         $field,
                     );
@@ -38,30 +38,30 @@ class ArkasPipePayload
         return $records;
     }
 
-    public static function values(string $output): array
+    public static function values(string $output, string $command = 'unknown'): array
     {
         $data = [];
         foreach (preg_split('/\R/', trim($output)) as $lineNumber => $line) {
             [$key, $value] = array_pad(explode('|', $line, 2), 2, '');
-            $key = self::normalizeText($key, 'VALUES', $lineNumber + 1, 'key');
+            $key = self::normalizeText($key, $command, $lineNumber + 1, 'key');
             if ($key !== '') {
-                $data[$key] = self::normalizeText($value, 'VALUES', $lineNumber + 1, $key);
+                $data[$key] = self::normalizeText($value, $command, $lineNumber + 1, $key);
             }
         }
 
         return $data;
     }
 
-    public static function pairs(string $output): array
+    public static function pairs(string $output, string $command = 'unknown'): array
     {
         $records = [];
         foreach (preg_split('/\R/', trim($output)) as $lineNumber => $line) {
             [$id, $name] = array_pad(explode('|', $line, 2), 2, '');
-            $id = self::normalizeText($id, 'PAIRS', $lineNumber + 1, 'id');
+            $id = self::normalizeText($id, $command, $lineNumber + 1, 'id');
             if ($id !== '' && $id !== 'SCHEMA') {
                 $records[] = [
                     'id' => $id,
-                    'name' => self::normalizeText($name, 'PAIRS', $lineNumber + 1, 'name'),
+                    'name' => self::normalizeText($name, $command, $lineNumber + 1, 'name'),
                 ];
             }
         }
@@ -69,7 +69,19 @@ class ArkasPipePayload
         return $records;
     }
 
-    private static function normalizeText(string $value, string $context, int $line, string $field): string
+    /** @return array<int, string> */
+    public static function lines(string $output, string $command = 'unknown'): array
+    {
+        $lines = preg_split('/\R/', trim($output)) ?: [];
+
+        return array_map(
+            fn (string $line, int $index): string => self::normalizeText($line, $command, $index + 1, 'line'),
+            $lines,
+            array_keys($lines),
+        );
+    }
+
+    private static function normalizeText(string $value, string $command, int $line, string $field): string
     {
         if ($value === '' || mb_check_encoding($value, 'UTF-8')) {
             return $value;
@@ -81,7 +93,7 @@ class ArkasPipePayload
         }
 
         Log::warning('ARKAS Bridge mengirim teks non-UTF-8; nilai dinormalisasi.', [
-            'context' => $context,
+            'command' => $command,
             'line' => $line,
             'field' => $field,
             'source_encoding' => 'Windows-1252/fallback-scrub',

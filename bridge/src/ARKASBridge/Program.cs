@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using Microsoft.Data.Sqlite;
 
 namespace ARKASBridge;
@@ -13,6 +14,8 @@ internal static class Program
     {
         try
         {
+            Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             SQLitePCL.Batteries_V2.Init();
 
             Dictionary<string, string> parsed = ParseArgs(args);

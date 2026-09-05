@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
 use App\Services\ArkasBridgeClient;
+use App\Services\ArkasPipePayload;
 use App\Services\ArkasSynchronizationServiceV2;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -47,11 +48,15 @@ class SafeArkasSynchronizationTest extends TestCase
 
         $transaction->update([
             'payment_description' => 'Uraian pembayaran manual',
+            'receipt_recipient_name' => 'Penerima kuitansi manual',
             'payment_method' => 'siplah',
             'siplah_order_number' => 'SIPL-2026-12345',
             'payment_reference' => 'PAY-7788',
             'invoice_number' => 'INV-88231',
+            'invoice_date' => '2026-08-30',
+            'invoice_status' => 'PAID',
             'vendor_name' => 'Penyedia SiPLah Manual',
+            'vendor_owner' => 'Pemilik penyedia manual',
             'vendor_npwp' => '98.765.432.1-210.000',
         ]);
         $transaction->items->first()->update(['item_description' => 'Uraian item manual']);
@@ -61,16 +66,21 @@ class SafeArkasSynchronizationTest extends TestCase
         $transaction->refresh()->load(['items', 'spjPackage']);
 
         $this->assertSame('Uraian pembayaran manual', $transaction->payment_description);
+        $this->assertSame('Penerima kuitansi manual', $transaction->receipt_recipient_name);
         $this->assertSame('siplah', $transaction->payment_method);
         $this->assertSame('SIPL-2026-12345', $transaction->siplah_order_number);
         $this->assertSame('PAY-7788', $transaction->payment_reference);
         $this->assertSame('INV-88231', $transaction->invoice_number);
+        $this->assertSame('2026-08-30', $transaction->invoice_date?->toDateString());
+        $this->assertSame('PAID', $transaction->invoice_status);
         $this->assertSame('Penyedia SiPLah Manual', $transaction->vendor_name);
+        $this->assertSame('Pemilik penyedia manual', $transaction->vendor_owner);
         $this->assertSame('98.765.432.1-210.000', $transaction->vendor_npwp);
         $this->assertSame('Uraian item manual', $transaction->items->first()->item_description);
         $this->assertNotNull($transaction->spjPackage);
         $this->assertTrue($transaction->requires_reconciliation);
         $this->assertSame('ACTIVE', $transaction->source_status);
+        $sourceHash = $transaction->source_hash;
 
         $method->invoke($service, $year, [], $this->createSyncRun($year));
         $transaction->refresh()->load(['items', 'spjPackage']);
@@ -87,6 +97,34 @@ class SafeArkasSynchronizationTest extends TestCase
 
         $this->assertSame('ACTIVE', $transaction->source_status);
         $this->assertNull($transaction->source_missing_since);
+        $this->assertSame($sourceHash, $transaction->source_hash);
+    }
+
+    public function test_legacy_encoded_rkas_and_bku_payloads_are_normalized_before_json_storage_and_hashing(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        $year = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $service = new ArkasSynchronizationServiceV2(Mockery::mock(ArkasBridgeClient::class));
+
+        $rkasOutput = "FIELDS|ID_RAPBS|ID_REF_SUMBER_DANA|URAIAN|NAMA_KEGIATAN|JUMLAH\n"
+            .'DATA|RKAS-001|1|Belanja '.chr(0x96).' alat|Kegiatan '.chr(0x80)." sekolah|100000\n";
+        $bkuOutput = "FIELDS|ID_KAS_UMUM|ID_REF_SUMBER_DANA|KATEGORI_BKU|NO_BUKTI|TANGGAL_TRANSAKSI|JUMLAH|VOLUME|URAIAN|KODE_REKENING|NAMA_TOKO|IS_SIPLAH|KODE_BKU\n"
+            .'DATA|KAS-001|1|BELANJA|BKU-001|2026-08-31|100000|1|Belanja '.chr(0x96).' alat|5.1.02.01|Toko O'.chr(0x92)."Brien|1|BNU\n";
+
+        $saveRkas = new ReflectionMethod($service, 'saveRkas');
+        $saveRkas->invoke($service, $year, ArkasPipePayload::decode($rkasOutput, 'rkas'));
+        $saveTransactions = new ReflectionMethod($service, 'saveBkuAndTransactions');
+        $saveTransactions->invoke($service, $year, ArkasPipePayload::decode($bkuOutput, 'bku'), $this->createSyncRun($year));
+
+        $rkasPayload = DB::connection('school')->table('arkas_rkas_items')->value('payload');
+        $bkuPayload = DB::connection('school')->table('arkas_bku_rows')->value('payload');
+        $transaction = Transaction::query()->firstOrFail();
+
+        $this->assertIsArray(json_decode($rkasPayload, true, flags: JSON_THROW_ON_ERROR));
+        $this->assertIsArray(json_decode($bkuPayload, true, flags: JSON_THROW_ON_ERROR));
+        $this->assertSame('Belanja – alat', $transaction->description);
+        $this->assertSame('Toko O’Brien', $transaction->vendor_name);
+        $this->assertNotEmpty($transaction->source_hash);
     }
 
     public function test_tax_deposit_row_is_not_counted_twice_as_transaction_tax(): void

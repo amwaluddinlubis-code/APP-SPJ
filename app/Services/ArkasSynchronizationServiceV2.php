@@ -21,7 +21,7 @@ class ArkasSynchronizationServiceV2
             throw new \RuntimeException('Tahun anggaran belum memiliki sumber dana. Sinkronkan referensi sumber dana terlebih dahulu.');
         }
 
-        $identity = ArkasPipePayload::values($this->bridge->execute($source, 'identity'));
+        $identity = ArkasPipePayload::values($this->bridge->execute($source, 'identity'), 'identity');
         if (($identity['NPSN'] ?? '') !== $school->npsn) {
             throw new \RuntimeException('NPSN database ARKAS tidak sesuai dengan sekolah aktif.');
         }
@@ -33,8 +33,8 @@ class ArkasSynchronizationServiceV2
         ]);
 
         try {
-            $rkas = ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year, null, $year->fund_source_id));
-            $bku = ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year, null, $year->fund_source_id));
+            $rkas = ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year, null, $year->fund_source_id), 'rkas');
+            $bku = ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year, null, $year->fund_source_id), 'bku');
             $rkas = array_values(array_filter($rkas, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id));
             $bku = array_values(array_filter($bku, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id));
 
@@ -50,7 +50,7 @@ class ArkasSynchronizationServiceV2
                 'status' => 'SUCCESS', 'records_read' => count($rkas) + count($bku),
                 'records_written' => count($rkas) + count($bku), 'finished_at' => now(), 'updated_at' => now(),
             ]);
-            $source->forceFill(['last_identity' => json_encode($identity), 'last_synced_at' => now()])->save();
+            $source->forceFill(['last_identity' => json_encode($identity, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'last_synced_at' => now()])->save();
 
             return ['rkas' => count($rkas), 'bku' => count($bku)];
         } catch (\Throwable $exception) {
@@ -74,7 +74,7 @@ class ArkasSynchronizationServiceV2
                 ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'activity_code' => $record['KODE_KEGIATAN'] ?? null, 'activity_name' => $record['NAMA_KEGIATAN'] ?? null,
                     'account_code' => $record['KODE_REKENING'] ?? null, 'description' => $record['URAIAN'] ?? null,
-                    'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record),
+                    'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
                     'updated_at' => now(), 'created_at' => now()]
             );
         }
@@ -98,7 +98,7 @@ class ArkasSynchronizationServiceV2
                 ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'parent_kas_id' => $record['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $record['KATEGORI_BKU'] ?? null,
                     'no_bukti' => $record['NO_BUKTI'] ?? null, 'transaction_date' => $record['TANGGAL_TRANSAKSI'] ?: null,
-                    'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record),
+                    'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
                     'updated_at' => now(), 'created_at' => now()]
             );
             if (($record['KATEGORI_BKU'] ?? '') === 'BELANJA' && ! empty($record['NO_BUKTI'])) {
@@ -167,7 +167,7 @@ class ArkasSynchronizationServiceV2
             }
             $hashPayload = $data;
             unset($hashPayload['last_seen_sync_run_id'], $hashPayload['source_missing_since'], $hashPayload['source_status'], $hashPayload['updated_at']);
-            $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR));
+            $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
             $existing = DB::connection('school')->table('transactions')
                 ->where('fiscal_year_id', $year->id)->where('source_key', $sourceKey)->first();
             $existing ??= DB::connection('school')->table('transactions')

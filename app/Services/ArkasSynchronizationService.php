@@ -13,19 +13,19 @@ class ArkasSynchronizationService
 
     public function synchronize(School $school, FiscalYear $year, ArkasSource $source): array
     {
-        $identity = ArkasPipePayload::values($this->bridge->execute($source, 'identity'));
+        $identity = ArkasPipePayload::values($this->bridge->execute($source, 'identity'), 'identity');
         if (($identity['NPSN'] ?? '') !== $school->npsn) {
             throw new \RuntimeException('NPSN database ARKAS tidak sesuai dengan sekolah aktif.');
         } $run = DB::connection('school')->table('sync_runs')->insertGetId(['fiscal_year_id' => $year->id, 'source' => 'ARKAS', 'status' => 'RUNNING', 'records_read' => 0, 'records_written' => 0, 'started_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         try {
-            $rkas = ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year));
-            $bku = ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year));
+            $rkas = ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year), 'rkas');
+            $bku = ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year), 'bku');
             DB::connection('school')->transaction(function () use ($year, $rkas, $bku) {
                 $this->saveRkas($year, $rkas);
                 $this->saveBkuAndTransactions($year, $bku);
             });
             DB::connection('school')->table('sync_runs')->where('id', $run)->update(['status' => 'SUCCESS', 'records_read' => count($rkas) + count($bku), 'records_written' => count($rkas) + count($bku), 'finished_at' => now(), 'updated_at' => now()]);
-            $source->forceFill(['last_identity' => json_encode($identity), 'last_synced_at' => now()])->save();
+            $source->forceFill(['last_identity' => json_encode($identity, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'last_synced_at' => now()])->save();
 
             return ['rkas' => count($rkas), 'bku' => count($bku)];
         } catch (\Throwable $e) {
@@ -43,7 +43,7 @@ class ArkasSynchronizationService
         } else {
             $query->whereNotIn('source_rapbs_id', $ids)->delete();
         } foreach ($records as $r) {
-            DB::connection('school')->table('arkas_rkas_items')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_rapbs_id' => $r['ID_RAPBS']], ['fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'activity_code' => $r['KODE_KEGIATAN'] ?? null, 'activity_name' => $r['NAMA_KEGIATAN'] ?? null, 'account_code' => $r['KODE_REKENING'] ?? null, 'description' => $r['URAIAN'] ?? null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r), 'updated_at' => now(), 'created_at' => now()]);
+            DB::connection('school')->table('arkas_rkas_items')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_rapbs_id' => $r['ID_RAPBS']], ['fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'activity_code' => $r['KODE_KEGIATAN'] ?? null, 'activity_name' => $r['NAMA_KEGIATAN'] ?? null, 'account_code' => $r['KODE_REKENING'] ?? null, 'description' => $r['URAIAN'] ?? null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now()]);
         }
     }
 
@@ -53,7 +53,7 @@ class ArkasSynchronizationService
         $tax = [];
         $rkas = DB::connection('school')->table('arkas_rkas_items')->where('fiscal_year_id', $year->id)->get()->keyBy('source_rapbs_id');
         foreach ($records as $r) {
-            DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $r['ID_KAS_UMUM']], ['fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'parent_kas_id' => $r['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $r['KATEGORI_BKU'] ?? null, 'no_bukti' => $r['NO_BUKTI'] ?? null, 'transaction_date' => $r['TANGGAL_TRANSAKSI'] ?: null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r), 'updated_at' => now(), 'created_at' => now()]);
+            DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $r['ID_KAS_UMUM']], ['fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'parent_kas_id' => $r['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $r['KATEGORI_BKU'] ?? null, 'no_bukti' => $r['NO_BUKTI'] ?? null, 'transaction_date' => $r['TANGGAL_TRANSAKSI'] ?: null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now()]);
             if (($r['KATEGORI_BKU'] ?? '') === 'BELANJA' && ! empty($r['NO_BUKTI'])) {
                 $belanja[$r['NO_BUKTI']][] = $r;
             } if (($r['KATEGORI_BKU'] ?? '') === 'PAJAK' && ! empty($r['PARENT_ID_KAS_UMUM']) && ! $this->isTaxDeposit($r)) {

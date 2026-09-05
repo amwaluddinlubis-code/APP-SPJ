@@ -22,7 +22,7 @@ class ArkasReferenceSynchronizationService
 
         $contexts = [];
         foreach ($years as $year) {
-            foreach (ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year)) as $fundSource) {
+            foreach (ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources') as $fundSource) {
                 $id = (int) ($fundSource['ID_SUMBER_DANA'] ?? 0);
                 if ($id === 0) {
                     continue;
@@ -46,7 +46,7 @@ class ArkasReferenceSynchronizationService
             foreach ($contexts as $context) {
                 $db->table('fund_sources')->updateOrInsert(
                     ['id' => $context['fund_source_id']],
-                    ['code' => $context['code'], 'name' => $context['name'], 'is_hidden' => false, 'payload' => json_encode($context['payload']), 'updated_at' => now(), 'created_at' => now()],
+                    ['code' => $context['code'], 'name' => $context['name'], 'is_hidden' => false, 'payload' => json_encode($context['payload'], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now()],
                 );
                 $db->table('fiscal_years')->updateOrInsert(
                     ['year' => $context['year'], 'fund_source_id' => $context['fund_source_id']],
@@ -61,13 +61,13 @@ class ArkasReferenceSynchronizationService
     /** @return array<string,int> */
     public function synchronizeBase(FiscalYear $year, ArkasSource $source): array
     {
-        $fundSources = ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year->year));
+        $fundSources = ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year->year), 'fund-sources');
         $fiscalYearContexts = $this->fiscalYearContexts($source, $year->year, $fundSources);
-        $profile = ArkasPipePayload::values($this->bridge->execute($source, 'profile', $year->year));
-        $pegawai = ArkasPipePayload::decode($this->bridge->execute($source, 'pegawai', $year->year));
-        $ptk = ArkasPipePayload::decode($this->bridge->execute($source, 'ptk', $year->year));
-        $rekening = ArkasPipePayload::decode($this->bridge->execute($source, 'rekening', $year->year));
-        $periods = ArkasPipePayload::pairs($this->bridge->execute($source, 'periods'));
+        $profile = ArkasPipePayload::values($this->bridge->execute($source, 'profile', $year->year), 'profile');
+        $pegawai = ArkasPipePayload::decode($this->bridge->execute($source, 'pegawai', $year->year), 'pegawai');
+        $ptk = ArkasPipePayload::decode($this->bridge->execute($source, 'ptk', $year->year), 'ptk');
+        $rekening = ArkasPipePayload::decode($this->bridge->execute($source, 'rekening', $year->year), 'rekening');
+        $periods = ArkasPipePayload::pairs($this->bridge->execute($source, 'periods'), 'periods');
         $db = DB::connection('school');
         $now = now();
 
@@ -77,7 +77,7 @@ class ArkasReferenceSynchronizationService
                 $db->table('fund_sources')->updateOrInsert(
                     ['id' => $context['fund_source_id']],
                     ['code' => $context['code'], 'name' => $context['name'],
-                        'is_hidden' => false, 'payload' => json_encode($context['payload']), 'updated_at' => $now, 'created_at' => $now]
+                        'is_hidden' => false, 'payload' => json_encode($context['payload'], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now]
                 );
                 $db->table('fiscal_years')->updateOrInsert(
                     ['year' => $context['year'], 'fund_source_id' => $context['fund_source_id']],
@@ -93,7 +93,7 @@ class ArkasReferenceSynchronizationService
                 'principal_phone' => $profile['TELP_KEPALA_SEKOLAH'] ?? null,
                 'treasurer_email' => $profile['EMAIL_BENDAHARA'] ?? null,
                 'treasurer_phone' => $profile['TELP_BENDAHARA'] ?? null,
-                'payload' => json_encode($profile), 'updated_at' => $now, 'created_at' => $now,
+                'payload' => json_encode($profile, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
             ]);
             foreach ($pegawai as $record) {
                 $this->saveEmployee('PEGAWAI', $record['NIP'] ?: sha1(($record['NAMA'] ?? '').'|'.($record['JABATAN'] ?? '')), $record);
@@ -108,7 +108,7 @@ class ArkasReferenceSynchronizationService
                 }
                 $db->table('account_references')->updateOrInsert(['fiscal_year_id' => $year->id, 'account_code' => $record['KODE_REKENING']], $flags + [
                     'account_name' => $record['NAMA_REKENING'] ?? null, 'spj_category' => $record['KATEGORI_SPJ'] ?? null,
-                    'payload' => json_encode($record), 'updated_at' => $now, 'created_at' => $now,
+                    'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
                 ]);
             }
             foreach ($periods as $period) {
@@ -130,7 +130,7 @@ class ArkasReferenceSynchronizationService
         foreach ($years as $year) {
             $fundSources = $year === $selectedYear
                 ? $selectedFundSources
-                : ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year));
+                : ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources');
             foreach ($fundSources as $fundSource) {
                 $id = (int) ($fundSource['ID_SUMBER_DANA'] ?? 0);
                 if ($id === 0) {
@@ -154,7 +154,7 @@ class ArkasReferenceSynchronizationService
     {
         return array_values(array_unique(array_filter(array_map(
             fn (string $value): int => (int) trim($value),
-            preg_split('/\R/', trim($this->bridge->execute($source, 'years'))) ?: []
+            ArkasPipePayload::lines($this->bridge->execute($source, 'years'), 'years')
         ), fn (int $value): bool => $value > 0)));
     }
 
@@ -186,7 +186,7 @@ class ArkasReferenceSynchronizationService
             $db->table('business_partners')->updateOrInsert(['name' => $name, 'npwp' => $npwp], [
                 'phone' => $payload['NO_TELP_TOKO'] ?? null, 'address' => $payload['ALAMAT_TOKO'] ?? null,
                 'is_business_entity' => $this->flag($payload['IS_BADAN_USAHA'] ?? false), 'is_arkas_synced' => true,
-                'payload' => json_encode($payload), 'updated_at' => $now, 'created_at' => $now,
+                'payload' => json_encode($payload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
             ]);
             $partners++;
         }
@@ -205,7 +205,7 @@ class ArkasReferenceSynchronizationService
             'gender' => $record['JENIS_KELAMIN'] ?? null, 'employment_status' => $ptk ? null : ($record['STATUS_PEGAWAI'] ?? null),
             'staff_type' => $record['JENIS_PTK'] ?? null, 'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
             'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
-            'is_active' => $this->flag($record['STATUS_AKTIF'] ?? true), 'payload' => json_encode($record), 'updated_at' => now(), 'created_at' => now(),
+            'is_active' => $this->flag($record['STATUS_AKTIF'] ?? true), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now(),
         ]);
     }
 

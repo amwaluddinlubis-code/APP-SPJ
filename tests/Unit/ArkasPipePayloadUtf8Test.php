@@ -13,9 +13,9 @@ class ArkasPipePayloadUtf8Test extends TestCase
         Log::spy();
 
         $output = "FIELDS|ID_KAS_UMUM|URAIAN|NAMA_TOKO\n"
-            ."DATA|KAS-001|Belanja ".chr(0x96)." perlengkapan|Toko O".chr(0x92)."Brien\n";
+            .'DATA|KAS-001|Belanja '.chr(0x96).' perlengkapan|Toko O'.chr(0x92)."Brien\n";
 
-        $records = ArkasPipePayload::decode($output);
+        $records = ArkasPipePayload::decode($output, 'bku');
 
         $this->assertCount(1, $records);
         $this->assertSame('Belanja – perlengkapan', $records[0]['URAIAN']);
@@ -23,7 +23,10 @@ class ArkasPipePayloadUtf8Test extends TestCase
         $this->assertTrue(mb_check_encoding($records[0]['URAIAN'], 'UTF-8'));
         $this->assertTrue(mb_check_encoding($records[0]['NAMA_TOKO'], 'UTF-8'));
 
-        Log::shouldHaveReceived('warning')->twice();
+        Log::shouldHaveReceived('warning')->withArgs(
+            fn (string $message, array $context): bool => $context['command'] === 'bku'
+                && in_array($context['field'], ['URAIAN', 'NAMA_TOKO'], true)
+        )->twice();
     }
 
     public function test_decode_preserves_valid_utf8_indonesian_text(): void
@@ -44,12 +47,23 @@ class ArkasPipePayloadUtf8Test extends TestCase
     {
         Log::spy();
 
-        $values = ArkasPipePayload::values("NAMA_SEKOLAH|SD Negeri ".chr(0x96)." Contoh\n");
-        $pairs = ArkasPipePayload::pairs("1|Sumber Dana ".chr(0x96)." Reguler\n");
+        $values = ArkasPipePayload::values('NAMA_SEKOLAH|SD Negeri '.chr(0x96)." Contoh\n");
+        $pairs = ArkasPipePayload::pairs('1|Sumber Dana '.chr(0x96)." Reguler\n");
 
         $this->assertSame('SD Negeri – Contoh', $values['NAMA_SEKOLAH']);
         $this->assertSame('Sumber Dana – Reguler', $pairs[0]['name']);
         $this->assertTrue(mb_check_encoding($values['NAMA_SEKOLAH'], 'UTF-8'));
         $this->assertTrue(mb_check_encoding($pairs[0]['name'], 'UTF-8'));
+    }
+
+    public function test_invalid_legacy_byte_is_converted_to_valid_utf8(): void
+    {
+        Log::spy();
+
+        $records = ArkasPipePayload::decode("FIELDS|ID_KAS_UMUM|URAIAN\nDATA|KAS-003|Nilai ".chr(0x81)." lama\n", 'bku');
+
+        $this->assertTrue(mb_check_encoding($records[0]['URAIAN'], 'UTF-8'));
+        json_encode($records, JSON_THROW_ON_ERROR);
+        $this->addToAssertionCount(1);
     }
 }
