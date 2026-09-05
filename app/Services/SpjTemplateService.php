@@ -124,7 +124,7 @@ class SpjTemplateService
             'RINCIAN_UPAH' => $transaction->workers->map(fn ($worker, $index) => ($index + 1).'. '.$worker->name.' | '.$worker->job_description.' | '.$worker->work_days.' hari × '.$this->rupiah($worker->daily_rate).' = '.$this->rupiah($worker->amount))->implode("\n"),
         ];
 
-        return $values + [
+        $allValues = $values + [
             'NOMOR_DOKUMEN' => $values['NOMOR_SPJ'],
             'TANGGAL_DOKUMEN' => $values['TANGGAL_TRANSAKSI'],
             'NOMOR_BUKTI' => $values['NO_BUKTI'],
@@ -144,6 +144,32 @@ class SpjTemplateService
             // KOP_SURAT ditangani sebagai gambar oleh fillExcelLetterhead().
             'KOP_SURAT' => '',
         ];
+
+        return $this->normalizeScalarPlaceholders($allValues);
+    }
+
+    /**
+     * Nilai scalar kosong selalu dirender sebagai "-". Placeholder repeat
+     * (ITEM_*/UPAH_*) diproses terpisah dan KOP_SURAT adalah placeholder gambar.
+     *
+     * @param  array<string,string|null>  $values
+     * @return array<string,string>
+     */
+    private function normalizeScalarPlaceholders(array $values): array
+    {
+        foreach ($values as $key => $value) {
+            if ($key === 'KOP_SURAT') {
+                $values[$key] = '';
+                continue;
+            }
+
+            $stringValue = (string) ($value ?? '');
+            $values[$key] = trim($stringValue) === ''
+                ? SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE
+                : $stringValue;
+        }
+
+        return $values;
     }
 
     public function download(DocumentTemplate $template, SpjPackage $package, School $school)
