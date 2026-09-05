@@ -50,6 +50,19 @@ class SpjDocumentTypeRegistryTest extends TestCase
     }
 
     #[Test]
+    public function cover_requires_the_composed_funding_period_without_requiring_duplicate_components(): void
+    {
+        $cover = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::SPJ_COVER);
+
+        $this->assertNotNull($cover);
+        $this->assertContains('SUMBER_DANA_PERIODE', $cover['required']);
+        $this->assertNotContains('TAHUN_ANGGARAN', $cover['required']);
+        $this->assertNotContains('SUMBER_DANA', $cover['required']);
+        $this->assertContains('TAHUN_ANGGARAN', $cover['optional']);
+        $this->assertContains('SUMBER_DANA', $cover['optional']);
+    }
+
+    #[Test]
     public function every_registered_placeholder_has_one_contract_role_per_document(): void
     {
         foreach (SpjDocumentTypeRegistry::all() as $code => $definition) {
