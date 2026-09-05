@@ -61,6 +61,7 @@
         >
             <x-slot:actions>
                 <form method="GET" class="flex">
+                    <input type="hidden" name="per_page" value="{{ $perPage }}">
                     <input
                         name="q"
                         value="{{ $search }}"
@@ -69,13 +70,30 @@
                     >
                     <button class="rounded-r-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white">Cari</button>
                 </form>
+
+                <form method="GET" class="flex items-center gap-2">
+                    <input type="hidden" name="q" value="{{ $search }}">
+                    <label for="rkas-per-page" class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Baris</label>
+                    <select
+                        id="rkas-per-page"
+                        name="per_page"
+                        onchange="this.form.submit()"
+                        class="rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm"
+                        style="border-color: var(--ui-line); background: var(--ui-bg); color: var(--ui-fg)"
+                    >
+                        @foreach([10, 15, 30, 50, 100] as $size)
+                            <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }} baris</option>
+                        @endforeach
+                    </select>
+                </form>
+
                 <a class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50" href="{{ route('synced-data.show', 'rkas') }}">
                     Data Mentah
                 </a>
             </x-slot:actions>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table data-pagination="server" class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
@@ -116,9 +134,12 @@
                 </table>
             </div>
 
-            <div class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <span class="text-sm text-slate-500">Menampilkan {{ $items->firstItem() ?: 0 }}–{{ $items->lastItem() ?: 0 }} dari {{ $items->total() }} data</span>
-                <div>{{ $items->links() }}</div>
+            <div
+                class="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                style="border-color: var(--ui-line); background: var(--ui-bg-subtle)"
+            >
+                <span class="text-sm" style="color: var(--ui-fg-muted)">Menampilkan {{ $items->firstItem() ?: 0 }}–{{ $items->lastItem() ?: 0 }} dari {{ $items->total() }} data</span>
+                <div class="[&>nav]:text-sm">{{ $items->links() }}</div>
             </div>
         </x-section-card>
     </div>
