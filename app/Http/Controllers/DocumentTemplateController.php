@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentTemplate;
 use App\Services\SpjDocumentTypeRegistry;
+use App\Services\SpjTemplatePackageImporter;
 use App\Services\SpjTemplateService;
 use App\Services\SpjTemplateValidator;
 use Illuminate\Http\RedirectResponse;
@@ -119,6 +120,64 @@ class DocumentTemplateController extends Controller
             $response->with(
                 'template_validation_warnings',
                 collect($validation['warnings'])->pluck('message')->filter()->values()->all()
+            );
+        }
+
+        return $response;
+    }
+
+    /** Mengimpor workbook master menjadi seluruh template canonical XLSX. */
+    public function importPackage(Request $request, SpjTemplatePackageImporter $importer): RedirectResponse
+    {
+        $data = $request->validate([
+            'template_package' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
+            'replace_existing' => ['nullable', 'boolean'],
+        ]);
+
+        $uploaded = $request->file('template_package');
+        $temporaryPath = $uploaded->getRealPath();
+        if (! is_string($temporaryPath) || $temporaryPath === '') {
+            throw ValidationException::withMessages([
+                'template_package' => 'Workbook paket template tidak dapat dibaca.',
+            ]);
+        }
+
+        try {
+            $result = $importer->importPackage(
+                (int) session('active_fiscal_year_id'),
+                $temporaryPath,
+                $request->boolean('replace_existing'),
+            );
+        } catch (Throwable $exception) {
+            throw ValidationException::withMessages([
+                'template_package' => $exception->getMessage(),
+            ]);
+        }
+
+        if (! $result['valid']) {
+            $messages = collect($result['errors'])
+                ->map(fn (array $issue): string => '['.$issue['document_type'].'] '.$issue['message'])
+                ->values()
+                ->all();
+
+            throw ValidationException::withMessages([
+                'template_package' => $messages ?: ['Paket template tidak memenuhi kontrak canonical.'],
+            ]);
+        }
+
+        $message = 'Paket template berhasil diimpor: '.$result['imported'].' template canonical.';
+        if (($result['replaced'] ?? 0) > 0) {
+            $message .= ' '.$result['replaced'].' template lama diganti.';
+        }
+
+        $response = back()->with('success', $message);
+        if (! empty($result['warnings'])) {
+            $response->with(
+                'template_package_warnings',
+                collect($result['warnings'])
+                    ->map(fn (array $issue): string => '['.$issue['document_type'].'] '.$issue['message'])
+                    ->values()
+                    ->all()
             );
         }
 
