@@ -29,7 +29,7 @@ if (chartDataElement) {
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero: true,
+                    beginAtZero,
                     ticks: {
                         callback: (value) => money(value),
                     },
@@ -301,6 +301,28 @@ const initializeSiplahPurchaseUi = (root = document) => {
     const siplahBlock = siplahOrderField?.closest('fieldset');
     const siplahHeading = siplahBlock?.querySelector('p');
     const siplahDescription = siplahHeading?.nextElementSibling;
+    const vendorNameField = form.querySelector('[name="vendor_name"]');
+    const vendorNpwpField = form.querySelector('[name="vendor_npwp"]');
+    const receiptRecipientField = form.querySelector('[name="receipt_recipient_name"]');
+    let invoiceStatusField = form.querySelector('[name="invoice_status"]');
+
+    if (invoiceStatusField instanceof HTMLInputElement) {
+        const select = document.createElement('select');
+        select.name = 'invoice_status';
+        select.className = invoiceStatusField.className;
+        select.required = invoiceStatusField.required;
+        select.disabled = invoiceStatusField.disabled;
+        select.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
+
+        const currentStatus = invoiceStatusField.value.trim().toLowerCase();
+        select.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
+        invoiceStatusField.replaceWith(select);
+        invoiceStatusField = select;
+    } else if (invoiceStatusField instanceof HTMLSelectElement) {
+        const currentStatus = invoiceStatusField.value.trim().toLowerCase();
+        invoiceStatusField.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
+        invoiceStatusField.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
+    }
 
     if (purchaseHeading instanceof HTMLElement && !purchaseHeading.dataset.defaultText) {
         purchaseHeading.dataset.defaultText = purchaseHeading.textContent?.trim() || 'Data pembelian barang/konsumsi';
@@ -315,12 +337,35 @@ const initializeSiplahPurchaseUi = (root = document) => {
         purchaseHeading.insertAdjacentElement('afterend', guidance);
     }
 
+    let sourceGuidance = siplahBlock?.querySelector('[data-siplah-source-guidance]');
+    if (!sourceGuidance && siplahDescription instanceof HTMLElement) {
+        sourceGuidance = document.createElement('p');
+        sourceGuidance.dataset.siplahSourceGuidance = 'true';
+        sourceGuidance.className = 'mt-1 text-xs';
+        sourceGuidance.style.color = 'var(--ui-fg-muted)';
+        sourceGuidance.textContent = 'Penyedia dan NPWP diisi awal dari sinkronisasi ARKAS. Operator tetap dapat memperbaikinya; sinkronisasi berikutnya tidak menimpa koreksi yang sudah tersimpan.';
+        siplahDescription.insertAdjacentElement('afterend', sourceGuidance);
+    }
+
     const render = () => {
         const isSiplah = paymentMethod.value.toLowerCase() === 'siplah';
 
         internalWrappers.forEach((wrapper) => {
             wrapper.hidden = isSiplah;
         });
+
+        if (isSiplah && vendorNameField instanceof HTMLInputElement && !vendorNameField.value.trim()
+            && receiptRecipientField instanceof HTMLInputElement && receiptRecipientField.value.trim()) {
+            vendorNameField.value = receiptRecipientField.value.trim();
+        }
+
+        if (vendorNameField instanceof HTMLInputElement) {
+            vendorNameField.placeholder = isSiplah ? 'Nama penyedia dari ARKAS (dapat diedit)' : 'Nama penyedia';
+        }
+
+        if (vendorNpwpField instanceof HTMLInputElement) {
+            vendorNpwpField.placeholder = isSiplah ? 'NPWP dari ARKAS (dapat diedit)' : 'NPWP penyedia';
+        }
 
         if (purchaseHeading instanceof HTMLElement) {
             purchaseHeading.textContent = isSiplah
@@ -330,6 +375,10 @@ const initializeSiplahPurchaseUi = (root = document) => {
 
         if (guidance instanceof HTMLElement) {
             guidance.hidden = !isSiplah;
+        }
+
+        if (sourceGuidance instanceof HTMLElement) {
+            sourceGuidance.hidden = !isSiplah;
         }
 
         if (siplahHeading instanceof HTMLElement) {
