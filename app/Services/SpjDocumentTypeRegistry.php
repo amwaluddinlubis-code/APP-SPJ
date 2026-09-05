@@ -99,9 +99,9 @@ final class SpjDocumentTypeRegistry
                 'source' => self::SOURCE_PACKAGE_GENERATED,
                 'usage' => null,
                 'applicable_categories' => $allCategories,
-                'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'JENIS_SPJ', 'SUMBER_DANA_PERIODE'],
+                'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'SUMBER_DANA_PERIODE'],
                 'optional' => [
-                    'NAMA_SEKOLAH', 'NPSN', 'TRIWULAN', 'SEMESTER',
+                    'JENIS_SPJ', 'NAMA_SEKOLAH', 'NPSN', 'TRIWULAN', 'SEMESTER',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],
