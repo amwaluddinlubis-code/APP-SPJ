@@ -18,7 +18,7 @@
             'SPPD' => ['title' => 'SPPD', 'description' => 'Lengkapi tujuan perjalanan, lokasi, periode, dan referensi pembayaran.'],
             'HONOR_PEGAWAI' => ['title' => 'Honor Pegawai', 'description' => 'Lengkapi uraian honor, periode pembayaran, dan nama penerima honor.'],
         ];
-        $selectedSpjType = strtoupper((string) ($transaction->spj_category ?: $transaction->spj_category));
+        $selectedSpjType = strtoupper((string) $transaction->spj_category);
         $selectedSpjType = match ($selectedSpjType) {
             'BELANJA_MODAL' => 'BARANG',
             'PERJALANAN_DINAS' => 'SPPD',
@@ -129,6 +129,17 @@
         }
         $readinessChecklist = array_merge($manualChecklist, $categoryChecklist);
         $readyCount = collect($readinessChecklist)->where('ready', true)->count();
+        $pendingChecklist = collect($readinessChecklist)->where('ready', false)->values();
+        $completedChecklist = collect($readinessChecklist)->where('ready', true)->values();
+        $packageLocked = $transaction->spjPackage && ! $transaction->spjPackage->isEditable();
+        $taxBreakdown = collect([
+            'PPN' => $transaction->ppn,
+            'PPh 21' => $transaction->pph21,
+            'PPh 22' => $transaction->pph22,
+            'PPh 23' => $transaction->pph23,
+            'PPh 4(2)' => $transaction->pph4,
+            'SSPD' => $transaction->sspd,
+        ])->filter(fn ($value) => (float) $value !== 0.0);
         $sourceStatus = strtoupper((string) ($transaction->source_status ?: 'ACTIVE'));
         $needsAttention = $sourceStatus === 'SOURCE_MISSING' || (bool) $transaction->requires_reconciliation;
     @endphp
@@ -202,8 +213,14 @@
                     </div>
                     <a href="#modul-buat-spj" class="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-violet-700">Isi data</a>
                 </div>
-                <div class="mt-4 grid gap-2 md:grid-cols-2">
-                    @foreach($readinessChecklist as $item)
+                @if($pendingChecklist->isEmpty())
+                    <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                        <p class="font-bold">Semua data yang diperiksa sudah lengkap.</p>
+                        <p class="mt-1 text-xs">Lanjutkan ke paket SPJ atau buka daftar data lengkap di bawah.</p>
+                    </div>
+                @else
+                    <div class="mt-4 grid gap-2 md:grid-cols-2">
+                    @foreach($pendingChecklist as $item)
                         <div class="rounded-lg border {{ $item['ready'] ? 'border-emerald-100 bg-emerald-50' : 'border-amber-100 bg-amber-50' }} p-3">
                             <div class="flex items-center gap-2">
                                 <span class="flex h-5 w-5 items-center justify-center rounded-full {{ $item['ready'] ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white' }} text-[11px] font-bold">{{ $item['ready'] ? '✓' : '!' }}</span>
@@ -212,7 +229,18 @@
                             <p class="mt-1 pl-7 text-xs {{ $item['ready'] ? 'text-emerald-700' : 'text-amber-700' }}">{{ $item['ready'] ? 'Sudah tersedia.' : $item['hint'] }}</p>
                         </div>
                     @endforeach
-                </div>
+                    </div>
+                @endif
+                @if($completedChecklist->isNotEmpty())
+                    <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <summary class="cursor-pointer text-xs font-bold text-slate-700">Lihat {{ $completedChecklist->count() }} data yang sudah lengkap</summary>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @foreach($completedChecklist as $item)
+                                <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">✓ {{ $item['label'] }}</span>
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
             </article>
         </section>
 
@@ -232,6 +260,17 @@
             </div>
 
             <div class="p-4 sm:p-5">
+                @if($packageLocked)
+                    <div class="mb-3 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div><p class="text-xs font-bold uppercase text-slate-500">Kategori</p><p class="mt-1 font-semibold text-slate-900">{{ $spjTypeLabel($selectedSpjType) }}</p></div>
+                        <div><p class="text-xs font-bold uppercase text-slate-500">Cara bayar</p><p class="mt-1 font-semibold text-slate-900">{{ ['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Belum diisi' }}</p></div>
+                        <div><p class="text-xs font-bold uppercase text-slate-500">Penerima kuitansi</p><p class="mt-1 font-semibold text-slate-900">{{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
+                        <div><p class="text-xs font-bold uppercase text-slate-500">Perlu dilengkapi</p><p class="mt-1 font-semibold {{ $pendingChecklist->isEmpty() ? 'text-emerald-700' : 'text-amber-700' }}">{{ $pendingChecklist->isEmpty() ? 'Tidak ada' : $pendingChecklist->count().' data' }}</p></div>
+                    </div>
+                    <details class="rounded-xl border border-slate-200 bg-white">
+                        <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-slate-700">Lihat rincian data paket terkunci</summary>
+                        <div class="border-t border-slate-200 p-3">
+                @endif
                 <form method="POST" action="{{ route('spj.prepare', $transaction->id) }}" class="spj-builder-form rounded-xl border bg-white p-3 sm:p-4">
                     @csrf
                     <input type="hidden" name="ppn_rate" value="{{ $effectiveTaxRate($transaction->ppn_rate, $transaction->ppn) }}">
@@ -269,13 +308,11 @@
                     <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Isian umum semua kategori</p>
                         <div class="mt-2 grid gap-2 lg:grid-cols-4">
-                            <div class="lg:col-span-2"><label class="text-[11px] font-semibold text-slate-700">Uraian dari ARKAS</label><textarea name="description" rows="2" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm">{{ $transaction->description }}</textarea></div>
+                            <div class="lg:col-span-2"><label class="text-[11px] font-semibold text-slate-700">Uraian dari ARKAS <span class="font-normal text-slate-500">(referensi)</span></label><textarea name="description" rows="2" readonly class="mt-1 w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-sm text-slate-700">{{ $transaction->description }}</textarea></div>
                             <div class="lg:col-span-2"><label class="text-[11px] font-semibold text-slate-700">Uraian dokumen / pembayaran <span class="text-rose-600">*</span></label><textarea name="payment_description" rows="2" required class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Metode Pembayaran <span class="text-rose-600">*</span></label><select name="payment_method" x-model="paymentMethod" required class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm"><option value="transfer_bank" @selected($paymentMethod === 'transfer_bank')>Transfer Bank (CMS / Non Tunai)</option><option value="siplah" @selected($paymentMethod === 'siplah')>SiPLah Kemdikbud</option><option value="tunai" @selected($paymentMethod === 'tunai')>Tunai Kas BOS</option></select></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Referensi Pembayaran</label><input name="payment_reference" value="{{ $transaction->payment_reference }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="No. cek/CMS/kuitansi"></div>
                             <div><label class="text-[11px] font-semibold text-slate-700">Penerima Kuitansi <span class="text-rose-600">*</span></label><input name="receipt_recipient_name" required value="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Boleh berbeda dari penerima BKU"></div>
-                            <div><label class="text-[11px] font-semibold text-slate-700">Nama Penandatangan</label><input name="signatory_name" value="{{ $transaction->signatory_name }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Nama penerima/penanggung jawab"></div>
-                            <div><label class="text-[11px] font-semibold text-slate-700">Jabatan/Peran</label><input name="signatory_role" value="{{ $transaction->signatory_role }}" class="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" placeholder="Bendahara, penerima, dll"></div>
                         </div>
                     </div>
 
@@ -286,7 +323,7 @@
                             <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Penyedia SiPLah</label><input name="vendor_name" value="{{ $transaction->vendor_name }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Nama penyedia"></div>
                             <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Pemilik/Penanggung Jawab Penyedia</label><input name="vendor_owner" value="{{ $transaction->vendor_owner }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Opsional"></div>
                             <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">NPWP Penyedia</label><input name="vendor_npwp" value="{{ $transaction->vendor_npwp }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="NPWP penyedia"></div>
-                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Nomor Pesanan SiPLah</label><input name="siplah_order_number" value="{{ $transaction->siplah_order_number }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Nomor order marketplace"></div>
+                            <div><label class="text-[11px] font-semibold" style="color: var(--ui-fg)">Nomor Pesanan SiPLah</label><input name="siplah_order_number" value="{{ $transaction->siplah_order_number }}" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-sm" placeholder="Nomor order marketplace" required></div>
                         </div>
                     </fieldset>
 
@@ -341,13 +378,13 @@
                             <button type="button" @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})" class="rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-sky-700">+ Pekerja</button>
                         </div>
                         <div class="mt-2 grid gap-2 lg:grid-cols-4">
-                            <div class="lg:col-span-4">
-                                <label class="text-[11px] font-semibold text-sky-900">Deskripsi Pekerjaan</label>
-                                <textarea name="work_description" rows="2" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="Uraian pekerjaan">{{ $workDetails?->work_description }}</textarea>
+                            <div class="lg:col-span-1">
+                                <label class="text-[11px] font-semibold text-sky-900">Deskripsi Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
+                                <input name="work_description" value="{{ $workDetails?->work_description ?: $transaction->work_description }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="Uraian pekerjaan" required>
                             </div>
                             <div>
-                                <label class="text-[11px] font-semibold text-sky-900">Lokasi</label>
-                                <input name="work_location" value="{{ $workDetails?->work_location ?: $transaction->work_location }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="Lokasi pekerjaan">
+                                <label class="text-[11px] font-semibold text-sky-900">Lokasi Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
+                                <input name="work_location" value="{{ $workDetails?->work_location ?: $transaction->work_location }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-sm" placeholder="Lokasi pekerjaan" required>
                             </div>
                             <div>
                                 <label class="text-[11px] font-semibold text-sky-900">No. SPK <span class="text-emerald-700">(otomatis)</span></label>
@@ -373,26 +410,33 @@
                                 <thead>
                                     <tr class="text-left text-[11px] font-bold uppercase tracking-wide text-sky-800">
                                         <th class="w-10 px-2 py-1.5">No</th>
-                                        <th class="min-w-44 px-2 py-1.5">Nama Pekerja</th>
-                                        <th class="min-w-52 px-2 py-1.5">Uraian Pekerjaan</th>
-                                        <th class="w-24 px-2 py-1.5 text-right">Hari</th>
-                                        <th class="w-32 px-2 py-1.5 text-right">Tarif</th>
-                                        <th class="w-36 px-2 py-1.5 text-center">Penerima</th>
+                                        <th class="min-w-44 px-2 py-1">Nama Pekerja</th>
+                                        <th class="min-w-52 px-2 py-1">Uraian Pekerjaan</th>
+                                        <th class="w-24 px-2 py-1">Hari</th>
+                                        <th class="w-32 px-2 py-1">Tarif</th>
+                                        <th class="w-36 px-2 py-1">Penerima</th>
                                         <th class="min-w-44 px-2 py-1.5">Catatan</th>
-                                        <th class="w-20 px-2 py-1.5"></th>
+                                        <th class="w-20 px-2 py-1.5">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <template x-for="(row, index) in rows" :key="index">
                                         <tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-sky-100' : ''">
-                                            <td class="px-2 py-1.5 font-semibold text-sky-700"><div class="flex items-center gap-2"><button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-sky-200 bg-white px-1.5 py-1 text-slate-500 active:cursor-grabbing">⋮⋮</button><span x-text="index + 1"></span></div></td>
-                                            <td class="px-2 py-1.5"><label class="block"><span class="text-[11px] font-semibold text-sky-900">Nama Pekerja</span><input :name="`workers[${index}][name]`" x-model="row.name" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Nama pekerja"></label></td>
-                                            <td class="px-2 py-1.5"><label class="block"><span class="text-[11px] font-semibold text-sky-900">Uraian Pekerjaan</span><input :name="`workers[${index}][job_description]`" x-model="row.job_description" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Jenis pekerjaan"></label></td>
-                                            <td class="px-2 py-1.5"><label class="block"><span class="text-[11px] font-semibold text-sky-900">Hari</span><input type="number" min="0" step=".5" :name="`workers[${index}][work_days]`" x-model="row.work_days" class="mt-1 w-20 rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="Hari"></label></td>
-                                            <td class="px-2 py-1.5"><label class="block"><span class="text-[11px] font-semibold text-sky-900">Tarif</span><input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="mt-1 w-28 rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="0"></label></td>
-                                            <td class="px-2 py-1.5 text-center"><label class="inline-flex flex-col items-center gap-1 text-[11px] font-semibold text-sky-900"><span>Penerima</span><span class="inline-flex items-center gap-1.5 rounded-md border border-sky-200 bg-white px-2 py-1.5"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient" class="rounded border-sky-300 text-sky-600"> Ya</span></label></td>
-                                            <td class="px-2 py-1.5"><label class="block"><span class="text-[11px] font-semibold text-sky-900">Catatan</span><input :name="`workers[${index}][notes]`" x-model="row.notes" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Catatan"></label></td>
-                                            <td class="px-2 py-1.5"><div class="flex items-center gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-sky-200 px-2 py-1.5 text-xs font-bold text-sky-700 disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-sky-200 px-2 py-1.5 text-xs font-bold text-sky-700 disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-200 px-2 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50">Hapus</button></div></td>
+                                            <td class="px-2 py-1 font-semibold text-sky-700"><div class="flex items-center gap-2">
+                                                <button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-sky-200 bg-white px-3.5 py-1 text-slate-500 active:cursor-grabbing">⋮⋮</button><span x-text="index + 1"></span></div></td>
+                                            <td class="px-2 py-1">
+                                                <input :name="`workers[${index}][name]`" x-model="row.name" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Nama pekerja"></td>
+                                            <td class="px-2 py-1">
+                                                <input :name="`workers[${index}][job_description]`" x-model="row.job_description" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Jenis pekerjaan"></td>
+                                            <td class="px-2 py-1">
+                                                <input type="number" min="0" step=".5" :name="`workers[${index}][work_days]`" x-model="row.work_days" class="mt-1 w-20 rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="Hari"></td>
+                                            <td class="px-2 py-1">
+                                                <input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="mt-1 w-28 rounded-md border border-sky-200 px-4 py-2 text-right text-sm" placeholder="0"></td>
+                                            <td class="px-2 py-1 text-center">
+                                                <span class="inline-flex items-center gap-1.5 rounded-md border border-sky-200 bg-white px-2 py-1.5"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient" class="rounded border-sky-300 text-sky-600"> Ya</span></td>
+                                            <td class="px-2 py-1">
+                                                <input :name="`workers[${index}][notes]`" x-model="row.notes" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Catatan"></td>
+                                            <td class="px-2 py-1"><div class="flex items-center gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-sky-200 px-4 py-2 text-sm font-bold text-sky-700 disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-sky-200 px-4 py-2 text-sm font-bold text-sky-700 disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Hapus</button></div></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -430,18 +474,42 @@
                             <div><p class="text-[11px] font-bold uppercase tracking-wide text-sky-900">Data penerima honor</p><p class="mt-0.5 text-xs text-sky-700">Gunakan baris ini untuk beberapa penerima honor dalam satu transaksi.</p></div>
                             <button type="button" @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})" class="rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-bold text-white">+ Penerima</button>
                         </div>
-                        <div class="mt-2 space-y-2">
-                            <template x-for="(row, index) in rows" :key="index">
-                                <div @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'ring-2 ring-sky-400' : ''" class="grid gap-2 rounded-md border border-sky-200 bg-white p-2 md:grid-cols-6">
-                                    <div class="flex items-center gap-2 md:col-span-6"><button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-sky-200 bg-sky-50 px-2 py-1 text-slate-500 active:cursor-grabbing">⋮⋮</button><span class="text-xs font-bold text-sky-700" x-text="'Urutan ' + (index + 1)"></span></div>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-sky-900">Nama Penerima <span class="text-rose-600">*</span></span><input :name="`workers[${index}][name]`" x-model="row.name" required class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Nama penerima"></label>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-sky-900">Jabatan/Jenis Honor <span class="text-rose-600">*</span></span><input :name="`workers[${index}][job_description]`" x-model="row.job_description" required class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Jabatan/jenis honor"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-sky-900">Bulan/Kali <span class="text-rose-600">*</span></span><input type="number" min="1" step="1" required :name="`workers[${index}][work_days]`" :value="parseInt(row.work_days) || 1" @input="row.work_days = parseInt($event.target.value) || 1" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="1"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-sky-900">Tarif <span class="text-rose-600">*</span></span><input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" required :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="0"></label>
-                                    <label class="block md:col-span-5"><span class="text-[11px] font-semibold text-sky-900">Catatan</span><input :name="`workers[${index}][notes]`" x-model="row.notes" class="mt-1 w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Catatan"></label>
-                                    <div class="flex items-end gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-sky-200 px-3 py-1.5 text-sm font-bold text-sky-700 disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-sky-200 px-3 py-1.5 text-sm font-bold text-sky-700 disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-200 px-2 py-1.5 text-xs font-bold text-rose-700">Hapus</button></div>
-                                </div>
-                            </template>
+                        <div class="mt-2 overflow-x-auto rounded-lg border border-sky-200 bg-white">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-[11px] font-bold uppercase tracking-wide text-sky-800">
+                                        <th class="w-10 px-2 py-1.5">No</th>
+                                        <th class="min-w-44 px-2 py-1">Nama Penerima <span class="text-rose-600">*</span></th>
+                                        <th class="min-w-52 px-2 py-1">Jabatan/Jenis Honor <span class="text-rose-600">*</span></th>
+                                        <th class="w-24 px-2 py-1">Bulan/Kali <span class="text-rose-600">*</span></th>
+                                        <th class="w-32 px-2 py-1">Tarif <span class="text-rose-600">*</span></th>
+                                        <th class="w-36 px-2 py-1">Penerima Kuitansi</th>
+                                        <th class="w-36 px-2 py-1">Catatan</th>
+                                        <th class="w-20 px-2 py-1.5">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(row, index) in rows" :key="index">
+                                <tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-sky-100' : ''" class="border-t border-sky-100">
+                                    <td class="px-2 py-2"><div class="flex items-center gap-2">
+                                        <button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-sky-200 bg-sky-50 px-2 py-1 text-slate-500 active:cursor-grabbing">⋮⋮</button><span class="text-xs font-bold text-sky-700" x-text="index + 1"></span></div>
+                                    </td>
+                                    <td class="px-2 py-2"><input :name="`workers[${index}][name]`" x-model="row.name" required class="w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Nama penerima"></td>
+                                    <td class="px-2 py-2"><input :name="`workers[${index}][job_description]`" x-model="row.job_description" required class="w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Jabatan/jenis honor"></td>
+                                        <td class="px-2 py-2"><input type="number" min="1" step="1" required :name="`workers[${index}][work_days]`" :value="parseInt(row.work_days) || 1" @input="row.work_days = parseInt($event.target.value) || 1" class="w-full rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="1">
+                                        </td>
+                                        <td class="px-2 py-2"><input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" required :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="w-full rounded-md border border-sky-200 px-2 py-1.5 text-right text-sm" placeholder="0">
+                                        </td>
+                                        <td class="px-2 py-2 text-center"><label class="inline-flex items-center gap-1.5 rounded-md border border-sky-200 px-2 py-1.5"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient" class="rounded border-sky-300 text-sky-600"> Ya</label></td>
+                                        <td class="px-2 py-2"><input :name="`workers[${index}][notes]`" x-model="row.notes" class="w-full rounded-md border border-sky-200 px-2 py-1.5 text-sm" placeholder="Catatan"></td>
+                                        <td class="px-2 py-2"><div class="flex items-center gap-1">
+                                            <button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-sky-200 px-3 py-1.5 text-sm font-bold text-sky-700 disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-sky-200 px-3 py-1.5 text-sm font-bold text-sky-700 disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-200 px-2 py-1.5 text-xs font-bold text-rose-700">Hapus</button></div>
+                                        </td>
+                                    </tr>
+
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
                         <div class="mt-3 grid gap-2 sm:grid-cols-3">
                             <div class="rounded-lg border border-slate-200 bg-white px-3 py-2"><p class="text-[11px] font-bold uppercase text-slate-500">Nilai transaksi</p><p class="mt-1 font-mono text-sm font-bold text-slate-900" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(transactionTotal)"></p></div>
@@ -472,6 +540,10 @@
                     @endif
                     </fieldset>
                 </form>
+                @if($packageLocked)
+                        </div>
+                    </details>
+                @endif
 
             </div>
         </section>
@@ -499,7 +571,7 @@
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><h2 class="font-bold text-slate-800">Rincian Pajak</h2><div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-base">@foreach(['PPN' => $transaction->ppn, 'PPh 21' => $transaction->pph21, 'PPh 22' => $transaction->pph22, 'PPh 23' => $transaction->pph23, 'PPh 4(2)' => $transaction->pph4, 'SSPD' => $transaction->sspd] as $label => $value)<div class="flex justify-between gap-3 border-b border-slate-100 pb-2"><span class="text-slate-500">{{ $label }}</span><span class="font-semibold text-slate-800">{{ $rupiah($value) }}</span></div>@endforeach</div></article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><div class="flex items-center justify-between gap-3"><h2 class="font-bold text-slate-800">Rincian Pajak</h2><span class="font-bold text-slate-900">{{ $rupiah($transaction->tax_total) }}</span></div><div class="mt-4 grid gap-x-6 gap-y-3 text-base sm:grid-cols-2">@forelse($taxBreakdown as $label => $value)<div class="flex justify-between gap-3 border-b border-slate-100 pb-2"><span class="text-slate-500">{{ $label }}</span><span class="font-semibold text-slate-800">{{ $rupiah($value) }}</span></div>@empty<div class="text-sm text-slate-500">Tidak ada potongan pajak pada transaksi ini.</div>@endforelse</div></article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow"><h2 class="font-bold text-slate-800">Informasi Dokumen SPJ</h2><dl class="mt-4 space-y-3 text-base"><div class="flex justify-between gap-4"><dt class="text-slate-500">Nomor SPJ</dt><dd class="text-right font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 line-through' : 'text-slate-800' }}">{{ $transaction->spjPackage?->document_number ?: 'Belum ditetapkan' }}</dd></div><div class="flex justify-between gap-4"><dt class="text-slate-500">Status paket</dt><dd class="font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700' : 'text-slate-800' }}">{{ $transaction->spjPackage?->status === 'CANCELLED' ? 'Nomor dibatalkan' : ($transaction->spjPackage?->status ?: 'Belum dibuat') }}</dd></div><div class="flex justify-between gap-4"><dt class="text-slate-500">Referensi pembayaran</dt><dd class="text-right font-semibold text-slate-800">{{ $transaction->payment_reference ?: 'Belum ada referensi' }}</dd></div><div class="flex justify-between gap-4"><dt class="text-slate-500">Pembelian SIPLah</dt><dd class="font-semibold text-slate-800">{{ $transaction->is_siplah ? 'Ya' : 'Tidak' }}</dd></div></dl></article>
         </section>
     </div>
