@@ -16,6 +16,13 @@ return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
     /*
+    | ARKAS synchronization runs in the foreground by default so the desktop /
+    | local-school installation never depends on a separate queue worker.
+    | Server deployments may opt in to background execution explicitly.
+    */
+    'arkas_sync_async' => env('ARKAS_SYNC_ASYNC', false),
+
+    /*
     |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
@@ -79,9 +86,7 @@ return [
     | Job Batching
     |--------------------------------------------------------------------------
     |
-    | The following options configure the database and table that store job
-    | batching information. These options can be updated to any database
-    | connection and table which has been defined by your application.
+    | The following options configure the behavior of queued job batching.
     |
     */
 
