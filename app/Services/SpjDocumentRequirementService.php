@@ -97,7 +97,7 @@ class SpjDocumentRequirementService
         $add(
             'siplah_order', 'Pengadaan', 'Pesanan / referensi transaksi SIPLah', 'SIPLah',
             true, $isSiplah && $purchaseCategory,
-            filled($transaction->payment_reference) || filled($transaction->invoice_number) || filled($firstGoods?->order_number),
+            filled($transaction->siplah_order_number) || filled($transaction->payment_reference) || filled($transaction->invoice_number),
             'Referensi pengadaan SIPLah tersedia.',
             'Referensi pesanan/transaksi SIPLah belum tersedia.'
         );
@@ -117,7 +117,7 @@ class SpjDocumentRequirementService
         );
         $add(
             'internal_order', 'Pengadaan', 'Surat pesanan internal', 'Dibuat aplikasi',
-            ! $isSiplah && $goodsCategory, $goodsCategory,
+            ! $isSiplah && $goodsCategory, ! $isSiplah && $goodsCategory,
             filled($firstGoods?->order_number) && filled($firstGoods?->order_date),
             'Surat pesanan internal tersedia.',
             'Surat pesanan internal belum lengkap.'
@@ -127,21 +127,23 @@ class SpjDocumentRequirementService
             || (filled($firstGoods?->bap_number) && filled($firstGoods?->bap_date))
             || (filled($firstGoods?->bast_number) && filled($firstGoods?->bast_date));
         $add(
-            'goods_receipt', 'Penerimaan', 'Bukti penerimaan barang', $isSiplah ? 'SIPLah / aplikasi' : 'Aplikasi / dokumen sumber',
+            'goods_receipt', 'Penerimaan', 'Bukti penerimaan barang', $isSiplah ? 'SIPLah / dokumen penerimaan' : 'Aplikasi / dokumen sumber',
             $goodsCategory, $goodsCategory, $receiptReady,
             'Bukti penerimaan barang tersedia.',
-            'Belum ada bukti penerimaan barang, BAP, atau BAST.'
+            $isSiplah
+                ? 'Transaksi SIPLah tetap memerlukan bukti penerimaan barang yang dapat ditelusuri.'
+                : 'Belum ada bukti penerimaan barang, BAP, atau BAST.'
         );
         $add(
             'bap', 'Penerimaan', 'Berita Acara Pemeriksaan/Penerimaan (BAP)', 'Dibuat aplikasi',
-            false, $goodsCategory,
+            false, ! $isSiplah && $goodsCategory,
             filled($firstGoods?->bap_number) && filled($firstGoods?->bap_date),
             'BAP tersedia.',
             'BAP belum dibuat. Dokumen ini dapat diwajibkan sesuai jenis/nilai pengadaan dan kebijakan sekolah.'
         );
         $add(
             'bast', 'Penerimaan', 'Berita Acara Serah Terima (BAST)', 'Dibuat aplikasi',
-            false, $goodsCategory,
+            false, ! $isSiplah && $goodsCategory,
             filled($firstGoods?->bast_number) && filled($firstGoods?->bast_date),
             'BAST tersedia.',
             'BAST belum dibuat. Dokumen ini dapat diwajibkan sesuai jenis/nilai pengadaan dan kebijakan sekolah.'
