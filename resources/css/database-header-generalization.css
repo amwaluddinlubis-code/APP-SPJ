@@ -11,20 +11,26 @@ main:has(#db-tabs) {
     --db-header-fg-muted: var(--ui-fg-muted, var(--ui-component-text-muted, var(--text-comfort-muted, #718096)));
 }
 
-/* Match the shared page-header shell geometry. */
+/* Treat the legacy wrapper as a layout-only container. The hero and the
+   operational summary become independent generalized primitives. */
 main:has(#db-tabs) > div > section:first-of-type {
-    overflow: hidden !important;
-    border: 1px solid var(--db-header-line) !important;
-    border-radius: var(--profile-header-radius) !important;
-    background: var(--db-header-surface) !important;
-    box-shadow: var(--profile-card-shadow) !important;
+    display: grid !important;
+    gap: var(--profile-section-gap, 1.5rem) !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
-/* Match page-header-main spacing and typography invariants. */
+/* Canonical page-header geometry. */
 main:has(#db-tabs) > div > section:first-of-type > div:first-child {
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--db-header-line) !important;
+    border-radius: var(--profile-header-radius) !important;
     padding: var(--profile-header-padding-y) var(--profile-header-padding-x) !important;
+    box-shadow: var(--profile-card-shadow) !important;
 }
 
 main:has(#db-tabs) > div > section:first-of-type > div:first-child > p:first-child {
@@ -66,13 +72,14 @@ main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
     }
 }
 
-/* Summary now follows the shared ui-stat language instead of a custom flat strip. */
+/* Summary follows the shared ui-stat language as a separate grid, not a
+   continuation strip attached to the hero. */
 main:has(#db-tabs) > div > section:first-of-type > .grid {
     display: grid !important;
     gap: .75rem !important;
-    border-top: 1px solid var(--db-header-line) !important;
-    background: var(--db-header-surface) !important;
-    padding: var(--profile-content-padding) !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
 }
 
 main:has(#db-tabs) > div > section:first-of-type > .grid > div {
@@ -81,10 +88,10 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div {
     min-width: 0;
     border: 1px solid var(--db-header-line) !important;
     border-radius: var(--profile-card-radius) !important;
-    background: var(--db-header-surface-soft) !important;
+    background: var(--db-header-surface) !important;
     color: var(--db-header-fg) !important;
     padding: 1rem 1.1rem !important;
-    box-shadow: none !important;
+    box-shadow: var(--profile-card-shadow) !important;
 }
 
 main:has(#db-tabs) > div > section:first-of-type > .grid > div + div {
@@ -114,21 +121,27 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:first-child {
 }
 
 main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(2) {
-    margin-top: .2rem !important;
+    margin-top: .25rem !important;
     color: var(--db-header-fg-strong) !important;
-    font-size: 1rem !important;
+    font-size: 1.125rem !important;
     font-weight: 750 !important;
-    line-height: 1.4rem !important;
+    line-height: 1.5rem !important;
 }
 
 main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(n+3) {
-    margin-top: .3rem !important;
+    margin-top: .35rem !important;
     color: var(--db-header-fg-muted) !important;
     font-size: .75rem !important;
     line-height: 1.15rem !important;
 }
 
-/* Preserve semantic health states inside the generalized cards. */
+/* Keep the three cards balanced and let long technical values truncate instead
+   of changing card height. */
+main:has(#db-tabs) > div > section:first-of-type > .grid > div > p {
+    min-width: 0;
+}
+
+/* Preserve semantic health states inside generalized stat cards. */
 main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-emerald-600,.text-emerald-700) {
     color: var(--text-comfort-success) !important;
 }
@@ -139,6 +152,11 @@ main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-amber-600,.te
 
 main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-rose-600,.text-rose-700) {
     color: var(--text-comfort-danger) !important;
+}
+
+/* Give the workspace the same separation rhythm used by generalized pages. */
+main:has(#db-tabs) #db-tabs {
+    margin-top: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
