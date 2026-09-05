@@ -163,7 +163,7 @@
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-800">Template yang Tersedia</h2>
-                <p class="mt-1 text-sm text-slate-500">Template baru memakai document type dan kategori canonical. Data legacy tetap ditampilkan agar tidak hilang.</p>
+                <p class="mt-1 text-sm text-slate-500">Template baru memakai document type dan kategori canonical. Unduh template terakhir sebelum menggantinya jika perlu melakukan revisi lokal.</p>
             </div>
             <form method="GET" class="grid gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 sm:grid-cols-[12rem_minmax(12rem,1fr)_auto_auto] sm:items-end">
                 <x-ui.field label="Status Template" for="status">
@@ -243,8 +243,9 @@
                                         {{ $template->is_active ? 'Aktif' : 'Tidak aktif' }}
                                     </label>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right align-top">
-                                    <div class="flex justify-end gap-2">
+                                <td class="px-4 py-3 text-right align-top">
+                                    <div class="flex flex-wrap justify-end gap-2">
+                                        <x-ui.button variant="secondary" :href="route('document-templates.download', $template->id)">Download Template</x-ui.button>
                                         <x-ui.button form="mapping-{{ $template->id }}" type="submit">Simpan Perubahan</x-ui.button>
                                         <form method="POST" action="{{ route('document-templates.destroy', $template->id) }}" data-confirm="Hapus template {{ $template->name }}? Template yang dihapus tidak dapat digunakan lagi. Lanjutkan?">@csrf @method('DELETE')
                                             <x-ui.button type="submit" variant="danger">Hapus</x-ui.button>
