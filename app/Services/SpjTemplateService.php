@@ -149,8 +149,8 @@ class SpjTemplateService
     }
 
     /**
-     * Nilai scalar kosong selalu dirender sebagai "-". Placeholder repeat
-     * (ITEM_*/UPAH_*) diproses terpisah dan KOP_SURAT adalah placeholder gambar.
+     * Nilai scalar kosong selalu dirender sebagai "-". Placeholder baris dinamis
+     * dengan awalan ITEM_ dan UPAH_ diproses terpisah; KOP_SURAT adalah gambar.
      *
      * @param  array<string,string|null>  $values
      * @return array<string,string>
