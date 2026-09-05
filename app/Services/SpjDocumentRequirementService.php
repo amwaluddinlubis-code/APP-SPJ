@@ -77,9 +77,9 @@ class SpjDocumentRequirementService
         );
         $add(
             'payment_evidence', 'Pembayaran', 'Bukti / referensi pembayaran', $isSiplah ? 'SIPLah / bank' : 'Bank / kas / bukti bayar',
-            true, true, $transaction->payments->isNotEmpty() || filled($transaction->payment_reference),
+            false, true, $transaction->payments->isNotEmpty() || filled($transaction->payment_reference),
             'Bukti atau referensi pembayaran tersedia.',
-            'Bukti atau referensi pembayaran belum tersedia.'
+            'Bukti atau referensi pembayaran belum tersedia. Data ini bersifat pendukung dan tidak memblokir cetak.'
         );
 
         $taxApplies = (float) $transaction->tax_total > 0;
@@ -110,10 +110,10 @@ class SpjDocumentRequirementService
         );
         $add(
             'invoice', 'Pengadaan', 'Invoice / faktur / tagihan', $isSiplah ? 'SIPLah / penyedia' : 'Penyedia',
-            $purchaseCategory, $purchaseCategory,
+            false, $purchaseCategory,
             filled($transaction->invoice_number),
             'Invoice/faktur/tagihan tersedia.',
-            'Nomor invoice/faktur/tagihan belum tersedia.'
+            'Nomor invoice/faktur/tagihan belum tersedia. Data ini bersifat pendukung dan tidak memblokir cetak.'
         );
         $add(
             'internal_order', 'Pengadaan', 'Surat pesanan internal', 'Dibuat aplikasi',
