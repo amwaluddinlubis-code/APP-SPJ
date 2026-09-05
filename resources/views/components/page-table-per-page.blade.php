@@ -3,7 +3,7 @@
     'name' => 'perPage',
     'current' => null,
     'options' => [15, 25, 50, 100],
-    'allowAll' => true,
+    'allowAll' => false,
     'label' => 'Baris',
 ])
 
