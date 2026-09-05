@@ -35,3 +35,217 @@ main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody {
 main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody tr:hover {
     background: var(--ui-table-row-hover) !important;
 }
+/* Transaction detail workspace.
+   #modul-buat-spj exists only on /transaksi/{transaction}, so this remains
+   route-local without adding hooks to the large Blade view. */
+main:has(#modul-buat-spj) {
+    --transaction-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
+    --transaction-surface-soft: var(--ui-surface-soft, var(--ui-component-surface-soft, #f8fafc));
+    --transaction-surface-muted: var(--ui-surface-muted, var(--transaction-surface-soft));
+    --transaction-fg: var(--ui-fg, var(--ui-component-text, var(--text-comfort-primary, #334155)));
+    --transaction-fg-strong: var(--ui-fg-strong, var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937)));
+    --transaction-fg-muted: var(--ui-fg-muted, var(--ui-component-text-muted, var(--text-comfort-muted, #718096)));
+    --transaction-line: var(--ui-line, var(--ui-component-border, var(--ui-border, #dbe3ec)));
+    --transaction-line-strong: var(--ui-line-strong, var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)));
+}
+
+/* Neutral surfaces and borders */
+main:has(#modul-buat-spj) :is(
+    article.bg-white,
+    section.bg-white,
+    form.bg-white,
+    details.bg-white,
+    #modul-buat-spj.bg-white,
+    .bg-slate-50,
+    .bg-slate-100
+) {
+    border-color: var(--transaction-line) !important;
+    background: var(--transaction-surface) !important;
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) :is(.bg-slate-50,.bg-slate-100) {
+    background: var(--transaction-surface-soft) !important;
+}
+
+main:has(#modul-buat-spj) :is(.border-slate-100,.border-slate-200) {
+    border-color: var(--transaction-line) !important;
+}
+
+main:has(#modul-buat-spj) .border-slate-300 {
+    border-color: var(--transaction-line-strong) !important;
+}
+
+/* Reading hierarchy */
+main:has(#modul-buat-spj) :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+    color: var(--transaction-fg-strong) !important;
+}
+
+main:has(#modul-buat-spj) .text-slate-600 {
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) :is(.text-slate-500,.text-slate-400) {
+    color: var(--transaction-fg-muted) !important;
+}
+
+main:has(#modul-buat-spj) :is(.text-indigo-700,.text-sky-700,.text-violet-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Back navigation and neutral actions */
+main:has(#modul-buat-spj) > div > div:first-child > a[href*="/transaksi"],
+main:has(#modul-buat-spj) :is(.ui-btn-secondary,.btn-outline-secondary) {
+    border-color: var(--transaction-line-strong) !important;
+    background: var(--transaction-surface) !important;
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) > div > div:first-child > a[href*="/transaksi"]:hover,
+main:has(#modul-buat-spj) :is(.ui-btn-secondary,.btn-outline-secondary):hover {
+    background: var(--transaction-surface-soft) !important;
+    color: var(--transaction-fg-strong) !important;
+}
+
+/* Theme-aware primary actions. Yellow Bright intentionally uses dark foreground. */
+main:has(#modul-buat-spj) :is(
+    .spj-builder-primary,
+    a[href="#modul-buat-spj"].bg-violet-600,
+    button.bg-violet-600,
+    button.bg-indigo-600,
+    a.bg-indigo-600
+) {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 74%, var(--transaction-line-strong)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(#modul-buat-spj) :is(
+    .spj-builder-primary,
+    a[href="#modul-buat-spj"].bg-violet-600,
+    button.bg-violet-600,
+    button.bg-indigo-600,
+    a.bg-indigo-600
+):hover {
+    background: var(--theme-action-hover-bg, var(--theme-action-bg)) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(#modul-buat-spj) :is(.spj-builder-primary,a[href="#modul-buat-spj"],button,a) svg {
+    color: currentColor;
+    stroke: currentColor;
+}
+
+/* ARKAS/BKU reference card stays visually read-only. */
+main:has(#modul-buat-spj) x-page-header + section article,
+main:has(#modul-buat-spj) section:first-of-type article {
+    border-color: var(--transaction-line) !important;
+    background: var(--transaction-surface-soft) !important;
+}
+
+main:has(#modul-buat-spj) section:first-of-type article > div:first-child {
+    border-color: var(--transaction-line) !important;
+    background: var(--transaction-surface-muted) !important;
+}
+
+main:has(#modul-buat-spj) section:first-of-type article > div:last-child > div {
+    border-color: var(--transaction-line) !important;
+}
+
+/* Operator controls */
+main:has(#modul-buat-spj) #modul-buat-spj :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+) {
+    border-color: var(--transaction-line-strong) !important;
+    background: var(--transaction-surface) !important;
+    color: var(--transaction-fg-strong) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(input,textarea)::placeholder {
+    color: var(--transaction-fg-muted) !important;
+    opacity: 1;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):hover:not(:disabled):not([readonly]) {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 36%, var(--transaction-line-strong)) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):focus-visible {
+    border-color: var(--theme-content-accent) !important;
+    outline: 2px solid color-mix(in srgb, var(--theme-content-accent) 38%, transparent) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-content-accent) 12%, transparent) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea)[readonly] {
+    cursor: default;
+    border-color: var(--transaction-line) !important;
+    background: var(--transaction-surface-muted) !important;
+    color: var(--transaction-fg-muted) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):disabled,
+main:has(#modul-buat-spj) #modul-buat-spj fieldset:disabled :is(input,select,textarea,button) {
+    cursor: not-allowed;
+    border-color: var(--transaction-line) !important;
+    background: var(--transaction-surface-muted) !important;
+    color: var(--transaction-fg-muted) !important;
+    opacity: .72;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj fieldset:disabled {
+    opacity: .82 !important;
+}
+
+/* Deep SPJ header exclusively uses on-dark foreground tokens. */
+main:has(#modul-buat-spj) .spj-builder-header {
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 18%, transparent) !important;
+}
+
+main:has(#modul-buat-spj) .spj-builder-header :is(h1,h2,h3,strong) {
+    color: var(--text-comfort-on-dark) !important;
+}
+
+main:has(#modul-buat-spj) .spj-builder-header p {
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+
+main:has(#modul-buat-spj) .spj-builder-header > div p:first-child {
+    border-color: color-mix(in srgb, var(--text-comfort-on-dark) 20%, transparent) !important;
+    background: color-mix(in srgb, var(--text-comfort-on-dark) 10%, transparent) !important;
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+
+/* Transaction tables */
+main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) {
+    background: var(--transaction-surface) !important;
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) thead {
+    background: var(--transaction-surface-soft) !important;
+}
+
+main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td) {
+    border-color: var(--transaction-line) !important;
+}
+
+main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:hover {
+    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--transaction-surface)) !important;
+}
+
+/* Sticky/action shells */
+main:has(#modul-buat-spj) :is(.ui-form-actions,.ui-sticky-actions,[class*="sticky"][class*="border"]) {
+    border-color: var(--transaction-line) !important;
+    background: color-mix(in srgb, var(--transaction-surface) 94%, transparent) !important;
+    color: var(--transaction-fg) !important;
+    backdrop-filter: blur(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main:has(#modul-buat-spj) :is(a,button,input,select,textarea) {
+        transition: none !important;
+    }
+}
