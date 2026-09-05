@@ -77,6 +77,34 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         $this->assertFalse((bool) $internalOrder['available']);
     }
 
+    public function test_payment_evidence_and_invoice_are_visible_but_do_not_block_print_when_missing(): void
+    {
+        $transaction = $this->transaction([
+            'payment_method' => 'tunai',
+            'is_siplah' => false,
+            'spj_category' => 'BARANG',
+            'vendor_name' => 'Toko Contoh',
+            'payment_reference' => null,
+            'invoice_number' => null,
+        ]);
+
+        $service = app(SpjDocumentRequirementService::class);
+        $requirements = collect($service->forTransaction($transaction));
+
+        foreach (['payment_evidence', 'invoice'] as $key) {
+            $requirement = $requirements->firstWhere('key', $key);
+
+            $this->assertTrue((bool) $requirement['applicable']);
+            $this->assertFalse((bool) $requirement['required']);
+            $this->assertFalse((bool) $requirement['available']);
+            $this->assertSame('OPSIONAL_BELUM_LENGKAP', $requirement['status']);
+        }
+
+        $blockingKeys = collect($service->blockingRequirements($transaction))->pluck('key')->all();
+        $this->assertNotContains('payment_evidence', $blockingKeys);
+        $this->assertNotContains('invoice', $blockingKeys);
+    }
+
     /** @param array<string, mixed> $overrides */
     private function transaction(array $overrides = []): Transaction
     {
