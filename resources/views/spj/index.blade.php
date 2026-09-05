@@ -5,7 +5,7 @@
         default => str_replace('_', ' ', (string) $value),
     })
     @php($spjProgress = ($totalPackages ?? 0) > 0 ? min(100, (int) round((($numberedPackages ?? 0) / $totalPackages) * 100)) : 0)
-    <div class="space-y-6" x-data="{
+    <div class="spj-semantic-workspace space-y-6" x-data="{
         tab: '{{ $tab ?? 'persiapan' }}',
         loadingTab: false,
         changeTab(name) {

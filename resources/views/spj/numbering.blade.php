@@ -2,7 +2,7 @@
     @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
     @php($selectedClosure = $selectedSummary['closure'] ?? null)
 
-    <div class="space-y-6">
+    <div class="spj-semantic-workspace space-y-6">
         <x-page-header
             kicker="PENOMORAN DOKUMEN SPJ"
             title="Penomoran SPJ per Triwulan"

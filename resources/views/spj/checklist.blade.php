@@ -1,5 +1,5 @@
 <x-layouts.tailwind-app>
-    <div class="space-y-6">
+    <div class="spj-semantic-workspace space-y-6">
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-6 text-white sm:px-7">
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

@@ -91,3 +91,122 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     border-color: var(--spj-border) !important;
     background: var(--spj-surface-soft) !important;
 }
+
+/* Phase 3 semantic contract shared by the SPJ overview, preparation,
+   checklist, and numbering workspaces. The scoped compatibility selectors
+   preserve their existing workflow markup while removing palette coupling. */
+.spj-semantic-workspace {
+    --spj-surface: var(--ui-surface-base);
+    --spj-surface-soft: var(--ui-surface-soft);
+    --spj-surface-muted: var(--ui-surface-muted);
+    --spj-border: var(--ui-line);
+    --spj-border-strong: var(--ui-line-strong);
+    --spj-text: var(--ui-fg);
+    --spj-text-strong: var(--ui-fg-strong);
+    --spj-text-muted: var(--ui-fg-muted);
+    color: var(--spj-text);
+}
+
+.spj-semantic-workspace :is(section,article,aside,details,form,div)[class*="bg-white"][class*="rounded-"],
+.spj-semantic-workspace > section[class*="bg-white"] {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace :is(.bg-white,.bg-slate-50\/70,.bg-slate-50\/30) {
+    background-color: var(--spj-surface) !important;
+}
+
+.spj-semantic-workspace :is(.bg-slate-50,.bg-slate-100) {
+    background-color: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace :is(.border-slate-100,.border-slate-200) {
+    border-color: var(--spj-border) !important;
+}
+
+.spj-semantic-workspace .border-slate-300 {
+    border-color: var(--spj-border-strong) !important;
+}
+
+.spj-semantic-workspace :is(.divide-slate-100,.divide-slate-200) > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--spj-border) !important;
+}
+
+.spj-semantic-workspace :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace .text-slate-600 {
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace :is(.text-slate-500,.text-slate-400,.text-slate-300) {
+    color: var(--spj-text-muted) !important;
+}
+
+.spj-semantic-workspace :is(.text-indigo-950,.text-indigo-900,.text-indigo-800,.text-indigo-700,.text-indigo-600,.text-violet-800,.text-violet-700,.text-violet-600,.text-sky-900,.text-sky-800,.text-sky-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+.spj-semantic-workspace :is(.border-indigo-100,.border-indigo-200,.border-indigo-300,.border-violet-100,.border-violet-200,.border-sky-100,.border-sky-200) {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--spj-border)) !important;
+}
+
+.spj-semantic-workspace :is(.bg-indigo-50,.bg-violet-50,.bg-sky-50) {
+    background-color: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--spj-surface)) !important;
+}
+
+.spj-semantic-workspace table:not([data-ui-table="off"]) {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace table:not([data-ui-table="off"]) thead {
+    background: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace table:not([data-ui-table="off"]) tbody {
+    background: transparent !important;
+}
+
+.spj-semantic-workspace table:not([data-ui-table="off"]) tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+.spj-semantic-workspace :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) {
+    border-color: var(--spj-border-strong) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):focus-visible {
+    border-color: var(--theme-accent) !important;
+    outline: 3px solid color-mix(in srgb, var(--theme-accent) 28%, transparent) !important;
+    outline-offset: 1px;
+}
+
+.spj-semantic-workspace :is(input,select,textarea):disabled,
+.spj-semantic-workspace fieldset:disabled :is(input,select,textarea,button) {
+    cursor: not-allowed;
+    opacity: .64;
+}
+
+.spj-semantic-workspace :is(a,button)[class*="bg-indigo-600"],
+.spj-semantic-workspace :is(a,button)[class*="bg-violet-600"] {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 76%, var(--spj-border)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.spj-semantic-workspace :is(a,button)[class*="bg-indigo-600"]:hover,
+.spj-semantic-workspace :is(a,button)[class*="bg-violet-600"]:hover {
+    background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--spj-text-strong)) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.spj-semantic-workspace :is(a,button) svg {
+    color: currentColor;
+}

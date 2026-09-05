@@ -5,7 +5,7 @@
     @php($requiredTotal = (int) ($summary['required_total'] ?? 0))
     @php($progress = $requiredTotal > 0 ? (int) round(($readyCount / $requiredTotal) * 100) : 100)
 
-    <div class="space-y-6">
+    <div class="spj-semantic-workspace space-y-6">
         <x-page-header
             title="Siapkan SPJ"
             subtitle="Aplikasi hanya menampilkan dokumen wajib yang masih kurang. Lengkapi bagian ini terlebih dahulu, lalu lanjutkan ke paket SPJ."

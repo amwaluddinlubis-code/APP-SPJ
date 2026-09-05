@@ -49,6 +49,16 @@ main:has(#modul-buat-spj) {
     --transaction-line-strong: var(--ui-line-strong, var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)));
 }
 
+/* Yellow Bright uses an accent-to-soft page-header gradient. Keep the detail
+   header copy dark across both ends without affecting the deep SPJ builder. */
+html[data-theme='yellow'] main:has(#modul-buat-spj) .page-header-main :is(.page-header-title,.page-header-kicker) {
+    color: var(--theme-sidebar) !important;
+}
+
+html[data-theme='yellow'] main:has(#modul-buat-spj) .page-header-description {
+    color: var(--text-comfort-primary) !important;
+}
+
 /* Neutral surfaces and borders */
 main:has(#modul-buat-spj) :is(
     article.bg-white,
