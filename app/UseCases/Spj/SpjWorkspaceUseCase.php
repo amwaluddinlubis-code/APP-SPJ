@@ -97,6 +97,8 @@ class SpjWorkspaceUseCase
     private function tabPaket(Request $request): View|RedirectResponse
     {
         $packageId = $request->query('package_id');
+        $packagePerPage = $request->integer('package_perPage', 15);
+        $packagePerPage = in_array($packagePerPage, [10, 15, 25, 50, 100], true) ? $packagePerPage : 15;
 
         $packageList = SpjPackage::query()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
@@ -104,7 +106,7 @@ class SpjWorkspaceUseCase
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')
-            ->paginate(15, ['*'], 'package_page')
+            ->paginate($packagePerPage, ['*'], 'package_page')
             ->withQueryString();
 
         if (! $packageId) {
