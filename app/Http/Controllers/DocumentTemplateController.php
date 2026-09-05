@@ -143,6 +143,21 @@ class DocumentTemplateController extends Controller
         return back()->with('success', 'Pemetaan template berhasil diperbarui.');
     }
 
+    /** Mengunduh file template terakhir yang tersimpan tanpa menjalankan renderer SPJ. */
+    public function downloadStored(string $templateId)
+    {
+        $template = DocumentTemplate::query()->find($templateId);
+        if (! $template || $template->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+            return back()->with('error', 'Template tidak ditemukan.');
+        }
+
+        if (! Storage::exists($template->file_path)) {
+            return back()->with('error', 'Berkas template tidak ditemukan pada penyimpanan. Unggah ulang template ini.');
+        }
+
+        return Storage::download($template->file_path, $this->storedTemplateDownloadName($template));
+    }
+
     public function destroy(string $templateId): RedirectResponse
     {
         $template = DocumentTemplate::query()->find($templateId);
@@ -199,6 +214,20 @@ class DocumentTemplateController extends Controller
         }
 
         return response()->download($path, 'CONTOH-TEMPLATE-SPJ.'.$format)->deleteFileAfterSend(true);
+    }
+
+    private function storedTemplateDownloadName(DocumentTemplate $template): string
+    {
+        $extension = strtolower(trim((string) $template->format));
+        $base = trim((string) ($template->name ?: $template->document_type));
+        $base = preg_replace('/[^A-Za-z0-9._-]+/', '-', $base) ?: 'template-'.$template->id;
+        $base = trim($base, '-_.');
+
+        if ($extension !== '' && ! str_ends_with(strtolower($base), '.'.$extension)) {
+            $base .= '.'.$extension;
+        }
+
+        return $base;
     }
 
     /** @return array<string,mixed> */
