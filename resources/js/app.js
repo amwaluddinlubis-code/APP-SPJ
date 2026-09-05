@@ -271,6 +271,78 @@ const initializeClientTablePagination = (root = document) => {
 initializeClientTablePagination();
 document.addEventListener('livewire:navigated', () => initializeClientTablePagination());
 
+const initializeSiplahPurchaseUi = (root = document) => {
+    const paymentMethod = root.querySelector?.('select[name="payment_method"]') || document.querySelector('select[name="payment_method"]');
+    if (!(paymentMethod instanceof HTMLSelectElement)) return;
+
+    const form = paymentMethod.closest('form');
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const internalFieldNames = ['order_number', 'order_date', 'bap_number', 'bap_date', 'bast_number', 'bast_date'];
+    const internalWrappers = internalFieldNames
+        .map((name) => form.querySelector(`[name="${name}"]`)?.closest('div'))
+        .filter((element) => element instanceof HTMLElement);
+
+    const orderField = form.querySelector('[name="order_number"]');
+    const purchaseBlock = orderField?.closest('.rounded-lg');
+    const purchaseHeading = purchaseBlock?.querySelector('p');
+    const siplahOrderField = form.querySelector('[name="siplah_order_number"]');
+    const siplahBlock = siplahOrderField?.closest('fieldset');
+    const siplahHeading = siplahBlock?.querySelector('p');
+    const siplahDescription = siplahHeading?.nextElementSibling;
+
+    if (purchaseHeading instanceof HTMLElement && !purchaseHeading.dataset.defaultText) {
+        purchaseHeading.dataset.defaultText = purchaseHeading.textContent?.trim() || 'Data pembelian barang/konsumsi';
+    }
+
+    let guidance = purchaseBlock?.querySelector('[data-siplah-marketplace-guidance]');
+    if (!guidance && purchaseHeading instanceof HTMLElement) {
+        guidance = document.createElement('div');
+        guidance.dataset.siplahMarketplaceGuidance = 'true';
+        guidance.className = 'mt-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-900';
+        guidance.innerHTML = '<span class="font-bold">Dokumen marketplace menjadi sumber pengadaan.</span> Surat Pesanan, BAP, dan BAST internal tidak diwajibkan untuk transaksi SiPLah. Invoice serta bukti penerimaan barang tetap harus dapat ditelusuri.';
+        purchaseHeading.insertAdjacentElement('afterend', guidance);
+    }
+
+    const render = () => {
+        const isSiplah = paymentMethod.value.toLowerCase() === 'siplah';
+
+        internalWrappers.forEach((wrapper) => {
+            wrapper.hidden = isSiplah;
+        });
+
+        if (purchaseHeading instanceof HTMLElement) {
+            purchaseHeading.textContent = isSiplah
+                ? 'Invoice & penerimaan pembelian SiPLah'
+                : purchaseHeading.dataset.defaultText;
+        }
+
+        if (guidance instanceof HTMLElement) {
+            guidance.hidden = !isSiplah;
+        }
+
+        if (siplahHeading instanceof HTMLElement) {
+            siplahHeading.textContent = 'Data Pembelian SiPLah';
+        }
+
+        if (siplahDescription instanceof HTMLElement) {
+            siplahDescription.textContent = isSiplah
+                ? 'Data penyedia dan Nomor Pesanan SiPLah menjadi referensi transaksi marketplace. Dokumen pemesanan dan invoice asli tetap dipertahankan sebagai bukti sumber.'
+                : siplahDescription.textContent;
+        }
+    };
+
+    if (paymentMethod.dataset.siplahUiInitialized !== 'true') {
+        paymentMethod.dataset.siplahUiInitialized = 'true';
+        paymentMethod.addEventListener('change', render);
+    }
+
+    render();
+};
+
+initializeSiplahPurchaseUi();
+document.addEventListener('livewire:navigated', () => initializeSiplahPurchaseUi());
+
 const initializeScrollToTop = () => {
     if (document.getElementById('app-scroll-to-top')) return;
 
