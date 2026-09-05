@@ -15,6 +15,8 @@ class ArkasSyncController extends Controller
 {
     public function __invoke(Request $request): RedirectResponse
     {
+        $operation = null;
+
         try {
             $request->validate(['confirm_sync' => ['accepted']]);
             $school = School::findOrFail(session('active_school_id'));
@@ -25,18 +27,40 @@ class ArkasSyncController extends Controller
                     ->route('arkas.settings')
                     ->with('error', 'Sumber ARKAS untuk '.$school->name.' belum disimpan. Isi path database dan kata sandi terlebih dahulu.');
             }
+
+            $runAsync = (bool) config('queue.arkas_sync_async', false);
             $operation = BackgroundOperation::query()->create([
                 'school_id' => $school->id,
                 'fiscal_year_id' => $year->id,
                 'requested_by' => $request->user()?->id,
                 'type' => 'ARKAS_SYNC',
                 'status' => 'QUEUED',
-                'message' => 'Menunggu worker antrean.',
+                'message' => $runAsync ? 'Menunggu worker antrean.' : 'Menunggu proses sinkronisasi langsung.',
             ]);
-            SynchronizeArkas::dispatch($operation->id, $school->id, $year->id, $source->id)->onQueue('operations');
 
-            return back()->with('success', 'Sinkronisasi ARKAS masuk antrean. Proses tetap berjalan di latar belakang. ID proses: '.$operation->id.'.');
+            if ($runAsync) {
+                SynchronizeArkas::dispatch($operation->id, $school->id, $year->id, $source->id)->onQueue('operations');
+
+                return back()->with('success', 'Sinkronisasi ARKAS masuk antrean. Proses tetap berjalan di latar belakang. ID proses: '.$operation->id.'.');
+            }
+
+            SynchronizeArkas::dispatchSync($operation->id, $school->id, $year->id, $source->id);
+            $operation->refresh();
+
+            if ($operation->status === 'FAILED') {
+                return back()->with('error', $operation->message ?: 'Sinkronisasi ARKAS gagal.');
+            }
+
+            return back()->with('success', $operation->message ?: 'Sinkronisasi ARKAS selesai.');
         } catch (\Throwable $exception) {
+            if ($operation && ! in_array($operation->status, ['COMPLETED', 'FAILED'], true)) {
+                $operation->update([
+                    'status' => 'FAILED',
+                    'message' => 'Sinkronisasi gagal. Periksa log aplikasi untuk detail teknis.',
+                    'finished_at' => now(),
+                ]);
+            }
+
             Log::error('ARKAS synchronization failed.', [
                 'user_id' => $request->user()?->id,
                 'school_id' => session('active_school_id'),
