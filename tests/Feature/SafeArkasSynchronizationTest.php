@@ -40,6 +40,11 @@ class SafeArkasSynchronizationTest extends TestCase
 
         $method->invoke($service, $year, [$this->sourceRecord(100000)], $this->createSyncRun($year));
         $transaction = Transaction::query()->with('items')->firstOrFail();
+        $this->assertTrue((bool) $transaction->is_siplah);
+        $this->assertSame('siplah', $transaction->payment_method);
+        $this->assertSame('Penyedia ARKAS', $transaction->vendor_name);
+        $this->assertSame('12.345.678.9-012.000', $transaction->vendor_npwp);
+
         $transaction->update([
             'payment_description' => 'Uraian pembayaran manual',
             'payment_method' => 'siplah',
@@ -47,6 +52,7 @@ class SafeArkasSynchronizationTest extends TestCase
             'payment_reference' => 'PAY-7788',
             'invoice_number' => 'INV-88231',
             'vendor_name' => 'Penyedia SiPLah Manual',
+            'vendor_npwp' => '98.765.432.1-210.000',
         ]);
         $transaction->items->first()->update(['item_description' => 'Uraian item manual']);
         $transaction->spjPackage()->create(['status' => 'DRAFT']);
@@ -60,6 +66,7 @@ class SafeArkasSynchronizationTest extends TestCase
         $this->assertSame('PAY-7788', $transaction->payment_reference);
         $this->assertSame('INV-88231', $transaction->invoice_number);
         $this->assertSame('Penyedia SiPLah Manual', $transaction->vendor_name);
+        $this->assertSame('98.765.432.1-210.000', $transaction->vendor_npwp);
         $this->assertSame('Uraian item manual', $transaction->items->first()->item_description);
         $this->assertNotNull($transaction->spjPackage);
         $this->assertTrue($transaction->requires_reconciliation);
@@ -117,6 +124,7 @@ class SafeArkasSynchronizationTest extends TestCase
             'TANGGAL_TRANSAKSI' => '2026-08-31', 'JUMLAH' => $amount,
             'VOLUME' => 1, 'URAIAN' => 'Belanja dari ARKAS',
             'KODE_REKENING' => '5.1.02.01', 'NAMA_TOKO' => 'Penyedia ARKAS',
+            'NPWP_REKANAN' => '12.345.678.9-012.000', 'IS_SIPLAH' => 1,
             'KODE_BKU' => 'BNU',
         ];
     }
