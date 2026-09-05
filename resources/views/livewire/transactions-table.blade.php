@@ -152,30 +152,16 @@
                         @php($workStatus = $this->workStatusFor($transaction))
                         <tr class="transition hover:bg-indigo-50/40" wire:key="transaction-row-{{ $transaction->id }}">
                             <td class="px-4 py-2.5 align-middle">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono text-xs font-bold text-slate-500">#{{ $transaction->id }}</span>
-                                    <x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" />
-                                </div>
-                                <div class="mt-1 flex items-center gap-1.5 text-[11px]" style="color: var(--ui-fg-muted)">
-                                    <span class="font-mono font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</span>
-                                    <span>·</span>
-                                    <span>{{ $transaction->transaction_date?->format('d/m/Y') ?? '—' }}</span>
-                                    @if($this->paymentMethodFor($transaction) === 'siplah')<span>· SiPLah</span>@endif
-                                </div>
+                                <div class="flex items-center gap-2"><span class="font-mono text-xs font-bold text-slate-500">#{{ $transaction->id }}</span><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" /></div>
+                                <div class="mt-1 flex items-center gap-1.5 text-[11px]" style="color: var(--ui-fg-muted)"><span class="font-mono font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti }}</span><span>·</span><span>{{ $transaction->transaction_date?->format('d/m/Y') ?? '—' }}</span>@if($this->paymentMethodFor($transaction) === 'siplah')<span>· SiPLah</span>@endif</div>
                             </td>
                             <td class="max-w-0 px-4 py-2.5 align-middle">
                                 <p class="truncate font-semibold" style="color: var(--ui-fg)">{{ $transaction->description ?: 'Tanpa uraian ARKAS' }}</p>
                                 <p class="mt-0.5 truncate text-xs" style="color: {{ filled($transaction->payment_description) ? 'var(--theme-content-accent)' : 'var(--ui-fg-muted)' }}">SPJ: {{ $transaction->payment_description ?: 'Deskripsi belanja belum diisi' }}</p>
                                 <p class="mt-0.5 truncate text-[11px]" style="color: var(--ui-fg-muted)">{{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category).' · ' : '' }}{{ $transaction->items_count }} item · Penerima: {{ $transaction->effective_receipt_recipient_name ?: $transaction->recipient_name ?: 'Belum diisi' }}@if($transaction->requires_reconciliation) · Rekonsiliasi@endif</p>
                             </td>
-                            <td class="px-4 py-2.5 align-middle">
-                                <p class="truncate font-mono text-xs font-semibold" style="color: var(--theme-content-accent)">{{ $transaction->activity_code ?: '—' }}</p>
-                                <p class="mt-0.5 truncate text-[11px]" style="color: var(--ui-fg-muted)">{{ $transaction->account_code ?: 'Rekening belum tersedia' }}</p>
-                            </td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right align-middle">
-                                <p class="font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</p>
-                                <p class="mt-0.5 text-[11px] text-amber-700">Pajak {{ $rupiah($transaction->tax_total) }}</p>
-                            </td>
+                            <td class="px-4 py-2.5 align-middle"><p class="truncate font-mono text-xs font-semibold" style="color: var(--theme-content-accent)">{{ $transaction->activity_code ?: '—' }}</p><p class="mt-0.5 truncate text-[11px]" style="color: var(--ui-fg-muted)">{{ $transaction->account_code ?: 'Rekening belum tersedia' }}</p></td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right align-middle"><p class="font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</p><p class="mt-0.5 text-[11px] text-amber-700">Pajak {{ $rupiah($transaction->tax_total) }}</p></td>
                             <td class="px-4 py-2.5 align-middle">
                                 <div class="flex items-center justify-center gap-1.5" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
                                     <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-4 w-4" /></button>
@@ -194,16 +180,12 @@
             </table>
         </div>
 
-        @php
-            $pageStart = max(1, $transactions->currentPage() - 2);
-            $pageEnd = min($transactions->lastPage(), $transactions->currentPage() + 2);
-        @endphp
         <div class="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between">
             <p style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->firstItem() ?? 0 }}–{{ $transactions->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->total() }}</span> transaksi</p>
             @if($transactions->hasPages())
                 <nav class="flex items-center gap-1" aria-label="Navigasi halaman transaksi">
                     <button type="button" wire:click="previousPage" @disabled($transactions->onFirstPage()) class="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">‹</button>
-                    @for($page = $pageStart; $page <= $pageEnd; $page++)
+                    @for($page = max(1, $transactions->currentPage() - 2); $page <= min($transactions->lastPage(), $transactions->currentPage() + 2); $page++)
                         <button type="button" wire:click="gotoPage({{ $page }})" aria-current="{{ $transactions->currentPage() === $page ? 'page' : 'false' }}" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 font-semibold {{ $transactions->currentPage() === $page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100' }}">{{ $page }}</button>
                     @endfor
                     <button type="button" wire:click="nextPage" @disabled(!$transactions->hasMorePages()) class="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">›</button>
@@ -213,40 +195,21 @@
     </section>
 
     <div x-show="warningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="transaction-warning-title" x-on:click.self="closeWarning" x-on:keydown.escape.window="closeWarning">
-        <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
-            <div class="flex items-start gap-3">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">!</div>
-                <div><p class="text-xs font-bold uppercase tracking-wide text-amber-700">Warning</p><h2 id="transaction-warning-title" class="mt-1 text-lg font-bold text-slate-900" x-text="warningMessage"></h2><p class="mt-2 text-sm text-slate-500">Gunakan ikon Ubah Data SPJ untuk mengisi deskripsi belanja sebelum membuka detail transaksi.</p></div>
-            </div>
-            <div class="mt-5 flex justify-end"><button type="button" x-on:click="closeWarning" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700">Mengerti</button></div>
-        </div>
+        <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl"><div class="flex items-start gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">!</div><div><p class="text-xs font-bold uppercase tracking-wide text-amber-700">Warning</p><h2 id="transaction-warning-title" class="mt-1 text-lg font-bold text-slate-900" x-text="warningMessage"></h2><p class="mt-2 text-sm text-slate-500">Gunakan ikon Ubah Data SPJ untuk mengisi deskripsi belanja sebelum membuka detail transaksi.</p></div></div><div class="mt-5 flex justify-end"><button type="button" x-on:click="closeWarning" class="rounded-md bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700">Mengerti</button></div></div>
     </div>
 
     <div x-show="editorOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" x-on:click.self="closeEditor">
         <form method="POST" x-bind:action="editorAction" class="w-full max-w-xl rounded-xl bg-white p-5 shadow-2xl">
             @csrf
             @method('PUT')
-            <div class="flex items-start justify-between gap-4">
-                <div><p class="text-[11px] font-bold tracking-[.14em] text-violet-600">TRANSAKSI <span x-text="editor.no_bukti"></span></p><h2 class="mt-1 text-lg font-bold text-slate-900">Data SPJ Transaksi</h2><p class="mt-1 text-sm text-slate-500">Lengkapi uraian dan kategori SPJ tanpa mengubah data asli hasil sinkronisasi.</p></div>
-                <button type="button" x-on:click="closeEditor" class="text-xl text-slate-400 hover:text-slate-700">×</button>
-            </div>
-
+            <div class="flex items-start justify-between gap-4"><div><p class="text-[11px] font-bold tracking-[.14em] text-violet-600">TRANSAKSI <span x-text="editor.no_bukti"></span></p><h2 class="mt-1 text-lg font-bold text-slate-900">Data SPJ Transaksi</h2><p class="mt-1 text-sm text-slate-500">Lengkapi uraian dan kategori SPJ tanpa mengubah data asli hasil sinkronisasi.</p></div><button type="button" x-on:click="closeEditor" class="text-xl text-slate-400 hover:text-slate-700">×</button></div>
             <label class="mt-4 block text-sm font-bold text-slate-700">Kategori SPJ</label>
-            <select name="spj_category" x-model="editor.spj_category" x-ref="category" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">Pilih kategori SPJ</option><option value="BARANG">Barang</option><option value="KONSUMSI">Konsumsi</option><option value="PEMELIHARAAN">Pemeliharaan</option><option value="JASA_LAINNYA">Jasa Lainnya</option><option value="SPPD">SPPD</option><option value="HONOR_PEGAWAI">Honor Pegawai</option>
-            </select>
+            <select name="spj_category" x-model="editor.spj_category" x-ref="category" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="">Pilih kategori SPJ</option><option value="BARANG">Barang</option><option value="KONSUMSI">Konsumsi</option><option value="PEMELIHARAAN">Pemeliharaan</option><option value="JASA_LAINNYA">Jasa Lainnya</option><option value="SPPD">SPPD</option><option value="HONOR_PEGAWAI">Honor Pegawai</option></select>
             @error('form.spj_category')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
-
             <label class="mt-4 block text-sm font-bold text-slate-700">Uraian Pembayaran</label>
             <textarea name="payment_description" x-model="editor.payment_description" rows="5" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Contoh: Pembelian alat tulis kantor untuk mendukung pembelajaran dan administrasi sekolah."></textarea>
             @error('form.payment_description')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
-
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div><label class="block text-sm font-bold text-slate-700">Metode Pembayaran</label><select name="payment_method" x-model="editor.payment_method" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="transfer_bank">Transfer Bank (CMS / Non Tunai)</option><option value="siplah">SiPLah Kemdikbud</option><option value="tunai">Tunai Kas BOS</option></select></div>
-                <div><label class="block text-sm font-bold text-slate-700">Referensi Bayar</label><input name="payment_reference" x-model="editor.payment_reference" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"></div>
-                <div class="sm:col-span-2"><label class="block text-sm font-bold text-slate-700">Penerima Kuitansi</label><input name="receipt_recipient_name" x-model="editor.receipt_recipient_name" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Boleh berbeda dari penerima BKU/ARKAS"></div>
-            </div>
-
+            <div class="mt-4 grid gap-3 sm:grid-cols-2"><div><label class="block text-sm font-bold text-slate-700">Metode Pembayaran</label><select name="payment_method" x-model="editor.payment_method" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="transfer_bank">Transfer Bank (CMS / Non Tunai)</option><option value="siplah">SiPLah Kemdikbud</option><option value="tunai">Tunai Kas BOS</option></select></div><div><label class="block text-sm font-bold text-slate-700">Referensi Bayar</label><input name="payment_reference" x-model="editor.payment_reference" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"></div><div class="sm:col-span-2"><label class="block text-sm font-bold text-slate-700">Penerima Kuitansi</label><input name="receipt_recipient_name" x-model="editor.receipt_recipient_name" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Boleh berbeda dari penerima BKU/ARKAS"></div></div>
             <div class="mt-5 flex justify-end gap-2"><button type="button" x-on:click="closeEditor" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Batal</button><button class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700">Simpan Data SPJ</button></div>
         </form>
     </div>
