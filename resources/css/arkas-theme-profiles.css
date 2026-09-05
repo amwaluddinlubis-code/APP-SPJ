@@ -3,14 +3,15 @@
    They extend the shared semantic contract without changing component geometry. */
 
 html[data-theme='arkas_light'] {
-    --theme-action-bg: #22c7d6;
-    --theme-action-fg: #06212b;
-    --theme-action-hover-bg: #3ad3e0;
-    --theme-action-hover-fg: #06212b;
-    --theme-content-accent: #0b4f6c;
-    --theme-focus-ring: #0f5f7a;
-    --theme-focus-halo: rgb(34 199 214 / .24);
-    --theme-highlight: #facc15;
+    --theme-action-bg: #1f63e9;
+    --theme-action-fg: #ffffff;
+    --theme-action-hover-bg: #1957cf;
+    --theme-action-hover-fg: #ffffff;
+    --theme-content-accent: #284393;
+    --theme-focus-ring: #1f63e9;
+    --theme-focus-halo: rgb(31 99 233 / .24);
+    --theme-secondary-accent: #16b8c8;
+    --theme-highlight: #ffc400;
 }
 
 html[data-theme='arkas_dark'] {
@@ -32,17 +33,41 @@ html[data-theme='arkas_dark'] {
     --theme-highlight: #facc15;
 }
 
+html[data-theme='arkas_dark_v2'] {
+    --ui-page-bg: #081225;
+    --ui-surface: #0d1a31;
+    --ui-surface-soft: #132340;
+    --ui-border: #263b5d;
+    --ui-border-strong: #35527e;
+    --ui-text: #f1f5f9;
+    --ui-muted: #9aabc0;
+
+    --theme-action-bg: #1769e8;
+    --theme-action-fg: #ffffff;
+    --theme-action-hover-bg: #1f63e9;
+    --theme-action-hover-fg: #ffffff;
+    --theme-content-accent: #38c5d6;
+    --theme-focus-ring: #38c5d6;
+    --theme-focus-halo: rgb(56 197 214 / .24);
+    --theme-secondary-accent: #38c5d6;
+    --theme-highlight: #ffc400;
+}
+
 html[data-theme='arkas_dark'] body,
-html[data-theme='arkas_dark'] main {
+html[data-theme='arkas_dark'] main,
+html[data-theme='arkas_dark_v2'] body,
+html[data-theme='arkas_dark_v2'] main {
     background: var(--ui-page-bg) !important;
 }
 
-html[data-theme='arkas_dark'] main > header {
-    background: rgb(11 23 40 / .92) !important;
+html[data-theme='arkas_dark'] main > header,
+html[data-theme='arkas_dark_v2'] main > header {
+    background: color-mix(in srgb, var(--ui-surface) 92%, transparent) !important;
     border-color: var(--ui-border) !important;
 }
 
-html[data-theme='arkas_dark'] .app-sidebar {
+html[data-theme='arkas_dark'] .app-sidebar,
+html[data-theme='arkas_dark_v2'] .app-sidebar {
     background: linear-gradient(
         180deg,
         var(--theme-sidebar-deep) 0%,
@@ -56,43 +81,49 @@ html[data-theme='arkas_light'][data-ui-header='gradient'] .page-header-main {
     background: linear-gradient(
         120deg,
         var(--theme-sidebar-deep) 0%,
-        var(--theme-sidebar) 52%,
+        var(--theme-sidebar) 58%,
         var(--theme-accent) 100%
     ) !important;
 }
 
-html[data-theme='arkas_dark'][data-ui-header='deep'] .page-header-main {
+html[data-theme='arkas_dark'][data-ui-header='deep'] .page-header-main,
+html[data-theme='arkas_dark_v2'][data-ui-header='deep'] .page-header-main {
     background: linear-gradient(
         135deg,
-        #07111f 0%,
+        var(--ui-page-bg) 0%,
         var(--theme-sidebar-deep) 48%,
         var(--theme-sidebar) 78%,
-        color-mix(in srgb, var(--theme-accent) 42%, var(--theme-sidebar)) 100%
+        color-mix(in srgb, var(--theme-accent) 38%, var(--theme-sidebar)) 100%
     ) !important;
 }
 
 html[data-theme='arkas_light'] .app-sidebar-brand-mark,
 html[data-theme='arkas_dark'] .app-sidebar-brand-mark,
+html[data-theme='arkas_dark_v2'] .app-sidebar-brand-mark,
 html[data-theme='arkas_light'] .app-nav-active,
-html[data-theme='arkas_dark'] .app-nav-active {
+html[data-theme='arkas_dark'] .app-nav-active,
+html[data-theme='arkas_dark_v2'] .app-nav-active {
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
 html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn),
-html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn) {
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn),
+html[data-theme='arkas_dark_v2'] :is(.ui-btn-primary,.btn-primary,.theme-btn) {
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
 html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover,
-html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover {
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover,
+html[data-theme='arkas_dark_v2'] :is(.ui-btn-primary,.btn-primary,.theme-btn):hover {
     background: var(--theme-action-hover-bg) !important;
     color: var(--theme-action-hover-fg) !important;
 }
 
 html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg,
-html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg {
+html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg,
+html[data-theme='arkas_dark_v2'] :is(.ui-btn-primary,.btn-primary,.theme-btn,.app-nav-active) svg {
     color: currentColor;
     stroke: currentColor;
 }
