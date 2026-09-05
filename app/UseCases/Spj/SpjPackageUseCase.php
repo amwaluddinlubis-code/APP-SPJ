@@ -44,7 +44,7 @@ class SpjPackageUseCase
         if (filled($data['spj_category'] ?? null)) {
             $transaction->update(collect($data)->only([
                 'spj_category', 'payment_description', 'payment_reference', 'payment_method',
-                'receipt_recipient_name', 'signatory_name', 'signatory_role', 'vendor_name', 'vendor_owner', 'vendor_npwp',
+                'receipt_recipient_name', 'vendor_name', 'vendor_owner', 'vendor_npwp',
                 'siplah_order_number', 'invoice_number', 'invoice_date', 'invoice_status',
                 'ppn_rate', 'pph21_rate', 'pph22_rate', 'pph23_rate', 'pph4_rate', 'sspd_rate',
             ])->all());
@@ -92,7 +92,7 @@ class SpjPackageUseCase
 
         $package->transaction->fill(collect($data)->only([
             'payment_description', 'payment_reference', 'payment_method',
-            'receipt_recipient_name', 'signatory_name', 'signatory_role', 'vendor_name', 'vendor_owner', 'vendor_npwp',
+            'receipt_recipient_name', 'vendor_name', 'vendor_owner', 'vendor_npwp',
             'siplah_order_number', 'invoice_number', 'invoice_date', 'invoice_status',
             'ppn_rate', 'pph21_rate', 'pph22_rate', 'pph23_rate', 'pph4_rate', 'sspd_rate',
         ])->all())->save();
@@ -127,7 +127,6 @@ class SpjPackageUseCase
         if ($receiptRecipient) {
             $package->transaction->forceFill([
                 'receipt_recipient_name' => $receiptRecipient,
-                'signatory_name' => $package->transaction->signatory_name ?: $receiptRecipient,
             ])->save();
         }
 
@@ -163,8 +162,6 @@ class SpjPackageUseCase
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
-            'signatory_name' => ['nullable', 'string', 'max:180'],
-            'signatory_role' => ['nullable', 'string', 'max:80'],
             'vendor_name' => ['nullable', 'string', 'max:180'],
             'vendor_owner' => ['nullable', 'string', 'max:180'],
             'vendor_npwp' => ['nullable', 'string', 'max:32'],
@@ -256,8 +253,6 @@ class SpjPackageUseCase
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
-            'signatory_name' => ['nullable', 'string', 'max:180'],
-            'signatory_role' => ['nullable', 'string', 'max:80'],
             'event_name' => ['required_if:spj_category,KONSUMSI', 'nullable', 'string', 'max:180'],
             'event_location' => ['required_if:spj_category,KONSUMSI', 'nullable', 'string', 'max:180'],
             'event_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
