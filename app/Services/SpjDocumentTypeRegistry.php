@@ -116,13 +116,13 @@ final class SpjDocumentTypeRegistry
                 'applicable_categories' => $allCategories,
                 'required' => [
                     'NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'SUDAH_TERIMA_DARI',
-                    'NAMA_PENERIMA_KUITANSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'NILAI_BRUTO',
+                    'NAMA_PENERIMA_KUITANSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR_REFERENSI', 'NILAI_BRUTO',
                     'TOTAL_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],
                 'optional' => [
-                    'PENERIMA_PENYEDIA', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI',
+                    'PENERIMA_PENYEDIA', 'CARA_BAYAR', 'REFERENSI_BAYAR',
                     'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
                     'SUMBER_DANA', 'KODE_KEGIATAN', 'KODE_REKENING',
                 ],
