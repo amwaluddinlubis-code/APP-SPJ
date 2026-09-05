@@ -71,6 +71,23 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame(2, $second->sequence_number);
     }
 
+    public function test_same_date_source_order_is_stable_when_local_item_insertion_order_differs(): void
+    {
+        $year = $this->year();
+        $laterSourcePackage = $this->packageWithSourceItems($year, 'B-900', '2026-02-10', '900', ['900', '800']);
+        $earlierSourcePackage = $this->packageWithSourceItems($year, 'B-200', '2026-02-10', '200', ['300', '200']);
+
+        $this->assertLessThan($earlierSourcePackage->id, $laterSourcePackage->id, 'Test setup must make local package IDs disagree with BKU source order.');
+
+        $workflow = app(SpjNumberingUseCase::class);
+        $ordered = $workflow->orderedPackagesForDocumentType(collect([$laterSourcePackage, $earlierSourcePackage]), 'SPJ');
+
+        $this->assertSame($earlierSourcePackage->id, $ordered[0]->id);
+        $this->assertSame($laterSourcePackage->id, $ordered[1]->id);
+        $this->assertSame('B-200', $ordered[0]->transaction->no_bukti);
+        $this->assertSame('B-900', $ordered[1]->transaction->no_bukti);
+    }
+
     public function test_non_spj_document_order_uses_its_event_date_then_bku_source_order(): void
     {
         $year = $this->year();
@@ -91,6 +108,22 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame('2026-01-15', $first->document_date->format('Y-m-d'));
         $this->assertSame(1, $first->sequence_number);
         $this->assertSame(2, $second->sequence_number);
+    }
+
+    public function test_allocator_anchors_spj_and_order_dates_to_source_events_even_when_a_different_date_is_supplied(): void
+    {
+        $year = $this->year();
+        $package = $this->package($year, 'B-001', '2026-01-05', '101');
+        $package->transaction->items->first()->goods()->create(['order_date' => '2026-01-12']);
+        $package->load('transaction.goods');
+        $numbers = app(SpjDocumentNumberService::class);
+
+        $spj = $numbers->assign($package, 'SPJ', Carbon::parse('2026-03-31'), '10200001');
+        $order = $numbers->assign($package, 'PESANAN', Carbon::parse('2026-03-31'), '10200001');
+
+        $this->assertSame('2026-01-05', $spj->document_date->format('Y-m-d'));
+        $this->assertSame('2026-01-12', $order->document_date->format('Y-m-d'));
+        $this->assertSame('B-001', $package->transaction->fresh()->no_bukti);
     }
 
     public function test_each_document_type_has_an_independent_sequence_based_on_issuance_order(): void
@@ -176,19 +209,33 @@ class DocumentNumberingWorkflowTest extends TestCase
 
     private function package(FiscalYear $year, string $proofNumber, string $date, ?string $sourceId = null): SpjPackage
     {
+        return $this->packageWithSourceItems($year, $proofNumber, $date, $sourceId, [$sourceId]);
+    }
+
+    /** @param array<int, string|null> $sourceItemIds */
+    private function packageWithSourceItems(FiscalYear $year, string $proofNumber, string $date, ?string $sourceId, array $sourceItemIds): SpjPackage
+    {
+        $normalizedSourceIds = collect($sourceItemIds)
+            ->filter(fn ($value): bool => filled($value))
+            ->map(fn ($value): string => (string) $value)
+            ->sort()
+            ->values()
+            ->all();
         $transaction = Transaction::query()->create([
             'fiscal_year_id' => $year->id,
             'fund_source_id' => 1,
             'id_kas_umum' => $sourceId,
             'no_bukti' => $proofNumber,
             'transaction_date' => $date,
-            'source_key' => $sourceId ? hash('sha256', $sourceId) : null,
+            'source_key' => $normalizedSourceIds !== [] ? hash('sha256', implode('|', $normalizedSourceIds)) : null,
         ]);
-        $transaction->items()->create([
-            'source_item_id' => $sourceId,
-            'description' => 'Barang',
-            'amount' => 1000,
-        ]);
+        foreach ($sourceItemIds as $sourceItemId) {
+            $transaction->items()->create([
+                'source_item_id' => $sourceItemId,
+                'description' => 'Barang',
+                'amount' => 1000,
+            ]);
+        }
 
         return $transaction->spjPackage()->create(['status' => 'READY']);
     }
