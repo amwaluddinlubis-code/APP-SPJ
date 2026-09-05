@@ -35,8 +35,6 @@ class Transaction extends Model
         'invoice_number',
         'invoice_date',
         'invoice_status',
-        'signatory_name',
-        'signatory_role',
         'gross_amount',
         'ppn',
         'ppn_rate',
@@ -135,7 +133,6 @@ class Transaction extends Model
     {
         return $this->receipt_recipient_name
             ?: $this->spj_recipient_name
-            ?: $this->signatory_name
             ?: $this->recipient_name;
     }
 
