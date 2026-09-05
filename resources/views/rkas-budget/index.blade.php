@@ -60,7 +60,7 @@
             :padding="false"
         >
             <x-slot:actions>
-                <form method="GET" class="flex min-w-0 items-stretch">
+                <form method="GET" class="flex items-stretch">
                     <input type="hidden" name="per_page" value="{{ $perPage }}">
                     <label for="rkas-search" class="sr-only">Cari rekening atau kegiatan</label>
                     <input
@@ -73,8 +73,8 @@
                     >
                     <button
                         type="submit"
-                        class="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-r-lg px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none focus:ring-2"
-                        style="background: var(--theme-content-accent); --tw-ring-color: var(--theme-content-accent)"
+                        class="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-r-lg bg-[var(--theme-content-accent)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none focus:ring-2 dark:bg-orange-500 dark:hover:bg-orange-400"
+                        style="--tw-ring-color: var(--theme-content-accent)"
                     >
                         <x-ui-icon name="search" class="h-4 w-4" />
                         <span>Cari</span>
