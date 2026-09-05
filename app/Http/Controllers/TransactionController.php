@@ -59,8 +59,6 @@ class TransactionController extends Controller
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
-            'signatory_name' => ['nullable', 'string', 'max:180'],
-            'signatory_role' => ['nullable', 'string', 'max:80'],
             'participants' => ['nullable', 'array'],
             'participants.*.name' => ['nullable', 'string', 'max:180'],
             'participants.*.position' => ['nullable', 'string', 'max:180'],
@@ -102,8 +100,6 @@ class TransactionController extends Controller
             ...collect($data)->only([
                 'payment_reference',
                 'receipt_recipient_name',
-                'signatory_name',
-                'signatory_role',
                 'vendor_name',
                 'vendor_owner',
                 'vendor_npwp',
