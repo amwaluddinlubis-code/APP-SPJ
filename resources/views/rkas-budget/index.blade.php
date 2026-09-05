@@ -60,21 +60,21 @@
             :padding="false"
         >
             <x-slot:actions>
-                <form method="GET" class="flex items-stretch">
+                <form method="GET" class="flex overflow-hidden rounded-lg border shadow-sm focus-within:ring-2" style="border-color: var(--ui-line); --tw-ring-color: var(--theme-content-accent)">
                     <input type="hidden" name="per_page" value="{{ $perPage }}">
                     <label for="rkas-search" class="sr-only">Cari rekening atau kegiatan</label>
                     <input
                         id="rkas-search"
                         name="q"
                         value="{{ $search }}"
-                        class="w-72 min-w-0 rounded-l-lg border border-r-0 px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2"
-                        style="border-color: var(--ui-line); background: var(--ui-bg); color: var(--ui-fg); --tw-ring-color: var(--theme-content-accent)"
+                        class="w-80 min-w-0 border-0 bg-transparent px-3 py-2 text-sm outline-none focus:ring-0"
+                        style="background: var(--ui-bg); color: var(--ui-fg)"
                         placeholder="Cari rekening atau kegiatan"
                     >
                     <button
                         type="submit"
-                        class="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-r-lg bg-[var(--theme-content-accent)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none focus:ring-2 dark:bg-orange-500 dark:hover:bg-orange-400"
-                        style="--tw-ring-color: var(--theme-content-accent)"
+                        class="inline-flex min-w-[7.5rem] items-center justify-center gap-2 border-l px-5 py-2 text-sm font-bold text-white transition hover:brightness-95 focus:outline-none dark:bg-orange-500 dark:hover:bg-orange-400"
+                        style="border-color: var(--ui-line); background-color: var(--theme-content-accent)"
                     >
                         <x-ui-icon name="search" class="h-4 w-4" />
                         <span>Cari</span>
