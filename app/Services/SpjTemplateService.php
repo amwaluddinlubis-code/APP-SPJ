@@ -213,6 +213,15 @@ class SpjTemplateService
             throw new \RuntimeException('Format template tidak didukung.');
         }
 
+        try {
+            (new SpjUnresolvedPlaceholderGuard)->assertResolved((string) $template->document_type, $output, $extension);
+        } catch (\Throwable $exception) {
+            if (is_file($output)) {
+                @unlink($output);
+            }
+            throw $exception;
+        }
+
         return response()->download($output, $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension))->deleteFileAfterSend(true);
     }
 
