@@ -32,6 +32,49 @@
             </div>
         </x-page-header>
 
+        <x-ui.form-section title="Import Paket Template" description="Unggah satu workbook master XLSX yang berisi seluruh sheet canonical. Aplikasi memvalidasi paket terlebih dahulu lalu memisahkannya menjadi 11 template independen.">
+            <form method="POST" action="{{ route('document-templates.store') }}" enctype="multipart/form-data" class="space-y-5">@csrf
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+                    <x-ui.field label="Workbook Master Template" for="template_package" hint="XLSX maksimal 20 MB. Seluruh 11 sheet canonical wajib tersedia dan bebas ERROR." :error="$errors->first('template_package')" required>
+                        <input id="template_package" type="file" name="template_package" accept=".xlsx" required>
+                    </x-ui.field>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                        <label class="flex items-start gap-3 text-sm font-semibold text-slate-700">
+                            <input type="hidden" name="replace_existing" value="0">
+                            <input type="checkbox" name="replace_existing" value="1" @checked(old('replace_existing'))>
+                            <span>
+                                Ganti template yang sudah ada
+                                <span class="mt-1 block text-xs font-normal text-slate-500">Jika tidak dicentang dan template canonical XLSX sudah tersedia, import dibatalkan agar file lama tetap aman.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                    <p class="text-xs font-bold uppercase tracking-wide text-slate-600">11 template yang akan dibuat</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach($documentTypes as $documentType => $documentLabel)
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700"><span class="font-mono text-violet-700">{{ $documentType }}</span> · {{ $documentLabel }}</span>
+                        @endforeach
+                    </div>
+                    <p class="mt-3 text-xs text-slate-500">Sheet teknis <span class="font-mono">PLACEHOLDER_MAP</span> tidak dibuat sebagai template aplikasi.</p>
+                </div>
+
+                <div class="ui-form-actions"><x-ui.button type="submit">Validasi & Import 11 Template</x-ui.button></div>
+            </form>
+
+            @if(session('template_package_warnings'))
+                <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p class="text-sm font-bold text-amber-800">Paket berhasil diimpor dengan peringatan validasi.</p>
+                    <ul class="mt-2 space-y-1 text-xs text-amber-800">
+                        @foreach(session('template_package_warnings') as $warning)
+                            <li>• {{ $warning }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </x-ui.form-section>
+
         <x-ui.form-section title="Tambah atau Ganti Template" description="Pilih jenis dokumen canonical, unggah file DOCX/XLSX, lalu tentukan kategori SPJ. File diperiksa terhadap kontrak placeholder sebelum disimpan.">
             <form method="POST" action="{{ route('document-templates.store') }}" enctype="multipart/form-data" class="space-y-5">@csrf
                 <div class="grid gap-4 lg:grid-cols-2">
