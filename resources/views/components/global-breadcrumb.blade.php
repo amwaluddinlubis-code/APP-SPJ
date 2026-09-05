@@ -100,11 +100,13 @@
         $page = 'Lihat Sebagai Pengguna';
     }
 
-    $items = array_values(array_filter([
-        $group ? ['label' => $group, 'url' => $groupUrl] : null,
-        $page ? ['label' => $page, 'url' => $detail ? $pageUrl : null] : null,
-        $detail ? ['label' => $detail, 'url' => null] : null,
-    ]));
+    $items = array_values(
+        array_filter([
+            $group ? ['label' => $group, 'url' => $groupUrl] : null,
+            $page ? ['label' => $page, 'url' => $detail ? $pageUrl : null] : null,
+            $detail ? ['label' => $detail, 'url' => null] : null,
+        ]),
+    );
 @endphp
 
 <style>
@@ -123,26 +125,44 @@
     }
 </style>
 
-<nav class="app-global-breadcrumb module-breadcrumb mb-4 flex min-w-0 flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-sm shadow-sm backdrop-blur-md ring-1 ring-slate-900/[.02]" aria-label="Lokasi halaman">
-    @if(request()->routeIs('dashboard'))
-        <span class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700" aria-current="page">
-            <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+<nav class="app-global-breadcrumb module-breadcrumb mb-4 flex min-w-0 flex-wrap items-center gap-1.5 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/95 px-3 py-2 text-sm shadow-sm backdrop-blur-md"
+    aria-label="Lokasi halaman">
+    @if (request()->routeIs('dashboard'))
+        <span
+            class="inline-flex items-center gap-2 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-1.5 font-semibold text-[var(--ui-fg-strong)]"
+            aria-current="page">
+            <svg class="h-4 w-4 text-[var(--ui-fg-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
             Beranda
         </span>
     @else
-        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" title="Kembali ke beranda">
-            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+        <a href="{{ route('dashboard') }}"
+            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-medium text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]"
+            title="Kembali ke beranda">
+            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
             <span>Beranda</span>
         </a>
 
-        @foreach($items as $item)
-            <svg class="h-3.5 w-3.5 shrink-0 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-            @if(!empty($item['url']))
-                <a href="{{ $item['url'] }}" class="rounded-lg px-2 py-1.5 font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">{{ $item['label'] }}</a>
+        @foreach ($items as $item)
+            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--ui-line-strong)]" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            @if (!empty($item['url']))
+                <a href="{{ $item['url'] }}"
+                    class="rounded-lg px-2 py-1.5 font-medium text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]">{{ $item['label'] }}</a>
             @elseif($loop->last)
-                <span class="max-w-full truncate rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 font-semibold text-slate-800" aria-current="page">{{ $item['label'] }}</span>
+                <span
+                    class="max-w-full truncate rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2.5 py-1.5 font-semibold text-[var(--ui-fg-strong)]"
+                    aria-current="page">{{ $item['label'] }}</span>
             @else
-                <span class="px-1 py-1.5 font-medium text-slate-400">{{ $item['label'] }}</span>
+                <span class="px-1 py-1.5 font-medium text-[var(--ui-fg-muted)]">{{ $item['label'] }}</span>
             @endif
         @endforeach
     @endif
@@ -154,11 +174,14 @@
         if (!header) return;
 
         const syncStickyOffset = () => {
-            document.documentElement.style.setProperty('--app-sticky-header-height', `${Math.ceil(header.getBoundingClientRect().height)}px`);
+            document.documentElement.style.setProperty('--app-sticky-header-height',
+                `${Math.ceil(header.getBoundingClientRect().height)}px`);
         };
 
         syncStickyOffset();
-        window.addEventListener('resize', syncStickyOffset, { passive: true });
+        window.addEventListener('resize', syncStickyOffset, {
+            passive: true
+        });
 
         if ('ResizeObserver' in window) {
             const observer = new ResizeObserver(syncStickyOffset);
