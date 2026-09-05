@@ -114,6 +114,14 @@ const nearbyServerNav = (table) => {
     return nav instanceof HTMLElement ? nav : null;
 };
 
+const existingServerPageSizeNearby = (table) => {
+    const wrapper = table.parentElement;
+    const footer = wrapper?.nextElementSibling;
+    if (!(footer instanceof HTMLElement)) return false;
+
+    return Boolean(footer.querySelector('select[aria-label*="Baris"]'));
+};
+
 const pageNameFromNav = (nav) => {
     const links = nav.querySelectorAll('a[href]');
     for (const link of links) {
@@ -175,7 +183,8 @@ const initializeStandardClientTable = (table) => {
     if (table.closest('[wire\\:id]')) return;
 
     const serverNav = nearbyServerNav(table);
-    if (table.dataset.pagination === 'server' || serverNav) {
+    const hasExistingServerPageSize = existingServerPageSizeNearby(table);
+    if (table.dataset.pagination === 'server' || serverNav || hasExistingServerPageSize) {
         initializeServerTable(table, serverNav);
         return;
     }
