@@ -155,9 +155,9 @@ final class SpjDocumentTypeRegistry
                 'source' => self::SOURCE_GENERATED,
                 'usage' => null,
                 'applicable_categories' => $allCategories,
-                'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'NILAI_BRUTO', 'TOTAL_PAJAK', 'NILAI_DIBAYARKAN'],
+                'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'NILAI_BRUTO', 'TOTAL_PAJAK'],
                 'optional' => [
-                    'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
+                    'NILAI_DIBAYARKAN', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
                     'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'NAMA_PENYEDIA', 'NPWP_PENYEDIA',
                 ],
                 'repeat_required' => [],
