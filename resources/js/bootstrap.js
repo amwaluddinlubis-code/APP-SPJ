@@ -1,4 +1,5 @@
 import axios from 'axios';
+import './table-server-markers';
 import './table-ui-standardization';
 
 window.axios = axios;
