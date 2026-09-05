@@ -16,13 +16,12 @@ use PhpOffice\PhpWord\PhpWord;
 
 class DocumentTemplateController extends Controller
 {
-    private const SPJ_CATEGORIES = ['BARANG', 'BELANJA_MODAL', 'KONSUMSI', 'JASA_HONORARIUM', 'HONOR_PEGAWAI', 'UPAH', 'PEMELIHARAAN', 'JASA', 'PERJALANAN_DINAS', 'LAINNYA'];
-
     public function index(Request $request): View
     {
+        $categories = SpjDocumentTypeRegistry::categories();
         $filters = $request->validate([
             'status' => ['nullable', 'in:all,active,inactive'],
-            'category' => ['nullable', 'in:'.implode(',', self::SPJ_CATEGORIES)],
+            'category' => ['nullable', 'in:'.implode(',', $categories)],
         ]);
         $query = DocumentTemplate::query()->where('fiscal_year_id', session('active_fiscal_year_id'));
         match ($filters['status'] ?? 'all') {
@@ -41,7 +40,7 @@ class DocumentTemplateController extends Controller
 
         return view('document-templates.index', [
             'templates' => $query->orderBy('document_type')->orderBy('name')->paginate(15)->withQueryString(),
-            'categories' => self::SPJ_CATEGORIES,
+            'categories' => $categories,
             'filters' => $filters,
             'placeholderGroups' => SpjTemplateService::placeholderGroups(),
             'documentTypes' => SpjDocumentTypeRegistry::options(),
@@ -50,12 +49,13 @@ class DocumentTemplateController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $categories = SpjDocumentTypeRegistry::categories();
         $data = $request->validate([
             'document_type' => ['required', 'string', 'in:'.implode(',', SpjDocumentTypeRegistry::codes())],
             'name' => ['required', 'string', 'max:120'],
             'template' => ['required', 'file', 'mimes:docx,xlsx', 'max:10240'],
             'applicable_categories' => ['nullable', 'array'],
-            'applicable_categories.*' => ['string', 'in:'.implode(',', self::SPJ_CATEGORIES)],
+            'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
         ]);
         $documentType = strtoupper($data['document_type']);
         $extension = strtolower($request->file('template')->getClientOriginalExtension());
@@ -86,10 +86,11 @@ class DocumentTemplateController extends Controller
         if (! $template || $template->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
             return back()->with('error', 'Template tidak ditemukan.');
         }
+        $categories = SpjDocumentTypeRegistry::categories();
         $data = $request->validate([
             'is_active' => ['nullable', 'boolean'],
             'applicable_categories' => ['nullable', 'array'],
-            'applicable_categories.*' => ['string', 'in:'.implode(',', self::SPJ_CATEGORIES)],
+            'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
         ]);
         $template->update(['is_active' => (bool) ($data['is_active'] ?? false), 'applicable_categories' => $data['applicable_categories'] ?? []]);
 
