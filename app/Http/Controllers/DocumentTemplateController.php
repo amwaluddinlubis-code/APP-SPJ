@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentTemplate;
+use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjTemplateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,18 +44,20 @@ class DocumentTemplateController extends Controller
             'categories' => self::SPJ_CATEGORIES,
             'filters' => $filters,
             'placeholderGroups' => SpjTemplateService::placeholderGroups(),
+            'documentTypes' => SpjDocumentTypeRegistry::options(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'document_type' => ['required', 'string', 'max:40'],
+            'document_type' => ['required', 'string', 'in:'.implode(',', SpjDocumentTypeRegistry::codes())],
             'name' => ['required', 'string', 'max:120'],
             'template' => ['required', 'file', 'mimes:docx,xlsx', 'max:10240'],
             'applicable_categories' => ['nullable', 'array'],
             'applicable_categories.*' => ['string', 'in:'.implode(',', self::SPJ_CATEGORIES)],
         ]);
+        $documentType = strtoupper($data['document_type']);
         $extension = strtolower($request->file('template')->getClientOriginalExtension());
         $path = $request->file('template')->storeAs(
             'document-templates/'.session('active_fiscal_year_id'),
@@ -62,14 +65,14 @@ class DocumentTemplateController extends Controller
         );
         $old = DocumentTemplate::query()->where([
             'fiscal_year_id' => session('active_fiscal_year_id'),
-            'document_type' => strtoupper($data['document_type']),
+            'document_type' => $documentType,
             'format' => $extension,
         ])->first();
         if ($old) {
             Storage::delete($old->file_path);
         }
         DocumentTemplate::updateOrCreate(
-            ['fiscal_year_id' => session('active_fiscal_year_id'), 'document_type' => strtoupper($data['document_type']), 'format' => $extension],
+            ['fiscal_year_id' => session('active_fiscal_year_id'), 'document_type' => $documentType, 'format' => $extension],
             ['name' => $data['name'], 'file_path' => $path, 'applicable_categories' => $data['applicable_categories'] ?? [], 'is_active' => true]
         );
 
