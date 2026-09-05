@@ -14,6 +14,7 @@
     'server' => 'M4 4h16v6H4zM4 14h16v6H4zM7 7h.01M7 17h.01',
     'logout' => 'M10 17l5-5-5-5m5 5H3m9-9V3h9v18h-9v-2',
     'edit' => 'M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Zm10-14 4 4M13 20h7',
-    'employee' => 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    'employee' => 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 1 0 7.75',
+    'search' => 'm21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',
 ])
 <svg {{ $attributes->merge(['class' => 'h-5 w-5 shrink-0', 'fill' => 'none', 'viewBox' => '0 0 24 24', 'stroke' => 'currentColor', 'stroke-width' => '1.8']) }} aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $paths[$name] ?? $paths['document'] }}" /></svg>
