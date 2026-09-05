@@ -14,10 +14,10 @@
     </script>
     @vite('resources/css/app.css')
 </head>
-<body class="min-h-full bg-slate-50 text-slate-800">
+<body class="min-h-full bg-[var(--ui-surface-soft)] text-slate-800">
     <x-toast-notifications />
     <main class="mx-auto flex min-h-screen max-w-3xl items-center p-4 sm:p-8">
-        <section class="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+        <section class="w-full overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-xl shadow-slate-200/40">
             <div class="flex items-center justify-between bg-gradient-to-r from-slate-950 via-indigo-900 to-sky-800 px-5 py-4 text-white">
                 <a href="{{ route('login') }}" class="font-bold">SPJ BOSP Web</a>
                 <select id="public-theme-select" data-theme-selector class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white" aria-label="Tema tampilan"></select>

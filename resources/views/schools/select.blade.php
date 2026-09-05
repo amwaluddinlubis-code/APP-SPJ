@@ -7,13 +7,13 @@
     </div>
     <form method="POST" action="{{ route('logout') }}">
       @csrf
-      <button class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Keluar</button>
+      <button class="rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-xs font-bold text-slate-700">Keluar</button>
     </form>
   </div>
 
   <div class="mt-6 space-y-3">
     @forelse($schools as $school)
-      <form method="POST" action="{{ route('schools.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <form method="POST" action="{{ route('schools.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
         @csrf
         <input type="hidden" name="school_id" value="{{ $school->id }}">
         <div>
@@ -23,7 +23,7 @@
         <button class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white">Pilih Sekolah</button>
       </form>
     @empty
-      <div class="rounded-lg bg-slate-50 p-5 text-base text-slate-500">Belum ada sekolah.</div>
+      <div class="rounded-lg bg-[var(--ui-surface-soft)] p-5 text-base text-slate-500">Belum ada sekolah.</div>
     @endforelse
   </div>
 </x-layouts.public-tailwind>

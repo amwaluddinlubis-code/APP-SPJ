@@ -14,34 +14,34 @@
             <x-slot:actions>
                 <a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/20">Lihat detail transaksi</a>
                 @if($transaction->spjPackage)
-                    <a href="{{ route('spj.checklist', $transaction->spjPackage->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-indigo-950 shadow">Buka checklist paket</a>
+                    <a href="{{ route('spj.checklist', $transaction->spjPackage->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-indigo-950 shadow">Buka checklist paket</a>
                 @endif
             </x-slot:actions>
         </x-page-header>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">No. bukti</p>
                     <p class="mt-1 font-mono text-lg font-extrabold text-slate-900">{{ $transaction->no_bukti ?: '-' }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?: '-' }}</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Jalur transaksi</p>
                     <p class="mt-1 text-lg font-extrabold text-indigo-700">{{ $summary['channel'] }}</p>
                     <p class="mt-1 text-xs text-slate-500">Kategori: {{ str_replace('_', ' ', (string) $transaction->spj_category) }}</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Masih kurang</p>
                     <p class="mt-1 text-2xl font-extrabold {{ $missingCount ? 'text-amber-700' : 'text-emerald-700' }}">{{ $missingCount }}</p>
                     <p class="mt-1 text-xs text-slate-500">dari {{ $requiredTotal }} dokumen/data wajib</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Kesiapan</p>
                         <span class="text-sm font-bold text-indigo-700">{{ $progress }}%</span>
                     </div>
-                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--ui-surface-muted)]">
                         <div class="h-full rounded-full bg-indigo-600" style="width: {{ $progress }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-slate-500">{{ $readyCount }} dari {{ $requiredTotal }} siap</p>
@@ -50,14 +50,14 @@
         </section>
 
         <section class="grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
-            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-4 sm:px-6">
+            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-4 sm:px-6">
                     <h2 class="font-extrabold tracking-tight text-slate-900">Yang perlu dilengkapi sekarang</h2>
                     <p class="mt-1 text-sm leading-6 text-slate-500">Bagian yang sudah lengkap disembunyikan agar operator bisa fokus pada pekerjaan yang tersisa.</p>
                 </div>
 
                 @if($missingCount > 0)
-                    <div class="divide-y divide-slate-100">
+                    <div class="divide-y divide-[var(--ui-line)]">
                         @foreach($missingRequired as $item)
                             <div class="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
                                 <div class="flex min-w-0 gap-3">
@@ -101,7 +101,7 @@
                     @endif
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi</p>
                     <p class="mt-2 text-sm font-extrabold text-slate-900">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}</p>
                     <dl class="mt-4 space-y-3 text-sm">
@@ -112,9 +112,9 @@
                 </section>
 
                 @if($optionalIncomplete->isNotEmpty())
-                    <details class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                         <summary class="cursor-pointer px-5 py-4 text-sm font-extrabold text-slate-800">Dokumen tambahan yang belum tersedia ({{ $optionalIncomplete->count() }})</summary>
-                        <div class="border-t border-slate-100 px-5 py-4">
+                        <div class="border-t border-[var(--ui-line)] px-5 py-4">
                             <div class="space-y-3">
                                 @foreach($optionalIncomplete as $item)
                                     <div>
@@ -128,9 +128,9 @@
                 @endif
 
                 @if($completed->isNotEmpty())
-                    <details class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                         <summary class="cursor-pointer px-5 py-4 text-sm font-extrabold text-slate-800">Sudah lengkap ({{ $completed->count() }})</summary>
-                        <div class="border-t border-slate-100 px-5 py-4">
+                        <div class="border-t border-[var(--ui-line)] px-5 py-4">
                             <div class="space-y-2">
                                 @foreach($completed as $item)
                                     <div class="flex items-center gap-2 text-sm text-slate-600"><span class="font-black text-emerald-600">✓</span><span>{{ $item['label'] }}</span></div>

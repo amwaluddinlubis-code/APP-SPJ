@@ -5,7 +5,7 @@
             subtitle="Lengkapi data inti siswa terlebih dahulu. Informasi tambahan dapat diisi sesuai kebutuhan administrasi sekolah."
             kicker="Data Peserta Didik"
         >
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Mode Data" value="Manual" hint="Diisi oleh operator" value-class="text-indigo-700" />
                 <x-stat-item label="Pemadanan" value="NISN → ID Dapodik" hint="Saat sinkronisasi Dapodik" value-class="text-slate-800" />
                 <x-stat-item label="Status" :value="$student->exists ? ($student->is_active ? 'Aktif' : 'Tidak aktif') : 'Siswa baru'" :hint="$student->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$student->exists && !$student->is_active ? 'text-rose-700' : 'text-emerald-700'" />
@@ -131,19 +131,19 @@
                 </div>
 
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-slate-300 hover:bg-slate-50">
-                        <input type="checkbox" name="special_needs" value="1" @checked(old('special_needs',$student->special_needs)) class="mt-0.5 rounded border-slate-300 text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--ui-line)] bg-slate-50/70 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                        <input type="checkbox" name="special_needs" value="1" @checked(old('special_needs',$student->special_needs)) class="mt-0.5 rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
                         <span><span class="block text-sm font-semibold text-slate-800">Berkebutuhan khusus</span><span class="mt-1 block text-xs text-slate-500">Aktifkan bila informasi ini memang tercatat pada administrasi sekolah.</span></span>
                     </label>
 
-                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-slate-300 hover:bg-slate-50">
-                        <input type="checkbox" name="is_active" value="1" @checked(old('is_active',$student->exists ? $student->is_active : true)) class="mt-0.5 rounded border-slate-300 text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--ui-line)] bg-slate-50/70 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                        <input type="checkbox" name="is_active" value="1" @checked(old('is_active',$student->exists ? $student->is_active : true)) class="mt-0.5 rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
                         <span><span class="block text-sm font-semibold text-slate-800">Siswa aktif</span><span class="mt-1 block text-xs text-slate-500">Nonaktifkan bila siswa sudah tidak menjadi peserta didik aktif.</span></span>
                     </label>
                 </div>
             </x-ui.form-section>
 
-            <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl border border-[var(--ui-line)] bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs text-slate-500">Pastikan nama dan identitas utama sudah benar sebelum menyimpan.</p>
                 <div class="flex gap-2 sm:justify-end">
                     <x-ui.button variant="secondary" :href="$student->exists ? route('students.show',$student) : route('students.index')">Batal</x-ui.button>

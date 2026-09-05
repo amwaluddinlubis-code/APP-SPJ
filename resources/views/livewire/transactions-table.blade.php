@@ -40,8 +40,8 @@
             <x-ui.button :href="route('spj.index')">Buka ruang kerja SPJ →</x-ui.button>
         </x-slot:actions>
 
-        <div class="border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400">Total Tahunan {{ $activeYear->year }}</div>
-        <div class="grid divide-y divide-slate-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
+        <div class="border-b border-[var(--ui-line)] px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400">Total Tahunan {{ $activeYear->year }}</div>
+        <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi</p><p class="mt-1 text-xl font-bold text-slate-800">{{ number_format($stats->count, 0, ',', '.') }}</p></div>
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Nilai Bruto</p><p class="mt-1 text-xl font-bold text-indigo-700">{{ $rupiah($stats->gross) }}</p></div>
             <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Pajak</p><p class="mt-1 text-xl font-bold text-amber-600">{{ $rupiah($stats->tax) }}</p></div>
@@ -83,8 +83,8 @@
         </div>
     </section>
 
-    <section class="overflow-hidden border border-slate-200 bg-white shadow-sm">
-        <x-ui.toolbar class="border-b-0 bg-slate-50 px-4 py-3 sm:px-5">
+    <section class="overflow-hidden border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+        <x-ui.toolbar class="border-b-0 bg-[var(--ui-surface-soft)] px-4 py-3 sm:px-5">
             <div>
                 <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Transaksi SPJ</h2>
                 <p class="mt-0.5 text-sm" style="color: var(--ui-fg-muted)">Semua transaksi yang belum bernomor tetap di depan; yang sudah bernomor dipindahkan ke belakang.</p>
@@ -103,11 +103,11 @@
             </x-slot:actions>
         </x-ui.toolbar>
 
-        <div class="grid gap-2 border-t border-slate-200 p-3 lg:hidden">
+        <div class="grid gap-2 border-t border-[var(--ui-line)] p-3 lg:hidden">
             @if($transactions->count() > 0)
                 @foreach($transactions as $transaction)
                     @php($workStatus = $this->workStatusFor($transaction))
-                    <article class="border border-slate-200 bg-white px-3 py-2.5" wire:key="transaction-card-{{ $transaction->id }}">
+                    <article class="border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2.5" wire:key="transaction-card-{{ $transaction->id }}">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
                                 <span class="font-mono text-xs font-bold text-slate-500">#{{ $transaction->id }}</span>
@@ -125,12 +125,12 @@
                             <span class="truncate">{{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category).' · ' : '' }}{{ $transaction->items_count }} item · {{ $transaction->effective_receipt_recipient_name ?: $transaction->recipient_name ?: 'Penerima belum diisi' }}</span>
                             <span class="whitespace-nowrap font-semibold" style="color: var(--ui-fg)">{{ $rupiah($transaction->gross_amount) }}</span>
                         </div>
-                        <div class="mt-2 flex justify-end gap-1.5 border-t border-slate-100 pt-2">
-                            <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-4 w-4" /></button>
+                        <div class="mt-2 flex justify-end gap-1.5 border-t border-[var(--ui-line)] pt-2">
+                            <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--ui-line)] text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-4 w-4" /></button>
                             @if(filled($transaction->payment_description))
-                                <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-4 w-4" /></a>
+                                <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--ui-line)] text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-4 w-4" /></a>
                             @else
-                                <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-4 w-4" /></button>
+                                <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-4 w-4" /></button>
                             @endif
                         </div>
                     </article>
@@ -140,7 +140,7 @@
             @endif
         </div>
 
-        <div class="hidden overflow-hidden border-t border-slate-200 lg:block">
+        <div class="hidden overflow-hidden border-t border-[var(--ui-line)] lg:block">
             <table data-pagination="server" class="w-full table-fixed text-sm">
                 <colgroup>
                     <col class="w-[165px]">
@@ -148,15 +148,15 @@
                     <col class="w-[135px]">
                     <col class="w-[78px]">
                 </colgroup>
-                <thead class="bg-slate-50">
-                    <tr class="border-b border-slate-200">
+                <thead class="bg-[var(--ui-surface-soft)]">
+                    <tr class="border-b border-[var(--ui-line)]">
                         <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">ID / Status</th>
                         <th class="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">Uraian / Referensi</th>
                         <th class="px-3 py-2 text-right text-[11px] font-bold uppercase tracking-wide text-slate-500">Nilai</th>
                         <th class="px-2 py-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
+                <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                     @if($transactions->count() > 0)
                         @foreach($transactions as $transaction)
                             @php($workStatus = $this->workStatusFor($transaction))
@@ -179,11 +179,11 @@
                                 </td>
                                 <td class="px-2 py-2 align-middle">
                                     <div class="flex items-center justify-center gap-1" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
-                                        <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-3.5 w-3.5" /></button>
+                                        <button type="button" x-on:click="openEditorFromButton($el)" @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) data-action="{{ route('transactions.manual-description.update', $transaction->id) }}" data-spj-category="{{ $transaction->spj_category }}" data-payment-description="{{ $transaction->payment_description }}" data-description="{{ $transaction->description }}" data-payment-method="{{ $this->paymentMethodFor($transaction) }}" data-payment-reference="{{ $transaction->payment_reference }}" data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" data-no-bukti="{{ $transaction->no_bukti }}" title="Ubah data SPJ" aria-label="Ubah data SPJ" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--ui-line)] text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"><x-ui-icon name="edit" class="h-3.5 w-3.5" /></button>
                                         @if(filled($transaction->payment_description))
-                                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-3.5 w-3.5" /></a>
+                                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" aria-label="Buka detail" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--ui-line)] text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"><x-ui-icon name="document" class="h-3.5 w-3.5" /></a>
                                         @else
-                                            <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-3.5 w-3.5" /></button>
+                                            <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" aria-label="Buka detail belum tersedia" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-slate-300 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"><x-ui-icon name="document" class="h-3.5 w-3.5" /></button>
                                         @endif
                                     </div>
                                 </td>
@@ -196,22 +196,22 @@
             </table>
         </div>
 
-        <div class="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between">
             <p style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->firstItem() ?? 0 }}–{{ $transactions->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->total() }}</span> transaksi</p>
             @if($transactions->hasPages())
                 <nav class="flex items-center gap-1" aria-label="Navigasi halaman transaksi">
-                    <button type="button" wire:click="previousPage" @disabled($transactions->onFirstPage()) class="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">‹</button>
+                    <button type="button" wire:click="previousPage" @disabled($transactions->onFirstPage()) class="inline-flex h-8 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">‹</button>
                     @for($page = max(1, $transactions->currentPage() - 2); $page <= min($transactions->lastPage(), $transactions->currentPage() + 2); $page++)
-                        <button type="button" wire:click="gotoPage({{ $page }})" aria-current="{{ $transactions->currentPage() === $page ? 'page' : 'false' }}" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 font-semibold {{ $transactions->currentPage() === $page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100' }}">{{ $page }}</button>
+                        <button type="button" wire:click="gotoPage({{ $page }})" aria-current="{{ $transactions->currentPage() === $page ? 'page' : 'false' }}" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 font-semibold {{ $transactions->currentPage() === $page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)] text-slate-600 hover:bg-slate-100' }}">{{ $page }}</button>
                     @endfor
-                    <button type="button" wire:click="nextPage" @disabled(!$transactions->hasMorePages()) class="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">›</button>
+                    <button type="button" wire:click="nextPage" @disabled(!$transactions->hasMorePages()) class="inline-flex h-8 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">›</button>
                 </nav>
             @endif
         </div>
     </section>
 
     <div x-show="warningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="transaction-warning-title" x-on:click.self="closeWarning" x-on:keydown.escape.window="closeWarning">
-        <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
+        <div class="w-full max-w-md rounded-xl bg-[var(--ui-surface-base)] p-5 shadow-2xl">
             <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">!</div>
                 <div><p class="text-xs font-bold uppercase tracking-wide text-amber-700">Warning</p><h2 id="transaction-warning-title" class="mt-1 text-lg font-bold text-slate-900" x-text="warningMessage"></h2><p class="mt-2 text-sm text-slate-500">Gunakan ikon Ubah Data SPJ untuk mengisi deskripsi belanja sebelum membuka detail transaksi.</p></div>
@@ -221,18 +221,18 @@
     </div>
 
     <div x-show="editorOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" x-on:click.self="closeEditor">
-        <form method="POST" x-bind:action="editorAction" class="w-full max-w-xl rounded-xl bg-white p-5 shadow-2xl">
+        <form method="POST" x-bind:action="editorAction" class="w-full max-w-xl rounded-xl bg-[var(--ui-surface-base)] p-5 shadow-2xl">
             @csrf
             @method('PUT')
             <div class="flex items-start justify-between gap-4"><div><p class="text-[11px] font-bold tracking-[.14em] text-violet-600">TRANSAKSI <span x-text="editor.no_bukti"></span></p><h2 class="mt-1 text-lg font-bold text-slate-900">Data SPJ Transaksi</h2><p class="mt-1 text-sm text-slate-500">Lengkapi uraian dan kategori SPJ tanpa mengubah data asli hasil sinkronisasi.</p></div><button type="button" x-on:click="closeEditor" class="text-xl text-slate-400 hover:text-slate-700">×</button></div>
             <label class="mt-4 block text-sm font-bold text-slate-700">Kategori SPJ</label>
-            <select name="spj_category" x-model="editor.spj_category" x-ref="category" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="">Pilih kategori SPJ</option><option value="BARANG">Barang</option><option value="KONSUMSI">Konsumsi</option><option value="PEMELIHARAAN">Pemeliharaan</option><option value="JASA_LAINNYA">Jasa Lainnya</option><option value="SPPD">SPPD</option><option value="HONOR_PEGAWAI">Honor Pegawai</option></select>
+            <select name="spj_category" x-model="editor.spj_category" x-ref="category" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="">Pilih kategori SPJ</option><option value="BARANG">Barang</option><option value="KONSUMSI">Konsumsi</option><option value="PEMELIHARAAN">Pemeliharaan</option><option value="JASA_LAINNYA">Jasa Lainnya</option><option value="SPPD">SPPD</option><option value="HONOR_PEGAWAI">Honor Pegawai</option></select>
             @error('form.spj_category')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
             <label class="mt-4 block text-sm font-bold text-slate-700">Uraian Pembayaran</label>
-            <textarea name="payment_description" x-model="editor.payment_description" rows="5" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Contoh: Pembelian alat tulis kantor untuk mendukung pembelajaran dan administrasi sekolah."></textarea>
+            <textarea name="payment_description" x-model="editor.payment_description" rows="5" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Contoh: Pembelian alat tulis kantor untuk mendukung pembelajaran dan administrasi sekolah."></textarea>
             @error('form.payment_description')<p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>@enderror
-            <div class="mt-4 grid gap-3 sm:grid-cols-2"><div><label class="block text-sm font-bold text-slate-700">Metode Pembayaran</label><select name="payment_method" x-model="editor.payment_method" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="transfer_bank">Transfer Bank (CMS / Non Tunai)</option><option value="siplah">SiPLah Kemdikbud</option><option value="tunai">Tunai Kas BOS</option></select></div><div><label class="block text-sm font-bold text-slate-700">Referensi Bayar</label><input name="payment_reference" x-model="editor.payment_reference" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"></div><div class="sm:col-span-2"><label class="block text-sm font-bold text-slate-700">Penerima Kuitansi</label><input name="receipt_recipient_name" x-model="editor.receipt_recipient_name" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Boleh berbeda dari penerima BKU/ARKAS"></div></div>
-            <div class="mt-5 flex justify-end gap-2"><button type="button" x-on:click="closeEditor" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Batal</button><button class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700">Simpan Data SPJ</button></div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2"><div><label class="block text-sm font-bold text-slate-700">Metode Pembayaran</label><select name="payment_method" x-model="editor.payment_method" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"><option value="transfer_bank">Transfer Bank (CMS / Non Tunai)</option><option value="siplah">SiPLah Kemdikbud</option><option value="tunai">Tunai Kas BOS</option></select></div><div><label class="block text-sm font-bold text-slate-700">Referensi Bayar</label><input name="payment_reference" x-model="editor.payment_reference" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"></div><div class="sm:col-span-2"><label class="block text-sm font-bold text-slate-700">Penerima Kuitansi</label><input name="receipt_recipient_name" x-model="editor.receipt_recipient_name" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Boleh berbeda dari penerima BKU/ARKAS"></div></div>
+            <div class="mt-5 flex justify-end gap-2"><button type="button" x-on:click="closeEditor" class="rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-slate-700">Batal</button><button class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700">Simpan Data SPJ</button></div>
         </form>
     </div>
 </div>

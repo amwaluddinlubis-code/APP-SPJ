@@ -14,7 +14,7 @@
                 @endif
             </x-slot:actions>
 
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 <x-stat-item label="Total Data" :value="number_format($summary['total'], 0, ',', '.')" hint="Seluruh data pegawai" />
                 <x-stat-item label="Aktif" :value="number_format($summary['active'], 0, ',', '.')" hint="Pegawai berstatus aktif" value-class="text-emerald-700" />
                 <x-stat-item label="Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Berasal dari sinkronisasi" value-class="text-indigo-700" />
@@ -22,7 +22,7 @@
             </div>
         </x-page-header>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3">
                 <div>
                     <h2 class="font-bold" style="color: var(--ui-fg)">Daftar pegawai</h2>
@@ -66,8 +66,8 @@
 
             <div class="hidden overflow-x-auto md:block">
                 <table data-pagination="server" class="min-w-full text-sm">
-                    <thead class="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600"><tr><th class="px-4 py-3">Pegawai</th><th class="px-4 py-3">Identitas</th><th class="px-4 py-3">Kepegawaian</th><th class="px-4 py-3 text-right">Honor tahun aktif</th><th class="px-4 py-3 text-right">Aksi</th></tr></thead>
-                    <tbody class="divide-y divide-slate-200">
+                    <thead class="bg-[var(--ui-surface-muted)] text-left text-xs uppercase tracking-wide text-slate-600"><tr><th class="px-4 py-3">Pegawai</th><th class="px-4 py-3">Identitas</th><th class="px-4 py-3">Kepegawaian</th><th class="px-4 py-3 text-right">Honor tahun aktif</th><th class="px-4 py-3 text-right">Aksi</th></tr></thead>
+                    <tbody class="divide-y divide-[var(--ui-line)]">
                     @forelse ($employees as $employee)
                         <tr class="odd:bg-white even:bg-slate-50 hover:bg-[var(--theme-accent-soft)]">
                             <td class="px-4 py-3"><div class="font-semibold text-slate-900">{{ $employee->name }}</div><div class="mt-1"><span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ $employee->source_type }}</span><span class="ml-1 rounded-full px-2 py-0.5 text-xs font-semibold {{ $employee->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ $employee->is_active ? 'Aktif' : 'Tidak aktif' }}</span></div></td>
@@ -82,7 +82,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="divide-y divide-slate-200 md:hidden">@forelse($employees as $employee)<article class="p-4"><div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">{{ $employee->name }}</h3><p class="mt-1 text-xs text-slate-500">NUPTK {{ $employee->nuptk?:'—' }} · {{ $employee->position?:'Jabatan belum tercatat' }}</p></div><span class="rounded-full px-2 py-1 text-xs font-bold {{ $employee->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $employee->is_active?'Aktif':'Nonaktif' }}</span></div><div class="mt-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-500">{{ $employee->source_type }}</span><a href="{{ route('employees.show',$employee) }}" class="rounded-lg theme-bg-soft px-3 py-2 text-xs font-bold theme-text">Lihat detail</a></div></article>@empty<div class="p-10 text-center text-sm text-slate-500">Data pegawai tidak ditemukan.</div>@endforelse</div>
+            <div class="divide-y divide-[var(--ui-line)] md:hidden">@forelse($employees as $employee)<article class="p-4"><div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">{{ $employee->name }}</h3><p class="mt-1 text-xs text-slate-500">NUPTK {{ $employee->nuptk?:'—' }} · {{ $employee->position?:'Jabatan belum tercatat' }}</p></div><span class="rounded-full px-2 py-1 text-xs font-bold {{ $employee->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $employee->is_active?'Aktif':'Nonaktif' }}</span></div><div class="mt-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-500">{{ $employee->source_type }}</span><a href="{{ route('employees.show',$employee) }}" class="rounded-lg theme-bg-soft px-3 py-2 text-xs font-bold theme-text">Lihat detail</a></div></article>@empty<div class="p-10 text-center text-sm text-slate-500">Data pegawai tidak ditemukan.</div>@endforelse</div>
 
             <x-ui.server-pagination :paginator="$employees" noun="pegawai" />
         </section>

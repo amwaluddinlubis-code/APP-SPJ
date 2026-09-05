@@ -1,6 +1,6 @@
 <x-layouts.tailwind-app>
     <div class="spj-semantic-workspace space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-6 text-white sm:px-7">
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-3xl">
@@ -10,32 +10,32 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white">Buka paket lengkap</a>
-                        <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
+                        <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
                     </div>
                 </div>
             </div>
 
             <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Jalur pengadaan</p>
                     <p class="mt-1 text-xl font-bold text-indigo-700">{{ $requirementSummary['channel'] }}</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Dokumen wajib siap</p>
                     <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $requirementSummary['required_ready'] }} / {{ $requirementSummary['required_total'] }}</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Masih wajib dilengkapi</p>
                     <p class="mt-1 text-2xl font-bold {{ $requirementSummary['missing_required'] > 0 ? 'text-amber-700' : 'text-emerald-700' }}">{{ $requirementSummary['missing_required'] }}</p>
                 </div>
-                <div class="bg-white px-5 py-4">
+                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Status paket</p>
                     <div class="mt-2"><x-ui.status-badge :status="$package->status" size="xs" /></div>
                 </div>
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-[var(--ui-surface-base)] shadow-sm">
             <div class="border-b border-indigo-100 bg-indigo-50/70 px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -47,8 +47,8 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
+                <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                    <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Dokumen / Data</th>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kelompok</th>
@@ -57,7 +57,7 @@
                             <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @foreach($documentRequirements as $item)
                             <tr class="align-top">
                                 <td class="px-5 py-4">
@@ -68,7 +68,7 @@
                                 <td class="px-4 py-4 text-slate-600">{{ $item['source'] }}</td>
                                 <td class="px-4 py-4">
                                     @if(!$item['applicable'])
-                                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">Tidak berlaku</span>
+                                        <span class="rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-slate-500">Tidak berlaku</span>
                                     @elseif($item['required'])
                                         <span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">Wajib</span>
                                     @else
@@ -83,7 +83,7 @@
                                     @elseif($item['required'])
                                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">! Belum lengkap</span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">Belum tersedia</span>
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-slate-500">Belum tersedia</span>
                                     @endif
                                 </td>
                             </tr>
@@ -94,13 +94,13 @@
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                     <h2 class="font-bold text-slate-900">Pemeriksaan isi data</h2>
                     <p class="mt-1 text-sm text-slate-500">Bagian ini memeriksa isi transaksi dan dokumen wajib sebelum status paket dapat dilanjutkan.</p>
                 </div>
 
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-[var(--ui-line)]">
                     @foreach($checklist as $check)
                         <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex min-w-0 gap-3">
@@ -143,12 +143,12 @@
                         @elseif($package->status !== 'DRAFT')
                             <div class="mt-4"><x-ui.status-badge :status="$package->status" /></div>
                         @elseif(!$canEdit)
-                            <p class="mt-4 rounded-lg border border-slate-200 bg-white/70 p-3 text-sm font-semibold text-slate-600">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
+                            <p class="mt-4 rounded-lg border border-[var(--ui-line)] bg-white/70 p-3 text-sm font-semibold text-slate-600">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
                         @endif
                     @endif
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Paket yang diperiksa</p>
                     <p class="mt-2 font-mono text-sm font-bold text-indigo-700">{{ $package->transaction->no_bukti ?: 'Tanpa nomor bukti' }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-800">{{ $package->transaction->payment_description ?: $package->transaction->description ?: 'Uraian belum tersedia' }}</p>

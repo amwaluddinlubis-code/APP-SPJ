@@ -7,8 +7,8 @@
             subtitle="Rekap pajak dari transaksi BKU pada konteks tahun dan sumber dana aktif."
             kicker="Hasil Sinkronisasi ARKAS"
         >
-            <div class="border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400 sm:px-6">Total Tahunan {{ $year->year }}</div>
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <div class="border-b border-[var(--ui-line)] px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400 sm:px-6">Total Tahunan {{ $year->year }}</div>
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                 <x-stat-item label="Transaksi Pajak" :value="number_format($summary->count, 0, ',', '.')" hint="Transaksi mengandung pajak" />
                 <x-stat-item label="PPN" :value="$rupiah($summary->ppn)" hint="Total PPN tahunan" value-class="text-indigo-700" />
                 <x-stat-item label="PPh" :value="$rupiah($summary->pph21 + $summary->pph22 + $summary->pph23 + $summary->pph4)" hint="Gabungan PPh" value-class="text-rose-700" />
@@ -26,7 +26,7 @@
             </div>
         </x-page-filter>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3 sm:px-6">
                 <div>
                     <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Pajak Tersinkron</h2>
@@ -62,8 +62,8 @@
             </form>
 
             <div class="overflow-x-auto">
-                <table data-pagination="server" class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50"><tr>
+                <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                    <thead class="bg-[var(--ui-surface-soft)]"><tr>
                         <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti / Tanggal</th>
                         <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Penerima</th>
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPN</th>
@@ -73,7 +73,7 @@
                         <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh 4 / SSPD</th>
                         <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Total</th>
                     </tr></thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-[var(--ui-line)]">
                         @forelse($transactions as $transaction)
                             <tr class="transition hover:bg-amber-50/50">
                                 <td class="px-5 py-4"><a href="{{ route('transactions.show', $transaction) }}" class="font-mono font-bold text-indigo-700">{{ $transaction->no_bukti }}</a><p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? '-' }}</p></td>

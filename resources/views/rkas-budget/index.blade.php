@@ -23,7 +23,7 @@
                 </form>
             </x-slot:actions>
 
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                 <x-stat-item label="Total Anggaran" :value="$rupiah($budget)" hint="RKAS tersinkron" value-class="text-indigo-700" />
                 <x-stat-item label="Realisasi BKU" :value="$rupiah($spent)" hint="Belanja tercatat" value-class="text-emerald-700" />
                 <x-stat-item
@@ -84,8 +84,8 @@
             </x-slot:actions>
 
             <div class="overflow-x-auto">
-                <table data-pagination="server" class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
+                <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                    <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kode Rekening</th>
@@ -99,7 +99,7 @@
                             <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Selisih</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($items as $index => $item)
                             <tr class="transition hover:bg-indigo-50/50">
                                 <td class="px-5 py-4 text-center text-xs font-semibold text-slate-400">{{ $items->firstItem() + $index }}</td>

@@ -25,7 +25,7 @@
     </style>
     @php($rupiah = fn ($value) => 'Rp '.number_format((float) $value, 0, ',', '.'))
     <div x-data="{ tab: @js(request('tab', 'overview')) }" class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
             <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -35,12 +35,12 @@
                         <p class="mt-2 text-xs font-semibold text-sky-100">{{ $year->year }} · {{ $fundSource?->name ?? $year->fund_source }} · ID {{ session('active_fund_source_id') }}</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('audit-reports.export', 'xlsx') }}" class="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-800 shadow">Unduh XLSX</a>
+                        <a href="{{ route('audit-reports.export', 'xlsx') }}" class="rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-bold text-indigo-800 shadow">Unduh XLSX</a>
                         <a href="{{ route('audit-reports.export', 'pdf') }}" class="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-inset ring-white/30">Cetak PDF</a>
                     </div>
                 </div>
             </div>
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">RKAS</p><p class="mt-1 text-xl font-bold text-indigo-700">{{ $rupiah($summary['budget']) }}</p></div>
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">BKU Belanja</p><p class="mt-1 text-xl font-bold text-emerald-700">{{ $rupiah($summary['bku']) }}</p></div>
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi Unik</p><p class="mt-1 text-xl font-bold text-slate-800">{{ number_format($summary['transactionCount'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-slate-500">{{ $rupiah($summary['transactions']) }}</p></div>
@@ -48,7 +48,7 @@
             </div>
         </section>
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2 shadow-sm">
             <nav class="grid gap-2 sm:grid-cols-2 lg:grid-cols-6" aria-label="Tab laporan audit">
                 @foreach([
                     'overview' => ['Ringkasan', 'dashboard'],
@@ -70,13 +70,13 @@
                 <h2 class="font-bold text-amber-900">Batasan data audit</h2>
                 <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-amber-800">@foreach($limitations as $limitation)<li>{{ $limitation }}</li>@endforeach</ul>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-5 py-5 shadow-sm">
                 <h2 class="font-bold text-slate-800">Indikator pemeriksaan</h2>
                 <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div class="rounded-xl bg-slate-50 p-4"><span class="text-slate-500">Selisih rekonsiliasi</span><strong class="mt-1 block text-xl text-rose-600">{{ $summary['mismatchCount'] }}</strong></div>
-                    <div class="rounded-xl bg-slate-50 p-4"><span class="text-slate-500">Paket SPJ</span><strong class="mt-1 block text-xl text-indigo-600">{{ $summary['spjPackaged'] }}</strong></div>
-                    <div class="rounded-xl bg-slate-50 p-4"><span class="text-slate-500">Sinkronisasi</span><strong class="mt-1 block text-xl text-emerald-600">{{ $summary['syncCount'] }}</strong></div>
-                    <div class="rounded-xl bg-slate-50 p-4"><span class="text-slate-500">Aktivitas audit</span><strong class="mt-1 block text-xl text-slate-700">{{ $summary['auditCount'] }}</strong></div>
+                    <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><span class="text-slate-500">Selisih rekonsiliasi</span><strong class="mt-1 block text-xl text-rose-600">{{ $summary['mismatchCount'] }}</strong></div>
+                    <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><span class="text-slate-500">Paket SPJ</span><strong class="mt-1 block text-xl text-indigo-600">{{ $summary['spjPackaged'] }}</strong></div>
+                    <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><span class="text-slate-500">Sinkronisasi</span><strong class="mt-1 block text-xl text-emerald-600">{{ $summary['syncCount'] }}</strong></div>
+                    <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><span class="text-slate-500">Aktivitas audit</span><strong class="mt-1 block text-xl text-slate-700">{{ $summary['auditCount'] }}</strong></div>
                 </div>
             </div>
         </section>

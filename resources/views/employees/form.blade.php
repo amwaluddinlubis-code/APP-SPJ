@@ -5,7 +5,7 @@
             subtitle="Isi data seperlunya. Identitas utama digunakan untuk membantu pemadanan saat sinkronisasi Dapodik."
             kicker="Data Pegawai"
         >
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Mode Data" value="Manual" hint="Diisi oleh operator" value-class="text-indigo-700" />
                 <x-stat-item label="Pemadanan" value="NUPTK → Nama" hint="Saat sinkronisasi Dapodik" value-class="text-slate-800" />
                 <x-stat-item label="Status" :value="$employee->exists ? ($employee->is_active ? 'Aktif' : 'Tidak aktif') : 'Pegawai baru'" :hint="$employee->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$employee->exists && !$employee->is_active ? 'text-rose-700' : 'text-emerald-700'" />
@@ -92,13 +92,13 @@
                     </x-ui.field>
                 </div>
 
-                <label class="mt-5 flex max-w-xl items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <input type="checkbox" name="is_active" value="1" @checked(old('is_active',$employee->exists ? $employee->is_active : true)) class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
+                <label class="mt-5 flex max-w-xl items-start gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                    <input type="checkbox" name="is_active" value="1" @checked(old('is_active',$employee->exists ? $employee->is_active : true)) class="mt-0.5 h-4 w-4 rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
                     <span><span class="block text-sm font-semibold text-slate-800">Pegawai aktif</span><span class="mt-0.5 block text-xs leading-5 text-slate-500">Nonaktifkan jika pegawai tidak lagi digunakan pada transaksi baru. Riwayat lama tetap dipertahankan.</span></span>
                 </label>
             </x-ui.form-section>
 
-            <div class="sticky bottom-4 z-20 flex flex-col-reverse gap-2 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-end">
+            <div class="sticky bottom-4 z-20 flex flex-col-reverse gap-2 rounded-2xl border border-[var(--ui-line)] bg-white/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-end">
                 <x-ui.button variant="secondary" :href="$employee->exists ? route('employees.show',$employee) : route('employees.index')">Batal</x-ui.button>
                 <x-ui.button type="submit">{{ $employee->exists ? 'Simpan perubahan' : 'Simpan pegawai' }}</x-ui.button>
             </div>

@@ -15,6 +15,108 @@
     --ui-bg-subtle: var(--ui-surface-soft);
 }
 
+/* Phase 4 legacy-view bridge.
+   Palette utility names remain in older Blade templates for markup stability,
+   but structural colors in the authenticated content area resolve through the
+   semantic theme contract. Status palettes and deep surfaces are handled by
+   their dedicated rules below. */
+.app-main-content :is(section,article,aside,details,form,div)[class*="bg-white"][class*="rounded-"],
+.app-main-content :is(section,article,aside,details,form)[class*="bg-white"][class*="border-"] {
+    border-color: var(--ui-line) !important;
+    background-color: var(--ui-surface-base) !important;
+    color: var(--ui-fg) !important;
+}
+
+.app-main-content :is(section,article,aside,details,form,div)[class*="bg-slate-50"][class*="rounded-"],
+.app-main-content :is(section,article,aside,details,form,div)[class*="bg-slate-100"][class*="rounded-"] {
+    border-color: var(--ui-line) !important;
+    background-color: var(--ui-surface-soft) !important;
+    color: var(--ui-fg) !important;
+}
+
+.app-main-content :is(.border-slate-100,.border-slate-200) {
+    border-color: var(--ui-line) !important;
+}
+
+.app-main-content .border-slate-300 {
+    border-color: var(--ui-line-strong) !important;
+}
+
+.app-main-content :is(.divide-slate-100,.divide-slate-200) > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--ui-line) !important;
+}
+
+.app-main-content :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+    color: var(--ui-fg-strong) !important;
+}
+
+.app-main-content .text-slate-600 {
+    color: var(--ui-fg) !important;
+}
+
+.app-main-content :is(.text-slate-500,.text-slate-400) {
+    color: var(--ui-fg-muted) !important;
+}
+
+.app-main-content :is(.text-indigo-950,.text-indigo-900,.text-indigo-800,.text-indigo-700,.text-indigo-600,.text-violet-800,.text-violet-700,.text-violet-600,.text-sky-900,.text-sky-800,.text-sky-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+.app-main-content :is(.border-indigo-100,.border-indigo-200,.border-indigo-300,.border-violet-100,.border-violet-200,.border-sky-100,.border-sky-200) {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--ui-line)) !important;
+}
+
+.app-main-content :is(.bg-indigo-50,.bg-violet-50,.bg-sky-50) {
+    background-color: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--ui-surface-base)) !important;
+}
+
+.app-main-content :is(a,button)[class*="bg-indigo-600"],
+.app-main-content :is(a,button)[class*="bg-violet-600"],
+.app-main-content :is(a,button)[class*="bg-sky-600"] {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 76%, var(--ui-line)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.app-main-content :is(a,button)[class*="bg-indigo-600"]:hover,
+.app-main-content :is(a,button)[class*="bg-violet-600"]:hover,
+.app-main-content :is(a,button)[class*="bg-sky-600"]:hover {
+    background: var(--theme-action-hover-bg, color-mix(in srgb, var(--theme-action-bg) 88%, var(--ui-fg-strong))) !important;
+    color: var(--theme-action-hover-fg, var(--theme-action-fg)) !important;
+}
+
+.app-main-content :is(a,button) svg {
+    color: currentColor;
+}
+
+.app-main-content table:not(.fi-ta-table):not([data-ui-table="off"]) {
+    border-color: var(--ui-line) !important;
+    background: var(--ui-surface-base) !important;
+    color: var(--ui-fg) !important;
+}
+
+.app-main-content table:not(.fi-ta-table):not([data-ui-table="off"]) thead {
+    background: var(--ui-surface-soft) !important;
+}
+
+.app-main-content table:not(.fi-ta-table):not([data-ui-table="off"]) tbody {
+    background: transparent !important;
+}
+
+.app-main-content table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+/* Fixed deep panels keep the on-dark hierarchy even though their descendants
+   still carry old slate utility names. */
+.app-main-content :is(.bg-slate-950,.bg-slate-900,.bg-slate-800) :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+    color: var(--text-comfort-on-dark) !important;
+}
+
+.app-main-content :is(.bg-slate-950,.bg-slate-900,.bg-slate-800) :is(.text-slate-600,.text-slate-500,.text-slate-400,.text-slate-300) {
+    color: var(--text-comfort-on-dark-soft) !important;
+}
+
 /* Page shell / content rhythm */
 .ui-page-shell {
     width: 100%;

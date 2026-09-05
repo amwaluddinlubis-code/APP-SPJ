@@ -40,7 +40,7 @@
             </div>
         </x-page-header>
 
-        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-[var(--ui-surface-base)] shadow-sm">
             <div class="grid lg:grid-cols-[1.15fr_.85fr]">
                 <div class="bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 px-5 py-6 text-white sm:px-6 lg:px-7 lg:py-7">
                     <div class="flex items-center gap-2">
@@ -50,7 +50,7 @@
                     <h2 class="mt-4 text-xl font-bold leading-8 sm:text-2xl">{{ $startHere['title'] }}</h2>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-indigo-100">{{ $startHere['description'] }}</p>
                     <div class="mt-5 flex flex-wrap items-center gap-3">
-                        <a href="{{ $startHere['url'] }}" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold text-indigo-950 shadow-sm transition hover:bg-indigo-50">{{ $startHere['action'] }} →</a>
+                        <a href="{{ $startHere['url'] }}" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-extrabold text-indigo-950 shadow-sm transition hover:bg-indigo-50">{{ $startHere['action'] }} →</a>
                         <span class="text-xs font-semibold text-indigo-200">{{ $startHere['priority'] }}</span>
                     </div>
                 </div>
@@ -62,8 +62,8 @@
                     @if($otherActions->isNotEmpty())
                         <div class="mt-4 space-y-3">
                             @foreach($otherActions as $index => $action)
-                                <a href="{{ $action['url'] }}" class="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-indigo-200 hover:bg-indigo-50/50">
-                                    <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-700">{{ $index + 2 }}</span>
+                                <a href="{{ $action['url'] }}" class="flex items-start gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3.5 transition hover:border-indigo-200 hover:bg-indigo-50/50">
+                                    <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-xs font-extrabold text-slate-700">{{ $index + 2 }}</span>
                                     <span class="min-w-0">
                                         <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ $action['priority'] }}</span>
                                         <span class="mt-0.5 block text-sm font-bold leading-5 text-slate-800">{{ $action['title'] }}</span>
@@ -82,8 +82,8 @@
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="font-bold text-slate-900">Antrean kerja operator</h2>
                         <p class="mt-1 text-sm text-slate-500">Transaksi yang masih membutuhkan tindakan.</p>
@@ -92,7 +92,7 @@
                         <span class="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">{{ number_format($attentionCount, 0, ',', '.') }} pekerjaan perlu perhatian</span>
                     @endif
                 </div>
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-[var(--ui-line)]">
                     @forelse($workQueue as $transaction)
                         <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0">
@@ -105,13 +105,13 @@
                                     @elseif($transaction->spjPackage)
                                         <x-ui.status-badge :status="$transaction->spjPackage->status" size="xs" />
                                     @else
-                                        <span class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-700">Belum disiapkan</span>
+                                        <span class="inline-flex rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-0.5 text-[11px] font-bold text-slate-700">Belum disiapkan</span>
                                     @endif
                                 </div>
                                 <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $transaction->items_count }} rincian · Rp {{ number_format((float) $transaction->gross_amount, 0, ',', '.') }}</p>
                             </div>
-                            <a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700">Lanjutkan →</a>
+                            <a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex shrink-0 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700">Lanjutkan →</a>
                         </div>
                     @empty
                         <div class="px-5 py-10 text-center text-sm text-slate-500">Tidak ada transaksi yang sedang menunggu tindakan operator.</div>
@@ -120,7 +120,7 @@
             </article>
 
             <aside class="space-y-4">
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Progres paket SPJ</p>
                     <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                         <div class="rounded-xl bg-sky-50 px-3 py-3"><p class="text-xl font-bold text-sky-700">{{ $summary['ready'] }}</p><p class="mt-1 text-[11px] font-semibold text-sky-800">Siap</p></div>
@@ -130,7 +130,7 @@
                     <a href="{{ route('spj.index', ['tab' => 'paket']) }}" class="mt-4 inline-flex text-sm font-bold theme-text">Buka daftar paket →</a>
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Status sinkronisasi</p>
                     @if($latestSync)
                         <div class="mt-2"><x-ui.status-badge :status="$latestSync->status" size="xs" /></div>
@@ -141,14 +141,14 @@
             </aside>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-900">Kesiapan per triwulan</h2>
                 <p class="mt-1 text-sm text-slate-500">Buka triwulan untuk melihat kesiapan penomoran.</p>
             </div>
             <div class="grid gap-px bg-slate-200 md:grid-cols-2 xl:grid-cols-4">
                 @foreach($quarterSummary as $row)
-                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $row['quarter']]) }}" class="bg-white p-5">
+                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $row['quarter']]) }}" class="bg-[var(--ui-surface-base)] p-5">
                         <div class="flex items-center justify-between gap-3">
                             <h3 class="font-bold text-slate-900">Triwulan {{ $row['quarter'] }}</h3>
                             @if($row['blocked'] > 0)

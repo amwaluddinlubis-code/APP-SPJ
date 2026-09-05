@@ -1,6 +1,6 @@
 <x-layouts.tailwind-app>
     <div class="mx-auto max-w-4xl space-y-5">
-        <section class="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-rose-200 bg-[var(--ui-surface-base)] shadow-sm">
             <div class="bg-gradient-to-br from-slate-950 via-rose-950 to-rose-900 px-5 py-7 text-white sm:px-7">
                 <p class="text-xs font-bold tracking-[.16em] text-rose-200">ADMINISTRASI · DATABASE SEKOLAH</p>
                 <h1 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Reset Database Sekolah</h1>
@@ -17,7 +17,7 @@
                 <a href="{{ route('schools.select') }}" class="mt-4 inline-flex rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800">Pilih Sekolah</a>
             </section>
         @else
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah aktif</p>
@@ -70,7 +70,7 @@
 
                     <div class="flex flex-wrap items-center gap-3 border-t border-rose-200 pt-4">
                         <x-ui.button type="submit" variant="danger">Reset Database Sekarang</x-ui.button>
-                        <a href="{{ route('database-manager.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">Batal</a>
+                        <a href="{{ route('database-manager.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">Batal</a>
                         <a href="{{ route('school-backups.index') }}" class="text-sm font-bold text-indigo-700 hover:underline">Buka Backup & Pemulihan</a>
                     </div>
                 </form>

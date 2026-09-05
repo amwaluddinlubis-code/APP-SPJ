@@ -5,7 +5,7 @@
             subtitle="Kelola akun yang dapat masuk ke aplikasi, tentukan hak akses, dan hubungkan pengguna ke sekolah."
             kicker="Pengaturan pengguna"
         >
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                 <x-stat-item label="Total pengguna" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" />
                 <x-stat-item label="Administrator" :value="number_format($users->where('role', \App\Models\User::ROLE_ADMIN)->count(), 0, ',', '.')" hint="Akses penuh" value-class="text-indigo-700" />
                 <x-stat-item label="Operator" :value="number_format($users->where('role', \App\Models\User::ROLE_OPERATOR)->count(), 0, ',', '.')" hint="Mengelola SPJ" value-class="text-emerald-700" />
@@ -60,17 +60,17 @@
             </aside>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Akun terdaftar</p>
                     <h2 class="mt-1 text-lg font-bold text-slate-900">Daftar pengguna</h2>
                     <p class="mt-1 text-sm text-slate-500">Ubah hanya bagian yang diperlukan, lalu pilih Simpan.</p>
                 </div>
-                <span class="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ $users->count() }} pengguna</span>
+                <span class="inline-flex w-fit rounded-full bg-[var(--ui-surface-muted)] px-3 py-1 text-xs font-bold text-slate-600">{{ $users->count() }} pengguna</span>
             </div>
 
-            <div class="divide-y divide-slate-100">
+            <div class="divide-y divide-[var(--ui-line)]">
                 @forelse($users as $user)
                     <article class="p-5 transition hover:bg-slate-50/60 sm:p-6">
                         <form id="user-form-{{ $user->id }}" method="POST" action="{{ route('users.update', $user->id) }}">@csrf @method('PUT')</form>

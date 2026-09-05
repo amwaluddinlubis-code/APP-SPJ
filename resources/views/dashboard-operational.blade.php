@@ -3,16 +3,16 @@
         $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
         $packageStatus = fn ($transaction) => $transaction->spjPackage?->status;
         $nextActionTone = fn ($tone) => match ($tone) {
-            'rose' => ['card' => 'border-rose-200 bg-rose-50/70', 'badge' => 'border-rose-200 bg-white text-rose-700', 'button' => 'bg-rose-600 text-white hover:bg-rose-700'],
-            'orange' => ['card' => 'border-orange-200 bg-orange-50/70', 'badge' => 'border-orange-200 bg-white text-orange-700', 'button' => 'bg-orange-600 text-white hover:bg-orange-700'],
-            'amber' => ['card' => 'border-amber-200 bg-amber-50/70', 'badge' => 'border-amber-200 bg-white text-amber-700', 'button' => 'bg-amber-600 text-white hover:bg-amber-700'],
-            'sky' => ['card' => 'border-sky-200 bg-sky-50/70', 'badge' => 'border-sky-200 bg-white text-sky-700', 'button' => 'bg-sky-600 text-white hover:bg-sky-700'],
-            default => ['card' => 'border-emerald-200 bg-emerald-50/70', 'badge' => 'border-emerald-200 bg-white text-emerald-700', 'button' => 'bg-emerald-600 text-white hover:bg-emerald-700'],
+            'rose' => ['card' => 'border-rose-200 bg-rose-50/70', 'badge' => 'border-rose-200 bg-[var(--ui-surface-base)] text-rose-700', 'button' => 'bg-rose-600 text-white hover:bg-rose-700'],
+            'orange' => ['card' => 'border-orange-200 bg-orange-50/70', 'badge' => 'border-orange-200 bg-[var(--ui-surface-base)] text-orange-700', 'button' => 'bg-orange-600 text-white hover:bg-orange-700'],
+            'amber' => ['card' => 'border-amber-200 bg-amber-50/70', 'badge' => 'border-amber-200 bg-[var(--ui-surface-base)] text-amber-700', 'button' => 'bg-amber-600 text-white hover:bg-amber-700'],
+            'sky' => ['card' => 'border-sky-200 bg-sky-50/70', 'badge' => 'border-sky-200 bg-[var(--ui-surface-base)] text-sky-700', 'button' => 'bg-sky-600 text-white hover:bg-sky-700'],
+            default => ['card' => 'border-emerald-200 bg-emerald-50/70', 'badge' => 'border-emerald-200 bg-[var(--ui-surface-base)] text-emerald-700', 'button' => 'bg-emerald-600 text-white hover:bg-emerald-700'],
         };
     @endphp
 
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-3xl">
@@ -28,22 +28,22 @@
             </div>
 
             <div class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-                <a href="{{ route('transactions.index') }}" class="bg-white px-5 py-4 transition hover:bg-slate-50">
+                <a href="{{ route('transactions.index') }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-slate-50">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi aktif</p>
                     <p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($summary['transactions'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Dalam konteks tahun & sumber dana aktif</p>
                 </a>
-                <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="bg-white px-5 py-4 transition hover:bg-amber-50/50">
+                <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-amber-50/50">
                     <p class="text-xs font-bold uppercase tracking-wide text-amber-600">Perlu dilengkapi</p>
                     <p class="mt-1 text-2xl font-bold text-amber-700">{{ number_format($summary['without_package'] + $summary['draft'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Belum punya paket atau masih belum lengkap</p>
                 </a>
-                <a href="{{ route('spj.numbering-workflow') }}" class="bg-white px-5 py-4 transition hover:bg-sky-50/50">
+                <a href="{{ route('spj.numbering-workflow') }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-sky-50/50">
                     <p class="text-xs font-bold uppercase tracking-wide text-sky-600">Siap diproses</p>
                     <p class="mt-1 text-2xl font-bold text-sky-700">{{ number_format($summary['ready'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Paket siap masuk penomoran</p>
                 </a>
-                <a href="{{ route('reconciliation.index') }}" class="bg-white px-5 py-4 transition hover:bg-orange-50/50">
+                <a href="{{ route('reconciliation.index') }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-orange-50/50">
                     <p class="text-xs font-bold uppercase tracking-wide text-orange-600">Perlu perhatian</p>
                     <p class="mt-1 text-2xl font-bold text-orange-700">{{ number_format($summary['reconciliation'] + $summary['source_missing'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-slate-500">Perubahan sumber atau data tidak muncul lagi</p>
@@ -51,14 +51,14 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[.16em] text-indigo-500">Langkah berikutnya</p>
                         <h2 class="mt-1 text-lg font-bold text-slate-900">Prioritas kerja yang disarankan</h2>
                     </div>
-                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">Diurutkan dari yang paling penting</span>
+                    <span class="rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-1 text-xs font-semibold text-slate-600">Diurutkan dari yang paling penting</span>
                 </div>
                 <p class="text-sm text-slate-500">Dashboard menyusun tindakan berdasarkan kondisi sinkronisasi, rekonsiliasi, kelengkapan paket, dan kesiapan penomoran.</p>
             </div>
@@ -68,7 +68,7 @@
                     @php($tone = $nextActionTone($action['tone']))
                     <article class="rounded-2xl border p-4 {{ $tone['card'] }}">
                         <div class="flex items-start gap-3">
-                            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/70 bg-white text-sm font-extrabold text-slate-700 shadow-sm">{{ $index + 1 }}</span>
+                            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/70 bg-[var(--ui-surface-base)] text-sm font-extrabold text-slate-700 shadow-sm">{{ $index + 1 }}</span>
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold {{ $tone['badge'] }}">{{ $action['priority'] }}</span>
@@ -84,8 +84,8 @@
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="font-bold text-slate-900">Antrean kerja operator</h2>
                         <p class="mt-1 text-sm text-slate-500">Prioritas transaksi yang perlu ditinjau atau dilanjutkan.</p>
@@ -97,7 +97,7 @@
                     @endif
                 </div>
 
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-[var(--ui-line)]">
                     @forelse($workQueue as $transaction)
                         @php
                             $status = $packageStatus($transaction);
@@ -115,13 +115,13 @@
                                     @elseif($status)
                                         <x-ui.status-badge :status="$status" size="xs" />
                                     @else
-                                        <span class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-700">Belum disiapkan</span>
+                                        <span class="inline-flex rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-0.5 text-[11px] font-bold text-slate-700">Belum disiapkan</span>
                                     @endif
                                 </div>
                                 <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') }} · {{ $transaction->items_count }} rincian · {{ $rupiah($transaction->gross_amount) }}</p>
                             </div>
-                            <a href="{{ $isMissing || $needsReconciliation ? route('reconciliation.index') : route('transactions.show', $transaction->id) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">{{ $isMissing || $needsReconciliation ? 'Tinjau rekonsiliasi' : 'Lanjutkan' }} →</a>
+                            <a href="{{ $isMissing || $needsReconciliation ? route('reconciliation.index') : route('transactions.show', $transaction->id) }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50">{{ $isMissing || $needsReconciliation ? 'Tinjau rekonsiliasi' : 'Lanjutkan' }} →</a>
                         </div>
                     @empty
                         <div class="px-5 py-12 text-center">
@@ -133,7 +133,7 @@
             </article>
 
             <aside class="space-y-4">
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Status sinkronisasi</p>
@@ -146,7 +146,7 @@
                     <p class="mt-3 text-sm text-slate-500">Terakhir: {{ $latestSync?->finished_at ? \Illuminate\Support\Carbon::parse($latestSync->finished_at)->translatedFormat('d F Y H:i') : '—' }}</p>
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Progres paket SPJ</p>
                     <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                         <div class="rounded-xl bg-sky-50 px-3 py-3"><p class="text-xl font-bold text-sky-700">{{ $summary['ready'] }}</p><p class="mt-1 text-[11px] font-semibold text-sky-800">Siap</p></div>
@@ -168,14 +168,14 @@
             </aside>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-900">Kesiapan per triwulan</h2>
                 <p class="mt-1 text-sm text-slate-500">Ringkasan cepat untuk menentukan kapan penomoran dapat dijalankan.</p>
             </div>
             <div class="grid gap-px bg-slate-200 md:grid-cols-2 xl:grid-cols-4">
                 @foreach($quarterSummary as $row)
-                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $row['quarter']]) }}" class="bg-white p-5 transition hover:bg-slate-50">
+                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $row['quarter']]) }}" class="bg-[var(--ui-surface-base)] p-5 transition hover:bg-slate-50">
                         <div class="flex items-center justify-between gap-3">
                             <h3 class="font-bold text-slate-900">Triwulan {{ $row['quarter'] }}</h3>
                             @if($row['blocked'] > 0)
@@ -195,10 +195,10 @@
         </section>
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('transactions.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Keuangan</p><h2 class="mt-2 font-bold text-slate-900">Transaksi</h2><p class="mt-1 text-sm text-slate-500">Cari transaksi dan lengkapi data SPJ operator.</p></a>
-            <a href="{{ route('reconciliation.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-orange-500">Kontrol</p><h2 class="mt-2 font-bold text-slate-900">Rekonsiliasi</h2><p class="mt-1 text-sm text-slate-500">Periksa perubahan atau kehilangan data sumber.</p></a>
-            <a href="{{ route('spj.numbering-workflow') }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Dokumen</p><h2 class="mt-2 font-bold text-slate-900">Penomoran SPJ</h2><p class="mt-1 text-sm text-slate-500">Preview kesiapan triwulan sebelum menetapkan nomor.</p></a>
-            <a href="{{ route('dashboard.v2') }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-violet-500">Analitik</p><h2 class="mt-2 font-bold text-slate-900">Dashboard v.2</h2><p class="mt-1 text-sm text-slate-500">Buka dashboard lama dengan grafik dan ringkasan anggaran.</p></a>
+            <a href="{{ route('transactions.index') }}" class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Keuangan</p><h2 class="mt-2 font-bold text-slate-900">Transaksi</h2><p class="mt-1 text-sm text-slate-500">Cari transaksi dan lengkapi data SPJ operator.</p></a>
+            <a href="{{ route('reconciliation.index') }}" class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-orange-500">Kontrol</p><h2 class="mt-2 font-bold text-slate-900">Rekonsiliasi</h2><p class="mt-1 text-sm text-slate-500">Periksa perubahan atau kehilangan data sumber.</p></a>
+            <a href="{{ route('spj.numbering-workflow') }}" class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Dokumen</p><h2 class="mt-2 font-bold text-slate-900">Penomoran SPJ</h2><p class="mt-1 text-sm text-slate-500">Preview kesiapan triwulan sebelum menetapkan nomor.</p></a>
+            <a href="{{ route('dashboard.v2') }}" class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><p class="text-xs font-bold uppercase tracking-wide text-violet-500">Analitik</p><h2 class="mt-2 font-bold text-slate-900">Dashboard v.2</h2><p class="mt-1 text-sm text-slate-500">Buka dashboard lama dengan grafik dan ringkasan anggaran.</p></a>
         </section>
     </div>
 </x-layouts.tailwind-app>

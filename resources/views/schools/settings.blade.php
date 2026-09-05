@@ -5,7 +5,7 @@
             subtitle="Atur identitas sekolah, penandatangan, kop surat, dan tahun anggaran yang digunakan pada dokumen SPJ."
             kicker="PENGATURAN SEKOLAH"
         >
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                 <x-stat-item label="Sekolah Aktif" :value="$activeSchool?->name ?? 'Belum dipilih'" :hint="$activeSchool ? 'NPSN '.$activeSchool->npsn : 'Pilih sekolah aktif terlebih dahulu'" value-class="text-indigo-700" />
                 <x-stat-item label="Tahun Anggaran Aktif" :value="$activeYear?->year ?? '—'" :hint="$activeYear?->fund_source ?? 'Tahun anggaran belum dipilih'" value-class="text-emerald-700" />
                 <x-stat-item label="Jumlah Sekolah" :value="number_format($schools->count(), 0, ',', '.')" hint="Sekolah yang sudah terdaftar" />
@@ -21,7 +21,7 @@
                 <section class="rounded-2xl border border-indigo-200 bg-indigo-50/70 px-5 py-4 sm:px-6">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div><h2 class="font-bold text-indigo-950">Sekolah yang Sedang Diatur</h2><p class="mt-1 text-sm text-indigo-700">{{ $activeSchool->name }} · {{ $activeYear ? 'Tahun Anggaran '.$activeYear->year.' / '.$activeYear->fund_source : 'Pilih tahun anggaran untuk mengatur penandatangan' }}</p></div>
-                        <div class="flex flex-wrap gap-2"><span class="rounded-full bg-white px-3 py-1.5 text-sm font-bold text-indigo-700">Kode: {{ $activeSchool->school_code ?: 'Belum diisi' }}</span><span class="rounded-full bg-white px-3 py-1.5 text-sm font-bold text-indigo-700">NPSN: {{ $activeSchool->npsn }}</span></div>
+                        <div class="flex flex-wrap gap-2"><span class="rounded-full bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm font-bold text-indigo-700">Kode: {{ $activeSchool->school_code ?: 'Belum diisi' }}</span><span class="rounded-full bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm font-bold text-indigo-700">NPSN: {{ $activeSchool->npsn }}</span></div>
                     </div>
                 </section>
 
@@ -58,7 +58,7 @@
                             <x-ui.field label="Pilih gambar kop surat" for="letterhead"><input id="letterhead" type="file" name="letterhead" accept="image/png,image/jpeg"></x-ui.field>
                         </div>
                         @if ($activeSchool->letterhead_path)
-                            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3"><img src="{{ route('schools.letterhead', ['v' => $activeSchool->updated_at?->timestamp]) }}" alt="Kop surat {{ $activeSchool->name }}" class="h-20 max-w-full rounded bg-white object-contain"><p class="mt-2 text-xs font-semibold text-emerald-700">Kop surat sudah tersimpan dan siap digunakan.</p></div>
+                            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3"><img src="{{ route('schools.letterhead', ['v' => $activeSchool->updated_at?->timestamp]) }}" alt="Kop surat {{ $activeSchool->name }}" class="h-20 max-w-full rounded bg-[var(--ui-surface-base)] object-contain"><p class="mt-2 text-xs font-semibold text-emerald-700">Kop surat sudah tersimpan dan siap digunakan.</p></div>
                         @endif
                     </div>
                 </x-ui.form-section>
@@ -70,9 +70,9 @@
         @endif
 
         <div class="grid gap-6 xl:grid-cols-[1.05fr_.95fr] xl:items-start">
-            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-5 py-4"><h2 class="font-bold text-slate-800">Daftar Sekolah</h2><p class="mt-1 text-sm text-slate-500">Lihat sekolah yang sudah terdaftar dan status database masing-masing.</p></div>
-                <div class="divide-y divide-slate-100">@forelse ($schools as $school)<div class="px-5 py-4"><p class="font-bold text-slate-800">{{ $school->name }}</p><p class="mt-1 text-sm text-slate-500">Kode {{ $school->school_code ?: '—' }} · NPSN {{ $school->npsn }} · {{ $school->regency }}</p><span class="mt-2 inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Status database: {{ $school->databaseRecord?->status ?? 'Belum dibuat' }}</span></div>@empty<p class="px-5 py-10 text-center text-sm text-slate-500">Belum ada sekolah yang terdaftar.</p>@endforelse</div>
+            <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] px-5 py-4"><h2 class="font-bold text-slate-800">Daftar Sekolah</h2><p class="mt-1 text-sm text-slate-500">Lihat sekolah yang sudah terdaftar dan status database masing-masing.</p></div>
+                <div class="divide-y divide-[var(--ui-line)]">@forelse ($schools as $school)<div class="px-5 py-4"><p class="font-bold text-slate-800">{{ $school->name }}</p><p class="mt-1 text-sm text-slate-500">Kode {{ $school->school_code ?: '—' }} · NPSN {{ $school->npsn }} · {{ $school->regency }}</p><span class="mt-2 inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Status database: {{ $school->databaseRecord?->status ?? 'Belum dibuat' }}</span></div>@empty<p class="px-5 py-10 text-center text-sm text-slate-500">Belum ada sekolah yang terdaftar.</p>@endforelse</div>
             </section>
 
             <div class="space-y-6">

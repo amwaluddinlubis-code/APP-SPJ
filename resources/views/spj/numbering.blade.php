@@ -15,7 +15,7 @@
                 @endif
             </x-slot:actions>
 
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Triwulan" :value="'Triwulan '.$selectedQuarter" hint="Periksa sebelum membuat nomor" />
                 <x-stat-item label="Siap diberi nomor" :value="number_format($selectedSummary['ready'] ?? 0, 0, ',', '.')" hint="Paket sudah lengkap dan siap diproses" value-class="text-sky-700" />
                 <x-stat-item label="Sudah diberi nomor" :value="number_format($selectedSummary['numbered'] ?? 0, 0, ',', '.')" hint="Paket sudah bernomor atau sudah final" value-class="text-emerald-700" />
@@ -32,7 +32,7 @@
                     ['4', 'Periksa triwulan', 'Periksa paket yang siap dan yang masih bermasalah'],
                     ['5', 'Buat nomor', 'Buat nomor dokumen secara berurutan'],
                 ] as [$number, $title, $description])
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
                         <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">{{ $number }}</span>
                         <p class="mt-3 text-sm font-bold text-slate-900">{{ $title }}</p>
                         <p class="mt-1 text-xs leading-5 text-slate-500">{{ $description }}</p>
@@ -46,7 +46,7 @@
                 @foreach($quarterSummaries as $quarter => $summary)
                     @php($active = $quarter === $selectedQuarter)
                     @php($closureStatus = strtoupper((string) ($summary['closure']?->status ?? 'OPEN')))
-                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $quarter]) }}" class="rounded-2xl border p-4 transition {{ $active ? 'border-indigo-300 bg-indigo-50 shadow-sm ring-2 ring-indigo-100' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50' }}">
+                    <a href="{{ route('spj.numbering-workflow', ['quarter' => $quarter]) }}" class="rounded-2xl border p-4 transition {{ $active ? 'border-indigo-300 bg-indigo-50 shadow-sm ring-2 ring-indigo-100' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)] hover:border-slate-300 hover:bg-slate-50' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Triwulan {{ $quarter }}</p>
@@ -55,9 +55,9 @@
                             <x-ui.status-badge :status="$closureStatus === 'CLOSED' ? 'LOCKED' : 'ACTIVE'" :label="$closureStatus === 'CLOSED' ? 'Ditutup' : 'Terbuka'" size="xs" />
                         </div>
                         <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-                            <div class="rounded-lg bg-white px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Siap</p><p class="mt-1 font-bold text-sky-700">{{ $summary['ready'] }}</p></div>
-                            <div class="rounded-lg bg-white px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Bernomor</p><p class="mt-1 font-bold text-emerald-700">{{ $summary['numbered'] }}</p></div>
-                            <div class="rounded-lg bg-white px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Belum siap</p><p class="mt-1 font-bold text-amber-700">{{ $summary['blocked'] }}</p></div>
+                            <div class="rounded-lg bg-[var(--ui-surface-base)] px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Siap</p><p class="mt-1 font-bold text-sky-700">{{ $summary['ready'] }}</p></div>
+                            <div class="rounded-lg bg-[var(--ui-surface-base)] px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Bernomor</p><p class="mt-1 font-bold text-emerald-700">{{ $summary['numbered'] }}</p></div>
+                            <div class="rounded-lg bg-[var(--ui-surface-base)] px-2 py-2"><p class="text-[10px] font-bold uppercase text-slate-400">Belum siap</p><p class="mt-1 font-bold text-amber-700">{{ $summary['blocked'] }}</p></div>
                         </div>
                     </a>
                 @endforeach
@@ -71,7 +71,7 @@
                     <p class="mt-1">Masih ada {{ $selectedSummary['blocked'] }} transaksi yang belum memiliki paket SPJ atau paketnya belum lengkap. Selesaikan terlebih dahulu di Ruang Kerja SPJ.</p>
                 </div>
             @elseif($selectedClosure && strtoupper((string) $selectedClosure->status) === 'CLOSED')
-                <div class="mb-4 rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-800">
+                <div class="mb-4 rounded-xl border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-4 py-3 text-sm text-slate-800">
                     <p class="font-bold">Triwulan ini sudah ditutup.</p>
                     <p class="mt-1">Nomor baru tidak dapat dibuat sampai administrator membuka kembali triwulan ini.</p>
                 </div>
@@ -82,9 +82,9 @@
                 </div>
             @endif
 
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
-                <table data-pagination="none" class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
+            <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
+                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                    <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti / Tanggal</th>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Uraian</th>
@@ -94,7 +94,7 @@
                             <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Tindakan</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($previewPackages as $package)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3"><p class="font-mono font-bold text-indigo-700">{{ $package->transaction->no_bukti }}</p><p class="mt-1 text-xs text-slate-500">{{ $package->transaction->transaction_date?->translatedFormat('d F Y') }}</p></td>
@@ -121,7 +121,7 @@
                             <p class="mt-1 text-xs text-indigo-700">Nomor dibuat sesuai tanggal dokumen dan format penomoran yang sedang aktif.</p>
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach($documentTypes as $documentType)
-                                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-900">
+                                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-indigo-200 bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-semibold text-indigo-900">
                                         <input type="checkbox" name="document_types[]" value="{{ $documentType }}" checked class="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
                                         <span>{{ str_replace('_', ' ', $documentType) }}</span>
                                     </label>
@@ -139,10 +139,10 @@
         </x-section-card>
 
         <x-section-card title="Riwayat penomoran" description="Lihat hasil proses penomoran sebelumnya, termasuk jumlah nomor yang dibuat dan dokumen yang dilewati.">
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
-                <table data-pagination="none" class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Waktu</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Triwulan</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Status</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Nomor dibuat</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Dilewati</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Catatan</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+            <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
+                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Waktu</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Triwulan</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Status</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Nomor dibuat</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Dilewati</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Catatan</th></tr></thead>
+                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($recentRuns as $run)
                             <tr><td class="px-4 py-3 text-slate-600">{{ $run->started_at?->translatedFormat('d M Y H:i') ?: '—' }}</td><td class="px-4 py-3 font-semibold">Triwulan {{ $run->quarter }}</td><td class="px-4 py-3"><x-ui.status-badge :status="$run->status" size="xs" /></td><td class="px-4 py-3 text-right font-bold text-emerald-700">{{ $run->numbered_count ?? 0 }}</td><td class="px-4 py-3 text-right font-semibold text-slate-600">{{ $run->skipped_count ?? 0 }}</td><td class="max-w-sm px-4 py-3 text-xs text-slate-500">{{ $run->error_message ?: 'Proses selesai tanpa kendala.' }}</td></tr>
                         @empty

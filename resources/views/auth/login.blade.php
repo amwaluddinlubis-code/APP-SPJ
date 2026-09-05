@@ -6,15 +6,15 @@
         <form method="POST" action="{{ route('login.store') }}" class="mt-6 space-y-4">@csrf<div><label
                     class="text-base font-semibold text-slate-700">Email</label><input type="email" name="email"
                     value="{{ old('email') }}" required autofocus
-                    class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base @error('email') border-rose-400 @enderror">
+                    class="mt-1 w-full rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-base @error('email') border-rose-400 @enderror">
                 @error('email')
                     <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>
                 @enderror
             </div>
             <div><label class="text-base font-semibold text-slate-700">Kata Sandi</label><input type="password"
-                    name="password" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base">
+                    name="password" required class="mt-1 w-full rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-base">
             </div><label class="flex items-center gap-2 text-base text-slate-600"><input type="checkbox" name="remember"
-                    value="1" class="rounded border-slate-300 text-indigo-600"> Ingat saya</label><button
+                    value="1" class="rounded border-[var(--ui-line-strong)] text-indigo-600"> Ingat saya</label><button
                 class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-base font-bold text-white shadow hover:bg-indigo-700">Masuk</button>
         </form>
     </div>

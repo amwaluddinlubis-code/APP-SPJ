@@ -27,7 +27,7 @@
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'docx')">Unduh Contoh Word</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'xlsx')">Unduh Contoh Excel</x-ui.button>
             </x-slot:actions>
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Jumlah Template" :value="number_format($templates->total(), 0, ',', '.')" hint="Sesuai filter yang sedang digunakan"
                     value-class="text-indigo-700" />
                 <x-stat-item label="Kategori SPJ" :value="number_format(count($categories), 0, ',', '.')" hint="Kategori canonical yang dapat dihubungkan"
@@ -47,7 +47,7 @@
                         :error="$errors->first('template_package')" required>
                         <input id="template_package" type="file" name="template_package" accept=".xlsx" required>
                     </x-ui.field>
-                    <div class="rounded-xl border border-slate-200 bg-amber-50/70 p-4">
+                    <div class="rounded-xl border border-[var(--ui-line)] bg-amber-50/70 p-4">
                         <label class="flex items-start gap-3 text-sm font-semibold text-slate-700">
                             <input type="hidden" name="replace_existing" value="0">
                             <input type="checkbox" name="replace_existing" value="1" @checked(old('replace_existing'))>
@@ -61,12 +61,12 @@
                     </div>
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4">
                     <p class="text-xs font-bold uppercase tracking-wide text-slate-600">11 template yang akan dibuat</p>
                     <div class="mt-3 flex flex-wrap gap-2">
                         @foreach ($documentTypes as $documentType => $documentLabel)
                             <span
-                                class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700"><span
+                                class="rounded-full bg-[var(--ui-surface-muted)] px-3 py-1 text-[11px] font-semibold text-slate-700"><span
                                     class="font-mono text-violet-700">{{ $documentType }}</span> ·
                                 {{ $documentLabel }}</span>
                         @endforeach
@@ -113,7 +113,7 @@
                         :error="$errors->first('template')" required>
                         <input id="template_file" type="file" name="template" accept=".docx,.xlsx" required>
                     </x-ui.field>
-                    <fieldset class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                    <fieldset class="rounded-xl border border-[var(--ui-line)] bg-slate-50/70 p-4">
                         <legend class="px-1 text-xs font-bold text-slate-700">Digunakan untuk Kategori SPJ</legend>
                         <div class="mt-2 grid gap-2 sm:grid-cols-2">
                             @foreach ($categories as $category)
@@ -144,8 +144,8 @@
             @endif
         </x-ui.form-section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <h2 class="font-bold text-slate-800">Hasil Validasi Template</h2>
@@ -163,7 +163,7 @@
                 </div>
             </div>
 
-            <div class="divide-y divide-slate-100">
+            <div class="divide-y divide-[var(--ui-line)]">
                 @forelse($templates as $template)
                     @php
                         $validation = $validationResults[$template->id] ?? [
@@ -207,7 +207,7 @@
                         </summary>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                            <div class="rounded-xl border border-[var(--ui-line)] bg-slate-50/70 p-4">
                                 <h3 class="text-xs font-bold uppercase tracking-wide text-slate-600">Error</h3>
                                 @if (!empty($validation['errors']))
                                     <ul class="mt-2 space-y-2">
@@ -224,7 +224,7 @@
                                 @endif
                             </div>
 
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                            <div class="rounded-xl border border-[var(--ui-line)] bg-slate-50/70 p-4">
                                 <h3 class="text-xs font-bold uppercase tracking-wide text-slate-600">Warning</h3>
                                 @if (!empty($validation['warnings']))
                                     <ul class="mt-2 space-y-2">
@@ -249,14 +249,14 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-800">Template yang Tersedia</h2>
                 <p class="mt-1 text-sm text-slate-500">Template baru memakai document type dan kategori canonical.
                     Unduh template terakhir sebelum menggantinya jika perlu melakukan revisi lokal.</p>
             </div>
             <form method="GET"
-                class="grid gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 sm:grid-cols-[12rem_minmax(12rem,1fr)_auto_auto] sm:items-end">
+                class="grid gap-3 border-b border-[var(--ui-line)] bg-slate-50/60 px-5 py-4 sm:grid-cols-[12rem_minmax(12rem,1fr)_auto_auto] sm:items-end">
                 <x-ui.field label="Status Template" for="status">
                     <x-ui.select id="status" name="status">
                         <option value="all" @selected(($filters['status'] ?? 'all') === 'all')>Semua Status</option>
@@ -279,7 +279,7 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm" data-pagination="server">
-                    <thead class="bg-slate-100">
+                    <thead class="bg-[var(--ui-surface-muted)]">
                         <tr class="text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">
                             <th class="px-4 py-3">Template</th>
                             <th class="px-4 py-3">Format</th>
@@ -288,7 +288,7 @@
                             <th class="px-4 py-3 text-right">Tindakan</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-[var(--ui-line)]">
                         @forelse($templates as $template)
                             @php
                                 $canonicalType = \App\Services\SpjDocumentTypeRegistry::canonical(
@@ -382,14 +382,14 @@
                 </table>
             </div>
             @if ($templates->hasPages())
-                <div class="border-t border-slate-100 px-5 py-4">{{ $templates->links() }}</div>
+                <div class="border-t border-[var(--ui-line)] px-5 py-4">{{ $templates->links() }}</div>
             @endif
         </section>
 
-        <details class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <details class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <summary class="cursor-pointer px-5 py-4 text-sm font-bold text-slate-700">Lihat semua penanda data
                 ({{ $placeholderCount }})</summary>
-            <div class="space-y-5 border-t border-slate-100 px-5 py-4">
+            <div class="space-y-5 border-t border-[var(--ui-line)] px-5 py-4">
                 <p class="text-xs text-slate-500">Masukkan penanda ke template dengan kurung kurawal ganda, misalnya
                     <code>&#123;&#123;NOMOR_SPJ&#125;&#125;</code>. Untuk rincian yang memiliki banyak baris, letakkan
                     penanda rincian pada satu baris contoh. Aplikasi akan menggandakan baris tersebut sesuai jumlah
@@ -400,7 +400,7 @@
                         <div class="mt-2 flex flex-wrap gap-1.5">
                             @foreach ($markers as $marker)
                                 <code
-                                    class="rounded bg-slate-100 px-2 py-1 text-[11px] text-indigo-700">&#123;&#123;{{ $marker }}&#125;&#125;</code>
+                                    class="rounded bg-[var(--ui-surface-muted)] px-2 py-1 text-[11px] text-indigo-700">&#123;&#123;{{ $marker }}&#125;&#125;</code>
                             @endforeach
                         </div>
                     </section>

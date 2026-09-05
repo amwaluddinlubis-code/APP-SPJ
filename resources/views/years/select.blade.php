@@ -6,10 +6,10 @@
       <p class="mt-1 text-base text-slate-500">{{ $school->name }} · NPSN {{ $school->npsn }}. Data akan dibatasi berdasarkan pilihan ini.</p>
     </div>
     <div class="flex flex-wrap justify-end gap-2">
-      <a href="{{ route('schools.select') }}" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Ganti Sekolah</a>
+      <a href="{{ route('schools.select') }}" class="rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-xs font-bold text-slate-700">Ganti Sekolah</a>
       <form method="POST" action="{{ route('logout') }}">
         @csrf
-        <button class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Keluar</button>
+        <button class="rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-xs font-bold text-slate-700">Keluar</button>
       </form>
     </div>
   </div>
@@ -20,7 +20,7 @@
 
   <div class="mt-6 space-y-3">
     @forelse($years as $year)
-      <form method="POST" action="{{ route('years.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <form method="POST" action="{{ route('years.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
         @csrf
         <input type="hidden" name="fiscal_year_id" value="{{ $year->id }}">
         <div>
@@ -30,7 +30,7 @@
         <button class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white" @disabled(!$hasFundSourceContext)>Gunakan</button>
       </form>
     @empty
-      <div class="rounded-lg bg-slate-50 p-5 text-base text-slate-500">
+      <div class="rounded-lg bg-[var(--ui-surface-soft)] p-5 text-base text-slate-500">
         <p class="font-semibold text-slate-700">Belum ada kombinasi tahun dan sumber dana.</p>
         <p class="mt-2 text-sm">Jalankan sinkronisasi ARKAS untuk mengimpor data tahun dan sumber dana dari database ARKAS.</p>
         <form method="POST" action="{{ route('years.synchronize') }}" data-confirm="Sinkronisasi akan mengimpor data tahun dan sumber dana dari ARKAS. Lanjutkan?" class="mt-4">
