@@ -63,6 +63,19 @@ class SpjDocumentTypeRegistryTest extends TestCase
     }
 
     #[Test]
+    public function bast_does_not_require_item_unit_when_the_workbook_has_no_unit_column(): void
+    {
+        $bast = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAST);
+
+        $this->assertNotNull($bast);
+        $this->assertContains('ITEM_NO', $bast['repeat_required']);
+        $this->assertContains('ITEM_URAIAN', $bast['repeat_required']);
+        $this->assertContains('ITEM_VOLUME', $bast['repeat_required']);
+        $this->assertNotContains('ITEM_SATUAN', $bast['repeat_required']);
+        $this->assertContains('ITEM_SATUAN', $bast['repeat_optional']);
+    }
+
+    #[Test]
     public function every_registered_placeholder_has_one_contract_role_per_document(): void
     {
         foreach (SpjDocumentTypeRegistry::all() as $code => $definition) {
