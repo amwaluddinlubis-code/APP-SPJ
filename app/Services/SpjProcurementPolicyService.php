@@ -26,7 +26,7 @@ class SpjProcurementPolicyService
                 'channel_label' => 'SIPLah',
                 'a2_required' => true,
                 'procurement_evidence' => [
-                    'Pesanan/transaksi SIPLah',
+                    'Pesanan/transaksi marketplace SIPLah',
                     'Invoice atau tagihan dari penyedia',
                     'Rincian barang/jasa dari SIPLah',
                     'Bukti pembayaran SIPLah/bank',
@@ -35,11 +35,13 @@ class SpjProcurementPolicyService
                 ],
                 'internal_documents' => [
                     'Kuitansi / Bukti Kas Pengeluaran (A2)',
-                    'Berita acara/penerimaan yang diperlukan sesuai jenis belanja',
+                    'Bukti penerimaan barang/jasa yang dapat ditelusuri',
                     'Dokumen SPJ lain sesuai kategori transaksi',
                 ],
                 'notes' => [
-                    'Dokumen asli dari SIPLah dipertahankan sebagai bukti pengadaan dan tidak perlu dibuat ulang tanpa kebutuhan.',
+                    'Dokumen pemesanan, invoice, dan bukti transaksi dari marketplace SIPLah menjadi sumber utama pengadaan dan tidak dibuat ulang oleh aplikasi.',
+                    'Surat Pesanan internal, BAP internal, dan BAST internal tidak diwajibkan untuk transaksi SIPLah; dokumen tersebut hanya dibuat jika kebijakan sekolah atau kebutuhan khusus mengharuskannya.',
+                    'Bukti penerimaan barang/jasa tetap harus tersedia dan dapat ditelusuri.',
                     'Kuitansi/A2 tetap wajib dibuat dan dicetak dari aplikasi sebagai bukti pengeluaran internal sekolah.',
                     'Nilai SIPLah, BKU, transaksi, pembayaran, pajak, dan SPJ harus dapat ditelusuri dan direkonsiliasi.',
                 ],
