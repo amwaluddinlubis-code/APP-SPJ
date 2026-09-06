@@ -1,189 +1,159 @@
 # SPJ BOSP Web — Development Handoff 2026-09-05
 
-Dokumen ini adalah snapshot kerja terbaru branch `gui-standardization` dan menjadi acuan sebelum pengembangan berikutnya dimulai.
+> **Status: HISTORICAL / SUPERSEDED**
+>
+> Dokumen ini dipertahankan sebagai jejak handoff tanggal 2026-09-05, tetapi **tidak lagi menjadi sumber kondisi project terkini**. Untuk pekerjaan setelah 2026-09-06, gunakan `docs/CURRENT_PROGRESS.md` sebagai snapshot aktif.
 
-## 1. Status branch
+Terakhir ditinjau ulang: **2026-09-06**.
 
-Branch aktif:
+---
 
-```text
-gui-standardization
-```
+## 1. Mengapa dokumen ini disupersede
 
-Checkpoint terakhir yang sudah divalidasi:
+Sejak handoff 2026-09-05, branch `gui-standardization` telah mengalami perubahan penting pada domain SPJ dan UI Paket, sehingga checkpoint dan next action lama tidak lagi akurat.
 
-```text
-7d02661 — refactor(gui): canonicalize spj package overview
-```
+Perubahan setelah handoff ini mencakup:
 
-Phase 4 UI **dipause sementara** setelah Phase 4.3D dinyatakan PASS.
+- pemisahan validasi Surat Pesanan internal menjadi content requirement vs number requirement;
+- perbaikan/penambahan validasi kronologi tanggal pengadaan;
+- field tanggal pengadaan dimasukkan ke update flow Paket → Isian Manual;
+- auto-fill peserta `KONSUMSI` di Detail Transaksi diubah menjadi Dapodik-only;
+- dark form controls dinormalisasi;
+- theme Paket/Isian Manual diperbaiki;
+- quarter card hover `/spj/penomoran` dibuat theme-aware;
+- daftar Dokumen & Template dibuat compact;
+- Dokumen & Template dipindahkan ke sub-tab Rincian;
+- Rincian Transaksi dan Dokumen & Template dipisah menjadi dua panel dengan header theme-aware;
+- `docs/CSS_USAGE_GUIDE.md` dibuat sebagai contract CSS aktif.
 
-Phase 4.3E — internal package tabs shell + Rincian panel **belum dikerjakan** dan tidak dianggap checkpoint aktif.
+Karena itu, pernyataan lama seperti “Phase 4.3E belum dikerjakan” atau “next action utama adalah audit SiPLah sebelum perubahan source” **tidak lagi boleh digunakan sebagai instruksi kerja saat ini**.
 
-## 2. Status GUI standardization
+---
 
-Yang sudah selesai/diterima pada Phase 4:
+## 2. Kondisi checkpoint aktif
 
-- Phase 4.1 — Document Templates header actions;
-- Phase 4.2 — Transactions physical canonicalization;
-- Phase 4.3A — SPJ Page Header;
-- Phase 4.3B — SPJ Persiapan filter, status badge, dan actions;
-- Phase 4.3C — SPJ package list/card badges dan actions;
-- Phase 4.3D — SPJ package overview, top navigation, validation, dan template actions.
+Checkpoint aktif bukan lagi commit `7d02661` yang tercatat pada handoff lama.
 
-Yang belum dilanjutkan:
+Gunakan HEAD branch `gui-standardization` dan `CURRENT_PROGRESS.md` untuk menentukan kondisi aktual.
 
-- Phase 4.3E — internal package tabs shell + Rincian;
-- Isian Manual canonicalization;
-- Penomoran UI canonicalization;
-- Laporan/Monitoring physical cleanup;
-- final compatibility CSS cleanup.
+Dokumen ini tidak mencoba mengunci SHA baru karena perubahan aktif terus berjalan; SHA lokal/user harus diperiksa saat sesi dimulai.
 
-Pekerjaan tersebut bukan prioritas utama saat ini.
+---
 
-## 3. Hasil verifikasi terakhir
+## 3. SiPLah — koreksi status
 
-Phase 4.3D terakhir dilaporkan:
+Handoff lama menyebut SiPLah MVP sebagai pekerjaan yang belum diaudit. Kondisi sekarang lebih maju:
 
-```text
-theme:qa: PASS
-build: PASS
-view:cache: PASS
-diff --check: PASS
-SyncedDataSpjEntitiesTest: PASS — 2 tests, 12 assertions
-```
-
-Visual desktop:
-
-```text
-Dark: PASS
-Slate: PASS
-Yellow: PASS
-Indigo: PASS
-Violet: PASS
-```
-
-Area yang tersedia pada dataset telah lolos. Kondisi yang tidak tersedia pada dataset tetap ditandai `RVR` dan bukan otomatis dianggap gagal.
-
-Computed contrast tetap `RVR`.
-
-Mobile visual QA tetap TODO sesuai `docs/MOBILE_VISUAL_QA_TODO.md` dan tidak boleh disebut mobile-verified/mobile-complete sebelum TODO tersebut ditutup.
-
-## 4. Test strategy saat ini
-
-Gunakan focused verification untuk perubahan kecil/terarah:
-
-```text
-npm run theme:qa
-npm run build
-php artisan view:cache --no-interaction
-git diff --check
-php artisan test --compact <test paling relevan>
-```
-
-Jangan menjalankan full test suite pada setiap checkpoint kecil.
-
-Full suite belum boleh diklaim hijau total. Ada kegagalan unrelated yang pernah teridentifikasi pada `CriticalDocumentWorkflowTest` terkait perbedaan ekspektasi pesan `Duplikasi invoice` versus implementasi `Keunikan invoice`.
-
-## 5. Perubahan prioritas pengembangan
-
-Mulai setelah handoff ini, prioritas utama berpindah dari polishing Phase 4 UI ke **fitur pembelian SiPLah MVP**.
-
-Alasan:
-
-- fitur bisnis SiPLah memiliki nilai lebih tinggi untuk operator;
-- GUI standardization dasar sudah cukup stabil untuk ditunda;
-- pengembangan harus hemat siklus perubahan dan focused test;
-- hindari refactor visual besar sebelum fitur SiPLah MVP stabil.
-
-## 6. Keputusan domain SiPLah
-
-SiPLah **bukan kategori SPJ baru**.
-
-Kategori SPJ tetap:
-
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-SPPD
-HONOR_PEGAWAI
-JASA_LAINNYA
-```
-
-SiPLah adalah karakteristik/metode/sumber proses pembelian atau pembayaran pada transaksi.
-
-Field/konsep existing yang harus diaudit terlebih dahulu:
+Sudah tersedia pada codebase:
 
 ```text
 payment_method = siplah
-vendor_name / identitas rekanan
-order_number / order_date
-invoice / nomor bukti pembelian jika sudah tersedia
-payment_reference jika sudah tersedia
-receipt_recipient_name
-transaction items
-dokumen paket berdasarkan kategori SPJ
+siplah_order_number
+vendor_name / vendor_owner / vendor_npwp
+invoice_number / invoice_date / invoice_status
+payment_reference
+placeholder template SiPLah
+procurement/document requirement policy SiPLah vs Non-SiPLah
 ```
 
-Jangan membuat kategori `SIPLAH` pada `spj_category`.
+Status yang benar sekarang adalah **partial/in progress**, bukan “belum mulai”.
 
-## 7. Strategi SiPLah MVP
+SiPLah tetap **bukan kategori SPJ**.
 
-Sebelum menambah migration/field baru:
+---
 
-1. audit model, migration, service, form, dan view yang sudah memiliki dukungan SiPLah;
-2. petakan field existing yang dapat dipakai ulang;
-3. identifikasi field minimum yang benar-benar belum tersedia;
-4. implementasi MVP tanpa integrasi API eksternal SiPLah;
-5. pertahankan sumber ARKAS/BKU sebagai readonly source;
-6. jangan menimpa data operator saat sinkronisasi;
-7. gunakan focused tests saja;
-8. baru kembali ke Phase 4 UI setelah fitur SiPLah stabil.
+## 4. GUI — koreksi status
 
-## 8. Batas aman bisnis yang tidak boleh berubah
+Handoff lama menyatakan internal package tabs belum dikerjakan. Itu sudah tidak benar.
 
-- ARKAS/BKU adalah sumber data dan tidak ditimpa oleh input operator.
-- `payment_description` adalah uraian operator SPJ.
-- `manual_description` tidak digunakan.
-- `receipt_recipient_name` adalah data operator dan sinkronisasi tidak boleh menimpanya.
-- preview/download tidak boleh membuat nomor secara diam-diam.
-- numbering mengikuti jenis dokumen + urutan tanggal/peristiwa, bukan urutan input.
-- dokumen bernomor/final terkunci dan koreksi harus melalui lifecycle yang sah.
-- sumber dana mengikuti tahun anggaran aktif.
-
-## 9. Working tree lokal yang harus dilindungi
-
-Jangan restore/stash/reset/checkout/overwrite file berikut tanpa instruksi eksplisit user:
+Sub-tab Paket yang aktif:
 
 ```text
-resources/views/dashboard.blade.php
-resources/views/students/index.blade.php
+Rincian
+Isian Manual
+Penomoran
 ```
 
-File berikut harus tetap untracked dan tidak dikomit:
+Tab Rincian sekarang memiliki:
 
 ```text
-spj-bosp-web.code-workspace
+Panel Rincian Transaksi
+Panel Dokumen & Template
 ```
 
-## 10. Dokumen terkait
+Dokumen & Template dipindahkan ke Rincian dan menggunakan compact list. Isian Manual/theme/spacing dan numbering hover juga sudah mendapat compatibility/theme fixes.
 
-Baca bersama:
+---
+
+## 5. Domain rule terbaru yang wajib diketahui
+
+### Surat Pesanan internal
+
+- content/substansi blocking sebelum READY;
+- nomor tidak blocking pada preparation;
+- nomor wajib pada NUMBERED/FINAL;
+- nomor diterbitkan aplikasi saat numbering.
+
+### Kronologi tanggal
+
+Canonical rule Paket:
 
 ```text
-AGENTS.md
-.ai/rules/index.md
+order_date <= transaction_date
+order_date <= bap_date
+bap_date <= bast_date
+```
+
+Known mismatch: Detail Transaksi masih memiliki upper bound tambahan BAP/BAST <= transaction date di controller.
+
+### Konsumsi
+
+`fillTeachers()` pada Detail Transaksi memakai Employee Dapodik-only.
+
+---
+
+## 6. Verification status
+
+Jangan membawa klaim PASS lama sebagai bukti kondisi HEAD sekarang.
+
+Setiap perubahan harus diverifikasi ulang sesuai scope:
+
+```text
+npm run build                     # frontend
+php artisan test --compact ...    # backend focused test
+php artisan view:cache            # bila relevan
+```
+
+Mobile visual QA tetap TODO/RVR sampai `MOBILE_VISUAL_QA_TODO.md` ditutup.
+
+---
+
+## 7. Next action yang berlaku sekarang
+
+Gunakan urutan dari `DEVELOPMENT_ROADMAP.md`. Prioritas terdekat:
+
+1. samakan purchase-date rules antara Detail Transaksi dan Paket;
+2. regression test Surat Pesanan/numbering;
+3. stabilkan generator/preview;
+4. hardening lifecycle/locking/numbering/reconciliation;
+5. end-to-end test semua kategori;
+6. mobile QA dan release hardening.
+
+---
+
+## 8. Dokumen aktif yang harus dibaca
+
+```text
+README.md
 docs/CURRENT_PROGRESS.md
-docs/DEVELOPMENT_ROADMAP.md
+docs/ARCHITECTURE_COMPLETE.md
 docs/SPJ_DESIGN_DECISIONS.md
+docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
-docs/MOBILE_VISUAL_QA_TODO.md
+docs/CSS_USAGE_GUIDE.md
+docs/DEVELOPMENT_ROADMAP.md
 docs/SIPLAH_MVP_PLAN.md
+docs/MOBILE_VISUAL_QA_TODO.md
 ```
 
-## 11. Next action
-
-Next action yang disepakati:
-
-> Audit dukungan SiPLah yang sudah ada pada codebase, lalu tentukan gap minimum untuk SiPLah MVP sebelum melakukan perubahan source.
+Dokumen ini hanya untuk history handoff 2026-09-05 dan **tidak boleh mengalahkan dokumen aktif di atas**.
