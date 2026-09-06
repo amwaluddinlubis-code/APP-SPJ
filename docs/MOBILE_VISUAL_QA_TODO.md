@@ -1,12 +1,14 @@
 # TODO — Mobile Visual Regression QA
 
-Status: TODO
+Status: **TODO / RVR**
 
-Terakhir diperbarui: 2026-09-05
+Terakhir diperbarui: **2026-09-06**
 
-Dokumen ini mencatat bahwa visual regression khusus mobile belum diselesaikan pada Phase 3 GUI Standardization karena viewport sekitar 390 px tidak dapat dibentuk dan diverifikasi secara reliabel pada browser QA yang tersedia.
+Dokumen ini mencatat bahwa visual regression mobile belum ditutup. Aplikasi **belum boleh disebut mobile-verified/mobile-complete** sebelum checklist berikut dijalankan pada viewport target.
 
-## Ruang lingkup
+---
+
+## 1. Viewport target
 
 Target utama:
 
@@ -14,62 +16,115 @@ Target utama:
 390 × 844
 ```
 
-Halaman minimum yang harus diuji:
+Tambahkan tablet portrait/landscape bila tersedia.
+
+---
+
+## 2. Halaman minimum
 
 - Dashboard `/`
 - Transactions `/transaksi`
 - Transaction Detail `/transaksi/{id}`
 - SPJ Workspace `/spj`
+- SPJ Paket `/spj?tab=paket&package_id=...`
+- SPJ Numbering `/spj/penomoran`
 - Database Manager
 - Reset Database
 - Document Number Formats
 - Document Templates
 
-Theme minimum:
+---
+
+## 3. Theme minimum
 
 - Dark Professional
 - Yellow Bright
 - Violet Premium
 
-Bila waktu memungkinkan, lengkapi juga Slate Minimal dan Indigo Executive.
+Bila memungkinkan tambahkan Slate Minimal dan Indigo Executive.
 
-## Checklist mobile
+---
 
-- tidak ada horizontal overflow yang tidak disengaja;
-- Page Header stack dengan benar;
-- action header wrap tanpa saling menimpa;
-- primary/secondary action tetap readable;
-- summary cards tidak pecah atau terpotong;
-- tabs tetap dapat digunakan;
-- tabel memakai horizontal scroll atau mobile-card pattern yang sesuai;
+## 4. Checklist global mobile
+
+- tidak ada horizontal overflow tak disengaja;
+- Page Header stack benar;
+- action wrap tanpa overlap;
+- primary/secondary action readable;
+- summary card tidak pecah;
+- tabs usable;
+- tabel horizontal-scroll atau pattern mobile yang sesuai;
 - modal tidak keluar viewport;
-- sticky actions tidak menutup konten;
-- form/input/select tetap dapat digunakan;
-- pagination/per-page tetap dapat dijangkau;
-- theme selector tetap konsisten;
-- Livewire navigation tidak menghilangkan theme;
+- sticky action/Ke atas tidak menutup konten;
+- input/select/textarea usable;
+- pagination/per-page dapat dijangkau;
+- theme selector konsisten;
+- dark form controls tidak kembali putih;
+- Livewire/Alpine navigation tidak menghilangkan theme;
 - tidak ada HTTP 500 atau layout unusable.
 
-## Status terhadap Phase 3
+---
 
-Mobile visual regression ditetapkan sebagai pekerjaan tertunda (`TODO` / `RVR`) dan **tidak menjadi blocker untuk penyelesaian regression desktop/tablet Phase 3**.
+## 5. Checklist khusus Detail Transaksi
 
-Namun, aplikasi **belum boleh dinyatakan mobile-verified atau mobile-complete** sebelum checklist pada dokumen ini dijalankan dan hasilnya dicatat.
+- panel ARKAS/BKU vs SPJ tetap jelas;
+- uraian item compact tidak memotong informasi penting;
+- form kategori `KONSUMSI` usable;
+- tombol auto-fill peserta dan `+ Peserta manual` tidak overlap;
+- daftar participant dapat discroll bila perlu;
+- validation tanggal pengadaan tetap terlihat;
+- dark form control readable.
 
-Jika suatu halaman belum benar-benar diuji pada target mobile, gunakan status:
+---
+
+## 6. Checklist khusus SPJ Paket
+
+Perubahan 2026-09-06 wajib masuk regression:
+
+### Tab Rincian
+
+- **Panel Rincian Transaksi** dan **Panel Dokumen & Template** terlihat sebagai dua card berbeda;
+- header masing-masing mengikuti theme dan tetap readable;
+- gap antar panel cukup jelas;
+- compact document rows tidak terlalu padat untuk touch;
+- tombol Preview/Unduh wrap dengan benar;
+- group header/status badge tidak menyebabkan overflow.
+
+### Tab Isian Manual
+
+- background panel mengikuti theme;
+- label/hint/control readable;
+- panel pajak tidak memaksa dark/light surface yang salah;
+- gap antar panel konsisten;
+- select/input tidak terpotong.
+
+### Tab Penomoran
+
+- normal/hover/active quarter card tetap readable;
+- card tidak melebar keluar viewport;
+- badge status tidak overlap.
+
+---
+
+## 7. Status dan pelaporan
+
+Jika halaman/theme belum benar-benar diuji pada viewport target, gunakan:
 
 ```text
 RVR
 ```
 
-Jangan mengubahnya menjadi `PASS` berdasarkan desktop/tablet observation saja.
+Jangan mengubah ke PASS berdasarkan desktop/tablet observation saja.
 
-## Exit criteria
+---
 
-TODO ini dapat ditutup jika:
+## 8. Exit criteria
 
-1. viewport sekitar `390 × 844` berhasil diuji secara reliabel;
-2. halaman minimum di atas telah diperiksa;
-3. Dark, Yellow, dan Violet minimal telah diperiksa;
-4. tidak ada BLOCKER/HIGH issue mobile yang belum diselesaikan;
-5. hasil akhir mobile dicatat di regression report atau dokumentasi GUI.
+TODO dapat ditutup jika:
+
+1. viewport sekitar `390 × 844` diuji secara reliabel;
+2. seluruh halaman minimum diperiksa;
+3. Dark, Yellow, dan Violet minimal diperiksa;
+4. package layout terbaru diperiksa pada Rincian/Isian Manual/Penomoran;
+5. tidak ada BLOCKER/HIGH mobile issue tersisa;
+6. hasil akhir dicatat di regression report atau dokumentasi GUI.
