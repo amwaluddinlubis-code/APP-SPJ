@@ -76,17 +76,25 @@ Profile/density:
 --profile-control-height
 ```
 
-Aturan: dark appearance memakai token yang sama; semantic success/warning/danger tetap bermakna; compatibility layer boleh mengoreksi markup lama, tetapi markup baru memakai token canonical.
+Aturan: dark appearance memakai token yang sama; semantic success/warning/danger/status tetap bermakna; compatibility layer boleh mengoreksi markup lama, tetapi markup baru memakai token canonical.
 
 ### 3.1 Audit warna lintas-view
 
-Seluruh authenticated application workspace di bawah `<main>` kini memiliki final compatibility layer:
+Seluruh authenticated application workspace di bawah `<main>` kini memiliki global compatibility layer:
 
 ```text
 resources/css/view-theme-hardening.css
 ```
 
-Layer ini berada paling akhir pada `theme-system.css` dan mengubah ownership warna legacy dari Tailwind palette statis ke token theme aktif. Cakupan utamanya:
+Layer ini dijalankan setelah seluruh compatibility CSS fitur dan mengubah ownership warna legacy non-semantik dari Tailwind palette statis ke token theme aktif. Sesudahnya hanya ada satu exception terkontrol:
+
+```text
+resources/css/semantic-status-colors.css
+```
+
+Exception tersebut hanya menjaga perbedaan visual status workflow canonical pada `<x-ui.status-badge>`; ia bukan layer dekorasi umum.
+
+Cakupan hardening utama:
 
 ```text
 background/surface neutral
@@ -98,13 +106,14 @@ hover/focus/ring
 variant background dengan opacity
 ```
 
-Dengan demikian class lama seperti `bg-white`, `bg-slate-*`, `text-slate-*`, `bg-indigo-*`, `text-indigo-*`, atau hover/focus sejenis dapat tetap ada sementara sebagai **compatibility hook**, tetapi warna aktual pada authenticated view tidak lagi dimiliki oleh palette tersebut.
+Dengan demikian class lama seperti `bg-white`, `bg-slate-*`, `text-slate-*`, `bg-indigo-*`, `text-indigo-*`, atau hover/focus sejenis dapat tetap ada sementara sebagai **compatibility hook**, tetapi warna aktual non-semantik pada authenticated view tidak lagi dimiliki oleh palette tersebut.
 
 Pengecualian yang sengaja dipertahankan:
 
 - emerald/green untuk success;
 - amber/yellow/orange untuk warning/attention;
 - rose/red untuk danger/error;
+- sky/indigo/violet yang memang merepresentasikan status workflow canonical melalui `ui-status-badge`;
 - `text-white` serta overlay putih transparan pada hero gelap bila dibutuhkan untuk kontras;
 - PDF/print/template-preview yang membutuhkan warna output tetap;
 - public/auth/setup/pre-login yang tidak berada pada authenticated `<main>` dan dapat memiliki branding sendiri.
@@ -233,7 +242,7 @@ Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierar
 
 ## 12. Status dan badge
 
-Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kategori/role/metode pembayaran. Status harus memakai bahasa manusiawi dan semantic color yang konsisten.
+Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kategori/role/metode pembayaran. Status harus memakai bahasa manusiawi dan semantic color yang konsisten. `semantic-status-colors.css` hanya berlaku pada `ui-status-badge` agar warna workflow tetap berbeda tanpa mengunci surface ke light mode.
 
 ---
 
@@ -243,7 +252,7 @@ CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind stat
 
 Untuk Database Aktif, `settings-database-standardization.css` menjadi style layer canonical untuk root `#database-control-center`.
 
-`view-theme-hardening.css` berbeda: layer ini sengaja global tetapi hanya berlaku pada authenticated `<main>`. Tugasnya menangkap sisa palette non-semantik lintas halaman setelah seluruh feature layer selesai, bukan menjadi tempat menambah aturan khusus satu halaman.
+`view-theme-hardening.css` berbeda: layer ini sengaja global tetapi hanya berlaku pada authenticated `<main>`. Tugasnya menangkap sisa palette non-semantik lintas halaman setelah seluruh feature layer selesai, bukan menjadi tempat menambah aturan khusus satu halaman. `semantic-status-colors.css` adalah exception sempit setelahnya khusus status canonical.
 
 ---
 
