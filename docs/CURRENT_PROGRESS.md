@@ -90,6 +90,22 @@ Catatan UI: label tombol di view masih berbunyi “Ambil semua pegawai terdaftar
 
 `transactions-standardization.css` menormalisasi panel/form Detail Transaksi terhadap tema dan membuat daftar uraian barang lebih compact.
 
+### 4.4 Filter workflow Transaksi dan Persiapan
+
+Filter status pada halaman `/transaksi` dan `/spj?tab=persiapan` sekarang berbagi kontrak melalui `SpjWorkflowFilterService`:
+
+```text
+Perlu Perhatian   -> SOURCE_MISSING / requires_reconciliation
+Belum Dikerjakan  -> belum memiliki Paket SPJ
+Perlu Dilengkapi  -> DRAFT
+Siap Dinomori     -> READY
+Sudah Bernomor    -> NUMBERED / FINAL
+```
+
+State normal mengecualikan transaksi yang sedang `SOURCE_MISSING` atau membutuhkan rekonsiliasi agar bucket antrean tidak tumpang tindih. Keberadaan rincian `transaction_items` tidak lagi dipakai sebagai status pekerjaan operator karena rincian berasal dari sinkronisasi `kas_umum`. State lama `needs_details` bukan workflow canonical dan hanya dipertahankan sementara sebagai alias kompatibilitas ke **Perlu Perhatian** sampai markup Persiapan legacy dirapikan.
+
+Halaman Transaksi masih memiliki pencarian dan filter periode sendiri, tetapi filter **Status** tidak lagi membaca status mentah source transaction. Label dan arti status sama dengan Persiapan dan Dashboard Produktivitas.
+
 ---
 
 ## 5. Validasi pengadaan — kondisi aktual
@@ -265,7 +281,7 @@ Belum Dikerjakan
 → Final
 ```
 
-`Belum Dikerjakan` berarti transaksi aktif yang memiliki rincian, belum memiliki Paket SPJ, dan tidak sedang berada pada kondisi rekonsiliasi/source missing. `Sedang Dikerjakan` adalah Paket SPJ `DRAFT`; `Siap Dinomori` adalah Paket `READY`. Angka `Belum Bernomor` adalah total ketiga tahap tersebut untuk antrean normal.
+`Belum Dikerjakan` berarti transaksi aktif yang belum memiliki Paket SPJ dan tidak sedang berada pada kondisi rekonsiliasi/source missing. `Sedang Dikerjakan` adalah Paket SPJ `DRAFT`; `Siap Dinomori` adalah Paket `READY`. Angka `Belum Bernomor` adalah total ketiga tahap tersebut untuk antrean normal.
 
 Dashboard menampilkan prioritas otomatis, pekerjaan draft berikutnya, transaksi Belum Dikerjakan berikutnya berdasarkan urutan tanggal/id, progress keseluruhan, antrean kerja terdekat, serta ringkasan penomoran. Rekonsiliasi/source missing tetap diprioritaskan sebagai blocker sebelum pekerjaan normal.
 
@@ -276,7 +292,7 @@ Dashboard operasional sebelumnya **tidak ditimpa**. `OperationalDashboardControl
 resources/views/dashboard-operational-v3.blade.php
 ```
 
-Dashboard tersebut tersedia sebagai pembanding/legacy dan dapat dibuka dari tombol **Dashboard Lama** pada dashboard produktivitas.
+Dashboard tersebut tersedia sebagai pembanding/legacy.
 
 Route `/dashboard-v2` juga tetap tersedia melalui `DashboardController` dan protected view:
 
@@ -355,7 +371,7 @@ npm run build
 php artisan view:cache --no-interaction
 ```
 
-Dashboard produktivitas menambah controller/query read-only dan view baru serta mengubah route `/`. Tidak ada business rule SPJ, lifecycle, sinkronisasi, atau numbering yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal, termasuk perbandingan angka Belum Dikerjakan/DRAFT/READY terhadap dataset aktual.
+Filter workflow bersama memiliki focused coverage di `SpjPreparationFilterTest` dan `TransactionsWorkflowFilterTest`. Test tersebut tetap perlu dijalankan pada environment lokal sebelum perubahan dinyatakan PASS.
 
 ---
 
@@ -366,23 +382,25 @@ Dashboard produktivitas menambah controller/query read-only dan view baru serta 
 3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
 4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime non-semantik sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
 5. Dashboard produktivitas saat ini mendefinisikan `Belum Dikerjakan` dari state persisted (belum memiliki Paket SPJ), bukan event analytics “halaman pernah dibuka”; bila nanti diperlukan audit aktivitas buka halaman yang benar-benar literal, perlu event/log tersendiri.
-6. Mobile regression belum ditutup, termasuk dashboard produktivitas, Database Aktif, dan hardening palette lintas-view.
-7. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
+6. Markup filter Persiapan masih memiliki label legacy `Rincian belum ada`; backend mempertahankan `state=needs_details` hanya sebagai alias sementara ke **Perlu Perhatian**. UI tersebut harus dirapikan saat patch aman pada Blade besar dilakukan.
+7. Mobile regression belum ditutup, termasuk dashboard produktivitas, Database Aktif, dan hardening palette lintas-view.
+8. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
 
 ---
 
 ## 15. Prioritas berikutnya
 
-1. Verifikasi angka dashboard produktivitas terhadap dataset operator aktual.
-2. Seragamkan purchase-date rules antar endpoint.
-3. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
-4. Stabilkan generator/preview PDF/Word/Excel.
-5. Finalisasi lifecycle/locking/revisi/numbering.
-6. Finalisasi rekonsiliasi ARKAS snapshot/diff.
-7. Hardening authorization per role.
-8. End-to-end test seluruh kategori.
-9. Selesaikan mobile visual QA termasuk dashboard produktivitas, Database Aktif, dan palette lintas-view.
-10. Laporan BOS dan release hardening.
+1. Verifikasi filter workflow Transaksi dan Persiapan terhadap dataset operator aktual.
+2. Rapikan label legacy `needs_details` pada Blade Persiapan menjadi **Perlu Perhatian** tanpa full-file rewrite berisiko.
+3. Seragamkan purchase-date rules antar endpoint.
+4. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
+5. Stabilkan generator/preview PDF/Word/Excel.
+6. Finalisasi lifecycle/locking/revisi/numbering.
+7. Finalisasi rekonsiliasi ARKAS snapshot/diff.
+8. Hardening authorization per role.
+9. End-to-end test seluruh kategori.
+10. Selesaikan mobile visual QA termasuk dashboard produktivitas, Database Aktif, dan palette lintas-view.
+11. Laporan BOS dan release hardening.
 
 ---
 
