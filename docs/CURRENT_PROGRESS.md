@@ -247,28 +247,44 @@ Target sekarang bukan membuat design system baru, tetapi mengurangi markup legac
 
 ---
 
-## 10. Dashboard — source canonical
+## 10. Dashboard — source canonical dan produktivitas operator
 
-Dashboard operasional utama pada route `/` menggunakan `OperationalDashboardController` dan view canonical:
+Route `/` sekarang menggunakan `ProductivityDashboardController` dan view baru:
 
 ```text
+resources/views/dashboard-productivity.blade.php
+```
+
+Dashboard baru berorientasi tindakan operator, bukan sekadar statistik. Istilah workflow yang dipakai adalah:
+
+```text
+Belum Dikerjakan
+→ Sedang Dikerjakan
+→ Siap Dinomori
+→ Sudah Bernomor
+→ Final
+```
+
+`Belum Dikerjakan` berarti transaksi aktif yang memiliki rincian, belum memiliki Paket SPJ, dan tidak sedang berada pada kondisi rekonsiliasi/source missing. `Sedang Dikerjakan` adalah Paket SPJ `DRAFT`; `Siap Dinomori` adalah Paket `READY`. Angka `Belum Bernomor` adalah total ketiga tahap tersebut untuk antrean normal.
+
+Dashboard menampilkan prioritas otomatis, pekerjaan draft berikutnya, transaksi Belum Dikerjakan berikutnya berdasarkan urutan tanggal/id, progress keseluruhan, antrean kerja terdekat, serta ringkasan penomoran. Rekonsiliasi/source missing tetap diprioritaskan sebagai blocker sebelum pekerjaan normal.
+
+Dashboard operasional sebelumnya **tidak ditimpa**. `OperationalDashboardController` dan view berikut tetap dipertahankan:
+
+```text
+/dashboard-operasional
 resources/views/dashboard-operational-v3.blade.php
 ```
 
-View eksperimen/legacy berikut sudah dihapus agar tidak lagi membingungkan source aktif:
+Dashboard tersebut tersedia sebagai pembanding/legacy dan dapat dibuka dari tombol **Dashboard Lama** pada dashboard produktivitas.
 
-```text
-resources/views/dashboard-operational.blade.php
-resources/views/dashboard-operational-v2.blade.php
-```
-
-Route `/dashboard-v2` tetap merupakan dashboard pembanding/QA tersendiri melalui `DashboardController` dan view:
+Route `/dashboard-v2` juga tetap tersedia melalui `DashboardController` dan protected view:
 
 ```text
 resources/views/dashboard.blade.php
 ```
 
-Nama route `/dashboard-v2` **tidak** berarti view `dashboard-operational-v2.blade.php`. View `dashboard.blade.php` tetap source aktif untuk route tersebut dan merupakan protected working file sesuai `.ai/rules/index.md`.
+Nama route `/dashboard-v2` tidak berkaitan dengan file `dashboard-operational-v2.blade.php`; view legacy `dashboard-operational.blade.php` dan `dashboard-operational-v2.blade.php` tetap sudah dihapus dari repository.
 
 Cleanup repository juga mengeluarkan `.stakpak/data/local.db` dari tracking. Local state `.stakpak/data/` tetap di-ignore dan tidak boleh menjadi source project.
 
@@ -322,7 +338,7 @@ resources/css/settings-database-standardization.css
 
 ## 12. Mobile QA
 
-`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Halaman Database Aktif dan hardening palette lintas-view terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
+`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Dashboard produktivitas, Database Aktif, dan hardening palette lintas-view terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
 
 ---
 
@@ -333,12 +349,13 @@ Jangan menganggap seluruh suite hijau hanya karena test tertentu pernah PASS.
 Setelah backend berubah gunakan test relevan; setelah frontend berubah jalankan:
 
 ```text
+vendor/bin/pint --dirty --format agent
 npm run theme:qa
 npm run build
 php artisan view:cache --no-interaction
 ```
 
-Perubahan hardening lintas-view kali ini adalah CSS + marker presentational pada status badge + dokumentasi; tidak ada business rule/backend yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal.
+Dashboard produktivitas menambah controller/query read-only dan view baru serta mengubah route `/`. Tidak ada business rule SPJ, lifecycle, sinkronisasi, atau numbering yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal, termasuk perbandingan angka Belum Dikerjakan/DRAFT/READY terhadap dataset aktual.
 
 ---
 
@@ -348,22 +365,24 @@ Perubahan hardening lintas-view kali ini adalah CSS + marker presentational pada
 2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
 3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
 4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime non-semantik sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
-5. Mobile regression belum ditutup, termasuk Database Aktif dan hardening palette lintas-view.
-6. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
+5. Dashboard produktivitas saat ini mendefinisikan `Belum Dikerjakan` dari state persisted (belum memiliki Paket SPJ), bukan event analytics “halaman pernah dibuka”; bila nanti diperlukan audit aktivitas buka halaman yang benar-benar literal, perlu event/log tersendiri.
+6. Mobile regression belum ditutup, termasuk dashboard produktivitas, Database Aktif, dan hardening palette lintas-view.
+7. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
 
 ---
 
 ## 15. Prioritas berikutnya
 
-1. Seragamkan purchase-date rules antar endpoint.
-2. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
-3. Stabilkan generator/preview PDF/Word/Excel.
-4. Finalisasi lifecycle/locking/revisi/numbering.
-5. Finalisasi rekonsiliasi ARKAS snapshot/diff.
-6. Hardening authorization per role.
-7. End-to-end test seluruh kategori.
-8. Selesaikan mobile visual QA termasuk Database Aktif dan palette lintas-view.
-9. Laporan BOS dan release hardening.
+1. Verifikasi angka dashboard produktivitas terhadap dataset operator aktual.
+2. Seragamkan purchase-date rules antar endpoint.
+3. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
+4. Stabilkan generator/preview PDF/Word/Excel.
+5. Finalisasi lifecycle/locking/revisi/numbering.
+6. Finalisasi rekonsiliasi ARKAS snapshot/diff.
+7. Hardening authorization per role.
+8. End-to-end test seluruh kategori.
+9. Selesaikan mobile visual QA termasuk dashboard produktivitas, Database Aktif, dan palette lintas-view.
+10. Laporan BOS dan release hardening.
 
 ---
 
