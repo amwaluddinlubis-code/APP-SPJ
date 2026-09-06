@@ -136,7 +136,7 @@ class Transaction extends Model
     {
         return $this->hasManyThrough(SpjHonor::class, TransactionItem::class)
             ->orderBy('spj_honors.sort_order')
-            ->orderBy('id');
+            ->orderBy('spj_honors.id');
     }
 
     public function serviceRecipients(): HasMany
