@@ -12,6 +12,7 @@ use App\UseCases\Spj\SpjNumberingUseCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class DocumentNumberingWorkflowTest extends TestCase
@@ -86,6 +87,63 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame($laterSourcePackage->id, $ordered[1]->id);
         $this->assertSame('B-200', $ordered[0]->transaction->no_bukti);
         $this->assertSame('B-900', $ordered[1]->transaction->no_bukti);
+    }
+
+    public function test_same_date_spj_numbers_follow_arkas_created_at_then_last_updated_at(): void
+    {
+        $year = $this->year();
+        $laterPackage = $this->package($year, 'BPU04', '2026-02-10', '100');
+        $earlierPackage = $this->package($year, 'BPU01', '2026-02-10', '900');
+
+        $laterPackage->transaction->forceFill([
+            'source_created_at' => Carbon::parse('2026-02-10 11:00:00'),
+            'source_last_updated_at' => Carbon::parse('2026-02-10 11:30:00'),
+        ])->save();
+        $earlierPackage->transaction->forceFill([
+            'source_created_at' => Carbon::parse('2026-02-10 09:00:00'),
+            'source_last_updated_at' => Carbon::parse('2026-02-10 10:00:00'),
+        ])->save();
+
+        $ordered = app(SpjNumberingUseCase::class)->orderedPackagesForDocumentType(
+            collect([$laterPackage, $earlierPackage]),
+            'SPJ'
+        );
+
+        $this->assertSame($earlierPackage->id, $ordered[0]->id);
+        $this->assertSame($laterPackage->id, $ordered[1]->id);
+    }
+
+    public function test_single_numbering_does_not_skip_a_printed_target_and_block_on_a_later_bku_transaction(): void
+    {
+        $year = $this->year();
+        $target = $this->package($year, 'BPU03', '2026-02-10', '300');
+        $later = $this->package($year, 'BPU04', '2026-02-10', '400');
+        $target->forceFill(['status' => 'DICETAK'])->save();
+
+        $target->transaction->forceFill(['source_created_at' => Carbon::parse('2026-02-10 09:00:00')])->save();
+        $later->transaction->forceFill(['source_created_at' => Carbon::parse('2026-02-10 09:01:00')])->save();
+        session()->put(['active_fiscal_year_id' => $year->id, 'active_fund_source_id' => 1]);
+
+        $target = $target->fresh(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.honors', 'transaction.travels', 'documents']);
+        $blocker = new ReflectionMethod(SpjNumberingUseCase::class, 'singleNumberingBlocker');
+
+        $this->assertNull($blocker->invoke(app(SpjNumberingUseCase::class), $target, ['SPJ']));
+    }
+
+    public function test_package_numbering_can_issue_only_spj_without_using_goods_document_dates(): void
+    {
+        $year = $this->year();
+        $package = $this->package($year, 'BPU03', '2026-02-10', '300');
+        $package->transaction->items->first()->goods()->create([
+            'order_date' => '2026-01-08',
+            'bap_date' => '2026-01-08',
+            'bast_date' => '2026-01-08',
+        ]);
+
+        $result = app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package, '10200001', onlyDocumentTypes: ['SPJ']);
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame(['SPJ'], $package->documents()->pluck('document_type')->all());
     }
 
     public function test_non_spj_document_order_uses_its_event_date_then_bku_source_order(): void

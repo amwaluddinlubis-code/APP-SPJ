@@ -16,5 +16,8 @@
     'edit' => 'M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Zm10-14 4 4M13 20h7',
     'employee' => 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 1 0 7.75',
     'search' => 'm21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',
+    'preview' => 'M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Zm9.5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+    'excel' => 'M5 3h10l4 4v14H5V3Zm10 0v5h5M8 12h8m-8 4h8m-8-8h2',
+    'pdf' => 'M5 3h10l4 4v14H5V3Zm10 0v5h5M8 16h2.5a1.5 1.5 0 0 0 0-3H8v3Zm6 0v-3h1a1.5 1.5 0 0 1 0 3h-1Z',
 ])
 <svg {{ $attributes->merge(['class' => 'h-5 w-5 shrink-0', 'fill' => 'none', 'viewBox' => '0 0 24 24', 'stroke' => 'currentColor', 'stroke-width' => '1.8']) }} aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $paths[$name] ?? $paths['document'] }}" /></svg>

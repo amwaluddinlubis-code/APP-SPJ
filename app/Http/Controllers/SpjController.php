@@ -102,9 +102,24 @@ class SpjController extends Controller
         return $useCase->download($packageId);
     }
 
+    public function downloadPackageExcel(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->downloadPackageExcel($packageId);
+    }
+
+    public function previewPackage(string $packageId, SpjDocumentUseCase $useCase): View|RedirectResponse
+    {
+        return $useCase->previewPackage($packageId);
+    }
+
     public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
     {
         return $useCase->downloadTemplate($packageId, $templateId);
+    }
+
+    public function downloadTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->downloadTemplatePdf($packageId, $templateId);
     }
 
     public function previewTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase): View|RedirectResponse

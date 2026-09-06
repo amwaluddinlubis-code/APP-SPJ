@@ -54,7 +54,7 @@ class SpjNumberingUseCase
         if ($issues = $validator->validate($package)) {
             return back()->with('error', 'Penomoran ditolak. '.collect($issues)->pluck('message')->implode(' '));
         }
-        if ($blocker = $this->singleNumberingBlocker($package, self::AUTOMATIC_DOCUMENT_TYPES)) {
+        if ($blocker = $this->singleNumberingBlocker($package, ['SPJ'])) {
             return back()->with('error', $blocker);
         }
         if ($package->status === 'CANCELLED') {
@@ -62,11 +62,11 @@ class SpjNumberingUseCase
         }
 
         $school = School::query()->findOrFail(session('active_school_id'));
-        $result = $numbers->assignAutomaticNumbers($package, $school->school_code ?: $school->npsn, $school->npsn);
+        $result = $numbers->assignAutomaticNumbers($package, $school->school_code ?: $school->npsn, $school->npsn, ['SPJ']);
         $package->refresh();
         app(OperationalAuditService::class)->record($package->transaction->fiscal_year_id, 'SPJ_PACKAGE', $package->id, 'TETAPKAN_NOMOR', 'Nomor SPJ '.$package->document_number.' ditetapkan.');
 
-        return back()->with('success', "Penomoran otomatis selesai: {$result['created']} nomor baru; {$result['skipped']} nomor yang sudah ada dilewati.");
+        return back()->with('success', "Penomoran SPJ selesai: {$result['created']} nomor baru; {$result['skipped']} nomor yang sudah ada dilewati.");
     }
 
     public function markReady(string $packageId): RedirectResponse
@@ -420,6 +420,7 @@ class SpjNumberingUseCase
 
     private function sourceOrderKey(Transaction $transaction): string
     {
+        $arkasTimestampKey = $this->arkasTimestampOrderKey($transaction);
         $sourceItemIds = $transaction->relationLoaded('items')
             ? $transaction->items->pluck('source_item_id')
             : $transaction->items()->pluck('source_item_id');
@@ -431,6 +432,7 @@ class SpjNumberingUseCase
 
         if (filled($firstSourceItemId)) {
             return implode('|', [
+                $arkasTimestampKey,
                 $this->normalizeSourceOrderPart($firstSourceItemId),
                 $this->normalizeSourceOrderPart($transaction->source_key),
                 $this->normalizeSourceOrderPart($transaction->no_bukti),
@@ -439,6 +441,7 @@ class SpjNumberingUseCase
 
         if (filled($transaction->id_kas_umum)) {
             return implode('|', [
+                $arkasTimestampKey,
                 $this->normalizeSourceOrderPart($transaction->id_kas_umum),
                 $this->normalizeSourceOrderPart($transaction->source_key),
                 $this->normalizeSourceOrderPart($transaction->no_bukti),
@@ -447,13 +450,22 @@ class SpjNumberingUseCase
 
         if (filled($transaction->source_key)) {
             return implode('|', [
+                $arkasTimestampKey,
                 $this->normalizeSourceOrderPart($transaction->source_key),
                 $this->normalizeSourceOrderPart($transaction->no_bukti),
             ]);
         }
 
-        return $this->normalizeSourceOrderPart($transaction->no_bukti)
+        return $arkasTimestampKey.'|'.$this->normalizeSourceOrderPart($transaction->no_bukti)
             .'|LOCAL:'.str_pad((string) $transaction->id, 20, '0', STR_PAD_LEFT);
+    }
+
+    private function arkasTimestampOrderKey(Transaction $transaction): string
+    {
+        $createdAt = $transaction->source_created_at?->format('Y-m-d H:i:s.u') ?? '9999-12-31 23:59:59.999999';
+        $lastUpdatedAt = $transaction->source_last_updated_at?->format('Y-m-d H:i:s.u') ?? '9999-12-31 23:59:59.999999';
+
+        return $createdAt.'|'.$lastUpdatedAt;
     }
 
     private function normalizeSourceOrderPart(mixed $value): string
@@ -499,7 +511,7 @@ class SpjNumberingUseCase
             ->whereHas('transaction', fn ($query) => $query->activeContext()
                 ->whereMonth('transaction_date', '>=', $startMonth)
                 ->whereMonth('transaction_date', '<=', $endMonth))
-            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'CANCELLED'])
+            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK', 'CANCELLED'])
             ->get();
 
         foreach ($documentTypes as $documentType) {

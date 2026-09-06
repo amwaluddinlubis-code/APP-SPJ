@@ -108,6 +108,28 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertSame('INV-UPDATED', $transaction->invoice_number);
     }
 
+    public function test_siplah_invoice_date_only_needs_to_be_on_or_before_the_transaction_date(): void
+    {
+        $transaction = $this->transaction(['is_siplah' => true]);
+        $transaction->items()->create([
+            'description' => 'Kertas A4', 'item_description' => 'Kertas A4', 'quantity' => 1,
+            'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
+        ]);
+
+        $response = $this->withoutMiddleware()
+            ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->post(route('spj.prepare', $transaction->id), [
+                'spj_category' => 'BARANG', 'payment_description' => 'Pembelian melalui SiPLah',
+                'payment_method' => 'siplah', 'receipt_recipient_name' => 'Toko SiPLah Nusantara',
+                'siplah_order_number' => 'SIPL-2026-12345', 'order_date' => '2026-01-05',
+                'bap_date' => '2026-01-08', 'bast_date' => '2026-01-10',
+                'invoice_date' => '2026-01-06',
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame('2026-01-06', $transaction->fresh()->invoice_date?->format('Y-m-d'));
+    }
+
     public function test_siplah_template_placeholders_keep_marketplace_and_spj_order_numbers_separate(): void
     {
         $transaction = $this->transaction([

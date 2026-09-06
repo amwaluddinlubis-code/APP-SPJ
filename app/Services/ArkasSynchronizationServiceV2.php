@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ArkasSource;
 use App\Models\FiscalYear;
 use App\Models\School;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -142,9 +143,12 @@ class ArkasSynchronizationServiceV2
             $sourceItemIds = $this->ids($items, 'ID_KAS_UMUM');
             sort($sourceItemIds);
             $sourceKey = hash('sha256', implode('|', $sourceItemIds));
+            $sourceCreatedAt = $this->earliestSourceTimestamp($items, ['CREATE_DATE', 'CREATED_AT', 'create_date', 'created_at']);
+            $sourceLastUpdatedAt = $this->earliestSourceTimestamp($items, ['LAST_UPDATE', 'LAST_UPDATED_AT', 'UPDATED_AT', 'last_update', 'updated_at']);
             $isSiplah = (bool) ($first['IS_SIPLAH'] ?? false);
             $data = ['fund_source_id' => $first['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                 'id_kas_umum' => $first['ID_KAS_UMUM'], 'transaction_date' => $first['TANGGAL_TRANSAKSI'],
+                'source_created_at' => $sourceCreatedAt, 'source_last_updated_at' => $sourceLastUpdatedAt,
                 'description' => $first['URAIAN'] ?? null, 'payment_method' => $this->paymentMethod($first),
                 'activity_code' => $reference->activity_code ?? null, 'activity_name' => $reference->activity_name ?? null,
                 'account_code' => $first['KODE_REKENING'] ?? null, 'account_name' => $reference->description ?? null,
@@ -167,6 +171,8 @@ class ArkasSynchronizationServiceV2
             }
             $hashPayload = $data;
             unset($hashPayload['last_seen_sync_run_id'], $hashPayload['source_missing_since'], $hashPayload['source_status'], $hashPayload['updated_at']);
+            $hashWithOrderingMetadata = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
+            unset($hashPayload['source_created_at'], $hashPayload['source_last_updated_at']);
             $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
             $existing = DB::connection('school')->table('transactions')
                 ->where('fiscal_year_id', $year->id)->where('source_key', $sourceKey)->first();
@@ -176,8 +182,11 @@ class ArkasSynchronizationServiceV2
                 ->where(['fiscal_year_id' => $year->id, 'no_bukti' => $noBukti])->first();
             $hasPackage = $existing && DB::connection('school')->table('spj_packages')->where('transaction_id', $existing->id)->exists();
             $data['source_hash'] = $sourceHash;
-            $data['requires_reconciliation'] = (bool) ($existing->requires_reconciliation ?? false)
-                || ($hasPackage && filled($existing->source_hash) && $existing->source_hash !== $sourceHash);
+            $isOrderingMetadataOnlyHash = $existing && $existing->source_hash === $hashWithOrderingMetadata;
+            $data['requires_reconciliation'] = $isOrderingMetadataOnlyHash
+                ? false
+                : (bool) ($existing->requires_reconciliation ?? false)
+                    || ($hasPackage && filled($existing->source_hash) && $existing->source_hash !== $sourceHash);
             if ($existing && DB::connection('school')->table('spj_work_orders')->where('transaction_id', $existing->id)->exists()) {
                 // For an upah/pemeliharaan package, the checked worker is the
                 // intentional receipt recipient; do not replace it with ARKAS vendor.
@@ -277,6 +286,41 @@ class ArkasSynchronizationServiceV2
     private function ids(array $records, string $field): array
     {
         return array_values(array_filter(array_map(fn ($record) => (string) ($record[$field] ?? ''), $records)));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<int, string>  $keys
+     */
+    private function earliestSourceTimestamp(array $records, array $keys): ?Carbon
+    {
+        return collect($records)
+            ->map(fn (array $record): ?Carbon => $this->sourceTimestamp($record, $keys))
+            ->filter()
+            ->sort()
+            ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     * @param  array<int, string>  $keys
+     */
+    private function sourceTimestamp(array $record, array $keys): ?Carbon
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($record[$key] ?? ''));
+            if ($value === '') {
+                continue;
+            }
+
+            try {
+                return Carbon::parse($value);
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return null;
     }
 
     private function amount(mixed $value): float
