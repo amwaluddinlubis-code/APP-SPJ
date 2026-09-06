@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SpjPackage;
-use App\Services\OperationalAuditService;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use App\UseCases\Spj\SpjNumberingUseCase;
+use App\UseCases\Spj\SpjPackageCategoryUseCase;
 use App\UseCases\Spj\SpjPackageUseCase;
 use App\UseCases\Spj\SpjReportUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
@@ -85,10 +84,14 @@ class SpjController extends Controller
         return $useCase->unlockPackage($request, $packageId);
     }
 
-    public function updateDetails(string $packageId, Request $request, SpjPackageUseCase $useCase): RedirectResponse
-    {
+    public function updateDetails(
+        string $packageId,
+        Request $request,
+        SpjPackageUseCase $useCase,
+        SpjPackageCategoryUseCase $categoryUseCase,
+    ): RedirectResponse {
         if ($request->boolean('category_switch')) {
-            return $this->switchPackageCategory($packageId, $request);
+            return $categoryUseCase->switchCategory($packageId, $request);
         }
 
         return $useCase->updateDetails($packageId, $request);
@@ -117,37 +120,5 @@ class SpjController extends Controller
     public function exportHonorPayments(Request $request, string $format, SpjReportUseCase $useCase)
     {
         return $useCase->exportHonorPayments($request, $format);
-    }
-
-    private function switchPackageCategory(string $packageId, Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'spj_category' => ['required', 'in:BARANG,KONSUMSI,PEMELIHARAAN,JASA_LAINNYA,SPPD,HONOR_PEGAWAI'],
-        ]);
-
-        $package = SpjPackage::query()->with('transaction')->find($packageId);
-        if (! $package
-            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])
-                ->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah/tahun/sumber dana aktif.');
-        }
-        if (! $package->isEditable()) {
-            return back()->with('error', 'Paket sudah bernomor atau final. Buka kembali paket sebelum mengganti kategori SPJ.');
-        }
-
-        if ($package->transaction->spj_category !== $data['spj_category']) {
-            $package->transaction->forceFill(['spj_category' => $data['spj_category']])->save();
-            app(OperationalAuditService::class)->record(
-                $package->transaction->fiscal_year_id,
-                'SPJ_PACKAGE',
-                $package->id,
-                'UBAH_KATEGORI',
-                'Kategori paket '.$package->transaction->no_bukti.' diubah menjadi '.$data['spj_category'].'.'
-            );
-        }
-
-        return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $package->id])
-            ->with('success', 'Kategori SPJ diperbarui. Isian Manual dimuat ulang sesuai kategori yang dipilih.');
     }
 }
