@@ -70,7 +70,7 @@ class TransactionsWorkflowFilterTest extends TestCase
         string $date,
         ?string $packageStatus = null,
         ?string $documentNumber = null,
-        ?string $sourceStatus = null,
+        string $sourceStatus = 'ACTIVE',
     ): Transaction {
         $transaction = Transaction::query()->create([
             'fiscal_year_id' => 1,
