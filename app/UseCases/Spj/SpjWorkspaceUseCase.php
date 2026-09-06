@@ -61,7 +61,7 @@ class SpjWorkspaceUseCase
             'month' => ['nullable', 'integer', 'between:1,12'],
             'quarter' => ['nullable', 'integer', 'between:1,4'],
             'spj_category' => ['nullable', 'string', 'max:40'],
-            'state' => ['nullable', 'in:all,attention,unprepared,draft,ready,numbered'],
+            'state' => ['nullable', 'in:all,attention,needs_details,unprepared,draft,ready,numbered'],
         ]);
 
         $month = isset($filters['month']) ? (int) $filters['month'] : null;
@@ -79,6 +79,7 @@ class SpjWorkspaceUseCase
         foreach (array_keys($this->workflowFilters->options()) as $state) {
             $workQueueCounts[$state] = $this->workflowFilters->apply(clone $query, $state)->count();
         }
+        $workQueueCounts['needs_details'] = $workQueueCounts['attention'];
 
         $this->workflowFilters->apply($query, $filters['state'] ?? 'all');
 
