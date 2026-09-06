@@ -1,0 +1,33 @@
+/* Keep Dokumen & Template visually integrated after it is moved into the
+   first Paket sub-tab (Rincian). The JS placement layer only changes DOM
+   position; this file normalizes spacing and removes the redundant outer-card
+   treatment that would otherwise make the nested section feel too heavy. */
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] {
+    margin: 0 !important;
+    border-width: 1px 0 0 !important;
+    border-color: var(--spj-border) !important;
+    border-radius: 0 !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+    box-shadow: none !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child {
+    padding-block: .7rem !important;
+    background: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] h2,
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] h3 {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] p {
+    color: var(--spj-text-muted);
+}
+
+@media (max-width: 639px) {
+    .spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child {
+        padding-block: .6rem !important;
+    }
+}
