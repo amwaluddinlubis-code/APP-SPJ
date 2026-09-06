@@ -115,12 +115,47 @@ class SpjDocumentRequirementService
             'Invoice/faktur/tagihan tersedia.',
             'Nomor invoice/faktur/tagihan belum tersedia. Data ini bersifat pendukung dan tidak memblokir cetak.'
         );
+
+        /*
+         * Surat Pesanan Internal memiliki dua tahap validasi:
+         * 1) isi/substansi wajib lengkap sebelum paket boleh READY/dinomori;
+         * 2) nomor surat baru wajib setelah paket sudah NUMBERED/FINAL.
+         * Nomor yang diterbitkan aplikasi tidak boleh menjadi blocker sebelum proses penomoran.
+         */
+        $internalOrderApplicable = ! $isSiplah && $goodsCategory;
+        $orderDate = $firstGoods?->order_date ?: $transaction->order_date;
+        $orderItemsComplete = $transaction->items->isNotEmpty()
+            && $transaction->items->every(fn ($item) =>
+                filled($item->item_description ?: $item->description)
+                && (float) $item->quantity > 0
+                && filled($item->unit)
+                && (float) $item->unit_price >= 0
+                && (float) $item->amount >= 0
+            );
+        $internalOrderContentReady = filled($transaction->vendor_name)
+            && filled($orderDate)
+            && $orderItemsComplete
+            && (float) $transaction->gross_amount > 0;
+
         $add(
-            'internal_order', 'Pengadaan', 'Surat pesanan internal', 'Dibuat aplikasi',
-            ! $isSiplah && $goodsCategory, ! $isSiplah && $goodsCategory,
-            filled($firstGoods?->order_number) && filled($firstGoods?->order_date),
-            'Surat pesanan internal tersedia.',
-            'Surat pesanan internal belum lengkap.'
+            'internal_order_content', 'Pengadaan', 'Kelengkapan isi Surat Pesanan', 'Dibuat aplikasi',
+            $internalOrderApplicable, $internalOrderApplicable,
+            $internalOrderContentReady,
+            'Isi Surat Pesanan lengkap dan siap masuk proses penomoran.',
+            'Isi Surat Pesanan belum lengkap. Lengkapi penyedia, tanggal pesanan, rincian barang, satuan, jumlah, harga, dan nilai transaksi.'
+        );
+
+        $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?? ''));
+        $internalOrderNumberRequired = $internalOrderApplicable && in_array($packageStatus, ['NUMBERED', 'FINAL'], true);
+        $internalOrderNumber = $firstGoods?->order_number ?: $transaction->order_number;
+        $add(
+            'internal_order_number', 'Pengadaan', 'Nomor Surat Pesanan', 'Diterbitkan aplikasi',
+            $internalOrderNumberRequired, $internalOrderApplicable,
+            filled($internalOrderNumber),
+            'Nomor Surat Pesanan sudah diterbitkan.',
+            $internalOrderNumberRequired
+                ? 'Paket sudah bernomor/final tetapi Nomor Surat Pesanan belum tersedia. Jalankan atau perbaiki penomoran dokumen PESANAN.'
+                : 'Nomor Surat Pesanan belum diterbitkan. Nomor ini tidak memblokir tahap persiapan dan akan diwajibkan setelah paket bernomor.'
         );
 
         $receiptReady = $transaction->goodsReceipts->isNotEmpty()
