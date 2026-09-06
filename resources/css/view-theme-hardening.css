@@ -1,0 +1,293 @@
+/* Final compatibility layer for authenticated application views.
+   Some legacy Blade markup still carries Tailwind palette class names. Those
+   class names remain as compatibility hooks only: non-semantic structural
+   surfaces, text, borders, gradients and interaction states resolve through
+   the active UI/theme tokens here.
+
+   Deliberate exclusions:
+   - emerald/green = success
+   - amber/yellow/orange = warning/attention
+   - rose/red = danger/error
+   - text-white, bg-white/10..20 and border-white/* on dark/accent heroes
+   - printable/PDF/public views outside the authenticated <main> workspace
+*/
+
+:root {
+    --view-theme-surface: var(--ui-component-surface, var(--ui-surface, #ffffff));
+    --view-theme-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --view-theme-surface-muted: var(--ui-surface-muted, var(--ui-component-surface-soft, #f1f5f9));
+    --view-theme-line: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --view-theme-line-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --view-theme-fg: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --view-theme-fg-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --view-theme-fg-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #718096));
+    --view-theme-accent-surface: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--view-theme-surface));
+    --view-theme-accent-surface-hover: color-mix(in srgb, var(--theme-accent-soft) 76%, var(--view-theme-surface));
+    --view-theme-accent-border: color-mix(in srgb, var(--theme-accent) 28%, var(--view-theme-line));
+    --view-theme-accent-fg: color-mix(in srgb, var(--theme-accent-strong) 72%, var(--view-theme-fg));
+}
+
+/* Neutral structural backgrounds left in legacy Blade views. */
+main :is(
+    .bg-white,
+    .bg-slate-50,.bg-gray-50,.bg-zinc-50,.bg-neutral-50,.bg-stone-50
+) {
+    background-color: var(--view-theme-surface) !important;
+}
+
+main :is(
+    .bg-slate-100,.bg-gray-100,.bg-zinc-100,.bg-neutral-100,.bg-stone-100
+) {
+    background-color: var(--view-theme-surface-soft) !important;
+}
+
+main :is(
+    .bg-slate-200,.bg-gray-200,.bg-zinc-200,.bg-neutral-200,.bg-stone-200
+) {
+    background-color: var(--view-theme-line) !important;
+}
+
+/* Common translucent structural surfaces. Low-opacity white overlays used on
+   dark/accent heroes are intentionally not included. */
+main :is(
+    .bg-white\/50,.bg-white\/60,.bg-white\/70,.bg-white\/75,.bg-white\/80,.bg-white\/90,.bg-white\/95,
+    .bg-slate-50\/40,.bg-slate-50\/50,.bg-slate-50\/60,.bg-slate-50\/70,.bg-slate-50\/80,.bg-slate-50\/90,
+    .bg-gray-50\/40,.bg-gray-50\/50,.bg-gray-50\/60,.bg-gray-50\/70,.bg-gray-50\/80,.bg-gray-50\/90,
+    .bg-zinc-50\/40,.bg-zinc-50\/50,.bg-zinc-50\/60,.bg-zinc-50\/70,.bg-zinc-50\/80,.bg-zinc-50\/90
+) {
+    background-color: color-mix(in srgb, var(--view-theme-surface) 82%, transparent) !important;
+}
+
+/* Non-semantic accent backgrounds. Semantic status palettes are excluded. */
+main :is(
+    .bg-indigo-50,.bg-indigo-100,.bg-violet-50,.bg-violet-100,
+    .bg-blue-50,.bg-blue-100,.bg-sky-50,.bg-sky-100,.bg-cyan-50,.bg-cyan-100
+) {
+    background-color: var(--view-theme-accent-surface) !important;
+}
+
+main :is(
+    .bg-indigo-50\/30,.bg-indigo-50\/40,.bg-indigo-50\/50,.bg-indigo-50\/60,.bg-indigo-50\/70,.bg-indigo-50\/80,
+    .bg-violet-50\/30,.bg-violet-50\/40,.bg-violet-50\/50,.bg-violet-50\/60,.bg-violet-50\/70,.bg-violet-50\/80,
+    .bg-blue-50\/30,.bg-blue-50\/40,.bg-blue-50\/50,.bg-blue-50\/60,.bg-blue-50\/70,.bg-blue-50\/80,
+    .bg-sky-50\/30,.bg-sky-50\/40,.bg-sky-50\/50,.bg-sky-50\/60,.bg-sky-50\/70,.bg-sky-50\/80,
+    .bg-cyan-50\/30,.bg-cyan-50\/40,.bg-cyan-50\/50,.bg-cyan-50\/60,.bg-cyan-50\/70,.bg-cyan-50\/80
+) {
+    background-color: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--view-theme-surface)) !important;
+}
+
+main :is(
+    .bg-indigo-500,.bg-indigo-600,.bg-indigo-700,
+    .bg-violet-500,.bg-violet-600,.bg-violet-700,
+    .bg-blue-500,.bg-blue-600,.bg-blue-700,
+    .bg-sky-500,.bg-sky-600,.bg-sky-700,
+    .bg-cyan-500,.bg-cyan-600,.bg-cyan-700
+) {
+    background-color: var(--theme-action-bg, var(--theme-accent)) !important;
+}
+
+/* Neutral foreground hierarchy. */
+main :is(
+    .text-slate-950,.text-slate-900,.text-slate-800,
+    .text-gray-950,.text-gray-900,.text-gray-800,
+    .text-zinc-950,.text-zinc-900,.text-zinc-800,
+    .text-neutral-950,.text-neutral-900,.text-neutral-800,
+    .text-stone-950,.text-stone-900,.text-stone-800
+) {
+    color: var(--view-theme-fg-strong) !important;
+}
+
+main :is(
+    .text-slate-700,.text-slate-600,
+    .text-gray-700,.text-gray-600,
+    .text-zinc-700,.text-zinc-600,
+    .text-neutral-700,.text-neutral-600,
+    .text-stone-700,.text-stone-600
+) {
+    color: var(--view-theme-fg) !important;
+}
+
+main :is(
+    .text-slate-500,.text-slate-400,
+    .text-gray-500,.text-gray-400,
+    .text-zinc-500,.text-zinc-400,
+    .text-neutral-500,.text-neutral-400,
+    .text-stone-500,.text-stone-400
+) {
+    color: var(--view-theme-fg-muted) !important;
+}
+
+/* Non-semantic accent foreground. Very light accent text is usually placed on
+   a themed dark hero, so keep it readable rather than preserving a fixed hue. */
+main :is(
+    .text-indigo-100,.text-indigo-200,.text-indigo-300,
+    .text-violet-100,.text-violet-200,.text-violet-300,
+    .text-blue-100,.text-blue-200,.text-blue-300,
+    .text-sky-100,.text-sky-200,.text-sky-300,
+    .text-cyan-100,.text-cyan-200,.text-cyan-300
+) {
+    color: var(--text-comfort-on-dark-soft, #c3cedc) !important;
+}
+
+main :is(
+    .text-indigo-400,.text-indigo-500,.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-indigo-900,.text-indigo-950,
+    .text-violet-400,.text-violet-500,.text-violet-600,.text-violet-700,.text-violet-800,.text-violet-900,.text-violet-950,
+    .text-blue-400,.text-blue-500,.text-blue-600,.text-blue-700,.text-blue-800,.text-blue-900,.text-blue-950,
+    .text-sky-400,.text-sky-500,.text-sky-600,.text-sky-700,.text-sky-800,.text-sky-900,.text-sky-950,
+    .text-cyan-400,.text-cyan-500,.text-cyan-600,.text-cyan-700,.text-cyan-800,.text-cyan-900,.text-cyan-950
+) {
+    color: var(--view-theme-accent-fg) !important;
+}
+
+/* Structural borders and separators. */
+main :is(
+    .border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200,.border-zinc-100,.border-zinc-200,
+    .border-neutral-100,.border-neutral-200,.border-stone-100,.border-stone-200
+) {
+    border-color: var(--view-theme-line) !important;
+}
+
+main :is(
+    .border-slate-300,.border-gray-300,.border-zinc-300,.border-neutral-300,.border-stone-300
+) {
+    border-color: var(--view-theme-line-strong) !important;
+}
+
+main :is(
+    .border-indigo-100,.border-indigo-200,.border-indigo-300,.border-indigo-400,
+    .border-violet-100,.border-violet-200,.border-violet-300,.border-violet-400,
+    .border-blue-100,.border-blue-200,.border-blue-300,.border-blue-400,
+    .border-sky-100,.border-sky-200,.border-sky-300,.border-sky-400,
+    .border-cyan-100,.border-cyan-200,.border-cyan-300,.border-cyan-400
+) {
+    border-color: var(--view-theme-accent-border) !important;
+}
+
+main :is(
+    .divide-slate-100,.divide-slate-200,.divide-gray-100,.divide-gray-200,.divide-zinc-100,.divide-zinc-200,
+    .divide-neutral-100,.divide-neutral-200,.divide-stone-100,.divide-stone-200
+) > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--view-theme-line) !important;
+}
+
+/* Legacy hover states that otherwise snap back to a fixed light palette. */
+main :is(
+    .hover\:bg-white:hover,
+    .hover\:bg-slate-50:hover,.hover\:bg-slate-100:hover,
+    .hover\:bg-gray-50:hover,.hover\:bg-gray-100:hover,
+    .hover\:bg-zinc-50:hover,.hover\:bg-zinc-100:hover,
+    .hover\:bg-neutral-50:hover,.hover\:bg-neutral-100:hover,
+    .hover\:bg-stone-50:hover,.hover\:bg-stone-100:hover
+) {
+    background-color: var(--view-theme-surface-soft) !important;
+}
+
+main :is(
+    .hover\:bg-indigo-50:hover,.hover\:bg-indigo-100:hover,
+    .hover\:bg-violet-50:hover,.hover\:bg-violet-100:hover,
+    .hover\:bg-blue-50:hover,.hover\:bg-blue-100:hover,
+    .hover\:bg-sky-50:hover,.hover\:bg-sky-100:hover,
+    .hover\:bg-cyan-50:hover,.hover\:bg-cyan-100:hover,
+    .hover\:bg-indigo-50\/50:hover,.hover\:bg-violet-50\/50:hover,
+    .hover\:bg-blue-50\/50:hover,.hover\:bg-sky-50\/50:hover,.hover\:bg-cyan-50\/50:hover
+) {
+    background-color: var(--view-theme-accent-surface-hover) !important;
+}
+
+main :is(
+    .hover\:bg-indigo-600:hover,.hover\:bg-indigo-700:hover,
+    .hover\:bg-violet-600:hover,.hover\:bg-violet-700:hover,
+    .hover\:bg-blue-600:hover,.hover\:bg-blue-700:hover,
+    .hover\:bg-sky-600:hover,.hover\:bg-sky-700:hover,
+    .hover\:bg-cyan-600:hover,.hover\:bg-cyan-700:hover
+) {
+    background-color: var(--theme-action-hover-bg, var(--theme-accent-strong)) !important;
+}
+
+main :is(
+    .hover\:text-slate-900:hover,.hover\:text-slate-800:hover,.hover\:text-slate-700:hover,
+    .hover\:text-gray-900:hover,.hover\:text-gray-800:hover,.hover\:text-gray-700:hover,
+    .hover\:text-zinc-900:hover,.hover\:text-zinc-800:hover,.hover\:text-zinc-700:hover
+) {
+    color: var(--view-theme-fg-strong) !important;
+}
+
+main :is(
+    .hover\:text-indigo-500:hover,.hover\:text-indigo-600:hover,.hover\:text-indigo-700:hover,
+    .hover\:text-violet-500:hover,.hover\:text-violet-600:hover,.hover\:text-violet-700:hover,
+    .hover\:text-blue-500:hover,.hover\:text-blue-600:hover,.hover\:text-blue-700:hover,
+    .hover\:text-sky-500:hover,.hover\:text-sky-600:hover,.hover\:text-sky-700:hover,
+    .hover\:text-cyan-500:hover,.hover\:text-cyan-600:hover,.hover\:text-cyan-700:hover
+) {
+    color: var(--theme-content-accent, var(--view-theme-accent-fg)) !important;
+}
+
+main :is(
+    .hover\:border-slate-200:hover,.hover\:border-slate-300:hover,
+    .hover\:border-gray-200:hover,.hover\:border-gray-300:hover,
+    .hover\:border-zinc-200:hover,.hover\:border-zinc-300:hover
+) {
+    border-color: var(--view-theme-line-strong) !important;
+}
+
+main :is(
+    .hover\:border-indigo-200:hover,.hover\:border-indigo-300:hover,.hover\:border-indigo-400:hover,
+    .hover\:border-violet-200:hover,.hover\:border-violet-300:hover,.hover\:border-violet-400:hover,
+    .hover\:border-blue-200:hover,.hover\:border-blue-300:hover,.hover\:border-blue-400:hover,
+    .hover\:border-sky-200:hover,.hover\:border-sky-300:hover,.hover\:border-sky-400:hover,
+    .hover\:border-cyan-200:hover,.hover\:border-cyan-300:hover,.hover\:border-cyan-400:hover
+) {
+    border-color: color-mix(in srgb, var(--theme-accent) 42%, var(--view-theme-line)) !important;
+}
+
+/* Focus/ring remnants in legacy forms and filters. */
+main :is(
+    .focus\:border-indigo-500:focus,.focus\:border-violet-500:focus,.focus\:border-blue-500:focus,
+    .focus\:border-sky-500:focus,.focus\:border-cyan-500:focus
+) {
+    border-color: color-mix(in srgb, var(--theme-accent) 68%, var(--view-theme-line-strong)) !important;
+}
+
+main :is(
+    .focus\:ring-indigo-500:focus,.focus\:ring-violet-500:focus,.focus\:ring-blue-500:focus,
+    .focus\:ring-sky-500:focus,.focus\:ring-cyan-500:focus,
+    .ring-indigo-500,.ring-violet-500,.ring-blue-500,.ring-sky-500,.ring-cyan-500
+) {
+    --tw-ring-color: color-mix(in srgb, var(--theme-accent) 30%, transparent) !important;
+}
+
+/* Theme-owned dark gradients. Neutral dark starts are included because these
+   are visual chrome/hero treatments, not semantic status colors. */
+main :is(
+    .from-slate-950,.from-slate-900,
+    .from-indigo-950,.from-indigo-900,.from-violet-950,.from-violet-900,
+    .from-blue-950,.from-blue-900,.from-sky-950,.from-sky-900,.from-cyan-950,.from-cyan-900
+) {
+    --tw-gradient-from: var(--theme-sidebar-deep) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in srgb, var(--theme-sidebar-deep) 0%, transparent) var(--tw-gradient-to-position) !important;
+}
+
+main :is(
+    .via-slate-950,.via-slate-900,
+    .via-indigo-950,.via-indigo-900,.via-violet-950,.via-violet-900,
+    .via-blue-950,.via-blue-900,.via-sky-950,.via-sky-900,.via-cyan-950,.via-cyan-900
+) {
+    --tw-gradient-via: var(--theme-sidebar) var(--tw-gradient-via-position) !important;
+}
+
+main :is(
+    .to-slate-900,.to-slate-800,
+    .to-indigo-900,.to-indigo-800,.to-violet-900,.to-violet-800,
+    .to-blue-900,.to-blue-800,.to-sky-900,.to-sky-800,.to-cyan-900,.to-cyan-800
+) {
+    --tw-gradient-to: var(--theme-accent) var(--tw-gradient-to-position) !important;
+}
+
+/* Keep selected-theme accents visible in dark appearance while still resolving
+   surfaces/text through the dark token set. */
+html[data-ui-appearance='dark'] main {
+    --view-theme-accent-surface: color-mix(in srgb, var(--theme-accent) 13%, var(--view-theme-surface));
+    --view-theme-accent-surface-hover: color-mix(in srgb, var(--theme-accent) 20%, var(--view-theme-surface-soft));
+    --view-theme-accent-border: color-mix(in srgb, var(--theme-accent) 30%, var(--view-theme-line));
+    --view-theme-accent-fg: color-mix(in srgb, var(--theme-accent) 62%, var(--view-theme-fg-strong));
+}
