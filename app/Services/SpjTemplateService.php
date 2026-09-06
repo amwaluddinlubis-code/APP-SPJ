@@ -354,7 +354,8 @@ class SpjTemplateService
         }
 
         try {
-            (new SpreadsheetPdfWriter($spreadsheet))->save($temporaryFile);
+            $writer = new SpreadsheetPdfWriter($spreadsheet);
+            $writer->writeAllSheets()->save($temporaryFile);
 
             return (string) file_get_contents($temporaryFile);
         } finally {
