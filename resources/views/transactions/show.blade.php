@@ -273,7 +273,7 @@
             </x-ui.panel>
         </section>
 
-        <section id="modul-buat-spj" class="spj-builder order-2 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm" x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod) }">
+        <section id="modul-buat-spj" class="spj-builder order-2 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm" x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod), isSiplah: @js($isSiplah) }">
             <div class="spj-builder-header border-b px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -313,7 +313,7 @@
                     @endif
                     <fieldset @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
                     <div class="mb-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"><span class="font-black">*</span><p><strong>Wajib diisi.</strong> Penanda menyesuaikan kategori SPJ yang dipilih; field tanpa tanda bintang bersifat opsional atau terisi otomatis.</p></div>
-                    <div class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                    <div class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-3">
                         <div>
                             <label for="detail-spj-type" class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Kategori SPJ <span class="text-rose-600">* Wajib diisi</span></label>
                             <select id="detail-spj-type" name="spj_category" x-model="category" class="ui-select mt-1">
@@ -322,6 +322,15 @@
                                     <option value="{{ $type }}">{{ $spjGuidance[$type]['title'] }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div x-show="category === 'BARANG'" x-cloak class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
+                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Jenis Belanja Barang</p>
+                            <input type="hidden" name="is_siplah" x-model="isSiplah">
+                            <div class="mt-2 flex flex-wrap gap-3 text-sm text-[var(--ui-fg)]">
+                                <label class="inline-flex items-center gap-2"><input type="radio" :checked="isSiplah" @change="isSiplah = true; paymentMethod = 'siplah'"> Belanja SiPLah</label>
+                                <label class="inline-flex items-center gap-2"><input type="radio" :checked="!isSiplah" @change="isSiplah = false; if (paymentMethod === 'siplah') paymentMethod = 'tunai'"> Belanja offline</label>
+                            </div>
+                            <p class="mt-2 text-xs text-[var(--ui-fg-muted)]" x-text="isSiplah ? 'Gunakan data marketplace SiPLah.' : 'Gunakan data pesanan, BAP, dan BAST internal.'"></p>
                         </div>
                         <div class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
                             @foreach($spjGuidance as $type => $guidance)

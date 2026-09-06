@@ -36,6 +36,7 @@ class TransactionController extends Controller
             'spj_category' => ['nullable', 'in:BARANG,KONSUMSI,PEMELIHARAAN,JASA_LAINNYA,SPPD,HONOR_PEGAWAI,BELANJA_MODAL,PERJALANAN_DINAS,'],
             'payment_description' => ['nullable', 'string', 'max:4000'],
             'payment_method' => ['nullable', 'in:transfer_bank,siplah,tunai'],
+            'is_siplah' => ['nullable', 'boolean'],
             'payment_reference' => ['nullable', 'string', 'max:160'],
             'vendor_name' => ['nullable', 'string', 'max:180'],
             'vendor_owner' => ['nullable', 'string', 'max:180'],
@@ -97,6 +98,7 @@ class TransactionController extends Controller
             'payment_description' => blank($data['payment_description'] ?? null) ? null : trim($data['payment_description']),
             'spj_category' => blank($spjCategory) ? null : $spjCategory,
             'payment_method' => $paymentMethod,
+            'is_siplah' => $request->has('is_siplah') ? $request->boolean('is_siplah') : $transaction->is_siplah,
             ...collect($data)->only([
                 'payment_reference',
                 'receipt_recipient_name',
