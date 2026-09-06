@@ -1,4 +1,5 @@
 @vite('resources/js/theme-profiles.js')
+@vite('resources/js/maintenance-transaction-links.js')
 
 @php
     $initialNotifications = collect([
