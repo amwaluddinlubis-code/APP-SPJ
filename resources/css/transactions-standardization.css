@@ -254,6 +254,171 @@ main:has(#modul-buat-spj) :is(.ui-form-actions,.ui-sticky-actions,[class*="stick
     backdrop-filter: blur(12px);
 }
 
+/* Detail transaction: every neutral form/panel follows the selected theme.
+   This layer intentionally normalizes the large legacy Blade view without
+   changing semantic success/warning/danger meaning. */
+main:has(#modul-buat-spj) > div > :is(section,article),
+main:has(#modul-buat-spj) > div > section :is(article,form,fieldset,details),
+main:has(#modul-buat-spj) #modul-buat-spj > div:last-child,
+main:has(#modul-buat-spj) #modul-buat-spj .spj-builder-form,
+main:has(#modul-buat-spj) #rincian-transaksi,
+main:has(#modul-buat-spj) #rincian-transaksi form {
+    border-color: var(--transaction-line) !important;
+    background-color: var(--transaction-surface) !important;
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(fieldset,details) > :is(div,section):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]),
+main:has(#modul-buat-spj) #rincian-transaksi :is(thead,tfoot) {
+    border-color: var(--transaction-line) !important;
+    background-color: var(--transaction-surface-soft) !important;
+    color: var(--transaction-fg) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(h2,h3,h4,label,strong,summary),
+main:has(#modul-buat-spj) #rincian-transaksi :is(h2,h3,h4,label,strong,summary) {
+    color: var(--transaction-fg-strong) !important;
+}
+
+main:has(#modul-buat-spj) #modul-buat-spj :is(p,span,small,dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]),
+main:has(#modul-buat-spj) #rincian-transaksi :is(p,span,small,dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]) {
+    color: var(--transaction-fg-muted) !important;
+}
+
+/* Semantic panels are tinted from the current surface instead of forcing a
+   light-only background. The semantic foregrounds stay readable in dark and light. */
+main:has(#modul-buat-spj) :is(.bg-emerald-50,.bg-green-50) {
+    background-color: color-mix(in srgb, var(--transaction-surface) 84%, #10b981) !important;
+}
+main:has(#modul-buat-spj) :is(.bg-amber-50,.bg-yellow-50) {
+    background-color: color-mix(in srgb, var(--transaction-surface) 84%, #f59e0b) !important;
+}
+main:has(#modul-buat-spj) :is(.bg-rose-50,.bg-red-50) {
+    background-color: color-mix(in srgb, var(--transaction-surface) 84%, #f43f5e) !important;
+}
+
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-emerald-700,.text-emerald-800,.text-green-700,.text-green-800) {
+    color: #a7f3d0 !important;
+}
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-amber-700,.text-amber-800,.text-yellow-700,.text-yellow-800) {
+    color: #fde68a !important;
+}
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-rose-700,.text-rose-800,.text-red-700,.text-red-800) {
+    color: #fecdd3 !important;
+}
+
+/* Rincian Barang/Jasa: compact operator-oriented layout. */
+main:has(#modul-buat-spj) #rincian-transaksi > div:first-child {
+    gap: .5rem !important;
+    padding: .75rem 1rem !important;
+    background: var(--transaction-surface-soft) !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi > div:first-child h2 {
+    font-size: .9375rem !important;
+    line-height: 1.25rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi > div:first-child p {
+    margin-top: .125rem !important;
+    font-size: .75rem !important;
+    line-height: 1.1rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi > div:first-child > span {
+    padding: .35rem .625rem !important;
+    font-size: .75rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi table {
+    table-layout: auto;
+    font-size: .8125rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi thead th {
+    padding-top: .5rem !important;
+    padding-bottom: .5rem !important;
+    font-size: .6875rem !important;
+    line-height: .95rem !important;
+    white-space: nowrap;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td {
+    padding-top: .45rem !important;
+    padding-bottom: .45rem !important;
+    vertical-align: middle;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(1) {
+    width: 3rem;
+    padding-inline: .625rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2),
+main:has(#modul-buat-spj) #rincian-transaksi thead th:nth-child(2) {
+    min-width: 17rem !important;
+    width: 42%;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(3) {
+    min-width: 7.5rem;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(n+4) {
+    white-space: nowrap;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2) > p {
+    margin: 0 0 .2rem !important;
+    max-width: 44rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .6875rem !important;
+    line-height: 1rem !important;
+    color: var(--transaction-fg-muted) !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi .ui-input {
+    min-height: 2.15rem !important;
+    padding: .35rem .625rem !important;
+    border-color: var(--transaction-line-strong) !important;
+    background: var(--transaction-surface) !important;
+    color: var(--transaction-fg-strong) !important;
+    font-size: .8125rem !important;
+    line-height: 1.15rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi .ui-input::placeholder {
+    color: var(--transaction-fg-muted) !important;
+    opacity: 1;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi tfoot td {
+    padding-top: .6rem !important;
+    padding-bottom: .6rem !important;
+    font-size: .8125rem !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi form > fieldset > div:last-child {
+    padding: .55rem 1rem !important;
+    background: var(--transaction-surface-soft) !important;
+}
+
+main:has(#modul-buat-spj) #rincian-transaksi form > fieldset > div:last-child .ui-btn {
+    min-height: 2.2rem !important;
+    padding: .4rem .8rem !important;
+    font-size: .8125rem !important;
+}
+
+@media (max-width: 767px) {
+    main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2),
+    main:has(#modul-buat-spj) #rincian-transaksi thead th:nth-child(2) {
+        min-width: 15rem !important;
+        width: auto;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     main:has(#modul-buat-spj) :is(a,button,input,select,textarea) {
         transition: none !important;
