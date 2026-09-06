@@ -1,20 +1,99 @@
-/* Keep Dokumen & Template visually integrated after it is moved into the
-   first Paket sub-tab (Rincian). The JS placement layer only changes DOM
-   position; this file normalizes spacing and removes the redundant outer-card
-   treatment that would otherwise make the nested section feel too heavy. */
-.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] {
+/* Package Rincian sub-tab: keep transaction details and document templates
+   visually distinct while staying inside the selected theme. The placement JS
+   only moves Dokumen & Template into this tab; this layer owns the panel
+   hierarchy, spacing and theme-aware headers. */
+
+.spj-semantic-workspace [data-panel="rincian"] {
+    padding: 1rem !important;
+    background: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+/* Panel 1 — Rincian transaksi. The Blade already renders the heading as the
+   first child and the item list as the second child, so they can form one
+   card without changing the transaction workflow markup. */
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child {
+    position: relative;
     margin: 0 !important;
-    border-width: 1px 0 0 !important;
-    border-color: var(--spj-border) !important;
-    border-radius: 0 !important;
+    border: 1px solid var(--spj-border) !important;
+    border-bottom: 0 !important;
+    border-radius: var(--profile-card-radius) var(--profile-card-radius) 0 0 !important;
+    padding: .8rem 1rem !important;
+    background: color-mix(in srgb, var(--theme-accent, #4f46e5) 10%, var(--spj-surface)) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child::before {
+    content: '';
+    position: absolute;
+    inset-block: .65rem;
+    left: .45rem;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--theme-accent, #4f46e5);
+    opacity: .8;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child > div:first-child {
+    padding-left: .35rem;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child h2 {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child p,
+.spj-semantic-workspace [data-panel="rincian"] > div:first-child span {
+    color: var(--spj-text-muted) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:nth-child(2):not([data-spj-document-templates="true"]) {
+    overflow: hidden;
+    margin: 0 !important;
+    border: 1px solid var(--spj-border) !important;
+    border-radius: 0 0 var(--profile-card-radius) var(--profile-card-radius) !important;
     background: var(--spj-surface) !important;
     color: var(--spj-text) !important;
-    box-shadow: none !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > div:nth-child(2):not([data-spj-document-templates="true"]) > * {
+    border-color: var(--spj-border) !important;
+}
+
+/* Panel 2 — Dokumen & Template. It deliberately has its own card boundary and
+   a slightly stronger themed header, so users can immediately tell that the
+   document actions are a separate work area from transaction line items. */
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] {
+    overflow: hidden;
+    margin: .875rem 0 0 !important;
+    border: 1px solid var(--spj-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
 }
 
 .spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child {
-    padding-block: .7rem !important;
-    background: var(--spj-surface-soft) !important;
+    position: relative;
+    padding: .8rem 1rem !important;
+    border-bottom: 1px solid var(--spj-border) !important;
+    background: color-mix(in srgb, var(--theme-accent, #4f46e5) 16%, var(--spj-surface)) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child::before {
+    content: '';
+    position: absolute;
+    inset-block: .65rem;
+    left: .45rem;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--theme-accent, #4f46e5);
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child > div:first-child {
+    padding-left: .35rem;
 }
 
 .spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] h2,
@@ -26,8 +105,33 @@
     color: var(--spj-text-muted);
 }
 
+/* Group headers inside Dokumen & Template remain subordinate to the main
+   panel header and use theme surfaces instead of light-only slate colors. */
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] section > header {
+    border-color: var(--spj-border) !important;
+    background: color-mix(in srgb, var(--theme-accent, #4f46e5) 6%, var(--spj-surface-soft)) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] section > header h3 {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] section > header p {
+    color: var(--spj-text-muted) !important;
+}
+
 @media (max-width: 639px) {
+    .spj-semantic-workspace [data-panel="rincian"] {
+        padding: .75rem !important;
+    }
+
+    .spj-semantic-workspace [data-panel="rincian"] > div:first-child,
     .spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] > :first-child {
-        padding-block: .6rem !important;
+        padding: .7rem .85rem !important;
+    }
+
+    .spj-semantic-workspace [data-panel="rincian"] > [data-spj-document-templates="true"] {
+        margin-top: .75rem !important;
     }
 }
