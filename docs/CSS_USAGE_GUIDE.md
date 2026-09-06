@@ -1,76 +1,58 @@
 # Kamus Penggunaan CSS Aplikasi SPJ
 
-Dokumen ini menjadi pedoman penggunaan CSS pada branch `gui-standardization` agar halaman baru dan perbaikan UI tetap konsisten dengan tema yang dipilih pengguna.
+Terakhir diverifikasi: **2026-09-06**
 
-## 1. Prinsip utama
-
-1. **Jangan hard-code warna tampilan utama** pada Blade jika elemen harus mengikuti tema.
-2. Gunakan **token CSS** (`var(--...)`) untuk background, border, font, accent, hover, radius, shadow, dan focus state.
-3. Gunakan komponen kelas `ui-*` yang sudah tersedia sebelum membuat class baru.
-4. Tailwind tetap dipakai terutama untuk **layout, ukuran, spacing, grid, flex, responsive**, bukan sebagai sumber warna utama.
-5. Warna semantic seperti sukses, peringatan, dan error boleh tetap berbeda, tetapi background harus tetap nyaman pada light/dark/theme berwarna.
-6. CSS khusus halaman harus **di-scope** ke halaman/fitur tersebut agar tidak merusak modul lain.
-7. Hindari menambah CSS ke JavaScript. Semua CSS masuk melalui `resources/css/app.css` → `theme-system.css`.
+Dokumen ini adalah contract praktis CSS branch `gui-standardization`. Gunakan bersama `GUI_STANDARDIZATION.md`.
 
 ---
 
-## 2. Urutan CSS aplikasi
+## 1. Prinsip utama
 
-Entry point utama:
+1. Jangan hard-code warna utama pada elemen yang harus mengikuti tema.
+2. Gunakan token CSS `var(--...)` untuk surface, border, foreground, accent, hover, radius, shadow, focus, dan density.
+3. Gunakan primitive/class `ui-*` sebelum membuat class baru.
+4. Tailwind tetap dipakai terutama untuk layout, spacing, ukuran, grid, flex, responsive, overflow, truncate.
+5. Semantic success/warning/danger boleh berbeda, tetapi surface harus tetap nyaman di light/dark/theme berwarna.
+6. CSS fitur harus scoped.
+7. CSS tidak di-import dari feature/runtime JavaScript. Semua CSS masuk melalui `app.css` → `theme-system.css`.
+
+---
+
+## 2. Entry point dan cascade
+
+`resources/css/app.css`:
 
 ```css
-/* resources/css/app.css */
 @import './app-base.css';
 @import './human-ui.css';
 @import './forms-standardization.css';
 @import './theme-system.css';
 ```
 
-`theme-system.css` adalah entry point sistem tema dan harus menjaga urutan cascade. File paling akhir memiliki prioritas koreksi paling tinggi.
-
-Saat ini urutannya mencakup antara lain:
+Bagian akhir `theme-system.css` saat ini:
 
 ```text
-theme-profiles.css
-theme-profile-components.css
-comfortable-text.css
-theme-soft-surfaces.css
-full-dark.css
-dark-theme-refinement.css
-token-native-components.css
-layout-token-native.css
-page-header-unified.css
 ...
-transactions-standardization.css
-spj-workspace-standardization.css
-...
+theme-accessibility.css
+arkas-theme-profiles.css
+sidebar-toggle-fix.css
 dark-form-controls.css
 spj-package-theme-fix.css
+spj-package-document-placement.css
 ```
 
-### Aturan
-
-- Jangan import file CSS fitur dari `resources/js/app.js`.
-- Jika membuat layer koreksi theme-specific, import melalui `theme-system.css`.
-- Jangan mengubah urutan tanpa alasan karena urutan tersebut adalah bagian dari contract cascade.
+Urutan ini disengaja. Layer akhir dapat mengoreksi markup legacy yang masih memiliki class Tailwind statis.
 
 ---
 
-## 3. Token warna utama
+## 3. Token canonical
 
-### Surface / background
-
-Gunakan:
+### Surface
 
 ```css
 var(--ui-surface-base)
 var(--ui-surface-soft)
 var(--ui-surface-muted)
-```
-
-Untuk shared component gunakan token canonical:
-
-```css
 var(--ui-component-surface)
 var(--ui-component-surface-soft)
 ```
@@ -80,51 +62,36 @@ var(--ui-component-surface-soft)
 ```css
 var(--ui-line)
 var(--ui-line-strong)
-```
-
-atau:
-
-```css
 var(--ui-component-border)
 var(--ui-component-border-strong)
 ```
 
-### Font / foreground
+### Foreground
 
 ```css
 var(--ui-fg)
 var(--ui-fg-strong)
 var(--ui-fg-muted)
-```
-
-Untuk shared component:
-
-```css
 var(--ui-component-text)
 var(--ui-component-text-strong)
 var(--ui-component-text-muted)
 var(--ui-component-placeholder)
 ```
 
-### Accent tema
+### Theme accent/action
 
 ```css
 var(--theme-accent)
 var(--theme-accent-soft)
 var(--theme-accent-strong)
 var(--theme-content-accent)
-```
-
-### Action / tombol utama
-
-```css
 var(--theme-action-bg)
 var(--theme-action-fg)
 var(--theme-action-hover-bg)
 var(--theme-action-hover-fg)
 ```
 
-### Radius / shadow / density
+### Radius, shadow, density
 
 ```css
 var(--profile-card-radius)
@@ -137,11 +104,9 @@ var(--profile-content-padding)
 var(--profile-section-gap)
 ```
 
-Token ini berubah sesuai pengaturan UI pengguna, sehingga jangan menggantinya dengan radius/shadow hard-coded untuk komponen utama.
-
 ---
 
-## 4. Kamus class komponen yang dianjurkan
+## 4. Komponen/class yang dianjurkan
 
 ### Tombol
 
@@ -153,152 +118,54 @@ Token ini berubah sesuai pengaturan UI pengguna, sehingga jangan menggantinya de
 <button class="ui-btn ui-btn-danger">Hapus</button>
 ```
 
-Gunakan Tailwind hanya untuk penyesuaian geometri jika perlu:
-
-```html
-<button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan</button>
-```
-
-Hindari:
-
-```html
-<button class="bg-indigo-600 hover:bg-indigo-700 text-white">Simpan</button>
-```
-
-jika tombol tersebut harus mengikuti tema.
-
----
-
-### Input, select, textarea
+### Form control
 
 ```html
 <input class="ui-input">
 <select class="ui-select"></select>
 <textarea class="ui-textarea"></textarea>
-```
-
-Readonly:
-
-```html
 <input readonly class="ui-input ui-input-readonly">
 ```
 
-Yang sudah otomatis mengikuti theme:
-
-- background
-- border
-- font
-- placeholder
-- hover
-- focus ring
-- disabled
-- readonly
-- dark appearance
-
-Hindari:
-
-```html
-<input class="bg-white border-slate-300 text-slate-900">
-```
-
----
-
-### Card / section
-
-Gunakan komponen Blade bila tersedia:
-
-```blade
-<x-section-card title="Judul" description="Keterangan">
-    ...
-</x-section-card>
-```
-
-Jika markup manual diperlukan:
+### Panel/card
 
 ```html
 <section class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-    ...
+    <header class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+        <h2 class="font-bold text-[var(--ui-fg-strong)]">Judul</h2>
+        <p class="text-sm text-[var(--ui-fg-muted)]">Keterangan</p>
+    </header>
+    <div class="p-4">...</div>
 </section>
 ```
 
-Untuk panel sekunder:
-
-```html
-<div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-    ...
-</div>
-```
-
-Untuk panel readonly / subordinate:
-
-```html
-<div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] p-3">
-    ...
-</div>
-```
-
 ---
 
-## 5. Font dan hierarki teks
-
-Judul utama / label kuat:
-
-```html
-<h3 class="text-[var(--ui-fg-strong)]">...</h3>
-```
-
-Isi normal:
-
-```html
-<p class="text-[var(--ui-fg)]">...</p>
-```
-
-Keterangan / hint:
-
-```html
-<p class="text-[var(--ui-fg-muted)]">...</p>
-```
-
-Accent/link utama:
-
-```html
-<a class="text-[var(--theme-content-accent)]">...</a>
-```
-
-Hindari untuk teks umum:
+## 5. Hierarki teks
 
 ```text
-text-slate-900
-text-slate-800
-text-slate-700
-text-slate-500
-text-indigo-700
+strong/title  -> --ui-fg-strong
+normal        -> --ui-fg
+muted/helper  -> --ui-fg-muted
+accent/link   -> --theme-content-accent
 ```
 
-Kelas tersebut masih ada pada legacy markup, tetapi untuk kode baru gunakan token tema.
+Kelas `text-slate-*` dan `text-indigo-*` masih ada pada legacy markup, tetapi jangan dipakai untuk foreground theme-aware baru.
 
 ---
 
-## 6. Hover yang benar
+## 6. Hover/focus theme-aware
 
-### Card biasa
+Card hover:
 
 ```css
-.my-card:hover {
+.card:hover {
     border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--ui-line));
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--ui-surface-soft));
 }
 ```
 
-Atau markup sederhana:
-
-```html
-<div class="transition hover:bg-[var(--ui-surface-soft)]">...</div>
-```
-
-### Row tabel
-
-Gunakan token hover tabel bila konteksnya tabel:
+Table row:
 
 ```css
 tr:hover {
@@ -306,7 +173,9 @@ tr:hover {
 }
 ```
 
-### Hindari
+Focus form control sudah ditangani `ui-*` dan compatibility layer.
+
+Hindari untuk surface theme-aware:
 
 ```text
 hover:bg-slate-50
@@ -315,120 +184,66 @@ hover:border-slate-300
 hover:bg-indigo-50
 ```
 
-untuk elemen yang harus mengikuti theme.
+---
+
+## 7. Semantic color
+
+Success/warning/danger tetap boleh memakai emerald/amber/rose untuk makna status. Untuk background besar, blend dengan current surface:
+
+```css
+background: color-mix(in srgb, var(--ui-surface-base) 84%, #10b981); /* success */
+background: color-mix(in srgb, var(--ui-surface-base) 84%, #f59e0b); /* warning */
+background: color-mix(in srgb, var(--ui-surface-base) 84%, #f43f5e); /* danger */
+```
 
 ---
 
-## 7. Semantic color: success, warning, danger
+## 8. Spacing antar panel
 
-Warna semantic tetap boleh digunakan untuk membedakan status.
+Panel yang berada pada level hierarchy sama harus memakai spacing konsisten.
 
-Contoh text:
-
-```html
-<span class="text-emerald-700 dark:text-emerald-300">Sesuai</span>
-<span class="text-amber-700 dark:text-amber-300">Perhatian</span>
-<span class="text-rose-700 dark:text-rose-300">Gagal</span>
-```
-
-Untuk background semantic pada area yang juga harus mengikuti tema, lebih aman gunakan blend:
-
-```css
-background-color: color-mix(in srgb, var(--ui-surface-base) 84%, #10b981);
-```
-
-Warning:
-
-```css
-background-color: color-mix(in srgb, var(--ui-surface-base) 84%, #f59e0b);
-```
-
-Danger:
-
-```css
-background-color: color-mix(in srgb, var(--ui-surface-base) 84%, #f43f5e);
-```
-
-Dengan pola ini panel tidak berubah menjadi warna putih/pastel terang yang mengganggu saat dark mode.
-
----
-
-## 8. Spacing dan margin antar panel
-
-Untuk halaman dengan beberapa panel vertikal, gunakan satu sumber spacing.
-
-Contoh:
-
-```html
-<div class="space-y-4">
-    <section>...</section>
-    <section>...</section>
-    <section>...</section>
-</div>
-```
-
-atau CSS:
-
-```css
-.feature-panels > * + * {
-    margin-top: .875rem;
-}
-```
-
-Gunakan token jika panel merupakan komponen umum:
+Shared area:
 
 ```css
 gap: var(--profile-section-gap);
 ```
 
-Jangan mencampur `mt-2`, `mt-3`, `mt-4`, `mt-6` secara acak untuk panel yang berada pada level hierarki yang sama.
+Compatibility area dapat memakai ukuran lokal yang sengaja ditetapkan. Contoh Paket → Isian Manual saat ini memakai sekitar `.875rem` desktop dan `.75rem` mobile.
+
+Jangan mencampur `mt-2`, `mt-3`, `mt-4`, `mt-6` secara acak untuk sibling panel.
 
 ---
 
-## 9. Pola layout yang tetap boleh menggunakan Tailwind
+## 9. Tailwind yang tetap dianjurkan
 
-Tailwind sangat dianjurkan untuk:
+Gunakan Tailwind untuk:
 
 ```text
-flex
-grid
-hidden/block
-w-*/h-*
-min-w-*/max-w-*
-px-*/py-*/p-*
-gap-*
-space-y-*
-items-*
-justify-*
+flex / grid
+w-* / h-*
+min-* / max-*
+p-* / px-* / py-*
+gap-* / space-y-*
+items-* / justify-*
 overflow-*
 truncate
 whitespace-nowrap
 sm:/md:/lg:/xl:
 ```
 
-Contoh yang baik:
-
-```html
-<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    ...
-</div>
-```
-
-Warna tetap berasal dari token tema.
+Warna/surface utama tetap dari token.
 
 ---
 
-## 10. SPJ-specific contract
+## 10. Contract SPJ workspace
 
-Semua workspace SPJ baru sebaiknya memiliki wrapper:
+Wrapper:
 
 ```html
-<div class="spj-semantic-workspace">
-    ...
-</div>
+<div class="spj-semantic-workspace">...</div>
 ```
 
-Wrapper menyediakan alias:
+Alias yang tersedia:
 
 ```css
 --spj-surface
@@ -441,145 +256,106 @@ Wrapper menyediakan alias:
 --spj-text-muted
 ```
 
-Contoh:
+Gunakan alias ini untuk CSS fitur Paket agar tetap konsisten dengan profile/theme global.
 
-```html
-<div class="spj-semantic-workspace">
-    <section class="rounded-xl border p-4">
-        ...
-    </section>
-</div>
+---
+
+## 11. Contract Paket SPJ terbaru
+
+### Rincian
+
+Tab Rincian memiliki dua panel setingkat:
+
+```text
+Rincian Transaksi
+Dokumen & Template
 ```
 
-Untuk CSS fitur SPJ:
+Keduanya harus mempunyai card boundary sendiri. Jangan menyatukannya menjadi satu blok panjang tanpa hierarchy.
+
+Header panel boleh membedakan intensitas accent, misalnya:
 
 ```css
-.spj-semantic-workspace .package-card {
-    border-color: var(--spj-border);
-    background: var(--spj-surface);
-    color: var(--spj-text);
-}
-
-.spj-semantic-workspace .package-card:hover {
-    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--spj-border));
-    background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--spj-surface-soft));
-}
+background: color-mix(in srgb, var(--theme-accent) 10%, var(--spj-surface-soft));
 ```
+
+untuk panel transaksi, dan accent sedikit lebih kuat untuk panel Dokumen & Template.
+
+### Dokumen & Template
+
+Gunakan compact list, bukan card tinggi per dokumen. Baris perlu memuat nama, metadata tipe/format, status, dan actions dengan vertical padding kecil.
+
+### Isian Manual
+
+Surface, font, controls, semantic panels, panel pajak, focus, readonly, dan spacing ditangani oleh `spj-package-theme-fix.css`.
+
+### Penomoran
+
+Card triwulan harus menggunakan current theme surface/accent untuk normal/hover/active. Jangan kembali ke `hover:bg-slate-50`.
 
 ---
 
-## 11. Transaction detail contract
+## 12. Dark appearance
 
-Halaman detail transaksi sudah dinormalisasi melalui:
+Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 
-```text
-resources/css/transactions-standardization.css
-```
-
-Untuk elemen baru pada halaman tersebut gunakan token UI, bukan warna statis.
-
-Contoh:
-
-```html
-<div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-    <p class="font-bold text-[var(--ui-fg-strong)]">Judul</p>
-    <p class="text-sm text-[var(--ui-fg-muted)]">Keterangan</p>
-</div>
-```
+`resources/css/dark-form-controls.css` adalah safety layer global control dark mode, termasuk Chrome autofill.
 
 ---
 
-## 12. Dark mode
+## 13. File CSS dan tanggung jawab
 
-Jangan menulis dark mode secara manual untuk surface umum jika token theme sudah cukup.
-
-Lebih baik:
-
-```html
-<div class="bg-[var(--ui-surface-base)] text-[var(--ui-fg)]">
-```
-
-Daripada:
-
-```html
-<div class="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-```
-
-`dark:*` masih boleh digunakan untuk warna semantic kecil bila memang diperlukan, misalnya error/success text.
-
-Form control dark mode juga sudah memiliki safety layer di:
-
-```text
-resources/css/dark-form-controls.css
-```
-
----
-
-## 13. File CSS dan tanggung jawabnya
-
-| File | Fungsi |
+| File | Tanggung jawab |
 |---|---|
 | `app.css` | Entry point CSS aplikasi |
-| `app-base.css` | Framework/base |
-| `human-ui.css` | Legacy/shared UI |
-| `forms-standardization.css` | Standardisasi form lama |
-| `theme-system.css` | Urutan seluruh layer theme |
-| `theme-profiles.css` | Radius, density, shadow, UI profile |
-| `theme-profile-components.css` | Mapping profile ke komponen |
-| `token-native-components.css` | Contract `ui-*` dan shared tokens |
-| `layout-token-native.css` | Layout aplikasi berbasis token |
-| `page-header-unified.css` | Header halaman |
-| `transactions-standardization.css` | Detail/daftar transaksi |
-| `spj-workspace-standardization.css` | Workspace SPJ |
-| `spj-package-theme-fix.css` | Final safety layer SPJ Paket/Isian Manual |
-| `dark-form-controls.css` | Safety layer input pada dark appearance |
-| `theme-accessibility.css` | Accessibility/focus/contrast |
+| `app-base.css` | Base/framework |
+| `human-ui.css` | Shared/legacy UI |
+| `forms-standardization.css` | Fallback form legacy |
+| `theme-system.css` | Urutan canonical cascade |
+| `theme-profiles.css` | Density/radius/shadow profile |
+| `theme-profile-components.css` | Mapping profile → components |
+| `token-native-components.css` | Contract `ui-*`/component tokens |
+| `layout-token-native.css` | Layout token-native |
+| `page-header-unified.css` | Page Header |
+| `transactions-standardization.css` | Daftar/detail transaksi |
+| `spj-workspace-standardization.css` | SPJ workspace base |
+| `dark-form-controls.css` | Dark control safety |
+| `spj-package-theme-fix.css` | Paket/Isian Manual/theme compatibility, compact template list, numbering hover |
+| `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |
+| `theme-accessibility.css` | Focus/contrast/accessibility |
+
+JavaScript placement terkait:
+
+```text
+resources/js/spj-package-document-placement.js
+```
+
+JS tersebut hanya memindahkan section Dokumen & Template ke panel Rincian; CSS tetap berada di file CSS, bukan di JS.
 
 ---
 
 ## 14. Kapan membuat CSS baru
 
-Buat file CSS fitur baru jika:
+Buat CSS fitur baru bila:
 
-- selector hanya berlaku pada satu modul/halaman;
-- markup legacy terlalu besar untuk langsung direfaktor;
-- diperlukan compatibility layer terhadap class warna lama;
-- state hover/focus/active tidak cukup ditangani oleh komponen existing.
+- selector benar-benar scoped ke modul/halaman;
+- markup legacy terlalu besar untuk segera dipecah;
+- compatibility layer diperlukan;
+- hover/focus/state tidak cukup dari primitive existing.
 
-Nama yang dianjurkan:
+Nama:
 
 ```text
 <feature>-standardization.css
 <feature>-theme-fix.css
+<feature>-placement.css
 ```
-
-Scope selalu ke identifier khusus:
-
-```css
-main:has(#feature-root) ...
-```
-
-atau:
-
-```css
-.feature-semantic-workspace ...
-```
-
-Jangan membuat selector global seperti:
-
-```css
-div { ... }
-.card { ... }
-input { ... }
-```
-
-kecuali memang berada pada file shared contract dan sudah diuji lintas halaman.
 
 ---
 
 ## 15. Pola yang dilarang untuk kode baru
 
-Hindari:
+Untuk surface/foreground theme-aware, hindari:
 
 ```text
 bg-white
@@ -596,88 +372,33 @@ bg-indigo-50
 text-indigo-700
 ```
 
-jika elemen tersebut adalah surface/foreground utama yang harus berubah mengikuti tema.
-
-Juga hindari:
-
-```css
-background: #fff;
-color: #0f172a;
-border-color: #e2e8f0;
-```
-
-pada komponen theme-aware.
-
-Hard-coded hex hanya boleh untuk:
-
-- warna semantic khusus;
-- ilustrasi/branding;
-- fallback token;
-- kasus yang sengaja tidak mengikuti theme dan terdokumentasi.
+Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, atau kasus yang sengaja tidak mengikuti theme.
 
 ---
 
-## 16. Template cepat untuk panel baru
+## 16. Checklist sebelum commit UI
 
-```html
-<section class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-[var(--profile-card-shadow)]">
-    <header class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-        <h2 class="font-bold text-[var(--ui-fg-strong)]">Judul Panel</h2>
-        <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Keterangan panel.</p>
-    </header>
-
-    <div class="p-4">
-        <label class="text-sm font-semibold text-[var(--ui-fg-strong)]">Nama</label>
-        <input class="ui-input mt-1" placeholder="Isi nama">
-    </div>
-</section>
-```
-
----
-
-## 17. Template cepat card clickable
-
-```html
-<a class="block rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 text-[var(--ui-fg)] transition hover:border-[var(--theme-accent)] hover:bg-[var(--ui-surface-soft)]">
-    <p class="font-bold text-[var(--ui-fg-strong)]">Judul</p>
-    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Deskripsi</p>
-</a>
-```
-
-Jika hover accent terasa terlalu kuat, gunakan CSS `color-mix()` agar mengikuti karakter masing-masing tema.
-
----
-
-## 18. Checklist sebelum commit UI
-
-Sebelum commit perubahan UI, periksa:
-
-- light appearance;
-- dark appearance;
-- minimal dua theme/profile berbeda;
-- hover card dan row;
-- focus input/select/textarea;
-- readonly dan disabled;
-- text strong/muted tetap terbaca;
-- semantic success/warning/error tetap jelas;
+- light dan dark appearance;
+- minimal dua theme/profile;
+- hover/focus/active;
+- readonly/disabled;
+- strong/muted text terbaca;
+- semantic status jelas;
 - mobile width;
-- spacing antar panel konsisten;
-- tidak ada `bg-white`/`text-slate-*` baru yang seharusnya theme-aware;
-- jalankan `npm run build` jika CSS/JS berubah.
+- hierarchy panel jelas;
+- spacing sibling konsisten;
+- tidak menambah hard-coded surface/accent baru;
+- `npm run build` setelah CSS/JS/Blade berubah.
 
 ---
 
-## 19. Ringkasan keputusan
-
-Untuk kode baru, urutan pilihan adalah:
+## 17. Urutan pilihan untuk kode baru
 
 ```text
-1. Gunakan Blade UI component yang sudah ada.
-2. Gunakan class ui-*.
-3. Gunakan CSS variable/token theme.
-4. Gunakan Tailwind untuk layout/spacing/responsive.
-5. Buat CSS scoped khusus fitur hanya bila 1–4 tidak cukup.
-6. Jangan kembali ke warna hard-coded untuk surface utama.
+1. Blade component existing
+2. class ui-*
+3. token CSS canonical
+4. Tailwind layout/spacing/responsive
+5. scoped feature CSS bila perlu
+6. compatibility layer hanya untuk legacy
 ```
-
-Dokumen ini adalah contract praktis CSS untuk pekerjaan lanjutan pada branch `gui-standardization`.
