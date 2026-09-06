@@ -197,7 +197,9 @@ class TransactionController extends Controller
                 mb_strtolower(trim($employee->name))
             ))
             ->values();
-        $dapodikTeachers = $dapodikEmployees;
+        $dapodikTeachers = $dapodikEmployees
+            ->filter(fn (Employee $employee): bool => strtoupper(trim((string) $employee->source_type)) === 'DAPODIK')
+            ->values();
 
         return view('transactions.show', compact('transaction', 'headerVisual', 'paymentMethod', 'dapodikEmployees', 'dapodikTeachers'));
     }
