@@ -101,7 +101,9 @@ Validasi Surat Pesanan Non-SiPLah untuk kategori `BARANG`, `BELANJA_MODAL`, dan 
 1. **Kelengkapan isi Surat Pesanan** — blocking pada tahap persiapan jika substansi belum lengkap.
 2. **Nomor Surat Pesanan** — tidak blocking pada `DRAFT`/`READY`; menjadi wajib pada `NUMBERED`/`FINAL`.
 
-Substansi yang diperiksa mencakup penyedia, tanggal pesanan, rincian item, satuan, quantity, harga, nilai item, dan nilai transaksi.
+Substansi yang diperiksa mencakup penyedia, tanggal pesanan, uraian item, quantity, harga, dan nilai transaksi.
+
+Field `unit`/satuan berasal dari rincian source ARKAS dan tidak dapat dilengkapi melalui form uraian SPJ operator. Karena itu satuan **bukan blocker** untuk `Kelengkapan isi Surat Pesanan`; validasi item mengikuti rule canonical barang: uraian, jumlah lebih dari nol, dan harga valid. Konsistensi nilai item tetap diperiksa oleh validasi paket yang relevan.
 
 Nomor Surat Pesanan diterbitkan aplikasi melalui domain numbering `PESANAN`; requirement nomor tidak boleh menciptakan circular blocker sebelum numbering.
 
