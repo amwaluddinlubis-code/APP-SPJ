@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-06**
+Terakhir diperbarui: **2026-09-07**
 
 Roadmap ini menggambarkan prioritas setelah fondasi transaksi, safe sync ARKAS, package SPJ, numbering, template, tenant database, dan design system sudah terbentuk.
 
@@ -135,6 +135,33 @@ JASA_LAINNYA
 
 Untuk `KONSUMSI`, verifikasi juga bahwa auto-fill peserta mengambil Dapodik-only dan manual participant tetap berfungsi.
 
+Untuk `JASA_LAINNYA`, implementasi end-to-end berikutnya harus mencakup kebutuhan multi-penerima/penyedia untuk jasa harian seperti sewa laptop, sewa mobil penumpang umum, sewa peralatan, dan jasa sejenis. Satu transaksi BKU tetap satu transaksi/paket; rincian penerima berada di bawah transaksi dan total bruto/pajak/netto harus direkonsiliasi kembali ke transaksi source.
+
+Target model detail JASA_LAINNYA:
+
+```text
+1 transaction
+└── many service recipients/service lines
+    ├── recipient/vendor
+    ├── service type
+    ├── description
+    ├── date/period
+    ├── quantity
+    ├── duration_days
+    ├── rate_per_day
+    ├── gross
+    ├── tax
+    └── net
+```
+
+Untuk sewa harian dengan lebih dari satu unit, format perhitungan diutamakan:
+
+```text
+unit × hari × tarif per unit per hari
+```
+
+Jangan menambah kategori SPJ baru untuk subtype sewa; subtype tetap berada di bawah `JASA_LAINNYA`.
+
 ### 4.4 Tenant operations
 
 Backup/restore/reset tenant diuji end-to-end dan database global tetap aman.
@@ -208,17 +235,111 @@ Integrasi API eksternal SiPLah tetap di luar scope sampai MVP lokal stabil.
 
 ---
 
-## 7. P3 — laporan BOS
+## 7. P3 — Pusat Laporan dan laporan BOS
 
-Setelah workflow inti stabil:
+Laporan kompleks tidak diimplementasikan sekaligus sebelum source data, lifecycle, kategori, dan generator stabil. Targetnya adalah satu **Pusat Laporan** dengan kelompok berikut:
 
-- K7A, K7, K8, SPTJM;
-- K7B/K7C;
-- Buku Pembantu Kas/Bank/Pajak;
+```text
+Laporan Keuangan
+Laporan SPJ
+Laporan BOS
+Laporan Pajak
+Laporan per Kategori
+Monitoring & Audit
+```
+
+### 7.1 Laporan operasional / keuangan
+
+Target:
+
+- Buku Kas Umum / rekap transaksi;
+- filter bulan, triwulan, semester, tahun;
+- filter sumber dana, kegiatan, rekening, kategori SPJ;
+- nilai bruto, pajak, netto;
+- Buku Pembantu Kas;
+- Buku Pembantu Bank;
+- Buku Pembantu Pajak;
+- rekap RKAS vs realisasi;
+- rekap per kegiatan;
+- rekap per kode rekening;
+- rekap belanja per kategori.
+
+### 7.2 Laporan workflow SPJ
+
+Target:
+
+- status pekerjaan SPJ: Perlu Perhatian, Belum Dikerjakan, Perlu Dilengkapi, Siap Dinomori, Sudah Bernomor/Final;
+- daftar Paket SPJ;
+- laporan dokumen belum lengkap;
+- register penomoran SPJ dan dokumen pendukung;
+- histori nomor dibatalkan/diganti;
+- batch export per transaksi/periode.
+
+### 7.3 Laporan BOS resmi
+
+Target setelah aturan dan format final dikonfirmasi:
+
+- K7A;
+- K7;
+- K8;
+- SPTJM;
+- K7B / Register Penutupan Kas;
+- K7C / Berita Acara Pemeriksaan Kas;
 - laporan bulanan;
-- rekap belanja modal/barang-jasa;
-- daftar honor;
-- batch export per transaksi/triwulan.
+- rekap belanja modal/barang-jasa.
+
+### 7.4 Laporan pajak
+
+Target:
+
+- PPN;
+- PPh 21;
+- PPh 22;
+- PPh 23;
+- PPh 4(2);
+- SSPD/Pajak Daerah;
+- per transaksi dan per penerima bila domain memiliki multi-penerima;
+- rekap per bulan/triwulan/tahun;
+- referensi pembayaran/setoran bila tersedia.
+
+### 7.5 Laporan per kategori SPJ
+
+Target:
+
+- daftar penerima honor;
+- daftar penerima jasa;
+- rekap sewa/jasa harian;
+- daftar konsumsi/peserta kegiatan;
+- rekap SPPD/perjalanan dinas;
+- transaksi SiPLah;
+- rekap barang/pemeliharaan sesuai kebutuhan audit.
+
+Untuk `JASA_LAINNYA` multi-penerima, laporan harus mampu menampilkan setidaknya nama penerima/penyedia, jenis jasa, periode, jumlah unit, jumlah hari, tarif per hari, bruto, pajak, netto, dan total rekonsiliasi ke transaksi BKU.
+
+### 7.6 Monitoring dan audit
+
+Target:
+
+- laporan rekonsiliasi ARKAS/BKU;
+- source missing / mismatch source;
+- audit trail perubahan manual;
+- prepare/READY/numbering/finalization;
+- cancellation/reissue/reopen;
+- perubahan sensitif tenant bila relevan.
+
+### 7.7 Format keluaran
+
+Setiap laporan dievaluasi menurut kebutuhan nyata. Default target:
+
+```text
+Preview HTML
+PDF
+Excel/XLSX
+```
+
+Tidak semua laporan wajib memiliki semua format jika tidak masuk akal. PDF diprioritaskan untuk dokumen resmi/cetak; Excel untuk rekap, analisis, dan audit.
+
+**Status seluruh bagian Pusat Laporan di atas:** documented/planned. Jangan menandai sebagai fitur tersedia sampai query, template, generator, authorization, dan focused test masing-masing benar-benar ada.
 
 ---
 
@@ -241,6 +362,8 @@ Release candidate hanya layak jika:
 - mobile minimum QA ditutup;
 - frontend build berhasil untuk theme/dark mode.
 
+Untuk `JASA_LAINNYA`, release candidate yang mengklaim dukungan multi-penerima harus membuktikan rekonsiliasi detail penerima terhadap gross/tax/net transaksi source serta keluaran dokumennya.
+
 ---
 
 ## 9. Urutan pengerjaan yang direkomendasikan
@@ -254,9 +377,12 @@ Release candidate hanya layak jika:
 6. Reconciliation snapshot/diff
 7. Authorization hardening
 8. End-to-end semua kategori
-9. SiPLah end-to-end verification
-10. Mobile QA + GUI cleanup
-11. Laporan BOS + release hardening
+9. Implementasi JASA_LAINNYA multi-penerima
+10. SiPLah end-to-end verification
+11. Mobile QA + GUI cleanup
+12. Pusat Laporan tahap 1: operasional/SPJ/pajak
+13. Laporan BOS resmi + laporan kategori
+14. Release hardening
 ```
 
 Baca bersama:
