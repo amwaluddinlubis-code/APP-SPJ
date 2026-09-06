@@ -248,19 +248,14 @@ resources/css/spj-package-theme-fix.css
 
 Top-level panel spacing saat ini dinormalisasi sekitar `.875rem` desktop dan `.75rem` mobile pada area tersebut.
 
-Kategori pada `Paket → Isian Manual` harus mengikuti aturan yang sama dengan Detail Transaksi. Saat kategori dipilih:
+Kategori pada `Paket → Isian Manual` harus mengikuti aturan yang sama dengan Detail Transaksi. Untuk compatibility markup Paket saat ini:
 
-1. kategori disimpan lebih dulu;
-2. paket dimuat ulang agar form server-rendered sesuai kategori aktif;
-3. section yang tidak berlaku harus disembunyikan **dan semua control di dalamnya dinonaktifkan**, sehingga `required` milik kategori lain tidak boleh memblokir tombol **Simpan Isian Paket**;
-4. untuk `BARANG`, tanggal Pesanan/BAP/BAST bersifat opsional seperti pada Detail Transaksi; pada `KONSUMSI` field tersebut dapat diwajibkan oleh aturan kategori;
-5. jangan membiarkan section `KONSUMSI` aktif ketika kategori `BARANG`, atau sebaliknya.
+1. perubahan kategori disimpan lebih dulu lalu halaman paket dimuat ulang;
+2. section `data-spj-section` yang tidak berlaku disembunyikan dan seluruh control di dalamnya dinonaktifkan, sehingga field `required` kategori lain tidak boleh memblokir tombol **Simpan Isian Paket**;
+3. untuk `BARANG`, tanggal Pesanan/BAP/BAST bersifat opsional seperti pada Detail Transaksi; pada `KONSUMSI` field tersebut dapat diwajibkan oleh aturan kategori;
+4. controller frontend behavior ini berada di `resources/js/spj-package-manual-category.js`.
 
-Controller frontend untuk compatibility behavior ini berada di:
-
-```text
-resources/js/spj-package-manual-category.js
-```
+**Gap yang masih terbuka:** markup Paket saat ini baru mempunyai section kategori khusus yang lengkap untuk `BARANG`/`KONSUMSI`. `PEMELIHARAAN`, `SPPD`, `HONOR_PEGAWAI`, dan `JASA_LAINNYA` belum mempunyai panel Isian Manual Paket yang setara dengan Detail Transaksi. Sampai shared category partial dibuat, Detail Transaksi tetap menjadi form canonical untuk detail kategori tersebut. Jangan menyatakan Isian Manual Paket sudah fully-aligned lintas semua kategori sebelum gap ini ditutup.
 
 ### 8.4 Penomoran
 
