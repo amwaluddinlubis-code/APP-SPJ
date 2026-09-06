@@ -184,23 +184,60 @@ Normal/hover/active state harus memadukan current surface dan current theme acce
 
 ---
 
-## 9. Dashboard canonical
+## 9. Dashboard canonical dan produktivitas
 
-Dashboard operasional utama pada route `/` memakai `OperationalDashboardController` dan view canonical:
+Dashboard utama route `/` adalah dashboard produktivitas operator:
 
 ```text
+ProductivityDashboardController
+resources/views/dashboard-productivity.blade.php
+```
+
+Dashboard utama harus menjawab pertanyaan **“apa yang harus saya kerjakan berikutnya?”**. Hierarki utamanya:
+
+```text
+Pekerjaan Anda
+→ Prioritas berikutnya
+→ Lanjutkan pekerjaan yang sudah dimulai
+→ Transaksi berikutnya
+→ Alur kerja operator
+→ Antrean kerja terdekat
+→ Status penomoran/sistem
+```
+
+Istilah canonical pada dashboard produktivitas:
+
+```text
+Belum Dikerjakan
+Sedang Dikerjakan
+Siap Dinomori
+Sudah Bernomor
+Final
+```
+
+Jangan menggunakan kembali label **Belum disentuh**. `Belum Dikerjakan` saat ini adalah definisi persisted: transaksi aktif memiliki rincian, belum memiliki Paket SPJ, dan bukan rekonsiliasi/source missing. Ini bukan analytics literal tentang apakah halaman pernah dibuka.
+
+Pekerjaan `DRAFT` harus diprioritaskan sebelum membuka pekerjaan baru agar operator menyelesaikan pekerjaan setengah jadi. Rekonsiliasi/source missing mempunyai prioritas lebih tinggi daripada antrean normal. `Belum Bernomor` merangkum antrean normal yang masih berada pada tahap Belum Dikerjakan + DRAFT + READY.
+
+Dashboard operasional sebelumnya **harus tetap dipertahankan** sebagai pembanding/legacy pada:
+
+```text
+/dashboard-operasional
+OperationalDashboardController
 resources/views/dashboard-operational-v3.blade.php
 ```
 
-Jangan membuat atau mempertahankan varian `dashboard-operational`, `dashboard-operational-v2`, `dashboard-operational-new`, atau nama eksperimen sejenis setelah desain dipilih. Kandidat eksperimen harus digabung ke source canonical lalu dihapus dari repository.
+Jangan menimpa atau menghapus view tersebut ketika iterasi dashboard produktivitas dilakukan.
 
-Route `/dashboard-v2` adalah dashboard pembanding/QA yang berbeda dan memakai:
+Route `/dashboard-v2` adalah dashboard pembanding/QA lain dan memakai:
 
 ```text
 resources/views/dashboard.blade.php
 ```
 
-Nama `/dashboard-v2` tidak berkaitan dengan file `dashboard-operational-v2.blade.php`. `resources/views/dashboard.blade.php` tetap protected working file sesuai `.ai/rules/index.md`; jangan overwrite/commit tanpa instruksi eksplisit user.
+`resources/views/dashboard.blade.php` tetap protected working file sesuai `.ai/rules/index.md`; jangan overwrite/commit tanpa instruksi eksplisit user.
+
+View legacy `dashboard-operational.blade.php` dan `dashboard-operational-v2.blade.php` tetap sudah dihapus dan tidak boleh dihidupkan kembali hanya untuk eksperimen. Eksperimen baru harus memiliki nama yang jelas dan tidak menimpa source pembanding yang sudah dipertahankan.
 
 ---
 
@@ -258,7 +295,7 @@ Untuk Database Aktif, `settings-database-standardization.css` menjadi style laye
 
 ## 14. Responsive dan mobile
 
-Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan package, Database Aktif, dan hardening palette lintas-view belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan dashboard produktivitas, package, Database Aktif, dan hardening palette lintas-view belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
 
 ---
 
