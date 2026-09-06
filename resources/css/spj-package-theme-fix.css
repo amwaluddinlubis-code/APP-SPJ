@@ -191,3 +191,145 @@ html[data-ui-appearance='dark'] .spj-semantic-workspace :is(.text-rose-700,.text
     background: var(--spj-surface-soft) !important;
     color: var(--spj-text) !important;
 }
+
+/* Paket > Isian Manual ----------------------------------------------------
+   Normalize every legacy panel and its typography against the active theme.
+   This block is deliberately scoped to data-panel="isian" so semantic colors
+   elsewhere in SPJ are not flattened. */
+.spj-semantic-workspace [data-panel="isian"] {
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] > div:first-child {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form {
+    padding: 1rem !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+/* One consistent vertical rhythm for the large manual-entry panels. */
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form fieldset > div[x-show="!saving"] {
+    display: flex;
+    flex-direction: column;
+    gap: .875rem;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form fieldset > div[x-show="!saving"] > :is(div,section,fieldset,article) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form :is(
+    div,
+    section,
+    article,
+    fieldset
+)[class*="rounded-"][class*="border-"] {
+    border-color: var(--spj-border) !important;
+    box-shadow: none;
+}
+
+/* Neutral/accent panels inherit the selected surface instead of keeping
+   Tailwind's light-only sky/amber/slate fills. */
+.spj-semantic-workspace [data-panel="isian"] :is(
+    [class*="bg-slate-50"],
+    [class*="bg-slate-100"],
+    [class*="bg-sky-50"],
+    [class*="bg-indigo-50"],
+    [class*="bg-violet-50"]
+) {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(
+    [class*="bg-amber-50"],
+    [class*="bg-yellow-50"]
+) {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--spj-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--spj-surface-soft)) !important;
+    color: var(--spj-text) !important;
+}
+
+/* The old fixed slate-900 tax panel now follows the chosen theme while still
+   remaining visually stronger than surrounding cards. */
+.spj-semantic-workspace [data-panel="isian"] [class*="bg-slate-900"] {
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 32%, var(--spj-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent) 12%, var(--spj-surface-soft)) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] [class*="bg-slate-900"] [class*="bg-slate-800"] {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+/* Font hierarchy for hard-coded slate/sky/amber classes inside Isian Manual. */
+.spj-semantic-workspace [data-panel="isian"] :is(
+    h2,h3,h4,label,strong,
+    .text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700,
+    .text-sky-950,.text-sky-900,.text-sky-800,
+    .text-amber-950,.text-amber-900
+) {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(
+    .text-slate-600,
+    .text-sky-700,.text-sky-600,
+    .text-amber-800,.text-amber-700
+) {
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(
+    .text-slate-500,.text-slate-400,.text-slate-300,
+    p[class*="text-slate"],span[class*="text-slate"]
+) {
+    color: var(--spj-text-muted) !important;
+}
+
+/* Keep meaning-bearing status/accent copy distinct but theme-compatible. */
+.spj-semantic-workspace [data-panel="isian"] :is(.text-indigo-600,.text-indigo-700,.text-violet-600,.text-violet-700,.text-sky-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Form controls inherit the same surface/text contract in both light and dark
+   appearances, including number/date fields inside the former dark tax panel. */
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+    min-height: 2.35rem;
+    border-color: var(--spj-border-strong) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):focus-visible {
+    border-color: var(--theme-accent) !important;
+    outline: 3px solid color-mix(in srgb, var(--theme-accent) 24%, transparent) !important;
+    outline-offset: 1px;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea)[readonly],
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):disabled {
+    background: var(--spj-surface-muted) !important;
+    color: var(--spj-text-muted) !important;
+}
+
+/* More compact but even panel spacing on smaller screens. */
+@media (max-width: 767px) {
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form {
+        padding: .75rem !important;
+    }
+
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form fieldset > div[x-show="!saving"] {
+        gap: .75rem;
+    }
+}
