@@ -76,40 +76,13 @@ Profile/density:
 --profile-control-height
 ```
 
-Aturan:
-
-- dark appearance memakai token yang sama, bukan komponen terpisah;
-- semantic success/warning/danger tetap bermakna, tetapi surface harus tetap nyaman pada theme aktif;
-- compatibility layer boleh mengoreksi markup lama, namun kode baru memakai token canonical.
+Aturan: dark appearance memakai token yang sama; semantic success/warning/danger tetap bermakna; compatibility layer boleh mengoreksi markup lama, tetapi markup baru memakai token canonical.
 
 ---
 
 ## 4. Primitive UI resmi
 
-Utamakan:
-
-```text
-<x-ui.page-shell>
-<x-ui.alert>
-<x-ui.empty-state>
-<x-ui.badge>
-<x-ui.detail-list>
-<x-ui.detail-item>
-<x-ui.toolbar>
-<x-ui.modal>
-<x-ui.action-menu>
-<x-ui.loading>
-<x-ui.sticky-actions>
-<x-ui.danger-zone>
-<x-ui.table>
-<x-ui.field>
-<x-ui.input>
-<x-ui.select>
-<x-ui.textarea>
-<x-ui.button>
-<x-ui.form-section>
-<x-ui.status-badge>
-```
+Utamakan `x-ui.page-shell`, `x-ui.alert`, `x-ui.empty-state`, `x-ui.badge`, `x-ui.detail-list`, `x-ui.detail-item`, `x-ui.toolbar`, `x-ui.modal`, `x-ui.action-menu`, `x-ui.loading`, `x-ui.sticky-actions`, `x-ui.danger-zone`, `x-ui.table`, `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, `x-ui.form-section`, dan `x-ui.status-badge`.
 
 Legacy components yang sudah diarahkan ke sistem baru termasuk `page-filter`, `page-table-per-page`, `tabs`, `stat-item`, `error-alert`, dan `loading-spinner`.
 
@@ -117,17 +90,7 @@ Legacy components yang sudah diarahkan ke sistem baru termasuk `page-filter`, `p
 
 ## 5. Form dan input
 
-Gunakan `ui-input`, `ui-select`, `ui-textarea`, atau primitive Blade terkait.
-
-Standar:
-
-- label terlihat;
-- required jelas;
-- hint/error dekat field;
-- readonly/disabled mudah dibedakan;
-- focus ring mengikuti theme;
-- form panjang dibagi menjadi panel bermakna;
-- top-level panel memakai spacing konsisten.
+Gunakan `ui-input`, `ui-select`, `ui-textarea`, atau primitive Blade terkait. Label, required, hint/error, readonly/disabled, dan focus ring harus jelas. Form panjang dibagi menjadi panel bermakna dan top-level panel memakai spacing konsisten.
 
 `dark-form-controls.css` adalah safety layer agar control pada dark appearance tidak kembali putih.
 
@@ -135,14 +98,7 @@ Standar:
 
 ## 6. Tabel dan daftar
 
-Standar:
-
-- header konsisten;
-- angka/nominal rata kanan bila relevan;
-- row hover mengikuti token theme;
-- horizontal scroll digunakan untuk tabel lebar;
-- pagination/per-page memakai pola global;
-- daftar dokumen yang repetitif sebaiknya compact, bukan card besar per item.
+Header konsisten, angka rata kanan bila relevan, hover mengikuti token theme, tabel lebar memakai horizontal scroll, pagination/per-page mengikuti pola global, dan daftar repetitif sebaiknya compact.
 
 ---
 
@@ -158,170 +114,91 @@ Data ARKAS/BKU readonly
 → Buat/Perbarui Paket
 ```
 
-Rincian item dibuat compact agar uraian panjang tidak menghabiskan vertical space secara berlebihan.
-
-### Konsumsi
-
-Auto-fill peserta melalui `fillTeachers()` saat ini mengambil **Dapodik-only**. UI tidak boleh memberi kesan data berasal dari ARKAS bila function tersebut dipakai.
+Rincian item dibuat compact. Untuk `KONSUMSI`, auto-fill `fillTeachers()` adalah **Dapodik-only**.
 
 ---
 
 ## 8. SPJ Package — struktur canonical saat ini
 
-URL:
-
-```text
-/spj?tab=paket&package_id=...
-```
-
-Sub-tab internal:
-
-```text
-Rincian
-Isian Manual
-Penomoran
-```
+URL `/spj?tab=paket&package_id=...` memiliki sub-tab `Rincian`, `Isian Manual`, dan `Penomoran`.
 
 ### 8.1 Rincian
 
-Tab Rincian harus memperlihatkan dua area yang jelas berbeda:
+Tab Rincian harus memperlihatkan dua sibling panel jelas: **Rincian Transaksi** dan **Dokumen & Template**. Keduanya memiliki border/radius/shadow sendiri, header berbeda tetapi tetap theme-aware, dan gap konsisten.
 
-```text
-Panel Rincian Transaksi
-Panel Dokumen & Template
-```
-
-Keduanya wajib:
-
-- memiliki border/radius/shadow sendiri;
-- memiliki header yang berbeda tetapi tetap berasal dari theme accent;
-- tidak terlihat seperti satu daftar panjang tanpa hierarchy;
-- memakai gap konsisten antar panel.
-
-`Dokumen & Template` dipindahkan ke sub-tab Rincian agar ketika user membuka Isian Manual atau Penomoran, daftar template tidak ikut menambah scroll.
-
-Placement saat ini dilakukan oleh:
-
-```text
-resources/js/spj-package-document-placement.js
-resources/css/spj-package-document-placement.css
-```
-
-Ini compatibility/presentation layer, bukan aturan bisnis.
+`Dokumen & Template` berada di sub-tab Rincian agar Isian Manual/Penomoran tidak ikut memanjang. Placement saat ini dilakukan oleh `resources/js/spj-package-document-placement.js` dan `resources/css/spj-package-document-placement.css`.
 
 ### 8.2 Dokumen & Template
 
-Daftar dokumen memakai **compact list**:
-
-```text
-status / nama dokumen / tipe-format / actions
-```
-
-Prinsip:
-
-- satu dokumen tidak perlu card tinggi sendiri;
-- group header dibuat subordinate;
-- metadata dipadatkan;
-- action Preview/Unduh mudah ditemukan;
-- zebra/hover/theme mengikuti `--spj-*`/`--ui-*`;
-- status warning/success tetap semantic.
+Gunakan compact list `status / nama / tipe-format / actions`; group header subordinate, metadata padat, action mudah ditemukan, zebra/hover theme-aware, status tetap semantic.
 
 ### 8.3 Isian Manual
 
-Isian Manual wajib mengikuti theme aktif untuk:
-
-- background panel;
-- header;
-- heading/label/hint;
-- input/select/textarea;
-- readonly/disabled;
-- panel kategori;
-- panel pajak;
-- focus state;
-- spacing antar panel.
-
-Compatibility layer utama:
-
-```text
-resources/css/spj-package-theme-fix.css
-```
-
-Top-level panel spacing saat ini dinormalisasi sekitar `.875rem` desktop dan `.75rem` mobile pada area tersebut.
-
-Kategori pada `Paket → Isian Manual` harus mengikuti aturan yang sama dengan Detail Transaksi. Untuk compatibility markup Paket saat ini:
-
-1. perubahan kategori disimpan lebih dulu lalu halaman paket dimuat ulang;
-2. section `data-spj-section` yang tidak berlaku disembunyikan dan seluruh control di dalamnya dinonaktifkan, sehingga field `required` kategori lain tidak boleh memblokir tombol **Simpan Isian Paket**;
-3. untuk `BARANG`, tanggal Pesanan/BAP/BAST bersifat opsional seperti pada Detail Transaksi; pada `KONSUMSI` field tersebut dapat diwajibkan oleh aturan kategori;
-4. controller frontend behavior ini berada di `resources/js/spj-package-manual-category.js`.
-
-**Gap yang masih terbuka:** markup Paket saat ini baru mempunyai section kategori khusus yang lengkap untuk `BARANG`/`KONSUMSI`. `PEMELIHARAAN`, `SPPD`, `HONOR_PEGAWAI`, dan `JASA_LAINNYA` belum mempunyai panel Isian Manual Paket yang setara dengan Detail Transaksi. Sampai shared category partial dibuat, Detail Transaksi tetap menjadi form canonical untuk detail kategori tersebut. Jangan menyatakan Isian Manual Paket sudah fully-aligned lintas semua kategori sebelum gap ini ditutup.
+Background panel, header, text hierarchy, control, readonly/disabled, panel kategori, panel pajak, focus, dan spacing harus mengikuti theme aktif. Compatibility layer utama: `resources/css/spj-package-theme-fix.css`.
 
 ### 8.4 Penomoran
 
-Card triwulan `/spj/penomoran` tidak boleh menggunakan hover light-only seperti `hover:bg-slate-50`. Normal/hover/active state harus memadukan current surface + current theme accent.
+Normal/hover/active state harus memadukan current surface dan current theme accent; hindari light-only hover.
 
 ---
 
-## 9. Header panel theme-aware
+## 9. Pengaturan → Database Aktif
 
-Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierarchy jelas, tetapi tetap memakai token theme.
-
-Contoh:
-
-```css
-background: color-mix(in srgb, var(--theme-accent) 12%, var(--ui-surface-soft));
-```
-
-Jangan mengunci header ke `bg-indigo-*`, `bg-slate-*`, atau putih jika panel harus mengikuti theme.
-
----
-
-## 10. Status dan badge
-
-Gunakan `<x-ui.status-badge>` untuk status teknis dan label operator. Gunakan `<x-ui.badge>` untuk kategori/role/metode pembayaran.
-
-Status umum:
+Halaman `/pengaturan/database-aktif` adalah **Pusat Kontrol Database Sekolah**, bukan halaman debug mentah. Struktur canonical:
 
 ```text
-DRAFT / BELUM_LENGKAP -> Belum lengkap
-READY                  -> Siap diproses
-NUMBERED               -> Sudah bernomor
-FINAL / ARCHIVED       -> Final
-CANCELLED              -> Dibatalkan
-SOURCE_MISSING         -> Tidak muncul di sinkronisasi
+Page Header + status database aktif
+→ Ringkasan
+→ Database Sekolah
+→ Explorer Tabel
+→ Diagnostik
+→ Maintenance
 ```
 
----
+Prinsip UX:
 
-## 11. Compatibility layer
+- status sekolah/NPSN/koneksi aktif harus terlihat tanpa membuka tab;
+- health, integrity, writable, file existence, DB/WAL/SHM, migrasi terakhir, dan path harus mudah dibaca;
+- daftar database harus searchable dan database aktif harus paling mudah dikenali;
+- Explorer Tabel bersifat read-only, dengan pencarian/sort/pagination serta pemisahan Schema vs Data;
+- tindakan rutin seperti integrity/checkpoint/migrate boleh tersedia sebagai quick action;
+- tindakan maintenance harus dipisahkan menurut tingkat risiko;
+- reset total selalu berada pada **Zona berbahaya** dan tetap menuju konfirmasi terpisah;
+- backup harus mudah dicapai sebelum tindakan berisiko;
+- teknis seperti path/config boleh tampil, tetapi tidak boleh menjadi informasi utama di atas status operasional;
+- semua surface, text, hover, focus, dan active state mengikuti theme.
 
-Selama Blade lama masih mengandung class warna Tailwind statis:
-
-- CSS scoped boleh mengoreksi `bg-white`, `text-slate-*`, `bg-indigo-*`, odd/even variants, atau slash-opacity variants;
-- compatibility layer harus terlokalisasi;
-- kode baru jangan memperbanyak markup legacy;
-- bila halaman disentuh besar, migrasikan ke primitive canonical secara bertahap.
-
-Layer SPJ aktif:
-
-```text
-spj-workspace-standardization.css
-spj-package-theme-fix.css
-spj-package-document-placement.css
-```
+CSS halaman ini dimiliki oleh `resources/css/settings-database-standardization.css` dan harus scoped ke `#database-control-center`.
 
 ---
 
-## 12. Responsive dan mobile
+## 10. Header panel theme-aware
 
-Desktop tetap workspace utama, tetapi mobile/tablet harus usable.
-
-Perubahan package terbaru belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`; jangan menyebut mobile-complete sebelum checklist ditutup.
+Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierarchy jelas, tetapi tetap memakai token theme. Jangan mengunci header ke `bg-indigo-*`, `bg-slate-*`, atau putih jika panel harus mengikuti theme.
 
 ---
 
-## 13. Checklist UI sebelum selesai
+## 11. Status dan badge
+
+Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kategori/role/metode pembayaran. Status harus memakai bahasa manusiawi dan semantic color yang konsisten.
+
+---
+
+## 12. Compatibility layer
+
+CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind statis. Compatibility layer harus terlokalisasi; kode baru tidak boleh memperbanyak markup legacy. Layer SPJ aktif mencakup `spj-workspace-standardization.css`, `spj-package-theme-fix.css`, dan `spj-package-document-placement.css`.
+
+Untuk Database Aktif v2, `settings-database-standardization.css` menjadi style layer canonical untuk root `#database-control-center`.
+
+---
+
+## 13. Responsive dan mobile
+
+Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan package dan Database Aktif terbaru belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+
+---
+
+## 14. Checklist UI sebelum selesai
 
 - breadcrumb tidak double;
 - page header mengikuti pola global;
@@ -333,21 +210,12 @@ Perubahan package terbaru belum menutup QA mobile. Status resmi tetap mengikuti 
 - spacing antar panel konsisten;
 - mobile tidak overflow tanpa alasan;
 - status memakai bahasa manusiawi;
+- tindakan berisiko dipisahkan secara visual;
 - perubahan UI tidak melemahkan validation/authorization;
 - `npm run build` dijalankan setelah CSS/JS/Blade berubah.
 
 ---
 
-## 14. Dokumen pendamping
+## 15. Dokumen pendamping
 
-Aturan CSS praktis ada di:
-
-```text
-docs/CSS_USAGE_GUIDE.md
-```
-
-Kondisi implementasi terbaru ada di:
-
-```text
-docs/CURRENT_PROGRESS.md
-```
+Aturan CSS praktis: `docs/CSS_USAGE_GUIDE.md`. Kondisi implementasi terbaru: `docs/CURRENT_PROGRESS.md`.
