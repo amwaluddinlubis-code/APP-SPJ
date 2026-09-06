@@ -221,3 +221,231 @@ html[data-ui-appearance='dark'] .spj-semantic-workspace :is(.text-rose-700,.text
 .spj-semantic-workspace a[href*="/spj/penomoran?quarter="] :is(.text-slate-500,.text-slate-400,.text-slate-300) {
     color: var(--spj-text-muted) !important;
 }
+
+/* --------------------------------------------------------------------------
+   Paket > Dokumen & Template
+   The Blade already renders one document per row. Convert the visual treatment
+   into a compact document list so template metadata no longer dominates the
+   package workspace. Validation/download behavior remains unchanged.
+   -------------------------------------------------------------------------- */
+.spj-semantic-workspace section:has(form[action*="/template/"]) {
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > div:first-child {
+    min-height: 3rem;
+    padding-block: .625rem !important;
+    background: var(--spj-surface) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > div:first-child h2 {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > div:first-child p {
+    color: var(--spj-text-muted) !important;
+}
+
+/* Group bands become small separators instead of full secondary cards. */
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > header {
+    min-height: 2.25rem;
+    padding: .4rem 1rem !important;
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > header h3 {
+    color: var(--spj-text-strong) !important;
+    font-size: .75rem !important;
+    line-height: 1rem !important;
+}
+
+/* Description remains available to assistive/mobile users, but does not use
+   a full extra line on normal desktop workflow. */
+@media (min-width: 768px) {
+    .spj-semantic-workspace section:has(form[action*="/template/"]) > section > header p {
+        display: none !important;
+    }
+}
+
+/* One compact document = one scan-friendly row. */
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div {
+    min-height: 2.875rem;
+    gap: .625rem !important;
+    padding: .45rem 1rem !important;
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div:nth-child(even) {
+    background: color-mix(in srgb, var(--spj-surface-soft) 70%, var(--spj-surface)) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div:hover {
+    background: color-mix(in srgb, var(--spj-surface-soft) 88%, var(--theme-content-accent)) !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div > div:first-child p:first-child {
+    overflow: hidden;
+    color: var(--spj-text-strong) !important;
+    font-size: .8125rem !important;
+    line-height: 1.125rem !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div > div:first-child p + p {
+    margin-top: .125rem !important;
+    color: var(--theme-content-accent) !important;
+    font-size: .625rem !important;
+    line-height: .875rem !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div > div:last-child {
+    flex: 0 0 auto;
+    gap: .375rem !important;
+}
+
+.spj-semantic-workspace section:has(form[action*="/template/"]) .ui-btn {
+    min-height: 1.9rem !important;
+    padding: .3rem .65rem !important;
+    font-size: .6875rem !important;
+    line-height: 1rem !important;
+    box-shadow: none !important;
+}
+
+@media (max-width: 639px) {
+    .spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div {
+        align-items: flex-start !important;
+        padding-block: .625rem !important;
+    }
+
+    .spj-semantic-workspace section:has(form[action*="/template/"]) > section > div > div > div:last-child {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Paket > Isian Manual
+   Normalize every neutral panel, foreground and control to theme tokens, then
+   establish one vertical rhythm across all category-specific sections.
+   -------------------------------------------------------------------------- */
+.spj-semantic-workspace [data-panel="isian"] {
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] > div:first-child {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(h2,h3,legend,strong) {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(
+    .text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700
+) {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(.text-slate-600,.text-slate-500,.text-slate-400,.text-slate-300) {
+    color: var(--spj-text-muted) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(label,p,span) {
+    text-wrap: pretty;
+}
+
+/* Required/category panels keep a semantic cue, but the base surface always
+   comes from the active theme instead of a light-only Tailwind background. */
+.spj-semantic-workspace [data-panel="isian"] :is([class*="bg-amber-50"],[class*="bg-yellow-50"]) {
+    border-color: color-mix(in srgb, var(--spj-border) 72%, #f59e0b) !important;
+    background: color-mix(in srgb, var(--spj-surface) 92%, #f59e0b) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is([class*="bg-sky-50"],[class*="bg-blue-50"],[class*="bg-indigo-50"]) {
+    border-color: color-mix(in srgb, var(--spj-border) 72%, var(--theme-content-accent)) !important;
+    background: color-mix(in srgb, var(--spj-surface) 92%, var(--theme-content-accent)) !important;
+}
+
+/* The tax block used to force slate-900/slate-800. Make it an emphasized
+   theme surface so it remains distinct without switching palettes. */
+.spj-semantic-workspace [data-panel="isian"] [class*="bg-slate-900"] {
+    border: 1px solid color-mix(in srgb, var(--spj-border-strong) 72%, var(--theme-content-accent)) !important;
+    background: color-mix(in srgb, var(--spj-surface-soft) 88%, var(--theme-content-accent)) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] [class*="bg-slate-900"] [class*="bg-slate-800"] {
+    border-color: var(--spj-border) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] [class*="bg-slate-900"] :is(.text-white,.text-slate-300) {
+    color: var(--spj-text-strong) !important;
+}
+
+/* Keep controls readable across all selected themes, including number/date
+   inputs inside the tax panel. */
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+    border-color: var(--spj-border-strong) !important;
+    background: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):focus {
+    border-color: color-mix(in srgb, var(--spj-border-strong) 52%, var(--theme-content-accent)) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-content-accent) 12%, transparent) !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea)[readonly],
+.spj-semantic-workspace [data-panel="isian"] :is(input,select,textarea):disabled {
+    background: var(--spj-surface-muted) !important;
+    color: var(--spj-text-muted) !important;
+}
+
+/* Consistent panel rhythm: avoid the former mix of mt-3, mt-4 and space-y-4. */
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form {
+    padding: .875rem !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form > :not([hidden]) ~ :not([hidden]) {
+    margin-top: .875rem !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form [x-show="!saving"] > * + *,
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form [class*="space-y-3"] > * + *,
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form [class*="space-y-4"] > * + * {
+    margin-top: .875rem !important;
+}
+
+.spj-semantic-workspace [data-panel="isian"] #spj-manual-form :is(
+    .rounded-lg[class*="border"],
+    .rounded-xl[class*="border"]
+) {
+    border-color: var(--spj-border) !important;
+}
+
+@media (max-width: 639px) {
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form {
+        padding: .75rem !important;
+    }
+
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form > :not([hidden]) ~ :not([hidden]),
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form [x-show="!saving"] > * + *,
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form [class*="space-y-3"] > * + *,
+    .spj-semantic-workspace [data-panel="isian"] #spj-manual-form [class*="space-y-4"] > * + * {
+        margin-top: .75rem !important;
+    }
+}
