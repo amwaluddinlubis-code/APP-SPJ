@@ -51,7 +51,8 @@
             <button type="button" @click="toggleSidebar()" :aria-expanded="(!collapsed).toString()" class="app-sidebar-toggle hidden p-2 lg:inline-flex" :aria-label="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'" :title="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"><span x-text="collapsed ? '»' : '«'" class="text-xl leading-none"></span></button>
         </div>
         <nav class="space-y-1 text-base" aria-label="Navigasi utama">
-            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
+            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard Produktivitas"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard Produktivitas</span></a>
+            <a class="app-nav {{ request()->routeIs('dashboard.operational') ? 'app-nav-active' : '' }}" href="{{ route('dashboard.operational') }}" title="Dashboard Operasional"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard Operasional</span></a>
             <a class="app-nav {{ request()->routeIs('dashboard.v2') ? 'app-nav-active' : '' }}" href="{{ route('dashboard.v2') }}" title="Dashboard v.2"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard v.2</span></a>
 
             <div class="pt-3">
