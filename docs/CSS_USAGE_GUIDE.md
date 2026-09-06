@@ -1,6 +1,6 @@
 # Kamus Penggunaan CSS Aplikasi SPJ
 
-Terakhir diverifikasi: **2026-09-06**
+Terakhir diverifikasi: **2026-09-07**
 
 Dokumen ini adalah contract praktis CSS branch `gui-standardization`. Gunakan bersama `GUI_STANDARDIZATION.md`.
 
@@ -39,9 +39,10 @@ sidebar-toggle-fix.css
 dark-form-controls.css
 spj-package-theme-fix.css
 spj-package-document-placement.css
+view-theme-hardening.css
 ```
 
-Urutan ini disengaja. Layer akhir dapat mengoreksi markup legacy yang masih memiliki class Tailwind statis.
+Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer **paling akhir** untuk authenticated application views. Ia tidak mengubah business rule atau markup Blade; ia memastikan class warna legacy yang masih tersisa tidak mengalahkan theme aktif.
 
 ---
 
@@ -150,7 +151,7 @@ muted/helper  -> --ui-fg-muted
 accent/link   -> --theme-content-accent
 ```
 
-Kelas `text-slate-*` dan `text-indigo-*` masih ada pada legacy markup, tetapi jangan dipakai untuk foreground theme-aware baru.
+Kelas `text-slate-*`, `text-gray-*`, `text-zinc-*`, `text-indigo-*`, `text-violet-*`, `text-blue-*`, `text-sky-*`, dan `text-cyan-*` masih dapat ditemukan pada legacy markup. Pada authenticated `<main>`, warna non-semantiknya sekarang diterjemahkan oleh `view-theme-hardening.css` ke token theme. Kelas tersebut **bukan pola yang boleh ditambah pada kode baru**.
 
 ---
 
@@ -184,6 +185,8 @@ hover:border-slate-300
 hover:bg-indigo-50
 ```
 
+Legacy hover/focus/ring dengan palette neutral atau accent diterjemahkan oleh `view-theme-hardening.css`, termasuk variant ber-opacity yang sebelumnya masih dapat kembali ke warna light-only.
+
 ---
 
 ## 7. Semantic color
@@ -195,6 +198,16 @@ background: color-mix(in srgb, var(--ui-surface-base) 84%, #10b981); /* success 
 background: color-mix(in srgb, var(--ui-surface-base) 84%, #f59e0b); /* warning */
 background: color-mix(in srgb, var(--ui-surface-base) 84%, #f43f5e); /* danger */
 ```
+
+Audit view global **sengaja tidak menimpa** palette semantic berikut:
+
+```text
+emerald / green      -> success
+amber / yellow / orange -> warning / attention
+rose / red           -> danger / error
+```
+
+`text-white`, overlay `bg-white/10..20`, dan `border-white/*` pada hero gelap/theme accent juga dipertahankan bila dibutuhkan untuk kontras. View PDF/print/template preview dan public/auth/setup yang tidak berada pada authenticated `<main>` tidak dipaksa mengikuti palette aplikasi karena warna dapat merupakan bagian dari output cetak/branding/pre-login.
 
 ---
 
@@ -299,7 +312,7 @@ Card triwulan harus menggunakan current theme surface/accent untuk normal/hover/
 
 Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 
-`resources/css/dark-form-controls.css` adalah safety layer global control dark mode, termasuk Chrome autofill.
+`resources/css/dark-form-controls.css` adalah safety layer global control dark mode, termasuk Chrome autofill. `view-theme-hardening.css` bekerja setelahnya supaya utility legacy tidak mengembalikan surface/font ke palette light statis.
 
 ---
 
@@ -322,6 +335,7 @@ Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 | `dark-form-controls.css` | Dark control safety |
 | `spj-package-theme-fix.css` | Paket/Isian Manual/theme compatibility, compact template list, numbering hover |
 | `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |
+| `view-theme-hardening.css` | Final global bridge untuk hard-coded neutral/accent background, font, border, gradient, hover/focus/ring pada authenticated views |
 | `theme-accessibility.css` | Focus/contrast/accessibility |
 
 JavaScript placement terkait:
@@ -351,6 +365,8 @@ Nama:
 <feature>-placement.css
 ```
 
+`view-theme-hardening.css` adalah pengecualian yang sengaja bersifat global karena scope-nya hanya authenticated `<main>` dan fungsinya sebagai migration bridge lintas-view. Jangan menambah rule feature-specific ke file tersebut.
+
 ---
 
 ## 15. Pola yang dilarang untuk kode baru
@@ -372,7 +388,7 @@ bg-indigo-50
 text-indigo-700
 ```
 
-Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, atau kasus yang sengaja tidak mengikuti theme.
+Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, output print/PDF, atau kasus yang sengaja tidak mengikuti theme.
 
 ---
 
