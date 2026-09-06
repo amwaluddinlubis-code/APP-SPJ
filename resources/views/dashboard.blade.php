@@ -9,7 +9,7 @@
     <div class="space-y-6">
         <x-page-header
             :title="$school?->name ?? 'Sekolah belum dipilih'"
-            subtitle="Tahun Anggaran {{ $year->year }} · {{ $year->fund_source }} @if($school?->npsn) · NPSN {{ $school->npsn }} @endif"
+            :subtitle="'Tahun Anggaran '.$year->year.' · '.$year->fund_source.($school?->npsn ? ' · NPSN '.$school->npsn : '')"
             kicker="Dashboard SPJ BOSP"
         >
             <x-slot:actions>
