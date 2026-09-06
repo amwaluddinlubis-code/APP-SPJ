@@ -79,25 +79,14 @@ class SpjPackageValidationService
                 $url.'#rincian-transaksi'
             );
 
-            $hasGoodsDocuments = $transaction->goods->isNotEmpty();
-            $goodsDocumentLabel = $policy['channel'] === 'SIPLAH' ? 'Data penerimaan barang' : 'Dokumen barang';
-            $goodsDocumentPass = $policy['channel'] === 'SIPLAH'
-                ? $transaction->goodsReceipts->isNotEmpty() || $hasGoodsDocuments
-                : $hasGoodsDocuments;
-            $this->addCheck(
-                $checks,
-                'goods_documents',
-                'Belanja barang',
-                $goodsDocumentLabel,
-                $goodsDocumentPass,
-                $policy['channel'] === 'SIPLAH'
-                    ? 'Data penerimaan barang SIPLah sudah tersedia; dokumen pesanan platform tetap dipertahankan sebagai bukti sumber.'
-                    : 'Data pesanan/BAP/BAST sudah dibuat.',
-                $policy['channel'] === 'SIPLAH'
-                    ? 'Transaksi SIPLah tetap memerlukan bukti penerimaan barang/jasa yang dapat ditelusuri.'
-                    : 'Data pesanan, BAP, dan BAST belum dibuat.',
-                $url.'#modul-buat-spj'
-            );
+            if ($policy['channel'] === 'SIPLAH') {
+                $hasSiplahMetadata = filled($transaction->payment_reference)
+                    && filled($transaction->invoice_number)
+                    && $transaction->invoice_date !== null;
+                $this->addCheck($checks, 'siplah_metadata', 'Belanja barang', 'Data transaksi SiPLah', $hasSiplahMetadata, 'Referensi pembayaran serta nomor dan tanggal invoice SiPLah sudah tersedia.', 'Transaksi SiPLah memerlukan referensi pembayaran, nomor invoice, dan tanggal invoice.', $url.'#modul-buat-spj');
+            } else {
+                $this->addCheck($checks, 'goods_documents', 'Belanja barang', 'Dokumen barang', $transaction->goods->isNotEmpty(), 'Data pesanan/BAP/BAST sudah dibuat.', 'Data pesanan, BAP, dan BAST belum dibuat.', $url.'#modul-buat-spj');
+            }
 
             $hasBapOrBast = $transaction->goods->contains(fn ($goods) => filled($goods->bap_number) || filled($goods->bap_date) || filled($goods->bast_number) || filled($goods->bast_date));
             $bapBastReady = ! $hasBapOrBast || ($itemsComplete && $amountsValid);

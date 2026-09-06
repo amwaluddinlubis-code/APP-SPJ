@@ -134,8 +134,7 @@ class SpjDocumentRequirementService
         $providerName = $transaction->vendor_name ?: $transaction->recipient_name;
         $orderDate = $firstGoods?->order_date ?: $transaction->transaction_date;
         $orderItemsComplete = $transaction->items->isNotEmpty()
-            && $transaction->items->every(fn ($item) =>
-                filled($item->item_description ?: $item->description)
+            && $transaction->items->every(fn ($item) => filled($item->item_description ?: $item->description)
                 && (float) $item->quantity > 0
                 && (float) $item->unit_price >= 0
             );
@@ -183,11 +182,9 @@ class SpjDocumentRequirementService
             || (filled($firstGoods?->bast_number) && filled($firstGoods?->bast_date));
         $add(
             'goods_receipt', 'Penerimaan', 'Bukti penerimaan barang', $isSiplah ? 'SIPLah / dokumen penerimaan' : 'Aplikasi / dokumen sumber',
-            $goodsCategory, $goodsCategory, $receiptReady,
+            ! $isSiplah && $goodsCategory, ! $isSiplah && $goodsCategory, $receiptReady,
             'Bukti penerimaan barang tersedia.',
-            $isSiplah
-                ? 'Transaksi SIPLah tetap memerlukan bukti penerimaan barang yang dapat ditelusuri.'
-                : 'Belum ada bukti penerimaan barang, BAP, atau BAST.'
+            'Belum ada bukti penerimaan barang, BAP, atau BAST.'
         );
         $add(
             'bap', 'Penerimaan', 'Berita Acara Pemeriksaan/Penerimaan (BAP)', 'Dibuat aplikasi',

@@ -200,7 +200,7 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertNotContains('Surat pesanan internal', $blockingLabels);
         $this->assertFalse($validationIssues->contains('label', 'Surat pesanan internal'));
         $this->assertFalse($validationIssues->contains('message', 'Surat pesanan internal belum lengkap.'));
-        $this->assertTrue($validationIssues->contains('label', 'Data penerimaan barang'));
+        $this->assertFalse($validationIssues->contains('label', 'Data penerimaan barang'));
     }
 
     public function test_non_siplah_goods_purchase_still_requires_internal_purchase_order(): void
