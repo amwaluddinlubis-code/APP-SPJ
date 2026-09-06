@@ -121,6 +121,10 @@ class SpjDocumentRequirementService
          * 1) isi/substansi wajib lengkap sebelum paket boleh READY/dinomori;
          * 2) nomor surat baru wajib setelah paket sudah NUMBERED/FINAL.
          * Nomor yang diterbitkan aplikasi tidak boleh menjadi blocker sebelum proses penomoran.
+         *
+         * Field `unit` berasal dari rincian sumber ARKAS dan tidak dapat dilengkapi melalui
+         * form uraian SPJ operator. Karena itu `unit` tidak boleh menjadi hidden blocker.
+         * Kelengkapan item mengikuti validasi barang canonical: uraian, jumlah, dan harga.
          */
         $internalOrderApplicable = ! $isSiplah && $goodsCategory;
         $orderDate = $firstGoods?->order_date ?: $transaction->order_date;
@@ -128,9 +132,7 @@ class SpjDocumentRequirementService
             && $transaction->items->every(fn ($item) =>
                 filled($item->item_description ?: $item->description)
                 && (float) $item->quantity > 0
-                && filled($item->unit)
                 && (float) $item->unit_price >= 0
-                && (float) $item->amount >= 0
             );
         $internalOrderContentReady = filled($transaction->vendor_name)
             && filled($orderDate)
@@ -142,7 +144,7 @@ class SpjDocumentRequirementService
             $internalOrderApplicable, $internalOrderApplicable,
             $internalOrderContentReady,
             'Isi Surat Pesanan lengkap dan siap masuk proses penomoran.',
-            'Isi Surat Pesanan belum lengkap. Lengkapi penyedia, tanggal pesanan, rincian barang, satuan, jumlah, harga, dan nilai transaksi.'
+            'Isi Surat Pesanan belum lengkap. Lengkapi penyedia, tanggal pesanan, uraian barang, jumlah, harga, dan nilai transaksi.'
         );
 
         $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?? ''));
