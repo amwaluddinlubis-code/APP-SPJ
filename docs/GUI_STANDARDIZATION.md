@@ -144,7 +144,7 @@ Header konsisten, angka rata kanan bila relevan, hover mengikuti token theme, ta
 
 ---
 
-## 7. Detail Transaksi
+## 7. Detail Transaksi dan filter workflow
 
 Detail Transaksi adalah workspace operator:
 
@@ -157,6 +157,20 @@ Data ARKAS/BKU readonly
 ```
 
 Rincian item dibuat compact. Untuk `KONSUMSI`, auto-fill `fillTeachers()` adalah **Dapodik-only**.
+
+Filter status pada halaman `/transaksi` dan `/spj?tab=persiapan` memakai konsep workflow operator yang sama dan tidak lagi memakai status mentah transaksi sumber. Kontrak canonical:
+
+```text
+Perlu Perhatian   -> SOURCE_MISSING atau requires_reconciliation
+Belum Dikerjakan  -> transaksi normal belum memiliki Paket SPJ
+Perlu Dilengkapi  -> paket DRAFT
+Siap Dinomori     -> paket READY
+Sudah Bernomor    -> paket NUMBERED atau FINAL
+```
+
+Kelompok normal harus eksklusif terhadap **Perlu Perhatian** agar satu transaksi tidak dihitung sekaligus sebagai masalah sumber dan pekerjaan normal. Keberadaan `transaction_items` bukan indikator pekerjaan operator karena rincian berasal dari sinkronisasi `kas_umum`; karena itu state `needs_details` bukan lagi konsep workflow canonical. URL legacy `state=needs_details` hanya dipertahankan sementara sebagai alias kompatibilitas ke **Perlu Perhatian** sampai markup Persiapan lama dirapikan.
+
+Filter periode memakai prioritas **Bulan → Triwulan → Semester** bila lebih dari satu parameter ada; filter yang lebih spesifik tidak boleh bertabrakan dengan filter periode yang lebih luas.
 
 ---
 
@@ -215,7 +229,7 @@ Sudah Bernomor
 Final
 ```
 
-Jangan menggunakan kembali label **Belum disentuh**. `Belum Dikerjakan` saat ini adalah definisi persisted: transaksi aktif memiliki rincian, belum memiliki Paket SPJ, dan bukan rekonsiliasi/source missing. Ini bukan analytics literal tentang apakah halaman pernah dibuka.
+Jangan menggunakan kembali label **Belum disentuh**. `Belum Dikerjakan` saat ini adalah definisi persisted: transaksi aktif belum memiliki Paket SPJ dan bukan rekonsiliasi/source missing. Ini bukan analytics literal tentang apakah halaman pernah dibuka.
 
 Pekerjaan `DRAFT` harus diprioritaskan sebelum membuka pekerjaan baru agar operator menyelesaikan pekerjaan setengah jadi. Rekonsiliasi/source missing mempunyai prioritas lebih tinggi daripada antrean normal. `Belum Bernomor` merangkum antrean normal yang masih berada pada tahap Belum Dikerjakan + DRAFT + READY.
 
