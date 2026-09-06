@@ -25,6 +25,7 @@ class MaintenanceTransactionLinkController extends Controller
             ->values();
 
         return response()->json([
+            'current_role' => $this->currentRole($transaction),
             'candidates' => $candidates,
             'selected' => [
                 'material_transaction_id' => $transaction->maintenance_material_transaction_id,
@@ -45,6 +46,20 @@ class MaintenanceTransactionLinkController extends Controller
             'material_transaction_id' => ['nullable', 'integer'],
             'labor_transaction_id' => ['nullable', 'integer'],
         ]);
+
+        $currentRole = $this->currentRole($transaction);
+
+        if ($currentRole === 'labor' && filled($data['labor_transaction_id'] ?? null)) {
+            throw ValidationException::withMessages([
+                'labor_transaction_id' => 'Transaksi yang sedang dikerjakan sudah merupakan transaksi upah. Pilih hanya transaksi bahan/barang terkait.',
+            ]);
+        }
+
+        if ($currentRole === 'material' && filled($data['material_transaction_id'] ?? null)) {
+            throw ValidationException::withMessages([
+                'material_transaction_id' => 'Transaksi yang sedang dikerjakan sudah merupakan transaksi bahan/barang. Pilih hanya transaksi upah terkait.',
+            ]);
+        }
 
         foreach (['material_transaction_id', 'labor_transaction_id'] as $field) {
             $candidateId = $data[$field] ?? null;
@@ -70,8 +85,12 @@ class MaintenanceTransactionLinkController extends Controller
         }
 
         $transaction->forceFill([
-            'maintenance_material_transaction_id' => $data['material_transaction_id'] ?? null,
-            'maintenance_labor_transaction_id' => $data['labor_transaction_id'] ?? null,
+            'maintenance_material_transaction_id' => $currentRole === 'material'
+                ? null
+                : ($data['material_transaction_id'] ?? null),
+            'maintenance_labor_transaction_id' => $currentRole === 'labor'
+                ? null
+                : ($data['labor_transaction_id'] ?? null),
         ])->save();
 
         return response()->json(['message' => 'Transaksi terkait pemeliharaan berhasil disimpan.']);
@@ -99,5 +118,28 @@ class MaintenanceTransactionLinkController extends Controller
             ->where('requires_reconciliation', false)
             ->whereNotNull('payment_description')
             ->where('payment_description', '!=', '');
+    }
+
+    private function currentRole(Transaction $transaction): string
+    {
+        $searchable = strtolower(implode(' ', array_filter([
+            $transaction->payment_description,
+            $transaction->description,
+            $transaction->account_name,
+        ])));
+
+        foreach (['upah', 'tukang', 'tenaga kerja', 'pekerja', 'ongkos kerja', 'honor pekerja'] as $term) {
+            if (str_contains($searchable, $term)) {
+                return 'labor';
+            }
+        }
+
+        foreach (['bahan', 'barang', 'material', 'pembelian', 'semen', 'cat', 'pasir', 'batu', 'kayu', 'paku', 'besi'] as $term) {
+            if (str_contains($searchable, $term)) {
+                return 'material';
+            }
+        }
+
+        return 'unknown';
     }
 }
