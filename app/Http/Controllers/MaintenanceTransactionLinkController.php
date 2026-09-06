@@ -93,7 +93,7 @@ class MaintenanceTransactionLinkController extends Controller
     {
         return Transaction::query()
             ->activeContext()
-            ->whereKeyNot($transaction->id)
+            ->where('id', '!=', $transaction->id)
             ->whereDate('transaction_date', '>=', $transaction->transaction_date)
             ->where('source_status', 'ACTIVE')
             ->where('requires_reconciliation', false)
