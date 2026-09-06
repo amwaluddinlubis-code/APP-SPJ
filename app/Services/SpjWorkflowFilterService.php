@@ -35,7 +35,7 @@ class SpjWorkflowFilterService
             return $query;
         }
 
-        if ($state === 'attention') {
+        if (in_array($state, ['attention', 'needs_details'], true)) {
             return $query->where(function (Builder $query): void {
                 $query->where('requires_reconciliation', true)
                     ->orWhere('source_status', 'SOURCE_MISSING');
