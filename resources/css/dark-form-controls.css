@@ -1,0 +1,107 @@
+/* Final dark-mode form-control safety net.
+   Loaded last so legacy utility classes (including bg-white) cannot leave text
+   inputs white in dark appearance. Applies consistently across every dark
+   theme profile while preserving semantic disabled/readonly states. */
+
+html[data-ui-appearance='dark'] {
+    --ui-dark-control-bg: #0b1220;
+    --ui-dark-control-bg-soft: #0f172a;
+    --ui-dark-control-border: #374151;
+    --ui-dark-control-text: #e5e7eb;
+    --ui-dark-control-placeholder: #94a3b8;
+}
+
+html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+:is(
+    input[type='text'],
+    input[type='search'],
+    input[type='email'],
+    input[type='password'],
+    input[type='url'],
+    input[type='tel'],
+    input[type='number'],
+    input[type='date'],
+    input[type='datetime-local'],
+    input[type='month'],
+    input[type='time'],
+    input[type='week'],
+    input:not([type]),
+    textarea,
+    select,
+    .ui-input,
+    .ui-textarea,
+    .ui-select,
+    .form-control,
+    .form-select,
+    .fi-input
+) {
+    color-scheme: dark;
+    background-color: var(--ui-dark-control-bg) !important;
+    border-color: var(--ui-dark-control-border) !important;
+    color: var(--ui-dark-control-text) !important;
+}
+
+html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+:is(
+    input[type='text'],
+    input[type='search'],
+    input[type='email'],
+    input[type='password'],
+    input[type='url'],
+    input[type='tel'],
+    input[type='number'],
+    input:not([type]),
+    textarea,
+    .ui-input,
+    .ui-textarea,
+    .form-control,
+    .fi-input
+)::placeholder {
+    color: var(--ui-dark-control-placeholder) !important;
+    opacity: 1 !important;
+}
+
+html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+:is(
+    input[type='text'],
+    input[type='search'],
+    input[type='email'],
+    input[type='password'],
+    input[type='url'],
+    input[type='tel'],
+    input[type='number'],
+    input[type='date'],
+    input[type='datetime-local'],
+    input[type='month'],
+    input[type='time'],
+    input[type='week'],
+    input:not([type]),
+    textarea,
+    select,
+    .ui-input,
+    .ui-textarea,
+    .ui-select,
+    .form-control,
+    .form-select,
+    .fi-input
+):is([readonly], :disabled),
+html[data-ui-appearance='dark'] .ui-input-readonly {
+    background-color: var(--ui-dark-control-bg-soft) !important;
+    color: #94a3b8 !important;
+}
+
+html[data-ui-appearance='dark'] select option {
+    background-color: var(--ui-dark-control-bg) !important;
+    color: var(--ui-dark-control-text) !important;
+}
+
+/* Chrome autofill otherwise may paint a light/yellow surface over the control. */
+html[data-ui-appearance='dark'] input:-webkit-autofill,
+html[data-ui-appearance='dark'] input:-webkit-autofill:hover,
+html[data-ui-appearance='dark'] input:-webkit-autofill:focus,
+html[data-ui-appearance='dark'] textarea:-webkit-autofill,
+html[data-ui-appearance='dark'] select:-webkit-autofill {
+    -webkit-text-fill-color: var(--ui-dark-control-text) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--ui-dark-control-bg) inset !important;
+    caret-color: var(--ui-dark-control-text);
+}
