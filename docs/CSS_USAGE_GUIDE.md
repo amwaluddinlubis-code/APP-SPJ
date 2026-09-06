@@ -12,7 +12,7 @@ Dokumen ini adalah contract praktis CSS branch `gui-standardization`. Gunakan be
 2. Gunakan token CSS `var(--...)` untuk surface, border, foreground, accent, hover, radius, shadow, focus, dan density.
 3. Gunakan primitive/class `ui-*` sebelum membuat class baru.
 4. Tailwind tetap dipakai terutama untuk layout, spacing, ukuran, grid, flex, responsive, overflow, truncate.
-5. Semantic success/warning/danger boleh berbeda, tetapi surface harus tetap nyaman di light/dark/theme berwarna.
+5. Semantic success/warning/danger/status boleh berbeda, tetapi surface harus tetap nyaman di light/dark/theme berwarna.
 6. CSS fitur harus scoped.
 7. CSS tidak di-import dari feature/runtime JavaScript. Semua CSS masuk melalui `app.css` → `theme-system.css`.
 
@@ -40,9 +40,10 @@ dark-form-controls.css
 spj-package-theme-fix.css
 spj-package-document-placement.css
 view-theme-hardening.css
+semantic-status-colors.css
 ```
 
-Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer **paling akhir** untuk authenticated application views. Ia tidak mengubah business rule atau markup Blade; ia memastikan class warna legacy yang masih tersisa tidak mengalahkan theme aktif.
+Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer global terakhir untuk **warna non-semantik** pada authenticated application views. `semantic-status-colors.css` adalah satu-satunya exception setelahnya dan hanya mengembalikan identitas warna status workflow canonical agar `READY`, `NUMBERED`, `PRINTED`, dan status sejenis tetap mudah dibedakan. Keduanya tidak mengubah business rule atau markup domain.
 
 ---
 
@@ -202,10 +203,12 @@ background: color-mix(in srgb, var(--ui-surface-base) 84%, #f43f5e); /* danger *
 Audit view global **sengaja tidak menimpa** palette semantic berikut:
 
 ```text
-emerald / green      -> success
-amber / yellow / orange -> warning / attention
-rose / red           -> danger / error
+emerald / green          -> success
+amber / yellow / orange  -> warning / attention
+rose / red               -> danger / error
 ```
+
+Untuk status workflow canonical yang historically memakai `sky`, `indigo`, atau `violet`, `<x-ui.status-badge>` kini memiliki marker `ui-status-badge` + `data-status`, lalu `semantic-status-colors.css` mengembalikan hue semantic dengan `color-mix()` terhadap surface/border/font theme saat ini. Jadi makna status dipertahankan tanpa membuat badge menjadi light-only atau dark-only.
 
 `text-white`, overlay `bg-white/10..20`, dan `border-white/*` pada hero gelap/theme accent juga dipertahankan bila dibutuhkan untuk kontras. View PDF/print/template preview dan public/auth/setup yang tidak berada pada authenticated `<main>` tidak dipaksa mengikuti palette aplikasi karena warna dapat merupakan bagian dari output cetak/branding/pre-login.
 
@@ -312,7 +315,7 @@ Card triwulan harus menggunakan current theme surface/accent untuk normal/hover/
 
 Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 
-`resources/css/dark-form-controls.css` adalah safety layer global control dark mode, termasuk Chrome autofill. `view-theme-hardening.css` bekerja setelahnya supaya utility legacy tidak mengembalikan surface/font ke palette light statis.
+`resources/css/dark-form-controls.css` adalah safety layer global control dark mode, termasuk Chrome autofill. `view-theme-hardening.css` bekerja setelah feature compatibility layers supaya utility legacy tidak mengembalikan surface/font ke palette light statis. `semantic-status-colors.css` kemudian hanya memulihkan perbedaan warna status workflow secara theme-safe.
 
 ---
 
@@ -335,7 +338,8 @@ Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 | `dark-form-controls.css` | Dark control safety |
 | `spj-package-theme-fix.css` | Paket/Isian Manual/theme compatibility, compact template list, numbering hover |
 | `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |
-| `view-theme-hardening.css` | Final global bridge untuk hard-coded neutral/accent background, font, border, gradient, hover/focus/ring pada authenticated views |
+| `view-theme-hardening.css` | Global bridge untuk hard-coded neutral/accent background, font, border, gradient, hover/focus/ring pada authenticated views |
+| `semantic-status-colors.css` | Exception semantic sesudah hardening untuk mempertahankan perbedaan workflow status canonical |
 | `theme-accessibility.css` | Focus/contrast/accessibility |
 
 JavaScript placement terkait:
@@ -365,7 +369,7 @@ Nama:
 <feature>-placement.css
 ```
 
-`view-theme-hardening.css` adalah pengecualian yang sengaja bersifat global karena scope-nya hanya authenticated `<main>` dan fungsinya sebagai migration bridge lintas-view. Jangan menambah rule feature-specific ke file tersebut.
+`view-theme-hardening.css` adalah pengecualian yang sengaja bersifat global karena scope-nya hanya authenticated `<main>` dan fungsinya sebagai migration bridge lintas-view. Jangan menambah rule feature-specific ke file tersebut. `semantic-status-colors.css` juga tidak boleh dipakai untuk dekorasi; scope-nya hanya status canonical.
 
 ---
 
