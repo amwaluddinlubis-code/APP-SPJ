@@ -35,6 +35,7 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
     const laborColumn = makeColumn('Transaksi Upah', 'maintenance-labor-transaction', 'Pilih transaksi upah');
     const materialSelect = materialColumn.querySelector('select');
     const laborSelect = laborColumn.querySelector('select');
+    let currentRole = 'unknown';
     let loaded = false;
     let loading = false;
     let saving = false;
@@ -71,6 +72,17 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
         });
     };
 
+    const renderMaintenanceColumns = (isMaintenance) => {
+        if (!isMaintenance || !loaded) {
+            materialColumn.hidden = true;
+            laborColumn.hidden = true;
+            return;
+        }
+
+        materialColumn.hidden = currentRole === 'material';
+        laborColumn.hidden = currentRole === 'labor';
+    };
+
     const loadCandidates = async () => {
         if (loaded || loading) return;
 
@@ -91,6 +103,7 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
 
             const payload = await response.json();
             const options = payload.candidates || [];
+            currentRole = payload.current_role || 'unknown';
 
             resetOptions(materialSelect, options.length ? 'Pilih transaksi bahan / barang' : 'Tidak ada transaksi yang memenuhi syarat');
             resetOptions(laborSelect, options.length ? 'Pilih transaksi upah' : 'Tidak ada transaksi yang memenuhi syarat');
@@ -106,6 +119,13 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
 
             materialSelect.value = payload.selected?.material_transaction_id ? String(payload.selected.material_transaction_id) : '';
             laborSelect.value = payload.selected?.labor_transaction_id ? String(payload.selected.labor_transaction_id) : '';
+
+            if (currentRole === 'labor') {
+                laborSelect.value = '';
+            } else if (currentRole === 'material') {
+                materialSelect.value = '';
+            }
+
             synchronizeExclusiveOptions();
             loaded = true;
         } finally {
@@ -130,8 +150,8 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
                     'X-CSRF-TOKEN': csrf,
                 },
                 body: JSON.stringify({
-                    material_transaction_id: materialSelect.value ? Number(materialSelect.value) : null,
-                    labor_transaction_id: laborSelect.value ? Number(laborSelect.value) : null,
+                    material_transaction_id: currentRole === 'material' || !materialSelect.value ? null : Number(materialSelect.value),
+                    labor_transaction_id: currentRole === 'labor' || !laborSelect.value ? null : Number(laborSelect.value),
                 }),
             });
 
@@ -155,13 +175,13 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
         originalColumns.forEach((column) => {
             column.hidden = isMaintenance;
         });
-        materialColumn.hidden = !isMaintenance;
-        laborColumn.hidden = !isMaintenance;
+        renderMaintenanceColumns(isMaintenance);
 
         if (!isMaintenance) return;
 
         try {
             await loadCandidates();
+            renderMaintenanceColumns(true);
         } catch (error) {
             resetOptions(materialSelect, 'Gagal memuat transaksi');
             resetOptions(laborSelect, 'Gagal memuat transaksi');
