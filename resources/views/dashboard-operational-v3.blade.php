@@ -110,8 +110,9 @@
                                 </div>
                                 <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $transaction->items_count }} rincian · Rp {{ number_format((float) $transaction->gross_amount, 0, ',', '.') }}</p>
+                                <p class="mt-2 text-xs font-semibold text-amber-800">Perlu dilengkapi: {{ $transaction->next_step }}</p>
                             </div>
-                            <a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex shrink-0 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700">Lanjutkan →</a>
+                            <a href="{{ $transaction->next_step_url }}" class="inline-flex shrink-0 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700">Periksa →</a>
                         </div>
                     @empty
                         <div class="px-5 py-10 text-center text-sm text-slate-500">Tidak ada transaksi yang sedang menunggu tindakan operator.</div>

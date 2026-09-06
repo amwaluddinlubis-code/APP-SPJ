@@ -7,6 +7,7 @@ use App\Models\FiscalYear;
 use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\SpjPackageValidationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -66,7 +67,32 @@ class OperationalDashboardController extends Controller
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->limit(8)
-            ->get();
+            ->get()
+            ->map(function (Transaction $transaction): Transaction {
+                if (! $transaction->spjPackage) {
+                    $transaction->next_step = 'Lengkapi data SPJ lalu siapkan paket.';
+                    $transaction->next_step_url = route('transactions.show', $transaction->id).'#modul-buat-spj';
+
+                    return $transaction;
+                }
+
+                if ($transaction->spjPackage->status === 'DRAFT') {
+                    $issues = app(SpjPackageValidationService::class)->validate(
+                        $transaction->spjPackage->loadMissing(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts'])
+                    );
+                    $transaction->next_step = collect($issues)->pluck('label')->take(2)->implode(' · ') ?: 'Buka checklist untuk melengkapi paket.';
+                    $transaction->next_step_url = route('spj.checklist', $transaction->spjPackage->id);
+
+                    return $transaction;
+                }
+
+                $transaction->next_step = $transaction->spjPackage->status === 'READY'
+                    ? 'Paket siap ditinjau untuk penomoran.'
+                    : 'Tinjau status paket dan sumber data.';
+                $transaction->next_step_url = route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]);
+
+                return $transaction;
+            });
 
         $firstDraftPackage = (clone $packages)
             ->where('status', 'DRAFT')
