@@ -1,0 +1,37 @@
+/* Package tab theme fix.
+   Tailwind variant class names such as odd:bg-white/even:bg-slate-50/70 do not
+   match the plain .bg-white/.bg-slate selectors in the compatibility layer.
+   Normalize those package document rows through the active SPJ theme tokens. */
+
+.spj-semantic-workspace [class*="odd:bg-white"]:nth-child(odd) {
+    background-color: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace [class*="even:bg-slate-50/70"]:nth-child(even) {
+    background-color: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+/* Keep document/template item copy readable on every selected theme. */
+.spj-semantic-workspace [class*="odd:bg-white"] :is(p,span,strong),
+.spj-semantic-workspace [class*="even:bg-slate-50/70"] :is(p,span,strong) {
+    color: inherit;
+}
+
+.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--ui-fg"],
+.spj-semantic-workspace [class*="even:bg-slate-50/70"] p[style*="--ui-fg"] {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--theme-content-accent"],
+.spj-semantic-workspace [class*="even:bg-slate-50/70"] p[style*="--theme-content-accent"] {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Package inner tabs also carry a data-variant white background. */
+.spj-semantic-workspace [data-package-tab][data-active="true"] {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface) !important;
+    color: var(--theme-content-accent) !important;
+}
