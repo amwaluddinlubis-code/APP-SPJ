@@ -1,0 +1,40 @@
+/* Semantic status colors are the deliberate exception after global view theme
+   hardening. Workflow states must remain distinguishable even when the selected
+   theme changes. Mix the semantic hue into current UI tokens so badges stay
+   readable in light/dark appearance without becoming theme-owned accent chrome. */
+
+.ui-status-badge.bg-sky-50 {
+    background-color: color-mix(in srgb, var(--ui-surface-base) 86%, #0ea5e9) !important;
+}
+
+.ui-status-badge.border-sky-200 {
+    border-color: color-mix(in srgb, var(--ui-line) 58%, #0ea5e9) !important;
+}
+
+.ui-status-badge.text-sky-800 {
+    color: color-mix(in srgb, var(--ui-fg-strong) 58%, #0369a1) !important;
+}
+
+.ui-status-badge.bg-indigo-50 {
+    background-color: color-mix(in srgb, var(--ui-surface-base) 86%, #6366f1) !important;
+}
+
+.ui-status-badge.border-indigo-200 {
+    border-color: color-mix(in srgb, var(--ui-line) 58%, #6366f1) !important;
+}
+
+.ui-status-badge.text-indigo-800 {
+    color: color-mix(in srgb, var(--ui-fg-strong) 58%, #4338ca) !important;
+}
+
+.ui-status-badge.bg-violet-50 {
+    background-color: color-mix(in srgb, var(--ui-surface-base) 86%, #8b5cf6) !important;
+}
+
+.ui-status-badge.border-violet-200 {
+    border-color: color-mix(in srgb, var(--ui-line) 58%, #8b5cf6) !important;
+}
+
+.ui-status-badge.text-violet-800 {
+    color: color-mix(in srgb, var(--ui-fg-strong) 58%, #6d28d9) !important;
+}
