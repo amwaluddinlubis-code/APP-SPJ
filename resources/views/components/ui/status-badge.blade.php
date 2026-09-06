@@ -66,7 +66,8 @@
 @endphp
 
 <span
-    {{ $attributes->class(['inline-flex items-center rounded-full border font-bold', $sizeClass, $statusMeta['class']]) }}
+    {{ $attributes->class(['ui-status-badge inline-flex items-center rounded-full border font-bold', $sizeClass, $statusMeta['class']]) }}
+    data-status="{{ $normalizedStatus }}"
     title="Status sistem: {{ $normalizedStatus }}">
     {{ $label ?: $statusMeta['label'] }}
 </span>
