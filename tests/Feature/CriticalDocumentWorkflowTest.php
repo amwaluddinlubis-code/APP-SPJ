@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
 use App\Services\FiscalPeriodWorkflowService;
+use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use App\Services\TransactionSettlementService;
 use Illuminate\Support\Facades\Artisan;
@@ -170,6 +171,28 @@ class CriticalDocumentWorkflowTest extends TestCase
 
         $this->assertContains('Nilai item barang', $labels);
         $this->assertContains('Kelengkapan BAP/BAST', $labels);
+    }
+
+    public function test_internal_order_content_does_not_require_source_unit(): void
+    {
+        $transaction = $this->readyGoodsTransaction();
+        $transaction->forceFill(['vendor_name' => 'Toko Kertas'])->save();
+        $item = $transaction->items()->create([
+            'description' => 'Kertas',
+            'item_description' => 'Kertas HVS A4',
+            'quantity' => 1,
+            'unit' => null,
+            'unit_price' => 1000,
+            'amount' => 1000,
+        ]);
+        $item->goods()->create(['order_date' => '2026-01-10']);
+        $transaction->load(['items', 'goods', 'spjPackage']);
+
+        $requirement = collect(app(SpjDocumentRequirementService::class)->forTransaction($transaction))
+            ->firstWhere('key', 'internal_order_content');
+
+        $this->assertNotNull($requirement);
+        $this->assertTrue($requirement['available']);
     }
 
     public function test_duplicate_vendor_invoice_in_same_fiscal_year_blocks_numbering(): void
