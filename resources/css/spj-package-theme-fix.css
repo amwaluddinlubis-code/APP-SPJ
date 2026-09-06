@@ -1,37 +1,193 @@
-/* Package tab theme fix.
-   Tailwind variant class names such as odd:bg-white/even:bg-slate-50/70 do not
-   match the plain .bg-white/.bg-slate selectors in the compatibility layer.
-   Normalize those package document rows through the active SPJ theme tokens. */
+/* SPJ package/theme safety layer.
+   Loaded last so legacy Tailwind utility variants cannot force light surfaces
+   after the canonical theme tokens have been resolved. */
 
+/* Tailwind odd/even variants used by Dokumen & Template. */
 .spj-semantic-workspace [class*="odd:bg-white"]:nth-child(odd) {
     background-color: var(--spj-surface) !important;
     color: var(--spj-text) !important;
 }
 
-.spj-semantic-workspace [class*="even:bg-slate-50/70"]:nth-child(even) {
+.spj-semantic-workspace [class*="even:bg-slate-50/70"]:nth-child(even),
+.spj-semantic-workspace [class*="even:bg-slate-50"]:nth-child(even) {
     background-color: var(--spj-surface-soft) !important;
     color: var(--spj-text) !important;
 }
 
-/* Keep document/template item copy readable on every selected theme. */
-.spj-semantic-workspace [class*="odd:bg-white"] :is(p,span,strong),
-.spj-semantic-workspace [class*="even:bg-slate-50/70"] :is(p,span,strong) {
-    color: inherit;
+/* Slash-opacity light surfaces are separate generated classes and therefore
+   need an explicit theme-token override. */
+.spj-semantic-workspace :is(
+    [class*="bg-white/"],
+    [class*="bg-slate-50/"],
+    [class*="bg-slate-100/"],
+    [class*="bg-gray-50/"],
+    [class*="bg-gray-100/"]
+) {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
 }
 
-.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--ui-fg"],
-.spj-semantic-workspace [class*="even:bg-slate-50/70"] p[style*="--ui-fg"] {
+/* Neutral package shells, cards, detail rows, forms and panels. */
+.spj-semantic-workspace :is(
+    section,
+    article,
+    aside,
+    details,
+    form,
+    fieldset,
+    [data-panel]
+)[class*="border-"][class*="rounded-"] {
+    border-color: var(--spj-border) !important;
+}
+
+.spj-semantic-workspace :is(
+    section,
+    article,
+    aside,
+    details,
+    form,
+    fieldset,
+    [data-panel]
+)[class*="bg-white"] {
+    background-color: var(--spj-surface) !important;
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace :is(
+    section,
+    article,
+    aside,
+    details,
+    form,
+    fieldset,
+    [data-panel]
+)[class*="bg-slate-50"],
+.spj-semantic-workspace :is(
+    section,
+    article,
+    aside,
+    details,
+    form,
+    fieldset,
+    [data-panel]
+)[class*="bg-slate-100"] {
+    background-color: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
+}
+
+/* Package inner tabs carry data-variant white backgrounds in the Blade markup. */
+.spj-semantic-workspace [data-package-tab] {
+    color: var(--spj-text-muted) !important;
+}
+
+.spj-semantic-workspace [data-package-tab]:hover {
+    background-color: var(--spj-surface-soft) !important;
     color: var(--spj-text-strong) !important;
 }
 
-.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--theme-content-accent"],
-.spj-semantic-workspace [class*="even:bg-slate-50/70"] p[style*="--theme-content-accent"] {
-    color: var(--theme-content-accent) !important;
-}
-
-/* Package inner tabs also carry a data-variant white background. */
 .spj-semantic-workspace [data-package-tab][data-active="true"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface) !important;
     color: var(--theme-content-accent) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+/* Text hierarchy: legacy slate text in package detail must follow the selected
+   theme foreground instead of assuming a light background. */
+.spj-semantic-workspace :is([data-panel],section:has([data-package-tab])) :is(
+    .text-slate-950,
+    .text-slate-900,
+    .text-slate-800,
+    .text-slate-700
+) {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace :is([data-panel],section:has([data-package-tab])) .text-slate-600 {
+    color: var(--spj-text) !important;
+}
+
+.spj-semantic-workspace :is([data-panel],section:has([data-package-tab])) :is(
+    .text-slate-500,
+    .text-slate-400,
+    .text-slate-300
+) {
+    color: var(--spj-text-muted) !important;
+}
+
+/* Keep document/template item copy readable on every selected theme. */
+.spj-semantic-workspace [class*="odd:bg-white"] :is(p,span,strong),
+.spj-semantic-workspace [class*="even:bg-slate-50"] :is(p,span,strong) {
+    color: inherit;
+}
+
+.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--ui-fg"],
+.spj-semantic-workspace [class*="even:bg-slate-50"] p[style*="--ui-fg"] {
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace [class*="odd:bg-white"] p[style*="--theme-content-accent"],
+.spj-semantic-workspace [class*="even:bg-slate-50"] p[style*="--theme-content-accent"] {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Theme-aware semantic feedback. Do not leave pale light-only blocks inside
+   dark or deeply tinted themes; blend the semantic color into current surface. */
+.spj-semantic-workspace :is([class*="bg-emerald-50"],[class*="bg-green-50"]) {
+    background-color: color-mix(in srgb, var(--spj-surface) 84%, #10b981) !important;
+}
+
+.spj-semantic-workspace :is([class*="bg-amber-50"],[class*="bg-yellow-50"]) {
+    background-color: color-mix(in srgb, var(--spj-surface) 84%, #f59e0b) !important;
+}
+
+.spj-semantic-workspace :is([class*="bg-rose-50"],[class*="bg-red-50"]) {
+    background-color: color-mix(in srgb, var(--spj-surface) 84%, #f43f5e) !important;
+}
+
+html[data-ui-appearance='dark'] .spj-semantic-workspace :is(.text-emerald-700,.text-emerald-800,.text-green-700,.text-green-800) {
+    color: #a7f3d0 !important;
+}
+
+html[data-ui-appearance='dark'] .spj-semantic-workspace :is(.text-amber-700,.text-amber-800,.text-yellow-700,.text-yellow-800) {
+    color: #fde68a !important;
+}
+
+html[data-ui-appearance='dark'] .spj-semantic-workspace :is(.text-rose-700,.text-rose-800,.text-red-700,.text-red-800) {
+    color: #fecdd3 !important;
+}
+
+/* Manual package inputs/selects/textarea stay readable even when an old local
+   class attempts to reintroduce a white control surface. */
+.spj-semantic-workspace :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+    border-color: var(--spj-border-strong) !important;
+    background-color: var(--spj-surface) !important;
+    color: var(--spj-text-strong) !important;
+}
+
+.spj-semantic-workspace :is(input,textarea)::placeholder {
+    color: var(--spj-text-muted) !important;
+    opacity: 1;
+}
+
+.spj-semantic-workspace :is(input,select,textarea)[readonly],
+.spj-semantic-workspace :is(input,select,textarea):disabled {
+    border-color: var(--spj-border) !important;
+    background-color: var(--spj-surface-muted) !important;
+    color: var(--spj-text-muted) !important;
+}
+
+/* Dividers and table bands on Paket tab. */
+.spj-semantic-workspace :is([data-panel],section:has([data-package-tab])) :is(
+    .border-slate-100,
+    .border-slate-200,
+    .border-slate-300
+) {
+    border-color: var(--spj-border) !important;
+}
+
+.spj-semantic-workspace :is([data-panel],section:has([data-package-tab])) :is(thead,tfoot) {
+    background: var(--spj-surface-soft) !important;
+    color: var(--spj-text) !important;
 }
