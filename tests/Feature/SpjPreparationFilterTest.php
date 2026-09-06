@@ -41,26 +41,35 @@ class SpjPreparationFilterTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_preparation_state_filters_follow_package_lifecycle_status(): void
+    public function test_preparation_state_filters_follow_shared_operator_workflow(): void
     {
-        $needsDetails = $this->transaction('BPU-001', '2026-01-10');
-        $unprepared = $this->transaction('BPU-002', '2026-01-11', true);
-        $draft = $this->transaction('BPU-003', '2026-01-12', true, 'DRAFT');
-        $ready = $this->transaction('BPU-004', '2026-01-13', true, 'READY');
-        $numbered = $this->transaction('BPU-005', '2026-01-14', true, 'NUMBERED', '001/SPJ/2026');
-        $final = $this->transaction('BPU-006', '2026-01-15', true, 'FINAL', '002/SPJ/2026');
+        $unprepared = $this->transaction('BPU-001', '2026-01-11');
+        $draft = $this->transaction('BPU-002', '2026-01-12', 'DRAFT');
+        $ready = $this->transaction('BPU-003', '2026-01-13', 'READY');
+        $numbered = $this->transaction('BPU-004', '2026-01-14', 'NUMBERED', '001/SPJ/2026');
+        $final = $this->transaction('BPU-005', '2026-01-15', 'FINAL', '002/SPJ/2026');
+        $sourceMissing = $this->transaction('BPU-006', '2026-01-16', sourceStatus: 'SOURCE_MISSING');
+        $reconciliation = $this->transaction('BPU-007', '2026-01-17', requiresReconciliation: true);
 
-        $this->assertSame([$needsDetails->id], $this->filteredIds('needs_details'));
         $this->assertSame([$unprepared->id], $this->filteredIds('unprepared'));
         $this->assertSame([$draft->id], $this->filteredIds('draft'));
         $this->assertSame([$ready->id], $this->filteredIds('ready'));
         $this->assertSame([$numbered->id, $final->id], $this->filteredIds('numbered'));
+        $this->assertSame([$sourceMissing->id, $reconciliation->id], $this->filteredIds('attention'));
+    }
+
+    public function test_legacy_needs_details_state_is_a_temporary_alias_for_source_attention(): void
+    {
+        $sourceMissing = $this->transaction('BPU-MISSING', '2026-01-10', sourceStatus: 'SOURCE_MISSING');
+        $this->transaction('BPU-NORMAL', '2026-01-11');
+
+        $this->assertSame([$sourceMissing->id], $this->filteredIds('needs_details'));
     }
 
     public function test_month_filter_takes_precedence_when_month_and_quarter_are_both_present(): void
     {
-        $april = $this->transaction('BPU-APR', '2026-04-10', true);
-        $this->transaction('BPU-FEB', '2026-02-10', true);
+        $april = $this->transaction('BPU-APR', '2026-04-10');
+        $this->transaction('BPU-FEB', '2026-02-10');
 
         $view = app(SpjWorkspaceUseCase::class)->handle(Request::create('/spj', 'GET', [
             'tab' => 'persiapan',
@@ -86,9 +95,10 @@ class SpjPreparationFilterTest extends TestCase
     private function transaction(
         string $noBukti,
         string $date,
-        bool $withItem = false,
         ?string $packageStatus = null,
         ?string $documentNumber = null,
+        ?string $sourceStatus = null,
+        bool $requiresReconciliation = false,
     ): Transaction {
         $transaction = Transaction::query()->create([
             'fiscal_year_id' => 1,
@@ -98,18 +108,18 @@ class SpjPreparationFilterTest extends TestCase
             'gross_amount' => 100000,
             'net_amount' => 100000,
             'spj_category' => 'BARANG',
+            'source_status' => $sourceStatus,
+            'requires_reconciliation' => $requiresReconciliation,
         ]);
 
-        if ($withItem) {
-            $transaction->items()->create([
-                'description' => 'Barang uji',
-                'item_description' => 'Barang uji',
-                'quantity' => 1,
-                'unit' => 'buah',
-                'unit_price' => 100000,
-                'amount' => 100000,
-            ]);
-        }
+        $transaction->items()->create([
+            'description' => 'Barang uji',
+            'item_description' => 'Barang uji',
+            'quantity' => 1,
+            'unit' => 'buah',
+            'unit_price' => 100000,
+            'amount' => 100000,
+        ]);
 
         if ($packageStatus) {
             $transaction->spjPackage()->create([
