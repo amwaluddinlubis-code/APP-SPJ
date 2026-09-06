@@ -1,23 +1,150 @@
-/.phpunit.cache
-/node_modules
-/public/build
+# -----------------------------------------------------------------------------
+# PHP / Composer dependencies
+# -----------------------------------------------------------------------------
+/vendor/
+/auth.json
+
+# -----------------------------------------------------------------------------
+# Node / Vite build artifacts
+# -----------------------------------------------------------------------------
+/node_modules/
+/public/build/
 /public/hot
 /public/storage
-/storage/*.key
-/storage/pail
-/vendor
+/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -----------------------------------------------------------------------------
+# Environment & local secrets
+# Keep .env.example versioned as the canonical template.
+# -----------------------------------------------------------------------------
 .env
-.env.backup
-.env.production
-.phpactor.json
+.env.*
+!.env.example
+/auth.json
+*.pem
+*.p12
+*.pfx
+*.key
+credentials*.json
+service-account*.json
+google-credentials*.json
+client_secret*.json
+
+# -----------------------------------------------------------------------------
+# Laravel runtime files
+# -----------------------------------------------------------------------------
+/storage/*.key
+/storage/pail/
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/bootstrap/cache/*.php
+
+# Application runtime/private data.
+# Source templates belong under resources/, not storage/app/.
+/storage/app/school-databases/
+/storage/app/school-backups/
+/storage/app/private/*
+/storage/app/public/*
+/storage/app/uploads/
+/storage/app/exports/
+/storage/app/generated/
+
+# -----------------------------------------------------------------------------
+# SQLite / tenant databases
+# Never commit live school databases, dummy runtime databases, WAL/SHM, or copies.
+# -----------------------------------------------------------------------------
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Stakpak local state is runtime/tool data, not project source.
+/.stakpak/data/
+
+# -----------------------------------------------------------------------------
+# Database backups / temporary restore files / generated dumps
+# -----------------------------------------------------------------------------
+/storage/**/*.bak
+/storage/**/*.backup
+/storage/**/*.dump
+/storage/**/*.sql
+/storage/**/*.tmp
+/backups/
+/tmp/
+/temp/
+
+# -----------------------------------------------------------------------------
+# PHPUnit / QA / coverage caches
+# -----------------------------------------------------------------------------
+/.phpunit.cache/
+/.phpunit.result.cache
 .phpunit.result.cache
+/coverage/
+/test-results/
+.phpactor.json
+
+# -----------------------------------------------------------------------------
+# IDE / editor / local workspace files
+# -----------------------------------------------------------------------------
+/.fleet/
+/.idea/
+/.nova/
+/.vscode/
+/.zed/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# -----------------------------------------------------------------------------
+# OS metadata
+# -----------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -----------------------------------------------------------------------------
+# Generic logs & temporary files
+# -----------------------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.cache
+
+# -----------------------------------------------------------------------------
+# Microsoft Office temporary lock files only.
+# Do NOT ignore real .docx/.xlsx/.xlsm/.pdf files globally because the project may
+# intentionally version document templates or sanitized fixtures.
+# -----------------------------------------------------------------------------
+~$*.docx
+~$*.xlsx
+~$*.xlsm
+~$*.xls
+~$*.pptx
+
+# -----------------------------------------------------------------------------
+# Legacy local development files
+# -----------------------------------------------------------------------------
 Homestead.json
 Homestead.yaml
-npm-debug.log
-yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
