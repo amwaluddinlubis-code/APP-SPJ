@@ -22,9 +22,10 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
         wrapper.dataset.maintenanceLinkColumn = name;
         wrapper.innerHTML = `
             <label class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]" for="${name}">${label}</label>
-            <select id="${name}" class="ui-select mt-1" aria-label="${label}">
+            <select id="${name}" class="ui-select mt-1" aria-label="${label}" disabled>
                 <option value="">${placeholder}</option>
             </select>
+            <p class="mt-1 text-[11px] leading-relaxed text-[var(--ui-fg-muted)]">Format: nomor bukti - uraian pembayaran.</p>
         `;
         panel.appendChild(wrapper);
         return wrapper;
@@ -35,82 +36,143 @@ const initializeMaintenanceTransactionLinks = async (root = document) => {
     const materialSelect = materialColumn.querySelector('select');
     const laborSelect = laborColumn.querySelector('select');
     let loaded = false;
+    let loading = false;
+    let saving = false;
+
+    if (!(materialSelect instanceof HTMLSelectElement) || !(laborSelect instanceof HTMLSelectElement)) return;
 
     const dispatchNotification = (type, message) => {
         window.dispatchEvent(new CustomEvent('app-notify', { detail: { type, message } }));
     };
 
+    const setControlsDisabled = (disabled) => {
+        const fieldsetDisabled = Boolean(panel.closest('fieldset')?.disabled);
+        materialSelect.disabled = disabled || fieldsetDisabled;
+        laborSelect.disabled = disabled || fieldsetDisabled;
+    };
+
+    const resetOptions = (select, placeholder) => {
+        select.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = placeholder;
+        select.appendChild(option);
+    };
+
+    const synchronizeExclusiveOptions = () => {
+        const materialValue = materialSelect.value;
+        const laborValue = laborSelect.value;
+
+        Array.from(materialSelect.options).forEach((option) => {
+            option.disabled = option.value !== '' && option.value === laborValue;
+        });
+        Array.from(laborSelect.options).forEach((option) => {
+            option.disabled = option.value !== '' && option.value === materialValue;
+        });
+    };
+
     const loadCandidates = async () => {
-        if (loaded) return;
+        if (loaded || loading) return;
 
-        const response = await fetch(endpoint, {
-            headers: { Accept: 'application/json' },
-            credentials: 'same-origin',
-        });
+        loading = true;
+        setControlsDisabled(true);
+        resetOptions(materialSelect, 'Memuat transaksi bahan / barang...');
+        resetOptions(laborSelect, 'Memuat transaksi upah...');
 
-        if (!response.ok) {
-            throw new Error('Daftar transaksi terkait tidak dapat dimuat.');
-        }
-
-        const payload = await response.json();
-        const options = payload.candidates || [];
-
-        [materialSelect, laborSelect].forEach((select) => {
-            options.forEach((candidate) => {
-                const option = document.createElement('option');
-                option.value = String(candidate.id);
-                option.textContent = candidate.label;
-                select.appendChild(option);
+        try {
+            const response = await fetch(endpoint, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
             });
-        });
 
-        materialSelect.value = payload.selected?.material_transaction_id ? String(payload.selected.material_transaction_id) : '';
-        laborSelect.value = payload.selected?.labor_transaction_id ? String(payload.selected.labor_transaction_id) : '';
-        loaded = true;
+            if (!response.ok) {
+                throw new Error('Daftar transaksi terkait tidak dapat dimuat.');
+            }
+
+            const payload = await response.json();
+            const options = payload.candidates || [];
+
+            resetOptions(materialSelect, options.length ? 'Pilih transaksi bahan / barang' : 'Tidak ada transaksi yang memenuhi syarat');
+            resetOptions(laborSelect, options.length ? 'Pilih transaksi upah' : 'Tidak ada transaksi yang memenuhi syarat');
+
+            [materialSelect, laborSelect].forEach((select) => {
+                options.forEach((candidate) => {
+                    const option = document.createElement('option');
+                    option.value = String(candidate.id);
+                    option.textContent = candidate.label;
+                    select.appendChild(option);
+                });
+            });
+
+            materialSelect.value = payload.selected?.material_transaction_id ? String(payload.selected.material_transaction_id) : '';
+            laborSelect.value = payload.selected?.labor_transaction_id ? String(payload.selected.labor_transaction_id) : '';
+            synchronizeExclusiveOptions();
+            loaded = true;
+        } finally {
+            loading = false;
+            setControlsDisabled(false);
+        }
     };
 
     const saveSelection = async () => {
-        const response = await fetch(endpoint, {
-            method: 'PUT',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf,
-            },
-            body: JSON.stringify({
-                material_transaction_id: materialSelect.value ? Number(materialSelect.value) : null,
-                labor_transaction_id: laborSelect.value ? Number(laborSelect.value) : null,
-            }),
-        });
+        if (saving) return;
 
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            const message = Object.values(payload.errors || {}).flat()[0] || payload.message || 'Transaksi terkait tidak dapat disimpan.';
-            throw new Error(message);
+        saving = true;
+        setControlsDisabled(true);
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({
+                    material_transaction_id: materialSelect.value ? Number(materialSelect.value) : null,
+                    labor_transaction_id: laborSelect.value ? Number(laborSelect.value) : null,
+                }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const message = Object.values(payload.errors || {}).flat()[0] || payload.message || 'Transaksi terkait tidak dapat disimpan.';
+                throw new Error(message);
+            }
+
+            synchronizeExclusiveOptions();
+            dispatchNotification('success', payload.message || 'Transaksi terkait pemeliharaan berhasil disimpan.');
+        } finally {
+            saving = false;
+            setControlsDisabled(false);
         }
-
-        dispatchNotification('success', payload.message || 'Transaksi terkait pemeliharaan berhasil disimpan.');
     };
 
     const render = async () => {
         const isMaintenance = categorySelect.value.toUpperCase() === 'PEMELIHARAAN';
+
         originalColumns.forEach((column) => {
             column.hidden = isMaintenance;
         });
         materialColumn.hidden = !isMaintenance;
         laborColumn.hidden = !isMaintenance;
 
-        if (isMaintenance) {
-            try {
-                await loadCandidates();
-            } catch (error) {
-                dispatchNotification('error', error.message);
-            }
+        if (!isMaintenance) return;
+
+        try {
+            await loadCandidates();
+        } catch (error) {
+            resetOptions(materialSelect, 'Gagal memuat transaksi');
+            resetOptions(laborSelect, 'Gagal memuat transaksi');
+            setControlsDisabled(true);
+            dispatchNotification('error', error.message);
         }
     };
 
     const persist = async () => {
+        synchronizeExclusiveOptions();
+
         try {
             await saveSelection();
         } catch (error) {
