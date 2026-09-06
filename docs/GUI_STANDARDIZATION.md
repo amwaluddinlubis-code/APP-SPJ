@@ -248,6 +248,20 @@ resources/css/spj-package-theme-fix.css
 
 Top-level panel spacing saat ini dinormalisasi sekitar `.875rem` desktop dan `.75rem` mobile pada area tersebut.
 
+Kategori pada `Paket → Isian Manual` harus mengikuti aturan yang sama dengan Detail Transaksi. Saat kategori dipilih:
+
+1. kategori disimpan lebih dulu;
+2. paket dimuat ulang agar form server-rendered sesuai kategori aktif;
+3. section yang tidak berlaku harus disembunyikan **dan semua control di dalamnya dinonaktifkan**, sehingga `required` milik kategori lain tidak boleh memblokir tombol **Simpan Isian Paket**;
+4. untuk `BARANG`, tanggal Pesanan/BAP/BAST bersifat opsional seperti pada Detail Transaksi; pada `KONSUMSI` field tersebut dapat diwajibkan oleh aturan kategori;
+5. jangan membiarkan section `KONSUMSI` aktif ketika kategori `BARANG`, atau sebaliknya.
+
+Controller frontend untuk compatibility behavior ini berada di:
+
+```text
+resources/js/spj-package-manual-category.js
+```
+
 ### 8.4 Penomoran
 
 Card triwulan `/spj/penomoran` tidak boleh menggunakan hover light-only seperti `hover:bg-slate-50`. Normal/hover/active state harus memadukan current surface + current theme accent.
