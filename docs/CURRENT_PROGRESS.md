@@ -195,6 +195,7 @@ settings-database-standardization.css
 dark-form-controls.css
 spj-package-theme-fix.css
 spj-package-document-placement.css
+view-theme-hardening.css
 ```
 
 Aturan kode baru:
@@ -203,6 +204,23 @@ Aturan kode baru:
 - warna utama memakai token `--ui-*`, `--theme-*`, atau feature token yang memetakan ke token tersebut;
 - Tailwind tetap dipakai untuk layout/spacing/responsive;
 - jangan menambah hard-coded surface/accent yang seharusnya theme-aware.
+
+### 7.1 Audit hard-coded background/font seluruh view
+
+Recursive inventory `resources/views` pada branch aktif telah dijadikan scope audit untuk palette background/font. Karena banyak view legacy masih besar dan memiliki business markup yang tidak aman untuk mass rewrite, normalisasi dilakukan melalui final compatibility layer `resources/css/view-theme-hardening.css` yang di-import **paling akhir** oleh `theme-system.css`.
+
+Untuk seluruh authenticated application view di bawah `<main>`, layer ini membuat sisa class legacy berikut mengikuti theme terpilih:
+
+- neutral surface/background (`white/slate/gray/zinc/neutral/stone`);
+- neutral foreground/font hierarchy;
+- non-semantic accent (`indigo/violet/blue/sky/cyan`);
+- border dan divider structural;
+- dark hero/chrome gradient;
+- hover, focus, ring, dan variant opacity yang sebelumnya masih dapat kembali ke warna statis.
+
+Hard-coded yang memang mempunyai arti dipertahankan: semantic success/warning/danger, warna kontras putih pada hero gelap, serta output PDF/print/template-preview dan public/pre-login branding yang tidak berada pada authenticated `<main>`.
+
+Artinya class palette lama masih dapat terlihat di beberapa Blade sebagai **compatibility hook**, tetapi pada workspace aplikasi warna aktualnya tidak lagi menjadi source of truth. Kode baru harus langsung memakai primitive/token canonical, bukan menambah class palette lama.
 
 Acuan rinci: `docs/CSS_USAGE_GUIDE.md`.
 
@@ -301,7 +319,7 @@ resources/css/settings-database-standardization.css
 
 ## 12. Mobile QA
 
-`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Halaman Database Aktif terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
+`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Halaman Database Aktif dan hardening palette lintas-view terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
 
 ---
 
@@ -312,10 +330,12 @@ Jangan menganggap seluruh suite hijau hanya karena test tertentu pernah PASS.
 Setelah backend berubah gunakan test relevan; setelah frontend berubah jalankan:
 
 ```text
+npm run theme:qa
 npm run build
+php artisan view:cache --no-interaction
 ```
 
-Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
+Perubahan hardening lintas-view kali ini adalah CSS-only + dokumentasi; tidak ada business rule/backend yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal.
 
 ---
 
@@ -324,8 +344,9 @@ Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 1. Validasi tanggal pengadaan belum identik antara Detail Transaksi dan Paket.
 2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
 3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
-4. Mobile regression belum ditutup, termasuk Database Aktif v2.
-5. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
+4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
+5. Mobile regression belum ditutup, termasuk Database Aktif dan hardening palette lintas-view.
+6. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
 
 ---
 
@@ -338,7 +359,7 @@ Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 5. Finalisasi rekonsiliasi ARKAS snapshot/diff.
 6. Hardening authorization per role.
 7. End-to-end test seluruh kategori.
-8. Selesaikan mobile visual QA termasuk Database Aktif v2.
+8. Selesaikan mobile visual QA termasuk Database Aktif dan palette lintas-view.
 9. Laporan BOS dan release hardening.
 
 ---
