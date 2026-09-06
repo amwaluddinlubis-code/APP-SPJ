@@ -82,7 +82,7 @@
         </section>
 
         <section class="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
-            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <article x-data="{ filter: 'all' }" @keydown.window.j.prevent="$el.querySelector('[data-queue-row]:not([style*=&quot;display: none&quot;]) a')?.focus()" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="font-bold text-slate-900">Antrean kerja operator</h2>
@@ -92,9 +92,15 @@
                         <span class="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">{{ number_format($attentionCount, 0, ',', '.') }} pekerjaan perlu perhatian</span>
                     @endif
                 </div>
+                <div class="flex flex-wrap gap-2 border-b border-[var(--ui-line)] px-5 py-3 text-xs font-bold">
+                    <button type="button" @click="filter = 'all'" class="ui-btn ui-btn-secondary px-2.5 py-1.5">Semua</button>
+                    <button type="button" @click="filter = 'incomplete'" class="ui-btn ui-btn-secondary px-2.5 py-1.5">Belum lengkap</button>
+                    <button type="button" @click="filter = 'ready'" class="ui-btn ui-btn-secondary px-2.5 py-1.5">Siap dinomori</button>
+                    <button type="button" @click="filter = 'attention'" class="ui-btn ui-btn-secondary px-2.5 py-1.5">Perlu perhatian</button>
+                </div>
                 <div class="divide-y divide-[var(--ui-line)]">
                     @forelse($workQueue as $transaction)
-                        <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div data-queue-row x-show="filter === 'all' || filter === '{{ $transaction->queue_state }}'" class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <a href="{{ route('transactions.show', $transaction->id) }}" class="font-mono text-sm font-bold theme-text">{{ $transaction->no_bukti ?: 'Tanpa nomor bukti' }}</a>
@@ -111,8 +117,15 @@
                                 <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $transaction->items_count }} rincian · Rp {{ number_format((float) $transaction->gross_amount, 0, ',', '.') }}</p>
                                 <p class="mt-2 text-xs font-semibold text-amber-800">Perlu dilengkapi: {{ $transaction->next_step }}</p>
+                                @if($transaction->completion_checks)
+                                    <div class="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                                        @foreach($transaction->completion_checks as $check)
+                                            <span class="rounded-full px-2 py-0.5 {{ $check['passed'] ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800' }}">{{ $check['passed'] ? '✓' : '✗' }} {{ $check['label'] }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
-                            <a href="{{ $transaction->next_step_url }}" class="inline-flex shrink-0 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700">Periksa →</a>
+                            <a href="{{ $transaction->next_step_url }}" class="inline-flex shrink-0 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-slate-700">Selesaikan cepat →</a>
                         </div>
                     @empty
                         <div class="px-5 py-10 text-center text-sm text-slate-500">Tidak ada transaksi yang sedang menunggu tindakan operator.</div>

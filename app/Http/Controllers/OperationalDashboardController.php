@@ -69,18 +69,22 @@ class OperationalDashboardController extends Controller
             ->limit(8)
             ->get()
             ->map(function (Transaction $transaction): Transaction {
+                $transaction->queue_state = $transaction->requires_reconciliation || $transaction->source_status === 'SOURCE_MISSING'
+                    ? 'attention' : ($transaction->spjPackage?->status === 'READY' ? 'ready' : 'incomplete');
                 if (! $transaction->spjPackage) {
                     $transaction->next_step = 'Lengkapi data SPJ lalu siapkan paket.';
                     $transaction->next_step_url = route('transactions.show', $transaction->id).'#modul-buat-spj';
+                    $transaction->completion_checks = [];
 
                     return $transaction;
                 }
 
                 if ($transaction->spjPackage->status === 'DRAFT') {
-                    $issues = app(SpjPackageValidationService::class)->validate(
+                    $checks = app(SpjPackageValidationService::class)->checklist(
                         $transaction->spjPackage->loadMissing(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts'])
                     );
-                    $transaction->next_step = collect($issues)->pluck('label')->take(2)->implode(' · ') ?: 'Buka checklist untuk melengkapi paket.';
+                    $transaction->completion_checks = collect($checks)->take(4)->all();
+                    $transaction->next_step = collect($checks)->where('passed', false)->pluck('label')->take(2)->implode(' · ') ?: 'Buka checklist untuk melengkapi paket.';
                     $transaction->next_step_url = route('spj.checklist', $transaction->spjPackage->id);
 
                     return $transaction;
@@ -90,6 +94,7 @@ class OperationalDashboardController extends Controller
                     ? 'Paket siap ditinjau untuk penomoran.'
                     : 'Tinjau status paket dan sumber data.';
                 $transaction->next_step_url = route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]);
+                $transaction->completion_checks = [];
 
                 return $transaction;
             });
