@@ -146,9 +146,9 @@ class SpjPackageUseCase
             'payment_method' => ['required', 'in:transfer_bank,siplah,tunai'],
             'receipt_recipient_name' => ['required', 'string', 'max:255'],
             'order_number' => ['nullable', 'string', 'max:80'],
-            'order_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate, 'before_or_equal:bap_date'],
+            'order_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'bap_number' => ['nullable', 'string', 'max:80'],
-            'bap_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:order_date', 'before_or_equal:bast_date'],
+            'bap_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:order_date'],
             'bast_number' => ['nullable', 'string', 'max:80'],
             'bast_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:bap_date'],
             'invoice_number' => ['nullable', 'string', 'max:80'],
@@ -242,9 +242,9 @@ class SpjPackageUseCase
             'receipt_recipient_name' => ['nullable', 'string', 'max:255'],
             'spj_category' => ['nullable', 'string', 'max:40'],
             'order_number' => ['nullable', 'string', 'max:80'],
-            'order_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate, 'before_or_equal:bap_date'],
+            'order_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'bap_number' => ['nullable', 'string', 'max:80'],
-            'bap_date' => ['nullable', 'date', 'after_or_equal:order_date', 'before_or_equal:bast_date'],
+            'bap_date' => ['nullable', 'date', 'after_or_equal:order_date'],
             'bast_number' => ['nullable', 'string', 'max:80'],
             'bast_date' => ['nullable', 'date', 'after_or_equal:bap_date'],
             'invoice_number' => ['nullable', 'string', 'max:80'],
@@ -327,9 +327,8 @@ class SpjPackageUseCase
     private function purchaseDateMessages(): array
     {
         return [
-            'order_date.before_or_equal' => 'Tanggal Pesanan harus lebih kecil atau sama dengan Tanggal Transaksi dan Tanggal BAP.',
+            'order_date.before_or_equal' => 'Tanggal Pesanan harus lebih kecil atau sama dengan Tanggal Transaksi.',
             'bap_date.after_or_equal' => 'Tanggal BAP harus lebih besar atau sama dengan Tanggal Pesanan.',
-            'bap_date.before_or_equal' => 'Tanggal BAP harus lebih kecil atau sama dengan Tanggal BAST.',
             'bast_date.after_or_equal' => 'Tanggal BAST harus lebih besar atau sama dengan Tanggal BAP.',
         ];
     }
