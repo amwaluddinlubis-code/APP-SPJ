@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-06**
+Terakhir diverifikasi: **2026-09-07**
 
 Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`. Tujuannya menjaga aplikasi operasional sekolah tetap konsisten, mudah dipahami, dan mengikuti tema yang dipilih user.
 
@@ -142,7 +142,27 @@ Normal/hover/active state harus memadukan current surface dan current theme acce
 
 ---
 
-## 9. Pengaturan → Database Aktif
+## 9. Dashboard canonical
+
+Dashboard operasional utama pada route `/` memakai `OperationalDashboardController` dan view canonical:
+
+```text
+resources/views/dashboard-operational-v3.blade.php
+```
+
+Jangan membuat atau mempertahankan varian `dashboard-operational`, `dashboard-operational-v2`, `dashboard-operational-new`, atau nama eksperimen sejenis setelah desain dipilih. Kandidat eksperimen harus digabung ke source canonical lalu dihapus dari repository.
+
+Route `/dashboard-v2` adalah dashboard pembanding/QA yang berbeda dan memakai:
+
+```text
+resources/views/dashboard.blade.php
+```
+
+Nama `/dashboard-v2` tidak berkaitan dengan file `dashboard-operational-v2.blade.php`. `resources/views/dashboard.blade.php` tetap protected working file sesuai `.ai/rules/index.md`; jangan overwrite/commit tanpa instruksi eksplisit user.
+
+---
+
+## 10. Pengaturan → Database Aktif
 
 Halaman `/pengaturan/database-aktif` adalah **Pusat Kontrol Database Sekolah**, bukan halaman debug mentah. Struktur canonical:
 
@@ -172,19 +192,19 @@ CSS halaman ini dimiliki oleh `resources/css/settings-database-standardization.c
 
 ---
 
-## 10. Header panel theme-aware
+## 11. Header panel theme-aware
 
 Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierarchy jelas, tetapi tetap memakai token theme. Jangan mengunci header ke `bg-indigo-*`, `bg-slate-*`, atau putih jika panel harus mengikuti theme.
 
 ---
 
-## 11. Status dan badge
+## 12. Status dan badge
 
 Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kategori/role/metode pembayaran. Status harus memakai bahasa manusiawi dan semantic color yang konsisten.
 
 ---
 
-## 12. Compatibility layer
+## 13. Compatibility layer
 
 CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind statis. Compatibility layer harus terlokalisasi; kode baru tidak boleh memperbanyak markup legacy. Layer SPJ aktif mencakup `spj-workspace-standardization.css`, `spj-package-theme-fix.css`, dan `spj-package-document-placement.css`.
 
@@ -192,13 +212,13 @@ Untuk Database Aktif v2, `settings-database-standardization.css` menjadi style l
 
 ---
 
-## 13. Responsive dan mobile
+## 14. Responsive dan mobile
 
 Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan package dan Database Aktif terbaru belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
 
 ---
 
-## 14. Checklist UI sebelum selesai
+## 15. Checklist UI sebelum selesai
 
 - breadcrumb tidak double;
 - page header mengikuti pola global;
@@ -216,6 +236,6 @@ Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan pack
 
 ---
 
-## 15. Dokumen pendamping
+## 16. Dokumen pendamping
 
 Aturan CSS praktis: `docs/CSS_USAGE_GUIDE.md`. Kondisi implementasi terbaru: `docs/CURRENT_PROGRESS.md`.
