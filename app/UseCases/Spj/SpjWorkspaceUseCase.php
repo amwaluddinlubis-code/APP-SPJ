@@ -145,6 +145,7 @@ class SpjWorkspaceUseCase
             'transaction.participants',
             'transaction.travels',
             'transaction.honors',
+            'transaction.serviceRecipients',
             'transaction.payments',
             'transaction.goodsReceipts.items',
         ])->find($packageId);

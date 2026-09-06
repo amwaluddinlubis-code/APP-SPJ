@@ -38,6 +38,10 @@ class SpjTransactionDetailsService
         if ($category === 'HONOR_PEGAWAI') {
             $this->synchronizeHonors($transaction, $details);
         }
+
+        if ($category === 'JASA_LAINNYA') {
+            $this->synchronizeServiceRecipients($transaction, $details);
+        }
     }
 
     /** @param array<string, mixed> $details */
@@ -212,6 +216,45 @@ class SpjTransactionDetailsService
                 'tax_rate' => $taxRate,
                 'tax_amount' => $tax,
                 'net_amount' => $gross - $tax,
+                'sort_order' => $sortOrder,
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $details */
+    private function synchronizeServiceRecipients(Transaction $transaction, array $details): void
+    {
+        if (! array_key_exists('service_recipients', $details)) {
+            return;
+        }
+
+        $transaction->serviceRecipients()->delete();
+        foreach ($details['service_recipients'] ?? [] as $sortOrder => $recipient) {
+            if (blank($recipient['name'] ?? null)) {
+                continue;
+            }
+
+            $quantity = max(0, (float) ($recipient['quantity'] ?? 0));
+            $days = max(0, (float) ($recipient['rental_days'] ?? 0));
+            $rate = max(0, (float) ($recipient['daily_rate'] ?? 0));
+            $transaction->serviceRecipients()->create([
+                'name' => trim($recipient['name']),
+                'npwp' => blank($recipient['npwp'] ?? null) ? null : trim($recipient['npwp']),
+                'service_type' => blank($recipient['service_type'] ?? null) ? 'Jasa sewa harian' : trim($recipient['service_type']),
+                'service_description' => blank($recipient['service_description'] ?? null) ? null : trim($recipient['service_description']),
+                'quantity' => $quantity,
+                'unit' => blank($recipient['unit'] ?? null) ? 'unit' : trim($recipient['unit']),
+                'rental_days' => $days,
+                'daily_rate' => $rate,
+                'amount' => $quantity * $days * $rate,
+                'usage_started_at' => $recipient['usage_started_at'] ?? null,
+                'usage_completed_at' => $recipient['usage_completed_at'] ?? null,
+                'receipt_number' => blank($recipient['receipt_number'] ?? null) ? null : trim($recipient['receipt_number']),
+                'payment_reference' => blank($recipient['payment_reference'] ?? null) ? null : trim($recipient['payment_reference']),
+                'agreement_number' => blank($recipient['agreement_number'] ?? null) ? null : trim($recipient['agreement_number']),
+                'agreement_date' => $recipient['agreement_date'] ?? null,
+                'is_receipt_recipient' => (bool) ($recipient['is_receipt_recipient'] ?? false),
+                'notes' => blank($recipient['notes'] ?? null) ? null : trim($recipient['notes']),
                 'sort_order' => $sortOrder,
             ]);
         }

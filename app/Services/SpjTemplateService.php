@@ -31,7 +31,7 @@ class SpjTemplateService
             'Pembelian SiPLah' => ['SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_REFERENSI_BAYAR'],
             'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
             'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
-            'Ringkasan' => ['RINCIAN_BELANJA', 'RINCIAN_UPAH'],
+            'Ringkasan' => ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'],
             'Baris rincian barang' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH', 'ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
             'Baris upah/honor' => ['UPAH_NO', 'UPAH_NAMA', 'UPAH_PEKERJAAN', 'UPAH_HARI', 'UPAH_TARIF_HARI', 'UPAH_JUMLAH', 'UPAH_PENERIMA_KUITANSI'],
         ];
@@ -41,13 +41,14 @@ class SpjTemplateService
     public function placeholders(SpjPackage $package, School $school): array
     {
         $transaction = $package->transaction;
-        $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers']);
+        $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers', 'serviceRecipients']);
 
         $year = FiscalYear::query()->findOrFail($transaction->fiscal_year_id);
         $profile = DB::connection('school')->table('school_profiles')->where('fiscal_year_id', $year->id)->first();
         $goods = $transaction->goods->first();
         $workOrder = $transaction->workOrder;
         $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->description).' | '.$item->quantity.' '.($item->unit ?: '—').' | '.$this->rupiah($item->amount))->implode("\n");
+        $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.$this->rupiah($recipient->amount))->implode("\n");
 
         $transactionDate = $transaction->transaction_date?->translatedFormat('d F Y') ?: '';
         $orderDate = $goods?->order_date?->translatedFormat('d F Y') ?: '';
@@ -124,6 +125,7 @@ class SpjTemplateService
             'TOTAL_PAJAK' => $this->rupiah($transaction->tax_total),
             'NILAI_DIBAYARKAN' => $this->rupiah($transaction->net_amount),
             'RINCIAN_BELANJA' => $items,
+            'RINCIAN_JASA' => $services,
             'RINCIAN_UPAH' => $transaction->workers->map(fn ($worker, $index) => ($index + 1).'. '.$worker->name.' | '.$worker->job_description.' | '.$worker->work_days.' hari × '.$this->rupiah($worker->daily_rate).' = '.$this->rupiah($worker->amount))->implode("\n"),
         ];
 

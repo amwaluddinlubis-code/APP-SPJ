@@ -116,6 +116,15 @@ class SpjPackageValidationService
             $this->addCheck($checks, 'honor_total', 'Honor pegawai', 'Total honor', $honorTotalMatches, $honorMessage, $honorMessage, $url.'#modul-buat-spj');
         }
 
+        if ($category === 'JASA_LAINNYA') {
+            $hasRecipients = $transaction->serviceRecipients->isNotEmpty();
+            $this->addCheck($checks, 'service_recipients', 'Jasa lainnya', 'Daftar penerima pembayaran', $hasRecipients, 'Daftar penerima jasa sudah tersedia.', 'Jasa Lainnya memerlukan minimal satu penerima pembayaran.', $url.'#modul-buat-spj');
+            $total = (float) $transaction->serviceRecipients->sum('amount');
+            $matches = $hasRecipients && abs($total - $grossAmount) <= 0.01;
+            $message = $matches ? 'Total penerima jasa sesuai dengan nilai bruto transaksi.' : sprintf('Total penerima jasa Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($total, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
+            $this->addCheck($checks, 'service_recipient_total', 'Jasa lainnya', 'Total penerima pembayaran', $matches, $message, $message, $url.'#modul-buat-spj');
+        }
+
         $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'goods_receipt', 'honor'];
         foreach ($this->documentRequirements->forTransaction($transaction) as $requirement) {
             if (! $requirement['applicable'] || ! $requirement['required'] || in_array($requirement['key'], $alreadyCovered, true)) {

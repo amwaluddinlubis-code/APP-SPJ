@@ -31,6 +31,9 @@ class TransactionController extends Controller
         if ($submittedCategory !== 'KONSUMSI') {
             $request->request->remove('participants');
         }
+        if ($submittedCategory !== 'JASA_LAINNYA') {
+            $request->request->remove('service_recipients');
+        }
         $maximumDocumentDate = $transaction->transaction_date->format('Y-m-d');
         $data = $request->validate([
             'spj_category' => ['nullable', 'in:BARANG,KONSUMSI,PEMELIHARAAN,JASA_LAINNYA,SPPD,HONOR_PEGAWAI,BELANJA_MODAL,PERJALANAN_DINAS,'],
@@ -60,6 +63,23 @@ class TransactionController extends Controller
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients' => ['nullable', 'array'],
+            'service_recipients.*.name' => ['nullable', 'string', 'max:180'],
+            'service_recipients.*.npwp' => ['nullable', 'string', 'max:40'],
+            'service_recipients.*.service_type' => ['nullable', 'string', 'max:180'],
+            'service_recipients.*.service_description' => ['nullable', 'string', 'max:4000'],
+            'service_recipients.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.unit' => ['nullable', 'string', 'max:40'],
+            'service_recipients.*.rental_days' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.daily_rate' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.usage_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.usage_completed_at' => ['nullable', 'date', 'after_or_equal:service_recipients.*.usage_started_at', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.receipt_number' => ['nullable', 'string', 'max:100'],
+            'service_recipients.*.payment_reference' => ['nullable', 'string', 'max:160'],
+            'service_recipients.*.agreement_number' => ['nullable', 'string', 'max:100'],
+            'service_recipients.*.agreement_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.is_receipt_recipient' => ['nullable', 'boolean'],
+            'service_recipients.*.notes' => ['nullable', 'string', 'max:2000'],
             'workers' => ['nullable', 'array'],
             'workers.*.name' => ['nullable', 'string', 'max:180'],
             'workers.*.job_description' => ['nullable', 'string', 'max:255'],

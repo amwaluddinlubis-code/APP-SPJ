@@ -127,6 +127,11 @@ class Transaction extends Model
             ->orderBy('spj_honors.id');
     }
 
+    public function serviceRecipients(): HasMany
+    {
+        return $this->hasMany(SpjServiceRecipient::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function spjPackage(): HasOne
     {
         return $this->hasOne(SpjPackage::class);

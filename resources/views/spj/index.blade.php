@@ -425,6 +425,11 @@
                                     </div>
                                     <p class="mt-2 text-right text-xs font-semibold text-[var(--ui-fg-muted)]">Total rincian pekerja: <span class="text-[var(--ui-fg-strong)]" x-text="money(total())"></span></p>
                                 </section>
+                                <section data-spj-section="JASA_LAINNYA" class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
+                                    <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Penerima pembayaran jasa</h3>
+                                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kelola beberapa penyedia jasa sewa harian, kuitansi, referensi pembayaran, dan PKS dari detail transaksi.</p>
+                                    <a href="{{ route('transactions.show', $transaction->id).'#modul-buat-spj' }}" class="ui-btn ui-btn-secondary mt-3 px-3 py-1.5 text-xs font-bold">Kelola rincian penerima jasa</a>
+                                </section>
                                 <div class="flex justify-end pt-1"><button :disabled="saving" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-1.5 text-base font-bold text-white shadow hover:bg-indigo-700 disabled:opacity-60"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></button></div>
                     </div>
                     </fieldset>

@@ -36,6 +36,9 @@ class SpjPackageUseCase
         if ($submittedCategory !== 'KONSUMSI') {
             $request->request->remove('participants');
         }
+        if ($submittedCategory !== 'JASA_LAINNYA') {
+            $request->request->remove('service_recipients');
+        }
 
         $data = $request->validate($this->prepareRules($request, $transaction), $this->purchaseDateMessages());
         $data['spj_category'] = $this->canonicalCategory($data['spj_category'] ?? null);
@@ -147,6 +150,7 @@ class SpjPackageUseCase
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            ...$this->serviceRecipientRules($request, $transaction, $maximumDocumentDate),
             'vendor_name' => ['nullable', 'string', 'max:180'],
             'vendor_owner' => ['nullable', 'string', 'max:180'],
             'vendor_npwp' => ['nullable', 'string', 'max:32'],
@@ -245,6 +249,7 @@ class SpjPackageUseCase
             'spk_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'rab_number' => ['nullable', 'string', 'max:80'],
             'rab_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            ...$this->serviceRecipientRules($request, $package->transaction, $maximumDocumentDate),
             'event_name' => ['required_if:spj_category,KONSUMSI', 'nullable', 'string', 'max:180'],
             'event_location' => ['required_if:spj_category,KONSUMSI', 'nullable', 'string', 'max:180'],
             'event_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
@@ -307,6 +312,45 @@ class SpjPackageUseCase
             'pph23_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'pph4_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sspd_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ];
+    }
+
+    /** @return array<string, array<int, mixed>> */
+    private function serviceRecipientRules(Request $request, Transaction $transaction, string $maximumDocumentDate): array
+    {
+        return [
+            'service_recipients' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) use ($request, $transaction): void {
+                $category = strtoupper((string) $request->input('spj_category'));
+                if ($category !== 'JASA_LAINNYA' || ! is_array($value)) {
+                    return;
+                }
+                $recipients = collect($value)->filter(fn (array $recipient): bool => filled($recipient['name'] ?? null));
+                if ($recipients->isEmpty()) {
+                    $fail('Jasa Lainnya memerlukan minimal satu penerima pembayaran.');
+
+                    return;
+                }
+                $total = $recipients->sum(fn (array $recipient): float => (float) ($recipient['quantity'] ?? 0) * (float) ($recipient['rental_days'] ?? 0) * (float) ($recipient['daily_rate'] ?? 0));
+                if (abs($total - (float) $transaction->gross_amount) > 0.01) {
+                    $fail(sprintf('Total penerima jasa Rp %s tidak sama dengan nilai bruto transaksi Rp %s.', number_format($total, 0, ',', '.'), number_format((float) $transaction->gross_amount, 0, ',', '.')));
+                }
+            }],
+            'service_recipients.*.name' => ['nullable', 'string', 'max:180'],
+            'service_recipients.*.npwp' => ['nullable', 'string', 'max:40'],
+            'service_recipients.*.service_type' => ['nullable', 'string', 'max:180'],
+            'service_recipients.*.service_description' => ['nullable', 'string', 'max:4000'],
+            'service_recipients.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.unit' => ['nullable', 'string', 'max:40'],
+            'service_recipients.*.rental_days' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.daily_rate' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.usage_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.usage_completed_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.receipt_number' => ['nullable', 'string', 'max:100'],
+            'service_recipients.*.payment_reference' => ['nullable', 'string', 'max:160'],
+            'service_recipients.*.agreement_number' => ['nullable', 'string', 'max:100'],
+            'service_recipients.*.agreement_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.is_receipt_recipient' => ['nullable', 'boolean'],
+            'service_recipients.*.notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
