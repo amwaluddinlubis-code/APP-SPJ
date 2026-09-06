@@ -8,12 +8,15 @@ use App\Models\FiscalPeriodClosure;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjWorkflowFilterService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SpjWorkspaceUseCase
 {
+    public function __construct(private readonly SpjWorkflowFilterService $workflowFilters) {}
+
     public function handle(Request $request): View|RedirectResponse
     {
         $tab = $request->query('tab', 'persiapan');
@@ -58,7 +61,7 @@ class SpjWorkspaceUseCase
             'month' => ['nullable', 'integer', 'between:1,12'],
             'quarter' => ['nullable', 'integer', 'between:1,4'],
             'spj_category' => ['nullable', 'string', 'max:40'],
-            'state' => ['nullable', 'in:all,ready,needs_details,unprepared,draft,numbered'],
+            'state' => ['nullable', 'in:all,attention,unprepared,draft,ready,numbered'],
         ]);
 
         $month = isset($filters['month']) ? (int) $filters['month'] : null;
@@ -72,35 +75,12 @@ class SpjWorkspaceUseCase
             })
             ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('spj_category', $type));
 
-        $queueCounts = (clone $query)
-            ->leftJoin('transaction_items as queue_items', 'queue_items.transaction_id', '=', 'transactions.id')
-            ->leftJoin('spj_packages as queue_packages', 'queue_packages.transaction_id', '=', 'transactions.id')
-            ->toBase()
-            ->selectRaw('COUNT(DISTINCT transactions.id) as total')
-            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NULL THEN transactions.id END) as needs_details')
-            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.id IS NULL THEN transactions.id END) as unprepared')
-            ->selectRaw("COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.status = 'DRAFT' THEN transactions.id END) as draft")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.status = 'READY' THEN transactions.id END) as ready")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.status IN ('NUMBERED', 'FINAL') THEN transactions.id END) as numbered")
-            ->first();
+        $workQueueCounts = ['all' => (clone $query)->count()];
+        foreach (array_keys($this->workflowFilters->options()) as $state) {
+            $workQueueCounts[$state] = $this->workflowFilters->apply(clone $query, $state)->count();
+        }
 
-        $workQueueCounts = [
-            'all' => (int) $queueCounts->total,
-            'needs_details' => (int) $queueCounts->needs_details,
-            'unprepared' => (int) $queueCounts->unprepared,
-            'draft' => (int) $queueCounts->draft,
-            'ready' => (int) $queueCounts->ready,
-            'numbered' => (int) $queueCounts->numbered,
-        ];
-
-        match ($filters['state'] ?? 'all') {
-            'ready' => $query->whereHas('spjPackage', fn ($q) => $q->where('status', 'READY')),
-            'needs_details' => $query->doesntHave('items'),
-            'unprepared' => $query->has('items')->doesntHave('spjPackage'),
-            'draft' => $query->whereHas('spjPackage', fn ($q) => $q->where('status', 'DRAFT')),
-            'numbered' => $query->whereHas('spjPackage', fn ($q) => $q->whereIn('status', ['NUMBERED', 'FINAL'])),
-            default => null,
-        };
+        $this->workflowFilters->apply($query, $filters['state'] ?? 'all');
 
         $perPageRaw = $request->input('perPage', 15);
         $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
@@ -108,6 +88,7 @@ class SpjWorkspaceUseCase
 
         $transactions = $query
             ->with('spjPackage')->withCount('items')
+            ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' OR requires_reconciliation = 1 THEN 0 ELSE 1 END")
             ->orderByRaw("COALESCE((SELECT CASE status WHEN 'DRAFT' THEN 0 WHEN 'READY' THEN 2 WHEN 'NUMBERED' THEN 3 WHEN 'FINAL' THEN 4 ELSE 5 END FROM spj_packages WHERE spj_packages.transaction_id = transactions.id LIMIT 1), 1)")
             ->orderBy('transaction_date')
             ->orderBy('id')
