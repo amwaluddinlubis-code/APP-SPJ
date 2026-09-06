@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\SpjTransactionDetailsService;
+use App\Services\SpjWorkflowFilterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -171,16 +172,7 @@ class TransactionsTable extends Component
 
     public function getStatusesProperty(): Collection
     {
-        return Cache::remember($this->cacheKey('transaction-status-labels'), 60, function (): Collection {
-            return (clone $this->baseQuery())
-                ->whereNotNull('status')
-                ->distinct()
-                ->pluck('status')
-                ->map(fn ($status) => $this->transactionStatusLabel((string) $status))
-                ->unique()
-                ->sort()
-                ->values();
-        });
+        return $this->workflowFilters()->labels();
     }
 
     public function getTransactionsProperty(): LengthAwarePaginator
@@ -192,19 +184,10 @@ class TransactionsTable extends Component
         $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
-        // Semua transaksi yang BELUM bernomor tetap merupakan pekerjaan aktif dan
-        // harus berada di depan. Hanya transaksi yang sudah memiliki nomor dokumen
-        // (termasuk final/arsip) yang dipindahkan ke belakang. ID menjaga urutan stabil.
         $paginator = $query
-            ->orderByRaw("CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM spj_packages
-                    WHERE spj_packages.transaction_id = transactions.id
-                    AND spj_packages.document_number IS NOT NULL
-                    AND TRIM(spj_packages.document_number) <> ''
-                ) THEN 1
-                ELSE 0
-            END ASC")
+            ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' OR requires_reconciliation = 1 THEN 0 ELSE 1 END")
+            ->orderByRaw("COALESCE((SELECT CASE status WHEN 'DRAFT' THEN 0 WHEN 'READY' THEN 2 WHEN 'NUMBERED' THEN 3 WHEN 'FINAL' THEN 4 ELSE 5 END FROM spj_packages WHERE spj_packages.transaction_id = transactions.id LIMIT 1), 1)")
+            ->orderBy('transaction_date')
             ->orderBy('id')
             ->paginate($perPage);
 
@@ -232,8 +215,12 @@ class TransactionsTable extends Component
     /** @return array{status:string,label:string} */
     public function workStatusFor(Transaction $transaction): array
     {
-        if (blank($transaction->payment_description)) {
-            return ['status' => 'DRAFT', 'label' => 'Perlu deskripsi'];
+        if ($transaction->source_status === 'SOURCE_MISSING') {
+            return ['status' => 'SOURCE_MISSING', 'label' => 'Perlu Perhatian'];
+        }
+
+        if ($transaction->requires_reconciliation) {
+            return ['status' => 'RECONCILIATION', 'label' => 'Perlu Perhatian'];
         }
 
         $package = $transaction->spjPackage;
@@ -247,15 +234,19 @@ class TransactionsTable extends Component
             return ['status' => 'FINAL', 'label' => 'Final'];
         }
 
-        if (filled($package?->document_number)) {
-            return ['status' => 'NUMBERED', 'label' => 'Bernomor'];
+        if (filled($package?->document_number) || in_array($packageStatus, ['NUMBERED', 'BERNOMOR'], true)) {
+            return ['status' => 'NUMBERED', 'label' => 'Sudah Bernomor'];
+        }
+
+        if ($packageStatus === 'READY') {
+            return ['status' => 'READY', 'label' => 'Siap Dinomori'];
         }
 
         if ($package) {
-            return ['status' => 'DRAFT', 'label' => 'Draft paket'];
+            return ['status' => 'DRAFT', 'label' => 'Perlu Dilengkapi'];
         }
 
-        return ['status' => 'READY', 'label' => 'Siap detail'];
+        return ['status' => 'BELUM_LENGKAP', 'label' => 'Belum Dikerjakan'];
     }
 
     private function baseQuery(): Builder
@@ -296,7 +287,10 @@ class TransactionsTable extends Component
         }
 
         if ($this->status !== '') {
-            $query->whereIn('status', $this->databaseStatusesForFilter($this->status));
+            $state = $this->workflowFilters()->stateForLabel($this->status);
+            if ($state) {
+                $this->workflowFilters()->apply($query, $state);
+            }
         }
 
         return $query;
@@ -321,33 +315,9 @@ class TransactionsTable extends Component
         return implode(':', ['school', session('active_school_id'), 'year', session('active_fiscal_year_id'), $reference]);
     }
 
-    private function transactionStatusLabel(string $status): string
+    private function workflowFilters(): SpjWorkflowFilterService
     {
-        return match (strtoupper(trim($status))) {
-            'DRAFT', 'BELUM_LENGKAP' => 'Belum lengkap',
-            'READY', 'SIAP', 'DISIAPKAN' => 'Siap diproses',
-            'NUMBERED', 'BERNOMOR' => 'Sudah bernomor',
-            'PRINTED', 'DICETAK' => 'Sudah dicetak',
-            'FINAL', 'ARCHIVED', 'ARSIP' => 'Final',
-            'CANCELLED', 'CANCELED' => 'Dibatalkan',
-            default => str($status)->replace('_', ' ')->lower()->ucfirst()->toString(),
-        };
-    }
-
-    /** @return array<int,string> */
-    private function databaseStatusesForFilter(string $filter): array
-    {
-        $normalized = trim($filter);
-        $map = [
-            'Belum lengkap' => ['DRAFT', 'BELUM_LENGKAP'],
-            'Siap diproses' => ['READY', 'SIAP', 'DISIAPKAN'],
-            'Sudah bernomor' => ['NUMBERED', 'BERNOMOR'],
-            'Sudah dicetak' => ['PRINTED', 'DICETAK'],
-            'Final' => ['FINAL', 'ARCHIVED', 'ARSIP'],
-            'Dibatalkan' => ['CANCELLED', 'CANCELED'],
-        ];
-
-        return $map[$normalized] ?? [$normalized];
+        return app(SpjWorkflowFilterService::class);
     }
 
     public function paymentMethodFor(Transaction $transaction): string
