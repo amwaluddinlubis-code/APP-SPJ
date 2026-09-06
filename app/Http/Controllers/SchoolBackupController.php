@@ -46,7 +46,7 @@ class SchoolBackupController extends Controller
         $request->validate(['confirm_restore' => ['accepted']]);
         $school = School::query()->findOrFail(session('active_school_id'));
         $backup = SchoolBackup::query()->where(['id' => $backupId, 'school_id' => $school->id])->firstOrFail();
-        $source = storage_path('app/'.$backup->file_path);
+        $source = rtrim((string) config('spj.data_path'), '/\\').DIRECTORY_SEPARATOR.$backup->file_path;
         $target = $school->databaseRecord?->database_path;
         if (! $target || ! File::exists($source)) {
             return back()->with('error', 'Berkas backup tidak ditemukan atau database sekolah belum tersedia.');
@@ -80,7 +80,7 @@ class SchoolBackupController extends Controller
             throw new \RuntimeException('Database lokal sekolah tidak ditemukan.');
         }
         DB::connection('school')->statement('PRAGMA wal_checkpoint(TRUNCATE)');
-        $folder = storage_path('app/school-backups/'.$school->npsn);
+        $folder = rtrim((string) config('spj.data_path'), '/\\').DIRECTORY_SEPARATOR.'backups'.DIRECTORY_SEPARATOR.$school->npsn;
         File::ensureDirectoryExists($folder);
         $name = 'spj-'.$school->npsn.'-'.now()->format('Ymd-His').'-'.strtolower($reason).'.sqlite';
         $target = $folder.'/'.$name;
@@ -94,7 +94,7 @@ class SchoolBackupController extends Controller
 
         $backup = SchoolBackup::create([
             'school_id' => $school->id,
-            'file_path' => 'school-backups/'.$school->npsn.'/'.$name,
+            'file_path' => 'backups/'.$school->npsn.'/'.$name,
             'file_name' => $name,
             'file_size' => File::size($target),
             'reason' => $reason,
@@ -108,7 +108,7 @@ class SchoolBackupController extends Controller
             ->skip($retention)
             ->get();
         foreach ($expired as $oldBackup) {
-            File::delete(storage_path('app/'.$oldBackup->file_path));
+            File::delete(rtrim((string) config('spj.data_path'), '/\\').DIRECTORY_SEPARATOR.$oldBackup->file_path);
             $oldBackup->delete();
         }
 

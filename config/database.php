@@ -44,7 +44,7 @@ return [
 
         'school' => [
             'driver' => 'sqlite',
-            'database' => storage_path('app/school-databases/_unselected.sqlite'),
+            'database' => rtrim(config('spj.data_path'), '/\\').DIRECTORY_SEPARATOR.'school-databases'.DIRECTORY_SEPARATOR.'_unselected.sqlite',
             'prefix' => '',
             'foreign_key_constraints' => true,
             'busy_timeout' => (int) env('SCHOOL_DB_BUSY_TIMEOUT', 5000),

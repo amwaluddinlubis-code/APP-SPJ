@@ -16,12 +16,17 @@ use Illuminate\Support\Facades\Schema;
 
 class SchoolDatabaseManager
 {
+    private function schoolDatabasePath(string $suffix = ''): string
+    {
+        return rtrim((string) config('spj.data_path'), '/\\').DIRECTORY_SEPARATOR.'school-databases'.($suffix === '' ? '' : DIRECTORY_SEPARATOR.$suffix);
+    }
+
     /**
      * Provision database file + migrate untuk sekolah.
      */
     public function provision(School $school): SchoolDatabase
     {
-        $folder = storage_path('app/school-databases/'.preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn));
+        $folder = $this->schoolDatabasePath(preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn));
         File::ensureDirectoryExists($folder);
         $path = $folder.'/spj.sqlite';
         $createdFile = false;
@@ -135,7 +140,7 @@ class SchoolDatabaseManager
     /** Pastikan dummy memiliki schema tenant terbaru tanpa data. */
     public function ensureDummyDatabase(): string
     {
-        $path = storage_path('app/school-databases/_unselected.sqlite');
+        $path = $this->schoolDatabasePath('_unselected.sqlite');
         File::ensureDirectoryExists(dirname($path));
 
         if ($this->dummySchemaIsCurrent($path)) {
@@ -345,7 +350,7 @@ class SchoolDatabaseManager
         if (! $school) {
             $this->ensureDummyDatabase();
             // Set ke dummy jika masih null/berbeda
-            $dummy = storage_path('app/school-databases/_unselected.sqlite');
+            $dummy = $this->schoolDatabasePath('_unselected.sqlite');
             if ($db !== $dummy) {
                 Config::set('database.connections.school.database', $dummy);
                 DB::purge('school');
