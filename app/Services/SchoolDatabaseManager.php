@@ -73,6 +73,10 @@ class SchoolDatabaseManager
     {
         $school = $school instanceof School ? $school : School::findOrFail($school);
         $record = $school->databaseRecord ?: $this->provision($school);
+        $managedPath = $this->schoolDatabasePath(preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn).DIRECTORY_SEPARATOR.'spj.sqlite');
+        if ($record->database_path !== $managedPath && File::exists($managedPath)) {
+            $record->forceFill(['database_path' => $managedPath])->save();
+        }
         if (! File::exists($record->database_path)) {
             throw new \RuntimeException('Database lokal sekolah tidak ditemukan: '.$record->database_path);
         }
