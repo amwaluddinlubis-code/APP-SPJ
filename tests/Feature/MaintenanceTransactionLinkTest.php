@@ -51,27 +51,56 @@ class MaintenanceTransactionLinkTest extends TestCase
         $response = app(MaintenanceTransactionLinkController::class)->show((string) $maintenance->id);
         $payload = $response->getData(true);
 
+        $this->assertSame('unknown', $payload['current_role']);
         $this->assertSame([
             ['id' => $eligible->id, 'label' => 'BPU-014 - Pembelian cat dan kuas'],
         ], $payload['candidates']);
     }
 
-    public function test_selected_material_and_labor_transactions_are_persisted(): void
+    public function test_labor_transaction_only_links_to_material_transaction(): void
     {
-        $maintenance = $this->transaction('BPU-010', '2026-03-10', 'Pemeliharaan ruang kelas');
+        $labor = $this->transaction('BPU-010', '2026-03-10', 'Upah tukang pemeliharaan ruang kelas');
         $material = $this->transaction('BPU-014', '2026-03-12', 'Pembelian cat dan kuas');
+
+        $payload = app(MaintenanceTransactionLinkController::class)
+            ->show((string) $labor->id)
+            ->getData(true);
+
+        $this->assertSame('labor', $payload['current_role']);
+
+        $request = Request::create('/transaksi/'.$labor->id.'/pemeliharaan/transaksi-terkait', 'PUT', [
+            'material_transaction_id' => $material->id,
+            'labor_transaction_id' => null,
+        ]);
+
+        app(MaintenanceTransactionLinkController::class)->update($request, (string) $labor->id);
+
+        $labor->refresh();
+        $this->assertSame($material->id, $labor->maintenance_material_transaction_id);
+        $this->assertNull($labor->maintenance_labor_transaction_id);
+    }
+
+    public function test_material_transaction_only_links_to_labor_transaction(): void
+    {
+        $material = $this->transaction('BPU-010', '2026-03-10', 'Pembelian bahan pemeliharaan ruang kelas');
         $labor = $this->transaction('BPU-018', '2026-03-15', 'Upah tukang 3 hari');
 
-        $request = Request::create('/transaksi/'.$maintenance->id.'/pemeliharaan/transaksi-terkait', 'PUT', [
-            'material_transaction_id' => $material->id,
+        $payload = app(MaintenanceTransactionLinkController::class)
+            ->show((string) $material->id)
+            ->getData(true);
+
+        $this->assertSame('material', $payload['current_role']);
+
+        $request = Request::create('/transaksi/'.$material->id.'/pemeliharaan/transaksi-terkait', 'PUT', [
+            'material_transaction_id' => null,
             'labor_transaction_id' => $labor->id,
         ]);
 
-        app(MaintenanceTransactionLinkController::class)->update($request, (string) $maintenance->id);
+        app(MaintenanceTransactionLinkController::class)->update($request, (string) $material->id);
 
-        $maintenance->refresh();
-        $this->assertSame($material->id, $maintenance->maintenance_material_transaction_id);
-        $this->assertSame($labor->id, $maintenance->maintenance_labor_transaction_id);
+        $material->refresh();
+        $this->assertNull($material->maintenance_material_transaction_id);
+        $this->assertSame($labor->id, $material->maintenance_labor_transaction_id);
     }
 
     private function transaction(string $proofNumber, string $date, ?string $paymentDescription): Transaction
