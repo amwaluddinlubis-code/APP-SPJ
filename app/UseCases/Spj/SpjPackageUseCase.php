@@ -87,11 +87,11 @@ class SpjPackageUseCase
         }
 
         $data = $request->validate($this->updateRules($request, $package), $this->purchaseDateMessages());
+        $data['spj_category'] = $this->canonicalCategory($data['spj_category'] ?? $package->transaction->spj_category);
         $this->validateTaxMatchesBku($package->transaction, $data);
-        $workers = $data['workers'] ?? [];
 
         $package->transaction->fill(collect($data)->only([
-            'payment_description', 'payment_reference', 'payment_method',
+            'spj_category', 'payment_description', 'payment_reference', 'payment_method',
             'receipt_recipient_name', 'vendor_name', 'vendor_owner', 'vendor_npwp',
             'siplah_order_number', 'invoice_number', 'invoice_date', 'invoice_status',
             'ppn_rate', 'pph21_rate', 'pph22_rate', 'pph23_rate', 'pph4_rate', 'sspd_rate',
@@ -100,30 +100,9 @@ class SpjPackageUseCase
         $package->transaction->load('items');
         app(SpjTransactionDetailsService::class)->synchronize($package->transaction, $data);
 
-        $workOrder = $package->transaction->workOrder;
-        $workOrder?->workers()->delete();
-        $receiptRecipient = null;
-        foreach ($workers as $sortOrder => $worker) {
-            if (! $workOrder || blank($worker['name'] ?? null)) {
-                continue;
-            }
-            $days = (float) ($worker['work_days'] ?? 0);
-            $rate = (float) ($worker['daily_rate'] ?? 0);
-            $isRecipient = (bool) ($worker['is_receipt_recipient'] ?? false);
-            $workOrder->workers()->create([
-                'name' => $worker['name'],
-                'job_description' => $worker['job_description'] ?? null,
-                'work_days' => $days,
-                'daily_rate' => $rate,
-                'amount' => $days * $rate,
-                'is_receipt_recipient' => $isRecipient,
-                'notes' => $worker['notes'] ?? null,
-                'sort_order' => $sortOrder,
-            ]);
-            if ($isRecipient && ! $receiptRecipient) {
-                $receiptRecipient = $worker['name'];
-            }
-        }
+        $receiptRecipient = $package->transaction->workOrder?->workers()
+            ->where('is_receipt_recipient', true)
+            ->value('name');
         if ($receiptRecipient) {
             $package->transaction->forceFill([
                 'receipt_recipient_name' => $receiptRecipient,
@@ -160,8 +139,8 @@ class SpjPackageUseCase
             'invoice_number' => [$isSiplah ? 'required' : 'nullable', 'string', 'max:80'],
             'invoice_date' => $invoiceDateRules,
             'invoice_status' => ['nullable', 'string', 'max:30'],
-            'work_description' => ['nullable', 'string', 'max:4000'],
-            'work_location' => ['nullable', 'string', 'max:180'],
+            'work_description' => ['required_if:spj_category,PEMELIHARAAN', 'nullable', 'string', 'max:4000'],
+            'work_location' => ['required_if:spj_category,PEMELIHARAAN', 'nullable', 'string', 'max:180'],
             'work_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'work_completed_at' => ['nullable', 'date', 'after_or_equal:work_started_at', 'before_or_equal:'.$maximumDocumentDate],
             'spk_number' => ['nullable', 'string', 'max:80'],
