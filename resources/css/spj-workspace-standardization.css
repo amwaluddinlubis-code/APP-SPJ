@@ -210,3 +210,145 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 .spj-semantic-workspace :is(a,button) svg {
     color: currentColor;
 }
+
+/* Keep the operator workspace compact on desktop so the queue starts within
+   the first viewport while preserving the global header and breadcrumb. */
+@media (min-width: 1024px) {
+    .spj-semantic-workspace {
+        gap: 1rem !important;
+    }
+
+    .spj-semantic-workspace .page-header-main {
+        padding-block: 1.15rem !important;
+    }
+
+    .spj-semantic-workspace .page-header-description {
+        max-width: 40rem;
+        line-height: 1.35rem !important;
+    }
+
+    .spj-semantic-workspace .page-header-summary > .spj-work-summary > * {
+        padding-block: .75rem !important;
+    }
+}
+
+/* Summary cards distinguish queued work from packages that are already in the
+   document lifecycle. The percentage is explicitly scoped to created packages. */
+.spj-semantic-workspace .spj-work-summary > button {
+    position: relative;
+}
+
+.spj-semantic-workspace .spj-work-summary > button:hover {
+    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--spj-surface)) !important;
+}
+
+/* Filters read as one compact toolbar at desktop widths. */
+.spj-semantic-workspace .spj-filter-bar {
+    padding: .875rem !important;
+}
+
+/* The preparation page is an operator queue: each summary link narrows the
+   current filter context to the next kind of work without changing any data. */
+.spj-semantic-workspace .spj-work-queue-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 3.25rem;
+    padding: .625rem .75rem;
+    border: 1px solid var(--spj-border);
+    border-radius: var(--profile-control-radius, .625rem);
+    background: var(--spj-surface-soft);
+    color: var(--spj-text);
+    font-size: .8125rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.spj-semantic-workspace .spj-work-queue-item strong {
+    min-width: 1.75rem;
+    padding: .125rem .45rem;
+    border-radius: 999px;
+    background: var(--spj-surface);
+    color: var(--spj-text-strong);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.spj-semantic-workspace .spj-work-queue-item:hover {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 28%, var(--spj-border));
+    background: color-mix(in srgb, var(--theme-accent-soft) 25%, var(--spj-surface));
+    box-shadow: var(--profile-card-shadow);
+}
+
+.spj-semantic-workspace .spj-work-queue-item:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--theme-accent) 28%, transparent);
+    outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+    .spj-semantic-workspace .spj-filter-bar > div:first-of-type {
+        align-items: end;
+    }
+
+    .spj-semantic-workspace .spj-filter-bar > div:last-child {
+        margin-top: .625rem !important;
+    }
+}
+
+/* The workflow action remains visible when the preparation/package tables
+   overflow horizontally in a normal desktop window. */
+.spj-semantic-workspace div[x-show="tab === 'persiapan'"] table :is(th, td):last-child,
+.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table :is(th, td):last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    box-shadow: -10px 0 14px color-mix(in srgb, var(--spj-surface) 72%, transparent);
+}
+
+.spj-semantic-workspace div[x-show="tab === 'persiapan'"] table th:last-child,
+.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table th:last-child {
+    z-index: 2;
+    background: var(--spj-surface-soft) !important;
+}
+
+.spj-semantic-workspace div[x-show="tab === 'persiapan'"] table td:last-child,
+.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table td:last-child {
+    background: var(--spj-surface) !important;
+}
+
+.spj-semantic-workspace div[x-show="tab === 'persiapan'"] table {
+    min-width: 60rem;
+}
+
+/* Exports form a secondary group after the reporting filters, so applying a
+   period is visually distinct from downloading an output. */
+.spj-semantic-workspace .spj-report-toolbar > :is(a, button) {
+    flex: 0 0 auto;
+}
+
+@media (min-width: 1024px) {
+    .spj-semantic-workspace .spj-report-toolbar > a:nth-of-type(1) {
+        margin-left: auto;
+    }
+}
+
+/* Monitoring should prioritize the unresolved work list over period controls. */
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child {
+    padding-block: 1rem !important;
+}
+
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child > .grid {
+    gap: .5rem !important;
+}
+
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child > .grid > div {
+    padding: .75rem !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spj-semantic-workspace * {
+        transition: none !important;
+    }
+}
