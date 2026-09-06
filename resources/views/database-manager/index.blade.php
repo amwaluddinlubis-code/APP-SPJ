@@ -1,269 +1,254 @@
 <x-layouts.tailwind-app>
-    @php($fmtBytes = fn($b) => $b < 1024 ? $b.' B' : ($b < 1048576 ? number_format($b/1024,1).' KB' : number_format($b/1048576,2).' MB'))
-    @php($badgeLevel = fn($level) => $level==='ok' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($level==='warning' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'))
-    <div class="space-y-5">
-        {{-- Header --}}
-        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <p class="text-xs font-bold tracking-[.16em] text-sky-200">MAINTENANCE · DATABASE AKTIF</p>
-                <h1 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Manajemen Database Aktif</h1>
-                <p class="mt-1 text-base text-indigo-100">Satu modul untuk kelola koneksi <span class="font-mono font-bold">school</span> (SQLite per NPSN), migrasi, health check & maintenance. Mempermudah debug tanpa ubah <code>config/database.php:45</code> manual.</p>
-            </div>
-            <div class="grid gap-3 bg-slate-50/60 px-4 py-3 sm:grid-cols-3 text-base">
-                <div class="rounded-lg border bg-[var(--ui-surface-base)] px-3 py-2.5">
-                    <p class="text-[11px] font-bold uppercase text-slate-400">Koneksi Aktif</p>
-                    <p class="mt-1 font-mono text-xs font-bold text-slate-800 truncate" title="{{ $active['database'] }}">{{ $active['database'] ? basename($active['database']) : '—' }}</p>
-                    @if(!empty($active['isDummy']) || !$active['school'])
-                        <p class="mt-0.5 text-xs text-amber-600">● Belum pilih sekolah — pakai dummy valid</p>
-                    @else
-                        <p class="mt-0.5 text-xs {{ $active['connected'] ? 'text-emerald-600' : 'text-rose-600' }}">{{ $active['connected'] ? '● Connected — '.($active['school']->name ?? '') : '● Error: '.str($active['error'])->limit(40) }}</p>
-                    @endif
-                </div>
-                <div class="rounded-lg border bg-[var(--ui-surface-base)] px-3 py-2.5">
-                    <p class="text-[11px] font-bold uppercase text-slate-400">Sekolah Aktif</p>
-                    <p class="mt-1 text-base font-bold text-slate-800">{{ $active['school']?->name ?? '— Belum pilih —' }}</p>
-                    <p class="text-xs text-slate-500">NPSN {{ $active['school']?->npsn ?? '-' }} · Session ID {{ $active['schoolId'] ?? '-' }}</p>
-                </div>
-                <div class="rounded-lg border bg-[var(--ui-surface-base)] px-3 py-2.5">
-                    <p class="text-[11px] font-bold uppercase text-slate-400">Total Database</p>
-                    <p class="mt-1 text-2xl font-bold text-slate-800">{{ $list->count() }}</p>
-                    <p class="text-xs text-slate-500">{{ $list->filter(fn($s)=>$s['exists'])->count() }} file ada · {{ $list->filter(fn($s)=>$s['isActive'])->count() }} aktif</p>
-                </div>
-            </div>
-        </section>
+    @php
+        $fmtBytes = fn ($bytes) => $bytes < 1024
+            ? $bytes.' B'
+            : ($bytes < 1048576 ? number_format($bytes / 1024, 1).' KB' : number_format($bytes / 1048576, 2).' MB');
+        $healthClass = fn ($level) => match ($level) {
+            'ok' => 'db-health-ok',
+            'warning' => 'db-health-warning',
+            default => 'db-health-danger',
+        };
+        $activeHealth = $activeStatus ? app(\App\Services\SchoolDatabaseManager::class)->health($activeStatus['school']) : null;
+        $databaseCount = $list->count();
+        $existingDatabaseCount = $list->filter(fn ($row) => $row['exists'])->count();
+        $connectedDatabaseCount = $list->filter(fn ($row) => $row['connectionOk'])->count();
+        $totalStorage = $list->sum(fn ($row) => (int) ($row['totalSize'] ?? 0));
+        $activeTableCount = count($tables ?? []);
+        $activeTableRows = collect($tables ?? [])->sum(fn ($row) => (int) ($row['count'] ?? 0));
+        $integrityOk = $activeStatus && strtolower(trim((string) ($activeStatus['integrity'] ?? ''))) === 'ok';
+        $connectionReady = $active['school'] && $active['connected'] && $activeStatus;
+    @endphp
 
-        {{-- Tabs --}}
-        <section class="overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow" id="db-tabs">
-            <div class="border-b border-[var(--ui-line)] bg-slate-50/70">
-                <nav class="flex gap-1 overflow-x-auto px-2 py-1 text-base">
-                    <button data-tab="overview" class="tab-btn whitespace-nowrap rounded-md px-3 py-2 text-base font-bold border border-transparent data-[active=true]:bg-white data-[active=true]:border-slate-200 data-[active=true]:text-indigo-700 data-[active=true]:shadow text-slate-600">◎ Overview</button>
-                    <button data-tab="list" class="tab-btn whitespace-nowrap rounded-md px-3 py-2 text-base font-bold border border-transparent data-[active=true]:bg-white data-[active=true]:border-slate-200 data-[active=true]:text-indigo-700 data-[active=true]:shadow text-slate-600">📚 Daftar Database</button>
-                    <button data-tab="tables" class="tab-btn whitespace-nowrap rounded-md px-3 py-2 text-base font-bold border border-transparent data-[active=true]:bg-white data-[active=true]:border-slate-200 data-[active=true]:text-indigo-700 data-[active=true]:shadow text-slate-600">🗂️ Table Manager @if(!empty($tables))<span class="ml-1 rounded-full bg-[var(--ui-surface-muted)] px-1.5 py-0.5 text-[11px]">{{ count($tables) }}</span>@endif</button>
-                    <button data-tab="diagnostic" class="tab-btn whitespace-nowrap rounded-md px-3 py-2 text-base font-bold border border-transparent data-[active=true]:bg-white data-[active=true]:border-slate-200 data-[active=true]:text-indigo-700 data-[active=true]:shadow text-slate-600">🔍 Diagnostik</button>
-                    <button data-tab="maintenance" class="tab-btn whitespace-nowrap rounded-md px-3 py-2 text-base font-bold border border-transparent data-[active=true]:bg-white data-[active=true]:border-slate-200 data-[active=true]:text-indigo-700 data-[active=true]:shadow text-slate-600">🛠️ Maintenance</button>
+    <div id="database-control-center" class="db-control-center space-y-5">
+        <x-page-header
+            title="Pusat Kontrol Database Sekolah"
+            subtitle="Pantau database aktif, kesehatan SQLite, struktur tabel, dan tindakan maintenance dari satu halaman."
+            kicker="PENGATURAN · DATABASE AKTIF"
+        >
+            <x-slot:actions>
+                <x-ui.button variant="secondary" :href="route('schools.select')">Ganti sekolah</x-ui.button>
+                <x-ui.button variant="secondary" :href="route('school-backups.index')">Backup &amp; Restore</x-ui.button>
+                @if($active['school'])
+                    <x-ui.button :href="route('database-manager.reset-form')">Reset database</x-ui.button>
+                @endif
+            </x-slot:actions>
+
+            <div class="db-hero-summary grid sm:grid-cols-2 xl:grid-cols-4">
+                <div class="db-hero-stat">
+                    <p class="db-eyebrow">Database aktif</p>
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="db-status-dot {{ $connectionReady ? 'is-ok' : 'is-danger' }}"></span>
+                        <p class="font-bold text-[var(--ui-fg-strong)]">{{ $active['school']?->name ?? 'Belum dipilih' }}</p>
+                    </div>
+                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">NPSN {{ $active['school']?->npsn ?? '—' }} · Session {{ $active['schoolId'] ?? '—' }}</p>
+                </div>
+                <div class="db-hero-stat">
+                    <p class="db-eyebrow">Kesehatan</p>
+                    <p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ $activeHealth ? strtoupper($activeHealth['level']) : 'BELUM TERSEDIA' }}</p>
+                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $activeHealth && empty($activeHealth['issues']) ? 'Tidak ada masalah terdeteksi' : ($activeHealth ? implode(' · ', $activeHealth['issues']) : 'Aktifkan sekolah untuk menjalankan health check') }}</p>
+                </div>
+                <div class="db-hero-stat">
+                    <p class="db-eyebrow">Penyimpanan aktif</p>
+                    <p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ $activeStatus ? $fmtBytes($activeStatus['totalSize']) : '—' }}</p>
+                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">DB {{ $activeStatus ? $fmtBytes($activeStatus['size']) : '—' }} · WAL {{ $activeStatus ? $fmtBytes($activeStatus['walSize']) : '—' }}</p>
+                </div>
+                <div class="db-hero-stat">
+                    <p class="db-eyebrow">Struktur aktif</p>
+                    <p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ number_format($activeTableCount, 0, ',', '.') }} tabel</p>
+                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ number_format($activeTableRows, 0, ',', '.') }} baris terhitung dari seluruh tabel</p>
+                </div>
+            </div>
+        </x-page-header>
+
+        @if(!$active['school'])
+            <x-ui.alert type="warning" title="Belum ada database sekolah aktif">
+                Pilih sekolah terlebih dahulu. Setelah sekolah aktif, halaman ini akan menampilkan health check, isi tabel, status migrasi, dan alat maintenance.
+            </x-ui.alert>
+        @elseif(!$active['connected'])
+            <x-ui.alert type="danger" title="Koneksi database aktif bermasalah">
+                {{ $active['error'] ?: 'Koneksi SQLite tidak dapat dibuka. Periksa file database dan permission.' }}
+            </x-ui.alert>
+        @elseif($activeHealth && !empty($activeHealth['issues']))
+            <x-ui.alert type="warning" title="Database aktif memerlukan perhatian">
+                {{ implode(' · ', $activeHealth['issues']) }}
+            </x-ui.alert>
+        @endif
+
+        <section id="db-tabs" class="db-workspace">
+            <div class="db-tabbar">
+                <nav class="flex gap-1 overflow-x-auto" aria-label="Navigasi database">
+                    <button type="button" data-tab="overview" class="tab-btn">Ringkasan</button>
+                    <button type="button" data-tab="list" class="tab-btn">Database Sekolah <span class="db-tab-count">{{ $databaseCount }}</span></button>
+                    <button type="button" data-tab="tables" class="tab-btn">Explorer Tabel <span class="db-tab-count">{{ $activeTableCount }}</span></button>
+                    <button type="button" data-tab="diagnostic" class="tab-btn">Diagnostik</button>
+                    <button type="button" data-tab="maintenance" class="tab-btn">Maintenance</button>
                 </nav>
             </div>
 
-            {{-- Panel Overview --}}
-            <div data-panel="overview" class="p-4 space-y-4">
-                @if($activeStatus)
-                    @php($h = app(\App\Services\SchoolDatabaseManager::class)->health($activeStatus['school']))
-                    <div class="rounded-lg border p-3 flex items-center justify-between {{ $badgeLevel($h['level']) }}">
-                        <div>
-                            <p class="text-base font-bold">Health: {{ strtoupper($h['level']) }}</p>
-                            <p class="text-xs mt-0.5">{{ empty($h['issues']) ? 'Semua OK' : implode(' · ', $h['issues']) }}</p>
+            <div data-panel="overview" class="db-panel space-y-4">
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="db-metric-card">
+                        <div class="flex items-start justify-between gap-3">
+                            <div><p class="db-eyebrow">Database sekolah</p><p class="db-metric-value">{{ $databaseCount }}</p></div>
+                            <span class="db-icon-tile">DB</span>
                         </div>
-                        <span class="text-xs font-mono">{{ $activeStatus['integrity'] ?? '-' }}</span>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-base">
-                        <div class="rounded-lg border bg-[var(--ui-surface-soft)] px-3 py-2.5"><p class="text-[11px] font-bold text-slate-400">FILE SIZE</p><p class="mt-1 font-bold">{{ $fmtBytes($activeStatus['totalSize']) }}</p><p class="text-xs text-slate-500">DB {{ $fmtBytes($activeStatus['size']) }} + WAL {{ $fmtBytes($activeStatus['walSize']) }}</p></div>
-                        <div class="rounded-lg border bg-[var(--ui-surface-soft)] px-3 py-2.5"><p class="text-[11px] font-bold text-slate-400">STATUS</p><p class="mt-1 font-bold">{{ $activeStatus['status'] ?? '-' }}</p><p class="text-xs text-slate-500">Migrated {{ $activeStatus['lastMigrated']?->diffForHumans() ?? '—' }}</p></div>
-                        <div class="rounded-lg border bg-[var(--ui-surface-soft)] px-3 py-2.5"><p class="text-[11px] font-bold text-slate-400">WRITABLE</p><p class="mt-1 font-bold {{ $activeStatus['isWritable'] ? 'text-emerald-700' : 'text-rose-700' }}">{{ $activeStatus['isWritable'] ? 'Yes' : 'No' }}</p><p class="text-xs text-slate-500 truncate">{{ $activeStatus['path'] }}</p></div>
-                        <div class="rounded-lg border bg-[var(--ui-surface-soft)] px-3 py-2.5"><p class="text-[11px] font-bold text-slate-400">TABLE COUNTS</p><div class="mt-1 space-y-0.5 text-xs">@foreach($activeStatus['tableCounts'] as $tbl=>$cnt)<div class="flex justify-between"><span class="text-slate-500">{{ $tbl }}</span><span class="font-bold">{{ $cnt ?? '—' }}</span></div>@endforeach</div></div>
-                    </div>
-                @else
-                    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-800">Belum ada sekolah aktif. Pilih sekolah dulu di <a href="{{ route('schools.select') }}" class="font-bold underline">Pilih Sekolah</a> atau aktifkan dari tab Daftar.</div>
-                @endif
-                <div class="rounded-lg bg-slate-900 px-4 py-3 text-xs font-mono text-emerald-200 overflow-x-auto">
-                    <p class="font-bold text-slate-400">Active connection (config/database.php:45)</p>
-                    <p class="mt-1 break-all">database.connections.school.database = {{ $active['database'] }}</p>
-                    <p class="mt-1 text-slate-500">Dipakai oleh Middleware EnsureActiveSchool + AppServiceProvider. Jangan edit manual, pakai tombol Aktifkan di modul ini.</p>
+                        <p class="db-metric-hint">{{ $existingDatabaseCount }} file tersedia · {{ $connectedDatabaseCount }} dapat dikoneksi</p>
+                    </article>
+                    <article class="db-metric-card">
+                        <div class="flex items-start justify-between gap-3">
+                            <div><p class="db-eyebrow">Integritas</p><p class="db-metric-value {{ $integrityOk ? 'text-emerald-600' : ($activeStatus ? 'text-rose-600' : '') }}">{{ $activeStatus ? ($integrityOk ? 'OK' : 'Periksa') : '—' }}</p></div>
+                            <span class="db-icon-tile">✓</span>
+                        </div>
+                        <p class="db-metric-hint">PRAGMA integrity_check pada database yang sedang aktif</p>
+                    </article>
+                    <article class="db-metric-card">
+                        <div class="flex items-start justify-between gap-3">
+                            <div><p class="db-eyebrow">Total penyimpanan</p><p class="db-metric-value">{{ $fmtBytes($totalStorage) }}</p></div>
+                            <span class="db-icon-tile">GB</span>
+                        </div>
+                        <p class="db-metric-hint">Akumulasi file SQLite, WAL, dan SHM seluruh sekolah</p>
+                    </article>
+                    <article class="db-metric-card">
+                        <div class="flex items-start justify-between gap-3">
+                            <div><p class="db-eyebrow">Migrasi aktif</p><p class="db-metric-value">{{ $activeStatus?->lastMigrated?->diffForHumans() ?? ($activeStatus['lastMigrated']?->diffForHumans() ?? '—') }}</p></div>
+                            <span class="db-icon-tile">↻</span>
+                        </div>
+                        <p class="db-metric-hint">Waktu migrasi terakhir yang tercatat untuk sekolah aktif</p>
+                    </article>
                 </div>
+
+                @if($activeStatus)
+                    <div class="grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
+                        <section class="db-card">
+                            <div class="db-card-header">
+                                <div><p class="db-eyebrow">Status operasional</p><h2 class="db-card-title">Checklist database aktif</h2></div>
+                                <span class="db-health-pill {{ $healthClass($activeHealth['level']) }}">{{ strtoupper($activeHealth['level']) }}</span>
+                            </div>
+                            <div class="db-check-list">
+                                <div class="db-check-row"><span class="db-status-dot {{ $active['connected'] ? 'is-ok' : 'is-danger' }}"></span><div><strong>Koneksi SQLite</strong><p>{{ $active['connected'] ? 'Koneksi school dapat dibuka.' : 'Koneksi database gagal.' }}</p></div><span>{{ $active['connected'] ? 'Siap' : 'Error' }}</span></div>
+                                <div class="db-check-row"><span class="db-status-dot {{ $activeStatus['exists'] ? 'is-ok' : 'is-danger' }}"></span><div><strong>File database</strong><p>{{ basename($activeStatus['path']) }}</p></div><span>{{ $activeStatus['exists'] ? 'Ada' : 'Hilang' }}</span></div>
+                                <div class="db-check-row"><span class="db-status-dot {{ $activeStatus['isWritable'] ? 'is-ok' : 'is-danger' }}"></span><div><strong>Permission tulis</strong><p>Laravel perlu write access untuk transaksi, WAL, migrasi, dan maintenance.</p></div><span>{{ $activeStatus['isWritable'] ? 'Writable' : 'Read only' }}</span></div>
+                                <div class="db-check-row"><span class="db-status-dot {{ $integrityOk ? 'is-ok' : 'is-danger' }}"></span><div><strong>Integrity check</strong><p>Hasil PRAGMA integrity_check: {{ $activeStatus['integrity'] ?? '—' }}</p></div><span>{{ $integrityOk ? 'Normal' : 'Periksa' }}</span></div>
+                            </div>
+                        </section>
+
+                        <section class="db-card">
+                            <div class="db-card-header"><div><p class="db-eyebrow">Penyimpanan</p><h2 class="db-card-title">Komposisi file SQLite</h2></div></div>
+                            <div class="space-y-3 p-4">
+                                @php($totalActiveBytes = max(1, (int) $activeStatus['totalSize']))
+                                @foreach([
+                                    ['label' => 'Database utama', 'value' => (int) $activeStatus['size']],
+                                    ['label' => 'WAL', 'value' => (int) $activeStatus['walSize']],
+                                    ['label' => 'SHM', 'value' => (int) $activeStatus['shmSize']],
+                                ] as $storagePart)
+                                    <div>
+                                        <div class="flex items-center justify-between gap-3 text-xs"><span class="font-semibold text-[var(--ui-fg)]">{{ $storagePart['label'] }}</span><span class="font-mono text-[var(--ui-fg-muted)]">{{ $fmtBytes($storagePart['value']) }}</span></div>
+                                        <div class="db-progress mt-1"><span style="width: {{ min(100, max(1, ($storagePart['value'] / $totalActiveBytes) * 100)) }}%"></span></div>
+                                    </div>
+                                @endforeach
+                                <div class="db-path-box"><p class="db-eyebrow">Lokasi file</p><p class="mt-1 break-all font-mono text-xs">{{ $activeStatus['path'] }}</p></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="grid gap-4 xl:grid-cols-[.9fr_1.1fr]">
+                        <section class="db-card">
+                            <div class="db-card-header"><div><p class="db-eyebrow">Data utama</p><h2 class="db-card-title">Ringkasan jumlah record</h2></div></div>
+                            <div class="db-table-counts">
+                                @forelse($activeStatus['tableCounts'] as $tableName => $count)
+                                    <div><span class="font-mono">{{ $tableName }}</span><strong>{{ $count ?? 'error' }}</strong></div>
+                                @empty
+                                    <p class="p-4 text-sm text-[var(--ui-fg-muted)]">Belum ada table count yang tersedia.</p>
+                                @endforelse
+                            </div>
+                        </section>
+
+                        <section class="db-card">
+                            <div class="db-card-header"><div><p class="db-eyebrow">Aksi cepat</p><h2 class="db-card-title">Tindakan yang paling sering digunakan</h2></div></div>
+                            <div class="grid gap-3 p-4 sm:grid-cols-2">
+                                <form method="POST" action="{{ route('database-manager.integrity', $activeStatus['school']->id) }}" class="db-action-card">@csrf<button type="submit"><strong>Periksa integritas</strong><span>Jalankan integrity_check sebelum maintenance atau ketika ada indikasi data rusak.</span></button></form>
+                                <form method="POST" action="{{ route('database-manager.checkpoint', $activeStatus['school']->id) }}" class="db-action-card">@csrf<button type="submit"><strong>Checkpoint WAL</strong><span>Flush perubahan dari WAL ke file database utama.</span></button></form>
+                                <form method="POST" action="{{ route('database-manager.migrate', $activeStatus['school']->id) }}" class="db-action-card">@csrf<button type="submit"><strong>Jalankan migrasi</strong><span>Pastikan struktur tenant mengikuti migration school terbaru.</span></button></form>
+                                <a href="{{ route('school-backups.index') }}" class="db-action-card"><strong>Backup sebelum perubahan</strong><span>Buka modul backup & restore sebelum tindakan berisiko.</span></a>
+                            </div>
+                        </section>
+                    </div>
+                @endif
             </div>
 
-            {{-- Panel List --}}
-            <div data-panel="list" class="hidden">
+            <div data-panel="list" class="hidden db-panel p-0">
+                <div class="db-section-toolbar">
+                    <div><p class="db-eyebrow">Seluruh tenant sekolah</p><h2 class="db-card-title">Database Sekolah</h2><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Aktifkan koneksi, cek keberadaan file, dan jalankan migrasi per sekolah.</p></div>
+                    <label class="db-search"><span>Cari</span><input id="database-school-search" type="search" placeholder="Nama sekolah atau NPSN"></label>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-[800px] w-full text-base">
-                        <thead class="bg-[var(--ui-surface-soft)] text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                            <tr><th class="px-3 py-2 text-left">Sekolah</th><th class="px-3 py-2">File</th><th class="px-3 py-2 text-right">Size</th><th class="px-3 py-2">Koneksi</th><th class="px-3 py-2">Health</th><th class="px-3 py-2 text-right">Aksi</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--ui-line)]">
+                    <table class="db-data-table min-w-[900px] w-full">
+                        <thead><tr><th>Sekolah</th><th>Database</th><th class="text-right">Ukuran</th><th>Koneksi</th><th>Health</th><th class="text-right">Tindakan</th></tr></thead>
+                        <tbody id="database-school-list">
                             @foreach($list as $row)
-                                @php($health = app(\App\Services\SchoolDatabaseManager::class)->health($row['school']))
-                                <tr class="{{ $row['isActive'] ? 'bg-indigo-50/40' : '' }}">
-                                    <td class="px-3 py-2.5">
-                                        <p class="font-bold text-slate-800">{{ $row['school']->name }} @if($row['isActive'])<span class="ml-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] text-white">AKTIF</span>@endif</p>
-                                        <p class="text-xs text-slate-500">NPSN {{ $row['school']->npsn }} · ID {{ $row['school']->id }}</p>
-                                    </td>
-                                    <td class="px-3 py-2.5 font-mono text-xs">{{ $row['exists'] ? '✓ '.basename($row['path']) : '✗ missing' }}</td>
-                                    <td class="px-3 py-2.5 text-right text-xs">{{ $fmtBytes($row['totalSize']) }}</td>
-                                    <td class="px-3 py-2.5 text-xs {{ $row['connectionOk'] ? 'text-emerald-700' : 'text-rose-700' }}">{{ $row['connectionOk'] ? 'OK' : 'ERR' }}</td>
-                                    <td class="px-3 py-2.5"><span class="rounded-full border px-2 py-0.5 text-xs font-bold {{ $badgeLevel($health['level']) }}">{{ strtoupper($health['level']) }}</span></td>
-                                    <td class="px-3 py-2.5 text-right">
-                                        <div class="flex justify-end gap-1">
-                                            @if(!$row['isActive'])<form method="POST" action="{{ route('database-manager.activate', $row['school']->id) }}">@csrf<button class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-indigo-700">Aktifkan</button></form>@endif
-                                            <form method="POST" action="{{ route('database-manager.migrate', $row['school']->id) }}">@csrf<button class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-xs font-bold hover:bg-slate-50">Migrate</button></form>
-                                        </div>
-                                    </td>
+                                @php($rowHealth = app(\App\Services\SchoolDatabaseManager::class)->health($row['school']))
+                                <tr data-search="{{ strtolower($row['school']->name.' '.$row['school']->npsn) }}" class="{{ $row['isActive'] ? 'is-active' : '' }}">
+                                    <td><div class="flex items-center gap-3"><span class="db-status-dot {{ $row['isActive'] ? 'is-ok' : '' }}"></span><div><div class="flex items-center gap-2"><strong>{{ $row['school']->name }}</strong>@if($row['isActive'])<span class="db-active-badge">AKTIF</span>@endif</div><p>NPSN {{ $row['school']->npsn }} · ID {{ $row['school']->id }}</p></div></div></td>
+                                    <td><p class="font-mono text-xs">{{ $row['exists'] ? basename($row['path']) : 'File belum tersedia' }}</p><p>{{ $row['exists'] ? 'File ditemukan' : 'Perlu provision' }}</p></td>
+                                    <td class="text-right font-mono text-xs">{{ $fmtBytes($row['totalSize']) }}</td>
+                                    <td><span class="db-health-pill {{ $row['connectionOk'] ? 'db-health-ok' : 'db-health-danger' }}">{{ $row['connectionOk'] ? 'TERHUBUNG' : 'ERROR' }}</span></td>
+                                    <td><span class="db-health-pill {{ $healthClass($rowHealth['level']) }}">{{ strtoupper($rowHealth['level']) }}</span></td>
+                                    <td><div class="flex justify-end gap-2">@if(!$row['isActive'])<form method="POST" action="{{ route('database-manager.activate', $row['school']->id) }}">@csrf<x-ui.button type="submit">Aktifkan</x-ui.button></form>@endif<form method="POST" action="{{ route('database-manager.migrate', $row['school']->id) }}">@csrf<x-ui.button type="submit" variant="secondary">Migrasi</x-ui.button></form></div></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+                <div id="database-school-empty" class="hidden db-empty-state">Tidak ada sekolah yang cocok dengan pencarian.</div>
             </div>
 
-            {{-- Panel Table Manager — Elegant Modern --}}
-            <div data-panel="tables" class="hidden">
+            <div data-panel="tables" class="hidden p-0">
                 @if(!$active['school'])
-                    <div class="p-8 text-center">
-                        <div class="mx-auto max-w-md rounded-xl border border-amber-200 bg-amber-50 p-6">
-                            <p class="text-base font-bold text-amber-800">Belum ada database aktif</p>
-                            <p class="mt-1 text-xs text-amber-700">Pilih sekolah di tab Daftar untuk mengaktifkan koneksi, lalu table manager akan menampilkan struktur.</p>
-                            <button onclick="document.querySelector('[data-tab=list]').click()" class="mt-3 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700">Ke Daftar Database →</button>
-                        </div>
-                    </div>
+                    <div class="db-empty-state"><strong>Belum ada database aktif.</strong><span>Aktifkan sekolah sebelum membuka Explorer Tabel.</span></div>
                 @elseif(!empty($tableError))
-                    <div class="m-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-base text-rose-700">Error: {{ $tableError }}</div>
+                    <div class="m-4"><x-ui.alert type="danger" title="Explorer tabel tidak dapat dibuka">{{ $tableError }}</x-ui.alert></div>
                 @else
-                    <div class="flex flex-col lg:flex-row lg:min-h-[560px]">
-                        {{-- Sidebar — table list as sortable table --}}
-                        <aside class="lg:w-[340px] lg:shrink-0 lg:border-r lg:bg-slate-50/20 flex flex-col">
-                            <div class="p-3 border-b bg-[var(--ui-surface-base)] sticky top-0 z-10">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-xs font-bold tracking-wide text-slate-600 uppercase">Tables</h3>
-                                    <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">{{ count($tables) }} tabel</span>
-                                </div>
-                                <div class="relative mt-2">
-                                    <input id="table-search" type="text" placeholder="Cari tabel..." class="w-full rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] pl-8 pr-3 py-2 text-base placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 outline-none">
-                                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
-                                </div>
-                                <p class="mt-1.5 text-[11px] text-slate-500 truncate">{{ $active['school']->name }} · <span class="font-mono">{{ basename($active['database']) }}</span></p>
+                    <div class="db-table-explorer lg:flex lg:min-h-[620px]">
+                        <aside class="db-table-sidebar lg:w-[330px] lg:shrink-0">
+                            <div class="db-table-sidebar-head">
+                                <div class="flex items-center justify-between gap-2"><div><p class="db-eyebrow">Explorer</p><h3 class="font-bold text-[var(--ui-fg-strong)]">Daftar tabel</h3></div><span class="db-tab-count">{{ count($tables) }}</span></div>
+                                <input id="table-search" type="search" placeholder="Cari tabel..." class="ui-input mt-3 w-full">
+                                <p class="mt-2 truncate text-xs text-[var(--ui-fg-muted)]">{{ $active['school']->name }} · {{ basename($active['database']) }}</p>
                             </div>
-                            <div class="flex-1 flex flex-col min-h-0">
-                                <div class="overflow-auto flex-1">
-                                    <table class="w-full text-base">
-                                        <thead class="sticky top-0 bg-[var(--ui-surface-soft)] text-[11px] font-bold uppercase tracking-wide text-slate-500 z-[1]">
-                                            <tr>
-                                                <th data-sort="name" class="cursor-pointer select-none px-3 py-2 text-left hover:text-indigo-600 hover:bg-slate-100 transition">Nama Tabel <span class="sort-icon opacity-40">↕</span></th>
-                                                <th data-sort="rows" class="cursor-pointer select-none px-3 py-2 text-right hover:text-indigo-600 hover:bg-slate-100 transition">Rows <span class="sort-icon opacity-40">↕</span></th>
-                                                <th class="px-3 py-2 text-center w-[72px]">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="table-list-body" class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                                            @foreach($tables as $idx => $t)
-                                                <tr data-name="{{ strtolower($t['name']) }}" data-rows="{{ $t['count'] ?? 0 }}" data-table-name="{{ $t['name'] }}" class="group hover:bg-indigo-50/40 transition {{ $table===$t['name'] ? '!bg-indigo-50 !border-l-2 !border-l-indigo-500' : '' }}">
-                                                    <td class="px-3 py-2.5">
-                                                        <p class="font-mono text-base font-semibold truncate {{ $table===$t['name'] ? 'text-indigo-700' : 'text-slate-800' }}">{{ $t['name'] }}</p>
-                                                        <p class="text-[11px] text-slate-400 truncate hidden lg:block">{{ str($t['sql'])->limit(32) }}</p>
-                                                    </td>
-                                                    <td class="px-3 py-2.5 text-right"><span class="inline-flex rounded bg-[var(--ui-surface-muted)] px-1.5 py-0.5 font-mono text-xs {{ $table===$t['name'] ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600' }}">{{ $t['count'] ?? '—' }}</span></td>
-                                                    <td class="px-3 py-2.5 text-center">
-                                                        <a href="{{ route('database-manager.index', ['table' => $t['name']]) }}#tables" class="inline-flex rounded-md px-2.5 py-1 text-xs font-bold border transition {{ $table===$t['name'] ? 'bg-indigo-600 text-white border-indigo-600 shadow' : 'bg-[var(--ui-surface-base)] border-[var(--ui-line)] text-slate-600 hover:bg-slate-50 hover:border-slate-300' }}">Browse</a>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                                {{-- Pagination ringan tanpa scroll panjang --}}
-                                <div class="flex items-center justify-between border-t bg-[var(--ui-surface-base)] px-3 py-2 text-xs">
-                                    <span id="table-pagination-info" class="text-slate-500"></span>
-                                    <div class="flex gap-1">
-                                        <button id="table-prev" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-xs font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">‹ Prev</button>
-                                        <button id="table-next" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-xs font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Next ›</button>
-                                    </div>
-                                </div>
+                            <div class="db-table-sidebar-list">
+                                <table class="w-full text-sm"><thead><tr><th data-sort="name">Nama <span class="sort-icon">↕</span></th><th data-sort="rows" class="text-right">Rows <span class="sort-icon">↕</span></th><th></th></tr></thead><tbody id="table-list-body">
+                                    @foreach($tables as $t)
+                                        <tr data-name="{{ strtolower($t['name']) }}" data-rows="{{ $t['count'] ?? 0 }}" class="{{ $table === $t['name'] ? 'is-active' : '' }}">
+                                            <td><p class="truncate font-mono font-semibold">{{ $t['name'] }}</p><p class="truncate text-[11px] text-[var(--ui-fg-muted)]">{{ str($t['sql'])->limit(28) }}</p></td>
+                                            <td class="text-right font-mono text-xs">{{ $t['count'] ?? '—' }}</td>
+                                            <td class="text-right"><a href="{{ route('database-manager.index', ['table' => $t['name']]) }}#tables" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">Buka</a></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody></table>
                             </div>
+                            <div class="db-table-pagination"><span id="table-pagination-info"></span><div class="flex gap-1"><button id="table-prev" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">‹</button><button id="table-next" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">›</button></div></div>
                         </aside>
 
-                        {{-- Main — detail --}}
-                        <div class="flex-1 min-w-0 bg-[var(--ui-surface-base)] flex flex-col">
+                        <div class="min-w-0 flex-1">
                             @if(!$table)
-                                <div class="flex-1 grid place-items-center p-8 text-center">
-                                    <div class="max-w-sm">
-                                        <div class="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600">🗂️</div>
-                                        <h4 class="mt-3 text-base font-bold text-slate-800">Pilih tabel di samping</h4>
-                                        <p class="mt-1 text-xs leading-relaxed text-slate-500">Daftar di kiri berisi semua tabel SQLite aktif. Klik untuk melihat <b>schema</b> & <b>15 baris data</b> secara live tanpa reload halaman penuh.</p>
-                                        <div class="mt-4 flex flex-wrap justify-center gap-1.5">
-                                            @foreach(collect($tables)->take(4) as $t)
-                                                <a href="{{ route('database-manager.index', ['table' => $t['name']]) }}#tables" class="rounded-full border bg-[var(--ui-surface-base)] px-2.5 py-1 text-xs font-mono hover:bg-slate-50">{{ $t['name'] }}</a>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
+                                <div class="db-empty-state h-full min-h-[420px]"><span class="db-icon-tile">SQL</span><strong>Pilih tabel untuk diperiksa</strong><span>Schema dan data akan ditampilkan tanpa mengubah isi database.</span></div>
                             @else
-                                {{-- Header --}}
-                                <div class="border-b bg-gradient-to-r from-slate-50 to-white px-4 py-3 sm:px-5">
-                                    <div class="flex flex-wrap items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <h4 class="font-mono text-base font-bold text-slate-800">{{ $table }}</h4>
-                                                <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">{{ $tableData?->total() ?? $tables[array_search($table, array_column($tables,'name'))]['count'] ?? '—' }} rows</span>
-                                                @if($schema)<span class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-0.5 text-[11px] font-bold text-slate-600">{{ count($schema) }} cols</span>@endif
-                                            </div>
-                                            <p class="mt-1 text-xs text-slate-500 line-clamp-1 font-mono">{{ collect($tables)->firstWhere('name',$table)['sql'] ?? '' }}</p>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <a href="{{ route('database-manager.index') }}#tables" class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">✕ Tutup</a>
-                                        </div>
-                                    </div>
-                                    {{-- Tabs Schema / Data --}}
-                                    <div class="mt-3 flex gap-1">
-                                        <button data-tm-tab="schema" class="tm-tab whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold border data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:border-indigo-600 data-[active=false]:bg-white data-[active=false]:border-slate-200 data-[active=false]:text-slate-600">Schema</button>
-                                        <button data-tm-tab="data" class="tm-tab whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold border data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:border-indigo-600 data-[active=false]:bg-white data-[active=false]:border-slate-200 data-[active=false]:text-slate-600">Data</button>
-                                    </div>
+                                <div class="db-table-detail-head">
+                                    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="font-mono text-lg font-bold text-[var(--ui-fg-strong)]">{{ $table }}</h3><span class="db-health-pill db-health-ok">{{ $tableData?->total() ?? collect($tables)->firstWhere('name', $table)['count'] ?? '—' }} rows</span>@if($schema)<span class="db-health-pill">{{ count($schema) }} kolom</span>@endif</div><p class="mt-1 truncate font-mono text-xs text-[var(--ui-fg-muted)]">{{ collect($tables)->firstWhere('name', $table)['sql'] ?? '' }}</p></div>
+                                    <a href="{{ route('database-manager.index') }}#tables" class="ui-btn ui-btn-secondary !min-h-0 !py-1.5 !text-xs">Tutup</a>
                                 </div>
-
-                                {{-- Schema Panel --}}
-                                <div data-tm-panel="schema" class="p-0">
+                                <div class="db-inner-tabs"><button type="button" data-tm-tab="schema" class="tm-tab">Schema</button><button type="button" data-tm-tab="data" class="tm-tab">Data</button></div>
+                                <div data-tm-panel="schema">
                                     @if($schema)
-                                        <div class="overflow-x-auto">
-                                            <table class="min-w-full text-xs">
-                                                <thead class="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wide text-slate-500 sticky top-0">
-                                                    <tr><th class="px-3 py-2 text-left font-semibold">COL</th><th class="px-3 py-2 text-left">Name</th><th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2 text-center">NN</th><th class="px-3 py-2 text-center">PK</th><th class="px-3 py-2 text-left">Default</th></tr>
-                                                </thead>
-                                                <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                                                    @foreach($schema as $col)
-                                                        <tr class="hover:bg-indigo-50/30 transition">
-                                                            <td class="px-3 py-2 font-mono text-slate-400">{{ $col->cid }}</td>
-                                                            <td class="px-3 py-2 font-mono font-semibold text-slate-800">{{ $col->name }} @if($col->pk)<span class="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[10px] text-amber-700">PK</span>@endif</td>
-                                                            <td class="px-3 py-2"><span class="rounded bg-[var(--ui-surface-muted)] px-1.5 py-0.5 font-mono text-[11px]">{{ $col->type }}</span></td>
-                                                            <td class="px-3 py-2 text-center">{{ $col->notnull ? '●' : '—' }}</td>
-                                                            <td class="px-3 py-2 text-center">{{ $col->pk ? '★' : '—' }}</td>
-                                                            <td class="px-3 py-2 font-mono text-slate-500 text-[11px]">{{ $col->dflt_value ?? '—' }}</td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                        <div class="overflow-x-auto"><table class="db-data-table min-w-[700px] w-full"><thead><tr><th>#</th><th>Nama kolom</th><th>Type</th><th>NN</th><th>PK</th><th>Default</th></tr></thead><tbody>@foreach($schema as $col)<tr><td class="font-mono text-xs">{{ $col->cid }}</td><td class="font-mono font-semibold">{{ $col->name }}</td><td><span class="db-code-chip">{{ $col->type }}</span></td><td>{{ $col->notnull ? 'Ya' : '—' }}</td><td>{{ $col->pk ? 'Ya' : '—' }}</td><td class="font-mono text-xs">{{ $col->dflt_value ?? '—' }}</td></tr>@endforeach</tbody></table></div>
                                     @endif
                                 </div>
-
-                                {{-- Data Panel --}}
-                                <div data-tm-panel="data" class="hidden flex flex-col">
+                                <div data-tm-panel="data" class="hidden">
                                     @if($tableData && $tableData->count())
-                                        <div class="overflow-auto max-h-[360px] lg:max-h-[420px] border-t">
-                                            <table class="min-w-[640px] w-full text-xs">
-                                                <thead class="bg-slate-900 text-slate-100 sticky top-0">
-                                                    <tr>@foreach(array_keys((array)$tableData->first()) as $h)<th class="px-3 py-2 text-left font-bold whitespace-nowrap tracking-wide text-[11px] uppercase">{{ $h }}</th>@endforeach</tr>
-                                                </thead>
-                                                <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                                                    @foreach($tableData as $idx => $row)
-                                                        <tr class="hover:bg-indigo-50/40 transition {{ $idx%2===0 ? 'bg-[var(--ui-surface-base)]' : 'bg-slate-50/30' }}">
-                                                            @foreach((array)$row as $v)
-                                                                <td class="px-3 py-2 max-w-[240px] truncate font-mono text-slate-700" title="{{ is_string($v) ? $v : json_encode($v) }}">
-                                                                    @if(is_null($v))<span class="text-slate-400 italic">NULL</span>@elseif($v==='' )<span class="text-slate-400">—</span>@else{{ str(is_string($v) ? $v : json_encode($v))->limit(90) }}@endif
-                                                                </td>
-                                                            @endforeach
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div class="border-t bg-[var(--ui-surface-soft)] px-3 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
-                                            <div class="flex items-center gap-2">
-                                                <x-page-table-per-page :total="$tableData->total()" />
-                                                <span class="hidden sm:inline text-slate-400">•</span>
-                                                <span class="text-slate-500">Menampilkan {{ $tableData->firstItem() }}–{{ $tableData->lastItem() }} dari {{ $tableData->total() }}</span>
-                                            </div>
-                                            <div class="flex gap-1">{{ $tableData->appends(['table'=>$table, 'perPage'=>request('perPage',15)])->links('pagination::simple-tailwind') }}</div>
-                                        </div>
+                                        <div class="max-h-[460px] overflow-auto"><table class="db-data-table min-w-[760px] w-full"><thead class="sticky top-0"><tr>@foreach(array_keys((array) $tableData->first()) as $heading)<th>{{ $heading }}</th>@endforeach</tr></thead><tbody>@foreach($tableData as $row)<tr>@foreach((array) $row as $value)<td class="max-w-[260px] truncate font-mono text-xs" title="{{ is_string($value) ? $value : json_encode($value) }}">@if(is_null($value))<em>NULL</em>@elseif($value === '')—@else{{ str(is_string($value) ? $value : json_encode($value))->limit(90) }}@endif</td>@endforeach</tr>@endforeach</tbody></table></div>
+                                        <div class="db-data-footer"><x-page-table-per-page :total="$tableData->total()" /><span>{{ $tableData->firstItem() }}–{{ $tableData->lastItem() }} dari {{ $tableData->total() }}</span><div>{{ $tableData->appends(['table' => $table, 'perPage' => request('perPage', 15)])->links('pagination::simple-tailwind') }}</div></div>
                                     @elseif($tableData)
-                                        <div class="p-10 text-center">
-                                            <p class="text-base font-medium text-slate-600">Tabel kosong</p>
-                                            <p class="mt-1 text-xs text-slate-400">Belum ada baris di {{ $table }}.</p>
-                                        </div>
+                                        <div class="db-empty-state">Tabel ini belum memiliki data.</div>
                                     @endif
                                 </div>
                             @endif
@@ -272,168 +257,180 @@
                 @endif
             </div>
 
-            {{-- Panel Diagnostic --}}
-            <div data-panel="diagnostic" class="hidden p-4 space-y-3">
+            <div data-panel="diagnostic" class="hidden db-panel space-y-4">
                 @if($activeStatus)
-                    <h3 class="text-base font-bold text-slate-800">Diagnostik: {{ $activeStatus['school']->name }}</h3>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div class="rounded-lg border p-3">
-                            <p class="text-xs font-bold text-slate-600">Integrity Check (PRAGMA)</p>
-                            <p class="mt-1 font-mono text-base {{ strtolower($activeStatus['integrity'])==='ok' ? 'text-emerald-700' : 'text-rose-700' }}">{{ $activeStatus['integrity'] }}</p>
-                            <form method="POST" action="{{ route('database-manager.integrity', $activeStatus['school']->id) }}" class="mt-2">@csrf<button class="rounded-md border border-[var(--ui-line)] px-2.5 py-1 text-xs font-bold hover:bg-slate-50">Run Check</button></form>
-                        </div>
-                        <div class="rounded-lg border p-3">
-                            <p class="text-xs font-bold text-slate-600">Table Counts (school connection)</p>
-                            <div class="mt-2 space-y-1 text-xs">@foreach($activeStatus['tableCounts'] as $tbl=>$cnt)<div class="flex justify-between border-b border-[var(--ui-line)] py-1"><span class="font-mono">{{ $tbl }}</span><span class="font-bold">{{ $cnt ?? 'error' }}</span></div>@endforeach</div>
-                        </div>
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <section class="db-card">
+                            <div class="db-card-header"><div><p class="db-eyebrow">Kesehatan file</p><h2 class="db-card-title">Diagnostik SQLite</h2></div><span class="db-health-pill {{ $integrityOk ? 'db-health-ok' : 'db-health-danger' }}">{{ $activeStatus['integrity'] ?? '—' }}</span></div>
+                            <div class="db-diagnostic-list">
+                                <div><span>File tersedia</span><strong>{{ $activeStatus['exists'] ? 'Ya' : 'Tidak' }}</strong></div>
+                                <div><span>Writable</span><strong>{{ $activeStatus['isWritable'] ? 'Ya' : 'Tidak' }}</strong></div>
+                                <div><span>Database</span><strong>{{ $fmtBytes($activeStatus['size']) }}</strong></div>
+                                <div><span>WAL</span><strong>{{ $fmtBytes($activeStatus['walSize']) }}</strong></div>
+                                <div><span>SHM</span><strong>{{ $fmtBytes($activeStatus['shmSize']) }}</strong></div>
+                                <div><span>Status</span><strong>{{ $activeStatus['status'] ?? '—' }}</strong></div>
+                            </div>
+                            <div class="p-4 pt-0"><form method="POST" action="{{ route('database-manager.integrity', $activeStatus['school']->id) }}">@csrf<x-ui.button type="submit">Jalankan integrity check</x-ui.button></form></div>
+                        </section>
+                        <section class="db-card">
+                            <div class="db-card-header"><div><p class="db-eyebrow">Teknis</p><h2 class="db-card-title">Koneksi & path</h2></div></div>
+                            <div class="p-4 space-y-3">
+                                <div class="db-path-box"><p class="db-eyebrow">Connection</p><p class="mt-1 font-mono text-xs">database.connections.school</p></div>
+                                <div class="db-path-box"><p class="db-eyebrow">Database path</p><p class="mt-1 break-all font-mono text-xs">{{ $activeStatus['path'] }}</p></div>
+                                @if($activeStatus['connectionError'])<x-ui.alert type="danger" title="Connection error">{{ $activeStatus['connectionError'] }}</x-ui.alert>@endif
+                            </div>
+                        </section>
                     </div>
-                    <div class="rounded-lg border bg-[var(--ui-surface-soft)] p-3 text-xs">
-                        <p class="font-bold text-slate-700">Path & Permissions</p>
-                        <p class="mt-1 font-mono break-all">{{ $activeStatus['path'] }}</p>
-                        <p class="mt-1">Exists: {{ $activeStatus['exists'] ? 'yes' : 'no' }} · Writable: {{ $activeStatus['isWritable'] ? 'yes' : 'no' }} · WAL {{ $fmtBytes($activeStatus['walSize']) }} · SHM {{ $fmtBytes($activeStatus['shmSize']) }}</p>
-                        @if($activeStatus['connectionError'])<p class="mt-1 text-rose-700">Connection error: {{ $activeStatus['connectionError'] }}</p>@endif
-                    </div>
+                    <section class="db-card">
+                        <div class="db-card-header"><div><p class="db-eyebrow">Record penting</p><h2 class="db-card-title">Table count yang dipantau</h2></div></div>
+                        <div class="db-table-counts db-table-counts-wide">@foreach($activeStatus['tableCounts'] as $tableName => $count)<div><span class="font-mono">{{ $tableName }}</span><strong>{{ $count ?? 'error' }}</strong></div>@endforeach</div>
+                    </section>
                 @else
-                    <p class="text-base text-slate-500">Tidak ada database aktif untuk didiagnosa.</p>
+                    <div class="db-empty-state">Tidak ada database aktif untuk didiagnostik.</div>
                 @endif
             </div>
 
-            {{-- Panel Maintenance --}}
-            <div data-panel="maintenance" class="hidden p-4 space-y-3">
+            <div data-panel="maintenance" class="hidden db-panel space-y-4">
                 @if($activeStatus)
-                    <h3 class="text-base font-bold text-slate-800">Maintenance: {{ $activeStatus['school']->name }}</h3>
-                    <p class="text-xs text-slate-500">Jalankan hanya saat perlu. Backup otomatis disarankan sebelum VACUUM/migrasi.</p>
-                    <div class="grid gap-3 sm:grid-cols-3">
-                        <form method="POST" action="{{ route('database-manager.migrate', $activeStatus['school']->id) }}" class="rounded-lg border p-3 bg-[var(--ui-surface-base)]">@csrf<button class="w-full rounded-md bg-indigo-600 px-3 py-1.5 text-base font-bold text-white hover:bg-indigo-700">▶ Migrate</button><p class="mt-1 text-xs text-slate-500">Jalankan <code>migrate --database=school</code> + update last_migrated_at.</p></form>
-                        <form method="POST" action="{{ route('database-manager.checkpoint', $activeStatus['school']->id) }}" class="rounded-lg border p-3 bg-[var(--ui-surface-base)]">@csrf<button class="w-full rounded-md bg-emerald-600 px-3 py-1.5 text-base font-bold text-white hover:bg-emerald-700">⬢ Checkpoint WAL</button><p class="mt-1 text-xs text-slate-500">PRAGMA wal_checkpoint(FULL) untuk flush WAL ke DB.</p></form>
-                        <form method="POST" action="{{ route('database-manager.vacuum', $activeStatus['school']->id) }}" class="rounded-lg border p-3 bg-[var(--ui-surface-base)]" data-confirm="VACUUM akan mengunci database sebentar. Lanjutkan?">@csrf<button class="w-full rounded-md bg-amber-600 px-3 py-1.5 text-base font-bold text-white hover:bg-amber-700">♻ Vacuum</button><p class="mt-1 text-xs text-slate-500">Reclaim space & defragment SQLite.</p></form>
+                    <div class="grid gap-4 xl:grid-cols-3">
+                        <section class="db-maintenance-card is-safe">
+                            <p class="db-eyebrow">Rutin / aman</p><h2>Checkpoint WAL</h2><p>Flush WAL ke file database utama. Cocok dijalankan saat WAL membesar atau sebelum backup.</p><form method="POST" action="{{ route('database-manager.checkpoint', $activeStatus['school']->id) }}">@csrf<x-ui.button type="submit">Jalankan checkpoint</x-ui.button></form>
+                        </section>
+                        <section class="db-maintenance-card is-caution">
+                            <p class="db-eyebrow">Struktur</p><h2>Migrasi database</h2><p>Jalankan seluruh migration school yang belum diterapkan pada tenant aktif.</p><form method="POST" action="{{ route('database-manager.migrate', $activeStatus['school']->id) }}">@csrf<x-ui.button type="submit">Jalankan migrasi</x-ui.button></form>
+                        </section>
+                        <section class="db-maintenance-card is-caution">
+                            <p class="db-eyebrow">Optimasi</p><h2>VACUUM SQLite</h2><p>Reclaim space dan defragment file. Dapat mengunci database sementara.</p><form method="POST" action="{{ route('database-manager.vacuum', $activeStatus['school']->id) }}" data-confirm="VACUUM akan mengunci database sebentar. Pastikan tidak ada proses aktif dan backup tersedia. Lanjutkan?">@csrf<x-ui.button type="submit">Jalankan VACUUM</x-ui.button></form>
+                        </section>
                     </div>
-                    <div class="flex gap-2">
-                        <form method="POST" action="{{ route('database-manager.provision', $activeStatus['school']->id) }}" data-confirm="Provision akan membuat file jika hilang dan menjalankan migrasi. Lanjutkan?">@csrf<button class="rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-1.5 text-xs font-bold hover:bg-slate-50">Provision Ulang</button></form>
-                        <a href="{{ route('school-backups.index') }}" class="rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-1.5 text-xs font-bold hover:bg-slate-50">Ke Backup & Restore →</a>
-                    </div>
+                    <section class="db-card">
+                        <div class="db-card-header"><div><p class="db-eyebrow">Pemulihan struktur</p><h2 class="db-card-title">Provision & backup</h2></div></div>
+                        <div class="grid gap-3 p-4 md:grid-cols-2">
+                            <form method="POST" action="{{ route('database-manager.provision', $activeStatus['school']->id) }}" class="db-action-card" data-confirm="Provision akan membuat file bila hilang dan menjalankan migrasi. Lanjutkan?">@csrf<button type="submit"><strong>Provision database</strong><span>Gunakan bila file tenant belum ada atau perlu dibuat ulang strukturnya tanpa reset total.</span></button></form>
+                            <a href="{{ route('school-backups.index') }}" class="db-action-card"><strong>Backup & Restore</strong><span>Buat backup sebelum migrasi besar, VACUUM, atau tindakan korektif.</span></a>
+                        </div>
+                    </section>
+                    <section class="db-danger-zone">
+                        <div><p class="db-eyebrow">Zona berbahaya</p><h2>Reset total database sekolah aktif</h2><p>Menghapus seluruh data tenant, SQLite sequence, WAL/SHM, lalu membangun kembali database. Hanya gunakan ketika benar-benar ingin memulai database sekolah dari nol.</p></div>
+                        <x-ui.button :href="route('database-manager.reset-form')">Buka halaman reset</x-ui.button>
+                    </section>
                 @else
-                    <p class="text-base text-slate-500">Pilih sekolah aktif dulu.</p>
+                    <div class="db-empty-state">Pilih sekolah aktif sebelum menjalankan maintenance.</div>
                 @endif
-                <div class="rounded-lg bg-slate-900 p-3 text-xs font-mono text-slate-300">
-                    <p class="font-bold text-white">Tips Maintenance</p>
-                    <p class="mt-1">• Service terpusat di <code>app/Services/SchoolDatabaseManager.php:1</code> - semua controller/middleware harus pakai ini, jangan Config::set manual.</p>
-                    <p>• Tambah sekolah baru → auto provision via <code>SchoolConfigurationController:61</code>.</p>
-                    <p>• Ganti DB aktif → <code>POST /pengaturan/database-aktif/{id}/activate</code> (update session + reconnect).</p>
-                    <p>• Cron: jalankan checkpoint harian untuk hindari WAL bengkak.</p>
-                </div>
             </div>
         </section>
 
-        <p class="text-xs text-slate-500">Modul ini menggantikan cek manual di <code>SchoolConfigurationController.php:12</code> & <code>AppServiceProvider.php:26</code> agar 1 sumber kebenaran untuk koneksi <code>school</code>.</p>
+        <section class="db-connection-footnote">
+            <div><p class="db-eyebrow">Sumber koneksi</p><strong>SchoolDatabaseManager adalah sumber kebenaran koneksi tenant.</strong><p>Jangan mengubah <code>config/database.php</code> secara manual. Aktivasi sekolah memperbarui session dan koneksi <code>school</code> secara terpusat.</p></div>
+            <code>{{ $active['database'] ?: 'database belum aktif' }}</code>
+        </section>
     </div>
 
     <script>
         (() => {
-            const btns = document.querySelectorAll('#db-tabs [data-tab]');
-            const panels = document.querySelectorAll('#db-tabs [data-panel]');
-            const key = 'db-manager-tab';
-            const set = (name) => {
-                btns.forEach(b => b.dataset.active = (b.dataset.tab===name).toString());
-                panels.forEach(p => p.classList.toggle('hidden', p.dataset.panel!==name));
-                localStorage.setItem(key, name);
-                history.replaceState(null,'','#'+name);
-            };
-            btns.forEach(b=>b.addEventListener('click',()=>set(b.dataset.tab)));
-            let init = location.hash.replace('#','') || localStorage.getItem(key) || 'overview';
-            const params = new URLSearchParams(location.search);
-            if (params.has('table')) init = 'tables';
-            set(['overview','list','tables','diagnostic','maintenance'].includes(init)?init:'overview');
+            const root = document.getElementById('db-tabs');
+            if (!root) return;
 
-            // Table Manager: sortable table + search + pagination (light, no reload, tidak perlu scroll panjang)
-            const search = document.getElementById('table-search');
-            const tbody = document.getElementById('table-list-body');
-            const prevBtn = document.getElementById('table-prev');
-            const nextBtn = document.getElementById('table-next');
-            const infoEl = document.getElementById('table-pagination-info');
-            if (tbody) {
-                const allRows = Array.from(tbody.querySelectorAll('tr'));
-                let filtered = [...allRows];
+            const buttons = root.querySelectorAll('[data-tab]');
+            const panels = root.querySelectorAll('[data-panel]');
+            const storageKey = 'db-manager-tab';
+            const validTabs = ['overview', 'list', 'tables', 'diagnostic', 'maintenance'];
+            const setTab = (name) => {
+                buttons.forEach(button => button.dataset.active = (button.dataset.tab === name).toString());
+                panels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.panel !== name));
+                localStorage.setItem(storageKey, name);
+                history.replaceState(null, '', '#'+name);
+            };
+            buttons.forEach(button => button.addEventListener('click', () => setTab(button.dataset.tab)));
+            let initialTab = location.hash.replace('#', '') || localStorage.getItem(storageKey) || 'overview';
+            if (new URLSearchParams(location.search).has('table')) initialTab = 'tables';
+            setTab(validTabs.includes(initialTab) ? initialTab : 'overview');
+
+            const schoolSearch = document.getElementById('database-school-search');
+            const schoolRows = Array.from(document.querySelectorAll('#database-school-list tr'));
+            const schoolEmpty = document.getElementById('database-school-empty');
+            if (schoolSearch) {
+                const filterSchools = () => {
+                    const query = schoolSearch.value.toLowerCase().trim();
+                    let visible = 0;
+                    schoolRows.forEach(row => {
+                        const match = !query || (row.dataset.search || '').includes(query);
+                        row.hidden = !match;
+                        if (match) visible++;
+                    });
+                    schoolEmpty?.classList.toggle('hidden', visible > 0);
+                };
+                schoolSearch.addEventListener('input', filterSchools);
+            }
+
+            const tableSearch = document.getElementById('table-search');
+            const tableBody = document.getElementById('table-list-body');
+            const previousButton = document.getElementById('table-prev');
+            const nextButton = document.getElementById('table-next');
+            const tableInfo = document.getElementById('table-pagination-info');
+            if (tableBody) {
+                const allRows = Array.from(tableBody.querySelectorAll('tr'));
+                let filteredRows = [...allRows];
                 let currentPage = 1;
                 const perPage = 15;
-                let sortKey = null;
-                let sortDir = 'asc';
+                let sortKey = 'name';
+                let sortDirection = 'asc';
 
-                const render = () => {
-                    allRows.forEach(r => r.style.display = 'none');
-                    const total = filtered.length;
-                    const totalPages = Math.max(1, Math.ceil(total / perPage));
-                    if (currentPage > totalPages) currentPage = totalPages;
-                    if (currentPage < 1) currentPage = 1;
-                    const start = (currentPage - 1) * perPage;
-                    const pageRows = filtered.slice(start, start + perPage);
-                    pageRows.forEach(r => r.style.display = '');
-                    if (infoEl) infoEl.textContent = total ? `${start+1}–${Math.min(start+perPage, total)} dari ${total}` : 'Tidak ada tabel';
-                    if (prevBtn) prevBtn.disabled = currentPage <= 1;
-                    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
-                };
-
-                const applySearch = () => {
-                    const q = (search?.value || '').toLowerCase().trim();
-                    filtered = allRows.filter(r => {
-                        const name = (r.dataset.name || '').toLowerCase();
-                        return !q || name.includes(q);
-                    });
-                    // keep current sort
-                    if (sortKey) {
-                        filtered.sort((a,b) => {
-                            let va = sortKey==='rows' ? parseInt(a.dataset.rows||0) : a.dataset.name;
-                            let vb = sortKey==='rows' ? parseInt(b.dataset.rows||0) : b.dataset.name;
-                            if (sortKey==='name') { va = String(va); vb = String(vb); return sortDir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
-                            return sortDir==='asc' ? va - vb : vb - va;
-                        });
-                    }
-                    currentPage = 1;
-                    render();
-                };
-
-                if (search) search.addEventListener('input', applySearch);
-
-                // sorting by header
-                document.querySelectorAll('th[data-sort]').forEach(th => {
-                    th.addEventListener('click', () => {
-                        const key = th.dataset.sort;
-                        if (sortKey === key) sortDir = sortDir==='asc' ? 'desc' : 'asc';
-                        else { sortKey = key; sortDir = 'asc'; }
-                        document.querySelectorAll('th[data-sort] .sort-icon').forEach(i=>i.textContent='↕');
-                        th.querySelector('.sort-icon').textContent = sortDir==='asc' ? '↑' : '↓';
-                        filtered.sort((a,b)=>{
-                            let va = key==='rows' ? parseInt(a.dataset.rows||0) : a.dataset.name;
-                            let vb = key==='rows' ? parseInt(b.dataset.rows||0) : b.dataset.name;
-                            if (key==='name') return sortDir==='asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-                            return sortDir==='asc' ? va - vb : vb - va;
-                        });
-                        render();
-                    });
+                const sortRows = () => filteredRows.sort((a, b) => {
+                    const aValue = sortKey === 'rows' ? parseInt(a.dataset.rows || '0', 10) : (a.dataset.name || '');
+                    const bValue = sortKey === 'rows' ? parseInt(b.dataset.rows || '0', 10) : (b.dataset.name || '');
+                    if (sortKey === 'name') return sortDirection === 'asc' ? String(aValue).localeCompare(String(bValue)) : String(bValue).localeCompare(String(aValue));
+                    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
                 });
 
-                if (prevBtn) prevBtn.addEventListener('click', ()=>{ currentPage--; render(); });
-                if (nextBtn) nextBtn.addEventListener('click', ()=>{ currentPage++; render(); });
+                const renderRows = () => {
+                    allRows.forEach(row => row.style.display = 'none');
+                    const total = filteredRows.length;
+                    const pages = Math.max(1, Math.ceil(total / perPage));
+                    currentPage = Math.min(Math.max(currentPage, 1), pages);
+                    const start = (currentPage - 1) * perPage;
+                    filteredRows.slice(start, start + perPage).forEach(row => row.style.display = '');
+                    if (tableInfo) tableInfo.textContent = total ? `${start + 1}–${Math.min(start + perPage, total)} dari ${total}` : 'Tidak ada tabel';
+                    if (previousButton) previousButton.disabled = currentPage <= 1;
+                    if (nextButton) nextButton.disabled = currentPage >= pages;
+                };
 
-                applySearch();
-                render();
+                const applyTableFilter = () => {
+                    const query = (tableSearch?.value || '').toLowerCase().trim();
+                    filteredRows = allRows.filter(row => !query || (row.dataset.name || '').includes(query));
+                    currentPage = 1;
+                    sortRows();
+                    renderRows();
+                };
+
+                tableSearch?.addEventListener('input', applyTableFilter);
+                root.querySelectorAll('th[data-sort]').forEach(header => header.addEventListener('click', () => {
+                    const key = header.dataset.sort;
+                    if (sortKey === key) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    else { sortKey = key; sortDirection = 'asc'; }
+                    root.querySelectorAll('th[data-sort] .sort-icon').forEach(icon => icon.textContent = '↕');
+                    header.querySelector('.sort-icon').textContent = sortDirection === 'asc' ? '↑' : '↓';
+                    sortRows();
+                    renderRows();
+                }));
+                previousButton?.addEventListener('click', () => { currentPage--; renderRows(); });
+                nextButton?.addEventListener('click', () => { currentPage++; renderRows(); });
+                applyTableFilter();
             }
-            // Table Manager: inner tabs Schema/Data (dynamic, no reload)
-            const tmBtns = document.querySelectorAll('.tm-tab');
-            const tmPanels = document.querySelectorAll('[data-tm-panel]');
-            const tmKey = 'tm-inner-tab';
-            const setTm = (name) => {
-                tmBtns.forEach(b => b.dataset.active = (b.dataset.tmTab===name).toString());
-                tmPanels.forEach(p => p.classList.toggle('hidden', p.dataset.tmPanel!==name));
-                localStorage.setItem(tmKey, name);
+
+            const innerButtons = root.querySelectorAll('.tm-tab');
+            const innerPanels = root.querySelectorAll('[data-tm-panel]');
+            const innerKey = 'tm-inner-tab';
+            const setInnerTab = (name) => {
+                innerButtons.forEach(button => button.dataset.active = (button.dataset.tmTab === name).toString());
+                innerPanels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.tmPanel !== name));
+                localStorage.setItem(innerKey, name);
             };
-            tmBtns.forEach(b=>b.addEventListener('click',()=>setTm(b.dataset.tmTab)));
-            if (tmBtns.length) {
-                const saved = localStorage.getItem(tmKey) || 'schema';
-                setTm(['schema','data'].includes(saved) ? saved : 'schema');
-                // jika data kosong, paksa ke schema
-                const hasData = document.querySelector('[data-tm-panel=data] table');
-                if (!hasData) setTm('schema');
+            innerButtons.forEach(button => button.addEventListener('click', () => setInnerTab(button.dataset.tmTab)));
+            if (innerButtons.length) {
+                let saved = localStorage.getItem(innerKey) || 'schema';
+                if (!root.querySelector('[data-tm-panel="data"] table')) saved = 'schema';
+                setInnerTab(['schema', 'data'].includes(saved) ? saved : 'schema');
             }
         })();
     </script>
