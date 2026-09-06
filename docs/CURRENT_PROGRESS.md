@@ -170,22 +170,11 @@ Workflow/validasi/download tidak diubah oleh perubahan layout ini.
 
 ### 6.3 Isian Manual
 
-Tab Isian Manual dinormalisasi agar mengikuti tema aktif:
-
-- surface utama dan surface sekunder;
-- font strong/normal/muted;
-- input/select/textarea;
-- readonly/disabled;
-- panel semantic;
-- panel pajak;
-- focus state;
-- margin/gap antar panel.
-
-Spacing top-level panel saat ini dinormalisasi sekitar `.875rem` desktop dan `.75rem` mobile pada compatibility layer Paket.
+Tab Isian Manual dinormalisasi agar mengikuti tema aktif untuk surface, font, control, panel semantic, panel pajak, focus state, dan spacing.
 
 ### 6.4 Penomoran
 
-Quarter selector `/spj/penomoran` memiliki normal/hover/active state yang mengikuti token theme, bukan `hover:bg-slate-50` statis.
+Quarter selector `/spj/penomoran` memiliki normal/hover/active state yang mengikuti token theme.
 
 ---
 
@@ -198,20 +187,19 @@ resources/css/app.css
 └── resources/css/theme-system.css
 ```
 
-Bagian akhir cascade saat ini:
+Layer penting saat ini termasuk:
 
 ```text
+settings-database-standardization.css
 dark-form-controls.css
 spj-package-theme-fix.css
 spj-package-document-placement.css
 ```
 
-`spj-package-theme-fix.css` menjadi compatibility/safety layer untuk markup Paket yang masih memiliki class warna Tailwind lama. `spj-package-document-placement.css` khusus struktur dua panel di sub-tab Rincian.
-
 Aturan kode baru:
 
 - gunakan `x-ui.*` / `ui-*` bila tersedia;
-- warna utama memakai token `--ui-*`, `--theme-*`, atau `--spj-*`;
+- warna utama memakai token `--ui-*`, `--theme-*`, atau feature token yang memetakan ke token tersebut;
 - Tailwind tetap dipakai untuk layout/spacing/responsive;
 - jangan menambah hard-coded surface/accent yang seharusnya theme-aware.
 
@@ -221,86 +209,99 @@ Acuan rinci: `docs/CSS_USAGE_GUIDE.md`.
 
 ## 8. SiPLah — status saat ini
 
-SiPLah bukan kategori SPJ. Kategori tetap:
+SiPLah bukan kategori SPJ. Kategori tetap `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `SPPD`, `HONOR_PEGAWAI`, dan `JASA_LAINNYA`.
 
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-SPPD
-HONOR_PEGAWAI
-JASA_LAINNYA
-```
+Dukungan yang sudah ada mencakup `payment_method = siplah`, `siplah_order_number`, vendor/owner/NPWP, invoice, referensi pembayaran, placeholder template SiPLah, dan policy requirement yang membedakan SiPLah vs Non-SiPLah.
 
-Dukungan yang sudah ada mencakup:
-
-- `payment_method = siplah`;
-- `siplah_order_number`;
-- vendor/owner/NPWP;
-- invoice dan referensi pembayaran;
-- placeholder template SiPLah;
-- policy requirement yang membedakan SiPLah vs Non-SiPLah.
-
-Status bukan lagi “belum ada sama sekali”, tetapi **partial/in progress**. End-to-end verification dan ownership field masih harus dijaga.
+Status masih **partial/in progress**.
 
 ---
 
 ## 9. GUI standardization — status
 
-Fondasi global tersedia:
-
-- sidebar persisten;
-- breadcrumb sticky;
-- page header/summary;
-- sticky `Ke atas`;
-- form/button/table primitives;
-- pagination/per-page;
-- alert, empty state, modal, badge, detail, toolbar;
-- loading/skeleton, action menu, sticky actions, danger zone;
-- theme profile + dark appearance;
-- compatibility layers untuk markup lama.
+Fondasi global tersedia: sidebar persisten, breadcrumb sticky, page header/summary, sticky `Ke atas`, form/button/table primitives, pagination/per-page, alert, empty state, modal, badge, detail, toolbar, loading/skeleton, action menu, sticky actions, danger zone, theme profile + dark appearance, dan compatibility layer untuk markup lama.
 
 Target sekarang bukan membuat design system baru, tetapi mengurangi markup legacy saat halaman disentuh dan menjaga konsistensi theme.
 
 ---
 
-## 10. Mobile QA
+## 10. Pengaturan → Database Aktif — redesign total
 
-`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Perubahan Paket terbaru juga harus masuk regression mobile sebelum aplikasi disebut mobile-verified.
+Halaman `/pengaturan/database-aktif` sekarang menjadi **Pusat Kontrol Database Sekolah**, bukan lagi halaman maintenance teknis yang padat tanpa hierarchy.
+
+Struktur baru:
+
+```text
+Page Header + status database aktif
+→ Ringkasan
+→ Database Sekolah
+→ Explorer Tabel
+→ Diagnostik
+→ Maintenance
+```
+
+Informasi yang ditonjolkan:
+
+- sekolah/NPSN dan koneksi aktif;
+- health level serta issue aktif;
+- ukuran DB/WAL/SHM;
+- integrity check;
+- writable/file existence;
+- migrasi terakhir;
+- jumlah database, tabel, dan record penting;
+- lokasi file SQLite;
+- status koneksi seluruh database sekolah.
+
+Fitur UX yang tersedia:
+
+- pencarian database berdasarkan nama sekolah/NPSN;
+- Explorer Tabel dengan pencarian, sort, pagination lokal, schema dan data read-only;
+- quick action untuk integrity check, WAL checkpoint, migrasi, dan backup;
+- maintenance dipisahkan menurut tingkat risiko;
+- zona reset total dibuat eksplisit dan diarahkan ke halaman konfirmasi reset;
+- semua panel memakai token theme dan tetap mendukung dark appearance.
+
+Action backend, route, audit, reset safety, migrate/checkpoint/vacuum/provision tetap memakai `DatabaseManagerController` dan `SchoolDatabaseManager`; redesign tidak mengubah lifecycle database tenant.
+
+CSS canonical halaman ini berada di:
+
+```text
+resources/css/settings-database-standardization.css
+```
 
 ---
 
-## 11. Testing dan verification
+## 11. Mobile QA
+
+`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Halaman Database Aktif terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
+
+---
+
+## 12. Testing dan verification
 
 Jangan menganggap seluruh suite hijau hanya karena test tertentu pernah PASS.
 
-Setelah backend berubah:
-
-```text
-php artisan test --compact <test relevan>
-```
-
-Setelah frontend berubah:
+Setelah backend berubah gunakan test relevan; setelah frontend berubah jalankan:
 
 ```text
 npm run build
 ```
 
-Perubahan dokumentasi saja tidak membutuhkan build.
+Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 
 ---
 
-## 12. Technical debt yang harus terlihat jelas
+## 13. Technical debt yang harus terlihat jelas
 
 1. Validasi tanggal pengadaan belum identik antara Detail Transaksi dan Paket.
 2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
 3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
-4. Mobile regression belum ditutup.
+4. Mobile regression belum ditutup, termasuk Database Aktif v2.
 5. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
 
 ---
 
-## 13. Prioritas berikutnya
+## 14. Prioritas berikutnya
 
 1. Seragamkan purchase-date rules antar endpoint.
 2. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
@@ -309,12 +310,12 @@ Perubahan dokumentasi saja tidak membutuhkan build.
 5. Finalisasi rekonsiliasi ARKAS snapshot/diff.
 6. Hardening authorization per role.
 7. End-to-end test seluruh kategori.
-8. Selesaikan mobile visual QA.
+8. Selesaikan mobile visual QA termasuk Database Aktif v2.
 9. Laporan BOS dan release hardening.
 
 ---
 
-## 14. Dokumen yang harus dibaca bersama
+## 15. Dokumen yang harus dibaca bersama
 
 ```text
 README.md
