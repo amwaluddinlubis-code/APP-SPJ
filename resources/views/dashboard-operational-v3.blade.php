@@ -40,6 +40,19 @@
             </div>
         </x-page-header>
 
+        <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
+            <div class="flex flex-wrap items-end justify-between gap-3"><div><h2 class="font-bold text-[var(--ui-fg-strong)]">Alur kerja SPJ</h2><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Kerjakan dari kiri ke kanan agar transaksi tidak tertinggal sebelum penomoran.</p></div><span class="text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $summary['transactions'] }} transaksi aktif</span></div>
+            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                @foreach($pipeline as $index => $stage)
+                    <a href="{{ $stage['url'] }}" class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 transition hover:border-[var(--theme-accent)]">
+                        <div class="flex items-center justify-between"><span class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $index + 1 }} · {{ $stage['label'] }}</span><span class="text-2xl font-bold text-[var(--ui-fg-strong)]">{{ $stage['count'] }}</span></div>
+                        <p class="mt-2 text-sm text-[var(--ui-fg-muted)]">{{ $stage['description'] }}</p>
+                        <span class="mt-3 inline-flex text-xs font-bold theme-text">{{ $stage['action'] }} →</span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+
         <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-[var(--ui-surface-base)] shadow-sm">
             <div class="grid lg:grid-cols-[1.15fr_.85fr]">
                 <div class="bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 px-5 py-6 text-white sm:px-6 lg:px-7 lg:py-7">

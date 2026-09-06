@@ -32,6 +32,13 @@ class OperationalDashboardController extends Controller
             'source_missing' => (clone $transactions)->where('source_status', 'SOURCE_MISSING')->count(),
         ];
 
+        $pipeline = [
+            ['key' => 'unprepared', 'label' => 'Belum disentuh', 'count' => $summary['without_package'], 'description' => 'Transaksi belum memiliki paket SPJ.', 'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']), 'action' => 'Mulai lengkapi'],
+            ['key' => 'draft', 'label' => 'Perlu dilengkapi', 'count' => $summary['draft'], 'description' => 'Paket dibuat tetapi belum siap dinomori.', 'url' => route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']), 'action' => 'Buka checklist'],
+            ['key' => 'ready', 'label' => 'Siap dinomori', 'count' => $summary['ready'], 'description' => 'Paket lengkap dan menunggu penomoran.', 'url' => route('spj.numbering-workflow'), 'action' => 'Tinjau penomoran'],
+            ['key' => 'done', 'label' => 'Selesai', 'count' => $summary['numbered'] + $summary['final'], 'description' => 'Paket sudah bernomor atau final.', 'url' => route('spj.index', ['tab' => 'paket']), 'action' => 'Lihat paket'],
+        ];
+
         $attentionCount = $summary['without_package'] + $summary['draft'] + $summary['reconciliation'] + $summary['source_missing'];
 
         $quarterSummary = collect(range(1, 4))->map(function (int $quarter) use ($transactions): array {
@@ -196,7 +203,7 @@ class OperationalDashboardController extends Controller
 
         return view('dashboard-operational-v3', compact(
             'school', 'year', 'summary', 'attentionCount', 'quarterSummary', 'workQueue',
-            'latestSync', 'latestOperation', 'nextActions', 'startHere', 'otherActions'
+            'latestSync', 'latestOperation', 'nextActions', 'startHere', 'otherActions', 'pipeline'
         ));
     }
 }
