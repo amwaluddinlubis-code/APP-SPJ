@@ -1,485 +1,109 @@
-/* Database Control Center — semantic visual redesign.
-   Visual-only layer: all database actions, routes, confirmations, table-manager
-   behaviour and persistence remain owned by the existing Blade/controllers. */
-
-main:has(#db-tabs),
-main:has(form[action*="database-manager"]) {
-    --db-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
-    --db-surface-soft: var(--ui-surface-muted, var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc)));
-    --db-border: var(--ui-line, var(--ui-component-border, var(--ui-border, #dbe3ec)));
-    --db-border-strong: var(--ui-line-strong, var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)));
-    --db-text: var(--ui-fg, var(--ui-component-text, var(--text-comfort-primary, #334155)));
-    --db-text-strong: var(--ui-fg-strong, var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937)));
-    --db-text-muted: var(--ui-fg-muted, var(--ui-component-text-muted, var(--text-comfort-muted, #718096)));
-    --db-radius: var(--profile-card-radius, 1rem);
-    --db-control-radius: var(--profile-control-radius, .625rem);
-}
-
-/* --------------------------------------------------------------------------
-   Page hero / active database summary
-   -------------------------------------------------------------------------- */
-
-main:has(#db-tabs) > div > section:first-of-type {
-    overflow: hidden;
-    border: 1px solid var(--db-border) !important;
-    border-radius: var(--profile-header-radius, var(--db-radius)) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > div:first-child {
-    position: relative;
-    background:
-        radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--theme-accent) 24%, transparent) 0, transparent 34%),
-        linear-gradient(135deg, var(--theme-sidebar-deep), color-mix(in srgb, var(--theme-sidebar) 86%, var(--theme-accent-strong))) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > div:first-child :is(h1,strong) {
-    color: var(--text-comfort-on-dark) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > div:first-child :is(p,code,span) {
-    color: var(--text-comfort-on-dark-soft) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > div:first-child > p:first-child {
-    color: var(--text-comfort-on-dark-muted) !important;
-}
-
-/* Turn the lower strip into a compact operational summary. */
-main:has(#db-tabs) > div > section:first-of-type > .grid {
-    gap: 0 !important;
-    border-top: 1px solid var(--db-border) !important;
-    background: var(--db-surface) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > .grid > div {
-    min-width: 0;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-    box-shadow: none !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > .grid > div + div {
-    border-top: 1px solid var(--db-border) !important;
-}
-
-@media (min-width: 640px) {
-    main:has(#db-tabs) > div > section:first-of-type > .grid > div + div {
-        border-top: 0 !important;
-        border-left: 1px solid var(--db-border) !important;
-    }
-}
-
-main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-slate-900,.text-slate-800,.text-slate-700) {
-    color: var(--db-text-strong) !important;
-}
-
-main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-slate-600,.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Workspace shell and navigation
-   -------------------------------------------------------------------------- */
-
-main #db-tabs {
-    overflow: hidden;
-    border: 1px solid var(--db-border) !important;
-    border-radius: var(--db-radius) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main #db-tabs > div:first-child {
-    border-color: var(--db-border) !important;
-    background: var(--db-surface-soft) !important;
-}
-
-main #db-tabs > div:first-child nav {
-    gap: .25rem !important;
-    padding: .45rem !important;
-}
-
-main #db-tabs .tab-btn {
-    min-height: 2.65rem;
-    border: 1px solid transparent !important;
-    border-radius: var(--db-control-radius) !important;
-    background: transparent !important;
-    color: var(--db-text-muted) !important;
-    box-shadow: none !important;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
-}
-
-main #db-tabs .tab-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent-soft) 28%, var(--db-surface)) !important;
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs .tab-btn[data-active="true"],
-main #db-tabs .tab-btn[data-active=true] {
-    border-color: color-mix(in srgb, var(--theme-content-accent) 22%, var(--db-border)) !important;
-    background: var(--db-surface) !important;
-    color: var(--theme-content-accent) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Overview: dashboard-like health cards
-   -------------------------------------------------------------------------- */
-
-main #db-tabs [data-panel="overview"] {
-    background: var(--db-surface) !important;
-}
-
-main #db-tabs [data-panel="overview"] > .grid > div {
-    border: 1px solid var(--db-border) !important;
-    border-radius: calc(var(--db-radius) * .78) !important;
-    background: var(--db-surface-soft) !important;
-    color: var(--db-text) !important;
-    box-shadow: none !important;
-}
-
-main #db-tabs [data-panel="overview"] > .grid > div > p:first-child {
-    color: var(--db-text-muted) !important;
-    letter-spacing: .08em;
-}
-
-main #db-tabs [data-panel="overview"] > .grid > div > p:nth-child(2) {
-    color: var(--db-text-strong) !important;
-    font-size: 1.05rem;
-}
-
-main #db-tabs [data-panel="overview"] :is(.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-/* Technical connection block intentionally remains dark and secondary. */
-main #db-tabs [data-panel="overview"] > .bg-slate-900,
-main #db-tabs [data-panel="maintenance"] > .bg-slate-900 {
-    border: 1px solid color-mix(in srgb, var(--text-comfort-on-dark) 14%, transparent) !important;
-    border-radius: calc(var(--db-radius) * .8) !important;
-    background: color-mix(in srgb, var(--theme-sidebar-deep) 96%, #020617) !important;
-    color: var(--text-comfort-on-dark-soft) !important;
-}
-
-main #db-tabs :is([data-panel="overview"],[data-panel="maintenance"]) > .bg-slate-900 :is(p,code,span) {
-    color: var(--text-comfort-on-dark-soft) !important;
-}
-
-main #db-tabs :is([data-panel="overview"],[data-panel="maintenance"]) > .bg-slate-900 .text-white {
-    color: var(--text-comfort-on-dark) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Database school list
-   -------------------------------------------------------------------------- */
-
-main #db-tabs [data-panel="list"] table {
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-}
-
-main #db-tabs [data-panel="list"] thead {
-    background: var(--db-surface-soft) !important;
-    color: var(--db-text-muted) !important;
-}
-
-main #db-tabs [data-panel="list"] :is(th,td) {
-    border-color: var(--db-border) !important;
-}
-
-main #db-tabs [data-panel="list"] tbody tr {
-    background: var(--db-surface) !important;
-}
-
-main #db-tabs [data-panel="list"] tbody tr:hover {
-    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--db-surface)) !important;
-}
-
-main #db-tabs [data-panel="list"] tbody tr[class*="bg-indigo"] {
-    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--db-surface)) !important;
-}
-
-main #db-tabs [data-panel="list"] :is(.text-slate-900,.text-slate-800,.text-slate-700) {
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs [data-panel="list"] :is(.text-slate-600,.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Table Manager — master/detail control-center layout
-   -------------------------------------------------------------------------- */
-
-main #db-tabs [data-panel="tables"] > div.flex {
-    background: var(--db-surface) !important;
-}
-
-main #db-tabs [data-panel="tables"] aside {
-    border-color: var(--db-border) !important;
-    background: var(--db-surface-soft) !important;
-}
-
-main #db-tabs [data-panel="tables"] aside > div:first-child {
-    border-color: var(--db-border) !important;
-    background: color-mix(in srgb, var(--db-surface) 94%, transparent) !important;
-    backdrop-filter: blur(12px);
-}
-
-main #db-tabs [data-panel="tables"] aside table,
-main #db-tabs [data-panel="tables"] aside thead,
-main #db-tabs [data-panel="tables"] aside tbody,
-main #db-tabs [data-panel="tables"] aside tr {
-    background: transparent !important;
-}
-
-main #db-tabs [data-panel="tables"] aside tbody tr:hover {
-    background: color-mix(in srgb, var(--theme-content-accent) 6%, var(--db-surface-soft)) !important;
-}
-
-main #db-tabs [data-panel="tables"] aside tbody tr[class*="bg-indigo"],
-main #db-tabs [data-panel="tables"] aside tbody tr[data-active="true"] {
-    background: color-mix(in srgb, var(--theme-accent-soft) 44%, var(--db-surface)) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(.bg-white,.bg-slate-50,.bg-slate-50\/20,.bg-slate-50\/30,.bg-slate-50\/40,.bg-slate-50\/60,.bg-slate-50\/70) {
-    background-color: var(--db-surface) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(.border-slate-100,.border-slate-200,.border-slate-300) {
-    border-color: var(--db-border) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(.text-slate-900,.text-slate-800,.text-slate-700) {
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(.text-slate-600,.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(th[data-sort],.tm-tab) {
-    color: var(--db-text-muted) !important;
-}
-
-main #db-tabs [data-panel="tables"] :is(th[data-sort],.tm-tab):hover {
-    background: var(--db-surface-soft) !important;
-    color: var(--theme-content-accent) !important;
-}
-
-main #db-tabs [data-panel="tables"] .tm-tab[data-active="true"] {
-    border-color: color-mix(in srgb, var(--theme-content-accent) 22%, var(--db-border)) !important;
-    background: var(--db-surface) !important;
-    color: var(--theme-content-accent) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Forms and controls
-   -------------------------------------------------------------------------- */
-
-main #db-tabs :is(input,select,textarea) {
-    border-color: var(--db-border-strong) !important;
-    border-radius: var(--db-control-radius) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs :is(input,textarea)::placeholder {
-    color: var(--db-text-muted) !important;
-    opacity: 1;
-}
-
-main #db-tabs :is(input,select,textarea):hover:not(:disabled):not([readonly]) {
-    border-color: color-mix(in srgb, var(--theme-content-accent) 34%, var(--db-border-strong)) !important;
-}
-
-main #db-tabs :is(input,select,textarea):focus-visible {
-    border-color: var(--theme-content-accent) !important;
-    outline: 2px solid color-mix(in srgb, var(--theme-content-accent) 34%, transparent) !important;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-content-accent) 10%, transparent) !important;
-}
-
-main #db-tabs :is(input,select,textarea):disabled,
-main #db-tabs :is(input,select,textarea)[readonly] {
-    background: var(--db-surface-soft) !important;
-    color: var(--db-text-muted) !important;
-}
-
-/* Primary database actions: Yellow Bright keeps its intentional dark foreground. */
-main #db-tabs :is(button,a)[class*="bg-indigo-600"],
-main #db-tabs :is(button,a)[class*="bg-indigo-700"] {
-    border-color: color-mix(in srgb, var(--theme-action-bg) 70%, var(--db-border-strong)) !important;
-    background: var(--theme-action-bg) !important;
-    color: var(--theme-action-fg) !important;
-}
-
-main #db-tabs :is(button,a)[class*="bg-indigo-600"]:hover,
-main #db-tabs :is(button,a)[class*="bg-indigo-700"]:hover {
-    background: var(--theme-action-hover-bg, var(--theme-action-bg)) !important;
-    color: var(--theme-action-fg) !important;
-}
-
-/* Neutral actions. */
-main #db-tabs :is(button,a)[class*="bg-white"],
-main #db-tabs button[class*="border-slate"],
-main #db-tabs a[class*="border-slate"] {
-    border-color: var(--db-border-strong) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-}
-
-main #db-tabs :is(button,a)[class*="bg-white"]:hover,
-main #db-tabs button[class*="border-slate"]:hover,
-main #db-tabs a[class*="border-slate"]:hover {
-    background: var(--db-surface-soft) !important;
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs :is(button,a) svg {
-    color: currentColor;
-    stroke: currentColor;
-}
-
-/* --------------------------------------------------------------------------
-   Diagnostic
-   -------------------------------------------------------------------------- */
-
-main #db-tabs [data-panel="diagnostic"] > .grid > div,
-main #db-tabs [data-panel="diagnostic"] > .rounded-lg {
-    border-color: var(--db-border) !important;
-    border-radius: calc(var(--db-radius) * .78) !important;
-    background: var(--db-surface-soft) !important;
-    color: var(--db-text) !important;
-}
-
-main #db-tabs [data-panel="diagnostic"] :is(.text-slate-800,.text-slate-700,.text-slate-600) {
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs [data-panel="diagnostic"] :is(.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Maintenance — visual risk hierarchy
-   -------------------------------------------------------------------------- */
-
-main #db-tabs [data-panel="maintenance"] > .grid > form {
-    border: 1px solid var(--db-border) !important;
-    border-radius: calc(var(--db-radius) * .8) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-    box-shadow: none !important;
-}
-
-main #db-tabs [data-panel="maintenance"] > .grid > form:hover {
-    border-color: color-mix(in srgb, var(--theme-content-accent) 22%, var(--db-border)) !important;
-}
-
-main #db-tabs [data-panel="maintenance"] :is(.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-/* Success/warning/destructive actions remain semantic instead of theme-primary. */
-main #db-tabs [data-panel="maintenance"] button.bg-emerald-600 {
-    background: #4d7f6a !important;
-    color: var(--text-comfort-on-dark) !important;
-}
-
-main #db-tabs [data-panel="maintenance"] button.bg-amber-600 {
-    background: #91662d !important;
-    color: var(--text-comfort-on-dark) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Generic compatibility inside database workspace
-   -------------------------------------------------------------------------- */
-
-main #db-tabs :is(.border-slate-100,.border-slate-200,.border-slate-300) {
-    border-color: var(--db-border) !important;
-}
-
-main #db-tabs :is(.text-slate-900,.text-slate-800,.text-slate-700) {
-    color: var(--db-text-strong) !important;
-}
-
-main #db-tabs :is(.text-slate-600,.text-slate-500,.text-slate-400) {
-    color: var(--db-text-muted) !important;
-}
-
-main #db-tabs table:not(.fi-ta-table):not([data-ui-table="off"]) thead {
-    background: var(--db-surface-soft) !important;
-}
-
-main #db-tabs table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td) {
-    border-color: var(--db-border) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Reset page — keep destructive semantics but align geometry/surfaces
-   -------------------------------------------------------------------------- */
-
-main:has(form[action*="database-manager/reset"]) section:first-of-type,
-main:has(form[action*="database-manager"][data-confirm]) section:first-of-type {
-    border-color: color-mix(in srgb, var(--text-comfort-danger) 32%, var(--db-border)) !important;
-    border-radius: var(--profile-header-radius, var(--db-radius)) !important;
-    background: var(--db-surface) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:first-of-type > div:first-child {
-    background:
-        radial-gradient(circle at 88% 12%, color-mix(in srgb, #be123c 20%, transparent) 0, transparent 34%),
-        linear-gradient(135deg, var(--theme-sidebar-deep), color-mix(in srgb, #881337 72%, var(--theme-sidebar))) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(.font-mono):not(:has(form)) {
-    border-color: var(--db-border) !important;
-    border-radius: var(--db-radius) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) {
-    border-color: color-mix(in srgb, var(--text-comfort-danger) 38%, var(--db-border)) !important;
-    border-radius: var(--db-radius) !important;
-    background: color-mix(in srgb, #ffe4e6 24%, var(--db-surface)) !important;
-    color: var(--db-text) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) :is(h2,strong) {
-    color: var(--text-comfort-danger) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) p {
-    color: color-mix(in srgb, var(--text-comfort-danger) 62%, var(--db-text)) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) form > div:last-child {
-    border-color: color-mix(in srgb, var(--text-comfort-danger) 24%, var(--db-border)) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) a[class*="bg-white"] {
-    border-color: var(--db-border-strong) !important;
-    background: var(--db-surface) !important;
-    color: var(--db-text) !important;
-}
-
-main:has(form[action*="database-manager"][data-confirm]) section:has(form[data-confirm]) a[class*="text-indigo"] {
-    color: var(--theme-content-accent) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    main:has(#db-tabs) :is(a,button,input,select,textarea) {
-        transition: none !important;
-    }
-}
+/* Database Control Center v2 — theme-aware operational workspace. */
+#database-control-center {
+    --db-surface: var(--ui-surface-base, #fff);
+    --db-soft: var(--ui-surface-soft, #f8fafc);
+    --db-muted: var(--ui-surface-muted, #f1f5f9);
+    --db-border: var(--ui-line, #dbe3ec);
+    --db-border-strong: var(--ui-line-strong, #cbd5e1);
+    --db-text: var(--ui-fg, #334155);
+    --db-strong: var(--ui-fg-strong, #1f2937);
+    --db-subtle: var(--ui-fg-muted, #64748b);
+    color: var(--db-text);
+}
+#database-control-center .db-eyebrow{font-size:.6875rem;font-weight:800;letter-spacing:.095em;text-transform:uppercase;color:var(--db-subtle)}
+#database-control-center .db-hero-summary{overflow:hidden;border-top:1px solid var(--db-border);background:var(--db-surface)}
+#database-control-center .db-hero-stat{min-width:0;padding:.9rem 1rem;background:var(--db-surface)}
+#database-control-center .db-hero-stat+.db-hero-stat{border-top:1px solid var(--db-border)}
+@media(min-width:640px){#database-control-center .db-hero-stat+.db-hero-stat{border-top:0}#database-control-center .db-hero-stat:nth-child(even){border-left:1px solid var(--db-border)}#database-control-center .db-hero-stat:nth-child(n+3){border-top:1px solid var(--db-border)}}
+@media(min-width:1280px){#database-control-center .db-hero-stat+.db-hero-stat{border-left:1px solid var(--db-border)}#database-control-center .db-hero-stat:nth-child(n+3){border-top:0}}
+#database-control-center .db-workspace,#database-control-center .db-card,#database-control-center .db-metric-card{border:1px solid var(--db-border);background:var(--db-surface);box-shadow:var(--profile-card-shadow)}
+#database-control-center .db-workspace{overflow:hidden;border-radius:var(--profile-card-radius,1rem)}
+#database-control-center .db-card,#database-control-center .db-metric-card{border-radius:calc(var(--profile-card-radius,1rem)*.82)}
+#database-control-center .db-tabbar{padding:.45rem;border-bottom:1px solid var(--db-border);background:var(--db-soft)}
+#database-control-center .tab-btn{min-height:2.55rem;white-space:nowrap;border:1px solid transparent;border-radius:var(--profile-control-radius,.625rem);padding:.58rem .85rem;font-size:.8125rem;font-weight:750;color:var(--db-subtle);transition:.15s}
+#database-control-center .tab-btn:hover{background:color-mix(in srgb,var(--theme-accent) 7%,var(--db-surface));color:var(--db-strong)}
+#database-control-center .tab-btn[data-active="true"]{border-color:color-mix(in srgb,var(--theme-accent) 25%,var(--db-border));background:var(--db-surface);color:var(--theme-content-accent);box-shadow:var(--profile-card-shadow)}
+#database-control-center .db-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:1.35rem;margin-left:.3rem;border-radius:999px;padding:.05rem .35rem;background:var(--db-muted);color:var(--db-subtle);font-size:.65rem;font-weight:800}
+#database-control-center .tab-btn[data-active="true"] .db-tab-count{background:color-mix(in srgb,var(--theme-accent) 12%,var(--db-surface));color:var(--theme-content-accent)}
+#database-control-center .db-panel{padding:1rem;background:var(--db-surface)}
+#database-control-center .db-metric-card{padding:1rem}
+#database-control-center .db-metric-value{margin-top:.25rem;font-size:1.35rem;line-height:1.25;font-weight:800;color:var(--db-strong)}
+#database-control-center .db-metric-hint{margin-top:.65rem;font-size:.75rem;line-height:1.45;color:var(--db-subtle)}
+#database-control-center .db-icon-tile{display:inline-grid;place-items:center;min-width:2.35rem;height:2.35rem;border:1px solid color-mix(in srgb,var(--theme-accent) 18%,var(--db-border));border-radius:.7rem;background:color-mix(in srgb,var(--theme-accent) 8%,var(--db-soft));color:var(--theme-content-accent);font-size:.68rem;font-weight:900}
+#database-control-center .db-card-header,#database-control-center .db-section-toolbar,#database-control-center .db-table-detail-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.9rem 1rem;border-bottom:1px solid var(--db-border);background:color-mix(in srgb,var(--theme-accent) 6%,var(--db-soft))}
+#database-control-center .db-card-title{font-size:.95rem;font-weight:800;color:var(--db-strong)}
+#database-control-center .db-status-dot{width:.6rem;height:.6rem;flex:0 0 auto;border-radius:999px;background:var(--db-border-strong);box-shadow:0 0 0 3px color-mix(in srgb,var(--db-border) 48%,transparent)}
+#database-control-center .db-status-dot.is-ok{background:#10b981;box-shadow:0 0 0 3px color-mix(in srgb,#10b981 18%,transparent)}
+#database-control-center .db-status-dot.is-danger{background:#f43f5e;box-shadow:0 0 0 3px color-mix(in srgb,#f43f5e 18%,transparent)}
+#database-control-center .db-health-pill,#database-control-center .db-active-badge,#database-control-center .db-code-chip{display:inline-flex;align-items:center;border:1px solid var(--db-border);border-radius:999px;padding:.18rem .48rem;background:var(--db-muted);color:var(--db-subtle);font-size:.625rem;font-weight:800;line-height:1.2}
+#database-control-center .db-health-ok{border-color:color-mix(in srgb,#10b981 36%,var(--db-border));background:color-mix(in srgb,#10b981 10%,var(--db-surface));color:color-mix(in srgb,#059669 84%,var(--db-strong))}
+#database-control-center .db-health-warning{border-color:color-mix(in srgb,#f59e0b 36%,var(--db-border));background:color-mix(in srgb,#f59e0b 10%,var(--db-surface));color:color-mix(in srgb,#b45309 84%,var(--db-strong))}
+#database-control-center .db-health-danger{border-color:color-mix(in srgb,#f43f5e 36%,var(--db-border));background:color-mix(in srgb,#f43f5e 9%,var(--db-surface));color:color-mix(in srgb,#be123c 84%,var(--db-strong))}
+#database-control-center .db-active-badge{background:color-mix(in srgb,var(--theme-accent) 12%,var(--db-surface));color:var(--theme-content-accent);border-color:color-mix(in srgb,var(--theme-accent) 24%,var(--db-border))}
+#database-control-center .db-check-list{padding:.25rem 1rem .7rem}
+#database-control-center .db-check-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.8rem;padding:.85rem 0;border-bottom:1px solid var(--db-border)}
+#database-control-center .db-check-row:last-child{border-bottom:0}
+#database-control-center .db-check-row strong{display:block;font-size:.82rem;color:var(--db-strong)}
+#database-control-center .db-check-row p{margin-top:.15rem;font-size:.72rem;color:var(--db-subtle)}
+#database-control-center .db-check-row>span:last-child{font-size:.7rem;font-weight:800;color:var(--db-subtle)}
+#database-control-center .db-progress{height:.42rem;overflow:hidden;border-radius:999px;background:var(--db-muted)}
+#database-control-center .db-progress>span{display:block;height:100%;border-radius:inherit;background:var(--theme-content-accent)}
+#database-control-center .db-path-box{border:1px dashed var(--db-border-strong);border-radius:.7rem;padding:.7rem .8rem;background:var(--db-soft);color:var(--db-text)}
+#database-control-center .db-table-counts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:.45rem .8rem .8rem}
+#database-control-center .db-table-counts>div{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.55rem .4rem;border-bottom:1px solid var(--db-border);font-size:.72rem}
+#database-control-center .db-table-counts>div:nth-last-child(-n+2){border-bottom:0}
+#database-control-center .db-table-counts strong{color:var(--db-strong)}
+#database-control-center .db-table-counts-wide{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+#database-control-center .db-action-card{display:flex;width:100%;min-height:5.2rem;border:1px solid var(--db-border);border-radius:.75rem;background:var(--db-soft);color:var(--db-text);text-align:left;transition:.15s}
+#database-control-center .db-action-card:hover{border-color:color-mix(in srgb,var(--theme-accent) 28%,var(--db-border));background:color-mix(in srgb,var(--theme-accent) 6%,var(--db-soft));transform:translateY(-1px)}
+#database-control-center .db-action-card>button,#database-control-center a.db-action-card{padding:.8rem}
+#database-control-center .db-action-card button{width:100%;text-align:left}
+#database-control-center .db-action-card strong{display:block;font-size:.8rem;color:var(--db-strong)}
+#database-control-center .db-action-card span{display:block;margin-top:.25rem;font-size:.7rem;line-height:1.45;color:var(--db-subtle)}
+#database-control-center .db-section-toolbar{flex-wrap:wrap}
+#database-control-center .db-search{display:grid;gap:.25rem;min-width:min(100%,18rem);font-size:.68rem;font-weight:800;color:var(--db-subtle)}
+#database-control-center .db-search input,#database-control-center #table-search{border:1px solid var(--db-border-strong);border-radius:var(--profile-control-radius,.625rem);background:var(--db-surface);color:var(--db-strong)}
+#database-control-center .db-search input{min-height:2.35rem;padding:.45rem .7rem}
+#database-control-center .db-search input:focus,#database-control-center #table-search:focus{border-color:var(--theme-content-accent);outline:2px solid color-mix(in srgb,var(--theme-content-accent) 28%,transparent);outline-offset:1px}
+#database-control-center .db-data-table{border-collapse:separate;border-spacing:0;color:var(--db-text);font-size:.76rem}
+#database-control-center .db-data-table thead{background:var(--db-soft);color:var(--db-subtle)}
+#database-control-center .db-data-table th{padding:.62rem .75rem;border-bottom:1px solid var(--db-border);font-size:.65rem;font-weight:800;letter-spacing:.045em;text-align:left;text-transform:uppercase}
+#database-control-center .db-data-table td{padding:.7rem .75rem;border-bottom:1px solid var(--db-border);vertical-align:middle}
+#database-control-center .db-data-table tbody tr{background:var(--db-surface)}
+#database-control-center .db-data-table tbody tr:hover{background:color-mix(in srgb,var(--theme-accent) 4%,var(--db-surface))}
+#database-control-center .db-data-table tbody tr.is-active{background:color-mix(in srgb,var(--theme-accent) 8%,var(--db-surface))}
+#database-control-center .db-data-table td p{color:var(--db-subtle)}
+#database-control-center .db-data-table td strong{color:var(--db-strong)}
+#database-control-center .db-empty-state{display:grid;place-items:center;align-content:center;gap:.45rem;min-height:10rem;padding:2rem;text-align:center;color:var(--db-subtle)}
+#database-control-center .db-empty-state strong{color:var(--db-strong)}
+#database-control-center .db-table-explorer{background:var(--db-surface)}
+#database-control-center .db-table-sidebar{display:flex;flex-direction:column;border-right:1px solid var(--db-border);background:var(--db-soft)}
+#database-control-center .db-table-sidebar-head{padding:.85rem;border-bottom:1px solid var(--db-border);background:var(--db-surface)}
+#database-control-center .db-table-sidebar-list{flex:1;min-height:0;overflow:auto}
+#database-control-center .db-table-sidebar-list th{padding:.55rem .65rem;border-bottom:1px solid var(--db-border);color:var(--db-subtle);font-size:.62rem;text-transform:uppercase;cursor:pointer}
+#database-control-center .db-table-sidebar-list td{padding:.58rem .65rem;border-bottom:1px solid var(--db-border)}
+#database-control-center .db-table-sidebar-list tr:hover{background:color-mix(in srgb,var(--theme-accent) 5%,var(--db-soft))}
+#database-control-center .db-table-sidebar-list tr.is-active{background:color-mix(in srgb,var(--theme-accent) 10%,var(--db-surface));box-shadow:inset 3px 0 0 var(--theme-content-accent)}
+#database-control-center .db-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .65rem;border-top:1px solid var(--db-border);background:var(--db-surface);color:var(--db-subtle);font-size:.68rem}
+#database-control-center .db-table-detail-head{background:var(--db-soft)}
+#database-control-center .db-inner-tabs{display:flex;gap:.35rem;padding:.55rem .75rem;border-bottom:1px solid var(--db-border);background:var(--db-surface)}
+#database-control-center .tm-tab{min-height:2rem;border:1px solid var(--db-border);border-radius:.55rem;padding:.35rem .75rem;background:var(--db-soft);color:var(--db-subtle);font-size:.7rem;font-weight:800}
+#database-control-center .tm-tab[data-active="true"]{border-color:color-mix(in srgb,var(--theme-accent) 28%,var(--db-border));background:color-mix(in srgb,var(--theme-accent) 9%,var(--db-surface));color:var(--theme-content-accent)}
+#database-control-center .db-data-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.7rem;padding:.65rem .8rem;border-top:1px solid var(--db-border);background:var(--db-soft);color:var(--db-subtle);font-size:.7rem}
+#database-control-center .db-diagnostic-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;padding:.8rem 1rem}
+#database-control-center .db-diagnostic-list>div{display:flex;align-items:center;justify-content:space-between;gap:.7rem;border:1px solid var(--db-border);border-radius:.65rem;padding:.65rem .7rem;background:var(--db-soft);font-size:.72rem}
+#database-control-center .db-diagnostic-list span{color:var(--db-subtle)}#database-control-center .db-diagnostic-list strong{color:var(--db-strong)}
+#database-control-center .db-maintenance-card{display:flex;flex-direction:column;gap:.65rem;min-height:13rem;border:1px solid var(--db-border);border-radius:calc(var(--profile-card-radius,1rem)*.82);padding:1rem;background:var(--db-surface)}
+#database-control-center .db-maintenance-card.is-safe{border-top:3px solid #10b981}#database-control-center .db-maintenance-card.is-caution{border-top:3px solid #f59e0b}
+#database-control-center .db-maintenance-card h2{font-size:.95rem;font-weight:800;color:var(--db-strong)}
+#database-control-center .db-maintenance-card>p:not(.db-eyebrow){flex:1;font-size:.75rem;line-height:1.5;color:var(--db-subtle)}
+#database-control-center .db-danger-zone{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;border:1px solid color-mix(in srgb,#f43f5e 35%,var(--db-border));border-radius:calc(var(--profile-card-radius,1rem)*.82);padding:1rem;background:color-mix(in srgb,#f43f5e 7%,var(--db-surface))}
+#database-control-center .db-danger-zone h2{margin-top:.2rem;font-size:.95rem;font-weight:800;color:var(--db-strong)}
+#database-control-center .db-danger-zone p:not(.db-eyebrow){margin-top:.25rem;max-width:58rem;font-size:.74rem;line-height:1.5;color:var(--db-subtle)}
+#database-control-center .db-connection-footnote{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;border:1px dashed var(--db-border-strong);border-radius:.8rem;padding:.85rem 1rem;background:var(--db-soft)}
+#database-control-center .db-connection-footnote strong{font-size:.78rem;color:var(--db-strong)}
+#database-control-center .db-connection-footnote p:not(.db-eyebrow){margin-top:.2rem;font-size:.7rem;color:var(--db-subtle)}
+#database-control-center .db-connection-footnote code{max-width:100%;overflow-wrap:anywhere;border-radius:.45rem;padding:.35rem .5rem;background:var(--db-muted);color:var(--db-text);font-size:.66rem}
+#database-control-center [hidden]{display:none!important}
+@media(max-width:1023px){#database-control-center .db-table-sidebar{border-right:0;border-bottom:1px solid var(--db-border)}#database-control-center .db-table-sidebar-list{max-height:22rem}}
+@media(max-width:639px){#database-control-center .db-panel{padding:.75rem}#database-control-center [data-panel="list"]{padding:0}#database-control-center .db-card-header,#database-control-center .db-section-toolbar,#database-control-center .db-table-detail-head{align-items:flex-start;padding:.75rem}#database-control-center .db-table-counts,#database-control-center .db-diagnostic-list{grid-template-columns:1fr}#database-control-center .db-table-counts>div:nth-last-child(-n+2){border-bottom:1px solid var(--db-border)}#database-control-center .db-table-counts>div:last-child{border-bottom:0}}
