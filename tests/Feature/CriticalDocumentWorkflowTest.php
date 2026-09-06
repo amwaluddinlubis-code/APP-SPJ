@@ -195,6 +195,29 @@ class CriticalDocumentWorkflowTest extends TestCase
         $this->assertTrue($requirement['available']);
     }
 
+    public function test_internal_order_content_accepts_recipient_as_displayed_provider_fallback(): void
+    {
+        $transaction = $this->readyGoodsTransaction();
+        $transaction->forceFill(['vendor_name' => null, 'recipient_name' => 'Risky Ponsel'])->save();
+        $item = $transaction->items()->create([
+            'description' => 'Paket Data T-Sel 30 Hari',
+            'item_description' => null,
+            'quantity' => 2,
+            'unit' => 'paket',
+            'unit_price' => 110000,
+            'amount' => 220000,
+        ]);
+        $transaction->forceFill(['gross_amount' => 220000, 'net_amount' => 220000])->save();
+        $item->goods()->create(['order_date' => '2026-01-10']);
+        $transaction->load(['items', 'goods', 'spjPackage']);
+
+        $requirement = collect(app(SpjDocumentRequirementService::class)->forTransaction($transaction))
+            ->firstWhere('key', 'internal_order_content');
+
+        $this->assertNotNull($requirement);
+        $this->assertTrue($requirement['available']);
+    }
+
     public function test_duplicate_vendor_invoice_in_same_fiscal_year_blocks_numbering(): void
     {
         Transaction::query()->create([
