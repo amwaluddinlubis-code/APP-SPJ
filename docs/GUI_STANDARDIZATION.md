@@ -1,20 +1,21 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diperbarui: 2026-09-04
+Terakhir diverifikasi: **2026-09-06**
 
-Dokumen ini menjadi acuan visual dan pengalaman pengguna untuk seluruh halaman aplikasi SPJ BOSP Web. Tujuannya adalah menjaga tampilan seragam, mudah dipahami operator sekolah, konsisten antar modul, dan kompatibel dengan tema yang dipilih user.
+Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`. Tujuannya menjaga aplikasi operasional sekolah tetap konsisten, mudah dipahami, dan mengikuti tema yang dipilih user.
 
 ---
 
 ## 1. Prinsip utama
 
-- UI harus terasa sebagai aplikasi operasional sekolah, bukan admin panel generik.
-- Bahasa di layar harus manusiawi dan berorientasi pekerjaan operator.
-- Data sumber ARKAS/BKU harus dibedakan jelas dari data manual SPJ.
-- Komponen visual sejenis wajib memakai primitive yang sama.
-- Jangan membuat hard-coded accent color pada komponen baru jika warna tersebut bukan warna semantik.
-- Tailwind menangani visual, Alpine hanya interaksi UI ringan, Livewire menangani state/data reaktif, Laravel menangani route/auth/validation/aturan bisnis.
+- UI harus terasa sebagai aplikasi kerja operator sekolah, bukan admin panel generik.
+- Data ARKAS/BKU harus terlihat sebagai readonly source; data operator SPJ terlihat editable.
+- Komponen sejenis memakai primitive yang sama.
+- Accent non-semantik tidak boleh hard-coded.
+- Tailwind terutama untuk layout/spacing/responsive; theme warna berasal dari token.
+- Alpine hanya untuk interaksi UI ringan; Livewire untuk state server-backed; Laravel untuk auth/validation/business rule.
 - Jangan membuat satu halaman menjadi satu card raksasa.
+- Perubahan visual tidak boleh mengubah business rule secara implisit.
 
 ---
 
@@ -23,57 +24,69 @@ Dokumen ini menjadi acuan visual dan pengalaman pengguna untuk seluruh halaman a
 Urutan standar:
 
 ```text
-Header aplikasi global
+Header aplikasi
 Breadcrumb sticky
-Header halaman + summary
-Toolbar / filter
-Form / section
-Tabel / workspace
-Sticky actions / utility footer
+Page Header + summary
+Toolbar/filter
+Form/section/workspace
+Tabel/detail
+Sticky action / utility
 ```
 
-Sidebar mempertahankan state collapse/expand. Context sekolah, tahun anggaran, dan sumber dana aktif tetap terlihat pada header.
-
-Pada halaman panjang tersedia kontrol sticky **Ke atas** yang muncul setelah user melakukan scroll.
+Pada halaman panjang tersedia kontrol sticky **Ke atas**.
 
 ---
 
 ## 3. Sistem tema
 
-Accent non-semantik wajib memakai token:
+Token utama:
 
 ```text
 --theme-accent
 --theme-accent-strong
 --theme-accent-soft
---theme-sidebar
---theme-sidebar-deep
+--theme-content-accent
+--theme-action-bg
+--theme-action-fg
+--theme-action-hover-bg
+--theme-action-hover-fg
 ```
 
-Surface/text/border memakai token UI seperti:
+Surface/text/border:
 
 ```text
---ui-page-bg
---ui-surface
+--ui-surface-base
 --ui-surface-soft
---ui-border
---ui-border-strong
---ui-text
---ui-muted
+--ui-surface-muted
+--ui-line
+--ui-line-strong
+--ui-fg
+--ui-fg-strong
+--ui-fg-muted
+```
+
+Profile/density:
+
+```text
+--profile-card-radius
+--profile-control-radius
+--profile-card-shadow
+--profile-content-padding
+--profile-section-gap
+--profile-control-height
 ```
 
 Aturan:
 
-- pilihan tema user harus otomatis memengaruhi primitive UI;
-- dark mode tidak memerlukan versi komponen terpisah;
-- success/warning/danger tetap memakai warna semantik agar arti tidak berubah karena theme;
-- kompatibilitas markup lama boleh memakai compatibility layer, tetapi kode baru harus memakai primitive `x-ui.*` dan token tema.
+- dark appearance memakai token yang sama, bukan komponen terpisah;
+- semantic success/warning/danger tetap bermakna, tetapi surface harus tetap nyaman pada theme aktif;
+- compatibility layer boleh mengoreksi markup lama, namun kode baru memakai token canonical.
 
 ---
 
 ## 4. Primitive UI resmi
 
-Komponen utama yang tersedia:
+Utamakan:
 
 ```text
 <x-ui.page-shell>
@@ -98,234 +111,234 @@ Komponen utama yang tersedia:
 <x-ui.status-badge>
 ```
 
-Komponen lama yang sudah diarahkan ke design system baru:
-
-```text
-page-filter
-page-table-per-page
-tabs
-stat-item
-error-alert
-loading-spinner
-```
-
-Jangan membuat primitive baru jika kebutuhan sudah ditangani salah satu komponen di atas.
+Legacy components yang sudah diarahkan ke sistem baru termasuk `page-filter`, `page-table-per-page`, `tabs`, `stat-item`, `error-alert`, dan `loading-spinner`.
 
 ---
 
-## 5. Breadcrumb dan page header
+## 5. Form dan input
 
-Breadcrumb global:
-
-- berada tepat di bawah header global;
-- sticky;
-- tidak boleh diduplikasi secara lokal;
-- mengikuti hierarchy yang mudah dibaca;
-- boleh wrap di mobile.
-
-Header halaman dan summary yang berkaitan langsung boleh berada dalam satu card. Form, filter, tabel, atau detail lain harus berada pada section terpisah.
-
-Komponen utama:
-
-```text
-<x-page-header>
-<x-stat-item>
-<x-section-card>
-```
-
----
-
-## 6. Form dan input
-
-Gunakan:
-
-```text
-<x-ui.field>
-<x-ui.input>
-<x-ui.select>
-<x-ui.textarea>
-<x-ui.button>
-<x-ui.form-section>
-<x-ui.sticky-actions>
-```
+Gunakan `ui-input`, `ui-select`, `ui-textarea`, atau primitive Blade terkait.
 
 Standar:
 
-- label selalu terlihat;
-- required memakai tanda `*`;
+- label terlihat;
+- required jelas;
 - hint/error dekat field;
-- readonly dan disabled mudah dibedakan;
-- focus ring mengikuti theme accent;
-- textarea untuk uraian/alamat panjang;
-- form panjang dibagi section;
-- sticky actions dipakai bila tombol Simpan/Batal perlu selalu terlihat.
+- readonly/disabled mudah dibedakan;
+- focus ring mengikuti theme;
+- form panjang dibagi menjadi panel bermakna;
+- top-level panel memakai spacing konsisten.
+
+`dark-form-controls.css` adalah safety layer agar control pada dark appearance tidak kembali putih.
 
 ---
 
-## 7. Toolbar dan filter
-
-Gunakan `<x-ui.toolbar>` dan komponen filter yang sudah ada. Tombol utama, reset filter, export, refresh, sync, dan action tambahan harus mengikuti hierarchy yang sama.
-
-Filter lama yang masih hard-coded diarahkan melalui compatibility layer; view baru tidak boleh mengunci warna ke indigo/slate bila fungsinya hanya accent biasa.
-
----
-
-## 8. Tabel
-
-Tabel aplikasi memakai standardisasi global dan primitive `<x-ui.table>`.
+## 6. Tabel dan daftar
 
 Standar:
 
 - header konsisten;
-- zebra/hover row;
-- angka memakai tabular alignment;
-- kolom nominal rata kanan;
-- status rata tengah bila sesuai;
-- action cell konsisten;
-- uraian panjang boleh wrap;
-- horizontal overflow responsif;
-- pagination/per-page memiliki pola visual yang sama;
-- dark mode dan tema aktif otomatis diterapkan.
-
-Tabel Filament internal tidak dipaksa memakai override aplikasi. Tabel khusus dapat opt-out dengan `data-ui-table="off"` bila benar-benar diperlukan.
+- angka/nominal rata kanan bila relevan;
+- row hover mengikuti token theme;
+- horizontal scroll digunakan untuk tabel lebar;
+- pagination/per-page memakai pola global;
+- daftar dokumen yang repetitif sebaiknya compact, bukan card besar per item.
 
 ---
 
-## 9. Status dan badge
+## 7. Detail Transaksi
 
-Status teknis tidak boleh menjadi bahasa utama operator.
-
-Mapping utama:
-
-```text
-DRAFT / BELUM_LENGKAP            -> Belum lengkap
-READY / SIAP / DISIAPKAN         -> Siap diproses
-NUMBERED / BERNOMOR              -> Sudah bernomor
-PRINTED / DICETAK                -> Sudah dicetak
-FINAL / ARCHIVED / ARSIP         -> Final
-CANCELLED / CANCELED             -> Dibatalkan
-SOURCE_MISSING                   -> Tidak muncul di sinkronisasi
-requires_reconciliation          -> Perlu rekonsiliasi
-DITETAPKAN                       -> Sudah ditetapkan
-PENDING                          -> Menunggu diproses
-PROCESSING / RUNNING             -> Sedang diproses
-COMPLETED / SUCCESS / SUCCEEDED  -> Selesai
-FAILED / ERROR                   -> Gagal
-LOCKED                           -> Terkunci
-UNLOCKED                         -> Dapat diedit
-REPLACED                         -> Diganti
-GENERATED                        -> Dokumen dibuat
-```
-
-Gunakan `<x-ui.status-badge>` untuk status dan `<x-ui.badge>` untuk kategori/role/metode pembayaran/label non-status.
-
----
-
-## 10. Alert, modal, empty state, loading
-
-Gunakan:
-
-- `<x-ui.alert>` untuk info/warning/error/success;
-- `<x-ui.modal>` untuk dialog;
-- `<x-ui.empty-state>` untuk kondisi data kosong;
-- `<x-ui.loading>` untuk spinner/skeleton/loading state;
-- `<x-ui.danger-zone>` untuk reset/hapus/restore/reopen/cancel yang bersifat sensitif;
-- `<x-ui.action-menu>` bila tabel memiliki banyak aksi sekunder.
-
-Aksi destruktif tetap memerlukan authorization backend dan konfirmasi yang sesuai.
-
----
-
-## 11. Detail Transaksi sebagai workspace operator
-
-Struktur utama:
+Detail Transaksi adalah workspace operator:
 
 ```text
 Data ARKAS/BKU readonly
-→ Data Umum SPJ editable
+→ Data Umum SPJ
 → Detail Kategori
-→ Checklist Kelengkapan
-→ Buat Paket SPJ
-→ Penomoran / Preview / Cetak / Final
+→ Kelengkapan
+→ Buat/Perbarui Paket
 ```
 
-Data sumber harus memiliki treatment visual readonly yang berbeda dari area editable operator.
+Rincian item dibuat compact agar uraian panjang tidak menghabiskan vertical space secara berlebihan.
+
+### Konsumsi
+
+Auto-fill peserta melalui `fillTeachers()` saat ini mengambil **Dapodik-only**. UI tidak boleh memberi kesan data berasal dari ARKAS bila function tersebut dipakai.
 
 ---
 
-## 12. Responsive dan dark mode
+## 8. SPJ Package — struktur canonical saat ini
 
-- Desktop tetap menjadi workspace utama, tetapi mobile/tablet harus dapat digunakan.
-- Tabel lebar menggunakan horizontal scroll, bukan memaksa kolom menjadi tidak terbaca.
-- Action target tetap nyaman disentuh pada mobile.
-- Primitive UI harus memakai token surface/accent agar dark mode otomatis konsisten.
-- Jangan membuat CSS dark khusus per halaman kecuali ada alasan visual yang benar-benar spesifik.
+URL:
+
+```text
+/spj?tab=paket&package_id=...
+```
+
+Sub-tab internal:
+
+```text
+Rincian
+Isian Manual
+Penomoran
+```
+
+### 8.1 Rincian
+
+Tab Rincian harus memperlihatkan dua area yang jelas berbeda:
+
+```text
+Panel Rincian Transaksi
+Panel Dokumen & Template
+```
+
+Keduanya wajib:
+
+- memiliki border/radius/shadow sendiri;
+- memiliki header yang berbeda tetapi tetap berasal dari theme accent;
+- tidak terlihat seperti satu daftar panjang tanpa hierarchy;
+- memakai gap konsisten antar panel.
+
+`Dokumen & Template` dipindahkan ke sub-tab Rincian agar ketika user membuka Isian Manual atau Penomoran, daftar template tidak ikut menambah scroll.
+
+Placement saat ini dilakukan oleh:
+
+```text
+resources/js/spj-package-document-placement.js
+resources/css/spj-package-document-placement.css
+```
+
+Ini compatibility/presentation layer, bukan aturan bisnis.
+
+### 8.2 Dokumen & Template
+
+Daftar dokumen memakai **compact list**:
+
+```text
+status / nama dokumen / tipe-format / actions
+```
+
+Prinsip:
+
+- satu dokumen tidak perlu card tinggi sendiri;
+- group header dibuat subordinate;
+- metadata dipadatkan;
+- action Preview/Unduh mudah ditemukan;
+- zebra/hover/theme mengikuti `--spj-*`/`--ui-*`;
+- status warning/success tetap semantic.
+
+### 8.3 Isian Manual
+
+Isian Manual wajib mengikuti theme aktif untuk:
+
+- background panel;
+- header;
+- heading/label/hint;
+- input/select/textarea;
+- readonly/disabled;
+- panel kategori;
+- panel pajak;
+- focus state;
+- spacing antar panel.
+
+Compatibility layer utama:
+
+```text
+resources/css/spj-package-theme-fix.css
+```
+
+Top-level panel spacing saat ini dinormalisasi sekitar `.875rem` desktop dan `.75rem` mobile pada area tersebut.
+
+### 8.4 Penomoran
+
+Card triwulan `/spj/penomoran` tidak boleh menggunakan hover light-only seperti `hover:bg-slate-50`. Normal/hover/active state harus memadukan current surface + current theme accent.
 
 ---
 
-## 13. Compatibility layer
+## 9. Header panel theme-aware
 
-Selama view legacy belum seluruhnya dimigrasikan:
+Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierarchy jelas, tetapi tetap memakai token theme.
 
-- global CSS/JS boleh menormalkan tabel, status, accent, loading, pagination, dan beberapa pola lama;
-- compatibility layer bukan alasan untuk menulis markup lama pada fitur baru;
-- setiap view yang disentuh sebaiknya dimigrasikan ke primitive resmi secara bertahap.
+Contoh:
+
+```css
+background: color-mix(in srgb, var(--theme-accent) 12%, var(--ui-surface-soft));
+```
+
+Jangan mengunci header ke `bg-indigo-*`, `bg-slate-*`, atau putih jika panel harus mengikuti theme.
 
 ---
 
-## 14. Checklist sebelum halaman dianggap selesai
+## 10. Status dan badge
+
+Gunakan `<x-ui.status-badge>` untuk status teknis dan label operator. Gunakan `<x-ui.badge>` untuk kategori/role/metode pembayaran.
+
+Status umum:
+
+```text
+DRAFT / BELUM_LENGKAP -> Belum lengkap
+READY                  -> Siap diproses
+NUMBERED               -> Sudah bernomor
+FINAL / ARCHIVED       -> Final
+CANCELLED              -> Dibatalkan
+SOURCE_MISSING         -> Tidak muncul di sinkronisasi
+```
+
+---
+
+## 11. Compatibility layer
+
+Selama Blade lama masih mengandung class warna Tailwind statis:
+
+- CSS scoped boleh mengoreksi `bg-white`, `text-slate-*`, `bg-indigo-*`, odd/even variants, atau slash-opacity variants;
+- compatibility layer harus terlokalisasi;
+- kode baru jangan memperbanyak markup legacy;
+- bila halaman disentuh besar, migrasikan ke primitive canonical secara bertahap.
+
+Layer SPJ aktif:
+
+```text
+spj-workspace-standardization.css
+spj-package-theme-fix.css
+spj-package-document-placement.css
+```
+
+---
+
+## 12. Responsive dan mobile
+
+Desktop tetap workspace utama, tetapi mobile/tablet harus usable.
+
+Perubahan package terbaru belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`; jangan menyebut mobile-complete sebelum checklist ditutup.
+
+---
+
+## 13. Checklist UI sebelum selesai
 
 - breadcrumb tidak double;
 - page header mengikuti pola global;
-- action utama mudah ditemukan;
+- hierarchy panel jelas;
 - readonly vs editable jelas;
-- form memakai primitive standar;
-- filter/toolbar konsisten;
-- tabel memakai standardisasi global;
-- empty/loading/error state manusiawi;
-- status memakai label manusiawi;
-- warna accent mengikuti theme;
-- dark mode tetap terbaca;
-- mobile/tablet tetap usable;
-- perubahan UI tidak mengubah aturan bisnis.
+- warna mengikuti theme;
+- dark appearance terbaca;
+- hover/focus/active tidak kembali ke warna light-only;
+- spacing antar panel konsisten;
+- mobile tidak overflow tanpa alasan;
+- status memakai bahasa manusiawi;
+- perubahan UI tidak melemahkan validation/authorization;
+- `npm run build` dijalankan setelah CSS/JS/Blade berubah.
 
 ---
 
-## 15. Status roadmap GUI
+## 14. Dokumen pendamping
 
-Sudah menjadi fondasi global:
+Aturan CSS praktis ada di:
 
-1. sidebar persisten;
-2. breadcrumb global;
-3. page header/summary;
-4. form/input/button system;
-5. status badge manusiawi;
-6. table standardization;
-7. theme-aware primitive system;
-8. alert/empty/modal/detail/toolbar/loading/danger/action primitives;
-9. sticky scroll-to-top;
-10. compatibility layer legacy.
+```text
+docs/CSS_USAGE_GUIDE.md
+```
 
-Masih perlu penyelesaian pada level halaman/workflow:
+Kondisi implementasi terbaru ada di:
 
-- rekonsiliasi;
-- SPJ/numbering end-to-end;
-- dashboard operasional final;
-- lifecycle/revisi;
-- migrasi view legacy tersisa;
-- authorization/safety audit.
-
----
-
-## 16. Aturan untuk agent/coder berikutnya
-
-1. baca `AGENTS.md` dan dokumen ini sebelum mengubah UI;
-2. cek primitive yang sudah ada sebelum membuat komponen baru;
-3. jangan menambah breadcrumb lokal;
-4. jangan membuat accent color hard-coded untuk fungsi non-semantik;
-5. gunakan `x-ui.*` untuk kode baru/view yang sedang disentuh;
-6. jangan mengubah nilai enum/status backend hanya untuk tampilan;
-7. gunakan semantic success/warning/danger untuk makna tindakan;
-8. bedakan data sumber readonly dan data operator editable;
-9. jalankan `npm run build` setelah perubahan frontend;
-10. perubahan GUI tidak boleh melemahkan validation/authorization backend.
+```text
+docs/CURRENT_PROGRESS.md
+```
