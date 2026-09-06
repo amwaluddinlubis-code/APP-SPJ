@@ -37,7 +37,7 @@ class SpjPackageUseCase
             $request->request->remove('participants');
         }
 
-        $data = $request->validate($this->prepareRules($request, $transaction));
+        $data = $request->validate($this->prepareRules($request, $transaction), $this->purchaseDateMessages());
         $data['spj_category'] = $this->canonicalCategory($data['spj_category'] ?? null);
         $this->validateTaxMatchesBku($transaction, $data);
 
@@ -86,7 +86,7 @@ class SpjPackageUseCase
             return back()->with('error', 'Paket sudah bernomor atau final. Buka kembali paket melalui administrator sebelum mengubah data.');
         }
 
-        $data = $request->validate($this->updateRules($request, $package));
+        $data = $request->validate($this->updateRules($request, $package), $this->purchaseDateMessages());
         $this->validateTaxMatchesBku($package->transaction, $data);
         $workers = $data['workers'] ?? [];
 
@@ -146,11 +146,11 @@ class SpjPackageUseCase
             'payment_method' => ['required', 'in:transfer_bank,siplah,tunai'],
             'receipt_recipient_name' => ['required', 'string', 'max:255'],
             'order_number' => ['nullable', 'string', 'max:80'],
-            'order_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'order_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'before_or_equal:'.$maximumDocumentDate, 'before_or_equal:bap_date'],
             'bap_number' => ['nullable', 'string', 'max:80'],
-            'bap_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:order_date', 'before_or_equal:'.$maximumDocumentDate],
+            'bap_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:order_date', 'before_or_equal:bast_date'],
             'bast_number' => ['nullable', 'string', 'max:80'],
-            'bast_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:bap_date', 'before_or_equal:'.$maximumDocumentDate],
+            'bast_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:bap_date'],
             'invoice_number' => ['nullable', 'string', 'max:80'],
             'invoice_date' => ['nullable', 'date', 'after_or_equal:bast_date', 'before_or_equal:'.$maximumDocumentDate],
             'invoice_status' => ['nullable', 'string', 'max:30'],
@@ -241,6 +241,12 @@ class SpjPackageUseCase
             'payment_method' => ['nullable', 'in:transfer_bank,siplah,tunai'],
             'receipt_recipient_name' => ['nullable', 'string', 'max:255'],
             'spj_category' => ['nullable', 'string', 'max:40'],
+            'order_number' => ['nullable', 'string', 'max:80'],
+            'order_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate, 'before_or_equal:bap_date'],
+            'bap_number' => ['nullable', 'string', 'max:80'],
+            'bap_date' => ['nullable', 'date', 'after_or_equal:order_date', 'before_or_equal:bast_date'],
+            'bast_number' => ['nullable', 'string', 'max:80'],
+            'bast_date' => ['nullable', 'date', 'after_or_equal:bap_date'],
             'invoice_number' => ['nullable', 'string', 'max:80'],
             'invoice_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'invoice_status' => ['nullable', 'string', 'max:30'],
@@ -315,6 +321,16 @@ class SpjPackageUseCase
             'pph23_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'pph4_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sspd_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ];
+    }
+
+    private function purchaseDateMessages(): array
+    {
+        return [
+            'order_date.before_or_equal' => 'Tanggal Pesanan harus lebih kecil atau sama dengan Tanggal Transaksi dan Tanggal BAP.',
+            'bap_date.after_or_equal' => 'Tanggal BAP harus lebih besar atau sama dengan Tanggal Pesanan.',
+            'bap_date.before_or_equal' => 'Tanggal BAP harus lebih kecil atau sama dengan Tanggal BAST.',
+            'bast_date.after_or_equal' => 'Tanggal BAST harus lebih besar atau sama dengan Tanggal BAP.',
         ];
     }
 
