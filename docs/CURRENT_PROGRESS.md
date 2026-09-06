@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Catatan Progres Terakhir
 
-Terakhir diperbarui: **2026-09-06**
+Terakhir diperbarui: **2026-09-07**
 
 Dokumen ini adalah snapshot utama kondisi branch `gui-standardization`. Jika ada dokumen historis atau handoff lama yang bertentangan dengan dokumen ini, gunakan dokumen ini bersama `SPJ_DESIGN_DECISIONS.md` dan kode aktif.
 
@@ -226,7 +226,34 @@ Target sekarang bukan membuat design system baru, tetapi mengurangi markup legac
 
 ---
 
-## 10. Pengaturan → Database Aktif — redesign total
+## 10. Dashboard — source canonical
+
+Dashboard operasional utama pada route `/` menggunakan `OperationalDashboardController` dan view canonical:
+
+```text
+resources/views/dashboard-operational-v3.blade.php
+```
+
+View eksperimen/legacy berikut sudah dihapus agar tidak lagi membingungkan source aktif:
+
+```text
+resources/views/dashboard-operational.blade.php
+resources/views/dashboard-operational-v2.blade.php
+```
+
+Route `/dashboard-v2` tetap merupakan dashboard pembanding/QA tersendiri melalui `DashboardController` dan view:
+
+```text
+resources/views/dashboard.blade.php
+```
+
+Nama route `/dashboard-v2` **tidak** berarti view `dashboard-operational-v2.blade.php`. View `dashboard.blade.php` tetap source aktif untuk route tersebut dan merupakan protected working file sesuai `.ai/rules/index.md`.
+
+Cleanup repository juga mengeluarkan `.stakpak/data/local.db` dari tracking. Local state `.stakpak/data/` tetap di-ignore dan tidak boleh menjadi source project.
+
+---
+
+## 11. Pengaturan → Database Aktif — redesign total
 
 Halaman `/pengaturan/database-aktif` sekarang menjadi **Pusat Kontrol Database Sekolah**, bukan lagi halaman maintenance teknis yang padat tanpa hierarchy.
 
@@ -272,13 +299,13 @@ resources/css/settings-database-standardization.css
 
 ---
 
-## 11. Mobile QA
+## 12. Mobile QA
 
 `docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Halaman Database Aktif terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
 
 ---
 
-## 12. Testing dan verification
+## 13. Testing dan verification
 
 Jangan menganggap seluruh suite hijau hanya karena test tertentu pernah PASS.
 
@@ -292,7 +319,7 @@ Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 
 ---
 
-## 13. Technical debt yang harus terlihat jelas
+## 14. Technical debt yang harus terlihat jelas
 
 1. Validasi tanggal pengadaan belum identik antara Detail Transaksi dan Paket.
 2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
@@ -302,7 +329,7 @@ Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 
 ---
 
-## 14. Prioritas berikutnya
+## 15. Prioritas berikutnya
 
 1. Seragamkan purchase-date rules antar endpoint.
 2. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
@@ -316,7 +343,7 @@ Untuk Blade yang berubah, `php artisan view:cache` juga disarankan.
 
 ---
 
-## 15. Dokumen yang harus dibaca bersama
+## 16. Dokumen yang harus dibaca bersama
 
 ```text
 README.md
