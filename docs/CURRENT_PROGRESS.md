@@ -196,6 +196,7 @@ dark-form-controls.css
 spj-package-theme-fix.css
 spj-package-document-placement.css
 view-theme-hardening.css
+semantic-status-colors.css
 ```
 
 Aturan kode baru:
@@ -207,9 +208,9 @@ Aturan kode baru:
 
 ### 7.1 Audit hard-coded background/font seluruh view
 
-Recursive inventory `resources/views` pada branch aktif telah dijadikan scope audit untuk palette background/font. Karena banyak view legacy masih besar dan memiliki business markup yang tidak aman untuk mass rewrite, normalisasi dilakukan melalui final compatibility layer `resources/css/view-theme-hardening.css` yang di-import **paling akhir** oleh `theme-system.css`.
+Recursive inventory `resources/views` pada branch aktif telah dijadikan scope audit untuk palette background/font. Karena banyak view legacy masih besar dan memiliki business markup yang tidak aman untuk mass rewrite, normalisasi dilakukan melalui `resources/css/view-theme-hardening.css`, yaitu global compatibility layer terakhir untuk warna **non-semantik** pada authenticated `<main>`.
 
-Untuk seluruh authenticated application view di bawah `<main>`, layer ini membuat sisa class legacy berikut mengikuti theme terpilih:
+Untuk seluruh authenticated application view, layer ini membuat sisa class legacy berikut mengikuti theme terpilih:
 
 - neutral surface/background (`white/slate/gray/zinc/neutral/stone`);
 - neutral foreground/font hierarchy;
@@ -218,9 +219,11 @@ Untuk seluruh authenticated application view di bawah `<main>`, layer ini membua
 - dark hero/chrome gradient;
 - hover, focus, ring, dan variant opacity yang sebelumnya masih dapat kembali ke warna statis.
 
-Hard-coded yang memang mempunyai arti dipertahankan: semantic success/warning/danger, warna kontras putih pada hero gelap, serta output PDF/print/template-preview dan public/pre-login branding yang tidak berada pada authenticated `<main>`.
+Sesudah hardening hanya ada satu exception terkontrol: `semantic-status-colors.css`. `<x-ui.status-badge>` sekarang memiliki marker `ui-status-badge` dan `data-status`; status workflow yang memang membutuhkan identitas warna seperti `READY`, `NUMBERED`, dan `PRINTED` tetap dibedakan dengan hue semantic yang di-blend ke token surface/border/font theme saat ini.
 
-Artinya class palette lama masih dapat terlihat di beberapa Blade sebagai **compatibility hook**, tetapi pada workspace aplikasi warna aktualnya tidak lagi menjadi source of truth. Kode baru harus langsung memakai primitive/token canonical, bukan menambah class palette lama.
+Hard-coded yang memang mempunyai arti tetap dipertahankan: semantic success/warning/danger, semantic workflow status canonical, warna kontras putih pada hero gelap, serta output PDF/print/template-preview dan public/pre-login branding yang tidak berada pada authenticated `<main>`.
+
+Artinya class palette lama masih dapat terlihat di beberapa Blade sebagai **compatibility hook**, tetapi pada workspace aplikasi warna non-semantik aktualnya tidak lagi menjadi source of truth. Kode baru harus langsung memakai primitive/token canonical, bukan menambah class palette lama.
 
 Acuan rinci: `docs/CSS_USAGE_GUIDE.md`.
 
@@ -335,7 +338,7 @@ npm run build
 php artisan view:cache --no-interaction
 ```
 
-Perubahan hardening lintas-view kali ini adalah CSS-only + dokumentasi; tidak ada business rule/backend yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal.
+Perubahan hardening lintas-view kali ini adalah CSS + marker presentational pada status badge + dokumentasi; tidak ada business rule/backend yang diubah. Browser/runtime PASS tetap harus diverifikasi pada environment lokal.
 
 ---
 
@@ -344,7 +347,7 @@ Perubahan hardening lintas-view kali ini adalah CSS-only + dokumentasi; tidak ad
 1. Validasi tanggal pengadaan belum identik antara Detail Transaksi dan Paket.
 2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
 3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
-4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
+4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime non-semantik sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
 5. Mobile regression belum ditutup, termasuk Database Aktif dan hardening palette lintas-view.
 6. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
 
