@@ -1,261 +1,140 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diperbarui: 2026-09-04
+Terakhir diverifikasi: **2026-09-06**
 
-Dokumen ini menjelaskan arsitektur aktif SPJ BOSP Web pada branch `gui-standardization`. Jika terdapat catatan historis yang bertentangan dengan dokumen ini, `SPJ_DESIGN_DECISIONS.md`, `CURRENT_PROGRESS.md`, atau kode aktif, gunakan sumber yang lebih baru tersebut.
+Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk kondisi implementasi paling mutakhir, baca bersama `CURRENT_PROGRESS.md`. Untuk aturan bisnis yang tidak boleh berubah, baca `SPJ_DESIGN_DECISIONS.md`.
 
 ---
 
 ## 1. Ringkasan
 
-SPJ BOSP Web adalah aplikasi Laravel 12 untuk menyusun dokumen pertanggungjawaban BOSP berdasarkan data RKAS/BKU yang disinkronkan dari ARKAS.
+SPJ BOSP Web adalah aplikasi Laravel 12 untuk menyusun dokumen pertanggungjawaban BOSP berdasarkan RKAS/BKU yang disinkronkan dari ARKAS.
 
 Tujuan arsitektur:
 
-- memisahkan data sumber ARKAS/BKU dari data manual SPJ operator;
+- memisahkan source ARKAS/BKU dan data operator;
 - mendukung banyak sekolah melalui database tenant terpisah;
-- menyediakan workflow transaksi → paket SPJ → validasi → penomoran → dokumen → final;
-- menjaga data operator saat sumber ARKAS berubah atau hilang;
-- menyediakan audit, rekonsiliasi, backup, reset tenant, dan kontrol akses;
-- memisahkan tanggung jawab HTTP dari use case/domain;
-- menyatukan pengalaman pengguna melalui design system internal yang theme-aware.
+- menyediakan workflow transaksi → paket → validasi → numbering → dokumen → final;
+- mempertahankan data manual saat source berubah/hilang;
+- menyediakan audit, rekonsiliasi, backup/reset tenant, dan authorization;
+- memisahkan HTTP/controller dari orchestration/domain;
+- menggunakan design system internal theme-aware.
 
-Stack utama:
-
-- PHP 8.2+;
-- Laravel 12;
-- Livewire 3;
-- Tailwind CSS 4;
-- Alpine.js + Persist;
-- Vite 6;
-- Filament 4 components;
-- SQLite multi-koneksi;
-- DomPDF;
-- PhpSpreadsheet;
-- PHPWord;
-- PHPUnit 11.
+Stack utama: PHP 8.2+, Laravel 12, Livewire 3, Alpine.js, Tailwind CSS 4, Vite 6, Filament components, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 11.
 
 ---
 
-## 2. Pola multi-database
+## 2. Multi-database
 
-Aplikasi memakai dua konteks database.
+### Database utama
 
-### 2.1 Database utama
+Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup, setup, dan metadata global.
 
-Menampung data global:
+### Database tenant/sekolah
 
-- `users`;
-- `schools`;
-- metadata database sekolah;
-- konfigurasi sumber ARKAS;
-- backup database sekolah;
-- cache/jobs/migration global;
-- konfigurasi aplikasi yang tidak spesifik transaksi tenant.
+Menyimpan tahun anggaran, sumber dana, source RKAS/BKU, transaksi, item, detail kategori SPJ, paket, nomor dokumen, audit, dan data kerja sekolah.
 
-### 2.2 Database sekolah / tenant
+Semua operasi tenant harus berada pada konteks sekolah/tahun/sumber dana aktif.
 
-Menampung data operasional sekolah:
+### Reset tenant
 
-- fiscal year/tahun anggaran;
-- sumber dana;
-- RKAS hasil sinkronisasi;
-- raw BKU hasil sinkronisasi;
-- transaksi;
-- item transaksi;
-- metadata manual SPJ;
-- detail kategori SPJ;
-- paket SPJ;
-- template dan nomor dokumen;
-- audit operasional;
-- status sinkronisasi/rekonsiliasi.
-
-Setiap query operasional harus berjalan pada konteks sekolah dan tahun anggaran yang aktif.
-
-### 2.3 Reset database tenant
-
-Administrator memiliki alur reset database sekolah aktif yang bersifat destruktif namun terisolasi dari database utama.
-
-Strategi reset:
+Reset sekolah aktif menggunakan strategi rebuild SQLite:
 
 ```text
 purge koneksi tenant
-→ hapus file SQLite tenant
-→ hapus file -wal/-shm bila ada
-→ provision file SQLite baru
+→ hapus file tenant + -wal/-shm
+→ provision database baru
 → jalankan migration tenant
 → reset sqlite_sequence
-→ hapus session tahun/sumber dana aktif
+→ bersihkan session konteks tenant
 ```
 
-Tujuannya bukan sekadar menghapus row, tetapi mengembalikan tenant ke kondisi seperti instalasi baru sehingga auto-increment kembali dari awal.
-
-Database utama/global tidak ikut dihapus.
+Database utama tidak ikut dihapus.
 
 ---
 
-## 3. Prinsip data sumber dan data operator
+## 3. Source data vs operator data
 
-Aplikasi membedakan dua lapisan data.
+### Source ARKAS/BKU
 
-### Data ARKAS/BKU
+Contoh: nomor bukti, tanggal transaksi, uraian sumber, rekening, kegiatan, penerima sumber, nilai bruto/pajak/neto, dan payload sinkronisasi.
 
-Karakteristik:
+Source tidak diedit dari workspace operator.
 
-- berasal dari sinkronisasi;
-- menjadi referensi resmi operator;
-- tidak diedit dari workspace Detail Transaksi;
-- perubahan/hilangnya data dapat memicu rekonsiliasi.
+### Data operator SPJ
 
-### Data SPJ operator
-
-Karakteristik:
-
-- diisi/dilengkapi operator;
-- tidak boleh ditimpa oleh sinkronisasi ARKAS;
-- digunakan untuk dokumen pertanggungjawaban.
-
-Contoh field penting:
+Contoh:
 
 - `payment_description`;
+- `payment_method` / `payment_reference`;
 - `receipt_recipient_name`;
-- metode dan referensi pembayaran;
-- penandatangan;
-- kategori SPJ;
-- rincian barang, konsumsi, pemeliharaan, perjalanan, honor, dan jasa.
+- `spj_category`;
+- detail barang/konsumsi/pemeliharaan/SPPD/honor/jasa;
+- vendor/manual procurement fields;
+- paket, nomor, status, dan audit.
 
-`manual_description` sudah tidak digunakan dan tidak boleh dihidupkan kembali.
+`manual_description` tidak digunakan.
 
 ---
 
-## 4. Entitas utama
-
-### User dan School
-
-Berada pada database utama. User memiliki role aplikasi dan dapat terkait dengan sekolah. Administrator dapat mengelola banyak sekolah. Operator harus dibatasi pada konteks sekolah yang sah.
-
-### FiscalYear dan FundSource
-
-Berada pada tenant database dan membentuk konteks kerja aktif. Sumber dana harus konsisten dengan tahun anggaran aktif.
+## 4. Entitas dan relasi utama
 
 ### Transaction
 
-Merepresentasikan transaksi BKU yang telah diproyeksikan menjadi entitas aplikasi.
+Merepresentasikan transaksi BKU yang sudah diproyeksikan menjadi entitas aplikasi.
 
-Field domain penting meliputi:
+Relasi penting mencakup item transaksi, goods, workers/work order, participants, travels, honors, payments, package, dan detail dokumen terkait.
 
-- identitas transaksi sumber;
-- tanggal dan nomor bukti;
-- uraian sumber;
-- `payment_description`;
-- `payment_method`;
-- `payment_reference`;
-- `recipient_name` sebagai penerima sumber ARKAS/BKU;
-- `receipt_recipient_name` sebagai penerima kuitansi manual;
-- nilai bruto, pajak, dan neto;
-- kategori SPJ;
-- status sumber/sinkronisasi;
-- flag rekonsiliasi.
+### Employee
 
-### Detail kategori SPJ
+Data pegawai dapat berasal dari beberapa source. Untuk kebutuhan tertentu source harus eksplisit.
 
-Data kategori dipisahkan berdasarkan kebutuhan domain. Implementasi aktif mencakup:
+Khusus auto-fill peserta kategori `KONSUMSI` pada Detail Transaksi, daftar `$dapodikTeachers` hanya berisi `Employee` aktif dengan:
 
-- barang/pembelian;
-- konsumsi/acara/peserta;
-- pemeliharaan/work order/pekerja;
-- SPPD/perjalanan dan banyak pelaksana;
-- honor dan banyak penerima;
-- jasa lainnya.
+```text
+source_type = DAPODIK
+```
 
-`SpjTransactionDetailsService` tetap menangani sinkronisasi/persistensi detail kategori.
+Data yang hanya berasal dari ARKAS tidak dipakai oleh `fillTeachers()`.
 
 ### SpjPackage
 
-Merepresentasikan paket dokumen pertanggungjawaban untuk sebuah transaksi.
+Merepresentasikan paket SPJ untuk sebuah transaksi. Status aktif yang digunakan codebase mencakup `DRAFT`, `READY`, `NUMBERED`, `FINAL`, dan `CANCELLED` pada alur yang relevan.
 
-Lifecycle target backend:
-
-```text
-DRAFT
-→ READY
-→ NUMBERED
-→ PRINTED / DICETAK
-→ FINAL / ARCHIVED
-```
-
-UI menampilkan label manusiawi:
-
-```text
-Belum lengkap
-→ Siap diproses
-→ Sudah bernomor
-→ Sudah dicetak
-→ Final
-```
-
-Preview tidak boleh mengubah lifecycle atau menerbitkan nomor.
+`isEditable()` membatasi perubahan normal pada kondisi yang belum terkunci.
 
 ---
 
-## 5. Sinkronisasi ARKAS
+## 5. Safe synchronization
 
 Alur konseptual:
 
 ```text
-Konfigurasi sumber ARKAS
-→ ArkasBridgeClient
-→ ambil identity / RKAS / BKU
-→ simpan raw data sumber
-→ proyeksikan/update transaksi dan item
-→ tandai data yang hilang/berubah
-→ pertahankan data manual operator
-→ catat hasil sinkronisasi
-→ tampilkan kebutuhan rekonsiliasi
+ARKAS Bridge/source
+→ ambil RKAS/BKU
+→ simpan/update source
+→ proyeksikan transaction/items
+→ tandai source hilang/berubah
+→ pertahankan manual overlay
+→ rekonsiliasi bila diperlukan
 ```
 
-Prinsip safe sync:
+Prinsip:
 
-- tidak menghapus data manual ketika source hilang;
-- tidak menimpa penerima kuitansi manual;
-- perubahan sumber dapat memicu `requires_reconciliation`;
-- transaksi yang tidak lagi muncul dapat ditandai sebagai data sumber hilang;
-- dokumen final tidak boleh berubah otomatis akibat sinkronisasi.
-
-Pengembangan berikutnya: snapshot before/after dan diff rekonsiliasi yang eksplisit.
+- source hilang tidak otomatis menghapus transaksi manual;
+- `receipt_recipient_name` dan field operator tidak ditimpa;
+- perubahan dapat memicu `requires_reconciliation`;
+- final/numbered document tidak boleh berubah diam-diam karena sync.
 
 ---
 
-## 6. Workflow transaksi dan SPJ
+## 6. Layer aplikasi
 
-Alur target:
+### Controllers
 
-```text
-Sinkronisasi ARKAS/BKU
-→ Daftar transaksi
-→ Detail Transaksi
-→ Data ARKAS/BKU readonly
-→ Data umum SPJ editable
-→ Detail kategori
-→ Checklist kelengkapan
-→ Siapkan paket SPJ
-→ Validasi
-→ READY
-→ Penomoran
-→ Preview
-→ Unduh/Cetak
-→ FINAL
-```
+Menangani request/response, entry point authorization/validation, lalu delegasi.
 
-Detail Transaksi adalah workspace operator utama.
-
-Backend tidak boleh mengandalkan tampilan UI untuk menjaga aturan bisnis; validasi dan authorization tetap ditegakkan pada controller/use case/service/middleware/policy yang relevan.
-
----
-
-## 7. Arsitektur use case SPJ
-
-`SpjController` sudah direduksi menjadi adapter HTTP tipis. Route dan action publik tetap dipertahankan, tetapi orkestrasi dipindahkan ke use case:
+### Use cases SPJ
 
 ```text
 app/UseCases/Spj/
@@ -266,266 +145,194 @@ app/UseCases/Spj/
 └── SpjReportUseCase.php
 ```
 
-Pembagian tanggung jawab:
-
-### SpjWorkspaceUseCase
-
-- query tab/workspace;
-- metrics;
-- roster peserta;
-- filter/list yang terkait ruang kerja.
-
-### SpjPackageUseCase
-
-- prepare transaksi menjadi paket;
-- update data paket;
-- validasi kategori;
-- pajak;
-- sinkronisasi detail kategori;
-- audit persiapan/perubahan.
-
-### SpjNumberingUseCase
-
-- numbering paket/dokumen;
-- batch numbering triwulan;
-- lifecycle numbering;
-- final/cancel/replace;
-- close/reopen quarter;
-- settlement dan event date yang terkait workflow.
-
-### SpjDocumentUseCase
-
-- preview/download;
-- validasi sebelum generate;
-- integrasi template/generator.
-
-### SpjReportUseCase
-
-- query laporan;
-- monitoring;
-- export PDF/Excel/honor;
-- agregasi laporan SPJ.
-
-Aturan utama: controller baru tidak boleh kembali menjadi tempat penumpukan logika domain.
-
----
-
-## 8. Penomoran dokumen
-
-Aturan:
-
-- setiap jenis dokumen mempunyai domain nomor sendiri;
-- nomor tidak mengikuti urutan input transaksi;
-- kandidat harus READY;
-- strategi utama adalah numbering per triwulan;
-- preview/download tidak boleh membuat nomor secara otomatis;
-- nomor ganda harus dicegah;
-- commit numbering harus atomik;
-- hasil numbering harus dapat diaudit;
-- dokumen bernomor/final terkunci dari perubahan normal.
-
----
-
-## 9. Dokumen dan template
-
-Fondasi generator dokumen sudah tersedia melalui controller/service template, DomPDF, PhpSpreadsheet, dan PHPWord.
-
-Referensi placeholder resmi:
-
-```text
-docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
-```
-
-Status arsitektur:
-
-- generator sudah ada;
-- preview/download lintas format masih dalam fase stabilisasi;
-- preview harus bebas side effect;
-- lifecycle dokumen harus dipisahkan dari aksi render file.
-
----
-
-## 10. Modul aplikasi
-
-### Authentication & setup
-
-- initial setup;
-- login/logout;
-- pemilihan sekolah;
-- pemilihan tahun/sumber dana.
-
-### User administration
-
-- user management;
-- role;
-- impersonation administrator.
-
-### Database management
-
-- provision tenant;
-- activate connection;
-- migrate;
-- integrity check;
-- checkpoint/vacuum;
-- backup/restore;
-- reset tenant bersih dengan rebuild database.
-
-### ARKAS & synced data
-
-- source configuration;
-- sinkronisasi;
-- RKAS/BKU monitoring;
-- reconciliation.
-
-### Transactions
-
-- daftar transaksi Livewire;
-- pencarian/filter;
-- detail transaksi;
-- data manual SPJ;
-- status sumber dan rekonsiliasi.
-
-### SPJ
-
-- persiapan paket;
-- checklist;
-- kategori SPJ;
-- numbering;
-- template;
-- preview/download;
-- finalization/lifecycle.
-
-### Audit & reporting
-
-- operational audit log;
-- audit report/export;
-- laporan BOS lengkap masih tahap lanjutan.
-
----
-
-## 11. Lapisan aplikasi
-
-### Controllers
-
-Menangani HTTP request, authorization entry point, dan delegasi ke use case/service. Controller harus tipis.
-
-### Use cases
-
-Menangani orkestrasi satu alur aplikasi yang memiliki beberapa langkah/service/model.
+- `SpjWorkspaceUseCase`: workspace, tab, query/filter/metrics.
+- `SpjPackageUseCase`: prepare/update package, kategori, pajak, detail package.
+- `SpjNumberingUseCase`: penomoran, quarter workflow, lifecycle numbering.
+- `SpjDocumentUseCase`: preview/download/generator.
+- `SpjReportUseCase`: reporting/export/monitoring.
 
 ### Services
 
-Menangani aturan domain dan operasi reusable, termasuk sinkronisasi ARKAS, tenant database, detail transaksi SPJ, validasi paket, template/generator, numbering, dan audit.
+Menangani aturan reusable/domain, misalnya `SpjTransactionDetailsService`, package validator, document requirements, procurement policy, numbering service, ARKAS sync, tenant database, dan audit.
 
-### Livewire
+### Livewire / Alpine
 
-Dipakai untuk state/data reaktif pada modul yang membutuhkan interaksi tabel/form dinamis.
-
-### Alpine
-
-Hanya untuk state UI ringan seperti toggle, modal, collapse, sticky utility, dan persist UI. Alpine tidak boleh berebut state data bisnis dengan Livewire.
-
-### Tailwind / Blade components
-
-Menangani visual dan design system.
+Livewire memegang state server-backed. Alpine digunakan untuk state UI ringan seperti tab internal, modal, drag/reorder, dan helper form. Business validation tetap backend.
 
 ---
 
-## 12. Arsitektur GUI
-
-Acuan resmi: `docs/GUI_STANDARDIZATION.md`.
-
-Urutan layout standar:
+## 7. Workflow SPJ aktif
 
 ```text
-Header global
-Breadcrumb sticky
-Header halaman + summary
-Toolbar / filter
-Form / section
-Tabel / workspace
-Sticky actions / utility footer
+Sinkronisasi ARKAS/BKU
+→ Daftar transaksi
+→ Detail Transaksi
+→ Lengkapi data SPJ
+→ Prepare package
+→ Package validation
+→ READY
+→ Numbering
+→ Preview/Download
+→ Final
 ```
 
-Primitive tema-aware yang tersedia mencakup page shell, alert, empty state, badge, detail list, toolbar, modal, action menu, loading/skeleton, sticky actions, danger zone, tabel, form controls, dan status badge.
-
-Prinsip penting:
-
-- jangan membuat breadcrumb lokal ganda;
-- bedakan readonly source dan editable operator;
-- status teknis diterjemahkan menjadi bahasa operator;
-- sidebar persisten;
-- sticky `Ke atas` tersedia pada halaman panjang;
-- table system dan pagination memakai pola global;
-- accent non-semantik berasal dari token `--theme-*`;
-- dark mode memakai token surface/text/border yang sama;
-- success/warning/danger tetap semantik;
-- perubahan GUI tidak boleh mengubah aturan bisnis secara implisit.
+Preview/download tidak boleh menjadi shortcut tersembunyi untuk numbering.
 
 ---
 
-## 13. Security dan authorization
+## 8. Arsitektur validasi Surat Pesanan
 
-Role utama diarahkan ke ADMIN, OPERATOR, dan VIEWER/read-only bila digunakan.
+`SpjDocumentRequirementService` memisahkan Surat Pesanan internal menjadi dua requirement:
 
-Target hardening:
+### `internal_order_content`
 
-- route mutation harus dilindungi backend;
-- VIEWER tidak boleh mutation;
-- aksi sensitif seperti finalisasi, pembatalan nomor, buka kunci, restore, reset database, dan konfigurasi harus memiliki authorization eksplisit;
-- reset database hanya untuk database sekolah aktif dan administrator;
-- koneksi tenant harus sesuai sekolah aktif;
-- seluruh aksi penting dicatat pada audit bila relevan.
+Applicable untuk Non-SiPLah + kategori barang (`BARANG`, `BELANJA_MODAL`, `KONSUMSI`).
+
+Blocking sampai substansi tersedia:
+
+- vendor;
+- tanggal pesanan;
+- item transaksi;
+- uraian item;
+- quantity > 0;
+- satuan;
+- unit price/amount valid;
+- gross amount > 0.
+
+### `internal_order_number`
+
+Applicable pada transaksi yang sama, tetapi baru `required=true` ketika package `NUMBERED` atau `FINAL`.
+
+Ini mencegah circular dependency: nomor PESANAN diterbitkan oleh aplikasi saat numbering, sehingga nomor tidak boleh menjadi blocker sebelum proses tersebut.
+
+---
+
+## 9. Arsitektur tanggal pengadaan
+
+`SpjPackageUseCase` menggunakan constraint utama:
+
+```text
+order_date <= transaction_date
+bap_date >= order_date
+bast_date >= bap_date
+```
+
+Frontend helper `spj-purchase-date-validation.js` menyelaraskan min/max dan custom validity pada form yang memiliki `order_date`, `bap_date`, dan `bast_date`.
+
+**Perbedaan aktif yang harus dicatat:** `TransactionController::updateManualDescription()` masih menambahkan upper bound `bap_date <= transaction_date` dan `bast_date <= transaction_date`. Jadi dua entry point backend belum 100% identik. Ini technical debt, bukan aturan domain baru yang sengaja ditetapkan.
+
+---
+
+## 10. Penomoran dokumen
+
+Aturan arsitektur:
+
+- domain nomor dipisahkan per jenis dokumen;
+- nomor tidak mengikuti urutan input transaksi;
+- tanggal peristiwa/dokumen menjadi basis urutan bila tersedia;
+- numbering harus idempotent/aman terhadap nomor aktif;
+- nomor dibatalkan disimpan sebagai histori, bukan dihapus;
+- package bernomor/final dikunci dari edit normal.
+
+`SpjDocumentNumberService` menangani mapping otomatis termasuk `PESANAN`, `BAP`, `BAST`, `SPK`, `RAB`, dan dokumen lain yang dikonfigurasi.
+
+---
+
+## 11. SiPLah
+
+SiPLah adalah procurement/payment channel, bukan `spj_category`.
+
+Dukungan saat ini:
+
+- `payment_method = siplah`;
+- `siplah_order_number`;
+- vendor/owner/NPWP;
+- invoice/reference;
+- placeholder template SiPLah;
+- policy requirement yang membedakan SiPLah/Non-SiPLah.
+
+Dokumen tetap ditentukan oleh kategori SPJ. Surat Pesanan internal Non-SiPLah dan nomor marketplace SiPLah adalah konsep berbeda.
+
+---
+
+## 12. Arsitektur GUI/theme
+
+Acuan utama:
+
+```text
+docs/GUI_STANDARDIZATION.md
+docs/CSS_USAGE_GUIDE.md
+```
+
+Entry point CSS:
+
+```text
+resources/css/app.css
+└── resources/css/theme-system.css
+```
+
+Layer relevan:
+
+- `token-native-components.css` — contract `ui-*`;
+- `transactions-standardization.css` — transaksi/detail;
+- `spj-workspace-standardization.css` — SPJ workspace;
+- `dark-form-controls.css` — dark form safety;
+- `spj-package-theme-fix.css` — Paket/Isian Manual compatibility/theme;
+- `spj-package-document-placement.css` — layout panel Rincian + Dokumen Template.
+
+### Paket SPJ
+
+Pada Paket, sub-tab internal adalah `Rincian`, `Isian Manual`, `Penomoran`.
+
+`Dokumen & Template` secara DOM dipindahkan ke sub-tab `Rincian` oleh `resources/js/spj-package-document-placement.js`. Di Rincian, transaksi dan template ditampilkan sebagai panel terpisah dengan header theme-aware. Ini presentation layer; business workflow tetap backend.
+
+---
+
+## 13. Security/authorization
+
+Target role utama: ADMIN, OPERATOR, VIEWER/read-only.
+
+Mutation penting harus dilindungi backend, terutama numbering, cancel/reopen/finalization, reset/restore tenant, configuration, dan reconciliation.
 
 ---
 
 ## 14. Testing
 
-Testing memakai database terpisah dari database utama.
+Database testing dipisahkan dari database utama.
 
-Area yang telah memiliki feature test mencakup:
+Setelah perubahan backend gunakan focused test yang relevan. Setelah perubahan frontend jalankan `npm run build`.
 
-- safe ARKAS sync;
-- tenant database manager;
-- reset tenant database/auto-increment;
-- school/year selection;
-- transactions Livewire;
-- user management;
-- impersonation;
-- security hardening;
-- numbering;
-- critical document workflow;
-- synced data entities.
-
-Setelah perubahan backend jalankan test relevan atau `php artisan test`. Setelah perubahan frontend jalankan `npm run build`.
+Jangan menyimpulkan full suite hijau hanya dari satu focused test.
 
 ---
 
-## 15. Area yang belum final
+## 15. Area belum final
 
-1. stabilisasi generator/preview PDF, Excel, Word;
-2. lifecycle dokumen lengkap;
-3. locking, revisi, pembatalan dan histori nomor;
-4. penomoran triwulan atomik final;
-5. rekonsiliasi snapshot/diff;
-6. hardening authorization seluruh role;
-7. end-to-end browser test seluruh kategori;
-8. migrasi view legacy tersisa ke primitive UI;
-9. laporan BOS lengkap;
-10. production hardening dan release process.
+1. konsistensi backend purchase-date rules;
+2. generator/preview PDF/Word/Excel end-to-end;
+3. lifecycle/locking/revision lengkap;
+4. numbering quarter hardening;
+5. reconciliation snapshot/diff;
+6. authorization per role;
+7. end-to-end browser test semua kategori;
+8. mobile regression;
+9. migration view legacy ke primitive canonical;
+10. laporan BOS dan production hardening.
 
 ---
 
 ## 16. Dokumen acuan
 
 ```text
+README.md
 AGENTS.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
+docs/CSS_USAGE_GUIDE.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
+docs/SIPLAH_MVP_PLAN.md
+docs/MOBILE_VISUAL_QA_TODO.md
 ```
-
-`CURRENT_PROGRESS.md` menjelaskan keadaan implementasi terkini, sedangkan dokumen ini menjelaskan bentuk arsitektur yang harus dipertahankan.
