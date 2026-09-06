@@ -78,6 +78,39 @@ Profile/density:
 
 Aturan: dark appearance memakai token yang sama; semantic success/warning/danger tetap bermakna; compatibility layer boleh mengoreksi markup lama, tetapi markup baru memakai token canonical.
 
+### 3.1 Audit warna lintas-view
+
+Seluruh authenticated application workspace di bawah `<main>` kini memiliki final compatibility layer:
+
+```text
+resources/css/view-theme-hardening.css
+```
+
+Layer ini berada paling akhir pada `theme-system.css` dan mengubah ownership warna legacy dari Tailwind palette statis ke token theme aktif. Cakupan utamanya:
+
+```text
+background/surface neutral
+foreground/font neutral
+accent indigo/violet/blue/sky/cyan
+border/divider neutral + accent
+gradient hero/chrome
+hover/focus/ring
+variant background dengan opacity
+```
+
+Dengan demikian class lama seperti `bg-white`, `bg-slate-*`, `text-slate-*`, `bg-indigo-*`, `text-indigo-*`, atau hover/focus sejenis dapat tetap ada sementara sebagai **compatibility hook**, tetapi warna aktual pada authenticated view tidak lagi dimiliki oleh palette tersebut.
+
+Pengecualian yang sengaja dipertahankan:
+
+- emerald/green untuk success;
+- amber/yellow/orange untuk warning/attention;
+- rose/red untuk danger/error;
+- `text-white` serta overlay putih transparan pada hero gelap bila dibutuhkan untuk kontras;
+- PDF/print/template-preview yang membutuhkan warna output tetap;
+- public/auth/setup/pre-login yang tidak berada pada authenticated `<main>` dan dapat memiliki branding sendiri.
+
+Kode baru tetap **tidak boleh** menambah hard-coded palette hanya karena compatibility layer tersedia.
+
 ---
 
 ## 4. Primitive UI resmi
@@ -206,15 +239,17 @@ Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kateg
 
 ## 13. Compatibility layer
 
-CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind statis. Compatibility layer harus terlokalisasi; kode baru tidak boleh memperbanyak markup legacy. Layer SPJ aktif mencakup `spj-workspace-standardization.css`, `spj-package-theme-fix.css`, dan `spj-package-document-placement.css`.
+CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind statis. Compatibility layer feature harus terlokalisasi; kode baru tidak boleh memperbanyak markup legacy. Layer SPJ aktif mencakup `spj-workspace-standardization.css`, `spj-package-theme-fix.css`, dan `spj-package-document-placement.css`.
 
-Untuk Database Aktif v2, `settings-database-standardization.css` menjadi style layer canonical untuk root `#database-control-center`.
+Untuk Database Aktif, `settings-database-standardization.css` menjadi style layer canonical untuk root `#database-control-center`.
+
+`view-theme-hardening.css` berbeda: layer ini sengaja global tetapi hanya berlaku pada authenticated `<main>`. Tugasnya menangkap sisa palette non-semantik lintas halaman setelah seluruh feature layer selesai, bukan menjadi tempat menambah aturan khusus satu halaman.
 
 ---
 
 ## 14. Responsive dan mobile
 
-Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan package dan Database Aktif terbaru belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan package, Database Aktif, dan hardening palette lintas-view belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
 
 ---
 
