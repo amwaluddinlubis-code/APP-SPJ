@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Keputusan Desain & Aturan Bisnis
 
-Terakhir diperbarui: **2026-09-06**
+Terakhir diperbarui: **2026-09-07**
 
 Dokumen ini adalah sumber keputusan bisnis permanen. Jika ada dokumen historis yang bertentangan, gunakan dokumen ini bersama `CURRENT_PROGRESS.md` dan kode aktif.
 
@@ -212,7 +212,70 @@ Satu transaksi dapat memiliki banyak penerima honor. Honor tidak boleh dicampur 
 
 ### Jasa Lainnya
 
-Digunakan untuk jasa yang tidak masuk kategori utama lain. Jangan menjadikannya bucket untuk semua transaksi.
+`JASA_LAINNYA` digunakan untuk jasa yang tidak masuk kategori utama lain. Jangan menjadikannya bucket untuk semua transaksi.
+
+Keputusan desain untuk implementasi berikutnya: satu transaksi BKU kategori `JASA_LAINNYA` **boleh memiliki lebih dari satu penerima/penyedia jasa**. Transaksi source tidak dipecah hanya karena penerima lebih dari satu; satu transaksi tetap menjadi satu Paket SPJ selama sumber BKU memang satu transaksi.
+
+Contoh domain yang termasuk kebutuhan ini:
+
+```text
+sewa laptop
+sewa mobil penumpang umum
+sewa peralatan
+jasa harian lain yang dibayar berdasarkan hari
+```
+
+Model detail yang direncanakan:
+
+```text
+1 Transaction (JASA_LAINNYA)
+└── banyak service recipients / service lines
+    ├── recipient/vendor identity
+    ├── service type
+    ├── uraian jasa
+    ├── periode/tanggal
+    ├── quantity/unit
+    ├── duration_days
+    ├── rate_per_day
+    ├── gross_amount
+    ├── tax_amount
+    ├── net_amount
+    └── payment reference
+```
+
+Untuk sewa harian yang mempunyai dimensi unit dan hari, jangan mereduksi data menjadi satu quantity gabungan jika detail aslinya tersedia. Format yang diutamakan adalah:
+
+```text
+jumlah unit × jumlah hari × tarif per unit per hari = bruto penerima
+```
+
+Validasi agregat yang direncanakan:
+
+```text
+Σ bruto seluruh penerima = transaction.gross_amount
+Σ pajak seluruh penerima = transaction.tax_total
+Σ netto seluruh penerima = transaction.net_amount
+```
+
+Jika total rincian penerima belum konsisten dengan transaksi source, paket belum boleh dinyatakan siap dinomori.
+
+Pajak untuk multi-penerima jasa direncanakan disimpan/dihitung pada level penerima atau service line agar perbedaan dasar pemotongan dan identitas penerima tidak hilang. Total kemudian direkonsiliasi kembali ke nilai transaksi.
+
+Dokumen dibedakan menjadi dua level:
+
+```text
+Dokumen paket
+- SPJ utama
+- SPK/Pesanan/BAP/BAST bila memang applicable
+
+Dokumen per penerima
+- kuitansi/bukti pembayaran per penerima bila diperlukan
+- rincian pembayaran/pajak per penerima
+```
+
+Jangan membuat kategori SPJ baru seperti `SEWA_LAPTOP` atau `SEWA_MOBIL`. Jika diperlukan, gunakan subtype/detail jasa di bawah `JASA_LAINNYA`.
+
+**Status:** keputusan ini masih **planned/documented**, belum dianggap implementasi aktif sampai model, migration, service, validation, UI, generator, dan focused test benar-benar tersedia.
 
 ---
 
@@ -317,7 +380,8 @@ Aktivitas sensitif yang harus dapat diaudit meliputi sync, perubahan data manual
 - rule tanggal berbeda antar endpoint;
 - participant konsumsi terisi dari source yang salah;
 - final document berubah karena sync/edit massal;
-- UI theme hard-coded sehingga dark/theme tertentu tidak terbaca.
+- UI theme hard-coded sehingga dark/theme tertentu tidak terbaca;
+- transaksi multi-penerima jasa dipaksa menjadi satu penerima sehingga rincian pembayaran/pajak tidak dapat direkonsiliasi dengan benar.
 
 ---
 
