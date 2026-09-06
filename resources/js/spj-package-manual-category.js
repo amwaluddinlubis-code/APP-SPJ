@@ -23,14 +23,27 @@ const applyPackageManualCategory = () => {
             if (!control.hasAttribute('data-spj-category-original-disabled')) {
                 control.setAttribute('data-spj-category-original-disabled', control.disabled ? '1' : '0');
             }
+            if (!control.hasAttribute('data-spj-category-original-required')) {
+                control.setAttribute('data-spj-category-original-required', control.required ? '1' : '0');
+            }
 
             if (!active) {
                 control.disabled = true;
+                control.required = false;
                 return;
             }
 
             control.disabled = control.getAttribute('data-spj-category-original-disabled') === '1';
+            control.required = control.getAttribute('data-spj-category-original-required') === '1';
         });
+    });
+
+    // Detail Transaksi treats Pesanan/BAP/BAST dates as optional for BARANG,
+    // but required for KONSUMSI. Keep Paket → Isian Manual identical.
+    ['order_date', 'bap_date', 'bast_date'].forEach((name) => {
+        const control = form.querySelector(`[data-spj-section~="BARANG"] [name="${name}"]`);
+        if (!control || control.disabled) return;
+        control.required = category === 'KONSUMSI';
     });
 };
 
@@ -56,8 +69,8 @@ const bindPackageManualCategory = () => {
         }
         switchField.value = '1';
 
-        // Category change is persisted first, then the server reloads the package
-        // so server-rendered category-specific fields match Transaction Detail.
+        // Persist the category first and reload the server-rendered package form.
+        // submit() intentionally bypasses stale required controls from the old category.
         form.submit();
     });
 };
