@@ -642,7 +642,7 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
     private static void WriteBku(SqliteConnection con, string year, string? fundSource)
     {
         Console.WriteLine("SCHEMA|BKU|1");
-        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_KAS_UMUM|ID_KAS_NOTA|ID_RAPBS_PERIODE|ID_RAPBS|ID_ANGGARAN|ID_REF_BKU|PARENT_ID_KAS_UMUM|TANGGAL_TRANSAKSI|NO_BUKTI|KODE_REKENING|URAIAN|URAIAN_PAJAK|VOLUME|JUMLAH|STATUS_BKU|KODE_BKU|REK_BKU|KATEGORI_BKU|IS_SPJ|IS_PPN|IS_PPH21|IS_PPH22|IS_PPH23|IS_PPH4|IS_SSPD|TANGGAL_NOTA|NO_NOTA|NAMA_TOKO|ALAMAT_TOKO|NO_TELP_TOKO|IS_BADAN_USAHA|NPWP_REKANAN|TOTAL_NOTA|HAS_PPN_NOTA|HAS_PPH22_NOTA|IS_SIPLAH");
+        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_KAS_UMUM|ID_KAS_NOTA|ID_RAPBS_PERIODE|ID_RAPBS|ID_ANGGARAN|ID_REF_BKU|PARENT_ID_KAS_UMUM|TANGGAL_TRANSAKSI|NO_BUKTI|KODE_REKENING|URAIAN|URAIAN_PAJAK|VOLUME|JUMLAH|STATUS_BKU|KODE_BKU|REK_BKU|KATEGORI_BKU|IS_SPJ|IS_PPN|IS_PPH21|IS_PPH22|IS_PPH23|IS_PPH4|IS_SSPD|TANGGAL_NOTA|NO_NOTA|NAMA_TOKO|ALAMAT_TOKO|NO_TELP_TOKO|IS_BADAN_USAHA|NPWP_REKANAN|TOTAL_NOTA|HAS_PPN_NOTA|HAS_PPH22_NOTA|IS_SIPLAH|CREATE_DATE|LAST_UPDATE");
 
         string? anggaranSourceColumn = FindColumn(ReadTableColumns(con, "anggaran"), "id_ref_sumber_dana");
         string sourceExpression = anggaranSourceColumn == null
@@ -757,7 +757,9 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
     COALESCE(n.total,0),
     COALESCE(n.has_ppn,0),
     COALESCE(n.has_pph_22,0),
-    COALESCE(n.is_beli_di_siplah,0)
+    COALESCE(n.is_beli_di_siplah,0),
+    COALESCE(k.create_date,''),
+    COALESCE(k.last_update,'')
 FROM kas_umum k
 INNER JOIN anggaran a ON a.id_anggaran = k.id_anggaran
 LEFT JOIN rapbs_periode rp ON rp.id_rapbs_periode = k.id_rapbs_periode AND COALESCE(rp.soft_delete,0) = 0

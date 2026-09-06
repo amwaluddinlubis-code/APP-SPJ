@@ -163,6 +163,7 @@ Daftar template dibuat compact:
 - padding baris dikurangi;
 - metadata tipe/format diringkas;
 - tombol preview/download dipadatkan;
+- template aktif dapat dipratinjau serta diunduh per jenis sebagai Excel atau PDF; Unduh Paket PDF menggabungkan template aktif yang sesuai kategori;
 - zebra/hover mengikuti theme;
 - header grup dokumen tidak lagi mendominasi vertical space.
 

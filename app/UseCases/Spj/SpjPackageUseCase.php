@@ -138,6 +138,12 @@ class SpjPackageUseCase
     private function prepareRules(Request $request, Transaction $transaction): array
     {
         $maximumDocumentDate = $transaction->transaction_date->format('Y-m-d');
+        $isSiplah = (bool) $transaction->is_siplah || strtolower((string) $request->input('payment_method')) === 'siplah';
+        $invoiceDateRules = ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate];
+
+        if (! $isSiplah) {
+            array_unshift($invoiceDateRules, 'after_or_equal:bast_date');
+        }
 
         return [
             'spj_category' => ['required', 'in:BARANG,KONSUMSI,PEMELIHARAAN,JASA_LAINNYA,SPPD,HONOR_PEGAWAI,BELANJA_MODAL,PERJALANAN_DINAS,JASA_HONORARIUM,UPAH,LAINNYA'],
@@ -152,7 +158,7 @@ class SpjPackageUseCase
             'bast_number' => ['nullable', 'string', 'max:80'],
             'bast_date' => ['required_if:spj_category,KONSUMSI', 'nullable', 'date', 'after_or_equal:bap_date'],
             'invoice_number' => ['nullable', 'string', 'max:80'],
-            'invoice_date' => ['nullable', 'date', 'after_or_equal:bast_date', 'before_or_equal:'.$maximumDocumentDate],
+            'invoice_date' => $invoiceDateRules,
             'invoice_status' => ['nullable', 'string', 'max:30'],
             'work_description' => ['nullable', 'string', 'max:4000'],
             'work_location' => ['nullable', 'string', 'max:180'],

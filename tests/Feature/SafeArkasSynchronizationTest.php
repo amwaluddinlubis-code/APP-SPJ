@@ -45,6 +45,8 @@ class SafeArkasSynchronizationTest extends TestCase
         $this->assertSame('siplah', $transaction->payment_method);
         $this->assertSame('Penyedia ARKAS', $transaction->vendor_name);
         $this->assertSame('12.345.678.9-012.000', $transaction->vendor_npwp);
+        $this->assertSame('2026-08-31 09:15:00', $transaction->source_created_at?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-31 09:16:00', $transaction->source_last_updated_at?->format('Y-m-d H:i:s'));
 
         $transaction->update([
             'payment_description' => 'Uraian pembayaran manual',
@@ -163,7 +165,8 @@ class SafeArkasSynchronizationTest extends TestCase
             'VOLUME' => 1, 'URAIAN' => 'Belanja dari ARKAS',
             'KODE_REKENING' => '5.1.02.01', 'NAMA_TOKO' => 'Penyedia ARKAS',
             'NPWP_REKANAN' => '12.345.678.9-012.000', 'IS_SIPLAH' => 1,
-            'KODE_BKU' => 'BNU',
+            'KODE_BKU' => 'BNU', 'CREATE_DATE' => '2026-08-31 09:15:00',
+            'LAST_UPDATE' => '2026-08-31 09:16:00',
         ];
     }
 

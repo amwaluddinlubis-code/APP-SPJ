@@ -247,6 +247,7 @@ Prinsip:
 5. Nomor aktif tidak boleh ditimpa.
 6. Nomor yang dibatalkan tetap menjadi history.
 7. Reissue pada package yang sama tidak boleh menciptakan identitas dokumen duplikat.
+8. Untuk transaksi BKU pada tanggal yang sama, urutan mengikuti `create_date` ARKAS, lalu `last_update`, sebelum fallback ke ID sumber dan nomor bukti.
 
 Jenis automatic numbering saat ini mencakup antara lain SPJ, PESANAN, BAP, BAST, SPK, RAB, dan Surat Tugas Perjalanan Dinas.
 
@@ -269,8 +270,9 @@ Keputusan terbaru:
 - Header kedua panel mengikuti theme accent dan surface aktif.
 - Daftar template menggunakan compact rows, bukan card tinggi per dokumen.
 - Isian Manual dan Penomoran tidak boleh dipanjangkan oleh daftar template.
+- Unduh Paket PDF merender seluruh template Excel aktif yang sesuai kategori paket; setiap template juga dapat dipratinjau, diunduh sebagai Excel, atau diunduh sebagai PDF.
 
-Perubahan ini presentation-only dan tidak mengubah validation/numbering/download.
+Perubahan struktur tetap tidak mengubah validation atau numbering. Unduhan mengikuti template aktif agar keluaran paket dan dokumen per jenis konsisten.
 
 ---
 

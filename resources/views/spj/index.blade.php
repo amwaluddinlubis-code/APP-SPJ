@@ -205,9 +205,13 @@
 
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                         <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5" style="border-color: var(--ui-line)">
-                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">PDF paket dibuat oleh aplikasi. Template Word/Excel diunduh dalam format sumbernya.</p></div>
+                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">PDF paket disusun dari template aktif yang sesuai dengan kategori transaksi.</p></div>
                             @unless($validationIssues || $package->status === 'CANCELLED')
-                                <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<x-ui.button type="submit">Unduh Paket PDF</x-ui.button></form>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-name="Pratinjau Paket SPJ" title="Pratinjau Paket" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="preview" class="h-5 w-5" /><span class="sr-only">Pratinjau Paket</span></button>
+                                    <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" title="Unduh Excel Paket" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="excel" class="h-5 w-5" /><span class="sr-only">Unduh Excel Paket</span></button></form>
+                                    <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<button type="submit" title="Unduh Paket PDF dari template aktif" class="ui-btn ui-btn-primary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="pdf" class="h-5 w-5" /><span class="sr-only">Unduh Paket PDF</span></button></form>
+                                </div>
                             @endunless
                         </div>
                         @if($templates->isNotEmpty())
@@ -241,13 +245,13 @@
                                         </div>
                                         <x-ui.status-badge :status="$status" :label="$groupTemplates->count().' dokumen'" />
                                     </header>
-                                    <div class="divide-y divide-[var(--ui-line)]">
+                                    <div class="grid gap-px bg-[var(--ui-line)] md:grid-cols-2">
                                         @foreach($groupTemplates as $template)
-                                            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 odd:bg-white even:bg-slate-50/70">
+                                            <div class="flex items-center justify-between gap-3 bg-[var(--ui-surface-base)] px-4 py-3">
                                                 <div><p class="font-semibold" style="color: var(--ui-fg)">{{ $template->name }}</p><p class="mt-0.5 font-mono text-[11px]" style="color: var(--theme-content-accent)">{{ $template->document_type }} · {{ strtoupper($template->format) }}</p></div>
-                                                <div class="flex items-center gap-2">
-                                                    @if(strtolower($template->format) === 'xlsx')<x-ui.button variant="secondary" :href="route('spj.preview-template', [$package->id, $template->id])" target="_blank">Pratinjau</x-ui.button>@endif
-                                                    @if($group === 'needs')<x-ui.status-badge :status="$package->status === 'CANCELLED' ? 'CANCELLED' : 'BELUM_LENGKAP'" :label="$package->status === 'CANCELLED' ? 'Nomor dibatalkan' : 'Lengkapi validasi dahulu'" />@else<form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<x-ui.button type="submit">Unduh {{ strtoupper($template->format) }}</x-ui.button></form>@endif
+                                                <div class="flex shrink-0 items-center gap-2">
+                                                    @if(strtolower($template->format) === 'xlsx')<button type="button" data-template-preview="{{ route('spj.preview-template', [$package->id, $template->id]) }}" data-template-name="{{ $template->name }}" title="Pratinjau {{ $template->name }}" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="preview" class="h-5 w-5" /><span class="sr-only">Pratinjau</span></button>@endif
+                                                    @if($group === 'needs')<x-ui.status-badge :status="$package->status === 'CANCELLED' ? 'CANCELLED' : 'BELUM_LENGKAP'" :label="$package->status === 'CANCELLED' ? 'Nomor dibatalkan' : 'Lengkapi validasi dahulu'" />@else<form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<button type="submit" title="Unduh Excel {{ $template->name }}" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="excel" class="h-5 w-5" /><span class="sr-only">Unduh Excel</span></button></form><form method="POST" action="{{ route('spj.download-template-pdf', [$package->id, $template->id]) }}" target="_blank">@csrf<button type="submit" title="Unduh PDF {{ $template->name }}" class="ui-btn ui-btn-primary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="pdf" class="h-5 w-5" /><span class="sr-only">Unduh PDF</span></button></form>@endif
                                                 </div>
                                             </div>
                                         @endforeach
@@ -386,8 +390,8 @@
                             @else
                                 <div class="mt-4 rounded-lg border border-dashed border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] p-6 text-center">
                                     <p class="text-base font-medium text-slate-700">Belum bernomor</p>
-                                    <p class="mt-1 text-xs text-slate-500">Klik tombol di bawah untuk generate nomor otomatis.</p>
-                                    <form class="mt-4" method="POST" action="{{ route('spj.assign-number', $package->id) }}">@csrf<button class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700">Terbitkan nomor otomatis</button><p class="mt-2 text-xs text-slate-500">{{ $isHonorPackage ? 'Nomor SPJ dibuat dari tanggal transaksi dan dipakai sebagai referensi kuitansi pembayaran honor.' : 'Nomor dibuat dari tanggal transaksi serta tanggal dokumen kategori yang tersedia.' }}</p></form>
+                                    <p class="mt-1 text-xs text-slate-500">Klik tombol di bawah untuk menerbitkan nomor SPJ sesuai urutan BKU.</p>
+                                    <form class="mt-4" method="POST" action="{{ route('spj.assign-number', $package->id) }}">@csrf<button class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700">Terbitkan nomor SPJ</button><p class="mt-2 text-xs text-slate-500">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan, BAP, dan BAST diterbitkan terpisah menurut tanggal dokumennya.</p></form>
                                 </div>
                             @endif
                             @if($package->documents->isNotEmpty())
@@ -537,6 +541,16 @@
         </section>
     </div>
 
+    <div id="template-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="template-preview-title">
+        <div class="flex h-[min(92vh,1100px)] w-full max-w-[1600px] flex-col overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-2xl">
+            <header class="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--ui-line)] px-4 py-3">
+                <div><p class="text-xs font-bold uppercase tracking-wide" style="color: var(--theme-content-accent)">Pratinjau Template</p><h2 id="template-preview-title" class="mt-0.5 font-bold" style="color: var(--ui-fg-strong)">Dokumen SPJ</h2></div>
+                <button type="button" data-close-template-preview class="ui-btn ui-btn-secondary min-h-10 px-4">Tutup</button>
+            </header>
+            <div class="min-h-0 flex-1 overflow-auto bg-[var(--ui-surface-muted)] p-3"><iframe id="template-preview-frame" title="Pratinjau template SPJ" class="h-full min-h-[760px] w-full rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)]"></iframe></div>
+        </div>
+    </div>
+
     <script>
         (() => {
             const category = document.getElementById('spj-type');
@@ -549,6 +563,21 @@
             };
             category?.addEventListener('change', refresh);
             refresh();
+        })();
+        (() => {
+            const modal = document.getElementById('template-preview-modal');
+            const frame = document.getElementById('template-preview-frame');
+            const title = document.getElementById('template-preview-title');
+            const close = () => { modal?.classList.add('hidden'); modal?.classList.remove('flex'); if (frame) frame.src = 'about:blank'; };
+            document.querySelectorAll('[data-template-preview]').forEach((button) => button.addEventListener('click', () => {
+                if (! frame || ! modal) return;
+                title.textContent = button.dataset.templateName || 'Pratinjau Template';
+                frame.src = button.dataset.templatePreview;
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+            }));
+            document.querySelectorAll('[data-close-template-preview]').forEach((button) => button.addEventListener('click', close));
+            modal?.addEventListener('click', (event) => { if (event.target === modal) close(); });
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
         })();
     </script>
 </x-layouts.tailwind-app>

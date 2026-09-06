@@ -58,7 +58,7 @@ class SpjWorkspaceUseCase
             'month' => ['nullable', 'integer', 'between:1,12'],
             'quarter' => ['nullable', 'integer', 'between:1,4'],
             'spj_category' => ['nullable', 'string', 'max:40'],
-            'state' => ['nullable', 'in:all,ready,unprepared,draft,numbered'],
+            'state' => ['nullable', 'in:all,ready,needs_details,unprepared,draft,numbered'],
         ]);
 
         $query = Transaction::query()->activeContext()
@@ -66,9 +66,27 @@ class SpjWorkspaceUseCase
             ->when($filters['quarter'] ?? null, fn ($q, $quarter) => $q->whereMonth('transaction_date', '>=', ((int) $quarter - 1) * 3 + 1)->whereMonth('transaction_date', '<=', (int) $quarter * 3))
             ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('spj_category', $type));
 
+        $queueCounts = (clone $query)
+            ->leftJoin('transaction_items as queue_items', 'queue_items.transaction_id', '=', 'transactions.id')
+            ->leftJoin('spj_packages as queue_packages', 'queue_packages.transaction_id', '=', 'transactions.id')
+            ->toBase()
+            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NULL THEN transactions.id END) as needs_details')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.id IS NULL THEN transactions.id END) as unprepared')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.id IS NOT NULL AND queue_packages.document_number IS NULL THEN transactions.id END) as draft')
+            ->selectRaw('COUNT(DISTINCT CASE WHEN queue_items.id IS NOT NULL AND queue_packages.document_number IS NOT NULL THEN transactions.id END) as numbered')
+            ->first();
+
+        $workQueueCounts = [
+            'needs_details' => (int) $queueCounts->needs_details,
+            'unprepared' => (int) $queueCounts->unprepared,
+            'draft' => (int) $queueCounts->draft,
+            'numbered' => (int) $queueCounts->numbered,
+        ];
+
         match ($filters['state'] ?? 'all') {
             'ready' => $query->has('items'),
-            'unprepared' => $query->doesntHave('spjPackage'),
+            'needs_details' => $query->doesntHave('items'),
+            'unprepared' => $query->has('items')->doesntHave('spjPackage'),
             'draft' => $query->whereHas('spjPackage', fn ($q) => $q->whereNull('document_number')),
             'numbered' => $query->whereHas('spjPackage', fn ($q) => $q->whereNotNull('document_number')),
             default => null,
@@ -91,6 +109,7 @@ class SpjWorkspaceUseCase
             ...$this->overviewMetrics(),
             'spjTypes' => Transaction::query()->activeContext()->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
             'filters' => $filters,
+            'workQueueCounts' => $workQueueCounts,
         ]);
     }
 
@@ -144,20 +163,6 @@ class SpjWorkspaceUseCase
         $validator = app(SpjPackageValidationService::class);
         $category = strtoupper((string) $package->transaction->spj_category);
         $participantRoster = $this->participantRoster();
-        if ($category === 'KONSUMSI' && $package->transaction->participants->isEmpty()) {
-            $item = $package->transaction->items->first();
-            if ($item) {
-                foreach ($participantRoster as $sortOrder => $employee) {
-                    $item->participants()->create([
-                        'name' => $employee->name,
-                        'position' => $employee->position ?: $employee->staff_type,
-                        'portions' => 1,
-                        'sort_order' => $sortOrder,
-                    ]);
-                }
-                $package->transaction->load('participants');
-            }
-        }
         $validationIssues = $validator->validate($package);
         $templates = DocumentTemplate::query()->where(['fiscal_year_id' => session('active_fiscal_year_id'), 'is_active' => true])->orderBy('document_type')->get()
             ->filter(fn (DocumentTemplate $template) => empty($template->applicable_categories) || in_array('SEMUA', $template->applicable_categories, true) || in_array($category, $template->applicable_categories, true));

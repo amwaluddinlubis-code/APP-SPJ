@@ -112,8 +112,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/spj/transaksi/{transactionId}/pembayaran', [SpjController::class, 'storePayment'])->name('spj.payments.store');
         Route::post('/spj/transaksi/{transactionId}/penerimaan', [SpjController::class, 'storeGoodsReceipt'])->name('spj.receipts.store');
         Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
+        Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
+        Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh', [SpjController::class, 'downloadTemplate'])->name('spj.download-template');
+        Route::post('/spj/paket/{packageId}/template/{templateId}/unduh-pdf', [SpjController::class, 'downloadTemplatePdf'])->name('spj.download-template-pdf');
         Route::get('/spj/laporan/honor/{format}', [SpjController::class, 'exportHonorPayments'])->name('spj.honor-payments.export');
         Route::get('/spj/unduh/{format}', [SpjController::class, 'export'])->name('spj.export');
         Route::middleware('operator-or-administrator')->group(function () {

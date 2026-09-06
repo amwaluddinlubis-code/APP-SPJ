@@ -6,13 +6,16 @@ use App\Models\DocumentTemplate;
 use App\Models\FiscalYear;
 use App\Models\School;
 use App\Models\SpjPackage;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
+use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf as SpreadsheetPdfWriter;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
@@ -160,6 +163,7 @@ class SpjTemplateService
         foreach ($values as $key => $value) {
             if ($key === 'KOP_SURAT') {
                 $values[$key] = '';
+
                 continue;
             }
 
@@ -231,6 +235,73 @@ class SpjTemplateService
         if (strtolower($template->format) !== 'xlsx') {
             return null;
         }
+
+        return $this->spreadsheetHtml($template, $package, $school);
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function downloadPackagePdf(Collection $templates, SpjPackage $package, School $school)
+    {
+        return $this->pdfResponse($this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school)), 'PAKET-SPJ-'.$package->document_number.'.pdf');
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function downloadPackageExcel(Collection $templates, SpjPackage $package, School $school)
+    {
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-xlsx-');
+        if ($temporaryFile === false) {
+            throw new \RuntimeException('File sementara Excel tidak dapat dibuat.');
+        }
+
+        try {
+            IOFactory::createWriter($this->packageSpreadsheet($templates, $package, $school), 'Xlsx')->save($temporaryFile);
+
+            return response()->download($temporaryFile, $this->safeName('PAKET-SPJ-'.$package->document_number.'.xlsx'))->deleteFileAfterSend(true);
+        } catch (\Throwable $exception) {
+            @unlink($temporaryFile);
+
+            throw $exception;
+        }
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function packagePreviewHtml(Collection $templates, SpjPackage $package, School $school): string
+    {
+        $pages = $templates->map(function (DocumentTemplate $template) use ($package, $school): string {
+            if (strtolower($template->format) !== 'xlsx') {
+                return '';
+            }
+
+            $html = $this->spreadsheetHtml($template, $package, $school);
+            preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
+            preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
+
+            return implode('', $styles[0] ?? []).'<div class="spj-preview-page">'.($body[1] ?? '').'</div>';
+        })->filter()->implode('<div style="page-break-after: always;"></div>');
+
+        return '<!doctype html><html><head><meta charset="utf-8"><style>.spj-preview-page{margin:0 auto 24px;width:max-content;max-width:none}.spj-preview-page table{background:white}@media print{.spj-preview-page{margin:0}}</style></head><body>'.$pages.'</body></html>';
+    }
+
+    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school)
+    {
+        if (strtolower($template->format) !== 'xlsx') {
+            throw new \RuntimeException('Unduh PDF saat ini hanya tersedia untuk template Excel.');
+        }
+
+        return $this->pdfResponse($this->spreadsheetPdfContents($this->filledSpreadsheet($template, $package, $school)), $template->document_type.'-'.$package->document_number.'.pdf');
+    }
+
+    private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
+    {
+        $spreadsheet = $this->filledSpreadsheet($template, $package, $school);
+        $writer = new Html($spreadsheet);
+        $writer->setSheetIndex(0)->setEmbedImages(true)->setUseInlineCss(true);
+
+        return $writer->generateHtmlAll();
+    }
+
+    private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    {
         $source = $this->templateSourcePath($template);
         if (! is_file($source)) {
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
@@ -243,16 +314,62 @@ class SpjTemplateService
             $this->fillExcelLetterhead($sheet, $school);
             foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
                 $cell = $sheet->getCell($coordinate);
-                if (! is_string($cell->getValue())) {
-                    continue;
+                if (is_string($cell->getValue())) {
+                    $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
                 }
-                $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
             }
         }
-        $writer = new Html($spreadsheet);
-        $writer->setSheetIndex(0)->setEmbedImages(true)->setUseInlineCss(true);
 
-        return $writer->generateHtmlAll();
+        return $spreadsheet;
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    private function packageSpreadsheet(Collection $templates, SpjPackage $package, School $school): Spreadsheet
+    {
+        if ($templates->isEmpty()) {
+            throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
+        }
+
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+
+        foreach ($templates as $template) {
+            if (strtolower($template->format) !== 'xlsx') {
+                throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
+            }
+
+            foreach ($this->filledSpreadsheet($template, $package, $school)->getWorksheetIterator() as $sheet) {
+                $spreadsheet->addExternalSheet($sheet);
+            }
+        }
+
+        return $spreadsheet;
+    }
+
+    private function spreadsheetPdfContents(Spreadsheet $spreadsheet): string
+    {
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
+        if ($temporaryFile === false) {
+            throw new \RuntimeException('File sementara PDF tidak dapat dibuat.');
+        }
+
+        try {
+            (new SpreadsheetPdfWriter($spreadsheet))->save($temporaryFile);
+
+            return (string) file_get_contents($temporaryFile);
+        } finally {
+            @unlink($temporaryFile);
+        }
+    }
+
+    private function pdfResponse(string $contents, string $fileName)
+    {
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$this->safeName($fileName).'"',
+            'Content-Length' => (string) strlen($contents),
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
     }
 
     private function rupiah(mixed $amount): string
