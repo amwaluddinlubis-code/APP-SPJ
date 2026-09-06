@@ -125,26 +125,44 @@ class SpjDocumentRequirementService
          * Field `unit` berasal dari rincian sumber ARKAS dan tidak dapat dilengkapi melalui
          * form uraian SPJ operator. Karena itu `unit` tidak boleh menjadi hidden blocker.
          * Kelengkapan item mengikuti validasi barang canonical: uraian, jumlah, dan harga.
+         *
+         * UI Isian Manual menampilkan `recipient_name` sebagai fallback pada field Nama Toko
+         * ketika `vendor_name` masih kosong. Validasi harus memakai fallback yang sama agar
+         * nilai yang terlihat lengkap di UI tidak ditolak sebagai penyedia kosong.
          */
         $internalOrderApplicable = ! $isSiplah && $goodsCategory;
-        $orderDate = $firstGoods?->order_date ?: $transaction->order_date;
+        $providerName = $transaction->vendor_name ?: $transaction->recipient_name;
+        $orderDate = $firstGoods?->order_date ?: $transaction->transaction_date;
         $orderItemsComplete = $transaction->items->isNotEmpty()
             && $transaction->items->every(fn ($item) =>
                 filled($item->item_description ?: $item->description)
                 && (float) $item->quantity > 0
                 && (float) $item->unit_price >= 0
             );
-        $internalOrderContentReady = filled($transaction->vendor_name)
+        $internalOrderContentReady = filled($providerName)
             && filled($orderDate)
             && $orderItemsComplete
             && (float) $transaction->gross_amount > 0;
+
+        $missingInternalOrderParts = collect([
+            blank($providerName) ? 'penyedia' : null,
+            blank($orderDate) ? 'tanggal pesanan' : null,
+            $transaction->items->isEmpty() ? 'rincian barang' : null,
+            $transaction->items->contains(fn ($item) => blank($item->item_description ?: $item->description)) ? 'uraian barang' : null,
+            $transaction->items->contains(fn ($item) => (float) $item->quantity <= 0) ? 'jumlah barang' : null,
+            $transaction->items->contains(fn ($item) => (float) $item->unit_price < 0) ? 'harga barang' : null,
+            (float) $transaction->gross_amount <= 0 ? 'nilai transaksi' : null,
+        ])->filter()->values();
+        $internalOrderMissingMessage = $missingInternalOrderParts->isEmpty()
+            ? 'Isi Surat Pesanan belum lengkap.'
+            : 'Isi Surat Pesanan belum lengkap pada: '.$missingInternalOrderParts->implode(', ').'.';
 
         $add(
             'internal_order_content', 'Pengadaan', 'Kelengkapan isi Surat Pesanan', 'Dibuat aplikasi',
             $internalOrderApplicable, $internalOrderApplicable,
             $internalOrderContentReady,
             'Isi Surat Pesanan lengkap dan siap masuk proses penomoran.',
-            'Isi Surat Pesanan belum lengkap. Lengkapi penyedia, tanggal pesanan, uraian barang, jumlah, harga, dan nilai transaksi.'
+            $internalOrderMissingMessage
         );
 
         $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?? ''));
