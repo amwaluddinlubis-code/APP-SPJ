@@ -1,8 +1,10 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Project ini merupakan arah pengembangan utama dari aplikasi SPJ berbasis Excel/VBA menuju aplikasi web multi-sekolah dengan sinkronisasi data ARKAS, workflow SPJ, penomoran dokumen, template dokumen, audit, dan design system internal.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif adalah `gui-standardization`.
 
-Branch pengembangan aktif: `gui-standardization`.
+Dokumen ini adalah ringkasan project. Kondisi implementasi paling rinci ada di `docs/CURRENT_PROGRESS.md`, keputusan bisnis permanen di `docs/SPJ_DESIGN_DECISIONS.md`, dan aturan UI/CSS di `docs/GUI_STANDARDIZATION.md` serta `docs/CSS_USAGE_GUIDE.md`.
+
+Terakhir diverifikasi terhadap branch aktif: **2026-09-06**.
 
 ## Stack utama
 
@@ -14,45 +16,35 @@ Branch pengembangan aktif: `gui-standardization`.
 - Vite 6
 - Filament 4 components
 - SQLite multi-koneksi (`main` + database tenant/sekolah)
-- DomPDF untuk PDF
-- PhpSpreadsheet untuk Excel
-- PHPWord untuk Word
-- PHPUnit 11 untuk automated test
+- DomPDF, PhpSpreadsheet, PHPWord
+- PHPUnit 11
 
 ## Arsitektur singkat
 
-Aplikasi menggunakan dua lapisan database:
+Aplikasi memakai dua lapisan database:
 
-1. **Database utama** untuk user, sekolah, konfigurasi, sumber ARKAS, backup, dan metadata global.
-2. **Database tenant/sekolah** untuk tahun anggaran, sumber dana, RKAS/BKU hasil sinkronisasi, transaksi, detail SPJ, paket dokumen, nomor dokumen, audit operasional, dan data kerja sekolah.
+1. **Database utama**: user, sekolah, konfigurasi tenant, sumber ARKAS, backup, dan metadata global.
+2. **Database tenant/sekolah**: tahun anggaran, sumber dana, RKAS/BKU hasil sinkronisasi, transaksi, detail SPJ, paket, nomor dokumen, audit, serta data kerja sekolah.
 
-Data hasil ARKAS/BKU diperlakukan sebagai **data sumber resmi/read-only**, sedangkan data tambahan SPJ operator disimpan terpisah agar sinkronisasi tidak menimpa pekerjaan manual.
+Data ARKAS/BKU adalah **data sumber/read-only**. Data operator SPJ disimpan terpisah agar sinkronisasi tidak menimpa pekerjaan manual.
 
-## Modul yang sudah tersedia
+## Modul yang tersedia
 
-- setup awal dan login;
-- pemilihan sekolah, tahun anggaran, dan sumber dana aktif;
-- manajemen user dan impersonation administrator;
-- konfigurasi sekolah dan database tenant;
-- backup/restore database sekolah;
-- **reset database sekolah secara penuh** dengan rebuild file SQLite tenant dan reset sequence/auto-increment;
-- konfigurasi sumber ARKAS dan sinkronisasi ARKAS/BKU;
-- penganggaran/RKAS;
-- daftar dan detail transaksi BKU;
-- rekonsiliasi perubahan/hilangnya data sumber;
-- kategori SPJ: Barang, Konsumsi, Pemeliharaan, SPPD, Honor Pegawai, dan Jasa Lainnya;
-- penerima kuitansi manual yang terpisah dari penerima BKU/ARKAS;
-- paket SPJ dan checklist kelengkapan;
-- penomoran dokumen dan format nomor;
-- template dokumen Word/Excel dan katalog placeholder;
-- generator/pratinjau/unduh dokumen yang sedang difinalisasi;
-- audit operasional dan laporan audit;
-- dashboard operasional;
-- standardisasi GUI menyeluruh dan tema dinamis.
+- setup awal, login, sekolah/tahun/sumber dana aktif;
+- user management dan impersonation administrator;
+- provision, backup/restore, dan reset database tenant secara penuh;
+- konfigurasi dan sinkronisasi ARKAS/BKU;
+- RKAS/penganggaran dan transaksi BKU;
+- rekonsiliasi perubahan atau hilangnya data sumber;
+- Detail Transaksi sebagai workspace operator;
+- kategori SPJ: Barang, Konsumsi, Pemeliharaan, SPPD, Honor Pegawai, Jasa Lainnya;
+- paket SPJ, checklist, penomoran, lifecycle, template Word/Excel, preview/download;
+- audit dan laporan operasional;
+- design system internal theme-aware.
 
 ## Struktur use case SPJ
 
-`SpjController` sudah direduksi menjadi adapter HTTP tipis. Tanggung jawab utamanya dipisahkan ke use case:
+`SpjController` adalah adapter HTTP tipis. Orkestrasi utama berada di:
 
 ```text
 app/UseCases/Spj/
@@ -63,9 +55,78 @@ app/UseCases/Spj/
 └── SpjReportUseCase.php
 ```
 
-Route dan kontrak HTTP lama tetap dipertahankan agar refactor tidak mengubah aturan aplikasi.
+Route/kontrak HTTP lama dipertahankan selama refactor agar aturan aplikasi tidak berubah diam-diam.
 
-## Workflow target operator
+## Aturan bisnis penting yang sudah aktif
+
+### Surat Pesanan internal
+
+Untuk Non-SiPLah pada kategori barang/konsumsi, validasi Surat Pesanan dipisah menjadi dua tahap:
+
+- **Kelengkapan isi Surat Pesanan** memblokir bila substansi belum lengkap: penyedia, tanggal pesanan, rincian item, satuan, jumlah, harga, dan nilai transaksi.
+- **Nomor Surat Pesanan** tidak memblokir tahap persiapan. Nomor diterbitkan aplikasi pada proses penomoran dan menjadi wajib ketika paket sudah `NUMBERED`/`FINAL`.
+
+### Kronologi tanggal pengadaan
+
+Aturan domain yang dituju pada Paket SPJ:
+
+```text
+TGL PESANAN <= TGL TRANSAKSI
+TGL PESANAN <= TGL BAP
+TGL BAP <= TGL BAST
+```
+
+`SpjPackageUseCase` sudah mengikuti relasi tersebut. **Catatan implementasi:** endpoint Detail Transaksi saat ini masih lebih ketat karena `TransactionController` juga membatasi TGL BAP dan TGL BAST agar tidak melewati tanggal transaksi. Perbedaan ini dicatat sebagai technical debt dan tidak boleh disembunyikan di dokumentasi.
+
+### Konsumsi dan Dapodik
+
+Pada Detail Transaksi kategori `KONSUMSI`, aksi Alpine `fillTeachers()` menggunakan daftar peserta yang berasal **hanya dari record Employee dengan `source_type = DAPODIK`**. Record yang hanya berasal dari ARKAS tidak ikut diisikan ke daftar peserta konsumsi.
+
+### SiPLah
+
+SiPLah **bukan kategori SPJ**. Ia adalah kanal/metode pembelian (`payment_method = siplah`) dan dapat dipakai bersama kategori seperti `BARANG` atau `KONSUMSI`. Dukungan field SiPLah, placeholder template, dan tampilan dasar sudah ada; verifikasi end-to-end masih perlu dilanjutkan.
+
+## Paket SPJ — struktur UI terbaru
+
+Halaman `/spj?tab=paket&package_id=...` memiliki sub-tab:
+
+```text
+Rincian
+├── Panel Rincian Transaksi
+└── Panel Dokumen & Template
+Isian Manual
+Penomoran
+```
+
+`Dokumen & Template` dipindahkan ke sub-tab **Rincian** agar tidak menambah scroll pada Isian Manual/Penomoran. Rincian transaksi dan dokumen template ditampilkan sebagai **dua panel terpisah** dengan header mengikuti tema aktif. Daftar dokumen dibuat compact.
+
+Tab **Isian Manual** sudah dinormalisasi agar background, font, form control, panel pajak, hover, serta jarak antar panel mengikuti token tema. Halaman `/spj/penomoran` juga memiliki hover card triwulan yang theme-aware.
+
+## Design system dan CSS
+
+Entry point CSS:
+
+```text
+resources/css/app.css
+└── resources/css/theme-system.css
+```
+
+Layer penting saat ini termasuk:
+
+```text
+token-native-components.css
+transactions-standardization.css
+spj-workspace-standardization.css
+dark-form-controls.css
+spj-package-theme-fix.css
+spj-package-document-placement.css
+```
+
+Kode baru harus mengutamakan `x-ui.*`, class `ui-*`, dan token `--ui-*`, `--theme-*`, atau `--spj-*`. Jangan menambah hard-coded `bg-white`, `text-slate-*`, `hover:bg-slate-50`, atau accent statis untuk surface yang harus mengikuti tema.
+
+Panduan rinci: `docs/CSS_USAGE_GUIDE.md`.
+
+## Workflow operator
 
 ```text
 Login
@@ -74,57 +135,14 @@ Login
 → Sinkronisasi ARKAS/BKU
 → Buka transaksi
 → Lengkapi data SPJ
-→ Validasi kelengkapan
-→ READY / Siap diproses
+→ Validasi
+→ READY
 → Penomoran
-→ Pratinjau dokumen
-→ Unduh / Cetak
+→ Pratinjau / Unduh
 → FINAL / Arsip
 ```
 
-Preview tidak boleh membuat nomor atau mengubah status secara diam-diam. Dokumen yang sudah bernomor/final harus mengikuti mekanisme locking dan revisi.
-
-## Status GUI
-
-Branch `gui-standardization` sekarang memakai design system global dengan pola:
-
-```text
-Header global
-Breadcrumb sticky
-Header halaman + summary
-Toolbar / filter
-Form / section
-Tabel / workspace
-Sticky actions / footer utilitas
-```
-
-Fondasi yang sudah diterapkan:
-
-- sidebar persisten;
-- breadcrumb global sticky;
-- sticky control `Ke atas` untuk halaman panjang;
-- form/input/button primitives;
-- table standardization global;
-- pagination dan per-page control yang seragam;
-- page shell, toolbar, filter, tabs, stat card;
-- alert, empty state, modal, badge, detail list;
-- action menu, loading/skeleton, sticky actions, danger zone;
-- status badge dengan bahasa operator;
-- pemisahan visual data ARKAS/BKU (readonly) dan data SPJ operator (editable);
-- compatibility layer untuk markup lama;
-- dark mode dan seluruh accent non-semantik mengikuti tema aktif.
-
-Token tema utama:
-
-```text
---theme-accent
---theme-accent-strong
---theme-accent-soft
---theme-sidebar
---theme-sidebar-deep
-```
-
-Primitive UI baru tidak boleh hard-code accent color jika bukan warna semantik. Warna success/warning/danger tetap mengikuti makna tindakan.
+Preview/download tidak boleh menerbitkan nomor secara diam-diam. Dokumen bernomor/final mengikuti locking dan lifecycle yang sah.
 
 ## Menjalankan project
 
@@ -139,49 +157,35 @@ npm run build
 php artisan serve
 ```
 
-Untuk development terpadu dapat menggunakan script Composer `dev` setelah dependency PHP dan Node tersedia.
-
-Pada fase awal gunakan SQLite. Konfigurasikan `DB_CONNECTION` dan path database sesuai `.env.example`. Konfigurasi `SPJ_ARKAS_BRIDGE_COMMAND`/sumber ARKAS hanya dengan executable/perintah ARKASBridge yang sudah diuji pada komputer target.
-
-## Testing
-
-Database test dipisahkan dari database utama. Jangan mengubah proteksi ini.
-
-Jalankan test yang relevan setelah perubahan backend:
-
-```powershell
-php artisan test
-```
-
-Setelah perubahan frontend:
+Setelah perubahan backend, jalankan test yang relevan. Setelah perubahan CSS/JS/Blade, jalankan:
 
 ```powershell
 npm run build
 ```
 
-Test suite mencakup antara lain sinkronisasi ARKAS aman, database tenant, pemilihan sekolah/tahun, transaksi Livewire, user management, impersonation, security hardening, penomoran, critical document workflow, serta test reset database sekolah yang memverifikasi auto-increment kembali ke awal setelah rebuild tenant.
-
 ## Dokumentasi utama
 
-- `AGENTS.md` — aturan kerja agent/coder.
-- `docs/CURRENT_PROGRESS.md` — snapshot implementasi terkini.
-- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan pembagian modul/use case.
-- `docs/SPJ_DESIGN_DECISIONS.md` — keputusan bisnis yang harus dipertahankan.
-- `docs/USER_SCENARIOS.md` — skenario operator dan peran pengguna.
-- `docs/GUI_STANDARDIZATION.md` — design system dan aturan UX/tema.
-- `docs/DEVELOPMENT_ROADMAP.md` — prioritas pengembangan menuju release.
-- `docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md` — placeholder template dokumen.
+- `AGENTS.md` — aturan kerja coder/agent; bukan snapshot fitur.
+- `docs/CURRENT_PROGRESS.md` — sumber utama kondisi implementasi terkini.
+- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aktif.
+- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen.
+- `docs/USER_SCENARIOS.md` — skenario operator.
+- `docs/GUI_STANDARDIZATION.md` — aturan GUI/theme.
+- `docs/CSS_USAGE_GUIDE.md` — contract CSS aktual.
+- `docs/DEVELOPMENT_ROADMAP.md` — prioritas menuju release.
+- `docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md` — placeholder template.
+- `docs/SIPLAH_MVP_PLAN.md` — status dan batas dukungan SiPLah.
+- `docs/MOBILE_VISUAL_QA_TODO.md` — pekerjaan QA mobile yang belum ditutup.
 
 ## Fokus berikutnya
 
-Prioritas utama tetap menuntaskan workflow SPJ end-to-end:
+Prioritas tetap menuntaskan workflow end-to-end dan mengurangi perbedaan aturan antar entry point, terutama:
 
-1. stabilisasi generator dan preview PDF/Excel/Word;
-2. lifecycle status SPJ dan locking/revisi;
-3. penomoran triwulan yang aman dan atomik;
-4. rekonsiliasi ARKAS dengan snapshot/diff;
-5. hardening authorization per role;
-6. end-to-end test seluruh kategori SPJ;
-7. penyempurnaan laporan BOS dan readiness release.
-
-Generalisasi GUI utama sudah menjadi fondasi; pekerjaan berikutnya adalah migrasi view tersisa dan konsistensi penggunaan primitive yang sudah ada, bukan membuat design system baru lagi.
+1. samakan validasi tanggal Detail Transaksi dan Paket;
+2. stabilkan generator/preview PDF, Word, dan Excel;
+3. hardening lifecycle, locking, revisi, pembatalan, dan numbering;
+4. rekonsiliasi ARKAS snapshot/diff;
+5. authorization per role;
+6. end-to-end test seluruh kategori;
+7. mobile visual QA;
+8. laporan BOS dan release hardening.
