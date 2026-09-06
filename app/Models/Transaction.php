@@ -71,6 +71,8 @@ class Transaction extends Model
         'event_location',
         'event_date',
         'participant_count',
+        'maintenance_material_transaction_id',
+        'maintenance_labor_transaction_id',
 
     ];
 
@@ -101,6 +103,16 @@ class Transaction extends Model
         return $this->hasOne(SpjWorkOrder::class);
     }
 
+    public function maintenanceMaterialTransaction(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'maintenance_material_transaction_id');
+    }
+
+    public function maintenanceLaborTransaction(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'maintenance_labor_transaction_id');
+    }
+
     public function workers(): HasManyThrough
     {
         return $this->hasManyThrough(SpjWorker::class, SpjWorkOrder::class, 'transaction_id', 'work_order_id')
@@ -124,7 +136,7 @@ class Transaction extends Model
     {
         return $this->hasManyThrough(SpjHonor::class, TransactionItem::class)
             ->orderBy('spj_honors.sort_order')
-            ->orderBy('spj_honors.id');
+            ->orderBy('id');
     }
 
     public function serviceRecipients(): HasMany
