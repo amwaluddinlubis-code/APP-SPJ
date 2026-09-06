@@ -35,6 +35,7 @@ Before relying on a package's API, confirm its installed version:
 ## Documentation Files
 
 - You must only create documentation files if explicitly requested by the user.
+- When behavior changes materially, update existing project documentation so `README.md`, `docs/CURRENT_PROGRESS.md`, design decisions, user scenarios, GUI/CSS guidance, and roadmap do not contradict the active code.
 
 ## Replies
 
@@ -165,7 +166,14 @@ Before relying on a package's API, confirm its installed version:
 
 # SPJ BOSP GUI Standardization
 
-Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend interaction, read `docs/GUI_STANDARDIZATION.md` and preserve the decisions documented there.
+Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend interaction, read **both**:
+
+```text
+docs/GUI_STANDARDIZATION.md
+docs/CSS_USAGE_GUIDE.md
+```
+
+Preserve the decisions documented there.
 
 ## Page Structure
 
@@ -174,6 +182,7 @@ Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend intera
 - Sticky breadcrumb offset must follow the actual global header height; do not hard-code a fragile top offset.
 - Page header and directly related summary/statistics may share one bordered card.
 - Do not wrap the whole page slot in a global card. Forms, filters, tables, and detailed sections remain separate cards.
+- Sibling panels at the same hierarchy level must have visually distinct boundaries and consistent spacing.
 
 ## Forms
 
@@ -182,6 +191,7 @@ Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend intera
 - Split long forms into meaningful workflow sections rather than one giant grid.
 - A sticky action bar is allowed for long forms when it improves access to Save/Cancel actions.
 - Preserve the global fallback form styling for legacy forms until they are explicitly migrated.
+- Theme-aware controls must use token/component surfaces; do not introduce new hard-coded `bg-white`/`text-slate-*` styling for general controls.
 
 ## Transaction Workspace
 
@@ -189,11 +199,20 @@ Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend intera
 - Visually separate `Data ARKAS/BKU` from `Data SPJ Operator`.
 - ARKAS/BKU source fields are readonly reference data and should never look editable.
 - SPJ operator fields are editable and should be grouped as Data Umum SPJ, Detail Kategori, Kelengkapan, then Buat Paket.
+- For `KONSUMSI`, the current `fillTeachers()` auto-fill is Dapodik-only; do not silently broaden it to ARKAS records.
 - Do not let frontend cleanup silently change sync, locking, numbering, validation, or document lifecycle business rules.
+
+## SPJ Package Workspace
+
+- Internal package tabs are `Rincian`, `Isian Manual`, and `Penomoran`.
+- `Rincian` contains two distinct sibling panels: `Rincian Transaksi` and `Dokumen & Template`.
+- Keep `Dokumen & Template` compact and inside the `Rincian` tab so it does not lengthen Isian Manual/Penomoran.
+- Panel headers, hover states, backgrounds, and text must follow the selected theme via `--ui-*`, `--theme-*`, or `--spj-*` tokens.
+- `resources/css/spj-package-theme-fix.css` and `spj-package-document-placement.css` are compatibility layers for the current large Blade view; new markup should prefer canonical primitives rather than duplicating legacy color utilities.
 
 ## TALL Ownership
 
-- Tailwind owns visual styling.
+- Tailwind owns visual styling/layout utilities.
 - Alpine owns lightweight client-only UI interaction.
 - Livewire owns reactive server-backed state/data.
 - Laravel owns routes, authorization, validation, persistence, and business rules.
@@ -204,5 +223,6 @@ Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend intera
 - After frontend changes, run `npm run build` or instruct the user to do so.
 - After backend changes, run the narrowest relevant Laravel tests.
 - Browser-check representative desktop and mobile pages after structural UI changes.
+- Do not claim mobile verification while `docs/MOBILE_VISUAL_QA_TODO.md` remains open.
 
 </laravel-boost-guidelines>
