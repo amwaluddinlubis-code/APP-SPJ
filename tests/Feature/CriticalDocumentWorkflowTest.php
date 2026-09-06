@@ -53,7 +53,7 @@ class CriticalDocumentWorkflowTest extends TestCase
         $this->assertCount(1, $receipt->items);
 
         $this->expectException(\RuntimeException::class);
-        $service->addGoodsReceipt($transaction, ['receipt_date' => '2026-01-21'], [['transaction_item_id' => $item->id, 'quantity_received' => 5, 'amount_received' => 500]]);
+        $service->addGoodsReceipt($transaction, ['payment_date' => '2026-02-02', 'gross_amount' => 500, 'tax_amount' => 0]);
     }
 
     public function test_entry_after_quarter_numbering_is_marked_late(): void
@@ -213,7 +213,7 @@ class CriticalDocumentWorkflowTest extends TestCase
 
         $issues = app(SpjPackageValidationService::class)->validate($package->load(['transaction.items', 'transaction.goods']));
 
-        $this->assertContains('Duplikasi invoice', collect($issues)->pluck('label')->all());
+        $this->assertContains('Keunikan invoice', collect($issues)->pluck('label')->all());
     }
 
     private function readyGoodsTransaction(): Transaction
