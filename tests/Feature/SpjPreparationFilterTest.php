@@ -97,7 +97,7 @@ class SpjPreparationFilterTest extends TestCase
         string $date,
         ?string $packageStatus = null,
         ?string $documentNumber = null,
-        ?string $sourceStatus = null,
+        string $sourceStatus = 'ACTIVE',
         bool $requiresReconciliation = false,
     ): Transaction {
         $transaction = Transaction::query()->create([
