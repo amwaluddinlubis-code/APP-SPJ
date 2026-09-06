@@ -12,6 +12,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MaintenanceTransactionLinkController;
 use App\Http\Controllers\OperationalDashboardController;
 use App\Http\Controllers\ProductivityDashboardController;
 use App\Http\Controllers\ReconciliationController;
@@ -99,6 +100,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
         Route::put('/transaksi/{transactionId}/uraian-manual', [TransactionController::class, 'updateManualDescription'])->name('transactions.manual-description.update');
         Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
+        Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
+        Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
         Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
