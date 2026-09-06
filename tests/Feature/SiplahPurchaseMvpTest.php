@@ -83,6 +83,7 @@ class SiplahPurchaseMvpTest extends TestCase
                 'spj_category' => 'BARANG', 'payment_description' => 'Pembelian kertas melalui SiPLah',
                 'payment_method' => 'siplah', 'receipt_recipient_name' => 'Toko SiPLah Nusantara',
                 'vendor_name' => 'Toko SiPLah Nusantara', 'siplah_order_number' => 'SIPL-2026-12345',
+                'payment_reference' => 'PAY-7788', 'invoice_number' => 'INV-88231', 'invoice_date' => '2026-01-14',
             ]);
 
         $response->assertSessionHasNoErrors();
@@ -98,7 +99,9 @@ class SiplahPurchaseMvpTest extends TestCase
                 'payment_method' => 'siplah',
                 'vendor_name' => 'Penyedia SiPLah Diperbarui',
                 'siplah_order_number' => 'SIPL-2026-54321',
+                'payment_reference' => 'PAY-UPDATED',
                 'invoice_number' => 'INV-UPDATED',
+                'invoice_date' => '2026-01-14',
             ]);
 
         $updateResponse->assertSessionHasNoErrors();
@@ -121,9 +124,8 @@ class SiplahPurchaseMvpTest extends TestCase
             ->post(route('spj.prepare', $transaction->id), [
                 'spj_category' => 'BARANG', 'payment_description' => 'Pembelian melalui SiPLah',
                 'payment_method' => 'siplah', 'receipt_recipient_name' => 'Toko SiPLah Nusantara',
-                'siplah_order_number' => 'SIPL-2026-12345', 'order_date' => '2026-01-05',
-                'bap_date' => '2026-01-08', 'bast_date' => '2026-01-10',
-                'invoice_date' => '2026-01-06',
+                'siplah_order_number' => 'SIPL-2026-12345', 'payment_reference' => 'PAY-7788',
+                'invoice_number' => 'INV-88231', 'invoice_date' => '2026-01-06',
             ]);
 
         $response->assertSessionHasNoErrors();
