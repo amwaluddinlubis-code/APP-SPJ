@@ -138,6 +138,7 @@
                         $isHonorPackage = in_array($packageCategory, ['HONOR_PEGAWAI', 'JASA_HONORARIUM'], true);
                         $isGoodsPackage = in_array($packageCategory, ['BARANG', 'KONSUMSI'], true);
                         $isConsumptionPackage = $packageCategory === 'KONSUMSI';
+                        $isSiplah = (bool) $transaction->is_siplah || strtolower((string) $transaction->payment_method) === 'siplah';
                         $purchaseDetails = $transaction->goods->first();
                         $transactionDateLimit = $transaction->transaction_date?->format('Y-m-d');
                         $orderDate = $purchaseDetails?->order_date?->format('Y-m-d') ?: $transaction->order_date?->format('Y-m-d') ?: $transactionDateLimit;
