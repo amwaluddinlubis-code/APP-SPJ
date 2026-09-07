@@ -136,3 +136,32 @@ main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > di
 main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > div:last-child > a:hover {
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--dashboard-surface)) !important;
 }
+
+/* Productivity dashboard priority card uses a permanently dark gradient.
+   Explicit important foregrounds prevent the global light-theme heading and paragraph
+   normalization from turning its text dark on the dark panel. */
+.dashboard-priority-panel {
+    background: linear-gradient(135deg, var(--theme-sidebar-deep), var(--theme-sidebar)) !important;
+    color: var(--text-comfort-on-dark, #e2e8f0) !important;
+}
+
+.dashboard-priority-panel :is(h1, h2, h3, h4, strong) {
+    color: var(--text-comfort-on-dark, #e2e8f0) !important;
+}
+
+.dashboard-priority-panel :is(p, span) {
+    color: var(--text-comfort-on-dark-soft, #c3cedc) !important;
+}
+
+.dashboard-priority-panel .dashboard-priority-kicker {
+    color: var(--text-comfort-on-dark-muted, #9aa8ba) !important;
+}
+
+.dashboard-priority-panel .dashboard-priority-action {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.dashboard-priority-panel .dashboard-priority-action :is(span, svg) {
+    color: inherit !important;
+}
