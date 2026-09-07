@@ -14,8 +14,8 @@ class RkasBudgetController extends Controller
         $yearId = (int) session('active_fiscal_year_id');
         $db = DB::connection('school');
         $search = trim((string) $request->query('q'));
-        $requestedPerPage = (int) $request->query('per_page', 30);
-        $perPage = in_array($requestedPerPage, [10, 15, 30, 50, 100], true) ? $requestedPerPage : 30;
+        $requestedPerPage = (int) $request->query('per_page', 15);
+        $perPage = in_array($requestedPerPage, [15, 30, 50, 100], true) ? $requestedPerPage : 15;
         $fundSourceId = (int) session('active_fund_source_id');
         $realization = $db->table('arkas_bku_rows')->selectRaw("json_extract(payload, '$.ID_RAPBS') as source_rapbs_id, SUM(amount) as realization")->where('fiscal_year_id', $yearId)->where('fund_source_id', $fundSourceId)->where('category', 'BELANJA')->groupByRaw("json_extract(payload, '$.ID_RAPBS')");
         $query = $db->table('arkas_rkas_items as r')->leftJoinSub($realization, 'b', fn ($join) => $join->on('b.source_rapbs_id', '=', 'r.source_rapbs_id'))->where('r.fiscal_year_id', $yearId)->where('r.fund_source_id', $fundSourceId)->selectRaw('r.*, COALESCE(b.realization, 0) as realization');
