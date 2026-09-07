@@ -161,6 +161,26 @@ class SpjPackageValidationService
     }
 
     /**
+     * Validate the source data before a numbering run. Document numbers that
+     * the same run will issue must not prevent that run from starting.
+     *
+     * @return array<int,array{label:string,message:string,url:string}>
+     */
+    public function validateForNumbering(SpjPackage $package): array
+    {
+        return collect($this->checklist($package))
+            ->reject(fn (array $check): bool => $check['key'] === 'document_internal_order_number')
+            ->where('passed', false)
+            ->map(fn (array $check) => [
+                'label' => $check['label'],
+                'message' => $check['message'],
+                'url' => $check['url'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  array<int,array{key:string,group:string,label:string,passed:bool,message:string,url:string}>  $checks
      */
     private function addCheck(array &$checks, string $key, string $group, string $label, bool $passed, string $passedMessage, string $failedMessage, string $url): void

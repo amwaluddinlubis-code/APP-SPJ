@@ -183,7 +183,7 @@ class SpjNumberingUseCase
             ->get();
 
         $invalidPackages = $packages->map(function (SpjPackage $package) use ($validator): ?array {
-            $issues = $validator->validate($package);
+            $issues = $validator->validateForNumbering($package);
 
             return $issues ? ['package' => $package, 'issues' => $issues] : null;
         })->filter();
@@ -207,7 +207,7 @@ class SpjNumberingUseCase
 
             foreach ($manualDocumentTypes as $documentType) {
                 $eligiblePackages = $packages->filter(function (SpjPackage $package) use ($documentType, $templates, $validator): bool {
-                    if ($validator->validate($package)) {
+                    if ($validator->validateForNumbering($package)) {
                         return false;
                     }
                     $category = strtoupper((string) $package->transaction->spj_category);
