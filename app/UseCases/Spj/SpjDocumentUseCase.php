@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\DocumentTemplate;
 use App\Models\School;
 use App\Models\SpjPackage;
+use App\Services\SpjMaintenanceDocumentContextService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjTemplateService;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class SpjDocumentUseCase
             return back()->with('error', 'PDF belum dapat dibuat. Lengkapi seluruh data wajib terlebih dahulu.');
         }
 
+        $this->applyDocumentContext($package);
         $school = School::query()->findOrFail(session('active_school_id'));
         $activeTemplates = $this->activeTemplatesForPackage($package);
 
@@ -39,6 +41,8 @@ class SpjDocumentUseCase
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 
+        $this->applyDocumentContext($package);
+
         return app(SpjTemplateService::class)->downloadPackageExcel($this->activeTemplatesForPackage($package), $package, School::query()->findOrFail(session('active_school_id')));
     }
 
@@ -49,6 +53,8 @@ class SpjDocumentUseCase
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 
+        $validationIssues = app(SpjPackageValidationService::class)->validate($package);
+        $this->applyDocumentContext($package);
         $templates = $this->activeTemplatesForPackage($package);
         $template = new DocumentTemplate(['name' => 'Paket SPJ', 'format' => 'xlsx']);
 
@@ -56,7 +62,7 @@ class SpjDocumentUseCase
             'package' => $package,
             'template' => $template,
             'previewHtml' => app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, School::query()->findOrFail(session('active_school_id'))),
-            'validationIssues' => app(SpjPackageValidationService::class)->validate($package),
+            'validationIssues' => $validationIssues,
         ]);
     }
 
@@ -73,6 +79,7 @@ class SpjDocumentUseCase
             return back()->with('error', 'Dokumen dari template belum dapat dibuat. Lengkapi data wajib terlebih dahulu.');
         }
 
+        $this->applyDocumentContext($package);
         $school = School::query()->findOrFail(session('active_school_id'));
         $documentType = strtoupper($template->document_type);
         $document = $package->documents()
@@ -102,6 +109,8 @@ class SpjDocumentUseCase
             return back()->with('error', 'PDF dari template belum dapat dibuat. Lengkapi data wajib terlebih dahulu.');
         }
 
+        $this->applyDocumentContext($package);
+
         return $templates->downloadPdf($template, $package, School::query()->findOrFail(session('active_school_id')));
     }
 
@@ -115,13 +124,15 @@ class SpjDocumentUseCase
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada tahun anggaran aktif.');
         }
         $school = School::query()->findOrFail(session('active_school_id'));
+        $validationIssues = $validator->validate($package);
+        $this->applyDocumentContext($package);
         $previewHtml = $templates->previewHtml($template, $package, $school);
 
         return view('spj-documents.template-preview', [
             'package' => $package,
             'template' => $template,
             'previewHtml' => $previewHtml,
-            'validationIssues' => $validator->validate($package),
+            'validationIssues' => $validationIssues,
         ]);
     }
 
@@ -137,5 +148,10 @@ class SpjDocumentUseCase
             ->filter(fn (DocumentTemplate $template): bool => empty($template->applicable_categories)
                 || in_array('SEMUA', $template->applicable_categories, true)
                 || in_array($category, $template->applicable_categories, true));
+    }
+
+    private function applyDocumentContext(SpjPackage $package): void
+    {
+        app(SpjMaintenanceDocumentContextService::class)->apply($package);
     }
 }
