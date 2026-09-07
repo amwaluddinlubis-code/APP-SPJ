@@ -30,7 +30,9 @@
                         x-text="item.type==='success'?'Berhasil':(item.type==='error'?'Ada yang perlu diperbaiki':(item.type==='warning'?'Perhatian':'Informasi'))"></p>
                     <p class="ui-toast-message mt-1 text-sm leading-6" x-text="item.message"></p>
                 </div>
-                <button type="button" class="ui-toast-close" @click="remove(item.id)" aria-label="Tutup pemberitahuan">✕</button>
+                <button type="button" class="ui-toast-close" @click="remove(item.id)" aria-label="Tutup pemberitahuan">
+                    <x-ui.icon name="close" size="sm" />
+                </button>
             </div>
             <div class="ui-toast-progress h-1"></div>
         </div>
