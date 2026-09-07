@@ -20,13 +20,9 @@ Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branc
 
 ---
 
-## 2. RVR — source sudah diperbaiki, menunggu verifikasi lokal
+## 2. RVR — source sudah diperbaiki, menunggu verifikasi runtime
 
-### R01 — Dashboard memakai workflow canonical
-
-`ProductivityDashboardController` tidak lagi memakai `->has('items')` untuk menentukan pekerjaan operator. Bucket `unprepared`, `draft`, `ready`, dan `attention` sekarang memakai `SpjWorkflowFilterService` yang sama dengan Transaksi/Persiapan.
-
-### R02 — APP DATA eksternal
+### R01 — APP DATA eksternal
 
 Konfigurasi tidak lagi mengunci path mesin developer. `SPJ_DATA_PATH` bersifat opsional dengan fallback `storage/app`. Pada deployment Windows yang sedang dipakai:
 
@@ -34,7 +30,7 @@ Konfigurasi tidak lagi mengunci path mesin developer. `SPJ_DATA_PATH` bersifat o
 SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
-Masih perlu runtime check provision/migrate/reset/backup/restore pada database nyata sekolah.
+Masih perlu runtime check provision/reset/backup/restore pada database nyata sekolah sebelum dianggap release-ready.
 
 ---
 
@@ -84,21 +80,17 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 4. Verification queue setelah pull
 
-Yang masih perlu diverifikasi:
+Focused tests workflow/pemeliharaan yang sebelumnya RVR sudah PASS. Checkpoint umum yang masih perlu dijalankan setelah perubahan relevan:
 
 ```powershell
 php vendor/bin/pint --dirty --format agent
-
-php artisan test --compact tests/Feature/TransactionsWorkflowFilterTest.php
-php artisan test --compact tests/Feature/MaintenanceTransactionLinkTest.php
-
 npm run theme:qa
 npm run build
 php artisan view:cache --no-interaction
 git diff --check
 ```
 
-APP DATA masih memerlukan runtime check provision/migrate/reset/backup/restore pada database sekolah nyata.
+APP DATA masih memerlukan runtime check provision/reset/backup/restore pada database sekolah nyata.
 
 ---
 
