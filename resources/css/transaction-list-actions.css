@@ -50,7 +50,7 @@ main:has(a[href*="/data-sinkron/bku"]) thead .transaction-action-column {
 
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
     display: inline-flex;
-    width: 5.25rem; /* 84px: exactly 3x the previous 28px icon-only width */
+    width: 5.25rem; /* keep the requested 3x button width */
     min-height: 2.25rem;
     align-items: center;
     justify-content: center;
@@ -62,6 +62,19 @@ main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
     font-weight: 700;
     line-height: 1rem;
     transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+/* Make the action column tighter without shrinking the action buttons themselves. */
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] colgroup col:last-child {
+    width: 11.5rem !important; /* 184px, down from 200px */
+}
+
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] td.transaction-action-column {
+    padding-inline: .25rem !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] td.transaction-action-column > div {
+    gap: .25rem !important;
 }
 
 /* The global table baseline is 14px, but action labels are compact controls and
@@ -113,6 +126,50 @@ main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:disabled {
     cursor: not-allowed;
     opacity: .48;
     transform: none;
+}
+
+/* Match the SPJ footer pattern: page information at the start, one compact
+   pagination group at the end. Existing Livewire actions remain unchanged. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav {
+    display: inline-flex !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--ui-line) !important;
+    border-radius: .5rem !important;
+    background: var(--ui-surface-base) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button {
+    margin: 0 !important;
+    min-width: 2.25rem !important;
+    height: 2.25rem !important;
+    border: 0 !important;
+    border-right: 1px solid var(--ui-line) !important;
+    border-radius: 0 !important;
+    background: var(--ui-surface-base) !important;
+    color: var(--ui-fg-muted) !important;
+    box-shadow: none !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:last-child {
+    border-right: 0 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:hover:not(:disabled):not([aria-current="page"]) {
+    background: var(--ui-surface-soft) !important;
+    color: var(--ui-fg) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button[aria-current="page"] {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:disabled {
+    background: var(--ui-surface-soft) !important;
+    color: var(--ui-fg-muted) !important;
+    opacity: .55 !important;
 }
 
 html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-indigo-700 {
