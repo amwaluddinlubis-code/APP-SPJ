@@ -11,6 +11,7 @@ Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branc
 - ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah bukan kategori; gunakan `payment_method = siplah`.
+- Transaksi SiPLah tidak memakai Surat Pesanan internal aplikasi; gunakan nomor/reference marketplace, invoice, payment reference, dan metadata penyedia sesuai kebutuhan.
 - Workflow Transaksi/Persiapan/Dashboard memakai `SpjWorkflowFilterService` sebagai kontrak status operator.
 - Root data eksternal dapat diatur dengan `SPJ_DATA_PATH`; bila tidak diisi aplikasi kembali ke `storage/app`.
 - Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
@@ -69,13 +70,7 @@ SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 
 Masih perlu runtime check provision/migrate/reset/backup/restore pada database nyata sekolah.
 
-### R06 — SiPLah MVP
-
-Source sudah memiliki policy, persistence metadata, package flow, pemisahan nomor marketplace vs nomor SPJ, placeholder template, serta focused tests `SiplahPurchaseMvpTest` dan `SiplahMarketplaceDocumentPolicyTest`.
-
-Belum boleh disebut PASS sampai suite tersebut dijalankan pada working copy terbaru dan preview/download nyata diverifikasi.
-
-### R07 — Rekonsiliasi gross/tax/net JASA_LAINNYA
+### R06 — Rekonsiliasi gross/tax/net JASA_LAINNYA
 
 Migration baru menambah `tax_amount` dan `net_amount` pada setiap service recipient. Sinkronisasi mengalokasikan tax/net dari source secara proporsional terhadap gross dengan koreksi rounding pada baris terakhir. `SpjPackageValidationService` sekarang memblokir ketidaksesuaian:
 
@@ -145,7 +140,6 @@ php artisan test --compact tests/Feature/TransactionPurchaseDateValidationTest.p
 php artisan test --compact tests/Feature/TransactionsWorkflowFilterTest.php tests/Feature/SpjPreparationFilterTest.php
 php artisan test --compact tests/Feature/MaintenanceTransactionLinkTest.php tests/Feature/MaintenanceDocumentContextTest.php
 php artisan test --compact tests/Feature/ServiceRecipientReconciliationTest.php
-php artisan test --compact tests/Feature/SiplahPurchaseMvpTest.php tests/Feature/SiplahMarketplaceDocumentPolicyTest.php
 
 npm run theme:qa
 npm run build
