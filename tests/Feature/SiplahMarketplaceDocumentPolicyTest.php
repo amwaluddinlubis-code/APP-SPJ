@@ -42,7 +42,6 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
             'is_siplah' => true,
             'spj_category' => 'BARANG',
             'vendor_name' => 'Toko SiPLah',
-            'vendor_npwp' => '12.345.678.9-012.000',
             'siplah_order_number' => 'SIPL-2026-001',
             'invoice_number' => 'INV-001',
             'payment_reference' => 'PAY-001',
@@ -51,14 +50,11 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         $requirements = collect(app(SpjDocumentRequirementService::class)->forTransaction($transaction));
 
         $this->assertTrue((bool) $requirements->firstWhere('key', 'siplah_order')['available']);
-        $this->assertFalse((bool) $requirements->firstWhere('key', 'internal_order')['applicable']);
+        $this->assertFalse((bool) $requirements->firstWhere('key', 'internal_order_content')['applicable']);
+        $this->assertFalse((bool) $requirements->firstWhere('key', 'internal_order_number')['applicable']);
+        $this->assertFalse((bool) $requirements->firstWhere('key', 'goods_receipt')['applicable']);
         $this->assertFalse((bool) $requirements->firstWhere('key', 'bap')['applicable']);
         $this->assertFalse((bool) $requirements->firstWhere('key', 'bast')['applicable']);
-
-        $goodsReceipt = $requirements->firstWhere('key', 'goods_receipt');
-        $this->assertTrue((bool) $goodsReceipt['applicable']);
-        $this->assertTrue((bool) $goodsReceipt['required']);
-        $this->assertFalse((bool) $goodsReceipt['available']);
     }
 
     public function test_non_siplah_goods_keep_existing_internal_purchase_order_requirement(): void
@@ -70,11 +66,14 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         ]);
 
         $requirements = collect(app(SpjDocumentRequirementService::class)->forTransaction($transaction));
-        $internalOrder = $requirements->firstWhere('key', 'internal_order');
+        $internalOrderContent = $requirements->firstWhere('key', 'internal_order_content');
+        $internalOrderNumber = $requirements->firstWhere('key', 'internal_order_number');
 
-        $this->assertTrue((bool) $internalOrder['applicable']);
-        $this->assertTrue((bool) $internalOrder['required']);
-        $this->assertFalse((bool) $internalOrder['available']);
+        $this->assertTrue((bool) $internalOrderContent['applicable']);
+        $this->assertTrue((bool) $internalOrderContent['required']);
+        $this->assertFalse((bool) $internalOrderContent['available']);
+        $this->assertTrue((bool) $internalOrderNumber['applicable']);
+        $this->assertFalse((bool) $internalOrderNumber['required']);
     }
 
     public function test_payment_evidence_and_invoice_are_visible_but_do_not_block_print_when_missing(): void
