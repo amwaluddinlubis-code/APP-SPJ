@@ -23,9 +23,18 @@ const actionIconRules = [
 
 const legacyPrefixPattern = /^[\s\u2190-\u21ff\u2600-\u27bf\u{1f300}-\u{1faff}]+/u;
 
+const cleanActionLabel = (value) => (value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(legacyPrefixPattern, '')
+    .replace(/[→›»]+\s*$/, '')
+    .trim();
+
 const normalizeActionLabel = (element) => {
-    const raw = element.textContent?.replace(/\s+/g, ' ').trim() || '';
-    return raw.replace(legacyPrefixPattern, '').replace(/[→›»]+\s*$/, '').trim();
+    const textLabel = cleanActionLabel(element.textContent);
+    if (textLabel) return textLabel;
+
+    return cleanActionLabel(element.getAttribute('aria-label') || element.getAttribute('title'));
 };
 
 const resolveIconName = (label) => {
@@ -60,8 +69,9 @@ const migrateAction = (element) => {
     if (!icon) return;
 
     const rawText = element.textContent?.replace(/\s+/g, ' ').trim() || '';
-    if (rawText !== label && element.childElementCount === 0) {
-        element.textContent = label;
+    const cleanedText = cleanActionLabel(rawText);
+    if (rawText && rawText !== cleanedText && element.childElementCount === 0) {
+        element.textContent = cleanedText;
     } else if (/^[\s\u2190-\u21ff\u2600-\u27bf\u{1f300}-\u{1faff}]+/u.test(rawText)) {
         const firstTextNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.nodeValue?.trim());
         if (firstTextNode) firstTextNode.nodeValue = firstTextNode.nodeValue.replace(legacyPrefixPattern, '');
