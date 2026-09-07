@@ -24,15 +24,21 @@ const makeIcon = (name, extraClass = '') => {
 };
 
 const normalizeButtonText = (element) => {
-    element.childNodes.forEach((node) => {
-        if (node.nodeType !== Node.TEXT_NODE) return;
-        node.nodeValue = node.nodeValue.replace(/^\s*[←+]+\s*/, '').replace(/\s*→\s*$/, '');
-    });
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) {
+        if (walker.currentNode.nodeValue?.trim()) nodes.push(walker.currentNode);
+    }
+    if (!nodes.length) return;
+
+    nodes[0].nodeValue = nodes[0].nodeValue.replace(/^\s*[←+]+\s*/, '');
+    nodes[nodes.length - 1].nodeValue = nodes[nodes.length - 1].nodeValue.replace(/\s*→\s*$/, '');
 };
 
 const addIcon = (element, icon) => {
-    if (!(element instanceof HTMLElement) || element.dataset.detailIcon === '1') return;
+    if (!(element instanceof HTMLElement)) return;
     normalizeButtonText(element);
+    if (element.dataset.detailIcon === '1') return;
     element.dataset.detailIcon = '1';
     element.classList.add('transaction-detail-icon-action');
     element.prepend(makeIcon(icon));
@@ -43,17 +49,24 @@ const enhanceActions = (page) => {
         ['kembali ke transaksi', 'back'], ['buka paket spj', 'document'], ['buat spj', 'document'],
         ['isi data', 'edit'], ['simpan perbaikan paket', 'save'], ['buat paket spj', 'save'],
         ['simpan uraian barang/jasa', 'save'], ['ambil semua pegawai terdaftar', 'users'],
-        ['ambil pegawai', 'users'], ['pekerja', 'plus'], ['peserta', 'plus'], ['pelaksana', 'plus'],
-        ['penerima', 'plus'], ['hapus', 'trash'],
+        ['ambil pegawai', 'users'], ['pekerja', 'plus'], ['peserta manual', 'plus'],
+        ['pelaksana', 'plus'], ['manual', 'plus'], ['penerima', 'plus'], ['hapus', 'trash'],
     ];
 
     page.querySelectorAll('a, button').forEach((element) => {
-        if (element.dataset.detailIcon === '1') return;
         const raw = element.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
         if (!raw || ['↑', '↓', '⋮⋮'].includes(raw)) return;
+
+        if (element.dataset.detailIcon === '1') {
+            normalizeButtonText(element);
+            return;
+        }
+
+        const hasLeadingPlus = /^\+\s*/.test(raw);
         const text = raw.replace(/^\+\s*/, '').replace(/^←\s*/, '').replace(/\s*→$/, '');
         const rule = rules.find(([needle]) => text === needle || (needle.length > 7 && text.includes(needle)));
         if (rule) addIcon(element, rule[1]);
+        else if (hasLeadingPlus) addIcon(element, 'plus');
     });
 };
 
@@ -209,6 +222,88 @@ const renderAutomaticSummary = (form) => {
     });
 };
 
+const makePanel = (title, icon, className) => {
+    const panel = document.createElement('section');
+    panel.className = `transaction-detail-form-panel ${className}`;
+
+    const heading = document.createElement('div');
+    heading.className = 'transaction-detail-form-panel-heading';
+    heading.append(makeIcon(icon));
+    const label = document.createElement('h3');
+    label.textContent = title;
+    heading.append(label);
+
+    const content = document.createElement('div');
+    content.className = 'transaction-detail-form-panel-content';
+    panel.append(heading, content);
+
+    return { panel, content };
+};
+
+const categoryFieldset = (form, category) => Array.from(form.querySelectorAll('fieldset')).find((fieldset) =>
+    (fieldset.getAttribute('x-show') || '').includes(`category === '${category}'`));
+
+const ensureFormLayout = (form) => {
+    const rootFieldset = Array.from(form.children).find((child) => child instanceof HTMLFieldSetElement);
+    if (!(rootFieldset instanceof HTMLFieldSetElement)) return;
+
+    let layout = rootFieldset.querySelector(':scope > .transaction-detail-form-layout');
+    let fullWidth = rootFieldset.querySelector(':scope > .transaction-detail-fullwidth-sections');
+
+    if (!(layout instanceof HTMLElement)) {
+        const originalChildren = Array.from(rootFieldset.children);
+        const requiredNotice = originalChildren.find((child) => child.textContent?.includes('Wajib diisi.'));
+        const submitButton = Array.from(rootFieldset.querySelectorAll('button')).find((button) => {
+            const text = button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+            return text.includes('buat paket spj') || text.includes('simpan perbaikan paket') || text.includes('paket terkunci');
+        });
+        const submitRow = submitButton?.parentElement;
+        const submitIndex = submitRow ? originalChildren.indexOf(submitRow) : originalChildren.length;
+
+        layout = document.createElement('div');
+        layout.className = 'transaction-detail-form-layout';
+        layout.dataset.transactionDetailLayout = 'true';
+
+        const infoPanel = makePanel('Informasi dan Penomoran Otomatis', 'database', 'transaction-detail-info-panel');
+        const operatorPanel = makePanel('Form Input Oleh Operator', 'edit', 'transaction-detail-operator-panel');
+        layout.append(infoPanel.panel, operatorPanel.panel);
+
+        fullWidth = document.createElement('div');
+        fullWidth.className = 'transaction-detail-fullwidth-sections';
+        fullWidth.dataset.transactionDetailFullwidth = 'true';
+
+        if (requiredNotice instanceof HTMLElement) requiredNotice.insertAdjacentElement('afterend', layout);
+        else rootFieldset.prepend(layout);
+        layout.insertAdjacentElement('afterend', fullWidth);
+
+        const specialFieldsets = new Set([
+            categoryFieldset(form, 'PEMELIHARAAN'),
+            categoryFieldset(form, 'HONOR_PEGAWAI'),
+            categoryFieldset(form, 'JASA_LAINNYA'),
+        ].filter(Boolean));
+
+        originalChildren.slice(0, submitIndex).forEach((child) => {
+            if (!(child instanceof HTMLElement) || child === requiredNotice) return;
+            if (specialFieldsets.has(child)) fullWidth.append(child);
+            else operatorPanel.content.append(child);
+        });
+
+        const reference = form.querySelector('[data-transaction-arkas-reference="true"]');
+        if (reference instanceof HTMLElement) infoPanel.content.append(reference);
+    }
+
+    const reference = form.querySelector('[data-transaction-arkas-reference="true"]');
+    const infoContent = layout.querySelector('.transaction-detail-info-panel .transaction-detail-form-panel-content');
+    if (reference instanceof HTMLElement && infoContent instanceof HTMLElement && reference.parentElement !== infoContent) {
+        infoContent.append(reference);
+    }
+
+    const category = form.querySelector('[name="spj_category"]')?.value?.toUpperCase() || '';
+    if (fullWidth instanceof HTMLElement) {
+        fullWidth.hidden = !['PEMELIHARAAN', 'HONOR_PEGAWAI', 'JASA_LAINNYA'].includes(category);
+    }
+};
+
 const normalizeCopy = (page) => {
     const replacements = new Map([
         ['Isi invoice atau nomor pesanan.', 'Lengkapi invoice dan tanggal dokumen; nomor pesanan diterbitkan otomatis saat penomoran.'],
@@ -232,6 +327,7 @@ const replaceLockEmoji = (page) => {
 
 const refresh = (form, page) => {
     normalizeArkasReference(form);
+    ensureFormLayout(form);
     hideAutomaticInputs(form);
     normalizeTravelNumbers(form);
     renderAutomaticSummary(form);
