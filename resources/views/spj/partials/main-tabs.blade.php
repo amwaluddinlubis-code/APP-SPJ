@@ -8,10 +8,14 @@
 </div>
 
 {{-- Laporan dan Monitoring dirender berdasarkan tab server-side.
-     Navigasi tab melakukan full URL navigation, jadi kedua panel tidak perlu
-     bergantung pada x-show atau struktur DOM Paket yang masih legacy. --}}
+     Navigasi tab melakukan full URL navigation. x-ignore mencegah x-show legacy
+     di dalam partial memproses ulang visibilitas panel aktif. --}}
 @if(($tab ?? 'persiapan') === 'laporan')
-    @include('spj.partials.laporan')
+    <div x-ignore data-spj-server-tab="laporan">
+        @include('spj.partials.laporan')
+    </div>
 @elseif(($tab ?? 'persiapan') === 'monitoring')
-    @include('spj.partials.monitoring')
+    <div x-ignore data-spj-server-tab="monitoring">
+        @include('spj.partials.monitoring')
+    </div>
 @endif
