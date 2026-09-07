@@ -12,6 +12,7 @@
 @import './audit-report-standardization.css';
 @import './transactions-standardization.css';
 @import './transaction-list-actions.css';
+@import './transaction-detail-normalization.css';
 @import './spj-workspace-standardization.css';
 @import './dashboard-standardization.css';
 @import './settings-database-standardization.css';
