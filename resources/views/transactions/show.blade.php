@@ -671,7 +671,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div x-show="category === 'BARANG'" x-cloak
+                            <div x-show="category === 'BARANG'" :disabled="category !== 'BARANG'" x-cloak
                                 class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5 col-span-3">
                                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Jenis
                                     Belanja Barang</p>
@@ -705,7 +705,7 @@
                                 <div class="lg:col-span-2">
                                     <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dokumen /
                                         pembayaran <span class="text-rose-600">*</span></label>
-                                    <textarea name="payment_description" rows="7" required class="ui-textarea mt-1 text-sm"
+                                    <textarea name="payment_description" rows="5" required class="ui-textarea mt-1 text-sm"
                                         placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea>
                                 </div>
                                 <div>
