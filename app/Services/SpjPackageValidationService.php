@@ -117,12 +117,29 @@ class SpjPackageValidationService
         }
 
         if ($category === 'JASA_LAINNYA') {
-            $hasRecipients = $transaction->serviceRecipients->isNotEmpty();
+            $recipients = $transaction->serviceRecipients;
+            $hasRecipients = $recipients->isNotEmpty();
             $this->addCheck($checks, 'service_recipients', 'Jasa lainnya', 'Daftar penerima pembayaran', $hasRecipients, 'Daftar penerima jasa sudah tersedia.', 'Jasa Lainnya memerlukan minimal satu penerima pembayaran.', $url.'#modul-buat-spj');
-            $total = (float) $transaction->serviceRecipients->sum('amount');
-            $matches = $hasRecipients && abs($total - $grossAmount) <= 0.01;
-            $message = $matches ? 'Total penerima jasa sesuai dengan nilai bruto transaksi.' : sprintf('Total penerima jasa Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($total, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
-            $this->addCheck($checks, 'service_recipient_total', 'Jasa lainnya', 'Total penerima pembayaran', $matches, $message, $message, $url.'#modul-buat-spj');
+
+            $grossTotal = (float) $recipients->sum('amount');
+            $grossMatches = $hasRecipients && abs($grossTotal - $grossAmount) <= 0.01;
+            $grossMessage = $grossMatches ? 'Total penerima jasa sesuai dengan nilai bruto transaksi.' : sprintf('Total penerima jasa Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($grossTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
+            $this->addCheck($checks, 'service_recipient_total', 'Jasa lainnya', 'Total bruto penerima', $grossMatches, $grossMessage, $grossMessage, $url.'#modul-buat-spj');
+
+            $taxTotal = (float) $recipients->sum('tax_amount');
+            $sourceTax = (float) $transaction->tax_total;
+            $taxMatches = $hasRecipients && abs($taxTotal - $sourceTax) <= 0.01;
+            $taxMessage = $taxMatches ? 'Total pajak penerima sesuai dengan pajak transaksi.' : sprintf('Total pajak penerima Rp %s tidak sama dengan pajak transaksi Rp %s.', number_format($taxTotal, 0, ',', '.'), number_format($sourceTax, 0, ',', '.'));
+            $this->addCheck($checks, 'service_recipient_tax_total', 'Jasa lainnya', 'Total pajak penerima', $taxMatches, $taxMessage, $taxMessage, $url.'#modul-buat-spj');
+
+            $netTotal = (float) $recipients->sum('net_amount');
+            $sourceNet = (float) $transaction->net_amount;
+            $netMatches = $hasRecipients && abs($netTotal - $sourceNet) <= 0.01;
+            $netMessage = $netMatches ? 'Total netto penerima sesuai dengan netto transaksi.' : sprintf('Total netto penerima Rp %s tidak sama dengan netto transaksi Rp %s.', number_format($netTotal, 0, ',', '.'), number_format($sourceNet, 0, ',', '.'));
+            $this->addCheck($checks, 'service_recipient_net_total', 'Jasa lainnya', 'Total netto penerima', $netMatches, $netMessage, $netMessage, $url.'#modul-buat-spj');
+
+            $lineTotalsValid = $hasRecipients && $recipients->every(fn ($recipient): bool => abs(((float) $recipient->amount - (float) $recipient->tax_amount) - (float) $recipient->net_amount) <= 0.01);
+            $this->addCheck($checks, 'service_recipient_line_totals', 'Jasa lainnya', 'Bruto/pajak/netto per penerima', $lineTotalsValid, 'Setiap penerima memiliki bruto, pajak, dan netto yang konsisten.', 'Ada penerima jasa dengan bruto, pajak, dan netto yang belum konsisten. Simpan ulang rincian penerima untuk melakukan rekonsiliasi.', $url.'#modul-buat-spj');
         }
 
         $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'goods_receipt', 'honor'];
