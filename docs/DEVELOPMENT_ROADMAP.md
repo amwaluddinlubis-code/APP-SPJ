@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-07**
 
-Roadmap ini hanya memuat pekerjaan yang masih belum selesai setelah perbaikan workflow, kronologi pengadaan, linkage pemeliharaan, dan APP DATA. Item yang sudah PASS tidak dipelihara sebagai milestone aktif.
+Roadmap ini hanya memuat pekerjaan yang masih belum selesai setelah perbaikan workflow, kronologi pengadaan, linkage pemeliharaan, APP DATA, dan rekonsiliasi dasar penerima jasa. Item yang sudah PASS tidak dipelihara sebagai milestone aktif.
 
 ---
 
@@ -17,6 +17,7 @@ normalisasi state Persiapan
 PEMELIHARAAN bahan + upah pada preview/download
 APP DATA eksternal
 SiPLah MVP
+rekonsiliasi gross/tax/net JASA_LAINNYA
 ```
 
 Daftar perintah canonical berada di `docs/CURRENT_PROGRESS.md`.
@@ -25,14 +26,13 @@ Daftar perintah canonical berada di `docs/CURRENT_PROGRESS.md`.
 
 ## P1 — JASA_LAINNYA multi-penerima end-to-end
 
-Fondasi aktif sudah mencakup penerima jamak, quantity × hari × tarif, gross detail, tax/net per penerima, dan alokasi rounding-safe.
+Fondasi aktif sudah mencakup penerima jamak, quantity × hari × tarif, gross detail, tax/net per penerima, alokasi rounding-safe, dan blocker rekonsiliasi gross/tax/net.
 
 Yang harus diselesaikan:
 
 1. tampilkan gross/tax/net setiap penerima pada output template;
-2. validasi row legacy yang belum memiliki hasil rekonsiliasi tax/net;
-3. dukung kuitansi/dokumen per penerima bila template mensyaratkan;
-4. tambah test preview/download dan lifecycle sampai FINAL.
+2. dukung kuitansi/dokumen per penerima bila template mensyaratkan;
+3. tambah test preview/download dan lifecycle sampai FINAL.
 
 Rule agregat tetap:
 
