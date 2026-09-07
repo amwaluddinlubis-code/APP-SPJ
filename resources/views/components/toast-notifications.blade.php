@@ -2,6 +2,7 @@
 @vite('resources/js/maintenance-transaction-links.js')
 @vite('resources/js/transaction-category-controls.js')
 @vite('resources/js/spj-preparation-state-normalizer.js')
+@vite('resources/js/transaction-summary-three-column.js')
 
 @php
     $initialNotifications = collect([
