@@ -66,10 +66,17 @@
                 Uraian item SPJ: <strong class="text-[var(--ui-fg-strong)]">{{ $descriptionsFilled }}/{{ $transaction->items->count() }}</strong> lengkap
             </div>
 
-            @if ($transaction->spjPackage)
-                <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]) }}"
+            @if (! $descriptionsComplete)
+                <p class="max-w-sm text-xs text-amber-700 lg:text-right">
+                    Simpan seluruh Uraian Barang/Jasa untuk SPJ terlebih dahulu sebelum Paket SPJ dapat dibuka.
+                </p>
+                <a href="#rincian-transaksi" class="ui-btn ui-btn-secondary px-4 py-2 text-sm">
+                    Lengkapi Uraian Item
+                </a>
+            @elseif($transaction->spjPackage)
+                <a href="{{ route('transactions.prepare-spj', $transaction->id) }}"
                     class="ui-btn ui-btn-primary px-4 py-2 text-sm">
-                    Buka Paket SPJ
+                    Lihat Paket SPJ
                 </a>
             @elseif($transaction->items->isNotEmpty())
                 <a href="{{ route('transactions.prepare-spj', $transaction->id) }}"
