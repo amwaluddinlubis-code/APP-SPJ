@@ -25,15 +25,38 @@
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                <x-stat-item label="Total Anggaran" :value="$rupiah($budget)" hint="RKAS tersinkron" value-class="text-indigo-700" />
-                <x-stat-item label="Realisasi BKU" :value="$rupiah($spent)" hint="Belanja tercatat" value-class="text-emerald-700" />
+                <x-stat-item
+                    label="Total Anggaran"
+                    :value="$rupiah($budget)"
+                    hint="RKAS tersinkron"
+                    value-class="text-indigo-700"
+                    icon="budget"
+                    icon-class="text-indigo-600"
+                />
+                <x-stat-item
+                    label="Realisasi BKU"
+                    :value="$rupiah($spent)"
+                    hint="Belanja tercatat"
+                    value-class="text-emerald-700"
+                    icon="transaction"
+                    icon-class="text-emerald-600"
+                />
                 <x-stat-item
                     label="Sisa Anggaran"
                     :value="$rupiah(abs($remaining))"
                     :hint="$remaining < 0 ? 'Melewati anggaran' : 'Belum direalisasikan'"
                     :value-class="$remaining < 0 ? 'text-rose-600' : 'text-slate-800'"
+                    icon="balance"
+                    :icon-class="$remaining < 0 ? 'text-rose-600' : 'text-amber-600'"
                 />
-                <x-stat-item label="Kegiatan RKAS" :value="number_format($activityCount, 0, ',', '.')" hint="Kegiatan tersinkron" value-class="text-slate-800" />
+                <x-stat-item
+                    label="Kegiatan RKAS"
+                    :value="number_format($activityCount, 0, ',', '.')"
+                    hint="Kegiatan tersinkron"
+                    value-class="text-slate-800"
+                    icon="work"
+                    icon-class="text-sky-600"
+                />
             </div>
         </x-page-header>
 
