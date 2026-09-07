@@ -1,8 +1,60 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-07**
+Terakhir diperbarui: **2026-09-08**
 
 Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branch `gui-standardization`. Item yang sudah selesai dan telah diverifikasi tidak dipelihara sebagai daftar progres di sini.
+
+---
+
+## URGENT — Migrasi Detail Transaksi ↔ Paket SPJ
+
+**Prioritas: URGENT**
+
+Rencana lengkap ada di:
+
+```text
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
+```
+
+Target arsitektur final:
+
+```text
+Detail Transaksi = source transaksi + item_description
+Paket SPJ        = seluruh data dokumen pertanggungjawaban
+```
+
+Keputusan aktif:
+
+- `item_description` tetap hanya diedit di Detail Transaksi;
+- quantity, unit, unit price, dan amount selalu readonly;
+- `item_description` harus benar-benar tersimpan sebelum Paket SPJ dapat dibuat/dibuka;
+- PPN, PPh 21/22/23/4(2), SSPD, total pajak, dan netto tetap milik transaksi/source;
+- Paket SPJ hanya membaca pajak sebagai referensi readonly;
+- kategori, uraian dokumen, metode/referensi pembayaran, penerima kuitansi, vendor, invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
+- pergantian kategori Paket SPJ tidak boleh melakukan full page reload.
+
+### Status implementasi migrasi saat ini
+
+Source utama sudah bergerak ke arsitektur baru:
+
+- Detail Transaksi tidak lagi merender builder/form kategori SPJ;
+- `item_description` tetap editable di `#rincian-transaksi`;
+- gateway `transactions.prepare-spj` memvalidasi uraian item sudah tersimpan sebelum membuka/membuat Paket;
+- draft/open package memakai `CreateSpjDraftUseCase`;
+- penyimpanan Paket memakai `UpdateSpjPackageDetailsUseCase` dan tidak menulis ulang pajak source;
+- validator mengarahkan masalah ke workspace pemiliknya;
+- Combo Kategori SPJ sekarang persist via AJAX tanpa full reload.
+
+### Gap URGENT yang masih aktif
+
+- **U01** — route legacy `spj.prepare` dan `SpjPackageUseCase::prepare()` masih ada sebagai compatibility path dan masih mewakili pola lama pengisian SPJ saat prepare package;
+- **U02** — `TransactionController::updateManualDescription()`/route `transactions.manual-description.update` masih memiliki write-path SPJ lama dan harus dipensiunkan setelah pemanggil aktif dipastikan tidak ada;
+- **U03** — Paket SPJ belum dipisah menjadi partial per kategori di bawah ownership view `spj/`;
+- **U04** — audit semua section/template/checklist agar tidak ada logic kategori lain yang masih mengandalkan reload penuh;
+- **U05** — readonly pajak perlu menjadi markup Blade canonical, bukan bergantung pada compatibility normalizer JavaScript;
+- **U06** — enam kategori belum diverifikasi end-to-end dengan syarat tidak ada input ganda.
+
+Migrasi **belum boleh dinyatakan PASS** sebelum U01–U06 ditutup atau secara eksplisit diputuskan out-of-scope.
 
 ---
 
@@ -63,10 +115,10 @@ Masih perlu suite terpadu untuk cancellation/reissue/reopen, backend locking NUM
 Belum ada satu checkpoint yang membuktikan seluruh kategori berjalan:
 
 ```text
-source -> DRAFT -> READY -> NUMBERED -> FINAL -> preview/download
+source -> Detail Transaksi -> DRAFT -> READY -> NUMBERED -> FINAL -> preview/download
 ```
 
-tanpa edit database manual.
+tanpa edit database manual dan tanpa pengisian data yang sama di Detail Transaksi serta Paket SPJ.
 
 ### F05 — Mobile visual QA masih terbuka
 
@@ -80,7 +132,7 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 4. Verification queue setelah pull
 
-Focused tests workflow/pemeliharaan yang sebelumnya RVR sudah PASS. Checkpoint umum yang masih perlu dijalankan setelah perubahan relevan:
+Prioritas pertama adalah migrasi URGENT Detail Transaksi ↔ Paket SPJ. Minimum checkpoint setelah perubahan relevan:
 
 ```powershell
 php vendor/bin/pint --dirty --format agent
@@ -88,6 +140,8 @@ npm run theme:qa
 npm run build
 php artisan view:cache --no-interaction
 git diff --check
+php artisan test --compact --filter=SpjPackage
+php artisan test --compact --filter=Transaction
 ```
 
 APP DATA masih memerlukan runtime check provision/reset/backup/restore pada database sekolah nyata.
@@ -96,6 +150,7 @@ APP DATA masih memerlukan runtime check provision/reset/backup/restore pada data
 
 ## 5. Aturan status dokumentasi
 
+- **URGENT** — prioritas program yang harus didahulukan; bukan pengganti PASS/FAIL/RVR/PLANNED.
 - **FAIL** — masih ada gap implementasi/domain yang nyata.
 - **RVR** — source sudah diperbaiki atau cakupan test sudah tersedia tetapi belum diverifikasi pada working copy/runtime terbaru.
 - **PLANNED** — belum diimplementasikan.
@@ -106,6 +161,7 @@ Baca bersama:
 
 ```text
 README.md
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/GUI_STANDARDIZATION.md
