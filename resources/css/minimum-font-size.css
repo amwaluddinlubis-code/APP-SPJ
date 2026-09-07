@@ -4,6 +4,8 @@
 
 :root {
     --ui-font-size-min: 0.75rem; /* 12px at the browser default root size */
+    --ui-table-font-size: 0.875rem; /* 14px: primary table reading size */
+    --ui-table-header-font-size: 0.8125rem; /* 13px: compact but readable headers */
 }
 
 /* Tailwind arbitrary-size utilities currently used by legacy and standardized views. */
@@ -27,4 +29,41 @@ small,
 .ui-status-badge,
 .app-runtime-badge {
     font-size: max(var(--ui-font-size-min), 0.75em);
+}
+
+/* Tables are primary reading surfaces in SPJ/BOSP workflows.
+   Use a larger baseline than the global 12px floor so long transaction,
+   RKAS, database, and report rows remain comfortable to scan. */
+main table:not([data-ui-table='compact']) {
+    font-size: var(--ui-table-font-size) !important;
+}
+
+main table:not([data-ui-table='compact']) :is(td, td p, td a, td strong, td span:not(.ui-badge):not(.ui-status-badge)) {
+    font-size: var(--ui-table-font-size) !important;
+    line-height: 1.4rem;
+}
+
+main table:not([data-ui-table='compact']) th,
+main table:not([data-ui-table='compact']) th :is(span, p, a, strong) {
+    font-size: var(--ui-table-header-font-size) !important;
+    line-height: 1.15rem;
+}
+
+/* Keep semantic badges/status chips compact inside tables, but never below 12px. */
+main table :is(.ui-badge, .ui-status-badge, [class*='text-[10px]'], [class*='text-[11px]']) {
+    font-size: var(--ui-font-size-min) !important;
+    line-height: 1rem;
+}
+
+/* Filament/Livewire tables use their own component classes, so reinforce the
+   same readable baseline without changing spacing or table structure. */
+main .fi-ta-table :is(td, .fi-ta-cell),
+main .fi-ta-table :is(td, .fi-ta-cell) :is(p, a, span:not(.fi-badge), strong) {
+    font-size: var(--ui-table-font-size) !important;
+    line-height: 1.4rem;
+}
+
+main .fi-ta-table :is(th, .fi-ta-header-cell),
+main .fi-ta-table :is(th, .fi-ta-header-cell) :is(span, p) {
+    font-size: var(--ui-table-header-font-size) !important;
 }
