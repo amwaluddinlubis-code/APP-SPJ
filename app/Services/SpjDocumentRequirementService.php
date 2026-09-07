@@ -205,16 +205,16 @@ class SpjDocumentRequirementService
         $add(
             'work_rab', 'Pekerjaan', 'RAB pekerjaan', 'Dibuat aplikasi',
             $workCategory, $workCategory,
-            filled($transaction->workOrder?->rab_number) && filled($transaction->workOrder?->rab_date),
+            filled($transaction->workOrder?->rab_date),
             'RAB pekerjaan tersedia.',
-            'RAB pekerjaan belum lengkap.'
+            'Tanggal RAB pekerjaan belum diisi.'
         );
         $add(
             'work_spk', 'Pekerjaan', 'SPK pekerjaan', 'Dibuat aplikasi',
             $workCategory, $workCategory,
-            filled($transaction->workOrder?->spk_number) && filled($transaction->workOrder?->spk_date),
+            filled($transaction->workOrder?->spk_date),
             'SPK pekerjaan tersedia.',
-            'SPK pekerjaan belum lengkap.'
+            'Tanggal SPK pekerjaan belum diisi.'
         );
         $add(
             'workers', 'Pekerjaan', 'Daftar pekerja / penerima upah', 'Dibuat aplikasi',
