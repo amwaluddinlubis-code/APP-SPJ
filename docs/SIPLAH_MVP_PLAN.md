@@ -2,7 +2,7 @@
 
 Status: **PARTIAL / IN PROGRESS**
 
-Terakhir diperbarui: **2026-09-06**
+Terakhir diperbarui: **2026-09-07**
 
 Branch target:
 
@@ -79,18 +79,35 @@ SIPLAH_REFERENSI_BAYAR
 
 ---
 
-## 3. Surat Pesanan internal vs SiPLah
+## 3. Surat Pesanan internal dan transaksi SiPLah
 
-Dua konsep ini **tidak boleh disamakan**.
+Keputusan canonical:
+
+> **Transaksi SiPLah tidak memakai Surat Pesanan internal aplikasi.**
+
+Untuk transaksi dengan:
 
 ```text
-siplah_order_number = nomor marketplace/order SiPLah
-order_number         = Nomor Surat Pesanan SPJ internal yang diterbitkan aplikasi
+payment_method = siplah
 ```
 
-Untuk Non-SiPLah + kategori barang/konsumsi, internal order memakai rule content + numbering.
+maka:
 
-Untuk SiPLah, requirement internal order Non-SiPLah tidak diterapkan dengan cara yang sama. Bukti/reference pengadaan SiPLah berasal dari nomor marketplace, invoice, payment reference, atau data source lain yang relevan.
+- tidak ada kewajiban isi Surat Pesanan internal;
+- tidak ada kewajiban Nomor Surat Pesanan internal;
+- Surat Pesanan internal tidak menjadi blocker DRAFT/READY/NUMBERED/FINAL;
+- aplikasi tidak perlu menerbitkan nomor `order_number` untuk kebutuhan SiPLah;
+- bukti pengadaan menggunakan data marketplace/source yang relevan seperti `siplah_order_number`, invoice, dan `payment_reference`.
+
+Nomor marketplace SiPLah tetap disimpan terpisah:
+
+```text
+siplah_order_number = nomor pesanan/order marketplace SiPLah
+```
+
+`order_number` hanya digunakan untuk Surat Pesanan internal pada pengadaan **Non-SiPLah** bila aturan transaksi tersebut memang memerlukannya.
+
+Untuk Non-SiPLah + kategori barang/konsumsi, Surat Pesanan internal tetap mengikuti rule content + numbering aplikasi.
 
 ---
 
@@ -114,6 +131,8 @@ Saat menambah dukungan SiPLah baru, jangan membuat field duplikat jika field gen
 
 Jika `payment_method === 'siplah'`, block data SiPLah dapat menampilkan/menyimpan penyedia, nomor pesanan marketplace, invoice, dan referensi pembayaran sesuai field existing.
 
+Surat Pesanan internal tidak perlu ditampilkan sebagai kewajiban transaksi SiPLah.
+
 ### Paket SPJ
 
 Package tetap mengikuti kategori SPJ normal. SiPLah tidak membuat tab/lifecycle/numbering baru.
@@ -126,7 +145,7 @@ Template/dokumen tetap berada di sub-tab Rincian bersama panel Dokumen & Templat
 
 Dokumen ditentukan oleh kategori SPJ dan lifecycle package.
 
-SiPLah boleh memengaruhi data yang dicetak, tetapi tidak otomatis membuat domain nomor baru.
+SiPLah boleh memengaruhi data yang dicetak, tetapi tidak otomatis membuat domain nomor baru dan tidak memakai domain nomor Surat Pesanan internal.
 
 Aturan tetap:
 
@@ -153,7 +172,7 @@ Wajib:
 2. apakah semua placeholder mengambil field canonical yang benar;
 3. apakah preview/download Word/Excel/PDF konsisten;
 4. apakah safe sync mempertahankan manual SiPLah fields;
-5. apakah package Barang/Konsumsi SiPLah lolos requirement yang benar tanpa internal-order blocker yang salah;
+5. apakah package Barang/Konsumsi SiPLah lolos requirement tanpa Surat Pesanan internal;
 6. apakah browser flow source → transaction → package → document bebas side effect numbering.
 
 ---
@@ -180,7 +199,8 @@ Belum dikerjakan:
 3. package dibuat berdasarkan kategori SPJ normal
 4. preview/download tidak menyebabkan numbering
 5. placeholder SiPLah mengambil source yang benar
-6. Non-SiPLah internal order validation tidak salah diterapkan ke SiPLah
+6. SiPLah tidak memiliki requirement Surat Pesanan internal
+7. Non-SiPLah tetap mengikuti Surat Pesanan internal sesuai policy
 ```
 
 ---
@@ -195,6 +215,7 @@ MVP dianggap stabil jika:
 - operator dapat melihat/mengisi field yang memang menjadi tanggung jawabnya;
 - safe sync aman;
 - requirement policy benar;
+- tidak ada Surat Pesanan internal pada workflow SiPLah;
 - dokumen menggunakan field SiPLah yang tepat;
 - numbering/lifecycle existing tetap aman;
 - focused tests dan browser flow lulus.
@@ -207,4 +228,4 @@ Bukan lagi “audit apakah ada dukungan SiPLah”. Dukungan sudah ada.
 
 Next action yang benar:
 
-> Verifikasi ownership field dan end-to-end output dokumen SiPLah, lalu tambahkan focused tests untuk safe sync, requirement policy, placeholder, dan browser flow.
+> Verifikasi ownership field dan end-to-end output dokumen SiPLah, lalu jalankan focused tests untuk safe sync, requirement policy, placeholder, dan browser flow.
