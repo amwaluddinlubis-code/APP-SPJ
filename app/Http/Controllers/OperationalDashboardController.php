@@ -68,16 +68,17 @@ class OperationalDashboardController extends Controller
                 $query->where('requires_reconciliation', true)
                     ->orWhere('source_status', 'SOURCE_MISSING')
                     ->orWhereDoesntHave('spjPackage')
-                    ->orWhereHas('spjPackage', fn ($package) => $package->whereIn('status', ['DRAFT', 'READY']));
+                    ->orWhereHas('spjPackage', fn ($package) => $package->where('status', 'DRAFT'));
             })
-            ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' THEN 0 WHEN requires_reconciliation = 1 THEN 1 ELSE 2 END")
+            ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' THEN 0 WHEN requires_reconciliation = 1 THEN 1 WHEN EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.status = 'DRAFT') THEN 2 ELSE 3 END")
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->limit(8)
             ->get()
             ->map(function (Transaction $transaction): Transaction {
                 $transaction->queue_state = $transaction->requires_reconciliation || $transaction->source_status === 'SOURCE_MISSING'
-                    ? 'attention' : ($transaction->spjPackage?->status === 'READY' ? 'ready' : 'incomplete');
+                    ? 'attention' : 'incomplete';
+
                 if (! $transaction->spjPackage) {
                     $transaction->next_step = 'Lengkapi data SPJ lalu siapkan paket.';
                     $transaction->next_step_url = route('transactions.show', $transaction->id).'#modul-buat-spj';
@@ -97,9 +98,7 @@ class OperationalDashboardController extends Controller
                     return $transaction;
                 }
 
-                $transaction->next_step = $transaction->spjPackage->status === 'READY'
-                    ? 'Paket siap ditinjau untuk penomoran.'
-                    : 'Tinjau status paket dan sumber data.';
+                $transaction->next_step = 'Tinjau status paket dan sumber data.';
                 $transaction->next_step_url = route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]);
                 $transaction->completion_checks = [];
 
