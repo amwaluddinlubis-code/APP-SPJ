@@ -657,7 +657,7 @@
                                 tanda bintang bersifat opsional atau terisi otomatis.</p>
                         </div>
                         <div
-                            class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-3">
+                            class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-4">
                             <div>
                                 <label for="detail-spj-type"
                                     class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Kategori
@@ -672,7 +672,7 @@
                                 </select>
                             </div>
                             <div x-show="category === 'BARANG'" x-cloak
-                                class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
+                                class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5 col-span-3">
                                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Jenis
                                     Belanja Barang</p>
                                 <input type="hidden" name="is_siplah" x-model="isSiplah">
@@ -689,19 +689,7 @@
                                     x-text="isSiplah ? 'Gunakan data marketplace SiPLah.' : 'Gunakan data pesanan, BAP, dan BAST internal.'">
                                 </p>
                             </div>
-                            <div
-                                class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
-                                @foreach ($spjGuidance as $type => $guidance)
-                                    <div x-show="category === '{{ $type }}'"
-                                        class="text-xs text-[var(--ui-fg)]">
-                                        <p class="font-bold text-[var(--ui-fg-strong)]">{{ $guidance['title'] }}</p>
-                                        <p class="mt-0.5 leading-relaxed text-[var(--ui-fg-muted)]">
-                                            {{ $guidance['description'] }}</p>
-                                    </div>
-                                @endforeach
-                                <p x-show="!category" class="text-xs text-[var(--ui-fg-muted)]">Pilih kategori untuk
-                                    menampilkan isian manual yang sesuai.</p>
-                            </div>
+
                         </div>
 
                         <div class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
@@ -717,7 +705,7 @@
                                 <div class="lg:col-span-2">
                                     <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dokumen /
                                         pembayaran <span class="text-rose-600">*</span></label>
-                                    <textarea name="payment_description" rows="2" required class="ui-textarea mt-1 text-sm"
+                                    <textarea name="payment_description" rows="7" required class="ui-textarea mt-1 text-sm"
                                         placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea>
                                 </div>
                                 <div>
@@ -782,13 +770,26 @@
                             <p
                                 class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
                                 Data pembelian barang/konsumsi</p>
-                            <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-4">
-                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No.
-                                        Invoice/Faktur <span x-show="paymentMethod === 'siplah'"
-                                            class="text-rose-600">*</span></label><input name="invoice_number"
-                                        x-bind:required="paymentMethod === 'siplah'"
-                                        value="{{ $transaction->invoice_number }}" class="ui-input mt-1 text-sm"
-                                        placeholder="No. invoice"></div>
+                            <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-3">
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            Pesanan</label><input type="date" name="order_date"
+                                            x-model="orderDate" :max="bapDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            BAP</label><input type="date" name="bap_date" x-model="bapDate"
+                                            :min="orderDate || null" :max="bastDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            BAST</label><input type="date" name="bast_date" x-model="bastDate"
+                                            :min="bapDate || null" :max="invoiceDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+
                                 <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Invoice
                                         <span x-show="paymentMethod === 'siplah'"
                                             class="text-rose-600">*</span></label><input type="date"
@@ -796,6 +797,14 @@
                                         x-bind:required="paymentMethod === 'siplah'"
                                         :min="paymentMethod === 'siplah' ? null : (bastDate || null)"
                                         max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
+
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No.
+                                        Invoice/Faktur <span x-show="paymentMethod === 'siplah'"
+                                            class="text-rose-600">*</span></label><input name="invoice_number"
+                                        x-bind:required="paymentMethod === 'siplah'"
+                                        value="{{ $transaction->invoice_number }}" class="ui-input mt-1 text-sm"
+                                        placeholder="No. invoice"></div>
+
                                 <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Status
                                         Invoice</label><input name="invoice_status"
                                         value="{{ $transaction->invoice_status }}" class="ui-input mt-1 text-sm"
@@ -808,12 +817,7 @@
                                             value="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}"
                                             class="ui-input ui-input-readonly mt-1 text-sm"></div>
                                 </template>
-                                <template x-if="paymentMethod !== 'siplah'">
-                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
-                                            Pesanan</label><input type="date" name="order_date"
-                                            x-model="orderDate" :max="bapDate || @js($transactionDateLimit)"
-                                            class="ui-input mt-1 text-sm"></div>
-                                </template>
+
                                 <template x-if="paymentMethod !== 'siplah'">
                                     <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAP
                                             <span
@@ -823,12 +827,7 @@
                                             class="ui-input ui-input-readonly mt-1 text-sm"
                                             placeholder="Terbit setelah penomoran"></div>
                                 </template>
-                                <template x-if="paymentMethod !== 'siplah'">
-                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
-                                            BAP</label><input type="date" name="bap_date" x-model="bapDate"
-                                            :min="orderDate || null" :max="bastDate || @js($transactionDateLimit)"
-                                            class="ui-input mt-1 text-sm"></div>
-                                </template>
+
                                 <template x-if="paymentMethod !== 'siplah'">
                                     <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAST
                                             <span
@@ -838,12 +837,7 @@
                                             class="ui-input ui-input-readonly mt-1 text-sm"
                                             placeholder="Terbit setelah penomoran"></div>
                                 </template>
-                                <template x-if="paymentMethod !== 'siplah'">
-                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
-                                            BAST</label><input type="date" name="bast_date" x-model="bastDate"
-                                            :min="bapDate || null" :max="invoiceDate || @js($transactionDateLimit)"
-                                            class="ui-input mt-1 text-sm"></div>
-                                </template>
+
                             </div>
                         </div>
 
