@@ -469,7 +469,7 @@
                 </div>
             </details>
 
-            <x-ui.panel variant="default" :padding="false">
+            <x-ui.panel variant="default" :padding="false" class="col-span-2">
                 <div class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -522,9 +522,8 @@
             </x-ui.panel>
         </section>
 
-        <section class="grid gap-4 lg:grid-cols-5">
-            <article
-                class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow col-span-2">
+        <section class="grid gap-4 lg:grid-cols-4 xl:grid-cols-4">
+            <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
                 <div class="flex items-center justify-between gap-3">
                     <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Pajak</h2><span
                         class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</span>
