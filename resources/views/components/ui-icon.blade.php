@@ -2,7 +2,7 @@
     'dashboard' => 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
     'budget' => 'M4 19h16M6 17V9m4 8V5m4 12v-6m4 6V3',
     'transaction' => 'm7 7 5-5 5 5m-5-5v16m5-4-5 5-5-5',
-    'tax' => 'M9 14h6m-7-4h8m-1-7H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6l4-4V5a2 2 0 0 0-2-2Zm2 14v-4h4',
+    'tax' => 'M9 14h6m-7-4h8m-1-7H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6l4-4V5a2 2 0 0 1-2-2Zm2 14v-4h4',
     'document' => 'M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 0v5h5M8 12h8M8 16h6',
     'report' => 'M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-8',
     'audit' => 'M4 5h16v14H4zM8 9h8M8 13h5M8 17h3',
@@ -19,5 +19,13 @@
     'preview' => 'M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Zm9.5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
     'excel' => 'M5 3h10l4 4v14H5V3Zm10 0v5h5M8 12h8m-8 4h8m-8-8h2',
     'pdf' => 'M5 3h10l4 4v14H5V3Zm10 0v5h5M8 16h2.5a1.5 1.5 0 0 0 0-3H8v3Zm6 0v-3h1a1.5 1.5 0 0 1 0 3h-1Z',
+    'inbox' => 'M4 5h16v14H4V5Zm0 9h4l2 3h4l2-3h4',
+    'work' => 'M9 6V4h6v2m-10 0h14a2 2 0 0 1 2 2v10H3V8a2 2 0 0 1 2-2Zm-2 5h18M9 11v2h6v-2',
+    'number' => 'M8 3 6 21m10-18-2 18M4 9h16M3 15h16',
+    'clock' => 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
+    'priority' => 'M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7l-8-4Zm0 5v5m0 4h.01',
+    'progress' => 'M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6',
+    'queue' => 'M5 6h14M5 12h14M5 18h9',
+    'system' => 'M12 3v3m0 12v3m9-9h-3M6 12H3m15.4-6.4-2.1 2.1M7.7 16.3l-2.1 2.1m12.8 0-2.1-2.1M7.7 7.7 5.6 5.6M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
 ])
 <svg {{ $attributes->merge(['class' => 'h-5 w-5 shrink-0', 'fill' => 'none', 'viewBox' => '0 0 24 24', 'stroke' => 'currentColor', 'stroke-width' => '1.8']) }} aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $paths[$name] ?? $paths['document'] }}" /></svg>
