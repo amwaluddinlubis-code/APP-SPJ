@@ -5,6 +5,7 @@
 :root {
     --ui-font-size-min: 0.75rem; /* 12px at the browser default root size */
     --ui-table-font-size: 0.875rem; /* 14px: primary table reading size */
+    --ui-table-small-font-size: 0.8125rem; /* 13px: secondary/small table text */
     --ui-table-header-font-size: 0.8125rem; /* 13px: compact but readable headers */
 }
 
@@ -32,8 +33,8 @@ small,
 }
 
 /* Tables are primary reading surfaces in SPJ/BOSP workflows.
-   Use a larger baseline than the global 12px floor so long transaction,
-   RKAS, database, and report rows remain comfortable to scan. */
+   Primary body content uses 14px so transaction, RKAS, database, and report
+   rows remain comfortable to scan. */
 main table:not([data-ui-table='compact']) {
     font-size: var(--ui-table-font-size) !important;
 }
@@ -49,10 +50,19 @@ main table:not([data-ui-table='compact']) th :is(span, p, a, strong) {
     line-height: 1.15rem;
 }
 
-/* Keep semantic badges/status chips compact inside tables, but never below 12px. */
-main table :is(.ui-badge, .ui-status-badge, [class*='text-[10px]'], [class*='text-[11px]']) {
-    font-size: var(--ui-font-size-min) !important;
-    line-height: 1rem;
+/* Explicitly small/secondary table text is allowed to be slightly smaller than
+   the 14px body baseline, but never below 13px. This intentionally overrides
+   legacy Tailwind text-xs (12px) and text-[11px] utilities inside tables. */
+main table :is(.text-xs, .text-\[11px\], [class*='text-[11px]']) {
+    font-size: var(--ui-table-small-font-size) !important;
+    line-height: 1.15rem;
+}
+
+/* Semantic badges/status chips inside tables follow the same 13px minimum so
+   they stay readable without visually competing with primary 14px cell text. */
+main table :is(.ui-badge, .ui-status-badge, [class*='text-[10px]']) {
+    font-size: var(--ui-table-small-font-size) !important;
+    line-height: 1.15rem;
 }
 
 /* Filament/Livewire tables use their own component classes, so reinforce the
@@ -66,4 +76,9 @@ main .fi-ta-table :is(td, .fi-ta-cell) :is(p, a, span:not(.fi-badge), strong) {
 main .fi-ta-table :is(th, .fi-ta-header-cell),
 main .fi-ta-table :is(th, .fi-ta-header-cell) :is(span, p) {
     font-size: var(--ui-table-header-font-size) !important;
+}
+
+main .fi-ta-table :is(.text-xs, .text-\[11px\], [class*='text-[11px]'], .fi-badge) {
+    font-size: var(--ui-table-small-font-size) !important;
+    line-height: 1.15rem;
 }
