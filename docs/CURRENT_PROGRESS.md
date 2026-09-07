@@ -16,6 +16,7 @@ Dokumen ini adalah register kondisi aktif branch `gui-standardization`. Item yan
 - SiPLah bukan kategori; gunakan `payment_method = siplah`.
 - Root data aplikasi memakai `SPJ_DATA_PATH`. Target development Windows saat ini: `D:/lrvProject/spj-bosp-data`.
 - Database sekolah berada di `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`; dummy berada di `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
+- Backup sekolah diarahkan ke `{SPJ_DATA_PATH}/backups/{NPSN}`.
 
 ---
 
@@ -127,11 +128,11 @@ Belum ada checkpoint terpadu yang membuktikan keenam kategori canonical berjalan
 
 Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak, kategori, monitoring, dan audit masih roadmap. Format resmi harus dikonfirmasi sebelum klaim compliance.
 
-### F12 — Operasi tenant perlu test end-to-end setelah pemindahan APP DATA
+### F12 — Operasi tenant perlu runtime verification pada APP DATA eksternal
 
 **Status: RVR**
 
-Konfigurasi path sudah diarahkan melalui `SPJ_DATA_PATH`, tetapi backup/restore/reset/provision/migrate perlu diverifikasi terhadap struktur data eksternal:
+Konfigurasi database sekolah, dummy, dan backup sudah menggunakan `SPJ_DATA_PATH`. Yang masih perlu dibuktikan melalui runtime/focused test adalah provision, migrate, reset, backup, restore, serta seluruh path export yang relevan terhadap struktur eksternal:
 
 ```text
 {SPJ_DATA_PATH}/
@@ -140,7 +141,7 @@ Konfigurasi path sudah diarahkan melalui `SPJ_DATA_PATH`, tetapi backup/restore/
 └── exports/
 ```
 
-Jangan menganggap backup/export sudah otomatis memakai root baru sebelum implementasi masing-masing diverifikasi.
+Jangan menyebut operasi tenant eksternal release-ready sebelum verifikasi tersebut selesai.
 
 ---
 
