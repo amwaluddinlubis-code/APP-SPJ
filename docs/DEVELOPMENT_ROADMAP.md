@@ -110,13 +110,13 @@ Root data aktif menggunakan:
 SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
-Verifikasi end-to-end provision/migrate/reset/backup/restore terhadap root eksternal. Database sekolah canonical:
+Database sekolah canonical:
 
 ```text
 {SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite
 ```
 
-Backup dan export tidak boleh diasumsikan sudah berpindah sampai implementasinya diverifikasi.
+Kode database sekolah/dummy dan backup sudah memakai root tersebut. Yang masih wajib adalah runtime/focused verification provision, migrate, reset, backup, restore, serta audit path export agar tidak ada path lama `storage/app` yang tersisa pada alur operasional.
 
 ---
 
