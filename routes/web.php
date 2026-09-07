@@ -98,7 +98,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/pegawai/{employeeId}', [EmployeeController::class, 'show'])->whereNumber('employeeId')->name('employees.show');
         Route::get('/siswa/{studentId}', [StudentController::class, 'show'])->whereNumber('studentId')->name('students.show');
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
-        Route::put('/transaksi/{transactionId}/uraian-manual', [TransactionController::class, 'updateManualDescription'])->name('transactions.manual-description.update');
         Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
         Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
@@ -106,7 +105,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
-        Route::post('/spj/{transactionId}/siapkan', [SpjController::class, 'prepare'])->name('spj.prepare');
         Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
         Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
         Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');

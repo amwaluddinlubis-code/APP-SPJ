@@ -80,27 +80,7 @@
                         <x-ui.button variant="secondary" :href="route('transactions.show', $transaction->id)">Lihat transaksi</x-ui.button>
                     </div>
 
-                    <section class="mx-5 mt-4 overflow-hidden rounded-xl border shadow" style="border-color: var(--ui-line); background: var(--ui-surface-base); color: var(--ui-fg)">
-                        <div class="px-4 py-5 sm:px-5" style="background: linear-gradient(115deg, var(--theme-sidebar-deep), var(--theme-sidebar)); color: var(--text-comfort-on-dark)">
-                            <p class="text-[11px] font-bold tracking-[.16em]" style="color: var(--text-comfort-on-dark-muted)">PAKET DOKUMEN SPJ</p>
-                            <div class="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                                <div>
-                                    <h1 class="font-mono text-2xl font-bold sm:text-3xl" style="color: var(--text-comfort-on-dark) !important">{{ $transaction->no_bukti }}</h1>
-                                    <p class="mt-1.5 text-base line-clamp-2" style="color: var(--text-comfort-on-dark-muted)">{{ $transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.' }}</p>
-                                </div>
-                                <div class="rounded-lg px-3 py-2.5 text-left ring-1 lg:text-right" style="background: color-mix(in srgb, var(--ui-surface-base) 10%, transparent); --tw-ring-color: color-mix(in srgb, var(--text-comfort-on-dark) 24%, transparent)">
-                                    <p class="text-[11px] font-semibold {{ $package->status === 'CANCELLED' ? 'text-rose-200' : '' }}" @if($package->status !== 'CANCELLED') style="color: var(--text-comfort-on-dark-muted)" @endif>{{ $package->status === 'CANCELLED' ? 'Nomor SPJ dibatalkan' : 'Nomor Dokumen SPJ' }}</p>
-                                    <p class="mt-0.5 font-mono text-base font-bold {{ $package->status === 'CANCELLED' ? 'text-rose-100 line-through' : '' }}" @if($package->status !== 'CANCELLED') style="color: var(--text-comfort-on-dark) !important" @endif>{{ $hasActiveSpjNumber ? $activeSpjDocument->document_number : ($package->status === 'CANCELLED' ? ($cancelledSpjDocument?->document_number ?: $package->document_number) : 'Belum ditetapkan') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid divide-y md:grid-cols-3 md:divide-x md:divide-y-0" style="border-color: var(--ui-line)">
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Periode</p><p class="mt-1 text-base font-semibold" style="color: var(--ui-fg)">{{ $package->quarter_code }} · {{ $package->semester_code }}</p></div>
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Penerima</p><p class="mt-1 text-base font-semibold" style="color: var(--ui-fg)">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p></div>
-                            <div class="px-4 py-3"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Nilai Dibayarkan</p><p class="mt-1 text-base font-semibold text-emerald-700">{{ $rupiah($transaction->net_amount) }}</p></div>
-                        </div>
-                    </section>
-
+                    @include('spj.partials.package.transaction-summary')
                     @if(strtolower((string) $transaction->payment_method) === 'siplah' || $transaction->is_siplah)
                         <section class="mx-5 mt-5 rounded-xl border p-4 shadow-sm" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
                             <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="text-base font-bold" style="color: var(--ui-fg)">Metode Pembelian: SiPLah</h2><x-ui.badge>Pembelian SiPLah</x-ui.badge></div>
@@ -118,82 +98,8 @@
                         </section>
                     @endif
 
-                    <section class="mx-5 mt-5 overflow-hidden rounded-xl border {{ $validationIssues ? 'border-amber-200' : 'border-emerald-200' }} bg-[var(--ui-surface-base)] shadow">
-                        <div class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Validasi Sebelum Cetak</h2><p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">{{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi sebelum PDF dibuat.' : 'Semua data wajib lengkap. Paket siap diunduh sebagai PDF.' }}</p></div>
-                            @if($validationIssues)
-                                <x-ui.status-badge status="BELUM_LENGKAP" label="Belum siap cetak" />
-                            @elseif($package->status === 'CANCELLED')
-                                <x-ui.status-badge status="CANCELLED" label="Penomoran dibatalkan" />
-                            @elseif($package->status === 'DRAFT')
-                                <form method="POST" action="{{ route('spj.ready', $package->id) }}">@csrf<x-ui.button type="submit">Tandai siap dinomori</x-ui.button></form>
-                            @else
-                                <x-ui.status-badge status="READY" label="Siap dicetak" />
-                            @endif
-                        </div>
-                        @if($validationIssues)<div class="divide-y divide-amber-100 border-t border-amber-100 bg-amber-50/40">@foreach($validationIssues as $issue)<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-base"><div><span class="font-bold text-amber-800">{{ $issue['label'] }}</span><span class="ml-1.5 text-amber-700">{{ $issue['message'] }}</span></div><x-ui.button variant="secondary" :href="$issue['url']" class="min-h-0 px-3 py-1.5 text-xs">Buka transaksi →</x-ui.button></div>@endforeach</div>@endif
-                    </section>
-
-                    <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-                        <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5" style="border-color: var(--ui-line)">
-                            <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">PDF paket disusun dari template aktif yang sesuai dengan kategori transaksi.</p></div>
-                            @unless($validationIssues || $package->status === 'CANCELLED')
-                                <div class="flex items-center gap-2">
-                                    <button type="button" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-name="Pratinjau Paket SPJ" title="Pratinjau Paket" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="preview" class="h-5 w-5" /><span class="sr-only">Pratinjau Paket</span></button>
-                                    <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" title="Unduh Excel Paket" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="excel" class="h-5 w-5" /><span class="sr-only">Unduh Excel Paket</span></button></form>
-                                    <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<button type="submit" title="Unduh Paket PDF dari template aktif" class="ui-btn ui-btn-primary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="pdf" class="h-5 w-5" /><span class="sr-only">Unduh Paket PDF</span></button></form>
-                                </div>
-                            @endunless
-                        </div>
-                        @if($templates->isNotEmpty())
-                            @php
-                                $documentGroupMeta = [
-                                    'needs' => ['Perlu dilengkapi', 'Lengkapi data paket sebelum dokumen dapat diunduh.', 'BELUM_LENGKAP'],
-                                    'preview' => ['Siap dipratinjau', 'Data paket lengkap. Periksa template atau unduh dokumen yang diperlukan.', 'READY'],
-                                    'completed' => ['Selesai', 'Dokumen telah difinalkan dan tersimpan sebagai bagian dari lifecycle paket.', 'FINAL'],
-                                ];
-                                $documentGroups = ['needs' => collect(), 'preview' => collect(), 'completed' => collect()];
-
-                                foreach ($templates as $template) {
-                                    $document = $package->documents->first(fn ($item) => (int) $item->document_template_id === (int) $template->id && $item->scope_key === 'MAIN' && $item->status !== 'CANCELLED');
-                                    $group = $document?->status === 'FINAL' ? 'completed' : (($validationIssues || $package->status === 'CANCELLED') ? 'needs' : 'preview');
-                                    $documentGroups[$group]->push($template);
-                                }
-                            @endphp
-                            @foreach($documentGroupMeta as $group => $metadata)
-                                @php
-                                    $title = $metadata[0];
-                                    $description = $metadata[1];
-                                    $status = $metadata[2];
-                                    $groupTemplates = $documentGroups[$group];
-                                @endphp
-                                @continue($groupTemplates->isEmpty())
-                                <section class="border-t border-[var(--ui-line)]" aria-label="{{ $title }}">
-                                    <header class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 px-4 py-3">
-                                        <div>
-                                            <h3 class="font-semibold" style="color: var(--ui-fg)">{{ $title }}</h3>
-                                            <p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">{{ $description }}</p>
-                                        </div>
-                                        <x-ui.status-badge :status="$status" :label="$groupTemplates->count().' dokumen'" />
-                                    </header>
-                                    <div class="grid gap-px bg-[var(--ui-line)] md:grid-cols-2">
-                                        @foreach($groupTemplates as $template)
-                                            <div class="flex items-center justify-between gap-3 bg-[var(--ui-surface-base)] px-4 py-3">
-                                                <div><p class="font-semibold" style="color: var(--ui-fg)">{{ $template->name }}</p><p class="mt-0.5 font-mono text-[11px]" style="color: var(--theme-content-accent)">{{ $template->document_type }} · {{ strtoupper($template->format) }}</p></div>
-                                                <div class="flex shrink-0 items-center gap-2">
-                                                    @if(strtolower($template->format) === 'xlsx')<button type="button" data-template-preview="{{ route('spj.preview-template', [$package->id, $template->id]) }}" data-template-name="{{ $template->name }}" title="Pratinjau {{ $template->name }}" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="preview" class="h-5 w-5" /><span class="sr-only">Pratinjau</span></button>@endif
-                                                    @if($group === 'needs')<x-ui.status-badge :status="$package->status === 'CANCELLED' ? 'CANCELLED' : 'BELUM_LENGKAP'" :label="$package->status === 'CANCELLED' ? 'Nomor dibatalkan' : 'Lengkapi validasi dahulu'" />@else<form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<button type="submit" title="Unduh Excel {{ $template->name }}" class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="excel" class="h-5 w-5" /><span class="sr-only">Unduh Excel</span></button></form><form method="POST" action="{{ route('spj.download-template-pdf', [$package->id, $template->id]) }}" target="_blank">@csrf<button type="submit" title="Unduh PDF {{ $template->name }}" class="ui-btn ui-btn-primary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="pdf" class="h-5 w-5" /><span class="sr-only">Unduh PDF</span></button></form>@endif
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </section>
-                            @endforeach
-                        @else
-                            <div class="px-4 py-6 text-center text-sm" style="color: var(--ui-fg-muted)">Belum ada template aktif yang sesuai dengan kategori {{ $spjTypeLabel($packageCategory) }}.</div>
-                        @endif
-                    </section>
-
+                    @include('spj.partials.package.validation')
+                    @include('spj.partials.package.documents')
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow" x-data="{ packageTab: 'rincian' }">
                         <div class="border-b border-[var(--ui-line)] bg-slate-50/70">
                             <nav class="flex gap-1 overflow-x-auto px-2 py-1 text-base" @click="const button = $event.target.closest('[data-package-tab]'); if (button) packageTab = button.dataset.packageTab">
@@ -204,24 +110,7 @@
                         </div>
 
                         <div x-show="packageTab === 'rincian'" data-panel="rincian" class="tab-panel">
-                            <div class="flex items-center justify-between border-b border-[var(--ui-line)] px-4 py-3">
-                                <div><h2 class="text-base font-bold text-slate-800">Rincian Paket</h2><p class="mt-0.5 text-xs text-slate-500">{{ $transaction->items->count() }} item yang akan dipakai dokumen SPJ.</p></div>
-                                <span class="hidden sm:inline-flex rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-slate-600">{{ $rupiah($transaction->items->sum('amount')) }}</span>
-                            </div>
-                            <div class="divide-y divide-[var(--ui-line)]">
-                                @forelse($transaction->items as $index => $item)
-                                    <div class="flex gap-3 px-4 py-3">
-                                        <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-[11px] font-bold text-slate-500">{{ $index + 1 }}</span>
-                                        <div class="min-w-0 flex-1">
-                                            <p class="text-base font-medium leading-tight text-slate-800">{{ $item->item_description ?: $item->description }}</p>
-                                            <p class="mt-0.5 text-xs text-slate-500">{{ $item->quantity }} {{ $item->unit }} · {{ $item->account_code ?: $transaction->account_code }}</p>
-                                        </div>
-                                        <p class="shrink-0 text-base font-semibold text-slate-800">{{ $rupiah($item->amount) }}</p>
-                                    </div>
-                                @empty
-                                    <p class="px-4 py-8 text-center text-base text-slate-500">Tidak ada rincian barang/jasa.</p>
-                                @endforelse
-                            </div>
+                            @include('spj.partials.package.items-readonly')
                         </div>
 
                         <div x-show="packageTab === 'isian'" data-panel="isian" class="tab-panel" x-data="{saving:false}">
@@ -239,10 +128,10 @@
                                     'is_receipt_recipient' => (bool) $worker->is_receipt_recipient,
                                     'notes' => $worker->notes,
                                 ])->values()->all();
-                                $workerRows = old('workers', $workerRows ?: [['name' => '', 'job_description' => '', 'work_days' => 1, 'daily_rate' => 0, 'is_receipt_recipient' => false, 'notes' => '']]);
+                                $workerRows = old('spj_category', $transaction->spj_category) === 'PEMELIHARAAN' ? old('workers', $workerRows) : $workerRows;
                                 $selectedSpjType = strtoupper((string) old('spj_category', $transaction->spj_category ?: $transaction->spj_category));
                             @endphp
-                            <form id="spj-manual-form" method="POST" action="{{ route('spj.update', $package->id) }}" class="space-y-4 p-4" @submit="saving=true">@csrf @method('PUT')
+                            <form id="spj-manual-form" method="POST" action="{{ route('spj.update', $package->id) }}" data-source-siplah="{{ $transaction->is_siplah ? '1' : '0' }}" class="space-y-4 p-4" @submit="if (!$event.defaultPrevented) saving=true">@csrf @method('PUT')
                     @unless($package->isEditable())<div class="flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-3 py-2 text-sm text-slate-700"><span aria-hidden="true">🔒</span><p><strong>Isian terkunci.</strong> Batalkan nomor dan buka paket untuk koreksi agar field dapat diedit kembali.</p></div>@endunless
                     <fieldset @disabled(!$package->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
                     <div x-show="saving" class="flex items-center justify-center py-4"><x-loading-spinner /></div>
@@ -261,105 +150,14 @@
                                         <p class="text-xs text-amber-800">Kategori menentukan field manual, dokumen pendukung, dan nomor yang diterbitkan. Subkategori terpisah tidak diperlukan.</p>
                                     </div>
                                 </div>
-                                <div x-data="{ gross: {{ (float) $transaction->gross_amount }}, ppn: {{ (float) ($transaction->ppn_rate ?? ((float) $transaction->gross_amount > 0 ? (float) $transaction->ppn / (float) $transaction->gross_amount * 100 : 0)) }}, pph21: {{ (float) ($transaction->pph21_rate ?? ((float) $transaction->gross_amount > 0 ? (float) $transaction->pph21 / (float) $transaction->gross_amount * 100 : 0)) }}, pph22: {{ (float) ($transaction->pph22_rate ?? ((float) $transaction->gross_amount > 0 ? (float) $transaction->pph22 / (float) $transaction->gross_amount * 100 : 0)) }}, pph23: {{ (float) ($transaction->pph23_rate ?? ((float) $transaction->gross_amount > 0 ? (float) $transaction->pph23 / (float) $transaction->gross_amount * 100 : 0)) }}, pph4: {{ (float) ($transaction->pph4_rate ?? ((float) $transaction->gross_amount > 0 ? (float) $transaction->pph4 / (float) $transaction->gross_amount * 100 : 0)) }}, sspd: {{ (float) ($transaction->sspd_rate ?? ((float) $transaction->gross_amount > 0 && (float) $transaction->sspd > 0 ? (float) $transaction->sspd / (float) $transaction->gross_amount * 100 : ($isConsumptionPackage ? 10 : 0))) }}, money(value) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value); } }" class="space-y-3">
-                                    <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                                        <h3 class="text-xs font-bold text-slate-800">{{ $isHonorPackage ? 'Identitas Pembayaran Honor' : 'Identitas Rekanan dan Pembayaran' }}</h3>
-                                        <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                                            <div><label class="text-xs font-medium text-slate-700">{{ $isHonorPackage ? 'Nama Penerima Honor' : 'Nama Toko / Katering' }}</label><input name="vendor_name" value="{{ $transaction->vendor_name ?: $transaction->recipient_name }}" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>
-                                            @unless($isHonorPackage)<div><label class="text-xs font-medium text-slate-700">Nama Pemilik / Direktur</label><input name="vendor_owner" value="{{ $transaction->vendor_owner }}" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div><div><label class="text-xs font-medium text-slate-700">NPWP Rekanan</label><input name="vendor_npwp" value="{{ $transaction->vendor_npwp }}" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>@endunless
-                                            <div><label class="text-xs font-medium text-slate-700">Metode Pembayaran</label><select name="payment_method" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"><option value="transfer_bank" @selected($transaction->payment_method === 'transfer_bank')>Transfer Bank (CMS / Non Tunai)</option><option value="siplah" @selected($transaction->payment_method === 'siplah')>SiPLah Kemdikbud</option><option value="tunai" @selected($transaction->payment_method === 'tunai' || blank($transaction->payment_method))>Tunai Kas BOS</option></select></div>
-                                            <div><label class="text-xs font-medium text-slate-700">Penerima Kuitansi</label><input name="receipt_recipient_name" value="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base" placeholder="Boleh beda dari BKU"></div>
-                                        </div>
-                                    </div>
-                                    <div class="rounded-lg bg-slate-900 p-3 text-white">
-                                        <h3 class="text-xs font-bold">Perhitungan Pajak & Total Pembayaran SPJ</h3>
-                                        @if($isConsumptionPackage)<p class="mt-1 text-xs text-amber-200">Belanja konsumsi dapat dikenai SSPD/Pajak Daerah atau PPh 4(2). Periksa ketentuan daerah dan nilai pajak pada BKU sebelum menyimpan; sistem tidak menetapkan tarif secara otomatis.</p>@endif
-                                        <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                                            @unless($isHonorPackage)<label class="text-xs text-slate-300">PPN (%)<input type="number" min="0" max="100" step=".01" name="ppn_rate" x-model.number="ppn" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label>@endunless
-                                            <label class="text-xs text-slate-300">PPh 21 (%)<input type="number" min="0" max="100" step=".01" name="pph21_rate" x-model.number="pph21" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label>
-                                            @unless($isHonorPackage)<label class="text-xs text-slate-300">PPh 22 (%)<input type="number" min="0" max="100" step=".01" name="pph22_rate" x-model.number="pph22" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label><label class="text-xs text-slate-300">PPh 23 (%)<input type="number" min="0" max="100" step=".01" name="pph23_rate" x-model.number="pph23" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label>@endunless
-                                            @unless($isHonorPackage)<label class="text-xs text-slate-300">PPh 4(2) (%)<input type="number" min="0" max="100" step=".01" name="pph4_rate" x-model.number="pph4" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label><label class="text-xs text-slate-300">SSPD / Pajak Daerah (%)<input type="number" min="0" max="100" step=".01" name="sspd_rate" x-model.number="sspd" class="mt-1 w-full rounded-md border-slate-600 bg-slate-800 px-2.5 py-1.5 text-white"></label>@endunless
-                                        </div>
-                                        <div class="mt-3 rounded-md bg-slate-800 p-3 text-sm"><div class="flex justify-between"><span>Subtotal Bruto</span><span x-text="money(gross)"></span></div><div class="mt-1 flex justify-between text-amber-300"><span>Total Potongan Pajak</span><span x-text="money(gross * (ppn + pph21 + pph22 + pph23 + pph4 + sspd) / 100)"></span></div><div class="mt-2 flex justify-between text-orange-300"><span>PPh 4(2) / SSPD</span><span x-text="money(gross * (pph4 + sspd) / 100)"></span></div><div class="mt-2 border-t border-slate-600 pt-2 flex justify-between font-bold text-emerald-400"><span>TOTAL PEMBAYARAN SPJ</span><span x-text="money(gross * (1 - (ppn + pph21 + pph22 + pph23 + pph4 + sspd) / 100))"></span></div></div>
-                                    </div>
-                                </div>
-                                @if($isHonorPackage)<div class="rounded-lg border border-sky-200 bg-sky-50 p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div><h3 class="text-xs font-bold text-sky-900">Rincian Penerima Honor</h3><p class="mt-1 text-xs text-sky-700">{{ $transaction->honors->count() }} penerima. Nama, jabatan, bulan/kali, tarif, dan PPh 21 dikelola pada transaksi agar satu BPU tetap menghasilkan satu kuitansi.</p></div><a href="{{ route('transactions.show', $transaction->id).'#modul-buat-spj' }}" class="rounded-md bg-sky-700 px-3 py-1.5 text-xs font-bold text-white">Ubah rincian honor →</a></div></div>@endif
-                                <div data-spj-section="BARANG KONSUMSI" class="rounded-lg border border-sky-200 bg-sky-50/60 p-3">
-                                    @if($isSiplah)
-                                    <h3 class="text-xs font-bold text-sky-900">Referensi Pembelian SiPLah</h3>
-                                    <p class="mt-1 text-xs text-sky-700">SiPLah hanya memerlukan referensi pembayaran serta nomor dan tanggal invoice. BAP/BAST internal tidak diperlukan.</p>
-                                    <div class="mt-2 grid gap-3 sm:grid-cols-3">
-                                        <div><label class="text-xs font-medium text-sky-900">Referensi Pembayaran <span class="text-rose-600">*</span></label><input required name="payment_reference" value="{{ $transaction->payment_reference }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base" placeholder="Referensi pembayaran SiPLah/bank"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">Nomor Invoice <span class="text-rose-600">*</span></label><input required name="invoice_number" value="{{ $transaction->invoice_number }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base" placeholder="Nomor invoice SiPLah"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">Tanggal Invoice <span class="text-rose-600">*</span></label><input required type="date" name="invoice_date" value="{{ $transaction->invoice_date?->format('Y-m-d') }}" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>
-                                    </div>
-                                    @else
-                                    <h3 class="text-xs font-bold text-sky-900">Dokumen Pembelian dan Serah Terima Barang</h3>
-                                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
-                                        <div><label class="text-xs font-medium text-sky-900">No. Pesanan <span class="text-emerald-700">(otomatis)</span></label><input readonly name="order_number" value="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}" class="mt-1 w-full cursor-not-allowed rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] px-2.5 py-1.5 text-base text-slate-600" placeholder="Terbit setelah penomoran"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">Tanggal Pesanan <span class="text-rose-600">*</span></label><input required type="date" name="order_date" value="{{ $orderDate }}" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">No. BAP <span class="text-emerald-700">(otomatis)</span></label><input readonly name="bap_number" value="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}" class="mt-1 w-full cursor-not-allowed rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] px-2.5 py-1.5 text-base text-slate-600" placeholder="Terbit setelah penomoran"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">Tanggal BAP <span class="text-rose-600">*</span></label><input required type="date" name="bap_date" value="{{ $bapDate }}" min="{{ $orderDate }}" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">No. BAST <span class="text-emerald-700">(otomatis)</span></label><input readonly name="bast_number" value="{{ $purchaseDetails?->bast_number ?: $transaction->bast_number }}" class="mt-1 w-full cursor-not-allowed rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] px-2.5 py-1.5 text-base text-slate-600" placeholder="Terbit setelah penomoran"></div>
-                                        <div><label class="text-xs font-medium text-sky-900">Tanggal BAST <span class="text-rose-600">*</span></label><input required type="date" name="bast_date" value="{{ $bastDate }}" min="{{ $bapDate }}" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-base"></div>
-                                    </div>
-                                    @endif
-                                </div>
-                                <div data-spj-section="KONSUMSI" x-data="{ rows: @js($participantRows), roster: @js(collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'portions' => 1])->values()->all()), participantCount: {{ (int) old('participant_count', $transaction->participant_count ?: collect($participantRows)->sum('portions')) }}, dragIndex: null, get portionTotal() { return this.rows.reduce((total, row) => total + (parseInt(row.portions) || 0), 0); }, fillRoster() { this.rows = this.roster.map(row => ({...row})); this.participantCount = this.portionTotal; }, move(index, direction) { const target = index + direction; if (target < 0 || target >= this.rows.length) return; [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]]; this.rows = [...this.rows]; }, dropAt(index) { if (this.dragIndex === null || this.dragIndex === index) return; const [row] = this.rows.splice(this.dragIndex, 1); this.rows.splice(index, 0, row); this.rows = [...this.rows]; this.dragIndex = null; } }" class="rounded-lg border border-sky-200 bg-sky-50/60 p-3">
-                                    <div class="flex items-center justify-between gap-3"><div><h3 class="text-xs font-bold text-sky-900">Acara / Daftar Peserta Rapat</h3><p class="mt-0.5 text-[11px] text-sky-700">Urutan peserta dipakai pada daftar hadir.</p></div><div class="flex gap-2"><button type="button" @click="fillRoster()" class="rounded-md border border-sky-300 bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-xs font-bold text-sky-800">Ambil semua pegawai</button><button type="button" @click="rows.push({name:'', position:'', portions:1})" class="rounded-md bg-sky-600 px-2.5 py-1.5 text-xs font-bold text-white">+ Tambah peserta</button></div></div>
-                            <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label class="text-xs font-semibold text-sky-900">Nama Acara/Rapat <span class="text-rose-600">*</span><input required name="event_name" value="{{ old('event_name', $transaction->event_name) }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-base" placeholder="Nama acara / rapat"></label><label class="text-xs font-semibold text-sky-900">Tempat Pelaksanaan <span class="text-rose-600">*</span><input required name="event_location" value="{{ old('event_location', $transaction->event_location) }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-base" placeholder="Tempat pelaksanaan"></label><label class="text-xs font-semibold text-sky-900">Tanggal Kegiatan <span class="text-rose-600">*</span><input required type="date" name="event_date" value="{{ old('event_date', $transaction->event_date?->format('Y-m-d') ?: $transactionDateLimit) }}" max="{{ $transactionDateLimit }}" class="mt-1 w-full rounded-md border border-sky-200 px-2.5 py-1.5 text-base"></label><label class="text-xs font-semibold text-sky-900">Jumlah Peserta <span class="text-rose-600">*</span><input required type="number" min="1" step="1" name="participant_count" x-model.number="participantCount" class="mt-1 w-full rounded-md border px-2.5 py-1.5 text-base" :class="participantCount === portionTotal ? 'border-sky-200' : 'border-rose-400 bg-rose-50'"></label></div>
-                                    <p x-show="participantCount !== portionTotal" class="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700" x-text="'Jumlah peserta harus sama dengan total porsi (' + portionTotal + ').'"></p>
-                                    <div class="mt-2 overflow-x-auto"><table class="min-w-full text-base"><thead><tr class="text-left text-[11px] font-bold uppercase text-sky-800"><th class="px-2 py-1.5">No.</th><th class="px-2 py-1.5">Nama Lengkap Peserta / Guru</th><th class="px-2 py-1.5">Jabatan / Instansi</th><th class="px-2 py-1.5">Jumlah Porsi</th><th class="px-2 py-1.5">Aksi</th></tr></thead><tbody><template x-for="(row,index) in rows" :key="index"><tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-sky-100' : ''"><td class="px-2 py-1.5"><div class="flex items-center gap-2"><button type="button" draggable="true" @dragstart="dragIndex=index; $event.dataTransfer.effectAllowed='move'" @dragend="dragIndex=null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-sky-200 bg-[var(--ui-surface-base)] px-1.5 py-1 text-slate-500 active:cursor-grabbing">⋮⋮</button><span x-text="index+1"></span></div></td><td class="px-2 py-1.5"><input required :name="`participants[${index}][name]`" x-model="row.name" class="w-full rounded border border-sky-200 px-2 py-1"></td><td class="px-2 py-1.5"><input :name="`participants[${index}][position]`" x-model="row.position" class="w-full rounded border border-sky-200 px-2 py-1"></td><td class="px-2 py-1.5"><input required type="number" min="1" step="1" :name="`participants[${index}][portions]`" x-model.number="row.portions" class="w-24 rounded border border-sky-200 px-2 py-1 text-right"></td><td class="px-2 py-1.5"><div class="flex gap-1"><button type="button" @click="move(index,-1)" :disabled="index === 0" title="Naikkan urutan" class="rounded border border-sky-200 px-2 py-1 text-sky-700 disabled:opacity-35">↑</button><button type="button" @click="move(index,1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded border border-sky-200 px-2 py-1 text-sky-700 disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index,1); participantCount = portionTotal" class="text-xs font-bold text-rose-700">Hapus</button></div></td></tr></template></tbody></table></div>
-                                </div>
-                                <section data-spj-section="PEMELIHARAAN" x-data="{ rows: @js($workerRows), addWorker() { this.rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''}); }, total() { return this.rows.reduce((sum, row) => sum + (Number(row.work_days) || 0) * (Number(row.daily_rate) || 0), 0); }, money(value) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value); } }" class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                                    <div class="flex flex-wrap items-start justify-between gap-3">
-                                        <div>
-                                            <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Work order pemeliharaan</h3>
-                                            <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Uraian dan lokasi menjadi dasar SPK/RAB; nomor dokumen diterbitkan saat penomoran.</p>
-                                        </div>
-                                        <button type="button" @click="addWorker()" class="ui-btn ui-btn-secondary px-3 py-1.5 text-xs font-bold">+ Pekerja</button>
-                                    </div>
-                                    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                        <x-ui.field label="Uraian pekerjaan" required>
-                                            <x-ui.textarea name="work_description" rows="2" required>{{ old('work_description', $workDetails?->work_description ?: $transaction->work_description) }}</x-ui.textarea>
-                                        </x-ui.field>
-                                        <x-ui.field label="Lokasi pekerjaan" required>
-                                            <x-ui.input name="work_location" :value="old('work_location', $workDetails?->work_location ?: $transaction->work_location)" required />
-                                        </x-ui.field>
-                                        <x-ui.field label="Tanggal mulai">
-                                            <x-ui.input type="date" name="work_started_at" :value="old('work_started_at', $workDetails?->work_started_at?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" />
-                                        </x-ui.field>
-                                        <x-ui.field label="Tanggal selesai">
-                                            <x-ui.input type="date" name="work_completed_at" :value="old('work_completed_at', $workDetails?->work_completed_at?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" />
-                                        </x-ui.field>
-                                        <x-ui.field label="Nomor SPK">
-                                            <x-ui.input readonly class="ui-input-readonly" name="spk_number" :value="$workDetails?->spk_number ?: $transaction->spk_number" placeholder="Terbit setelah penomoran" />
-                                        </x-ui.field>
-                                        <x-ui.field label="Tanggal SPK">
-                                            <x-ui.input type="date" name="spk_date" :value="old('spk_date', $workDetails?->spk_date?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" />
-                                        </x-ui.field>
-                                        <x-ui.field label="Nomor RAB">
-                                            <x-ui.input readonly class="ui-input-readonly" name="rab_number" :value="$workDetails?->rab_number ?: $transaction->rab_number" placeholder="Terbit setelah penomoran" />
-                                        </x-ui.field>
-                                        <x-ui.field label="Tanggal RAB">
-                                            <x-ui.input type="date" name="rab_date" :value="old('rab_date', $workDetails?->rab_date?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" />
-                                        </x-ui.field>
-                                    </div>
-                                    <div class="mt-3 overflow-x-auto rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                                        <table class="min-w-full text-sm">
-                                            <thead class="bg-[var(--ui-surface-muted)] text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]"><tr><th class="px-3 py-2">Pekerja</th><th class="px-3 py-2">Uraian tugas</th><th class="px-3 py-2">Hari</th><th class="px-3 py-2">Tarif/hari</th><th class="px-3 py-2">Penerima kuitansi</th><th class="px-3 py-2 text-right">Aksi</th></tr></thead>
-                                            <tbody class="divide-y divide-[var(--ui-line)]">
-                                                <template x-for="(row, index) in rows" :key="index"><tr><td class="px-3 py-2"><input :name="`workers[${index}][name]`" x-model="row.name" class="ui-input w-full text-sm" placeholder="Nama pekerja"></td><td class="px-3 py-2"><input :name="`workers[${index}][job_description]`" x-model="row.job_description" class="ui-input w-full text-sm" placeholder="Jenis pekerjaan"></td><td class="px-3 py-2"><input type="number" min="0" step=".5" :name="`workers[${index}][work_days]`" x-model.number="row.work_days" class="ui-input w-20 text-right text-sm"></td><td class="px-3 py-2"><input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" :value="new Intl.NumberFormat('id-ID').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('id-ID').format(row.daily_rate)" class="ui-input w-32 text-right text-sm"></td><td class="px-3 py-2"><label class="inline-flex items-center gap-2 text-xs text-[var(--ui-fg)]"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient"> Ya</label></td><td class="px-3 py-2 text-right"><button type="button" @click="rows.splice(index, 1)" class="ui-btn ui-btn-ghost px-2 py-1 text-xs text-rose-700">Hapus</button></td></tr></template>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <p class="mt-2 text-right text-xs font-semibold text-[var(--ui-fg-muted)]">Total rincian pekerja: <span class="text-[var(--ui-fg-strong)]" x-text="money(total())"></span></p>
-                                </section>
-                                <section data-spj-section="JASA_LAINNYA" class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
-                                    <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Penerima pembayaran jasa</h3>
-                                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kelola beberapa penyedia jasa sewa harian, kuitansi, referensi pembayaran, dan PKS dari detail transaksi.</p>
-                                    <a href="{{ route('transactions.show', $transaction->id).'#modul-buat-spj' }}" class="ui-btn ui-btn-secondary mt-3 px-3 py-1.5 text-xs font-bold">Kelola rincian penerima jasa</a>
-                                </section>
+                                @include('spj.partials.package.common')
+                                @include('spj.partials.package.tax-reference')
+                                @include('spj.partials.package.categories.honor-pegawai')
+                                @include('spj.partials.package.categories.sppd')
+                                @include('spj.partials.package.categories.barang')
+@include('spj.partials.package.categories.konsumsi')
+@include('spj.partials.package.categories.pemeliharaan')
+                                @include('spj.partials.package.categories.jasa-lainnya')
                                 <div class="flex justify-end pt-1"><button :disabled="saving" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-1.5 text-base font-bold text-white shadow hover:bg-indigo-700 disabled:opacity-60"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></button></div>
                     </div>
                     </fieldset>
@@ -367,84 +165,7 @@
                         </div>
 
                         <div x-show="packageTab === 'penomoran'" data-panel="penomoran" class="tab-panel p-4">
-                            <h2 class="text-base font-bold text-slate-800">Penomoran Dokumen</h2>
-                            <p class="mt-1 text-xs text-slate-500">Nomor mengikuti format aktif dan tanggal peristiwa. Nomor yang sudah diterbitkan tidak akan ditimpa.</p>
-                            <div class="mt-3 grid gap-3 sm:grid-cols-3"><div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><p class="text-[11px] font-bold uppercase text-slate-500">Kategori</p><p class="mt-1 font-bold text-slate-800">{{ $spjTypeLabel($packageCategory) }}</p></div><div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><p class="text-[11px] font-bold uppercase text-slate-500">Tanggal sumber</p><p class="mt-1 font-bold text-slate-800">{{ $transaction->transaction_date?->translatedFormat('d F Y') }}</p></div><div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><p class="text-[11px] font-bold uppercase text-slate-500">Cakupan nomor</p><p class="mt-1 font-bold text-indigo-700">{{ $isHonorPackage ? 'SPJ utama · dipakai pada kuitansi honor' : ($isGoodsPackage ? 'SPJ, Pesanan, BAP, BAST' : 'SPJ dan dokumen kategori') }}</p></div></div>
-                            @if($hasActiveSpjNumber)
-                                <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                                    <p class="text-[11px] font-bold uppercase tracking-wide text-emerald-600">Sudah ditetapkan</p>
-                                    <p class="mt-1 font-mono text-base font-bold text-emerald-800 break-all">{{ $activeSpjDocument->document_number }}</p>
-                                </div>
-                            @elseif($package->status === 'CANCELLED')
-                                <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4">
-                                    <p class="text-[11px] font-bold uppercase tracking-wide text-rose-600">Nomor dibatalkan</p>
-                                    <p class="mt-1 break-all font-mono text-base font-bold text-rose-800 line-through">{{ $cancelledSpjDocument?->document_number ?: $package->document_number }}</p>
-                                    @if($cancelledSpjDocument?->cancellation_reason)<p class="mt-2 text-xs text-rose-700">Alasan: {{ $cancelledSpjDocument->cancellation_reason }}</p>@endif
-                                    <form class="mt-3" method="POST" action="{{ route('spj.assign-number', $package->id) }}" data-confirm="Terbitkan ulang nomor SPJ tanpa mengubah data paket? Sistem akan menggunakan slot nomor tersedia sesuai urutan aktif.">
-                                        @csrf
-                                        <button class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-violet-700">Terbitkan ulang nomor</button>
-                                        <p class="mt-1 text-xs text-rose-700">Gunakan ini jika isian sudah benar. Untuk koreksi data, buka paket terlebih dahulu.</p>
-                                    </form>
-                                </div>
-                            @else
-                                <div class="mt-4 rounded-lg border border-dashed border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] p-6 text-center">
-                                    <p class="text-base font-medium text-slate-700">Belum bernomor</p>
-                                    <p class="mt-1 text-xs text-slate-500">Klik tombol di bawah untuk menerbitkan nomor SPJ sesuai urutan BKU.</p>
-                                    <form class="mt-4" method="POST" action="{{ route('spj.assign-number', $package->id) }}">@csrf<button class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700">Terbitkan nomor SPJ</button><p class="mt-2 text-xs text-slate-500">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan, BAP, dan BAST diterbitkan terpisah menurut tanggal dokumennya.</p></form>
-                                </div>
-                            @endif
-                            @if($package->documents->isNotEmpty())
-                                <div class="mt-4 divide-y divide-[var(--ui-line)] rounded-lg border border-[var(--ui-line)]">
-                                    @foreach($package->documents as $document)
-                                        <div class="p-3"><div class="flex flex-wrap items-center justify-between gap-2"><div><b>{{ $document->document_type }}</b><p class="font-mono text-xs text-slate-600">{{ $document->document_number }}</p></div><span class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-1 text-xs font-bold">{{ $document->status }}@if($document->is_late_entry) · SUSULAN @endif</span></div>
-                                            @if(in_array($document->status, ['NUMBERED', 'FINAL']))
-                                                <div class="mt-2 flex flex-wrap gap-2">
-                                                    @if($document->status === 'NUMBERED')<form method="POST" action="{{ route('spj.documents.finalize', $document->id) }}">@csrf<button class="rounded bg-emerald-600 px-2 py-1 text-xs font-bold text-white">Finalkan</button></form>@endif
-                                                    <form method="POST" action="{{ route('spj.documents.replace', $document->id) }}" class="flex gap-1" data-confirm="Nomor lama {{ $document->document_number }} akan dibatalkan permanen dan sistem menerbitkan nomor baru. Lanjutkan?">@csrf<input name="reason" required minlength="5" placeholder="Alasan penomoran ulang" class="rounded border-[var(--ui-line-strong)] text-xs"><button class="rounded bg-amber-600 px-2 py-1 text-xs font-bold text-white hover:bg-amber-700">Nomori ulang</button></form>
-                                                    @if(auth()->user()->isAdministrator())
-                                                        <form method="POST" action="{{ route('spj.documents.cancel', $document->id) }}" class="flex gap-1" data-confirm="Batalkan nomor {{ $document->document_number }}? Slot nomor dapat dipakai kembali sesuai aturan urutan.">@csrf<input name="reason" required minlength="5" placeholder="Alasan pembatalan" class="rounded border-rose-300 text-xs"><button class="rounded bg-rose-600 px-2 py-1 text-xs font-bold text-white hover:bg-rose-700">Batalkan nomor</button></form>
-                                                    @endif
-                                                </div>
-                                            @elseif($document->status === 'CANCELLED')
-                                                <div class="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800"><b>Nomor dibatalkan.</b> {{ $document->cancellation_reason }}</div>
-                                                @if($document->document_type === 'SPJ' && $document->scope_key === 'MAIN' && $package->status === 'DRAFT')
-                                                    <form method="POST" action="{{ route('spj.assign-number', $package->id) }}" class="mt-2" data-confirm="Terbitkan nomor SPJ baru sebagai pengganti nomor yang dibatalkan?">
-                                                        @csrf
-                                                        <button class="rounded bg-violet-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-violet-700">Terbitkan nomor pengganti</button>
-                                                        <p class="mt-1 text-xs text-slate-500">Nomor lama tetap tersimpan dalam riwayat dan tidak digunakan kembali.</p>
-                                                    </form>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                            @if($package->status === 'CANCELLED' && auth()->user()->isAdministrator())
-                                <form method="POST" action="{{ route('spj.unlock', $package->id) }}" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">@csrf<label class="text-xs font-bold text-amber-900">Buka paket untuk koreksi input</label><div class="mt-2 flex gap-2"><input name="reason" required minlength="5" placeholder="Alasan pembukaan paket" class="min-w-0 flex-1 rounded border-amber-300 text-sm"><button class="rounded bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">Buka paket</button></div></form>
-                            @endif
-                            @unless($isHonorPackage)<fieldset @disabled(!$package->isEditable()) class="mt-5 disabled:cursor-not-allowed disabled:opacity-60"><div class="grid gap-4 {{ $isGoodsPackage ? 'lg:grid-cols-2' : '' }}">
-                                @if($isGoodsPackage)<section class="rounded-lg border border-[var(--ui-line)] p-4">
-                                    <h3 class="font-bold text-slate-800">Pembayaran bertahap</h3>
-                                    <p class="mt-1 text-xs text-slate-500">Total bruto tidak boleh melampaui nilai transaksi.</p>
-                                    <div class="mt-3 space-y-2">@forelse($transaction->payments as $payment)<div class="flex justify-between text-sm"><span>{{ $payment->payment_date?->translatedFormat('d F Y') }} · {{ $payment->scope_key }} @if($payment->is_late_entry)<b class="text-amber-700">Susulan</b>@endif</span><b>{{ $rupiah($payment->gross_amount) }}</b></div>@empty<p class="text-xs text-slate-400">Belum ada pembayaran.</p>@endforelse</div>
-                                    <form method="POST" action="{{ route('spj.payments.store', $transaction->id) }}" class="mt-3 grid gap-2 sm:grid-cols-2">@csrf
-                                        <input type="date" name="payment_date" required class="rounded-md border-[var(--ui-line-strong)] text-sm"><input type="number" name="gross_amount" min="1" required placeholder="Nilai bruto" class="rounded-md border-[var(--ui-line-strong)] text-sm">
-                                        <input type="number" name="tax_amount" min="0" value="0" placeholder="Pajak" class="rounded-md border-[var(--ui-line-strong)] text-sm"><input name="payment_reference" placeholder="Referensi pembayaran" class="rounded-md border-[var(--ui-line-strong)] text-sm">
-                                        <button class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-bold text-white sm:col-span-2">Tambah pembayaran</button>
-                                    </form>
-                                </section>
-                                <section class="rounded-lg border border-[var(--ui-line)] p-4">
-                                    <h3 class="font-bold text-slate-800">Penerimaan barang bertahap</h3>
-                                    <p class="mt-1 text-xs text-slate-500">Jumlah kumulatif tidak boleh melebihi jumlah pesanan.</p>
-                                    <div class="mt-3 space-y-2">@forelse($transaction->goodsReceipts as $receipt)<div class="text-sm"><b>{{ $receipt->scope_key }}</b> · {{ $receipt->receipt_date?->translatedFormat('d F Y') }} @if($receipt->is_late_entry)<b class="text-amber-700">Susulan</b>@endif</div>@empty<p class="text-xs text-slate-400">Belum ada penerimaan bertahap.</p>@endforelse</div>
-                                    <form method="POST" action="{{ route('spj.receipts.store', $transaction->id) }}" class="mt-3 grid gap-2 sm:grid-cols-2">@csrf
-                                        <input type="date" name="receipt_date" required class="rounded-md border-[var(--ui-line-strong)] text-sm">
-                                        <select name="items[0][transaction_item_id]" required class="rounded-md border-[var(--ui-line-strong)] text-sm"><option value="">Pilih barang</option>@foreach($transaction->items as $item)<option value="{{ $item->id }}">{{ $item->item_description ?: $item->description }}</option>@endforeach</select>
-                                        <input type="number" step="0.0001" min="0.0001" name="items[0][quantity_received]" required placeholder="Jumlah diterima" class="rounded-md border-[var(--ui-line-strong)] text-sm"><input type="number" min="0" name="items[0][amount_received]" placeholder="Nilai penerimaan" class="rounded-md border-[var(--ui-line-strong)] text-sm">
-                                        <button class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-bold text-white sm:col-span-2">Tambah penerimaan</button>
-                                    </form>
-                                </section>@endif
-                            </div></fieldset>@endunless
+                            @include('spj.partials.package.numbering')
                         </div>
                     </section>
                 @php

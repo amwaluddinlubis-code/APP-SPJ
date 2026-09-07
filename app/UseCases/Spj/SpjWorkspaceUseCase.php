@@ -47,7 +47,7 @@ class SpjWorkspaceUseCase
             ? (int) $employee->payload['status_kepegawaian_id']
             : PHP_INT_MAX;
 
-        return Employee::query()->where('is_active', true)->orderBy('name')
+        return Employee::query()->where('is_active', true)->where('source_type', 'DAPODIK')->orderBy('name')
             ->get(['id', 'name', 'position', 'staff_type', 'source_type', 'nuptk', 'payload'])
             ->sortBy(fn (Employee $employee) => sprintf('%s-%d-%d', mb_strtolower(trim($employee->name)), $employee->source_type === 'DAPODIK' ? 0 : 1, filled($employee->nuptk) ? 0 : 1))
             ->unique(fn (Employee $employee) => mb_strtolower(trim($employee->name)))

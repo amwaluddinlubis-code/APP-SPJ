@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use App\UseCases\Spj\SpjNumberingUseCase;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
-use App\UseCases\Spj\SpjPackageUseCase;
 use App\UseCases\Spj\SpjReportUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
 use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
@@ -19,11 +18,6 @@ class SpjController extends Controller
     public function index(Request $request, SpjWorkspaceUseCase $useCase): View|RedirectResponse
     {
         return $useCase->handle($request);
-    }
-
-    public function prepare(Request $request, string $transactionId, SpjPackageUseCase $useCase): RedirectResponse
-    {
-        return $useCase->prepare($request, $transactionId);
     }
 
     public function assignNumber(string $packageId, SpjNumberingUseCase $useCase): RedirectResponse

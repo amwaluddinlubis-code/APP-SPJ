@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\TransactionController;
+use App\UseCases\Spj\CreateSpjDraftUseCase;
+use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
@@ -72,7 +73,8 @@ class TransactionPurchaseDateValidationTest extends TestCase
             'bast_date' => '2026-03-12',
         ]);
 
-        app(TransactionController::class)->updateManualDescription($request, (string) $transaction->id);
+        app(CreateSpjDraftUseCase::class)->handle((string) $transaction->id);
+        app(UpdateSpjPackageDetailsUseCase::class)->handle((string) $transaction->fresh()->spjPackage->id, $request);
 
         $goods = $transaction->fresh()->goods()->firstOrFail();
         $this->assertSame('2026-03-09', $goods->order_date?->format('Y-m-d'));

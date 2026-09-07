@@ -103,10 +103,13 @@ class CriticalDocumentWorkflowTest extends TestCase
             'amount' => 1000,
         ]);
 
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->get(route('transactions.prepare-spj', $transaction->id))->assertSessionMissing('error');
+        $transaction->unsetRelation('spjPackage');
         $response = $this->withoutMiddleware()
             ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
-            ->from('/transaksi/'.$transaction->id.'#modul-buat-spj')
-            ->post(route('spj.prepare', $transaction->id), [
+            ->from(route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]))
+            ->put(route('spj.update', $transaction->spjPackage->id), [
                 'spj_category' => 'BARANG',
                 'payment_description' => 'Pembelian kertas',
                 'payment_method' => 'tunai',
@@ -120,7 +123,7 @@ class CriticalDocumentWorkflowTest extends TestCase
                 ]],
             ]);
 
-        $response->assertRedirect('/transaksi/'.$transaction->id.'#modul-buat-spj');
+        $response->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]));
         $response->assertSessionHasErrors('order_date');
         $response->assertSessionDoesntHaveErrors('workers.0.daily_rate');
         $this->assertDatabaseMissing('spj_goods', ['order_date' => '2026-01-16'], 'school');
@@ -138,9 +141,12 @@ class CriticalDocumentWorkflowTest extends TestCase
             'amount' => 1000,
         ]);
 
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->get(route('transactions.prepare-spj', $transaction->id))->assertSessionMissing('error');
+        $transaction->unsetRelation('spjPackage');
         $response = $this->withoutMiddleware()
             ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
-            ->post(route('spj.prepare', $transaction->id), [
+            ->put(route('spj.update', $transaction->spjPackage->id), [
                 'spj_category' => 'BARANG',
                 'payment_description' => 'Pembelian kertas',
                 'payment_method' => 'tunai',
@@ -148,7 +154,7 @@ class CriticalDocumentWorkflowTest extends TestCase
                 'order_date' => '2026-01-10',
                 'bap_date' => '2026-01-09',
                 'bast_date' => '2026-01-08',
-                'invoice_date' => '2026-01-07',
+                'invoice_date' => '2026-01-16',
             ]);
 
         $response->assertSessionHasErrors(['bap_date', 'bast_date', 'invoice_date']);

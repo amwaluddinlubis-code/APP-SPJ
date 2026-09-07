@@ -36,9 +36,16 @@ class SiplahPurchaseMvpTest extends TestCase
     public function test_siplah_purchase_metadata_is_persisted_without_changing_spj_category(): void
     {
         $transaction = $this->transaction();
+        $transaction->items()->create([
+            'description' => 'Kertas', 'item_description' => 'Kertas', 'quantity' => 1,
+            'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
+        ]);
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->get(route('transactions.prepare-spj', $transaction->id))->assertSessionMissing('error');
+        $transaction->unsetRelation('spjPackage');
         $response = $this->withoutMiddleware()
             ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
-            ->put(route('transactions.manual-description.update', $transaction->id), [
+            ->put(route('spj.update', $transaction->spjPackage->id), [
                 'spj_category' => 'BARANG', 'payment_method' => 'siplah',
                 'vendor_name' => 'Toko SiPLah Nusantara', 'vendor_owner' => 'Budi Santoso',
                 'vendor_npwp' => 'NPWP-UJI', 'siplah_order_number' => 'SIPL-2026-12345',
@@ -77,9 +84,12 @@ class SiplahPurchaseMvpTest extends TestCase
             'description' => 'Kertas A4', 'item_description' => 'Kertas A4', 'quantity' => 1,
             'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
         ]);
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->get(route('transactions.prepare-spj', $transaction->id))->assertSessionMissing('error');
+        $transaction->unsetRelation('spjPackage');
         $response = $this->withoutMiddleware()
             ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
-            ->post(route('spj.prepare', $transaction->id), [
+            ->put(route('spj.update', $transaction->spjPackage->id), [
                 'spj_category' => 'BARANG', 'payment_description' => 'Pembelian kertas melalui SiPLah',
                 'payment_method' => 'siplah', 'receipt_recipient_name' => 'Toko SiPLah Nusantara',
                 'vendor_name' => 'Toko SiPLah Nusantara', 'siplah_order_number' => 'SIPL-2026-12345',
@@ -119,9 +129,12 @@ class SiplahPurchaseMvpTest extends TestCase
             'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
         ]);
 
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->get(route('transactions.prepare-spj', $transaction->id))->assertSessionMissing('error');
+        $transaction->unsetRelation('spjPackage');
         $response = $this->withoutMiddleware()
             ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
-            ->post(route('spj.prepare', $transaction->id), [
+            ->put(route('spj.update', $transaction->spjPackage->id), [
                 'spj_category' => 'BARANG', 'payment_description' => 'Pembelian melalui SiPLah',
                 'payment_method' => 'siplah', 'receipt_recipient_name' => 'Toko SiPLah Nusantara',
                 'siplah_order_number' => 'SIPL-2026-12345', 'payment_reference' => 'PAY-7788',

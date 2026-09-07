@@ -1,29 +1,4 @@
-<div class="space-y-6" x-data="{
-    editorOpen: false,
-    warningOpen: false,
-    warningMessage: '',
-    editorAction: '',
-    editor: { spj_category: '', payment_description: '', payment_method: '', payment_reference: '', receipt_recipient_name: '', no_bukti: '' },
-    openEditorFromButton(button) {
-        this.editorAction = button.dataset.action || '';
-        this.editor = {
-            spj_category: button.dataset.spjCategory || '',
-            payment_description: button.dataset.paymentDescription || button.dataset.description || '',
-            payment_method: button.dataset.paymentMethod || '',
-            payment_reference: button.dataset.paymentReference || '',
-            receipt_recipient_name: button.dataset.receiptRecipient || '',
-            no_bukti: button.dataset.noBukti || '',
-        };
-        this.editorOpen = true;
-        this.$nextTick(() => this.$refs.category?.focus());
-    },
-    closeEditor() { this.editorOpen = false; },
-    showDescriptionWarning() {
-        this.warningMessage = 'Lengkapi Deskripsi Belanja Terlebih Dahulu';
-        this.warningOpen = true;
-    },
-    closeWarning() { this.warningOpen = false; },
-}">
+<div class="space-y-6">
     @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
     @php($spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
         'HONOR_PEGAWAI' => 'Honor Pegawai',
@@ -208,35 +183,13 @@
                             </div>
                         </div>
                         <div class="transaction-action-cell mt-3 flex justify-end gap-2 border-t border-[var(--ui-line)] pt-3">
-                            <button
-                                type="button"
-                                x-on:click="openEditorFromButton($el)"
-                                @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable())
-                                data-action="{{ route('transactions.manual-description.update', $transaction->id) }}"
-                                data-spj-category="{{ $transaction->spj_category }}"
-                                data-payment-description="{{ $transaction->payment_description }}"
-                                data-description="{{ $transaction->description }}"
-                                data-payment-method="{{ $this->paymentMethodFor($transaction) }}"
-                                data-payment-reference="{{ $transaction->payment_reference }}"
-                                data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}"
-                                data-no-bukti="{{ $transaction->no_bukti }}"
-                                title="Ubah data SPJ"
-                                class="transaction-action-button transaction-action-edit"
-                            >
-                                <x-ui.icon name="edit" size="sm" />
-                                <span>Ubah</span>
-                            </button>
-                            @if(filled($transaction->payment_description))
-                                <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
+                            <a href="{{ route('transactions.prepare-spj', $transaction->id) }}" title="Buka Paket SPJ" class="transaction-action-button transaction-action-edit">
+                                    <x-ui.icon name="document" size="sm" /><span>Paket SPJ</span>
+                                </a>
+                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
                                     <x-ui.icon name="document" size="sm" />
                                     <span>Detail</span>
                                 </a>
-                            @else
-                                <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" class="transaction-action-button transaction-action-pending">
-                                    <x-ui.icon name="warning" size="sm" />
-                                    <span>Detail</span>
-                                </button>
-                            @endif
                         </div>
                     </article>
                 @endforeach
@@ -292,35 +245,13 @@
                                 </td>
                                 <td class="transaction-action-column px-3 py-3 align-middle">
                                     <div class="flex items-center justify-center gap-2" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
-                                        <button
-                                            type="button"
-                                            x-on:click="openEditorFromButton($el)"
-                                            @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable())
-                                            data-action="{{ route('transactions.manual-description.update', $transaction->id) }}"
-                                            data-spj-category="{{ $transaction->spj_category }}"
-                                            data-payment-description="{{ $transaction->payment_description }}"
-                                            data-description="{{ $transaction->description }}"
-                                            data-payment-method="{{ $this->paymentMethodFor($transaction) }}"
-                                            data-payment-reference="{{ $transaction->payment_reference }}"
-                                            data-receipt-recipient="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}"
-                                            data-no-bukti="{{ $transaction->no_bukti }}"
-                                            title="Ubah data SPJ"
-                                            class="transaction-action-button transaction-action-edit"
-                                        >
-                                            <x-ui.icon name="edit" size="sm" />
-                                            <span>Ubah</span>
-                                        </button>
-                                        @if(filled($transaction->payment_description))
-                                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
+                                        <a href="{{ route('transactions.prepare-spj', $transaction->id) }}" title="Buka Paket SPJ" class="transaction-action-button transaction-action-edit">
+                                    <x-ui.icon name="document" size="sm" /><span>Paket SPJ</span>
+                                </a>
+                                        <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
                                                 <x-ui.icon name="document" size="sm" />
                                                 <span>Detail</span>
                                             </a>
-                                        @else
-                                            <button type="button" x-on:click="showDescriptionWarning()" title="Buka detail — deskripsi belanja belum lengkap" class="transaction-action-button transaction-action-pending">
-                                                <x-ui.icon name="warning" size="sm" />
-                                                <span>Detail</span>
-                                            </button>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -352,101 +283,4 @@
         </div>
     </section>
 
-    {{-- Warning modal --}}
-    <div x-show="warningOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="transaction-warning-title" x-on:click.self="closeWarning" x-on:keydown.escape.window="closeWarning">
-        <div class="w-full max-w-md rounded-xl bg-[var(--ui-surface-base)] p-5 shadow-2xl">
-            <div class="flex items-start gap-3">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                    <x-ui.icon name="warning" size="lg" />
-                </div>
-                <div>
-                    <p class="text-[13px] font-bold uppercase tracking-wide text-amber-700">Peringatan</p>
-                    <h2 id="transaction-warning-title" class="mt-1 text-lg font-bold text-slate-900" x-text="warningMessage"></h2>
-                    <p class="mt-2 text-sm text-slate-500">Gunakan tombol Ubah Data SPJ untuk mengisi deskripsi belanja sebelum membuka detail transaksi.</p>
-                </div>
-            </div>
-            <div class="mt-5 flex justify-end">
-                <x-ui.button type="button" variant="secondary" icon="check" x-on:click="closeWarning">Mengerti</x-ui.button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Transaction editor modal --}}
-    <div x-show="editorOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" x-on:click.self="closeEditor" x-on:keydown.escape.window="closeEditor">
-        <form method="POST" x-bind:action="editorAction" class="w-full max-w-xl rounded-xl bg-[var(--ui-surface-base)] p-5 shadow-2xl">
-            @csrf
-            @method('PUT')
-
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 text-violet-700">
-                        <x-ui.icon name="edit" size="lg" />
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-[13px] font-bold uppercase tracking-[.10em] text-violet-600">Transaksi <span x-text="editor.no_bukti"></span></p>
-                        <h2 class="mt-1 text-lg font-bold text-slate-900">Data SPJ Transaksi</h2>
-                        <p class="mt-1 text-sm text-slate-500">Lengkapi uraian dan kategori SPJ tanpa mengubah data asli hasil sinkronisasi.</p>
-                    </div>
-                </div>
-                <button type="button" x-on:click="closeEditor" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--ui-line)] text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Tutup modal">
-                    <x-ui.icon name="close" size="sm" />
-                </button>
-            </div>
-
-            <label class="mt-5 flex items-center gap-2 text-sm font-bold text-slate-700" for="transaction-editor-category">
-                <x-ui-icon name="document" class="h-4 w-4 text-violet-600" />
-                <span>Kategori SPJ</span>
-            </label>
-            <select id="transaction-editor-category" name="spj_category" x-model="editor.spj_category" x-ref="category" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">Pilih kategori SPJ</option>
-                <option value="BARANG">Barang</option>
-                <option value="KONSUMSI">Konsumsi</option>
-                <option value="PEMELIHARAAN">Pemeliharaan</option>
-                <option value="JASA_LAINNYA">Jasa Lainnya</option>
-                <option value="SPPD">SPPD</option>
-                <option value="HONOR_PEGAWAI">Honor Pegawai</option>
-            </select>
-            @error('form.spj_category')<p class="mt-1 text-[13px] font-semibold text-rose-600">{{ $message }}</p>@enderror
-
-            <label class="mt-4 flex items-center gap-2 text-sm font-bold text-slate-700" for="transaction-editor-description">
-                <x-ui-icon name="edit" class="h-4 w-4 text-indigo-600" />
-                <span>Uraian Pembayaran</span>
-            </label>
-            <textarea id="transaction-editor-description" name="payment_description" x-model="editor.payment_description" rows="5" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Contoh: Pembelian alat tulis kantor untuk mendukung pembelajaran dan administrasi sekolah."></textarea>
-            @error('form.payment_description')<p class="mt-1 text-[13px] font-semibold text-rose-600">{{ $message }}</p>@enderror
-
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700" for="transaction-editor-method">
-                        <x-ui-icon name="transaction" class="h-4 w-4 text-emerald-600" />
-                        <span>Metode Pembayaran</span>
-                    </label>
-                    <select id="transaction-editor-method" name="payment_method" x-model="editor.payment_method" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="transfer_bank">Transfer Bank (CMS / Non Tunai)</option>
-                        <option value="siplah">SiPLah Kemdikbud</option>
-                        <option value="tunai">Tunai Kas BOS</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700" for="transaction-editor-reference">
-                        <x-ui-icon name="number" class="h-4 w-4 text-sky-600" />
-                        <span>Referensi Bayar</span>
-                    </label>
-                    <input id="transaction-editor-reference" name="payment_reference" x-model="editor.payment_reference" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700" for="transaction-editor-recipient">
-                        <x-ui-icon name="employee" class="h-4 w-4 text-amber-600" />
-                        <span>Penerima Kuitansi</span>
-                    </label>
-                    <input id="transaction-editor-recipient" name="receipt_recipient_name" x-model="editor.receipt_recipient_name" class="mt-1 w-full rounded-md border border-[var(--ui-line-strong)] px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Boleh berbeda dari penerima BKU/ARKAS">
-                </div>
-            </div>
-
-            <div class="mt-5 flex justify-end gap-2 border-t border-[var(--ui-line)] pt-4">
-                <x-ui.button type="button" variant="secondary" icon="close" x-on:click="closeEditor">Batal</x-ui.button>
-                <x-ui.button type="submit" icon="save">Simpan Data SPJ</x-ui.button>
-            </div>
-        </form>
-    </div>
 </div>
