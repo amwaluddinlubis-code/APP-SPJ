@@ -1,0 +1,81 @@
+/* Transaction list action treatment.
+   Mirrors the clearer SPJ table action hierarchy while keeping the list
+   readable in light and dark theme profiles. */
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-column,
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-cell {
+    border-left: 1px solid color-mix(in srgb, var(--theme-content-accent) 18%, var(--ui-line)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) thead .transaction-action-column {
+    background: color-mix(in srgb, var(--theme-content-accent) 9%, var(--ui-surface-soft)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
+    display: inline-flex;
+    width: 5.25rem;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: .5rem;
+    padding: .375rem .625rem;
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1rem;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-edit {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 38%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 10%, var(--ui-surface-base)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-edit:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 62%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 17%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail {
+    border-color: color-mix(in srgb, #059669 42%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #10b981 10%, var(--ui-surface-base)) !important;
+    color: #047857 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail:hover {
+    border-color: color-mix(in srgb, #059669 66%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #10b981 18%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending {
+    border-color: color-mix(in srgb, #d97706 42%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #f59e0b 10%, var(--ui-surface-base)) !important;
+    color: #b45309 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending:hover {
+    border-color: color-mix(in srgb, #d97706 66%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #f59e0b 18%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+    transform: none;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail {
+    color: #6ee7b7 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending {
+    color: #fbbf24 !important;
+}
