@@ -3,6 +3,9 @@
 @vite('resources/js/transaction-category-controls.js')
 @vite('resources/js/spj-preparation-state-normalizer.js')
 @vite('resources/js/transaction-summary-three-column.js')
+@vite('resources/js/legacy-action-icon-migrator.js')
+
+<x-ui.icon-templates />
 
 @php
     $initialNotifications = collect([
