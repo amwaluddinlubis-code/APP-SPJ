@@ -13,7 +13,10 @@ class CreateSpjDraftUseCase
     public function handle(string $transactionId): RedirectResponse
     {
         $transaction = Transaction::query()
-            ->with('spjPackage')
+            ->with([
+                'spjPackage',
+                'items:id,transaction_id,item_description',
+            ])
             ->withCount('items')
             ->find($transactionId);
 
@@ -28,7 +31,20 @@ class CreateSpjDraftUseCase
         if ($transaction->items_count < 1) {
             return redirect()
                 ->route('transactions.show', $transaction->id)
-                ->with('error', 'Paket SPJ belum dapat dibuat karena transaksi belum memiliki rincian barang/jasa.');
+                ->with('error', 'Paket SPJ belum dapat dibuka karena transaksi belum memiliki rincian barang/jasa.');
+        }
+
+        $missingDescriptions = $transaction->items
+            ->filter(fn ($item): bool => blank(trim((string) $item->item_description)))
+            ->count();
+
+        if ($missingDescriptions > 0) {
+            return redirect()
+                ->to(route('transactions.show', $transaction->id).'#rincian-transaksi')
+                ->with(
+                    'error',
+                    $missingDescriptions.' uraian item SPJ belum tersimpan. Lengkapi dan simpan seluruh Uraian Barang/Jasa untuk SPJ terlebih dahulu sebelum melihat Paket SPJ.'
+                );
         }
 
         if ($transaction->spjPackage) {
