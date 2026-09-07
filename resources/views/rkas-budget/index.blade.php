@@ -17,8 +17,9 @@
                 <form method="POST" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Lanjutkan?">
                     @csrf
                     <input type="hidden" name="confirm_sync" value="1">
-                    <button class="inline-flex w-fit rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/20">
-                        Sinkron Semua ARKAS
+                    <button class="inline-flex w-fit items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition hover:bg-white/20">
+                        <x-ui-icon name="sync" class="h-4 w-4" />
+                        <span>Sinkron Semua ARKAS</span>
                     </button>
                 </form>
             </x-slot:actions>
@@ -37,7 +38,10 @@
         </x-page-header>
 
         <section class="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
-            <span class="rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white">SISA TERSEDIA</span>
+            <span class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white">
+                <x-ui-icon name="budget" class="h-4 w-4" />
+                <span>SISA TERSEDIA</span>
+            </span>
             <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-sky-700">Masih bisa direalisasikan</p>
                 <p class="text-xl font-bold text-sky-900">{{ $rupiah($underBudget) }}</p>
@@ -71,15 +75,30 @@
                     />
                 </form>
 
-                <x-page-table-per-page
-                    :total="$items->total()"
-                    name="per_page"
-                    :current="$perPage"
-                    :options="[10, 15, 30, 50, 100]"
-                />
+                <form method="GET" class="ui-toolbar-group flex items-center gap-2 text-[13px]">
+                    @if($search !== '')
+                        <input type="hidden" name="q" value="{{ $search }}">
+                    @endif
+                    <label for="rkas-per-page" class="font-semibold" style="color: var(--ui-fg-muted)">Baris</label>
+                    <select
+                        id="rkas-per-page"
+                        name="per_page"
+                        class="ui-select !min-h-9 !w-auto !py-1.5 !text-[13px]"
+                    >
+                        @foreach([15, 30, 50, 100] as $option)
+                            <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }} baris</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)">
+                        <x-ui-icon name="queue" class="h-4 w-4" />
+                        <span>Terapkan</span>
+                    </button>
+                    <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">• {{ number_format($items->total(), 0, ',', '.') }} data</span>
+                </form>
 
-                <a class="rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('synced-data.show', 'rkas') }}">
-                    Data Mentah
+                <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('synced-data.show', 'rkas') }}">
+                    <x-ui-icon name="database" class="h-4 w-4" />
+                    <span>Data Mentah</span>
                 </a>
             </x-slot:actions>
 
@@ -87,36 +106,36 @@
                 <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
-                            <th class="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kode Rekening</th>
-                            <th class="min-w-[260px] px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Uraian / Barang</th>
-                            <th class="min-w-[220px] px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kegiatan</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Volume</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Satuan</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Harga Satuan</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Anggaran</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Realisasi</th>
-                            <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Selisih</th>
+                            <th class="px-5 py-3 text-center text-[13px] font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Kode Rekening</th>
+                            <th class="min-w-[260px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Uraian / Barang</th>
+                            <th class="min-w-[220px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Kegiatan</th>
+                            <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Volume</th>
+                            <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Satuan</th>
+                            <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Harga Satuan</th>
+                            <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Anggaran</th>
+                            <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Realisasi</th>
+                            <th class="px-5 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Selisih</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
+                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)] text-sm">
                         @forelse($items as $index => $item)
                             <tr class="transition hover:bg-indigo-50/50">
-                                <td class="px-5 py-4 text-center text-xs font-semibold text-slate-400">{{ $items->firstItem() + $index }}</td>
-                                <td class="px-4 py-4"><span class="font-mono text-xs font-bold text-indigo-700">{{ $item->account_code ?: '—' }}</span></td>
-                                <td class="px-4 py-4"><p class="line-clamp-2 font-semibold text-slate-800">{{ $item->description ?: 'Tanpa uraian' }}</p><p class="mt-1 font-mono text-[11px] text-slate-400">{{ $item->source_rapbs_id }}</p></td>
-                                <td class="px-4 py-4"><p class="font-mono text-xs font-semibold text-sky-700">{{ $item->activity_code ?: '—' }}</p><p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ $item->activity_name ?: 'Kegiatan belum diisi' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right">{{ rtrim(rtrim(number_format($item->volume, 2, ',', '.'), '0'), ',') }}</td>
-                                <td class="px-4 py-4 text-slate-500">{{ $item->unit }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($item->unit_price) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-indigo-700">{{ $rupiah($item->amount) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right font-medium text-emerald-700">{{ $rupiah($item->realization) }}</td>
-                                <td class="whitespace-nowrap px-5 py-4 text-right font-semibold {{ $item->variance < 0 ? 'text-rose-600' : 'text-slate-700' }}">{{ $item->variance < 0 ? '- ' : '' }}{{ $rupiah(abs($item->variance)) }}</td>
+                                <td class="px-5 py-4 text-center text-[13px] font-semibold text-slate-400">{{ $items->firstItem() + $index }}</td>
+                                <td class="px-4 py-4"><span class="font-mono text-[13px] font-bold text-indigo-700">{{ $item->account_code ?: '—' }}</span></td>
+                                <td class="px-4 py-4"><p class="line-clamp-2 text-sm font-semibold text-slate-800">{{ $item->description ?: 'Tanpa uraian' }}</p><p class="mt-1 font-mono text-[13px] text-slate-400">{{ $item->source_rapbs_id }}</p></td>
+                                <td class="px-4 py-4"><p class="font-mono text-[13px] font-semibold text-sky-700">{{ $item->activity_code ?: '—' }}</p><p class="mt-1 line-clamp-2 text-[13px] text-slate-500">{{ $item->activity_name ?: 'Kegiatan belum diisi' }}</p></td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm">{{ rtrim(rtrim(number_format($item->volume, 2, ',', '.'), '0'), ',') }}</td>
+                                <td class="px-4 py-4 text-sm text-slate-500">{{ $item->unit }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm">{{ $rupiah($item->unit_price) }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold text-indigo-700">{{ $rupiah($item->amount) }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-medium text-emerald-700">{{ $rupiah($item->realization) }}</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold {{ $item->variance < 0 ? 'text-rose-600' : 'text-slate-700' }}">{{ $item->variance < 0 ? '- ' : '' }}{{ $rupiah(abs($item->variance)) }}</td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="10" class="px-5 py-14 text-center">
-                                    <p class="font-semibold text-slate-700">Belum ada RKAS.</p>
+                                    <p class="text-sm font-semibold text-slate-700">Belum ada RKAS.</p>
                                     <p class="mt-1 text-base text-slate-500">Jalankan sinkronisasi atau ubah kata kunci pencarian.</p>
                                 </td>
                             </tr>
