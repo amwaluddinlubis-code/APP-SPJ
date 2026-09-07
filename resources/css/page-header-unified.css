@@ -41,10 +41,17 @@ html[data-ui-header] .page-header-main {
 }
 
 html[data-ui-header] .page-header-kicker {
-    color: var(--text-comfort-on-dark-muted, #c3ccd8) !important;
-    font-size: .6875rem !important;
+    display: inline-flex !important;
+    width: fit-content !important;
+    align-items: center !important;
+    border: 1px solid #f59e0b !important;
+    border-radius: .5rem !important;
+    background: rgb(245 158 11 / .12) !important;
+    padding: .3rem .65rem !important;
+    color: #fef3c7 !important;
+    font-size: .875rem !important;
     font-weight: 700 !important;
-    letter-spacing: .2em !important;
+    letter-spacing: .08em !important;
     line-height: 1.25rem !important;
     text-transform: uppercase !important;
 }
