@@ -1,5 +1,6 @@
 const actionIconRules = [
     { pattern: /^(simpan|simpan\b)/i, icon: 'save' },
+    { pattern: /^(buat paket spj|buat paket)/i, icon: 'plus' },
     { pattern: /^(tambah|tambahkan|\+\s*)/i, icon: 'plus' },
     { pattern: /^(hapus|delete|buang)/i, icon: 'trash' },
     { pattern: /^(edit|ubah|perbaiki)/i, icon: 'edit' },
@@ -12,6 +13,7 @@ const actionIconRules = [
     { pattern: /^(lihat transaksi|buka transaksi|lihat detail|detail transaksi|lihat paket)/i, icon: 'eye' },
     { pattern: /^(buka paket|buka paket spj)/i, icon: 'external-link' },
     { pattern: /^(isi data)/i, icon: 'edit' },
+    { pattern: /^(paket terkunci)/i, icon: 'lock' },
     { pattern: /^(rincian)(\b|$)/i, icon: 'document' },
     { pattern: /^(isian manual)(\b|$)/i, icon: 'edit' },
     { pattern: /^(kesiapan)(\b|$)/i, icon: 'check' },
