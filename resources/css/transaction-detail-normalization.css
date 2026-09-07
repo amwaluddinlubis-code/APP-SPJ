@@ -60,6 +60,7 @@ main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky
 
 /* ARKAS is a source reference: render it as readable information, never as an input. */
 main.transaction-detail-page .transaction-detail-reference-block {
+    grid-column: 1 / -1;
     min-width: 0;
 }
 
