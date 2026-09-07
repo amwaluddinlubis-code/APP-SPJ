@@ -22,7 +22,9 @@
 
                 <div class="page-header-title-row">
                     @if($icon)
-                        <span class="page-header-icon">{{ $icon }}</span>
+                        <span class="page-header-icon" aria-hidden="true">
+                            <x-ui.icon :name="$icon" size="lg" />
+                        </span>
                     @endif
                     <div class="min-w-0">
                         <h1 class="page-header-title">{{ $title }}</h1>
