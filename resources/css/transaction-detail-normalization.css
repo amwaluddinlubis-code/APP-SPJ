@@ -1,0 +1,268 @@
+/* Transaction detail normalization.
+   Automatic document numbers are informational outputs, not operator inputs. */
+
+main.transaction-detail-page .transaction-detail-inline-icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+}
+
+main.transaction-detail-page .transaction-detail-inline-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+main.transaction-detail-page .transaction-detail-icon-action {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center;
+    gap: .5rem !important;
+}
+
+main.transaction-detail-page .transaction-detail-icon-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+main.transaction-detail-page .page-header-summary .transaction-detail-stat-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: .45rem;
+    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+    border-radius: .75rem;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='indigo'] .transaction-detail-stat-icon,
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='indigo'] .ui-stat-value {
+    color: #4f46e5 !important;
+}
+
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='amber'] .transaction-detail-stat-icon,
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='amber'] .ui-stat-value {
+    color: #d97706 !important;
+}
+
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='emerald'] .transaction-detail-stat-icon,
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='emerald'] .ui-stat-value {
+    color: #059669 !important;
+}
+
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky'] .transaction-detail-stat-icon,
+main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky'] .ui-stat-value {
+    color: #0284c7 !important;
+}
+
+/* ARKAS is a source reference: render it as readable information, never as an input. */
+main.transaction-detail-page .transaction-detail-reference-block {
+    min-width: 0;
+}
+
+main.transaction-detail-page .transaction-detail-reference-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .8125rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2rem;
+    color: var(--ui-fg-strong) !important;
+}
+
+main.transaction-detail-page .transaction-detail-reference-text {
+    margin-top: .4rem;
+    min-height: 3.25rem;
+    border-left: 3px solid var(--theme-content-accent);
+    border-radius: .5rem;
+    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--ui-surface-base));
+    padding: .7rem .85rem;
+    font-size: .875rem !important;
+    font-weight: 600;
+    line-height: 1.45rem;
+    color: var(--ui-fg-strong);
+    white-space: pre-wrap;
+}
+
+/* Source inputs stay in the submitted payload as hidden values, but are no longer
+   shown to the operator as editable/read-only form controls. */
+main.transaction-detail-page .transaction-detail-auto-source-field {
+    display: none !important;
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-summary {
+    margin-top: .75rem;
+    overflow: hidden;
+    border: 1px solid var(--ui-line);
+    border-radius: .625rem;
+    background: var(--ui-surface-base);
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-title {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    border-bottom: 1px solid var(--ui-line);
+    background: var(--ui-surface-soft);
+    padding: .55rem .7rem;
+    font-size: .8125rem;
+    font-weight: 800;
+    line-height: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    color: var(--ui-fg-strong);
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-row {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, .75fr) minmax(0, 1.25fr);
+    align-items: center;
+    gap: .75rem;
+    border-bottom: 1px solid var(--ui-line);
+    border-left: 3px solid var(--ui-line-strong);
+    padding: .62rem .7rem;
+    font-size: .8125rem;
+    line-height: 1.25rem;
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-row:last-child {
+    border-bottom: 0;
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-row[data-tone='indigo'] { border-left-color: #4f46e5; }
+main.transaction-detail-page .transaction-detail-auto-number-row[data-tone='amber'] { border-left-color: #d97706; }
+main.transaction-detail-page .transaction-detail-auto-number-row[data-tone='emerald'] { border-left-color: #059669; }
+main.transaction-detail-page .transaction-detail-auto-number-row[data-tone='sky'] { border-left-color: #0284c7; }
+main.transaction-detail-page .transaction-detail-auto-number-row[data-tone='violet'] { border-left-color: #7c3aed; }
+
+main.transaction-detail-page .transaction-detail-auto-number-row > span {
+    font-weight: 700;
+    color: var(--ui-fg-muted);
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-row > strong {
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .8125rem;
+    font-weight: 800;
+    color: var(--ui-fg-strong);
+}
+
+main.transaction-detail-page .transaction-detail-auto-number-row > strong.is-pending,
+main.transaction-detail-page .transaction-detail-inline-auto-number strong.is-pending {
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+    font-weight: 600;
+    color: var(--ui-fg-muted);
+}
+
+/* SPPD can contain multiple travelers, so each generated Surat Tugas number stays
+   next to its traveler while using the same information treatment. */
+main.transaction-detail-page .transaction-detail-inline-auto-number {
+    display: flex;
+    min-height: 2.5rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: .25rem;
+    border-left: 3px solid #0284c7;
+    border-radius: .5rem;
+    background: var(--ui-surface-base);
+    padding: .55rem .7rem;
+}
+
+main.transaction-detail-page .transaction-detail-inline-auto-number-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1rem;
+    color: var(--ui-fg-muted);
+}
+
+main.transaction-detail-page .transaction-detail-inline-auto-number strong {
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .8125rem;
+    line-height: 1.2rem;
+    color: var(--ui-fg-strong);
+}
+
+/* Form normalization: labels 13px, controls 14px, helpers never below 12px. */
+main.transaction-detail-page .spj-builder-form :is(label, legend),
+main.transaction-detail-page .spj-builder-form .text-\[11px\],
+main.transaction-detail-page .spj-builder-form [class*='text-[11px]'] {
+    font-size: .8125rem !important;
+    line-height: 1.2rem;
+}
+
+main.transaction-detail-page .spj-builder-form :is(
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']),
+    select,
+    textarea
+) {
+    min-height: 2.5rem;
+    font-size: .875rem !important;
+    line-height: 1.35rem;
+}
+
+main.transaction-detail-page .spj-builder-form textarea {
+    min-height: 4.5rem;
+    line-height: 1.45rem;
+}
+
+main.transaction-detail-page .spj-builder-form :is(.text-xs, small) {
+    font-size: var(--ui-font-size-min, .75rem) !important;
+    line-height: 1.1rem;
+}
+
+main.transaction-detail-page .spj-builder-form button,
+main.transaction-detail-page .spj-builder-form a.ui-btn {
+    font-size: .8125rem !important;
+}
+
+/* Detail tables follow the approved global table typography explicitly. */
+main.transaction-detail-page table {
+    font-size: var(--ui-table-font-size, .875rem) !important;
+}
+
+main.transaction-detail-page table :is(td, td p, td a, td strong, td span:not(.ui-badge):not(.ui-status-badge)) {
+    font-size: var(--ui-table-font-size, .875rem) !important;
+    line-height: 1.4rem;
+}
+
+main.transaction-detail-page table th,
+main.transaction-detail-page table th :is(span, p, a, strong),
+main.transaction-detail-page table :is(.text-xs, .text-\[11px\], [class*='text-[11px]']) {
+    font-size: var(--ui-table-small-font-size, .8125rem) !important;
+    line-height: 1.15rem;
+}
+
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='indigo'] .transaction-detail-stat-icon,
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='indigo'] .ui-stat-value {
+    color: #a5b4fc !important;
+}
+
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='amber'] .transaction-detail-stat-icon,
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='amber'] .ui-stat-value {
+    color: #fbbf24 !important;
+}
+
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='emerald'] .transaction-detail-stat-icon,
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='emerald'] .ui-stat-value {
+    color: #6ee7b7 !important;
+}
+
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky'] .transaction-detail-stat-icon,
+html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky'] .ui-stat-value {
+    color: #7dd3fc !important;
+}
+
+@media (max-width: 639px) {
+    main.transaction-detail-page .transaction-detail-auto-number-row {
+        grid-template-columns: 1fr;
+        gap: .2rem;
+    }
+}
