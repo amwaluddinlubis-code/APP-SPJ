@@ -2,7 +2,7 @@
     'dashboard' => 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
     'budget' => 'M4 19h16M6 17V9m4 8V5m4 12v-6m4 6V3',
     'transaction' => 'm7 7 5-5 5 5m-5-5v16m5-4-5 5-5-5',
-    'tax' => 'M9 14h6m-7-4h8m-1-7H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6l4-4V5a2 2 0 0 1-2-2Zm2 14v-4h4',
+    'tax' => 'M9 14h6m-7-4h8m-1-7H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6l4-4V5a2 2 0 0 0-2-2Zm2 14v-4h4',
     'document' => 'M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 0v5h5M8 12h8M8 16h6',
     'report' => 'M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-8',
     'audit' => 'M4 5h16v14H4zM8 9h8M8 13h5M8 17h3',
