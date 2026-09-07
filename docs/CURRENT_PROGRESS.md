@@ -1,421 +1,184 @@
-# SPJ BOSP Web — Catatan Progres Terakhir
+# SPJ BOSP Web — Current Progress / Open Issues
 
 Terakhir diperbarui: **2026-09-07**
 
-Dokumen ini adalah snapshot utama kondisi branch `gui-standardization`. Jika ada dokumen historis atau handoff lama yang bertentangan dengan dokumen ini, gunakan dokumen ini bersama `SPJ_DESIGN_DECISIONS.md` dan kode aktif.
+Dokumen ini adalah register kondisi aktif branch `gui-standardization`. Item yang sudah selesai/PASS tidak lagi dipelihara sebagai daftar progres di sini; fondasi yang sudah stabil tetap dijelaskan di README, arsitektur, dan keputusan desain. Dokumen ini fokus pada **FAIL / belum tuntas / RVR** agar tidak menyesatkan.
 
 ---
 
-## 1. Kondisi project saat ini
+## 1. Kondisi aktif
 
-Project aktif:
-
-- Laravel 12 / PHP 8.2+;
-- Livewire + Alpine + Tailwind;
-- database multi-koneksi: database utama + tenant/sekolah;
-- ARKAS/BKU adalah sumber data operasional;
-- data operator SPJ dipisahkan dari source;
-- `SpjController` sudah dipisah ke use case;
-- design system global theme-aware sudah menjadi fondasi utama.
-
-Project sudah melewati tahap prototype, tetapi **belum release final**. Fokus tetap pada workflow SPJ end-to-end, consistency/hardening, dan pengujian.
+- Laravel 12 / PHP 8.2, Livewire + Alpine + Tailwind.
+- Multi-database: database utama + SQLite tenant/sekolah.
+- ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
+- `SpjController` tetap tipis dan orkestrasi utama berada di use case SPJ.
+- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
+- SiPLah bukan kategori; gunakan `payment_method = siplah`.
+- Root data aplikasi memakai `SPJ_DATA_PATH`. Target development Windows saat ini: `D:/lrvProject/spj-bosp-data`.
+- Database sekolah berada di `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`; dummy berada di `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
 
 ---
 
-## 2. Arsitektur data yang berlaku
+## 2. FAIL / belum tuntas yang masih aktif
 
-### Database utama
+### F01 — Validasi tanggal pengadaan belum konsisten
 
-Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup, dan metadata global.
+**Status: FAIL**
 
-### Database tenant/sekolah
-
-Menyimpan tahun anggaran, sumber dana, RKAS/BKU hasil sinkronisasi, transaksi, item, detail SPJ, paket, nomor dokumen, audit, serta data pendukung sekolah.
-
-Prinsip wajib:
-
-- source ARKAS/BKU tidak ditimpa data manual;
-- safe sync tidak boleh menghapus pekerjaan operator;
-- query operasional harus berada pada sekolah, tahun anggaran, dan sumber dana aktif;
-- reset database sekolah hanya menyasar tenant dan membangun ulang SQLite agar sequence/auto-increment kembali dari awal.
-
----
-
-## 3. Use case SPJ
-
-`SpjController` berfungsi sebagai adapter HTTP tipis. Orkestrasi utama:
-
-```text
-app/UseCases/Spj/
-├── SpjWorkspaceUseCase.php
-├── SpjPackageUseCase.php
-├── SpjNumberingUseCase.php
-├── SpjDocumentUseCase.php
-└── SpjReportUseCase.php
-```
-
-Boundary tersebut harus dipertahankan. Jangan memindahkan logika domain kembali ke controller tanpa alasan kuat.
-
----
-
-## 4. Detail Transaksi — kondisi terbaru
-
-Detail Transaksi adalah workspace operator untuk:
-
-```text
-Data ARKAS/BKU readonly
-→ Data Umum SPJ
-→ Detail kategori
-→ Kelengkapan
-→ Buat/Perbarui Paket
-```
-
-### 4.1 Kategori Konsumsi — peserta dari Dapodik
-
-Pada kategori `KONSUMSI`, tombol yang menjalankan Alpine `fillTeachers()` sekarang mengisi peserta dari `$dapodikTeachers` yang sudah difilter:
-
-```text
-Employee.source_type = DAPODIK
-```
-
-Record yang hanya berasal dari ARKAS tidak ikut masuk ke daftar peserta konsumsi.
-
-Catatan UI: label tombol di view masih berbunyi “Ambil semua pegawai terdaftar”; secara data sumber, hasilnya sekarang adalah Dapodik-only. Rename label merupakan cleanup UI yang masih dapat dilakukan.
-
-### 4.2 Dark form controls
-
-`resources/css/dark-form-controls.css` dimuat melalui `theme-system.css` sebagai safety layer untuk input/select/textarea pada dark appearance. Background, border, font, placeholder, readonly, disabled, dan autofill dinormalisasi agar tidak kembali putih.
-
-### 4.3 Rincian transaksi
-
-`transactions-standardization.css` menormalisasi panel/form Detail Transaksi terhadap tema dan membuat daftar uraian barang lebih compact.
-
-### 4.4 Filter workflow Transaksi dan Persiapan
-
-Filter status pada halaman `/transaksi` dan `/spj?tab=persiapan` sekarang berbagi kontrak melalui `SpjWorkflowFilterService`:
-
-```text
-Perlu Perhatian   -> SOURCE_MISSING / requires_reconciliation
-Belum Dikerjakan  -> belum memiliki Paket SPJ
-Perlu Dilengkapi  -> DRAFT
-Siap Dinomori     -> READY
-Sudah Bernomor    -> NUMBERED / FINAL
-```
-
-State normal mengecualikan transaksi yang sedang `SOURCE_MISSING` atau membutuhkan rekonsiliasi agar bucket antrean tidak tumpang tindih. Keberadaan rincian `transaction_items` tidak lagi dipakai sebagai status pekerjaan operator karena rincian berasal dari sinkronisasi `kas_umum`. State lama `needs_details` bukan workflow canonical dan hanya dipertahankan sementara sebagai alias kompatibilitas ke **Perlu Perhatian** sampai markup Persiapan legacy dirapikan.
-
-Halaman Transaksi masih memiliki pencarian dan filter periode sendiri, tetapi filter **Status** tidak lagi membaca status mentah source transaction. Label dan arti status sama dengan Persiapan dan Dashboard Produktivitas.
-
----
-
-## 5. Validasi pengadaan — kondisi aktual
-
-### 5.1 Surat Pesanan internal
-
-Validasi Surat Pesanan Non-SiPLah untuk kategori `BARANG`, `BELANJA_MODAL`, dan `KONSUMSI` sudah dipisahkan:
-
-1. **Kelengkapan isi Surat Pesanan** — blocking pada tahap persiapan jika substansi belum lengkap.
-2. **Nomor Surat Pesanan** — tidak blocking pada `DRAFT`/`READY`; menjadi wajib pada `NUMBERED`/`FINAL`.
-
-Substansi yang diperiksa mencakup penyedia, tanggal pesanan, uraian item, quantity, harga, dan nilai transaksi.
-
-Field `unit`/satuan berasal dari rincian source ARKAS dan tidak dapat dilengkapi melalui form uraian SPJ operator. Karena itu satuan **bukan blocker** untuk `Kelengkapan isi Surat Pesanan`; validasi item mengikuti rule canonical barang: uraian, jumlah lebih dari nol, dan harga valid. Konsistensi nilai item tetap diperiksa oleh validasi paket yang relevan.
-
-Nomor Surat Pesanan diterbitkan aplikasi melalui domain numbering `PESANAN`; requirement nomor tidak boleh menciptakan circular blocker sebelum numbering.
-
-### 5.2 Kronologi tanggal pengadaan
-
-Aturan domain Paket SPJ yang sudah diterapkan pada `SpjPackageUseCase`:
+Rule canonical Paket SPJ:
 
 ```text
 order_date <= transaction_date
-bap_date   >= order_date
-bast_date  >= bap_date
+order_date <= bap_date
+bap_date <= bast_date
 ```
 
-Frontend juga memiliki `resources/js/spj-purchase-date-validation.js` untuk menjaga constraint interaktif pada Detail Transaksi dan Paket → Isian Manual.
+`SpjPackageUseCase` mengikuti rule tersebut, tetapi `TransactionController::updateManualDescription()` masih memaksa `bap_date <= transaction_date` dan `bast_date <= transaction_date`. Kedua entry point belum setara.
 
-**Known mismatch yang harus diketahui:** `TransactionController::updateManualDescription()` saat ini masih memiliki validasi tambahan `bap_date <= transaction_date` dan `bast_date <= transaction_date`. Jadi Detail Transaksi masih lebih ketat daripada `SpjPackageUseCase`. Dokumentasi sebelumnya yang menyatakan kedua entry point sudah identik tidak lagi dianggap benar sampai rule backend ini diseragamkan.
+Target: satu rule backend + focused regression test.
+
+### F02 — Dashboard Produktivitas masih memakai keberadaan item sebagai syarat workflow
+
+**Status: FAIL / inkonsisten konsep**
+
+`ProductivityDashboardController` masih membangun `$cleanTransactions` dengan `->has('items')`. Ini bertentangan dengan kontrak workflow Transaksi/Persiapan bahwa `transaction_items` berasal dari source dan bukan indikator apakah operator sudah mulai mengerjakan SPJ.
+
+Target: dashboard memakai kontrak `SpjWorkflowFilterService` atau rule equivalent tanpa menjadikan item sebagai status pekerjaan.
+
+### F03 — Markup Persiapan masih menyimpan state legacy `needs_details`
+
+**Status: FAIL / technical debt UI**
+
+Backend sudah memakai state canonical, tetapi view Persiapan legacy masih memiliki label/link `needs_details`/“Rincian belum ada” sebagai compatibility path.
+
+Target: hapus state visual legacy tanpa rewrite besar `resources/views/spj/index.blade.php`.
+
+### F04 — PEMELIHARAAN: link bahan/upah belum masuk generator RAB
+
+**Status: FAIL / fitur belum end-to-end**
+
+Detail Transaksi sudah memiliki linkage transaksi terkait pemeliharaan dengan field:
+
+```text
+maintenance_material_transaction_id
+maintenance_labor_transaction_id
+```
+
+UI hanya meminta **transaksi lawan** dari transaksi yang sedang dibuka: transaksi upah memilih transaksi bahan/barang; transaksi bahan/barang memilih transaksi upah. Label kandidat memakai `NOMOR BUKTI - PAYMENT DESCRIPTION`.
+
+Yang belum selesai: generator RAB/dokumen pemeliharaan belum menggunakan transaksi terkait tersebut sebagai sumber otomatis bahan + upah. Aturan rekonsiliasi nilai dan cara membawa item ke RAB juga belum difinalkan.
+
+### F05 — JASA_LAINNYA multi-penerima baru partial
+
+**Status: FAIL / partial implementation**
+
+Sudah aktif: relation `serviceRecipients`, validasi request, sinkronisasi detail penerima, UI baris penerima, dan kalkulasi dasar `quantity × rental_days × daily_rate`.
+
+Belum tuntas:
+
+- rekonsiliasi wajib gross/tax/net ke transaksi source;
+- pajak per penerima/service line;
+- blocker READY bila total tidak sesuai;
+- dokumen per penerima;
+- generator/template output multi-penerima;
+- focused end-to-end test.
+
+Bug kategori tersembunyi pada browser telah diperbaiki dengan men-disable control kategori nonaktif; itu tidak lagi dimasukkan sebagai FAIL aktif.
+
+### F06 — SiPLah belum terverifikasi end-to-end
+
+**Status: FAIL / partial**
+
+Field/policy dasar tersedia, tetapi belum ada bukti lengkap source → Detail Transaksi → Paket → numbering → preview/download untuk skenario SiPLah. Safe-sync ownership dan output template masih perlu regression test.
+
+### F07 — Generator dokumen belum release-hardened
+
+**Status: FAIL / RVR**
+
+Preview/download foundation tersedia, tetapi stabilitas PDF/Word/Excel per kategori, konsistensi placeholder, error handling template, dan side-effect-free preview belum dibuktikan sebagai release checkpoint menyeluruh.
+
+### F08 — Lifecycle, authorization, reconciliation belum release-hardened
+
+**Status: FAIL / belum selesai**
+
+Masih perlu verifikasi dan test menyeluruh untuk:
+
+- cancellation/reissue/reopen;
+- locking backend NUMBERED/FINAL;
+- authorization ADMIN/OPERATOR/VIEWER pada mutation sensitif;
+- snapshot/diff rekonsiliasi ARKAS;
+- final document tidak berubah karena sync.
+
+### F09 — End-to-end semua kategori belum lengkap
+
+**Status: FAIL / RVR**
+
+Belum ada checkpoint terpadu yang membuktikan keenam kategori canonical berjalan source → FINAL dengan dokumen yang benar.
+
+### F10 — Mobile visual QA belum ditutup
+
+**Status: FAIL / RVR**
+
+`docs/MOBILE_VISUAL_QA_TODO.md` masih terbuka. Jangan menyebut aplikasi mobile-complete sebelum checklist tersebut ditutup.
+
+### F11 — Pusat Laporan dan laporan BOS belum tersedia sebagai fitur lengkap
+
+**Status: FAIL / planned**
+
+Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak, kategori, monitoring, dan audit masih roadmap. Format resmi harus dikonfirmasi sebelum klaim compliance.
+
+### F12 — Operasi tenant perlu test end-to-end setelah pemindahan APP DATA
+
+**Status: RVR**
+
+Konfigurasi path sudah diarahkan melalui `SPJ_DATA_PATH`, tetapi backup/restore/reset/provision/migrate perlu diverifikasi terhadap struktur data eksternal:
+
+```text
+{SPJ_DATA_PATH}/
+├── school-databases/
+├── backups/
+└── exports/
+```
+
+Jangan menganggap backup/export sudah otomatis memakai root baru sebelum implementasi masing-masing diverifikasi.
 
 ---
 
-## 6. Paket SPJ — layout dan theme terbaru
-
-URL kerja:
+## 3. Urutan penyelesaian FAIL
 
 ```text
-/spj?tab=paket&package_id=...
-```
-
-Sub-tab internal saat ini:
-
-```text
-Rincian
-Isian Manual
-Penomoran
-```
-
-### 6.1 Rincian
-
-Sub-tab `Rincian` sekarang berisi dua panel berbeda:
-
-```text
-Panel Rincian Transaksi
-Panel Dokumen & Template
-```
-
-`Dokumen & Template` dipindahkan ke tab Rincian melalui `resources/js/spj-package-document-placement.js` agar tidak ikut memperpanjang halaman ketika user membuka Isian Manual/Penomoran.
-
-Kedua panel dipisahkan secara visual, memiliki border/radius/shadow sendiri, dan header theme-aware. CSS placement berada di:
-
-```text
-resources/css/spj-package-document-placement.css
-```
-
-### 6.2 Dokumen & Template
-
-Daftar template dibuat compact:
-
-- padding baris dikurangi;
-- metadata tipe/format diringkas;
-- tombol preview/download dipadatkan;
-- template aktif dapat dipratinjau serta diunduh per jenis sebagai Excel atau PDF; Unduh Paket PDF menggabungkan template aktif yang sesuai kategori;
-- zebra/hover mengikuti theme;
-- header grup dokumen tidak lagi mendominasi vertical space.
-
-Workflow/validasi/download tidak diubah oleh perubahan layout ini.
-
-### 6.3 Isian Manual
-
-Tab Isian Manual dinormalisasi agar mengikuti tema aktif untuk surface, font, control, panel semantic, panel pajak, focus state, dan spacing.
-
-### 6.4 Penomoran
-
-Quarter selector `/spj/penomoran` memiliki normal/hover/active state yang mengikuti token theme.
-
----
-
-## 7. CSS/theme contract aktif
-
-Entry point:
-
-```text
-resources/css/app.css
-└── resources/css/theme-system.css
-```
-
-Layer penting saat ini termasuk:
-
-```text
-settings-database-standardization.css
-dark-form-controls.css
-spj-package-theme-fix.css
-spj-package-document-placement.css
-view-theme-hardening.css
-semantic-status-colors.css
-```
-
-Aturan kode baru:
-
-- gunakan `x-ui.*` / `ui-*` bila tersedia;
-- warna utama memakai token `--ui-*`, `--theme-*`, atau feature token yang memetakan ke token tersebut;
-- Tailwind tetap dipakai untuk layout/spacing/responsive;
-- jangan menambah hard-coded surface/accent yang seharusnya theme-aware.
-
-### 7.1 Audit hard-coded background/font seluruh view
-
-Recursive inventory `resources/views` pada branch aktif telah dijadikan scope audit untuk palette background/font. Karena banyak view legacy masih besar dan memiliki business markup yang tidak aman untuk mass rewrite, normalisasi dilakukan melalui `resources/css/view-theme-hardening.css`, yaitu global compatibility layer terakhir untuk warna **non-semantik** pada authenticated `<main>`.
-
-Untuk seluruh authenticated application view, layer ini membuat sisa class legacy berikut mengikuti theme terpilih:
-
-- neutral surface/background (`white/slate/gray/zinc/neutral/stone`);
-- neutral foreground/font hierarchy;
-- non-semantic accent (`indigo/violet/blue/sky/cyan`);
-- border dan divider structural;
-- dark hero/chrome gradient;
-- hover, focus, ring, dan variant opacity yang sebelumnya masih dapat kembali ke warna statis.
-
-Sesudah hardening hanya ada satu exception terkontrol: `semantic-status-colors.css`. `<x-ui.status-badge>` sekarang memiliki marker `ui-status-badge` dan `data-status`; status workflow yang memang membutuhkan identitas warna seperti `READY`, `NUMBERED`, dan `PRINTED` tetap dibedakan dengan hue semantic yang di-blend ke token surface/border/font theme saat ini.
-
-Hard-coded yang memang mempunyai arti tetap dipertahankan: semantic success/warning/danger, semantic workflow status canonical, warna kontras putih pada hero gelap, serta output PDF/print/template-preview dan public/pre-login branding yang tidak berada pada authenticated `<main>`.
-
-Artinya class palette lama masih dapat terlihat di beberapa Blade sebagai **compatibility hook**, tetapi pada workspace aplikasi warna non-semantik aktualnya tidak lagi menjadi source of truth. Kode baru harus langsung memakai primitive/token canonical, bukan menambah class palette lama.
-
-Acuan rinci: `docs/CSS_USAGE_GUIDE.md`.
-
----
-
-## 8. SiPLah — status saat ini
-
-SiPLah bukan kategori SPJ. Kategori tetap `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `SPPD`, `HONOR_PEGAWAI`, dan `JASA_LAINNYA`.
-
-Dukungan yang sudah ada mencakup `payment_method = siplah`, `siplah_order_number`, vendor/owner/NPWP, invoice, referensi pembayaran, placeholder template SiPLah, dan policy requirement yang membedakan SiPLah vs Non-SiPLah.
-
-Status masih **partial/in progress**.
-
----
-
-## 9. GUI standardization — status
-
-Fondasi global tersedia: sidebar persisten, breadcrumb sticky, page header/summary, sticky `Ke atas`, form/button/table primitives, pagination/per-page, alert, empty state, modal, badge, detail, toolbar, loading/skeleton, action menu, sticky actions, danger zone, theme profile + dark appearance, dan compatibility layer untuk markup lama.
-
-Target sekarang bukan membuat design system baru, tetapi mengurangi markup legacy saat halaman disentuh dan menjaga konsistensi theme.
-
----
-
-## 10. Dashboard — source canonical dan produktivitas operator
-
-Route `/` sekarang menggunakan `ProductivityDashboardController` dan view baru:
-
-```text
-resources/views/dashboard-productivity.blade.php
-```
-
-Dashboard baru berorientasi tindakan operator, bukan sekadar statistik. Istilah workflow yang dipakai adalah:
-
-```text
-Belum Dikerjakan
-→ Sedang Dikerjakan
-→ Siap Dinomori
-→ Sudah Bernomor
-→ Final
-```
-
-`Belum Dikerjakan` berarti transaksi aktif yang belum memiliki Paket SPJ dan tidak sedang berada pada kondisi rekonsiliasi/source missing. `Sedang Dikerjakan` adalah Paket SPJ `DRAFT`; `Siap Dinomori` adalah Paket `READY`. Angka `Belum Bernomor` adalah total ketiga tahap tersebut untuk antrean normal.
-
-Dashboard menampilkan prioritas otomatis, pekerjaan draft berikutnya, transaksi Belum Dikerjakan berikutnya berdasarkan urutan tanggal/id, progress keseluruhan, antrean kerja terdekat, serta ringkasan penomoran. Rekonsiliasi/source missing tetap diprioritaskan sebagai blocker sebelum pekerjaan normal.
-
-Dashboard operasional sebelumnya **tidak ditimpa**. `OperationalDashboardController` dan view berikut tetap dipertahankan:
-
-```text
-/dashboard-operasional
-resources/views/dashboard-operational-v3.blade.php
-```
-
-Dashboard tersebut tersedia sebagai pembanding/legacy.
-
-Route `/dashboard-v2` juga tetap tersedia melalui `DashboardController` dan protected view:
-
-```text
-resources/views/dashboard.blade.php
-```
-
-Nama route `/dashboard-v2` tidak berkaitan dengan file `dashboard-operational-v2.blade.php`; view legacy `dashboard-operational.blade.php` dan `dashboard-operational-v2.blade.php` tetap sudah dihapus dari repository.
-
-Cleanup repository juga mengeluarkan `.stakpak/data/local.db` dari tracking. Local state `.stakpak/data/` tetap di-ignore dan tidak boleh menjadi source project.
-
----
-
-## 11. Pengaturan → Database Aktif — redesign total
-
-Halaman `/pengaturan/database-aktif` sekarang menjadi **Pusat Kontrol Database Sekolah**, bukan lagi halaman maintenance teknis yang padat tanpa hierarchy.
-
-Struktur baru:
-
-```text
-Page Header + status database aktif
-→ Ringkasan
-→ Database Sekolah
-→ Explorer Tabel
-→ Diagnostik
-→ Maintenance
-```
-
-Informasi yang ditonjolkan:
-
-- sekolah/NPSN dan koneksi aktif;
-- health level serta issue aktif;
-- ukuran DB/WAL/SHM;
-- integrity check;
-- writable/file existence;
-- migrasi terakhir;
-- jumlah database, tabel, dan record penting;
-- lokasi file SQLite;
-- status koneksi seluruh database sekolah.
-
-Fitur UX yang tersedia:
-
-- pencarian database berdasarkan nama sekolah/NPSN;
-- Explorer Tabel dengan pencarian, sort, pagination lokal, schema dan data read-only;
-- quick action untuk integrity check, WAL checkpoint, migrasi, dan backup;
-- maintenance dipisahkan menurut tingkat risiko;
-- zona reset total dibuat eksplisit dan diarahkan ke halaman konfirmasi reset;
-- semua panel memakai token theme dan tetap mendukung dark appearance.
-
-Action backend, route, audit, reset safety, migrate/checkpoint/vacuum/provision tetap memakai `DatabaseManagerController` dan `SchoolDatabaseManager`; redesign tidak mengubah lifecycle database tenant.
-
-CSS canonical halaman ini berada di:
-
-```text
-resources/css/settings-database-standardization.css
+1. F01 validasi tanggal pengadaan
+2. F02 dashboard workflow source
+3. F03 cleanup state legacy Persiapan
+4. F04 PEMELIHARAAN → RAB bahan + upah
+5. F05 JASA_LAINNYA multi-penerima end-to-end
+6. F06 SiPLah end-to-end
+7. F07 generator dokumen
+8. F08 lifecycle/authorization/reconciliation
+9. F09 end-to-end seluruh kategori
+10. F12 tenant operations pada SPJ_DATA_PATH
+11. F10 mobile QA
+12. F11 Pusat Laporan / laporan BOS
 ```
 
 ---
 
-## 12. Mobile QA
+## 4. Aturan status dokumentasi
 
-`docs/MOBILE_VISUAL_QA_TODO.md` masih berstatus TODO/RVR. Dashboard produktivitas, Database Aktif, dan hardening palette lintas-view terbaru juga perlu masuk regression mobile sebelum aplikasi disebut mobile-verified.
+Gunakan hanya:
 
----
+- **FAIL** — perilaku diketahui belum benar/inkonsisten atau fitur yang diminta belum end-to-end.
+- **RVR** — perlu runtime/visual verification; belum boleh disebut PASS.
+- **PLANNED** — belum diimplementasikan.
 
-## 13. Testing dan verification
+Item yang sudah PASS tidak dipertahankan dalam register ini. Jika sebuah FAIL selesai dan telah diverifikasi, hapus dari daftar ini dan sinkronkan README/roadmap/desain bila relevan.
 
-Jangan menganggap seluruh suite hijau hanya karena test tertentu pernah PASS.
-
-Setelah backend berubah gunakan test relevan; setelah frontend berubah jalankan:
-
-```text
-vendor/bin/pint --dirty --format agent
-npm run theme:qa
-npm run build
-php artisan view:cache --no-interaction
-```
-
-Filter workflow bersama memiliki focused coverage di `SpjPreparationFilterTest` dan `TransactionsWorkflowFilterTest`. Test tersebut tetap perlu dijalankan pada environment lokal sebelum perubahan dinyatakan PASS.
-
----
-
-## 14. Technical debt yang harus terlihat jelas
-
-1. Validasi tanggal pengadaan belum identik antara Detail Transaksi dan Paket.
-2. Label tombol peserta konsumsi masih generic walaupun sumber `fillTeachers()` sekarang Dapodik-only.
-3. Paket SPJ masih memakai compatibility layer/DOM placement karena view besar belum sepenuhnya direfaktor menjadi komponen kecil.
-4. Beberapa Blade legacy masih menyimpan nama class palette Tailwind sebagai compatibility hook; warna runtime non-semantik sudah ditokenisasi oleh `view-theme-hardening.css`, tetapi cleanup markup dapat dilakukan bertahap saat view disentuh.
-5. Dashboard produktivitas saat ini mendefinisikan `Belum Dikerjakan` dari state persisted (belum memiliki Paket SPJ), bukan event analytics “halaman pernah dibuka”; bila nanti diperlukan audit aktivitas buka halaman yang benar-benar literal, perlu event/log tersendiri.
-6. Markup filter Persiapan masih memiliki label legacy `Rincian belum ada`; backend mempertahankan `state=needs_details` hanya sebagai alias sementara ke **Perlu Perhatian**. UI tersebut harus dirapikan saat patch aman pada Blade besar dilakukan.
-7. Mobile regression belum ditutup, termasuk dashboard produktivitas, Database Aktif, dan hardening palette lintas-view.
-8. Generator/lifecycle/reconciliation/authorization masih membutuhkan hardening end-to-end.
-
----
-
-## 15. Prioritas berikutnya
-
-1. Verifikasi filter workflow Transaksi dan Persiapan terhadap dataset operator aktual.
-2. Rapikan label legacy `needs_details` pada Blade Persiapan menjadi **Perlu Perhatian** tanpa full-file rewrite berisiko.
-3. Seragamkan purchase-date rules antar endpoint.
-4. Tambahkan/rapikan focused test untuk Surat Pesanan dan kronologi tanggal.
-5. Stabilkan generator/preview PDF/Word/Excel.
-6. Finalisasi lifecycle/locking/revisi/numbering.
-7. Finalisasi rekonsiliasi ARKAS snapshot/diff.
-8. Hardening authorization per role.
-9. End-to-end test seluruh kategori.
-10. Selesaikan mobile visual QA termasuk dashboard produktivitas, Database Aktif, dan palette lintas-view.
-11. Laporan BOS dan release hardening.
-
----
-
-## 16. Dokumen yang harus dibaca bersama
+Baca bersama:
 
 ```text
 README.md
-AGENTS.md
-docs/ARCHITECTURE_COMPLETE.md
 docs/SPJ_DESIGN_DECISIONS.md
-docs/USER_SCENARIOS.md
+docs/DEVELOPMENT_ROADMAP.md
 docs/GUI_STANDARDIZATION.md
 docs/CSS_USAGE_GUIDE.md
-docs/DEVELOPMENT_ROADMAP.md
-docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
-docs/SIPLAH_MVP_PLAN.md
-docs/MOBILE_VISUAL_QA_TODO.md
 ```
