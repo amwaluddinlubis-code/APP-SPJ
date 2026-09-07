@@ -522,6 +522,54 @@
             </x-ui.panel>
         </section>
 
+        <section class="grid gap-4 lg:grid-cols-5">
+            <article
+                class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow col-span-2">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Pajak</h2><span
+                        class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</span>
+                </div>
+                <div class="mt-4 grid gap-x-6 gap-y-3 text-base sm:grid-cols-2">
+                    @forelse($taxBreakdown as $label => $value)
+                        <div class="flex justify-between gap-3 border-b border-[var(--ui-line)] pb-2"><span
+                                class="text-[var(--ui-fg-muted)]">{{ $label }}</span><span
+                                class="font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($value) }}</span></div>
+                    @empty
+                        <div class="text-sm text-[var(--ui-fg-muted)]">Tidak ada potongan pajak pada transaksi ini.
+                        </div>
+                    @endforelse
+                </div>
+            </article>
+            <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Informasi Dokumen SPJ</h2>
+                <dl class="mt-4 space-y-3 text-base">
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-[var(--ui-fg-muted)]">Nomor SPJ</dt>
+                        <dd
+                            class="text-right font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 line-through dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
+                            {{ $transaction->spjPackage?->document_number ?: 'Belum ditetapkan' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-[var(--ui-fg-muted)]">Status paket</dt>
+                        <dd
+                            class="font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
+                            {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'Nomor dibatalkan' : ($transaction->spjPackage?->status ?: 'Belum dibuat') }}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-[var(--ui-fg-muted)]">Referensi pembayaran</dt>
+                        <dd class="text-right font-semibold text-[var(--ui-fg-strong)]">
+                            {{ $transaction->payment_reference ?: 'Belum ada referensi' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-[var(--ui-fg-muted)]">Pembelian SIPLah</dt>
+                        <dd class="font-semibold text-[var(--ui-fg-strong)]">
+                            {{ $transaction->is_siplah ? 'Ya' : 'Tidak' }}</dd>
+                    </div>
+                </dl>
+            </article>
+        </section>
+
         <section id="modul-buat-spj"
             class="spj-builder order-2 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm"
             x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod), isSiplah: @js($isSiplah) }">
@@ -533,7 +581,8 @@
                             MODUL PEMBUATAN SPJ</p>
                         <h2 class="mt-1 font-mono text-lg font-bold uppercase text-[var(--text-comfort-on-dark)]">
                             Siapkan dokumen berdasarkan kategori SPJ</h2>
-                        <p class="mt-1 text-sm text-[var(--text-comfort-on-dark-soft)]">Pilih skenario dokumen, pastikan
+                        <p class="mt-1 text-sm text-[var(--text-comfort-on-dark-soft)]">Pilih skenario dokumen,
+                            pastikan
                             uraian setiap item lengkap, lalu buat paket SPJ.</p>
                     </div>
                     @if ($transaction->spjPackage)
@@ -1623,49 +1672,5 @@
         </form>
     </section>
 
-    <section class="grid gap-4 lg:grid-cols-2">
-        <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
-            <div class="flex items-center justify-between gap-3">
-                <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Pajak</h2><span
-                    class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</span>
-            </div>
-            <div class="mt-4 grid gap-x-6 gap-y-3 text-base sm:grid-cols-2">
-                @forelse($taxBreakdown as $label => $value)
-                    <div class="flex justify-between gap-3 border-b border-[var(--ui-line)] pb-2"><span
-                            class="text-[var(--ui-fg-muted)]">{{ $label }}</span><span
-                        class="font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($value) }}</span></div>@empty
-                    <div class="text-sm text-[var(--ui-fg-muted)]">Tidak ada potongan pajak pada transaksi ini.</div>
-                @endforelse
-            </div>
-        </article>
-        <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
-            <h2 class="font-bold text-[var(--ui-fg-strong)]">Informasi Dokumen SPJ</h2>
-            <dl class="mt-4 space-y-3 text-base">
-                <div class="flex justify-between gap-4">
-                    <dt class="text-[var(--ui-fg-muted)]">Nomor SPJ</dt>
-                    <dd
-                        class="text-right font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 line-through dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
-                        {{ $transaction->spjPackage?->document_number ?: 'Belum ditetapkan' }}</dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-[var(--ui-fg-muted)]">Status paket</dt>
-                    <dd
-                        class="font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
-                        {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'Nomor dibatalkan' : ($transaction->spjPackage?->status ?: 'Belum dibuat') }}
-                    </dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-[var(--ui-fg-muted)]">Referensi pembayaran</dt>
-                    <dd class="text-right font-semibold text-[var(--ui-fg-strong)]">
-                        {{ $transaction->payment_reference ?: 'Belum ada referensi' }}</dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-[var(--ui-fg-muted)]">Pembelian SIPLah</dt>
-                    <dd class="font-semibold text-[var(--ui-fg-strong)]">
-                        {{ $transaction->is_siplah ? 'Ya' : 'Tidak' }}</dd>
-                </div>
-            </dl>
-        </article>
-    </section>
     </div>
 </x-layouts.tailwind-app>
