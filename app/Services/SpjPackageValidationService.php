@@ -17,18 +17,19 @@ class SpjPackageValidationService
     public function checklist(SpjPackage $package): array
     {
         $transaction = $package->transaction;
-        $url = route('transactions.show', $transaction->id);
+        $transactionUrl = route('transactions.show', $transaction->id);
+        $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]).'#spj-manual-form';
         $checks = [];
         $policy = $this->procurementPolicy->forTransaction($transaction);
         $channel = $policy['channel_label'];
 
-        $this->addCheck($checks, 'procurement_channel', 'Cara pengadaan', 'Jalur transaksi', true, 'Transaksi dikenali sebagai '.$channel.'.', 'Jalur transaksi belum dapat dikenali.', $url.'#modul-buat-spj');
-        $this->addCheck($checks, 'recipient', 'Umum', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi belum tersedia.', $url);
-        $this->addCheck($checks, 'activity_code', 'Umum', 'Kode kegiatan', filled($transaction->activity_code), 'Kode kegiatan sudah tersedia.', 'Kode kegiatan belum tersedia.', $url);
-        $this->addCheck($checks, 'activity_name', 'Umum', 'Nama kegiatan', filled($transaction->activity_name), 'Nama kegiatan sudah tersedia.', 'Nama kegiatan belum tersedia.', $url);
-        $this->addCheck($checks, 'account_code', 'Umum', 'Kode rekening', filled($transaction->account_code), 'Kode rekening sudah tersedia.', 'Kode rekening belum tersedia.', $url);
-        $this->addCheck($checks, 'account_name', 'Umum', 'Nama rekening', filled($transaction->account_name), 'Nama rekening sudah tersedia.', 'Nama rekening belum tersedia.', $url);
-        $this->addCheck($checks, 'payment_method', 'Umum', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar belum tersedia.', $url.'#modul-buat-spj');
+        $this->addCheck($checks, 'procurement_channel', 'Cara pengadaan', 'Jalur transaksi', true, 'Transaksi dikenali sebagai '.$channel.'.', 'Jalur transaksi belum dapat dikenali.', $packageUrl);
+        $this->addCheck($checks, 'recipient', 'Umum', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi belum tersedia.', $packageUrl);
+        $this->addCheck($checks, 'activity_code', 'Umum', 'Kode kegiatan', filled($transaction->activity_code), 'Kode kegiatan sudah tersedia.', 'Kode kegiatan belum tersedia.', $transactionUrl);
+        $this->addCheck($checks, 'activity_name', 'Umum', 'Nama kegiatan', filled($transaction->activity_name), 'Nama kegiatan sudah tersedia.', 'Nama kegiatan belum tersedia.', $transactionUrl);
+        $this->addCheck($checks, 'account_code', 'Umum', 'Kode rekening', filled($transaction->account_code), 'Kode rekening sudah tersedia.', 'Kode rekening belum tersedia.', $transactionUrl);
+        $this->addCheck($checks, 'account_name', 'Umum', 'Nama rekening', filled($transaction->account_name), 'Nama rekening sudah tersedia.', 'Nama rekening belum tersedia.', $transactionUrl);
+        $this->addCheck($checks, 'payment_method', 'Umum', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar belum tersedia.', $packageUrl);
 
         $a2Ready = filled($transaction->effective_receipt_recipient_name)
             && filled($transaction->payment_description ?: $transaction->description)
@@ -41,11 +42,11 @@ class SpjPackageValidationService
             $a2Ready,
             'Data Kuitansi/A2 lengkap dan wajib dicetak untuk transaksi '.$channel.'.',
             'Kuitansi/A2 wajib untuk transaksi '.$channel.'. Lengkapi penerima, uraian pembayaran, dan nilai transaksi agar dapat dicetak.',
-            $url.'#modul-buat-spj'
+            $packageUrl
         );
 
         $hasDetails = $transaction->items->isNotEmpty() || $transaction->goods->isNotEmpty();
-        $this->addCheck($checks, 'details', 'Rincian transaksi', 'Rincian barang/jasa', $hasDetails, 'Transaksi memiliki rincian barang/jasa.', 'Transaksi belum memiliki rincian barang atau jasa.', $url.'#rincian-transaksi');
+        $this->addCheck($checks, 'details', 'Rincian transaksi', 'Rincian barang/jasa', $hasDetails, 'Transaksi memiliki rincian barang/jasa.', 'Transaksi belum memiliki rincian barang atau jasa.', $transactionUrl.'#rincian-transaksi');
 
         $grossAmount = (float) $transaction->gross_amount;
         $itemTotal = (float) $transaction->items->sum('amount');
@@ -53,17 +54,17 @@ class SpjPackageValidationService
         $itemTotalMessage = $itemTotalMatches
             ? 'Total rincian sesuai dengan nilai bruto transaksi.'
             : sprintf('Total rincian Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($itemTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
-        $this->addCheck($checks, 'item_total', 'Rincian transaksi', 'Total rincian transaksi', $itemTotalMatches, $itemTotalMessage, $itemTotalMessage, $url.'#rincian-transaksi');
+        $this->addCheck($checks, 'item_total', 'Rincian transaksi', 'Total rincian transaksi', $itemTotalMatches, $itemTotalMessage, $itemTotalMessage, $transactionUrl.'#rincian-transaksi');
 
         $category = strtoupper((string) $transaction->spj_category);
 
         if ($category === 'BARANG') {
             $hasItems = $transaction->items->isNotEmpty();
-            $this->addCheck($checks, 'goods_items', 'Belanja barang', 'Barang pesanan', $hasItems, 'Pesanan memiliki rincian barang.', 'Pesanan wajib memiliki minimal satu barang.', $url.'#rincian-transaksi');
+            $this->addCheck($checks, 'goods_items', 'Belanja barang', 'Barang pesanan', $hasItems, 'Pesanan memiliki rincian barang.', 'Pesanan wajib memiliki minimal satu barang.', $transactionUrl.'#rincian-transaksi');
 
             $incompleteItems = $transaction->items->filter(fn ($item) => blank($item->item_description) || (float) $item->quantity <= 0 || (float) $item->unit_price < 0);
             $itemsComplete = $hasItems && $incompleteItems->isEmpty();
-            $this->addCheck($checks, 'goods_completeness', 'Belanja barang', 'Kelengkapan barang', $itemsComplete, 'Uraian, jumlah, dan harga setiap barang sudah lengkap.', 'Setiap barang wajib memiliki uraian, jumlah lebih dari nol, dan harga yang valid.', $url.'#rincian-transaksi');
+            $this->addCheck($checks, 'goods_completeness', 'Belanja barang', 'Kelengkapan barang', $itemsComplete, 'Uraian, jumlah, dan harga setiap barang sudah lengkap.', 'Setiap barang wajib memiliki uraian, jumlah lebih dari nol, dan harga yang valid.', $transactionUrl.'#rincian-transaksi');
 
             $invalidAmounts = $transaction->items->filter(fn ($item) => abs(((float) $item->quantity * (float) $item->unit_price) - (float) $item->amount) > 0.01);
             $amountsValid = $hasItems && $invalidAmounts->isEmpty();
@@ -76,21 +77,21 @@ class SpjPackageValidationService
                 $amountsValid,
                 'Perhitungan jumlah × harga setiap barang sudah konsisten.',
                 $invalidNames !== '' ? 'Jumlah × harga tidak sama dengan nilai item: '.$invalidNames.'.' : 'Perhitungan nilai item barang belum lengkap.',
-                $url.'#rincian-transaksi'
+                $transactionUrl.'#rincian-transaksi'
             );
 
             if ($policy['channel'] === 'SIPLAH') {
                 $hasSiplahMetadata = filled($transaction->payment_reference)
                     && filled($transaction->invoice_number)
                     && $transaction->invoice_date !== null;
-                $this->addCheck($checks, 'siplah_metadata', 'Belanja barang', 'Data transaksi SiPLah', $hasSiplahMetadata, 'Referensi pembayaran serta nomor dan tanggal invoice SiPLah sudah tersedia.', 'Transaksi SiPLah memerlukan referensi pembayaran, nomor invoice, dan tanggal invoice.', $url.'#modul-buat-spj');
+                $this->addCheck($checks, 'siplah_metadata', 'Belanja barang', 'Data transaksi SiPLah', $hasSiplahMetadata, 'Referensi pembayaran serta nomor dan tanggal invoice SiPLah sudah tersedia.', 'Transaksi SiPLah memerlukan referensi pembayaran, nomor invoice, dan tanggal invoice.', $packageUrl);
             } else {
-                $this->addCheck($checks, 'goods_documents', 'Belanja barang', 'Dokumen barang', $transaction->goods->isNotEmpty(), 'Data pesanan/BAP/BAST sudah dibuat.', 'Data pesanan, BAP, dan BAST belum dibuat.', $url.'#modul-buat-spj');
+                $this->addCheck($checks, 'goods_documents', 'Belanja barang', 'Dokumen barang', $transaction->goods->isNotEmpty(), 'Data pesanan/BAP/BAST sudah dibuat.', 'Data pesanan, BAP, dan BAST belum dibuat.', $packageUrl);
             }
 
             $hasBapOrBast = $transaction->goods->contains(fn ($goods) => filled($goods->bap_number) || filled($goods->bap_date) || filled($goods->bast_number) || filled($goods->bast_date));
             $bapBastReady = ! $hasBapOrBast || ($itemsComplete && $amountsValid);
-            $this->addCheck($checks, 'goods_bap_bast', 'Belanja barang', 'Kelengkapan BAP/BAST', $bapBastReady, 'Rincian barang konsisten untuk BAP/BAST.', 'BAP dan BAST belum dapat diterbitkan sebelum rincian barang lengkap dan konsisten.', $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'goods_bap_bast', 'Belanja barang', 'Kelengkapan BAP/BAST', $bapBastReady, 'Rincian barang konsisten untuk BAP/BAST.', 'BAP dan BAST belum dapat diterbitkan sebelum rincian barang lengkap dan konsisten.', $packageUrl);
 
             $duplicateExists = false;
             if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
@@ -101,45 +102,45 @@ class SpjPackageValidationService
                     ->whereRaw('LOWER(TRIM(vendor_name)) = ?', [mb_strtolower(trim((string) $transaction->vendor_name))])
                     ->exists();
             }
-            $this->addCheck($checks, 'invoice_duplicate', 'Belanja barang', 'Keunikan invoice', ! $duplicateExists, 'Nomor invoice tidak terdeteksi sebagai duplikat.', 'Nomor invoice ini sudah digunakan oleh vendor yang sama pada tahun anggaran aktif.', $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'invoice_duplicate', 'Belanja barang', 'Keunikan invoice', ! $duplicateExists, 'Nomor invoice tidak terdeteksi sebagai duplikat.', 'Nomor invoice ini sudah digunakan oleh vendor yang sama pada tahun anggaran aktif.', $packageUrl);
         }
 
         if ($category === 'HONOR_PEGAWAI') {
             $hasHonors = $transaction->honors->isNotEmpty();
-            $this->addCheck($checks, 'honor_recipients', 'Honor pegawai', 'Rincian penerima honorarium', $hasHonors, 'Daftar penerima honorarium sudah tersedia.', 'Honor Pegawai memerlukan minimal satu penerima.', $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'honor_recipients', 'Honor pegawai', 'Rincian penerima honorarium', $hasHonors, 'Daftar penerima honorarium sudah tersedia.', 'Honor Pegawai memerlukan minimal satu penerima.', $packageUrl);
 
             $honorTotal = (float) $transaction->honors->sum('gross_amount');
             $honorTotalMatches = $hasHonors && abs($honorTotal - $grossAmount) <= 0.01;
             $honorMessage = $honorTotalMatches
                 ? 'Total honor sesuai dengan nilai bruto transaksi.'
                 : sprintf('Total honor Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($honorTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
-            $this->addCheck($checks, 'honor_total', 'Honor pegawai', 'Total honor', $honorTotalMatches, $honorMessage, $honorMessage, $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'honor_total', 'Honor pegawai', 'Total honor', $honorTotalMatches, $honorMessage, $honorMessage, $packageUrl);
         }
 
         if ($category === 'JASA_LAINNYA') {
             $recipients = $transaction->serviceRecipients;
             $hasRecipients = $recipients->isNotEmpty();
-            $this->addCheck($checks, 'service_recipients', 'Jasa lainnya', 'Daftar penerima pembayaran', $hasRecipients, 'Daftar penerima jasa sudah tersedia.', 'Jasa Lainnya memerlukan minimal satu penerima pembayaran.', $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'service_recipients', 'Jasa lainnya', 'Daftar penerima pembayaran', $hasRecipients, 'Daftar penerima jasa sudah tersedia.', 'Jasa Lainnya memerlukan minimal satu penerima pembayaran.', $packageUrl);
 
             $grossTotal = (float) $recipients->sum('amount');
             $grossMatches = $hasRecipients && abs($grossTotal - $grossAmount) <= 0.01;
             $grossMessage = $grossMatches ? 'Total penerima jasa sesuai dengan nilai bruto transaksi.' : sprintf('Total penerima jasa Rp %s tidak sama dengan nilai bruto Rp %s.', number_format($grossTotal, 0, ',', '.'), number_format($grossAmount, 0, ',', '.'));
-            $this->addCheck($checks, 'service_recipient_total', 'Jasa lainnya', 'Total bruto penerima', $grossMatches, $grossMessage, $grossMessage, $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'service_recipient_total', 'Jasa lainnya', 'Total bruto penerima', $grossMatches, $grossMessage, $grossMessage, $packageUrl);
 
             $taxTotal = (float) $recipients->sum('tax_amount');
             $sourceTax = (float) $transaction->tax_total;
             $taxMatches = $hasRecipients && abs($taxTotal - $sourceTax) <= 0.01;
             $taxMessage = $taxMatches ? 'Total pajak penerima sesuai dengan pajak transaksi.' : sprintf('Total pajak penerima Rp %s tidak sama dengan pajak transaksi Rp %s.', number_format($taxTotal, 0, ',', '.'), number_format($sourceTax, 0, ',', '.'));
-            $this->addCheck($checks, 'service_recipient_tax_total', 'Jasa lainnya', 'Total pajak penerima', $taxMatches, $taxMessage, $taxMessage, $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'service_recipient_tax_total', 'Jasa lainnya', 'Total pajak penerima', $taxMatches, $taxMessage, $taxMessage, $packageUrl);
 
             $netTotal = (float) $recipients->sum('net_amount');
             $sourceNet = (float) $transaction->net_amount;
             $netMatches = $hasRecipients && abs($netTotal - $sourceNet) <= 0.01;
             $netMessage = $netMatches ? 'Total netto penerima sesuai dengan netto transaksi.' : sprintf('Total netto penerima Rp %s tidak sama dengan netto transaksi Rp %s.', number_format($netTotal, 0, ',', '.'), number_format($sourceNet, 0, ',', '.'));
-            $this->addCheck($checks, 'service_recipient_net_total', 'Jasa lainnya', 'Total netto penerima', $netMatches, $netMessage, $netMessage, $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'service_recipient_net_total', 'Jasa lainnya', 'Total netto penerima', $netMatches, $netMessage, $netMessage, $packageUrl);
 
             $lineTotalsValid = $hasRecipients && $recipients->every(fn ($recipient): bool => abs(((float) $recipient->amount - (float) $recipient->tax_amount) - (float) $recipient->net_amount) <= 0.01);
-            $this->addCheck($checks, 'service_recipient_line_totals', 'Jasa lainnya', 'Bruto/pajak/netto per penerima', $lineTotalsValid, 'Setiap penerima memiliki bruto, pajak, dan netto yang konsisten.', 'Ada penerima jasa dengan bruto, pajak, dan netto yang belum konsisten. Simpan ulang rincian penerima untuk melakukan rekonsiliasi.', $url.'#modul-buat-spj');
+            $this->addCheck($checks, 'service_recipient_line_totals', 'Jasa lainnya', 'Bruto/pajak/netto per penerima', $lineTotalsValid, 'Setiap penerima memiliki bruto, pajak, dan netto yang konsisten.', 'Ada penerima jasa dengan bruto, pajak, dan netto yang belum konsisten. Simpan ulang rincian penerima untuk melakukan rekonsiliasi.', $packageUrl);
         }
 
         $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'goods_receipt', 'honor'];
@@ -156,7 +157,7 @@ class SpjPackageValidationService
                 $requirement['available'],
                 $requirement['message'],
                 $requirement['message'],
-                $url.'#modul-buat-spj'
+                $packageUrl
             );
         }
 
