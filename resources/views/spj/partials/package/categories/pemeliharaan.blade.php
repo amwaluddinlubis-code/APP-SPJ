@@ -6,6 +6,41 @@
                                         </div>
                                         <button type="button" @click="addWorker()" class="ui-btn ui-btn-secondary px-3 py-1.5 text-xs font-bold">+ Pekerja</button>
                                     </div>
+
+                                    <div
+                                        data-spj-maintenance-links
+                                        data-show-url="{{ route('transactions.maintenance-links.show', $transaction->id) }}"
+                                        data-update-url="{{ route('transactions.maintenance-links.update', $transaction->id) }}"
+                                        data-editable="{{ $package->isEditable() ? '1' : '0' }}"
+                                        class="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3"
+                                    >
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <h4 class="text-xs font-bold uppercase tracking-wide text-indigo-900">Transaksi sumber pemeliharaan</h4>
+                                                <p class="mt-1 text-xs text-indigo-800">Hubungkan transaksi bahan/barang dan transaksi upah yang membentuk satu pekerjaan pemeliharaan. Link disimpan langsung dan tidak menjadi field input Paket SPJ.</p>
+                                            </div>
+                                            <span class="rounded-full border border-indigo-200 bg-white px-2.5 py-1 text-[11px] font-bold text-indigo-700">Bahan ↔ Upah</span>
+                                        </div>
+                                        <p data-maintenance-link-role class="mt-2 text-xs font-semibold text-indigo-900"></p>
+                                        <div class="mt-3 grid gap-3 md:grid-cols-2">
+                                            <div data-maintenance-link-field="material">
+                                                <label for="spj-maintenance-material-transaction" class="text-xs font-bold text-indigo-900">Transaksi bahan / barang terkait</label>
+                                                <select id="spj-maintenance-material-transaction" data-maintenance-link-select="material" class="ui-select mt-1 w-full" disabled>
+                                                    <option value="">Memuat transaksi bahan / barang…</option>
+                                                </select>
+                                                <p class="mt-1 text-[11px] text-indigo-700">Pilih nomor bukti transaksi bahan/barang yang menjadi pasangan pekerjaan ini.</p>
+                                            </div>
+                                            <div data-maintenance-link-field="labor">
+                                                <label for="spj-maintenance-labor-transaction" class="text-xs font-bold text-indigo-900">Transaksi upah terkait</label>
+                                                <select id="spj-maintenance-labor-transaction" data-maintenance-link-select="labor" class="ui-select mt-1 w-full" disabled>
+                                                    <option value="">Memuat transaksi upah…</option>
+                                                </select>
+                                                <p class="mt-1 text-[11px] text-indigo-700">Pilih nomor bukti transaksi upah/tukang yang menjadi pasangan pekerjaan ini.</p>
+                                            </div>
+                                        </div>
+                                        <p data-maintenance-link-status aria-live="polite" class="mt-2 text-xs text-[var(--ui-fg-muted)]"></p>
+                                    </div>
+
                                     <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                         <x-ui.field label="Uraian pekerjaan" required>
                                             <x-ui.textarea name="work_description" rows="2" required>{{ old('work_description', $workDetails?->work_description ?: $transaction->work_description) }}</x-ui.textarea>
