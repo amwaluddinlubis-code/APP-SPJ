@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/theme-profiles.js', 'resources/js/maintenance-transaction-links.js', 'resources/js/transaction-category-controls.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/theme-profiles.js', 'resources/js/maintenance-transaction-links.js', 'resources/js/transaction-category-controls.js', 'resources/js/spj-preparation-state-normalizer.js'],
             refresh: true,
         }),
         tailwindcss(),
