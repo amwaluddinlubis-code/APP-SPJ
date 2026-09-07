@@ -9,6 +9,7 @@ use App\UseCases\Spj\SpjPackageUseCase;
 use App\UseCases\Spj\SpjReportUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
 use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -90,7 +91,7 @@ class SpjController extends Controller
         Request $request,
         UpdateSpjPackageDetailsUseCase $useCase,
         SpjPackageCategoryUseCase $categoryUseCase,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         if ($request->boolean('category_switch')) {
             return $categoryUseCase->switchCategory($packageId, $request);
         }
