@@ -44,7 +44,7 @@ return [
 
         'school' => [
             'driver' => 'sqlite',
-            'database' => rtrim(env('SPJ_DATA_PATH', 'D:/lrvProject/spj-bosp-data'), '/\\').DIRECTORY_SEPARATOR.'school-databases'.DIRECTORY_SEPARATOR.'_unselected.sqlite',
+            'database' => rtrim(env('SPJ_DATA_PATH', storage_path('app')), '/\\').DIRECTORY_SEPARATOR.'school-databases'.DIRECTORY_SEPARATOR.'_unselected.sqlite',
             'prefix' => '',
             'foreign_key_constraints' => true,
             'busy_timeout' => (int) env('SCHOOL_DB_BUSY_TIMEOUT', 5000),
@@ -131,7 +131,7 @@ return [
     |
     | This table keeps track of all the migrations that have already run for
     | your application. Using this information, we can determine which of
-    | the migrations on disk haven't actually been run on the database.
+    | the migrations on disk haven't actually run on the database.
     |
     */
 
