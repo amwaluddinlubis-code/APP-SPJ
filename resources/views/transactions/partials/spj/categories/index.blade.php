@@ -1,0 +1,6 @@
+@include('transactions.partials.spj.categories.barang')
+@include('transactions.partials.spj.categories.konsumsi')
+@include('transactions.partials.spj.categories.pemeliharaan')
+@include('transactions.partials.spj.categories.sppd')
+@include('transactions.partials.spj.categories.honor-pegawai')
+@include('transactions.partials.spj.categories.jasa-lainnya')
