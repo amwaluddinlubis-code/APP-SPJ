@@ -9,7 +9,7 @@ class SpjServiceRecipient extends Model
 {
     protected $connection = 'school';
 
-    protected $fillable = ['transaction_id', 'name', 'npwp', 'service_type', 'service_description', 'quantity', 'unit', 'rental_days', 'daily_rate', 'amount', 'usage_started_at', 'usage_completed_at', 'receipt_number', 'payment_reference', 'agreement_number', 'agreement_date', 'is_receipt_recipient', 'notes', 'sort_order'];
+    protected $fillable = ['transaction_id', 'name', 'npwp', 'service_type', 'service_description', 'quantity', 'unit', 'rental_days', 'daily_rate', 'amount', 'tax_amount', 'net_amount', 'usage_started_at', 'usage_completed_at', 'receipt_number', 'payment_reference', 'agreement_number', 'agreement_date', 'is_receipt_recipient', 'notes', 'sort_order'];
 
     public function transaction(): BelongsTo
     {
@@ -18,6 +18,6 @@ class SpjServiceRecipient extends Model
 
     protected function casts(): array
     {
-        return ['quantity' => 'decimal:2', 'rental_days' => 'decimal:2', 'daily_rate' => 'decimal:2', 'amount' => 'decimal:2', 'usage_started_at' => 'date', 'usage_completed_at' => 'date', 'agreement_date' => 'date', 'is_receipt_recipient' => 'boolean'];
+        return ['quantity' => 'decimal:2', 'rental_days' => 'decimal:2', 'daily_rate' => 'decimal:2', 'amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'net_amount' => 'decimal:2', 'usage_started_at' => 'date', 'usage_completed_at' => 'date', 'agreement_date' => 'date', 'is_receipt_recipient' => 'boolean'];
     }
 }
