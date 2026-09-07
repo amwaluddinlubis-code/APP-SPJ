@@ -1,0 +1,30 @@
+/* Accessibility baseline: no application UI text may render below 12px.
+   Keep this file last in the theme cascade so legacy/custom utility classes
+   cannot reintroduce 10px/11px text. */
+
+:root {
+    --ui-font-size-min: 0.75rem; /* 12px at the browser default root size */
+}
+
+/* Tailwind arbitrary-size utilities currently used by legacy and standardized views. */
+.text-\[8px\],
+.text-\[9px\],
+.text-\[10px\],
+.text-\[11px\],
+.text-\[0\.5rem\],
+.text-\[0\.5625rem\],
+.text-\[0\.625rem\],
+.text-\[0\.6875rem\] {
+    font-size: var(--ui-font-size-min) !important;
+    line-height: 1rem;
+}
+
+/* Guard common small-text primitives that can inherit to less than 12px. */
+small,
+.ui-caption,
+.ui-kicker,
+.ui-badge,
+.ui-status-badge,
+.app-runtime-badge {
+    font-size: max(var(--ui-font-size-min), 0.75em);
+}
