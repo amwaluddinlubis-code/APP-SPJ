@@ -40,9 +40,15 @@ class SpjNumberingUseCase
         $package = SpjPackage::query()->with([
             'transaction.items',
             'transaction.goods',
+            'transaction.goodsReceipts',
             'transaction.workOrder',
             'transaction.honors',
             'transaction.travels',
+            'transaction.payments',
+            'transaction.workers',
+            'transaction.participants',
+            'transaction.serviceRecipients',
+            'transaction.spjPackage',
             'documents',
         ])->find($packageId);
         if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
@@ -72,7 +78,19 @@ class SpjNumberingUseCase
     public function markReady(string $packageId): RedirectResponse
     {
         $validator = app(SpjPackageValidationService::class);
-        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.honors'])->find($packageId);
+        $package = SpjPackage::query()->with([
+            'transaction.items',
+            'transaction.goods',
+            'transaction.goodsReceipts',
+            'transaction.workOrder',
+            'transaction.honors',
+            'transaction.travels',
+            'transaction.payments',
+            'transaction.workers',
+            'transaction.participants',
+            'transaction.serviceRecipients',
+            'transaction.spjPackage',
+        ])->find($packageId);
         if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
         }
@@ -141,9 +159,15 @@ class SpjNumberingUseCase
                 'documents',
                 'transaction.items',
                 'transaction.goods',
+                'transaction.goodsReceipts',
                 'transaction.workOrder',
                 'transaction.honors',
                 'transaction.travels',
+                'transaction.payments',
+                'transaction.workers',
+                'transaction.participants',
+                'transaction.serviceRecipients',
+                'transaction.spjPackage',
             ])
             ->where(function ($query): void {
                 $query->whereIn('status', ['READY', 'NUMBERED'])
@@ -237,9 +261,15 @@ class SpjNumberingUseCase
             'documents',
             'transaction.items',
             'transaction.goods',
+            'transaction.goodsReceipts',
             'transaction.workOrder',
             'transaction.honors',
             'transaction.travels',
+            'transaction.payments',
+            'transaction.workers',
+            'transaction.participants',
+            'transaction.serviceRecipients',
+            'transaction.spjPackage',
         ])->find($packageId);
         if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
@@ -505,8 +535,15 @@ class SpjNumberingUseCase
                 'documents',
                 'transaction.items',
                 'transaction.goods',
+                'transaction.goodsReceipts',
                 'transaction.workOrder',
+                'transaction.honors',
                 'transaction.travels',
+                'transaction.payments',
+                'transaction.workers',
+                'transaction.participants',
+                'transaction.serviceRecipients',
+                'transaction.spjPackage',
             ])
             ->whereHas('transaction', fn ($query) => $query->activeContext()
                 ->whereMonth('transaction_date', '>=', $startMonth)
