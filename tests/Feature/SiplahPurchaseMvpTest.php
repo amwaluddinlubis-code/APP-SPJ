@@ -41,7 +41,7 @@ class SiplahPurchaseMvpTest extends TestCase
             ->put(route('transactions.manual-description.update', $transaction->id), [
                 'spj_category' => 'BARANG', 'payment_method' => 'siplah',
                 'vendor_name' => 'Toko SiPLah Nusantara', 'vendor_owner' => 'Budi Santoso',
-                'vendor_npwp' => '12.345.678.9-012.000', 'siplah_order_number' => 'SIPL-2026-12345',
+                'vendor_npwp' => 'NPWP-UJI', 'siplah_order_number' => 'SIPL-2026-12345',
                 'invoice_number' => 'INV-88231', 'invoice_date' => '2026-01-14',
                 'invoice_status' => 'LUNAS', 'payment_reference' => 'PAY-7788',
             ]);
@@ -53,7 +53,7 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertNotSame('SIPLAH', $transaction->spj_category);
         $this->assertSame('Toko SiPLah Nusantara', $transaction->vendor_name);
         $this->assertSame('Budi Santoso', $transaction->vendor_owner);
-        $this->assertSame('12.345.678.9-012.000', $transaction->vendor_npwp);
+        $this->assertSame('NPWP-UJI', $transaction->vendor_npwp);
         $this->assertSame('SIPL-2026-12345', $transaction->siplah_order_number);
         $this->assertSame('INV-88231', $transaction->invoice_number);
         $this->assertSame('2026-01-14', $transaction->invoice_date?->format('Y-m-d'));
@@ -186,40 +186,47 @@ class SiplahPurchaseMvpTest extends TestCase
         $transaction = $this->goodsTransaction(['payment_method' => 'siplah']);
         $package = $transaction->spjPackage()->create(['quarter_code' => 'TW1', 'semester_code' => 'S1', 'status' => 'DRAFT']);
         $requirements = app(SpjDocumentRequirementService::class);
-
-        $internalOrder = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])))
-            ->firstWhere('key', 'internal_order');
+        $rows = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])));
+        $internalOrderContent = $rows->firstWhere('key', 'internal_order_content');
+        $internalOrderNumber = $rows->firstWhere('key', 'internal_order_number');
         $blockingLabels = collect($requirements->blockingRequirements($transaction))->pluck('label');
         $validationIssues = collect(app(SpjPackageValidationService::class)->validate(
             $package->load(['transaction.items', 'transaction.goods'])
         ));
 
-        $this->assertTrue($internalOrder['applicable']);
-        $this->assertFalse($internalOrder['required']);
-        $this->assertSame('OPSIONAL_BELUM_LENGKAP', $internalOrder['status']);
-        $this->assertNotContains('Surat pesanan internal', $blockingLabels);
-        $this->assertFalse($validationIssues->contains('label', 'Surat pesanan internal'));
-        $this->assertFalse($validationIssues->contains('message', 'Surat pesanan internal belum lengkap.'));
-        $this->assertFalse($validationIssues->contains('label', 'Data penerimaan barang'));
+        $this->assertFalse($internalOrderContent['applicable']);
+        $this->assertFalse($internalOrderContent['required']);
+        $this->assertSame('TIDAK_BERLAKU', $internalOrderContent['status']);
+        $this->assertFalse($internalOrderNumber['applicable']);
+        $this->assertFalse($internalOrderNumber['required']);
+        $this->assertNotContains('Kelengkapan isi Surat Pesanan', $blockingLabels);
+        $this->assertNotContains('Nomor Surat Pesanan', $blockingLabels);
+        $this->assertFalse($validationIssues->contains('label', 'Kelengkapan isi Surat Pesanan'));
+        $this->assertFalse($validationIssues->contains('label', 'Nomor Surat Pesanan'));
+        $this->assertFalse($validationIssues->contains('label', 'Bukti penerimaan barang'));
     }
 
-    public function test_non_siplah_goods_purchase_still_requires_internal_purchase_order(): void
+    public function test_non_siplah_goods_purchase_uses_content_then_numbering_stages(): void
     {
         $transaction = $this->goodsTransaction(['payment_method' => 'tunai', 'is_siplah' => false]);
         $package = $transaction->spjPackage()->create(['quarter_code' => 'TW1', 'semester_code' => 'S1', 'status' => 'DRAFT']);
         $requirements = app(SpjDocumentRequirementService::class);
-
-        $internalOrder = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])))
-            ->firstWhere('key', 'internal_order');
+        $rows = collect($requirements->forTransaction($transaction->load(['goods', 'payments', 'goodsReceipts'])));
+        $internalOrderContent = $rows->firstWhere('key', 'internal_order_content');
+        $internalOrderNumber = $rows->firstWhere('key', 'internal_order_number');
         $validationIssues = collect(app(SpjPackageValidationService::class)->validate(
             $package->load(['transaction.items', 'transaction.goods'])
         ));
 
-        $this->assertTrue($internalOrder['applicable']);
-        $this->assertTrue($internalOrder['required']);
-        $this->assertSame('WAJIB_BELUM_LENGKAP', $internalOrder['status']);
-        $this->assertTrue($validationIssues->contains('label', 'Surat pesanan internal'));
-        $this->assertTrue($validationIssues->contains('message', 'Surat pesanan internal belum lengkap.'));
+        $this->assertTrue($internalOrderContent['applicable']);
+        $this->assertTrue($internalOrderContent['required']);
+        $this->assertTrue($internalOrderContent['available']);
+        $this->assertSame('TERSEDIA', $internalOrderContent['status']);
+        $this->assertTrue($internalOrderNumber['applicable']);
+        $this->assertFalse($internalOrderNumber['required']);
+        $this->assertFalse($internalOrderNumber['available']);
+        $this->assertSame('OPSIONAL_BELUM_LENGKAP', $internalOrderNumber['status']);
+        $this->assertFalse($validationIssues->contains('label', 'Nomor Surat Pesanan'));
     }
 
     /** @param array<string, mixed> $overrides */
