@@ -124,9 +124,57 @@ Kode baru tetap **tidak boleh** menambah hard-coded palette hanya karena compati
 
 ## 4. Primitive UI resmi
 
-Utamakan `x-ui.page-shell`, `x-ui.alert`, `x-ui.empty-state`, `x-ui.badge`, `x-ui.detail-list`, `x-ui.detail-item`, `x-ui.toolbar`, `x-ui.modal`, `x-ui.action-menu`, `x-ui.loading`, `x-ui.sticky-actions`, `x-ui.danger-zone`, `x-ui.table`, `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, `x-ui.form-section`, dan `x-ui.status-badge`.
+Utamakan `x-ui.page-shell`, `x-ui.alert`, `x-ui.empty-state`, `x-ui.badge`, `x-ui.detail-list`, `x-ui.detail-item`, `x-ui.toolbar`, `x-ui.modal`, `x-ui.action-menu`, `x-ui.loading`, `x-ui.sticky-actions`, `x-ui.danger-zone`, `x-ui.table`, `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, `x-ui.icon`, `x-ui.form-section`, dan `x-ui.status-badge`.
 
 Legacy components yang sudah diarahkan ke sistem baru termasuk `page-filter`, `page-table-per-page`, `tabs`, `stat-item`, `error-alert`, dan `loading-spinner`.
+
+### 4.1 Icon canonical
+
+Gunakan `<x-ui.icon>` untuk icon pada button, link, action, status helper, dan navigasi baru. Component menggunakan inline SVG `stroke="currentColor"`, sehingga warna mengikuti foreground parent dan otomatis cocok dengan theme aktif.
+
+Contoh:
+
+```blade
+<x-ui.button type="submit">
+    <x-ui.icon name="save" size="sm" />
+    Simpan
+</x-ui.button>
+
+<x-ui.button variant="secondary" :href="route('transactions.index')">
+    <x-ui.icon name="arrow-left" size="sm" />
+    Kembali
+</x-ui.button>
+```
+
+Ukuran canonical:
+
+```text
+xs -> 14px
+sm -> 16px  (default untuk button compact/normal)
+md -> 20px  (default component)
+lg -> 24px
+xl -> 32px
+```
+
+Nama icon yang tersedia saat ini:
+
+```text
+save, edit/pencil, trash/delete, plus/add, minus,
+search, filter, refresh/reload, download, upload,
+arrow-left/back, arrow-right/next, arrow-up, arrow-down,
+chevron-left, chevron-right, chevron-up, chevron-down,
+check/success, x/close, eye/view, printer/print,
+document/file, database, settings/gear, home,
+user, users, calendar, clock, info, warning/alert,
+lock, unlock, external-link, menu
+```
+
+Aturan aksesibilitas:
+
+- icon dekoratif di dalam button berlabel tidak perlu `label`; component menghasilkan `aria-hidden="true"`;
+- icon yang berdiri sendiri harus diberi `label`, contoh `<x-ui.icon name="info" label="Informasi" />`;
+- jangan memakai emoji sebagai pengganti icon action canonical;
+- jangan menduplikasi SVG manual jika icon yang sama sudah tersedia di `x-ui.icon`.
 
 ---
 
@@ -326,6 +374,7 @@ Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan dash
 - mobile tidak overflow tanpa alasan;
 - status memakai bahasa manusiawi;
 - tindakan berisiko dipisahkan secara visual;
+- icon action baru memakai `x-ui.icon` bila tersedia;
 - perubahan UI tidak melemahkan validation/authorization;
 - `npm run build` dijalankan setelah CSS/JS/Blade berubah.
 
