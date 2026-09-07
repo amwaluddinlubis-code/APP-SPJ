@@ -2,6 +2,41 @@
    Mirrors the clearer SPJ table action hierarchy while keeping the list
    readable in light and dark theme profiles. */
 
+/* Header summary and filtered summary use exactly the same semantic palette.
+   These selectors deliberately outrank the canonical page-header neutral value
+   color so the transaction meanings stay visible in both summary locations. */
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-slate-800 {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-indigo-700 {
+    color: #4338ca !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-amber-600 {
+    color: #d97706 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-emerald-700 {
+    color: #047857 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-slate-600 {
+    color: #475569 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-indigo-600 {
+    color: #4f46e5 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-amber-600 {
+    color: #d97706 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-emerald-600 {
+    color: #059669 !important;
+}
+
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-column,
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-cell {
     border-left: 1px solid color-mix(in srgb, var(--theme-content-accent) 18%, var(--ui-line)) !important;
@@ -15,7 +50,7 @@ main:has(a[href*="/data-sinkron/bku"]) thead .transaction-action-column {
 
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
     display: inline-flex;
-    width: 5.25rem;
+    width: 5.25rem; /* 84px: exactly 3x the previous 28px icon-only width */
     min-height: 2.25rem;
     align-items: center;
     justify-content: center;
@@ -27,6 +62,14 @@ main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
     font-weight: 700;
     line-height: 1rem;
     transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+/* The global table baseline is 14px, but action labels are compact controls and
+   intentionally follow the approved 13px small-table rule. */
+main:has(a[href*="/data-sinkron/bku"]) table .transaction-action-button span {
+    font-size: var(--ui-table-small-font-size, .8125rem) !important;
+    line-height: 1rem !important;
+    color: inherit !important;
 }
 
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:hover:not(:disabled) {
@@ -70,6 +113,18 @@ main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:disabled {
     cursor: not-allowed;
     opacity: .48;
     transform: none;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-indigo-700 {
+    color: #a5b4fc !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-amber-600 {
+    color: #fbbf24 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-emerald-700 {
+    color: #6ee7b7 !important;
 }
 
 html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail {
