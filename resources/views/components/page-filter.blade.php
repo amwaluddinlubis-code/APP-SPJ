@@ -50,11 +50,11 @@
         </div>
         <div class="flex items-end gap-2">
             <input type="hidden" name="q" value="{{ $search }}">
-            <x-ui.button type="submit" class="w-full">Tampilkan</x-ui.button>
+            <x-ui.button type="submit" icon="filter" class="w-full">Tampilkan</x-ui.button>
         </div>
         @if($month || $quarter || $semester || $search || $status)
             <div class="flex items-center">
-                <a href="{{ request()->url() }}" class="ui-btn ui-btn-secondary">Hapus Saringan</a>
+                <x-ui.button variant="secondary" :href="request()->url()" icon="close">Hapus Saringan</x-ui.button>
             </div>
         @endif
     </form>
