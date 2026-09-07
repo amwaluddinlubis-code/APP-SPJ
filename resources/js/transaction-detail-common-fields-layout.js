@@ -24,11 +24,11 @@ const arrangeTransactionDetailCommonFields = () => {
         || !(recipientField instanceof HTMLElement)
         || !(commonGrid instanceof HTMLElement)) return;
 
-    if (commonGrid.dataset.transactionCommonFieldsLayout === '1') {
-        description.rows = 7;
-        description.style.minHeight = '11rem';
-        return;
-    }
+    description.rows = 5;
+    description.style.minHeight = '7rem';
+    description.style.resize = 'vertical';
+
+    if (commonGrid.dataset.transactionCommonFieldsLayout === '1') return;
 
     commonGrid.dataset.transactionCommonFieldsLayout = '1';
     commonGrid.classList.remove('lg:grid-cols-4');
@@ -36,9 +36,6 @@ const arrangeTransactionDetailCommonFields = () => {
 
     descriptionField.classList.remove('lg:col-span-2');
     descriptionField.classList.add('transaction-detail-description-field');
-    description.rows = 7;
-    description.style.minHeight = '11rem';
-    description.style.resize = 'vertical';
 
     const sideGrid = document.createElement('div');
     sideGrid.className = 'transaction-detail-common-side-grid grid content-start gap-3 sm:grid-cols-2';
