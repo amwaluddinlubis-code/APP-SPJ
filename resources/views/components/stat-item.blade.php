@@ -9,8 +9,11 @@
 
 <div {{ $attributes->class(['ui-stat']) }}>
     @if($icon)
-        <div class="ui-stat-heading">
-            <span class="ui-stat-icon {{ $iconClass }}">
+        <div class="ui-stat-heading flex items-center gap-2.5">
+            <span
+                class="ui-stat-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border {{ $iconClass }}"
+                style="border-color: color-mix(in srgb, currentColor 24%, transparent); background: color-mix(in srgb, currentColor 10%, transparent)"
+            >
                 <x-ui-icon :name="$icon" class="h-5 w-5" />
             </span>
             <p class="ui-stat-label">{{ $label }}</p>
