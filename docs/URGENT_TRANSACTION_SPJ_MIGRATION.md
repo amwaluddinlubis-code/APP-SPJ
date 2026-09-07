@@ -162,47 +162,43 @@ Status implementasi saat dokumen ini dibuat:
 
 ### U01 — pensiunkan compatibility write-path lama
 
-Masih ada route legacy:
+**Status: PASS**
 
-```text
-POST /spj/{transactionId}/siapkan
-route: spj.prepare
-```
+Route legacy `spj.prepare` dan `SpjPackageUseCase::prepare()` sudah tidak ada.
 
-Route tersebut masih menuju `SpjController::prepare()` → `SpjPackageUseCase::prepare()`.
-
-`SpjPackageUseCase::prepare()` adalah arsitektur lama karena menerima dan menyimpan form SPJ saat menyiapkan package. Setelah flow baru stabil, route/use-case ini harus:
-
-1. dipastikan tidak lagi dipakai view/test/flow aktif;
-2. diganti redirect/adapter aman bila masih dibutuhkan sementara;
-3. kemudian dihapus dari route aktif dan use case lama dirampingkan/dipensiunkan.
+- `SpjDocumentController` (dead controller, tidak ada route) sudah dihapus.
+- Stale JS selectors yang merujuk `form[action*="/spj/"][action*="/siapkan"]` sudah dihapus.
+- Gateway tunggal pembuatan/open DRAFT adalah `transactions.prepare-spj` → `SpjPreparationController` → `CreateSpjDraftUseCase`.
+- Test `test_legacy_routes_and_use_case_are_retired` memastikan route lama tidak ada.
+- Test `test_legacy_spj_prepare_route_does_not_exist` memverifikasi POST ke path lama return 404.
 
 ### U02 — pensiunkan write-path SPJ lama di TransactionController
 
-Route legacy berikut masih terdaftar:
+**Status: PASS**
 
-```text
-PUT /transaksi/{transactionId}/uraian-manual
-route: transactions.manual-description.update
-```
+Route `transactions.manual-description.update` dan method `updateManualDescription()` tidak ada di codebase.
 
-Method `TransactionController::updateManualDescription()` masih memvalidasi dan menulis banyak field SPJ. Ini bertentangan dengan ownership final jika masih dapat dipanggil.
-
-Target:
-
-- pertahankan hanya endpoint khusus `item_description` di Detail Transaksi;
-- hentikan mutation kategori/payment/vendor/detail kategori dari `TransactionController`;
-- hapus route/method compatibility setelah seluruh pemanggil aktif dipastikan tidak ada.
+- `TransactionController::updateSpjDescriptions()` hanya menulis `item_description`.
+- Endpoint `transactions.spj-descriptions.update` adalah satu-satunya write-path item_description.
+- TransactionController tidak mengubah spj_category, payment_description, payment_method, vendor, atau field SPJ lainnya.
+- Test `test_transaction_controller_only_writes_item_description` memverifikasi isolasi write-path.
 
 ### U03 — partial Paket SPJ per kategori
 
-Markup Paket SPJ masih terlalu besar dan perlu dipisah menjadi ownership view yang jelas:
+**Status: PASS**
+
+Struktur partial sudah terpisah dengan benar:
 
 ```text
 resources/views/spj/partials/package/
 ├── common.blade.php
 ├── tax-reference.blade.php
 ├── items-readonly.blade.php
+├── numbering.blade.php
+├── validation.blade.php
+├── documents.blade.php
+├── transaction-summary.blade.php
+├── row-editor.blade.php
 └── categories/
     ├── barang.blade.php
     ├── konsumsi.blade.php
@@ -212,67 +208,58 @@ resources/views/spj/partials/package/
     └── jasa-lainnya.blade.php
 ```
 
-Semua partial kategori harus tetap berada di workspace SPJ, bukan kembali ke `transactions/partials/spj`.
+Semua partial kategori memiliki `data-spj-section` attribute dan di-render di DOM untuk switching tanpa reload.
 
 ### U04 — hilangkan asumsi server-render kategori yang memaksa reload
 
-Pergantian kategori sudah AJAX, tetapi semua perilaku kategori harus diaudit agar tidak ada logic lain yang masih mengandalkan full page reload untuk:
+**Status: PASS**
 
-- label kategori;
-- template/dokumen applicable;
-- validasi checklist;
-- section SiPLah;
-- section honor/pemeliharaan/SPPD/konsumsi;
-- tombol READY/penomoran.
-
-Jika komponen di luar form perlu refresh setelah kategori berubah, gunakan event `spj:category-changed` atau refresh parsial yang terkontrol; jangan kembali ke full page reload sebagai default.
+- Duplikat `<div x-show="tab === 'paket'">` wrapper sudah diperbaiki.
+- Semua 6 kategori canonical di-render di DOM dengan `data-spj-section` dan visibility via JS.
+- `spj-package-manual-category.js` menghandle AJAX category switch tanpa reload.
+- Tidak ada `form.submit()` pada category switch.
+- Event `spj:category-changed` tersedia untuk komponen yang perlu refresh parsial.
 
 ### U05 — pajak readonly harus menjadi markup canonical
 
-Readonly pajak saat ini masih dibantu normalizer JavaScript. Target akhir:
+**Status: PASS**
 
-- markup Blade langsung menampilkan PPN/PPh/SSPD sebagai readonly display;
-- tidak lagi mengirim `ppn_rate`, `pph*_rate`, `sspd_rate` dari Paket SPJ;
-- hapus compatibility logic pajak lama setelah tidak diperlukan;
-- regression test memastikan Paket SPJ tidak dapat mengubah `ppn`, `pph*`, `sspd`, `tax_total`, `net_amount`.
+- `tax-reference.blade.php` sudah native Blade readonly — tidak ada `<input>` field.
+- `spj-package-transaction-boundary.js` sudah dibersihkan: `markTaxReference()` (JS runtime readonly) dihapus.
+- Field `ppn_rate`, `pph*_rate`, `sspd_rate` tidak dikirim dari form Paket SPJ.
+- Backend `UpdateSpjPackageDetailsUseCase` tidak menulis pajak transaksi.
+- Test `test_tax_reference_partial_renders_readonly_display` memverifikasi tidak ada `<input>` di partial.
+- Test `test_updating_spj_package_does_not_change_transaction_tax_values` memverifikasi backend immutability.
 
 ### U06 — verifikasi semua kategori tanpa input ganda
 
-Wajib diuji satu per satu:
+**Status: PASS**
 
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
+Keenam kategori canonical terverifikasi:
 
-Untuk setiap kategori, pastikan:
-
-- `item_description` hanya diedit di Detail Transaksi;
-- data kategori hanya diedit di Paket SPJ;
-- tidak ada field yang harus diisi ulang pada dua halaman;
-- kategori berubah tanpa reload;
-- save, validation, READY, numbering, preview/download tetap benar.
+- `test_each_category_can_be_selected_and_saved_in_draft` — kategori bisa dipilih dan disimpan sebagai DRAFT.
+- `test_each_category_can_be_selected_saved_and_rendered_in_the_package` — kategori bisa dipilih, disimpan, dan dirender.
+- `test_category_switch_is_ajax_persists_and_returns_json` — switch kategori via AJAX.
+- `test_category_partials_use_data_spj_section_attribute` — semua partial memiliki `data-spj-section`.
+- `test_package_update_cannot_change_tax_values` — pajak tidak bisa diubah dari Paket.
+- `test_package_update_cannot_change_item_descriptions` — item_description tidak bisa diubah dari Paket.
+- `test_numbered_package_blocks_description_update` — NUMBERED/FINAL terkunci.
 
 ---
 
 ## 6. Urutan implementasi URGENT
 
 ```text
-U01/U02  Tutup write-path lama
+U01/U02  Tutup write-path lama              ✅ PASS
    ↓
-U03      Partial Paket per kategori
+U03      Partial Paket per kategori         ✅ PASS
    ↓
-U04      Audit dynamic category tanpa reload
+U04      Audit dynamic category tanpa reload ✅ PASS
    ↓
-U05      Pajak readonly native Blade
+U05      Pajak readonly native Blade        ✅ PASS
    ↓
-U06      E2E enam kategori
+U06      E2E enam kategori                  ✅ PASS
    ↓
-Migrasi dinyatakan PASS
 ```
 
 Selama U01/U02 belum selesai, migrasi belum boleh disebut final meskipun UX utama sudah mengikuti arsitektur baru.

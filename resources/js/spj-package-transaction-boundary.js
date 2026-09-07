@@ -1,49 +1,4 @@
-const TAX_FIELD_NAMES = [
-    'ppn_rate',
-    'pph21_rate',
-    'pph22_rate',
-    'pph23_rate',
-    'pph4_rate',
-    'sspd_rate',
-];
-
 const packageForm = () => document.querySelector('#spj-manual-form');
-
-const markTaxReference = (form) => {
-    const controls = TAX_FIELD_NAMES
-        .map((name) => form.querySelector(`[name="${name}"]`))
-        .filter(Boolean);
-
-    if (controls.length === 0) return;
-
-    controls.forEach((control) => {
-        control.readOnly = true;
-        control.setAttribute('aria-readonly', 'true');
-        control.dataset.spjTransactionReadonly = 'true';
-        control.classList.add('cursor-not-allowed', 'opacity-80');
-
-        const label = control.closest('label');
-        if (label && !label.querySelector('[data-spj-readonly-label]')) {
-            const badge = document.createElement('span');
-            badge.dataset.spjReadonlyLabel = 'true';
-            badge.className = 'ml-1 text-[10px] font-bold uppercase tracking-wide text-slate-400';
-            badge.textContent = 'readonly BKU';
-            label.insertBefore(badge, control);
-        }
-    });
-
-    const section = controls[0].closest('.rounded-lg');
-    if (!section || section.dataset.spjTaxBoundary === 'true') return;
-
-    section.dataset.spjTaxBoundary = 'true';
-    const heading = section.querySelector('h3');
-    if (heading) heading.textContent = 'Referensi Pajak Transaksi (Readonly)';
-
-    const note = document.createElement('p');
-    note.className = 'mt-1 text-xs text-slate-300';
-    note.textContent = 'PPN, PPh, SSPD, total pajak, dan nilai netto mengikuti transaksi/BKU. Paket SPJ tidak menghitung ulang atau mengubah nilai pajak.';
-    heading?.insertAdjacentElement('afterend', note);
-};
 
 const addOwnershipNotice = (form) => {
     if (form.querySelector('[data-spj-ownership-notice]')) return;
@@ -85,7 +40,6 @@ const applyPackageTransactionBoundary = () => {
     if (!form) return;
 
     addOwnershipNotice(form);
-    markTaxReference(form);
     normalizeValidationLinks();
 };
 

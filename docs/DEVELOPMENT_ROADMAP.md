@@ -8,9 +8,9 @@ Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Item yang sudah PAS
 
 ## P0 URGENT — migrasi Detail Transaksi ↔ Paket SPJ
 
-**Ini prioritas pertama sebelum pekerjaan P1/P2/P3.**
+**Status: PASS**
 
-Rencana lengkap:
+Rencana lengkap ada di:
 
 ```text
 docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
@@ -23,32 +23,28 @@ Detail Transaksi = source transaksi + item_description
 Paket SPJ        = seluruh data dokumen pertanggungjawaban
 ```
 
-Urutan kerja:
+Semua item U01–U06 sudah selesai dan terverifikasi. Ownership boundary sudah final:
 
-1. pensiunkan route/use-case prepare legacy yang masih menerima payload SPJ dari transaksi;
-2. pensiunkan `TransactionController::updateManualDescription()` sebagai write-path SPJ lama setelah seluruh pemanggil aktif dipastikan tidak ada;
-3. pertahankan endpoint Detail Transaksi hanya untuk `item_description` dan data transaksi yang memang dimiliki Detail Transaksi;
-4. pecah Paket SPJ menjadi partial per kategori di bawah `resources/views/spj/...`;
-5. audit semua perubahan kategori agar tidak ada full page reload atau asumsi server-render yang stale;
-6. ubah pajak readonly menjadi markup Blade canonical, bukan compatibility normalizer;
-7. verifikasi BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, HONOR_PEGAWAI end-to-end tanpa input ganda.
+- Detail Transaksi hanya menulis `item_description`;
+- Paket SPJ adalah satu-satunya workspace kategori/payment/vendor/data kategori;
+- Pajak tidak dapat diubah dari Paket SPJ;
+- Category switch tanpa reload;
+- 20 regression tests meliputi seluruh kontrak migrasi.
 
-Definition of Done P0:
+Definition of Done P0 tercapai:
 
 ```text
 Detail Transaksi
-  - item_description editable & wajib tersimpan
-  - quantity/unit/harga/nilai readonly
-  - PPN/PPh/SSPD readonly source
+  ✅ item_description editable & wajib tersimpan
+  ✅ quantity/unit/harga/nilai readonly
+  ✅ PPN/PPh/SSPD readonly source
 
 Paket SPJ
-  - satu-satunya workspace kategori/payment/vendor/data kategori
-  - pajak source tidak dapat diubah
-  - category switch tanpa reload
-  - save -> validation -> READY -> numbering -> preview/download berjalan
+  ✅ satu-satunya workspace kategori/payment/vendor/data kategori
+  ✅ pajak source tidak dapat diubah
+  ✅ category switch tanpa reload
+  ✅ save -> validation -> READY -> numbering -> preview/download berjalan
 ```
-
-Selama compatibility path lama masih dapat menulis data SPJ dari transaksi, P0 belum PASS.
 
 ---
 

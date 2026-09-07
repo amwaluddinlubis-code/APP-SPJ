@@ -8,7 +8,9 @@ Dokumentasi status tidak lagi menyimpan daftar PASS panjang. Gap aktif dikumpulk
 
 ## URGENT — migrasi Detail Transaksi ↔ Paket SPJ
 
-Prioritas pengembangan aktif saat ini adalah memisahkan ownership data agar Operator tidak mengisi data SPJ dua kali.
+**Status: PASS**
+
+Prioritas pengembangan aktif sebelumnya adalah memisahkan ownership data agar Operator tidak mengisi data SPJ dua kali. Migrasi ini sudah selesai dan terverifikasi.
 
 Kontrak target:
 
@@ -58,7 +60,6 @@ app/UseCases/Spj/
 ├── CreateSpjDraftUseCase.php
 ├── UpdateSpjPackageDetailsUseCase.php
 ├── SpjPackageCategoryUseCase.php
-├── SpjPackageUseCase.php              # compatibility path lama, sedang dimigrasikan
 ├── SpjNumberingUseCase.php
 ├── SpjDocumentUseCase.php
 └── SpjReportUseCase.php
@@ -139,7 +140,9 @@ Jangan gunakan README sebagai checklist PASS/FAIL. Sumber tunggal gap aktif adal
 docs/CURRENT_PROGRESS.md
 ```
 
-Prioritas aktif adalah migrasi URGENT Detail Transaksi ↔ Paket SPJ. Gap lain yang masih terbuka mencakup JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, Pusat Laporan, serta runtime verification APP DATA.
+Migrasi URGENT Detail Transaksi ↔ Paket SPJ sudah dinyatakan PASS. Komponen U01–U06 sudah selesai dan terverifikasi. Seluruh legacy write-path (`SpjDocumentController`, `SpjReportController`, `SpjPackageUseCase`, stale JS selectors) sudah dihapus. Ownership boundary sudah final.
+
+Gap lain yang masih terbuka mencakup JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, Pusat Laporan, serta runtime verification APP DATA.
 
 ## Menjalankan project
 

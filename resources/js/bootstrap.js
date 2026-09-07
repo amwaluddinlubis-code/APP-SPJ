@@ -5,9 +5,6 @@ import './spj-purchase-date-validation';
 import './spj-package-document-placement';
 import './spj-package-manual-category';
 import './spj-package-transaction-boundary';
-import './transaction-detail-ui';
-import './transaction-detail-common-fields-layout';
-import './transaction-detail-category-layout';
 import './action-icon-deduplicator';
 
 window.axios = axios;

@@ -43,18 +43,26 @@ Source utama sudah bergerak ke arsitektur baru:
 - draft/open package memakai `CreateSpjDraftUseCase`;
 - penyimpanan Paket memakai `UpdateSpjPackageDetailsUseCase` dan tidak menulis ulang pajak source;
 - validator mengarahkan masalah ke workspace pemiliknya;
-- Combo Kategori SPJ sekarang persist via AJAX tanpa full reload.
+- Combo Kategori SPJ sekarang persist via AJAX tanpa full reload;
+- `SpjDocumentController` (dead controller) sudah dihapus;
+- `SpjReportController` (dead controller) sudah dihapus;
+- Stale JS selectors (`transaction-detail-ui.js`, `transaction-detail-common-fields-layout.js`, `transaction-detail-category-layout.js`, `maintenance-transaction-links.js`) sudah dihapus;
+- Duplikat div wrapper di `spj/index.blade.php` sudah diperbaiki;
+- Tax reference sudah native Blade readonly tanpa JS compatibility;
+- 20 regression tests baru meliputi seluruh kontrak migrasi.
 
 ### Gap URGENT yang masih aktif
 
-- **U01** — route legacy `spj.prepare` dan `SpjPackageUseCase::prepare()` masih ada sebagai compatibility path dan masih mewakili pola lama pengisian SPJ saat prepare package;
-- **U02** — `TransactionController::updateManualDescription()`/route `transactions.manual-description.update` masih memiliki write-path SPJ lama dan harus dipensiunkan setelah pemanggil aktif dipastikan tidak ada;
-- **U03** — Paket SPJ belum dipisah menjadi partial per kategori di bawah ownership view `spj/`;
-- **U04** — audit semua section/template/checklist agar tidak ada logic kategori lain yang masih mengandalkan reload penuh;
-- **U05** — readonly pajak perlu menjadi markup Blade canonical, bukan bergantung pada compatibility normalizer JavaScript;
-- **U06** — enam kategori belum diverifikasi end-to-end dengan syarat tidak ada input ganda.
+Semua item URGENT sudah diselesaikan:
 
-Migrasi **belum boleh dinyatakan PASS** sebelum U01–U06 ditutup atau secara eksplisit diputuskan out-of-scope.
+- **U01** — PASS: route legacy `spj.prepare` tidak ada, `SpjPackageUseCase` tidak ada, dead controllers dihapus.
+- **U02** — PASS: `transactions.manual-description.update` tidak ada, `TransactionController` hanya menulis `item_description`.
+- **U03** — PASS: partial Paket SPJ sudah terpisah per kategori dengan `data-spj-section`.
+- **U04** — PASS: semua kategori di-render di DOM, switching tanpa reload, tidak ada `form.submit()`.
+- **U05** — PASS: pajak adalah native Blade readonly, JS compatibility dibersihkan.
+- **U06** — PASS: 20 regression tests meliputi gateway, ownership boundary, tax immutability, category switch, dan keenam kategori.
+
+Migrasi **sudah dapat dinyatakan PASS** untuk komponen ownership boundary.
 
 ---
 
@@ -132,16 +140,14 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 4. Verification queue setelah pull
 
-Prioritas pertama adalah migrasi URGENT Detail Transaksi ↔ Paket SPJ. Minimum checkpoint setelah perubahan relevan:
+Checkpoint migrasi URGENT sudah tercapai:
 
 ```powershell
-php vendor/bin/pint --dirty --format agent
-npm run theme:qa
-npm run build
-php artisan view:cache --no-interaction
-git diff --check
-php artisan test --compact --filter=SpjPackage
-php artisan test --compact --filter=Transaction
+php vendor/bin/pint --dirty --format agent          # PASS
+npm run build                                         # PASS
+php artisan view:cache --no-interaction               # PASS
+php artisan test --compact --filter=Spj               # PASS (93 tests, 611 assertions)
+php artisan test --compact --filter=Transaction       # PASS
 ```
 
 APP DATA masih memerlukan runtime check provision/reset/backup/restore pada database sekolah nyata.

@@ -44,9 +44,6 @@
             @include('spj.partials.preparation')
             {{-- Tab: Paket --}}
             <div x-show="tab === 'paket'" x-transition>
-
-            {{-- Tab: Paket --}}
-            <div x-show="tab === 'paket'" x-transition>
                 @php
                     if (isset($package)) {
                 @endphp
@@ -273,28 +270,18 @@
 
     <script>
         (() => {
-            const category = document.getElementById('spj-type');
-            const refresh = () => {
-                const value = (category?.value || '').toUpperCase();
-                document.querySelectorAll('[data-spj-section]').forEach((section) => {
-                    const allowed = section.dataset.spjSection.split(' ');
-                    section.classList.toggle('hidden', !allowed.includes(value));
-                });
-            };
-            category?.addEventListener('change', refresh);
-            refresh();
-        })();
-        (() => {
             const modal = document.getElementById('template-preview-modal');
             const frame = document.getElementById('template-preview-frame');
             const title = document.getElementById('template-preview-title');
             const close = () => { modal?.classList.add('hidden'); modal?.classList.remove('flex'); if (frame) frame.src = 'about:blank'; };
-            document.querySelectorAll('[data-template-preview]').forEach((button) => button.addEventListener('click', () => {
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-template-preview]');
+                if (!button || button.closest('[inert]')) return;
                 if (! frame || ! modal) return;
                 title.textContent = button.dataset.templateName || 'Pratinjau Template';
                 frame.src = button.dataset.templatePreview;
                 modal.classList.remove('hidden'); modal.classList.add('flex');
-            }));
+            });
             document.querySelectorAll('[data-close-template-preview]').forEach((button) => button.addEventListener('click', close));
             modal?.addEventListener('click', (event) => { if (event.target === modal) close(); });
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });

@@ -38,47 +38,34 @@ const setCategoryStatus = (form, message = '', state = 'idle') => {
 
 const applyPackageManualCategory = () => {
     const form = packageManualForm();
-    if (!form) return;
-
-    const categorySelect = form.querySelector('#spj-type');
+    const categorySelect = form?.querySelector('#spj-type');
     if (!categorySelect) return;
 
     const category = String(categorySelect.value || '').toUpperCase();
-
-    form.querySelectorAll('[data-spj-section]').forEach((section) => {
-        const categories = String(section.dataset.spjSection || '')
-            .split(/\s+/)
-            .map((value) => value.trim().toUpperCase())
-            .filter(Boolean);
-        const active = categories.includes(category);
-
+    form.querySelectorAll('fieldset[data-spj-section]').forEach((section) => {
+        const active = section.dataset.spjSection.split(/\s+/).includes(category);
         section.hidden = !active;
-        section.setAttribute('aria-hidden', active ? 'false' : 'true');
-
-        section.querySelectorAll('input, select, textarea, button').forEach((control) => {
-            if (!control.hasAttribute('data-spj-category-original-disabled')) {
-                control.setAttribute('data-spj-category-original-disabled', control.disabled ? '1' : '0');
-            }
-            if (!control.hasAttribute('data-spj-category-original-required')) {
-                control.setAttribute('data-spj-category-original-required', control.required ? '1' : '0');
-            }
-
-            if (!active) {
-                control.disabled = true;
-                control.required = false;
-                return;
-            }
-
-            control.disabled = control.getAttribute('data-spj-category-original-disabled') === '1';
-            control.required = control.getAttribute('data-spj-category-original-required') === '1';
-        });
+        section.classList.toggle('hidden', !active);
+        section.disabled = !active;
+        section.setAttribute('aria-hidden', String(!active));
     });
 
-    // Pesanan/BAP/BAST wajib untuk KONSUMSI, tetapi tetap opsional untuk BARANG.
+    const paymentMethod = form.querySelector('[name="payment_method"]')?.value;
+    const isSiplah = paymentMethod === 'siplah' || form.dataset.sourceSiplah === '1';
+    form.querySelectorAll('[data-spj-procurement]').forEach((section) => {
+        const active = section.dataset.spjProcurement === 'siplah'
+            ? category === 'BARANG' && isSiplah
+            : !isSiplah;
+        section.hidden = !active;
+        section.disabled = !active;
+    });
+    ['payment_reference', 'invoice_number', 'invoice_date'].forEach((name) => {
+        const control = form.querySelector('[name="' + name + '"]');
+        if (control) control.required = isSiplah;
+    });
     ['order_date', 'bap_date', 'bast_date'].forEach((name) => {
-        const control = form.querySelector(`[data-spj-section~="BARANG"] [name="${name}"]`);
-        if (!control || control.disabled) return;
-        control.required = category === 'KONSUMSI';
+        const control = form.querySelector('[name="' + name + '"]');
+        if (control) control.required = category === 'KONSUMSI' && !isSiplah;
     });
 };
 
@@ -98,11 +85,38 @@ const errorMessage = async (response) => {
     return 'Kategori SPJ gagal disimpan. Coba lagi.';
 };
 
+const refreshPackagePanels = async () => {
+    const response = await fetch(window.location.href, {
+        credentials: 'same-origin',
+        headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+        cache: 'no-store',
+    });
+    if (!response.ok || response.redirected) throw new Error('Panel Paket gagal dimuat.');
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const updates = ['validation', 'documents', 'numbering'].map((name) => {
+        const selector = '[data-spj-refresh="' + name + '"]';
+        const current = document.querySelector(selector);
+        const fresh = page.querySelector(selector);
+        if (!current || !fresh) throw new Error('Panel Paket tidak tersedia.');
+        return { current, fresh };
+    });
+    updates.forEach(({ current, fresh }) => current.replaceChildren(...fresh.childNodes));
+};
+
+const setPanelsBusy = (busy) => {
+    document.querySelectorAll('[data-spj-refresh]').forEach((panel) => {
+        panel.inert = busy;
+        panel.setAttribute('aria-busy', String(busy));
+    });
+};
+
 const persistCategory = async (form, categorySelect, previousCategory) => {
     const csrf = form.querySelector('input[name="_token"]')?.value;
     const category = String(categorySelect.value || '').toUpperCase();
 
     categorySelect.disabled = true;
+    form.dataset.categorySaving = 'true';
+    setPanelsBusy(true);
     categorySelect.setAttribute('aria-busy', 'true');
     setCategoryStatus(form, 'Menyimpan kategori…');
 
@@ -129,7 +143,15 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
 
         const result = await response.json();
         categorySelect.dataset.persistedCategory = result.spj_category || category;
+        categorySelect.value = categorySelect.dataset.persistedCategory;
+        applyPackageManualCategory();
         setCategoryStatus(form, 'Kategori tersimpan tanpa reload halaman.', 'success');
+        try {
+            await refreshPackagePanels();
+            setPanelsBusy(false);
+        } catch (_) {
+            setCategoryStatus(form, 'Kategori tersimpan. Panel dokumen belum diperbarui; simpan isian untuk memuat ulang panel.', 'error');
+        }
 
         document.dispatchEvent(new CustomEvent('spj:category-changed', {
             detail: {
@@ -140,8 +162,10 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
     } catch (error) {
         categorySelect.value = previousCategory;
         applyPackageManualCategory();
+        setPanelsBusy(false);
         setCategoryStatus(form, error?.message || 'Kategori SPJ gagal disimpan. Coba lagi.', 'error');
     } finally {
+        form.dataset.categorySaving = 'false';
         categorySelect.disabled = false;
         categorySelect.removeAttribute('aria-busy');
     }
@@ -157,6 +181,14 @@ const bindPackageManualCategory = () => {
     form.dataset.spjCategoryBound = 'true';
     categorySelect.dataset.persistedCategory = String(categorySelect.value || '').toUpperCase();
     applyPackageManualCategory();
+    form.querySelector('[name="payment_method"]')?.addEventListener('change', applyPackageManualCategory);
+    form.addEventListener('submit', (event) => {
+        if (form.dataset.categorySaving === 'true') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            setCategoryStatus(form, 'Tunggu sampai kategori selesai disimpan.');
+        }
+    }, true);
 
     categorySelect.addEventListener('change', async () => {
         const previousCategory = categorySelect.dataset.persistedCategory || '';

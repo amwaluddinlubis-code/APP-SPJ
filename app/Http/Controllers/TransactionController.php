@@ -31,7 +31,9 @@ class TransactionController extends Controller
             if (! in_array((int) $itemData['id'], $itemIds, true)) {
                 abort(422, 'Rincian transaksi tidak valid.');
             }
+        }
 
+        foreach ($data['items'] as $itemData) {
             $transaction->items->firstWhere('id', (int) $itemData['id'])->update([
                 'item_description' => trim($itemData['item_description']),
             ]);

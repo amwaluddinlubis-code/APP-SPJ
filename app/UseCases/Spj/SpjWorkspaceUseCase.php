@@ -149,8 +149,14 @@ class SpjWorkspaceUseCase
             'transaction.payments',
             'transaction.goodsReceipts.items',
         ])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package
+            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
+            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
             return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
+        }
+        if ($package->transaction->items->isEmpty()
+            || $package->transaction->items->contains(fn ($item): bool => blank(trim((string) $item->item_description)))) {
+            return app(CreateSpjDraftUseCase::class)->handle((string) $package->transaction_id);
         }
 
         $validator = app(SpjPackageValidationService::class);

@@ -380,14 +380,12 @@ Gunakan primitive/theme token canonical (`x-ui.*`, `ui-*`, `--ui-*`, `--theme-*`
 
 ## 16. Compatibility path selama migrasi
 
-Compatibility path yang masih dapat menulis data SPJ dari arsitektur lama harus dianggap sementara, bukan bagian desain final.
-
-Target final:
+Compatibility path sudah ditutup. Write-path SPJ hanya melalui:
 
 - create/open draft melalui gateway Detail Transaksi → `CreateSpjDraftUseCase`;
-- update data Paket melalui use case Paket SPJ;
-- `TransactionController` hanya mengubah data transaksi yang memang dimiliki Detail Transaksi, terutama `item_description`;
-- route/use-case prepare lama yang menerima payload SPJ dari transaksi dipensiunkan setelah pemanggil aktif tidak ada.
+- update data Paket melalui `UpdateSpjPackageDetailsUseCase`;
+- `TransactionController` hanya mengubah `item_description` melalui `updateSpjDescriptions()`;
+- route/use-case prepare lama (`spj.prepare`, `SpjPackageUseCase`, `SpjDocumentController`, `SpjReportController`) sudah dihapus.
 
 Rencana penutupan compatibility path ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
