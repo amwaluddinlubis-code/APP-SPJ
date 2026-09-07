@@ -3,36 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\SpjWorkflowFilterService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class ProductivityDashboardController extends Controller
 {
-    public function __invoke(OperationalDashboardController $operationalDashboard): View
-    {
+    public function __invoke(
+        OperationalDashboardController $operationalDashboard,
+        SpjWorkflowFilterService $workflowFilters,
+    ): View {
         $legacyDashboard = $operationalDashboard();
         $data = $legacyDashboard->getData();
 
-        $cleanTransactions = Transaction::query()
-            ->activeContext()
-            ->has('items')
-            ->where('requires_reconciliation', false)
-            ->where(function (Builder $query): void {
-                $query->whereNull('source_status')
-                    ->orWhere('source_status', '!=', 'SOURCE_MISSING');
-            });
+        $baseTransactions = Transaction::query()->activeContext();
 
-        $unworkedQuery = (clone $cleanTransactions)->doesntHave('spjPackage');
-        $draftQuery = (clone $cleanTransactions)
-            ->whereHas('spjPackage', fn (Builder $query) => $query->where('status', 'DRAFT'));
-        $readyQuery = (clone $cleanTransactions)
-            ->whereHas('spjPackage', fn (Builder $query) => $query->where('status', 'READY'));
+        $unworkedQuery = $workflowFilters->apply(clone $baseTransactions, 'unprepared');
+        $draftQuery = $workflowFilters->apply(clone $baseTransactions, 'draft');
+        $readyQuery = $workflowFilters->apply(clone $baseTransactions, 'ready');
 
         $productivity = [
             'unworked' => (clone $unworkedQuery)->count(),
             'in_progress' => (clone $draftQuery)->count(),
             'ready' => (clone $readyQuery)->count(),
-            'attention' => (int) ($data['summary']['reconciliation'] ?? 0) + (int) ($data['summary']['source_missing'] ?? 0),
+            'attention' => (clone $workflowFilters->apply(clone $baseTransactions, 'attention'))->count(),
             'numbered' => (int) ($data['summary']['numbered'] ?? 0),
             'final' => (int) ($data['summary']['final'] ?? 0),
         ];
@@ -68,7 +62,7 @@ class ProductivityDashboardController extends Controller
     }
 
     /**
-     * @param array{unworked:int,in_progress:int,ready:int,attention:int,not_numbered:int,completed:int,workflow_total:int,completion_percent:int,numbered:int,final:int} $productivity
+     * @param  array{unworked:int,in_progress:int,ready:int,attention:int,not_numbered:int,completed:int,workflow_total:int,completion_percent:int,numbered:int,final:int}  $productivity
      * @return array{eyebrow:string,title:string,description:string,action:string,url:string}
      */
     private function priority(array $productivity, ?Transaction $nextUnworkedTransaction, ?Transaction $nextDraftTransaction): array
