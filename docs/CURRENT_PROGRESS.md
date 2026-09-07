@@ -2,31 +2,28 @@
 
 Terakhir diperbarui: **2026-09-07**
 
-Dokumen ini adalah register kondisi aktif branch `gui-standardization`. Item yang sudah selesai/PASS tidak lagi dipelihara sebagai daftar progres di sini; fondasi yang sudah stabil tetap dijelaskan di README, arsitektur, dan keputusan desain. Dokumen ini fokus pada **FAIL / belum tuntas / RVR** agar tidak menyesatkan.
+Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branch `gui-standardization`. Item yang sudah selesai dan telah diverifikasi tidak dipelihara sebagai daftar progres di sini.
 
 ---
 
-## 1. Kondisi aktif
+## 1. Kontrak aktif
 
-- Laravel 12 / PHP 8.2, Livewire + Alpine + Tailwind.
-- Multi-database: database utama + SQLite tenant/sekolah.
 - ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
-- `SpjController` tetap tipis dan orkestrasi utama berada di use case SPJ.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah bukan kategori; gunakan `payment_method = siplah`.
-- Root data aplikasi memakai `SPJ_DATA_PATH`. Target development Windows saat ini: `D:/lrvProject/spj-bosp-data`.
-- Database sekolah berada di `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`; dummy berada di `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
-- Backup sekolah diarahkan ke `{SPJ_DATA_PATH}/backups/{NPSN}`.
+- Workflow Transaksi/Persiapan/Dashboard memakai `SpjWorkflowFilterService` sebagai kontrak status operator.
+- Root data eksternal dapat diatur dengan `SPJ_DATA_PATH`; bila tidak diisi aplikasi kembali ke `storage/app`.
+- Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
+- Dummy: `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
+- Backup baru: `{SPJ_DATA_PATH}/backups/{NPSN}/...`.
 
 ---
 
-## 2. FAIL / belum tuntas yang masih aktif
+## 2. RVR — source sudah diperbaiki, menunggu verifikasi lokal
 
-### F01 — Validasi tanggal pengadaan belum konsisten
+### R01 — Kronologi tanggal pengadaan
 
-**Status: FAIL**
-
-Rule canonical Paket SPJ:
+`TransactionController` sudah disamakan dengan rule Paket SPJ:
 
 ```text
 order_date <= transaction_date
@@ -34,145 +31,137 @@ order_date <= bap_date
 bap_date <= bast_date
 ```
 
-`SpjPackageUseCase` mengikuti rule tersebut, tetapi `TransactionController::updateManualDescription()` masih memaksa `bap_date <= transaction_date` dan `bast_date <= transaction_date`. Kedua entry point belum setara.
+Pembatas lama `bap_date <= transaction_date` dan `bast_date <= transaction_date` sudah dihapus. Focused regression test tersedia di `TransactionPurchaseDateValidationTest`.
 
-Target: satu rule backend + focused regression test.
+### R02 — Dashboard memakai workflow canonical
 
-### F02 — Dashboard Produktivitas masih memakai keberadaan item sebagai syarat workflow
+`ProductivityDashboardController` tidak lagi memakai `->has('items')` untuk menentukan pekerjaan operator. Bucket `unprepared`, `draft`, `ready`, dan `attention` sekarang memakai `SpjWorkflowFilterService` yang sama dengan Transaksi/Persiapan.
 
-**Status: FAIL / inkonsisten konsep**
+### R03 — Persiapan tidak lagi menampilkan istilah `needs_details`
 
-`ProductivityDashboardController` masih membangun `$cleanTransactions` dengan `->has('items')`. Ini bertentangan dengan kontrak workflow Transaksi/Persiapan bahwa `transaction_items` berasal dari source dan bukan indikator apakah operator sudah mulai mengerjakan SPJ.
-
-Target: dashboard memakai kontrak `SpjWorkflowFilterService` atau rule equivalent tanpa menjadikan item sebagai status pekerjaan.
-
-### F03 — Markup Persiapan masih menyimpan state legacy `needs_details`
-
-**Status: FAIL / technical debt UI**
-
-Backend sudah memakai state canonical, tetapi view Persiapan legacy masih memiliki label/link `needs_details`/“Rincian belum ada” sebagai compatibility path.
-
-Target: hapus state visual legacy tanpa rewrite besar `resources/views/spj/index.blade.php`.
-
-### F04 — PEMELIHARAAN: link bahan/upah belum masuk generator RAB
-
-**Status: FAIL / fitur belum end-to-end**
-
-Detail Transaksi sudah memiliki linkage transaksi terkait pemeliharaan dengan field:
+Compatibility markup lama di view besar masih dipertahankan untuk menghindari rewrite berisiko, tetapi runtime UI sekarang menormalisasi:
 
 ```text
-maintenance_material_transaction_id
-maintenance_labor_transaction_id
+needs_details / Rincian belum ada -> attention / Perlu Perhatian
+ready / Siap dibuat               -> ready / Siap Dinomori
 ```
 
-UI hanya meminta **transaksi lawan** dari transaksi yang sedang dibuka: transaksi upah memilih transaksi bahan/barang; transaksi bahan/barang memilih transaksi upah. Label kandidat memakai `NOMOR BUKTI - PAYMENT DESCRIPTION`.
+Backend tetap menerima alias lama hanya untuk URL/bookmark historis.
 
-Yang belum selesai: generator RAB/dokumen pemeliharaan belum menggunakan transaksi terkait tersebut sebagai sumber otomatis bahan + upah. Aturan rekonsiliasi nilai dan cara membawa item ke RAB juga belum difinalkan.
+### R04 — PEMELIHARAAN: dokumen membaca transaksi bahan + upah terkait
 
-### F05 — JASA_LAINNYA multi-penerima baru partial
+`SpjMaintenanceDocumentContextService` sudah ditambahkan. Pada preview/download dokumen kategori `PEMELIHARAAN`:
 
-**Status: FAIL / partial implementation**
+- rincian barang/material berasal dari transaksi bahan/barang terkait;
+- rincian pekerja/upah berasal dari transaksi upah terkait;
+- current transaction tetap menjadi identitas Paket SPJ;
+- context hanya in-memory dan tidak menulis ulang source BKU.
 
-Sudah aktif: relation `serviceRecipients`, validasi request, sinkronisasi detail penerima, UI baris penerima, dan kalkulasi dasar `quantity × rental_days × daily_rate`.
+Focused test tersedia di `MaintenanceDocumentContextTest`.
 
-Belum tuntas:
+### R05 — APP DATA eksternal
 
-- rekonsiliasi wajib gross/tax/net ke transaksi source;
-- pajak per penerima/service line;
-- blocker READY bila total tidak sesuai;
-- dokumen per penerima;
-- generator/template output multi-penerima;
-- focused end-to-end test.
+Konfigurasi tidak lagi mengunci path mesin developer. `SPJ_DATA_PATH` bersifat opsional dengan fallback `storage/app`. Pada deployment Windows yang sedang dipakai:
 
-Bug kategori tersembunyi pada browser telah diperbaiki dengan men-disable control kategori nonaktif; itu tidak lagi dimasukkan sebagai FAIL aktif.
-
-### F06 — SiPLah belum terverifikasi end-to-end
-
-**Status: FAIL / partial**
-
-Field/policy dasar tersedia, tetapi belum ada bukti lengkap source → Detail Transaksi → Paket → numbering → preview/download untuk skenario SiPLah. Safe-sync ownership dan output template masih perlu regression test.
-
-### F07 — Generator dokumen belum release-hardened
-
-**Status: FAIL / RVR**
-
-Preview/download foundation tersedia, tetapi stabilitas PDF/Word/Excel per kategori, konsistensi placeholder, error handling template, dan side-effect-free preview belum dibuktikan sebagai release checkpoint menyeluruh.
-
-### F08 — Lifecycle, authorization, reconciliation belum release-hardened
-
-**Status: FAIL / belum selesai**
-
-Masih perlu verifikasi dan test menyeluruh untuk:
-
-- cancellation/reissue/reopen;
-- locking backend NUMBERED/FINAL;
-- authorization ADMIN/OPERATOR/VIEWER pada mutation sensitif;
-- snapshot/diff rekonsiliasi ARKAS;
-- final document tidak berubah karena sync.
-
-### F09 — End-to-end semua kategori belum lengkap
-
-**Status: FAIL / RVR**
-
-Belum ada checkpoint terpadu yang membuktikan keenam kategori canonical berjalan source → FINAL dengan dokumen yang benar.
-
-### F10 — Mobile visual QA belum ditutup
-
-**Status: FAIL / RVR**
-
-`docs/MOBILE_VISUAL_QA_TODO.md` masih terbuka. Jangan menyebut aplikasi mobile-complete sebelum checklist tersebut ditutup.
-
-### F11 — Pusat Laporan dan laporan BOS belum tersedia sebagai fitur lengkap
-
-**Status: FAIL / planned**
-
-Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak, kategori, monitoring, dan audit masih roadmap. Format resmi harus dikonfirmasi sebelum klaim compliance.
-
-### F12 — Operasi tenant perlu runtime verification pada APP DATA eksternal
-
-**Status: RVR**
-
-Konfigurasi database sekolah, dummy, dan backup sudah menggunakan `SPJ_DATA_PATH`. Yang masih perlu dibuktikan melalui runtime/focused test adalah provision, migrate, reset, backup, restore, serta seluruh path export yang relevan terhadap struktur eksternal:
-
-```text
-{SPJ_DATA_PATH}/
-├── school-databases/
-├── backups/
-└── exports/
+```env
+SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
-Jangan menyebut operasi tenant eksternal release-ready sebelum verifikasi tersebut selesai.
+Masih perlu runtime check provision/migrate/reset/backup/restore pada database nyata sekolah.
+
+### R06 — SiPLah MVP
+
+Source sudah memiliki policy, persistence metadata, package flow, pemisahan nomor marketplace vs nomor SPJ, placeholder template, serta focused tests `SiplahPurchaseMvpTest` dan `SiplahMarketplaceDocumentPolicyTest`.
+
+Belum boleh disebut PASS sampai suite tersebut dijalankan pada working copy terbaru dan preview/download nyata diverifikasi.
 
 ---
 
-## 3. Urutan penyelesaian FAIL
+## 3. FAIL / belum tuntas yang masih aktif
+
+### F01 — JASA_LAINNYA multi-penerima belum sepenuhnya end-to-end
+
+Sudah tersedia:
+
+- relation/model penerima jasa;
+- request validation dan UI daftar penerima;
+- `quantity × rental_days × daily_rate`;
+- blocker total bruto terhadap transaksi;
+- `tax_amount` dan `net_amount` per penerima;
+- alokasi tax/net proporsional dengan koreksi rounding pada penerima terakhir;
+- focused test `ServiceRecipientReconciliationTest`.
+
+Yang masih belum selesai:
+
+- tampilkan gross/tax/net secara eksplisit pada output template per penerima;
+- validasi legacy row yang belum direkonsiliasi setelah migration;
+- dokumen/kuitansi per penerima bila template membutuhkannya;
+- end-to-end test sampai preview/download/final.
+
+### F02 — Generator dokumen belum release-hardened untuk seluruh kategori
+
+Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per template, dan package export sudah ada. Yang masih perlu dibuktikan sebagai satu checkpoint release:
+
+- seluruh template aktif per kategori menghasilkan output valid;
+- preview tidak mempunyai side effect;
+- placeholder identitas/pajak/nomor konsisten;
+- error template terbaca operator;
+- output paket multi-template benar.
+
+### F03 — Lifecycle / authorization / reconciliation belum release-hardened terpadu
+
+Masih perlu suite terpadu untuk cancellation/reissue/reopen, backend locking NUMBERED/FINAL, mutation ADMIN/OPERATOR/VIEWER, snapshot/diff reconciliation, dan perlindungan final document terhadap sync.
+
+### F04 — End-to-end keenam kategori belum ditutup
+
+Belum ada satu checkpoint yang membuktikan seluruh kategori berjalan:
 
 ```text
-1. F01 validasi tanggal pengadaan
-2. F02 dashboard workflow source
-3. F03 cleanup state legacy Persiapan
-4. F04 PEMELIHARAAN → RAB bahan + upah
-5. F05 JASA_LAINNYA multi-penerima end-to-end
-6. F06 SiPLah end-to-end
-7. F07 generator dokumen
-8. F08 lifecycle/authorization/reconciliation
-9. F09 end-to-end seluruh kategori
-10. F12 tenant operations pada SPJ_DATA_PATH
-11. F10 mobile QA
-12. F11 Pusat Laporan / laporan BOS
+source -> DRAFT -> READY -> NUMBERED -> FINAL -> preview/download
 ```
+
+tanpa edit database manual.
+
+### F05 — Mobile visual QA masih terbuka
+
+`docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup. Status tetap RVR/FAIL sampai visual minimum diverifikasi.
+
+### F06 — Pusat Laporan dan laporan BOS resmi masih roadmap
+
+Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori, serta monitoring/audit terpadu belum dianggap fitur release. Format resmi harus dikonfirmasi sebelum klaim compliance.
 
 ---
 
-## 4. Aturan status dokumentasi
+## 4. Verification queue setelah pull
 
-Gunakan hanya:
+Jalankan minimal:
 
-- **FAIL** — perilaku diketahui belum benar/inkonsisten atau fitur yang diminta belum end-to-end.
-- **RVR** — perlu runtime/visual verification; belum boleh disebut PASS.
+```powershell
+php vendor/bin/pint --dirty --format agent
+
+php artisan test --compact tests/Feature/TransactionPurchaseDateValidationTest.php
+php artisan test --compact tests/Feature/TransactionsWorkflowFilterTest.php tests/Feature/SpjPreparationFilterTest.php
+php artisan test --compact tests/Feature/MaintenanceTransactionLinkTest.php tests/Feature/MaintenanceDocumentContextTest.php
+php artisan test --compact tests/Feature/ServiceRecipientReconciliationTest.php
+php artisan test --compact tests/Feature/SiplahPurchaseMvpTest.php tests/Feature/SiplahMarketplaceDocumentPolicyTest.php
+
+npm run theme:qa
+npm run build
+php artisan view:cache --no-interaction
+git diff --check
+```
+
+Karena ada migration tenant baru, database sekolah aktif juga harus dimigrasikan melalui mekanisme aktivasi tenant yang benar sebelum menguji JASA_LAINNYA.
+
+---
+
+## 5. Aturan status dokumentasi
+
+- **FAIL** — masih ada gap implementasi/domain yang nyata.
+- **RVR** — source sudah diperbaiki atau cakupan test sudah tersedia tetapi belum diverifikasi pada working copy/runtime terbaru.
 - **PLANNED** — belum diimplementasikan.
 
-Item yang sudah PASS tidak dipertahankan dalam register ini. Jika sebuah FAIL selesai dan telah diverifikasi, hapus dari daftar ini dan sinkronkan README/roadmap/desain bila relevan.
+Setelah user melaporkan hasil **PASS**, item RVR terkait dihapus dari dokumen ini, bukan dipindahkan ke daftar PASS panjang.
 
 Baca bersama:
 
