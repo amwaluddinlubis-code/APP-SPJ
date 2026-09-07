@@ -46,6 +46,7 @@ class SchoolConfigurationController extends Controller
             'school_code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code,'.$school->id],
             'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
+            'desa' => ['nullable', 'string', 'max:120'],
             'district' => ['nullable', 'string', 'max:120'],
             'regency' => ['nullable', 'string', 'max:120'],
             'province' => ['nullable', 'string', 'max:120'],
@@ -59,7 +60,7 @@ class SchoolConfigurationController extends Controller
             'treasurer_email' => ['nullable', 'email', 'max:180'],
             'treasurer_phone' => ['nullable', 'string', 'max:40'],
         ]);
-        $schoolData = collect($data)->only(['npsn', 'school_code', 'name', 'address', 'district', 'regency', 'province'])->toArray();
+        $schoolData = collect($data)->only(['npsn', 'school_code', 'name', 'address', 'desa', 'district', 'regency', 'province'])->toArray();
         if ($request->hasFile('letterhead')) {
             if ($school->letterhead_path) {
                 Storage::delete($school->letterhead_path);
@@ -94,7 +95,7 @@ class SchoolConfigurationController extends Controller
 
     public function storeSchool(Request $request, SchoolDatabaseManager $databases): RedirectResponse
     {
-        $data = $request->validate(['npsn' => ['required', 'string', 'max:16', 'unique:schools,npsn'], 'school_code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code'], 'name' => ['required', 'string', 'max:255'], 'address' => ['nullable', 'string'], 'district' => ['nullable', 'string', 'max:120'], 'regency' => ['nullable', 'string', 'max:120'], 'province' => ['nullable', 'string', 'max:120']]);
+        $data = $request->validate(['npsn' => ['required', 'string', 'max:16', 'unique:schools,npsn'], 'school_code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code'], 'name' => ['required', 'string', 'max:255'], 'address' => ['nullable', 'string'], 'desa' => ['nullable', 'string', 'max:120'], 'district' => ['nullable', 'string', 'max:120'], 'regency' => ['nullable', 'string', 'max:120'], 'province' => ['nullable', 'string', 'max:120']]);
         $school = School::create($data);
         $databases->provision($school);
 

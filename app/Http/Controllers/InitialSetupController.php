@@ -27,12 +27,15 @@ class InitialSetupController extends Controller
         $data = $request->validate(
             ['npsn' => ['required', 'string', 'max:16', 'unique:schools,npsn'],
                 'school_code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code'],
-                'school_name' => ['required', 'string', 'max:255'], 'year' => ['required', 'integer', 'between:2020,2100'], 'admin_name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', 'confirmed', 'min:12'],
+                'school_name' => ['required', 'string', 'max:255'], 'address' => ['nullable', 'string'], 'desa' => ['nullable', 'string', 'max:120'], 'district' => ['nullable', 'string', 'max:120'], 'regency' => ['nullable', 'string', 'max:120'], 'province' => ['nullable', 'string', 'max:120'], 'year' => ['required', 'integer', 'between:2020,2100'], 'admin_name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'password' => ['required', 'confirmed', 'min:12'],
             ]);
         $result = DB::transaction(function () use ($data, $databases) {
-            $school = School::create(['npsn' => $data['npsn'], 'school_code' => $data['school_code'], 'name' => $data['school_name']]);
+            $school = School::create(collect($data)->only(['npsn', 'school_code', 'desa', 'address', 'district', 'regency', 'province'])->merge(['name' => $data['school_name']])->all());
             $databases->provision($school);
-            $year = FiscalYear::create(['year' => $data['year'], 'fund_source' => 'BOSP', 'is_active' => true]);
+            $year = FiscalYear::updateOrCreate(
+                ['year' => $data['year'], 'fund_source' => 'BOSP'],
+                ['is_active' => true],
+            );
             $user = User::create(['school_id' => $school->id, 'role' => 'ADMIN', 'name' => $data['admin_name'], 'email' => $data['email'], 'password' => $data['password']]);
 
             return compact('school', 'year', 'user');

@@ -36,6 +36,7 @@ class ArkasSourceController
             'database_path' => ['required', 'string', 'max:1000'],
             'bridge_path' => ['nullable', 'string', 'max:1000'],
             'database_password' => ['nullable', 'string', 'max:1000'],
+            'return_to' => ['nullable', 'url', 'max:1000'],
         ]);
 
         $source = ArkasSource::firstOrNew(['school_id' => $data['school_id']]);
@@ -53,6 +54,12 @@ class ArkasSourceController
         }
 
         $source->save();
+
+        $returnTo = $data['return_to'] ?? null;
+
+        if (filled($returnTo) && str_starts_with($returnTo, url('/'))) {
+            return redirect()->to($returnTo)->with('success', 'Sumber ARKAS tersimpan. Anda dapat melanjutkan sinkronisasi.');
+        }
 
         return redirect()->route('arkas.settings')->with('success', 'Sumber ARKAS tersimpan. Path dan kata sandi siap digunakan saat Sinkron Semua ARKAS.');
     }

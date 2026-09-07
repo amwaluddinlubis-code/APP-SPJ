@@ -1,22 +1,43 @@
 <x-layouts.tailwind-app>
     @php
-        $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
+        $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
         $totalItems = $transaction->items->sum('amount');
-        $descriptionsComplete = $transaction->items->isNotEmpty() && $transaction->items->every(fn ($item) => filled($item->item_description));
-        $descriptionsFilled = $transaction->items->filter(fn ($item) => filled($item->item_description))->count();
-        $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
+        $descriptionsComplete =
+            $transaction->items->isNotEmpty() &&
+            $transaction->items->every(fn($item) => filled($item->item_description));
+        $descriptionsFilled = $transaction->items->filter(fn($item) => filled($item->item_description))->count();
+        $spjTypeLabel = fn($value) => match (strtoupper((string) $value)) {
             'JASA_LAINNYA' => 'Jasa Lainnya',
             'SPPD' => 'SPPD',
             'HONOR_PEGAWAI' => 'Honor Pegawai',
             default => str_replace('_', ' ', (string) $value),
         };
         $spjGuidance = [
-            'BARANG' => ['title' => 'Barang', 'description' => 'Lengkapi uraian belanja barang serta data invoice atau pesanan pembelian.'],
-            'KONSUMSI' => ['title' => 'Konsumsi', 'description' => 'Lengkapi uraian belanja makanan/minuman (katering) serta data invoice atau pesanan pembelian.'],
-            'PEMELIHARAAN' => ['title' => 'Pemeliharaan', 'description' => 'Lengkapi uraian pekerjaan, lokasi, periode, SPK, dan penandatangan.'],
-            'JASA_LAINNYA' => ['title' => 'Jasa Lainnya', 'description' => 'Lengkapi uraian jasa, referensi pembayaran, serta penerima atau penandatangan.'],
-            'SPPD' => ['title' => 'SPPD', 'description' => 'Lengkapi tujuan perjalanan, lokasi, periode, dan referensi pembayaran.'],
-            'HONOR_PEGAWAI' => ['title' => 'Honor Pegawai', 'description' => 'Lengkapi uraian honor, periode pembayaran, dan nama penerima honor.'],
+            'BARANG' => [
+                'title' => 'Barang',
+                'description' => 'Lengkapi uraian belanja barang serta data invoice atau pesanan pembelian.',
+            ],
+            'KONSUMSI' => [
+                'title' => 'Konsumsi',
+                'description' =>
+                    'Lengkapi uraian belanja makanan/minuman (katering) serta data invoice atau pesanan pembelian.',
+            ],
+            'PEMELIHARAAN' => [
+                'title' => 'Pemeliharaan',
+                'description' => 'Lengkapi uraian pekerjaan, lokasi, periode, SPK, dan penandatangan.',
+            ],
+            'JASA_LAINNYA' => [
+                'title' => 'Jasa Lainnya',
+                'description' => 'Lengkapi uraian jasa, referensi pembayaran, serta penerima atau penandatangan.',
+            ],
+            'SPPD' => [
+                'title' => 'SPPD',
+                'description' => 'Lengkapi tujuan perjalanan, lokasi, periode, dan referensi pembayaran.',
+            ],
+            'HONOR_PEGAWAI' => [
+                'title' => 'Honor Pegawai',
+                'description' => 'Lengkapi uraian honor, periode pembayaran, dan nama penerima honor.',
+            ],
         ];
         $selectedSpjType = strtoupper((string) $transaction->spj_category);
         $selectedSpjType = match ($selectedSpjType) {
@@ -27,111 +48,286 @@
             'UPAH' => 'PEMELIHARAAN',
             default => $selectedSpjType,
         };
-        $participantRows = $transaction->participants->map(fn ($participant) => [
-            'name' => $participant->name,
-            'position' => $participant->position,
-            'portions' => (int) $participant->portions,
-        ])->values()->all();
-        $dapodikParticipantRows = $dapodikTeachers->map(fn ($employee) => ['employee_id' => $employee->id, 'name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'portions' => 1])->values()->all();
-        $employeeOptions = $dapodikEmployees->map(fn ($employee) => ['id' => $employee->id, 'name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type])->values()->all();
+        $participantRows = $transaction->participants
+            ->map(
+                fn($participant) => [
+                    'name' => $participant->name,
+                    'position' => $participant->position,
+                    'portions' => (int) $participant->portions,
+                ],
+            )
+            ->values()
+            ->all();
+        $dapodikParticipantRows = $dapodikTeachers
+            ->map(
+                fn($employee) => [
+                    'employee_id' => $employee->id,
+                    'name' => $employee->name,
+                    'position' => $employee->position ?: $employee->staff_type,
+                    'portions' => 1,
+                ],
+            )
+            ->values()
+            ->all();
+        $employeeOptions = $dapodikEmployees
+            ->map(
+                fn($employee) => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'position' => $employee->position ?: $employee->staff_type,
+                ],
+            )
+            ->values()
+            ->all();
         if ($selectedSpjType === 'KONSUMSI') {
             $existingParticipantNames = collect($participantRows)
-                ->map(fn ($row) => mb_strtolower(trim($row['name'])))
+                ->map(fn($row) => mb_strtolower(trim($row['name'])))
                 ->all();
-            $missingDapodikParticipants = collect($dapodikParticipantRows)
-                ->reject(fn ($row) => in_array(mb_strtolower(trim($row['name'])), $existingParticipantNames, true));
+            $missingDapodikParticipants = collect($dapodikParticipantRows)->reject(
+                fn($row) => in_array(mb_strtolower(trim($row['name'])), $existingParticipantNames, true),
+            );
             $participantRows = collect($participantRows)->concat($missingDapodikParticipants)->values()->all();
         }
         $participantRows = old('participants', $participantRows);
         $purchaseDetails = $transaction->goods->first();
         $workDetails = $transaction->workOrder;
         $transactionDateLimit = $transaction->transaction_date?->format('Y-m-d');
-        $effectiveTaxRate = fn ($rate, $amount) => $rate !== null
+        $effectiveTaxRate = fn($rate, $amount) => $rate !== null
             ? (float) $rate
-            : ((float) $transaction->gross_amount > 0 ? (float) $amount / (float) $transaction->gross_amount * 100 : 0);
-        $purchaseOrderDate = $purchaseDetails?->order_date?->format('Y-m-d') ?: $transaction->order_date?->format('Y-m-d') ?: $transactionDateLimit;
-        $purchaseBapDate = $purchaseDetails?->bap_date?->format('Y-m-d') ?: $transaction->bap_date?->format('Y-m-d') ?: $transactionDateLimit;
-        $purchaseBastDate = $purchaseDetails?->bast_date?->format('Y-m-d') ?: $transaction->bast_date?->format('Y-m-d') ?: $transactionDateLimit;
+            : ((float) $transaction->gross_amount > 0
+                ? ((float) $amount / (float) $transaction->gross_amount) * 100
+                : 0);
+        $purchaseOrderDate =
+            $purchaseDetails?->order_date?->format('Y-m-d') ?:
+            $transaction->order_date?->format('Y-m-d') ?:
+            $transactionDateLimit;
+        $purchaseBapDate =
+            $purchaseDetails?->bap_date?->format('Y-m-d') ?:
+            $transaction->bap_date?->format('Y-m-d') ?:
+            $transactionDateLimit;
+        $purchaseBastDate =
+            $purchaseDetails?->bast_date?->format('Y-m-d') ?:
+            $transaction->bast_date?->format('Y-m-d') ?:
+            $transactionDateLimit;
         $purchaseInvoiceDate = $transaction->invoice_date?->format('Y-m-d') ?: $transactionDateLimit;
-        $workerRows = $transaction->workers->map(fn ($worker) => [
-            'name' => $worker->name,
-            'job_description' => $worker->job_description,
-            'work_days' => $worker->work_days,
-            'daily_rate' => $worker->daily_rate,
-            'is_receipt_recipient' => (bool) $worker->is_receipt_recipient,
-            'notes' => $worker->notes,
-        ])->values()->all();
-        $workerRows = $workerRows ?: [['name' => '', 'job_description' => '', 'work_days' => 1, 'daily_rate' => 0, 'is_receipt_recipient' => false, 'notes' => '']];
-        $honorRows = $transaction->honors->map(fn ($honor) => [
-            'name' => $honor->name,
-            'job_description' => $honor->position,
-            'work_days' => $honor->honor_months,
-            'daily_rate' => $honor->rate_per_unit,
-            'is_receipt_recipient' => false,
-            'notes' => '',
-        ])->values()->all();
-        $honorRows = old('workers', $honorRows ?: [['name' => '', 'job_description' => '', 'work_days' => 1, 'daily_rate' => 0, 'is_receipt_recipient' => false, 'notes' => '']]);
-        $travelRows = $transaction->travels->map(fn ($travel) => [
-            'traveler_name' => $travel->traveler_name,
-            'destination' => $travel->destination,
-            'purpose' => $travel->purpose,
-            'departure_date' => optional($travel->departure_date)->format('Y-m-d') ?: $transactionDateLimit,
-            'assignment_letter_number' => $travel->assignment_letter_number,
-            'assignment_letter_date' => optional($travel->assignment_letter_date)->format('Y-m-d') ?: $transactionDateLimit,
-            'return_date' => optional($travel->return_date)->format('Y-m-d') ?: $transactionDateLimit,
-            'transport_mode' => $travel->transport_mode,
-            'amount' => $travel->amount,
-            'notes' => $travel->notes,
-        ])->values()->all();
-        $travelRows = $travelRows ?: [['traveler_name' => '', 'destination' => '', 'purpose' => '', 'assignment_letter_number' => '', 'assignment_letter_date' => $transactionDateLimit, 'departure_date' => $transactionDateLimit, 'return_date' => $transactionDateLimit, 'transport_mode' => '', 'amount' => 0, 'notes' => '']];
+        $workerRows = $transaction->workers
+            ->map(
+                fn($worker) => [
+                    'name' => $worker->name,
+                    'job_description' => $worker->job_description,
+                    'work_days' => $worker->work_days,
+                    'daily_rate' => $worker->daily_rate,
+                    'is_receipt_recipient' => (bool) $worker->is_receipt_recipient,
+                    'notes' => $worker->notes,
+                ],
+            )
+            ->values()
+            ->all();
+        $workerRows = $workerRows ?: [
+            [
+                'name' => '',
+                'job_description' => '',
+                'work_days' => 1,
+                'daily_rate' => 0,
+                'is_receipt_recipient' => false,
+                'notes' => '',
+            ],
+        ];
+        $honorRows = $transaction->honors
+            ->map(
+                fn($honor) => [
+                    'name' => $honor->name,
+                    'job_description' => $honor->position,
+                    'work_days' => $honor->honor_months,
+                    'daily_rate' => $honor->rate_per_unit,
+                    'is_receipt_recipient' => false,
+                    'notes' => '',
+                ],
+            )
+            ->values()
+            ->all();
+        $honorRows = old(
+            'workers',
+            $honorRows ?: [
+                [
+                    'name' => '',
+                    'job_description' => '',
+                    'work_days' => 1,
+                    'daily_rate' => 0,
+                    'is_receipt_recipient' => false,
+                    'notes' => '',
+                ],
+            ],
+        );
+        $travelRows = $transaction->travels
+            ->map(
+                fn($travel) => [
+                    'traveler_name' => $travel->traveler_name,
+                    'destination' => $travel->destination,
+                    'purpose' => $travel->purpose,
+                    'departure_date' => optional($travel->departure_date)->format('Y-m-d') ?: $transactionDateLimit,
+                    'assignment_letter_number' => $travel->assignment_letter_number,
+                    'assignment_letter_date' =>
+                        optional($travel->assignment_letter_date)->format('Y-m-d') ?: $transactionDateLimit,
+                    'return_date' => optional($travel->return_date)->format('Y-m-d') ?: $transactionDateLimit,
+                    'transport_mode' => $travel->transport_mode,
+                    'amount' => $travel->amount,
+                    'notes' => $travel->notes,
+                ],
+            )
+            ->values()
+            ->all();
+        $travelRows = $travelRows ?: [
+            [
+                'traveler_name' => '',
+                'destination' => '',
+                'purpose' => '',
+                'assignment_letter_number' => '',
+                'assignment_letter_date' => $transactionDateLimit,
+                'departure_date' => $transactionDateLimit,
+                'return_date' => $transactionDateLimit,
+                'transport_mode' => '',
+                'amount' => 0,
+                'notes' => '',
+            ],
+        ];
         $category = strtoupper((string) $selectedSpjType);
         $manualChecklist = [
-            ['label' => 'Kategori SPJ', 'ready' => filled($selectedSpjType), 'hint' => 'Pilih kategori agar form sesuai skenario dokumen.'],
-            ['label' => 'Uraian dokumen', 'ready' => filled($transaction->payment_description), 'hint' => 'Isi uraian pembayaran yang akan masuk dokumen SPJ.'],
-            ['label' => 'Penerima kuitansi', 'ready' => filled($transaction->effective_receipt_recipient_name), 'hint' => 'Boleh berbeda dari penerima BKU/ARKAS.'],
-            ['label' => 'Metode pembayaran', 'ready' => filled($transaction->payment_method), 'hint' => 'Pilih Transfer Bank, SiPLah, atau Tunai.'],
-            ['label' => 'Uraian item SPJ', 'ready' => $descriptionsComplete, 'hint' => "{$descriptionsFilled} dari {$transaction->items->count()} item sudah lengkap."],
+            [
+                'label' => 'Kategori SPJ',
+                'ready' => filled($selectedSpjType),
+                'hint' => 'Pilih kategori agar form sesuai skenario dokumen.',
+            ],
+            [
+                'label' => 'Uraian dokumen',
+                'ready' => filled($transaction->payment_description),
+                'hint' => 'Isi uraian pembayaran yang akan masuk dokumen SPJ.',
+            ],
+            [
+                'label' => 'Penerima kuitansi',
+                'ready' => filled($transaction->effective_receipt_recipient_name),
+                'hint' => 'Boleh berbeda dari penerima BKU/ARKAS.',
+            ],
+            [
+                'label' => 'Metode pembayaran',
+                'ready' => filled($transaction->payment_method),
+                'hint' => 'Pilih Transfer Bank, SiPLah, atau Tunai.',
+            ],
+            [
+                'label' => 'Uraian item SPJ',
+                'ready' => $descriptionsComplete,
+                'hint' => "{$descriptionsFilled} dari {$transaction->items->count()} item sudah lengkap.",
+            ],
         ];
         $categoryChecklist = match ($category) {
             'BARANG' => [
-                ['label' => 'Data pembelian', 'ready' => filled($transaction->invoice_number) || filled($purchaseDetails?->order_number) || filled($transaction->order_number), 'hint' => 'Isi invoice atau nomor pesanan.'],
-                ['label' => 'Dokumen penerimaan', 'ready' => filled($purchaseDetails?->bap_number) || filled($transaction->bap_number) || filled($purchaseDetails?->bast_number) || filled($transaction->bast_number), 'hint' => 'Isi BAP atau BAST jika sudah tersedia.'],
+                [
+                    'label' => 'Data pembelian',
+                    'ready' =>
+                        filled($transaction->invoice_number) ||
+                        filled($purchaseDetails?->order_number) ||
+                        filled($transaction->order_number),
+                    'hint' => 'Isi invoice atau nomor pesanan.',
+                ],
+                [
+                    'label' => 'Dokumen penerimaan',
+                    'ready' =>
+                        filled($purchaseDetails?->bap_number) ||
+                        filled($transaction->bap_number) ||
+                        filled($purchaseDetails?->bast_number) ||
+                        filled($transaction->bast_number),
+                    'hint' => 'Isi BAP atau BAST jika sudah tersedia.',
+                ],
             ],
             'KONSUMSI' => [
-                ['label' => 'Data acara', 'ready' => filled($transaction->event_name) || filled($transaction->event_location), 'hint' => 'Isi nama acara dan tempat.'],
-                ['label' => 'Peserta/porsi', 'ready' => $transaction->participants->isNotEmpty(), 'hint' => 'Tambahkan minimal satu peserta atau dasar porsi.'],
+                [
+                    'label' => 'Data acara',
+                    'ready' => filled($transaction->event_name) || filled($transaction->event_location),
+                    'hint' => 'Isi nama acara dan tempat.',
+                ],
+                [
+                    'label' => 'Peserta/porsi',
+                    'ready' => $transaction->participants->isNotEmpty(),
+                    'hint' => 'Tambahkan minimal satu peserta atau dasar porsi.',
+                ],
             ],
             'PEMELIHARAAN' => [
-                ['label' => 'Work order', 'ready' => filled($workDetails?->work_description), 'hint' => 'Isi deskripsi pekerjaan pemeliharaan.'],
-                ['label' => 'Daftar pekerja', 'ready' => $transaction->workers->isNotEmpty(), 'hint' => 'Tambahkan pekerja dalam tabel.'],
-                ['label' => 'Penerima kuitansi pekerja', 'ready' => filled($transaction->receipt_recipient_name) || $transaction->workers->contains(fn ($worker) => (bool) $worker->is_receipt_recipient), 'hint' => 'Tandai salah satu pekerja atau isi penerima kuitansi manual.'],
+                [
+                    'label' => 'Work order',
+                    'ready' => filled($workDetails?->work_description),
+                    'hint' => 'Isi deskripsi pekerjaan pemeliharaan.',
+                ],
+                [
+                    'label' => 'Daftar pekerja',
+                    'ready' => $transaction->workers->isNotEmpty(),
+                    'hint' => 'Tambahkan pekerja dalam tabel.',
+                ],
+                [
+                    'label' => 'Penerima kuitansi pekerja',
+                    'ready' =>
+                        filled($transaction->receipt_recipient_name) ||
+                        $transaction->workers->contains(fn($worker) => (bool) $worker->is_receipt_recipient),
+                    'hint' => 'Tandai salah satu pekerja atau isi penerima kuitansi manual.',
+                ],
             ],
             'SPPD' => [
-                ['label' => 'Pelaksana perjalanan', 'ready' => $transaction->travels->isNotEmpty(), 'hint' => 'Satu pembayaran boleh berisi banyak pelaksana.'],
-                ['label' => 'Tanggal perjalanan', 'ready' => $transaction->travels->contains(fn ($travel) => filled($travel->departure_date)), 'hint' => 'Isi minimal tanggal berangkat.'],
+                [
+                    'label' => 'Pelaksana perjalanan',
+                    'ready' => $transaction->travels->isNotEmpty(),
+                    'hint' => 'Satu pembayaran boleh berisi banyak pelaksana.',
+                ],
+                [
+                    'label' => 'Tanggal perjalanan',
+                    'ready' => $transaction->travels->contains(fn($travel) => filled($travel->departure_date)),
+                    'hint' => 'Isi minimal tanggal berangkat.',
+                ],
             ],
             'HONOR_PEGAWAI' => [
-                ['label' => 'Penerima honor', 'ready' => $transaction->honors->isNotEmpty(), 'hint' => 'Tambahkan minimal satu penerima honor.'],
+                [
+                    'label' => 'Penerima honor',
+                    'ready' => $transaction->honors->isNotEmpty(),
+                    'hint' => 'Tambahkan minimal satu penerima honor.',
+                ],
             ],
             'JASA_LAINNYA' => [
-                ['label' => 'Uraian jasa', 'ready' => filled($transaction->work_description) || filled($transaction->payment_description), 'hint' => 'Isi uraian jasa atau pembayaran.'],
+                [
+                    'label' => 'Uraian jasa',
+                    'ready' => filled($transaction->work_description) || filled($transaction->payment_description),
+                    'hint' => 'Isi uraian jasa atau pembayaran.',
+                ],
             ],
             default => [],
         };
         $isSiplah = strtolower((string) $paymentMethod) === 'siplah' || (bool) $transaction->is_siplah;
         if ($isSiplah) {
             $categoryChecklist = array_merge($categoryChecklist, [
-                ['label' => 'Penyedia SiPLah', 'ready' => filled($transaction->vendor_name), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
-                ['label' => 'Nomor Pesanan SiPLah', 'ready' => filled($transaction->siplah_order_number), 'hint' => 'Nomor order marketplace, bukan Nomor Surat Pesanan SPJ.'],
-                ['label' => 'Invoice SiPLah', 'ready' => filled($transaction->invoice_number), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
-                ['label' => 'Referensi pembayaran', 'ready' => filled($transaction->payment_reference), 'hint' => 'Informasi panduan; tidak memblokir status READY.'],
+                [
+                    'label' => 'Penyedia SiPLah',
+                    'ready' => filled($transaction->vendor_name),
+                    'hint' => 'Informasi panduan; tidak memblokir status READY.',
+                ],
+                [
+                    'label' => 'Nomor Pesanan SiPLah',
+                    'ready' => filled($transaction->siplah_order_number),
+                    'hint' => 'Nomor order marketplace, bukan Nomor Surat Pesanan SPJ.',
+                ],
+                [
+                    'label' => 'Invoice SiPLah',
+                    'ready' => filled($transaction->invoice_number),
+                    'hint' => 'Informasi panduan; tidak memblokir status READY.',
+                ],
+                [
+                    'label' => 'Referensi pembayaran',
+                    'ready' => filled($transaction->payment_reference),
+                    'hint' => 'Informasi panduan; tidak memblokir status READY.',
+                ],
             ]);
         }
         $readinessChecklist = array_merge($manualChecklist, $categoryChecklist);
         $readyCount = collect($readinessChecklist)->where('ready', true)->count();
         $pendingChecklist = collect($readinessChecklist)->where('ready', false)->values();
         $completedChecklist = collect($readinessChecklist)->where('ready', true)->values();
-        $packageLocked = $transaction->spjPackage && ! $transaction->spjPackage->isEditable();
+        $packageLocked = $transaction->spjPackage && !$transaction->spjPackage->isEditable();
         $taxBreakdown = collect([
             'PPN' => $transaction->ppn,
             'PPh 21' => $transaction->pph21,
@@ -139,30 +335,31 @@
             'PPh 23' => $transaction->pph23,
             'PPh 4(2)' => $transaction->pph4,
             'SSPD' => $transaction->sspd,
-        ])->filter(fn ($value) => (float) $value !== 0.0);
+        ])->filter(fn($value) => (float) $value !== 0.0);
         $sourceStatus = strtoupper((string) ($transaction->source_status ?: 'ACTIVE'));
         $needsAttention = $sourceStatus === 'SOURCE_MISSING' || (bool) $transaction->requires_reconciliation;
     @endphp
     <div class="flex flex-col gap-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <a href="{{ route('transactions.index') }}" class="ui-btn ui-btn-secondary !text-sm">← Kembali ke transaksi</a>
+            <a href="{{ route('transactions.index') }}" class="ui-btn ui-btn-secondary !text-sm">← Kembali ke
+                transaksi</a>
             <div class="flex flex-wrap items-center gap-2">
                 <x-ui.status-badge :status="$transaction->status" />
-                @if($sourceStatus === 'SOURCE_MISSING')
+                @if ($sourceStatus === 'SOURCE_MISSING')
                     <x-ui.status-badge status="SOURCE_MISSING" label="Tidak muncul di sync terakhir" />
                 @else
                     <x-ui.status-badge status="ACTIVE" label="Data ARKAS aktif" />
                 @endif
-                @if($transaction->requires_reconciliation)
+                @if ($transaction->requires_reconciliation)
                     <x-ui.status-badge status="REQUIRES_RECONCILIATION" />
                 @endif
-                @if($transaction->spj_category)
+                @if ($transaction->spj_category)
                     <x-ui.badge variant="theme">SPJ: {{ $spjTypeLabel($transaction->spj_category) }}</x-ui.badge>
                 @endif
-                @if($isSiplah)
+                @if ($isSiplah)
                     <x-ui.badge variant="theme">Pembelian SiPLah</x-ui.badge>
                 @endif
-                @if($transaction->spjPackage?->document_number)
+                @if ($transaction->spjPackage?->document_number)
                     <x-ui.status-badge status="NUMBERED" :label="$transaction->spjPackage->document_number" />
                 @elseif($transaction->items->isNotEmpty())
                     <a href="#modul-buat-spj" class="ui-btn ui-btn-primary !min-h-0 !py-1.5 !px-3 !text-xs">Buat SPJ</a>
@@ -170,29 +367,30 @@
             </div>
         </div>
 
-        @if($needsAttention)
+        @if ($needsAttention)
             <x-ui.alert type="warning" title="Transaksi ini perlu perhatian sebelum dokumen difinalkan.">
                 <p>
-                    @if($sourceStatus === 'SOURCE_MISSING')
-                        Data ARKAS transaksi ini tidak muncul pada sinkronisasi terakhir. Data manual tetap dipertahankan.
+                    @if ($sourceStatus === 'SOURCE_MISSING')
+                        Data ARKAS transaksi ini tidak muncul pada sinkronisasi terakhir. Data manual tetap
+                        dipertahankan.
                     @endif
-                    @if($transaction->requires_reconciliation)
+                    @if ($transaction->requires_reconciliation)
                         Ada perubahan sumber ARKAS yang perlu ditinjau agar dokumen tidak berubah diam-diam.
                     @endif
                 </p>
             </x-ui.alert>
         @endif
 
-        <x-page-header
-            :title="$transaction->no_bukti"
-            :subtitle="$transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.'"
-            kicker="{{ $headerVisual['label'] }} · Detail transaksi / paket SPJ"
-        >
+        <x-page-header :title="$transaction->no_bukti" :subtitle="$transaction->payment_description ?: $transaction->description ?: 'Uraian transaksi belum tersedia.'"
+            kicker="{{ $headerVisual['label'] }} · Detail transaksi / paket SPJ">
             <div class="grid sm:grid-cols-2 xl:grid-cols-4">
                 <x-stat-item label="Nilai bruto" :value="$rupiah($transaction->gross_amount)" :hint="$transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" />
                 <x-stat-item label="Total pajak" :value="$rupiah($transaction->tax_total)" hint="PPN, PPh, dan pajak daerah" />
-                <x-stat-item label="Nilai dibayarkan" :value="$rupiah($transaction->net_amount)" :hint="['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Cara bayar belum diisi'" />
-                <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item" :hint="'Akumulasi: '.$rupiah($totalItems)" />
+                <x-stat-item label="Nilai dibayarkan" :value="$rupiah($transaction->net_amount)" :hint="['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][
+                    $paymentMethod
+                ] ?? 'Cara bayar belum diisi'" />
+                <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item"
+                    :hint="'Akumulasi: ' . $rupiah($totalItems)" />
             </div>
         </x-page-header>
 
@@ -201,70 +399,120 @@
                 <x-slot:title>
                     <div class="flex items-center gap-2">
                         <span>Informasi Referensi ARKAS / BKU</span>
-                        <span class="rounded bg-[var(--ui-line)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ui-fg-muted)]">Readonly</span>
+                        <span
+                            class="rounded bg-[var(--ui-line)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--ui-fg-muted)]">Readonly</span>
                     </div>
                 </x-slot:title>
                 <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-3 md:divide-x md:divide-y-0">
-                    <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima / Penyedia</p><p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p></div>
-                    <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Kegiatan</p><p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">{{ $transaction->activity_code ?: '—' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->activity_name ?: 'Kegiatan belum tersedia' }}</p></div>
-                    <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Rekening</p><p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">{{ $transaction->account_code ?: '—' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->account_name ?: 'Rekening belum tersedia' }}</p></div>
+                    <div class="px-5 py-4">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima /
+                            Penyedia</p>
+                        <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">
+                            {{ $transaction->recipient_name ?: 'Belum diisi' }}</p>
+                    </div>
+                    <div class="px-5 py-4">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Kegiatan</p>
+                        <p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">
+                            {{ $transaction->activity_code ?: '—' }}</p>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">
+                            {{ $transaction->activity_name ?: 'Kegiatan belum tersedia' }}</p>
+                    </div>
+                    <div class="px-5 py-4">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Rekening</p>
+                        <p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">
+                            {{ $transaction->account_code ?: '—' }}</p>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">
+                            {{ $transaction->account_name ?: 'Rekening belum tersedia' }}</p>
+                    </div>
                 </div>
             </x-ui.panel>
         </section>
 
-        <section class="grid gap-4 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)]">
-            <x-ui.panel variant="default" :padding="false">
-                <div class="p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Alur operator</p>
-                            <h2 class="mt-1 font-bold text-[var(--ui-fg-strong)]">Status pekerjaan transaksi</h2>
-                        </div>
-                        <x-ui.badge :variant="$readyCount === count($readinessChecklist) ? 'success' : 'warning'">{{ $readyCount }}/{{ count($readinessChecklist) }} siap</x-ui.badge>
+        <section class="grid gap-4 lg:grid-cols-[minmax(0,.75fr)_minmax(0,1.25fr)]">
+            <details class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Alur operator</p>
+                        <h2 class="mt-1 font-bold text-[var(--ui-fg-strong)]">Lihat status pekerjaan</h2>
                     </div>
+                    <x-ui.badge :variant="$readyCount === count($readinessChecklist) ? 'success' : 'warning'">{{ $readyCount }}/{{ count($readinessChecklist) }}
+                        siap</x-ui.badge>
+                </summary>
+                <div class="border-t border-[var(--ui-line)] p-4">
                     <ol class="mt-4 space-y-2 text-sm">
-                        <li class="flex gap-2"><span class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">1</span><span><strong class="text-[var(--ui-fg-strong)]">Pilih konteks</strong><br><span class="text-xs text-[var(--ui-fg-muted)]">Sekolah, tahun, dan sumber dana aktif.</span></span></li>
-                        <li class="flex gap-2"><span class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">2</span><span><strong class="text-[var(--ui-fg-strong)]">Cek data ARKAS</strong><br><span class="text-xs text-[var(--ui-fg-muted)]">{{ $sourceStatus === 'SOURCE_MISSING' ? 'Tidak muncul di sync terakhir.' : 'Data sumber aktif.' }}</span></span></li>
-                        <li class="flex gap-2"><span class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ filled($selectedSpjType) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">3</span><span><strong class="text-[var(--ui-fg-strong)]">Lengkapi data manual</strong><br><span class="text-xs text-[var(--ui-fg-muted)]">Kategori, uraian, penerima kuitansi, dan detail sesuai SPJ.</span></span></li>
-                        <li class="flex gap-2"><span class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ $transaction->spjPackage ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">4</span><span><strong class="text-[var(--ui-fg-strong)]">Buat paket SPJ</strong><br><span class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->spjPackage ? 'Paket sudah dibuat.' : 'Belum dibuat.' }}</span></span></li>
-                        <li class="flex gap-2"><span class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ $transaction->spjPackage?->document_number ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">5</span><span><strong class="text-[var(--ui-fg-strong)]">Nomor & arsip</strong><br><span class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->spjPackage?->document_number ?: 'Belum bernomor.' }}</span></span></li>
+                        <li class="flex gap-2"><span
+                                class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">1</span><span><strong
+                                    class="text-[var(--ui-fg-strong)]">Pilih konteks</strong><br><span
+                                    class="text-xs text-[var(--ui-fg-muted)]">Sekolah, tahun, dan sumber dana
+                                    aktif.</span></span></li>
+                        <li class="flex gap-2"><span
+                                class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">2</span><span><strong
+                                    class="text-[var(--ui-fg-strong)]">Cek data ARKAS</strong><br><span
+                                    class="text-xs text-[var(--ui-fg-muted)]">{{ $sourceStatus === 'SOURCE_MISSING' ? 'Tidak muncul di sync terakhir.' : 'Data sumber aktif.' }}</span></span>
+                        </li>
+                        <li class="flex gap-2"><span
+                                class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ filled($selectedSpjType) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">3</span><span><strong
+                                    class="text-[var(--ui-fg-strong)]">Lengkapi data manual</strong><br><span
+                                    class="text-xs text-[var(--ui-fg-muted)]">Kategori, uraian, penerima kuitansi, dan
+                                    detail sesuai SPJ.</span></span></li>
+                        <li class="flex gap-2"><span
+                                class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ $transaction->spjPackage ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">4</span><span><strong
+                                    class="text-[var(--ui-fg-strong)]">Buat paket SPJ</strong><br><span
+                                    class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->spjPackage ? 'Paket sudah dibuat.' : 'Belum dibuat.' }}</span></span>
+                        </li>
+                        <li class="flex gap-2"><span
+                                class="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full {{ $transaction->spjPackage?->document_number ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]' }} text-xs font-bold">5</span><span><strong
+                                    class="text-[var(--ui-fg-strong)]">Nomor & arsip</strong><br><span
+                                    class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->spjPackage?->document_number ?: 'Belum bernomor.' }}</span></span>
+                        </li>
                     </ol>
                 </div>
-            </x-ui.panel>
+            </details>
 
             <x-ui.panel variant="default" :padding="false">
                 <div class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Checklist kelengkapan</p>
-                            <h2 class="mt-1 font-bold text-[var(--ui-fg-strong)]">Yang perlu dilengkapi operator</h2>
+                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Checklist
+                                kelengkapan</p>
+                            <h2 class="mt-1 font-bold text-[var(--ui-fg-strong)]">Yang perlu dilengkapi</h2>
                         </div>
-                        <a href="#modul-buat-spj" class="ui-btn ui-btn-primary !min-h-0 !py-1.5 !px-3 !text-xs">Isi data</a>
+                        <a href="#modul-buat-spj" class="ui-btn ui-btn-primary !min-h-0 !py-1.5 !px-3 !text-xs">Isi
+                            data</a>
                     </div>
-                    @if($pendingChecklist->isEmpty())
-                        <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+                    @if ($pendingChecklist->isEmpty())
+                        <div
+                            class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
                             <p class="font-bold">Semua data yang diperiksa sudah lengkap.</p>
                             <p class="mt-1 text-xs">Lanjutkan ke paket SPJ atau buka daftar data lengkap di bawah.</p>
                         </div>
                     @else
                         <div class="mt-4 grid gap-2 md:grid-cols-2">
-                        @foreach($pendingChecklist as $item)
-                            <div class="rounded-lg border {{ $item['ready'] ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40' : 'border-[var(--ui-line)] bg-[var(--ui-surface-soft)]' }} p-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="flex h-5 w-5 items-center justify-center rounded-full {{ $item['ready'] ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white' }} text-[11px] font-bold">{{ $item['ready'] ? '✓' : '!' }}</span>
-                                    <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</p>
+                            @foreach ($pendingChecklist as $item)
+                                <div
+                                    class="rounded-lg border {{ $item['ready'] ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40' : 'border-[var(--ui-line)] bg-[var(--ui-surface-soft)]' }} p-3">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="flex h-5 w-5 items-center justify-center rounded-full {{ $item['ready'] ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white' }} text-[11px] font-bold">{{ $item['ready'] ? '✓' : '!' }}</span>
+                                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $item['label'] }}
+                                        </p>
+                                    </div>
+                                    <p class="mt-1 pl-7 text-xs text-[var(--ui-fg-muted)]">
+                                        {{ $item['ready'] ? 'Sudah tersedia.' : $item['hint'] }}</p>
                                 </div>
-                                <p class="mt-1 pl-7 text-xs text-[var(--ui-fg-muted)]">{{ $item['ready'] ? 'Sudah tersedia.' : $item['hint'] }}</p>
-                            </div>
-                        @endforeach
+                            @endforeach
                         </div>
                     @endif
-                    @if($completedChecklist->isNotEmpty())
-                        <details class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2">
-                            <summary class="cursor-pointer text-xs font-bold text-[var(--ui-fg-strong)]">Lihat {{ $completedChecklist->count() }} data yang sudah lengkap</summary>
+                    @if ($completedChecklist->isNotEmpty())
+                        <details
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2">
+                            <summary class="cursor-pointer text-xs font-bold text-[var(--ui-fg-strong)]">Lihat
+                                {{ $completedChecklist->count() }} data yang sudah lengkap</summary>
                             <div class="mt-2 flex flex-wrap gap-2">
-                                @foreach($completedChecklist as $item)
-                                    <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300">✓ {{ $item['label'] }}</span>
+                                @foreach ($completedChecklist as $item)
+                                    <span
+                                        class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300">✓
+                                        {{ $item['label'] }}</span>
                                 @endforeach
                             </div>
                         </details>
@@ -273,356 +521,1150 @@
             </x-ui.panel>
         </section>
 
-        <section id="modul-buat-spj" class="spj-builder order-2 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm" x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod), isSiplah: @js($isSiplah) }">
+        <section id="modul-buat-spj"
+            class="spj-builder order-2 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm"
+            x-data="{ category: '{{ $selectedSpjType }}', paymentMethod: @js($paymentMethod), isSiplah: @js($isSiplah) }">
             <div class="spj-builder-header border-b px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <p class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold text-[var(--text-comfort-on-dark)]">MODUL PEMBUATAN SPJ</p>
-                        <h2 class="mt-1 font-mono text-lg font-bold uppercase text-[var(--text-comfort-on-dark)]">Siapkan dokumen berdasarkan kategori SPJ</h2>
-                        <p class="mt-1 text-sm text-[var(--text-comfort-on-dark-soft)]">Pilih skenario dokumen, pastikan uraian setiap item lengkap, lalu buat paket SPJ.</p>
+                        <p
+                            class="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold text-[var(--text-comfort-on-dark)]">
+                            MODUL PEMBUATAN SPJ</p>
+                        <h2 class="mt-1 font-mono text-lg font-bold uppercase text-[var(--text-comfort-on-dark)]">
+                            Siapkan dokumen berdasarkan kategori SPJ</h2>
+                        <p class="mt-1 text-sm text-[var(--text-comfort-on-dark-soft)]">Pilih skenario dokumen, pastikan
+                            uraian setiap item lengkap, lalu buat paket SPJ.</p>
                     </div>
-                    @if($transaction->spjPackage)
-                        <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]) }}" class="spj-builder-primary inline-flex w-fit rounded-lg px-4 py-2 text-sm font-bold shadow-sm">Buka Paket SPJ →</a>
+                    @if ($transaction->spjPackage)
+                        <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]) }}"
+                            class="spj-builder-primary inline-flex w-fit rounded-lg px-4 py-2 text-sm font-bold shadow-sm">Buka
+                            Paket SPJ →</a>
                     @endif
                 </div>
 
             </div>
 
             <div class="p-4 sm:p-5">
-                @if($packageLocked)
-                    <div class="mb-3 grid gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div><p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Kategori</p><p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $spjTypeLabel($selectedSpjType) }}</p></div>
-                        <div><p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Cara bayar</p><p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ ['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Belum diisi' }}</p></div>
-                        <div><p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Penerima kuitansi</p><p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
-                        <div><p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Perlu dilengkapi</p><p class="mt-1 font-semibold {{ $pendingChecklist->isEmpty() ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400' }}">{{ $pendingChecklist->isEmpty() ? 'Tidak ada' : $pendingChecklist->count().' data' }}</p></div>
+                @if ($packageLocked)
+                    <div
+                        class="mb-3 grid gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Kategori</p>
+                            <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">
+                                {{ $spjTypeLabel($selectedSpjType) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Cara bayar</p>
+                            <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">
+                                {{ ['transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah', 'tunai' => 'Tunai'][$paymentMethod] ?? 'Belum diisi' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Penerima kuitansi</p>
+                            <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">
+                                {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Perlu dilengkapi</p>
+                            <p
+                                class="mt-1 font-semibold {{ $pendingChecklist->isEmpty() ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400' }}">
+                                {{ $pendingChecklist->isEmpty() ? 'Tidak ada' : $pendingChecklist->count() . ' data' }}
+                            </p>
+                        </div>
                     </div>
                     <details class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                        <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Lihat rincian data paket terkunci</summary>
+                        <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Lihat
+                            rincian data paket terkunci</summary>
                         <div class="border-t border-[var(--ui-line)] p-3">
                 @endif
-                <form method="POST" action="{{ route('spj.prepare', $transaction->id) }}" class="spj-builder-form rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3 sm:p-4">
+                <form method="POST" action="{{ route('spj.prepare', $transaction->id) }}"
+                    class="spj-builder-form rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3 sm:p-4">
                     @csrf
-                    <input type="hidden" name="ppn_rate" value="{{ $effectiveTaxRate($transaction->ppn_rate, $transaction->ppn) }}">
-                    <input type="hidden" name="pph21_rate" value="{{ $effectiveTaxRate($transaction->pph21_rate, $transaction->pph21) }}">
-                    <input type="hidden" name="pph22_rate" value="{{ $effectiveTaxRate($transaction->pph22_rate, $transaction->pph22) }}">
-                    <input type="hidden" name="pph23_rate" value="{{ $effectiveTaxRate($transaction->pph23_rate, $transaction->pph23) }}">
-                    <input type="hidden" name="pph4_rate" value="{{ $effectiveTaxRate($transaction->pph4_rate, $transaction->pph4) }}">
-                    <input type="hidden" name="sspd_rate" value="{{ $effectiveTaxRate($transaction->sspd_rate, $transaction->sspd) }}">
-                    @if($transaction->spjPackage && !$transaction->spjPackage->isEditable())
-                        <div class="mb-3 flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] px-3 py-2 text-sm text-[var(--ui-fg-strong)]"><span aria-hidden="true">🔒</span><p><strong>Paket terkunci.</strong> Batalkan penomoran lalu buka paket untuk koreksi sebelum mengubah isian.</p></div>
+                    <input type="hidden" name="ppn_rate"
+                        value="{{ $effectiveTaxRate($transaction->ppn_rate, $transaction->ppn) }}">
+                    <input type="hidden" name="pph21_rate"
+                        value="{{ $effectiveTaxRate($transaction->pph21_rate, $transaction->pph21) }}">
+                    <input type="hidden" name="pph22_rate"
+                        value="{{ $effectiveTaxRate($transaction->pph22_rate, $transaction->pph22) }}">
+                    <input type="hidden" name="pph23_rate"
+                        value="{{ $effectiveTaxRate($transaction->pph23_rate, $transaction->pph23) }}">
+                    <input type="hidden" name="pph4_rate"
+                        value="{{ $effectiveTaxRate($transaction->pph4_rate, $transaction->pph4) }}">
+                    <input type="hidden" name="sspd_rate"
+                        value="{{ $effectiveTaxRate($transaction->sspd_rate, $transaction->sspd) }}">
+                    @if ($transaction->spjPackage && !$transaction->spjPackage->isEditable())
+                        <div
+                            class="mb-3 flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] px-3 py-2 text-sm text-[var(--ui-fg-strong)]">
+                            <span aria-hidden="true">🔒</span>
+                            <p><strong>Paket terkunci.</strong> Batalkan penomoran lalu buka paket untuk koreksi sebelum
+                                mengubah isian.</p>
+                        </div>
                     @endif
                     <fieldset @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
-                    <div class="mb-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"><span class="font-black">*</span><p><strong>Wajib diisi.</strong> Penanda menyesuaikan kategori SPJ yang dipilih; field tanpa tanda bintang bersifat opsional atau terisi otomatis.</p></div>
-                    <div class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-3">
-                        <div>
-                            <label for="detail-spj-type" class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Kategori SPJ <span class="text-rose-600">* Wajib diisi</span></label>
-                            <select id="detail-spj-type" name="spj_category" x-model="category" class="ui-select mt-1">
-                                <option value="">Pilih kategori SPJ</option>
-                                @foreach(array_keys($spjGuidance) as $type)
-                                    <option value="{{ $type }}">{{ $spjGuidance[$type]['title'] }}</option>
-                                @endforeach
-                            </select>
+                        <div
+                            class="mb-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200">
+                            <span class="font-black">*</span>
+                            <p><strong>Wajib diisi.</strong> Penanda menyesuaikan kategori SPJ yang dipilih; field tanpa
+                                tanda bintang bersifat opsional atau terisi otomatis.</p>
                         </div>
-                        <div x-show="category === 'BARANG'" x-cloak class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
-                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Jenis Belanja Barang</p>
-                            <input type="hidden" name="is_siplah" x-model="isSiplah">
-                            <div class="mt-2 flex flex-wrap gap-3 text-sm text-[var(--ui-fg)]">
-                                <label class="inline-flex items-center gap-2"><input type="radio" :checked="isSiplah" @change="isSiplah = true; paymentMethod = 'siplah'"> Belanja SiPLah</label>
-                                <label class="inline-flex items-center gap-2"><input type="radio" :checked="!isSiplah" @change="isSiplah = false; if (paymentMethod === 'siplah') paymentMethod = 'tunai'"> Belanja offline</label>
-                            </div>
-                            <p class="mt-2 text-xs text-[var(--ui-fg-muted)]" x-text="isSiplah ? 'Gunakan data marketplace SiPLah.' : 'Gunakan data pesanan, BAP, dan BAST internal.'"></p>
-                        </div>
-                        <div class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
-                            @foreach($spjGuidance as $type => $guidance)
-                                <div x-show="category === '{{ $type }}'" class="text-xs text-[var(--ui-fg)]">
-                                    <p class="font-bold text-[var(--ui-fg-strong)]">{{ $guidance['title'] }}</p>
-                                    <p class="mt-0.5 leading-relaxed text-[var(--ui-fg-muted)]">{{ $guidance['description'] }}</p>
-                                </div>
-                            @endforeach
-                            <p x-show="!category" class="text-xs text-[var(--ui-fg-muted)]">Pilih kategori untuk menampilkan isian manual yang sesuai.</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Isian umum semua kategori</p>
-                        <div class="mt-2 grid gap-2 lg:grid-cols-4">
-                            <div class="lg:col-span-2">
-                                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dari ARKAS <span class="font-normal text-[var(--ui-fg-muted)]">(referensi readonly)</span></label>
-                                <textarea name="description" rows="2" readonly class="ui-textarea ui-input-readonly mt-1 text-sm">{{ $transaction->description }}</textarea>
-                            </div>
-                            <div class="lg:col-span-2">
-                                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dokumen / pembayaran <span class="text-rose-600">*</span></label>
-                                <textarea name="payment_description" rows="2" required class="ui-textarea mt-1 text-sm" placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea>
-                            </div>
+                        <div
+                            class="spj-builder-accent-panel grid gap-3 rounded-lg border border-[var(--ui-line)] p-3 lg:grid-cols-3">
                             <div>
-                                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode Pembayaran <span class="text-rose-600">*</span></label>
-                                <select name="payment_method" x-model="paymentMethod" required class="ui-select mt-1 text-sm">
-                                    <option value="transfer_bank" @selected($paymentMethod === 'transfer_bank')>Transfer Bank (CMS / Non Tunai)</option>
-                                    <option value="siplah" @selected($paymentMethod === 'siplah')>SiPLah Kemdikbud</option>
-                                    <option value="tunai" @selected($paymentMethod === 'tunai')>Tunai Kas BOS</option>
+                                <label for="detail-spj-type"
+                                    class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Kategori
+                                    SPJ <span class="text-rose-600">* Wajib diisi</span></label>
+                                <select id="detail-spj-type" name="spj_category" x-model="category"
+                                    class="ui-select mt-1">
+                                    <option value="">Pilih kategori SPJ</option>
+                                    @foreach (array_keys($spjGuidance) as $type)
+                                        <option value="{{ $type }}">{{ $spjGuidance[$type]['title'] }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
-                            <div>
-                                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi Pembayaran <span x-show="paymentMethod === 'siplah'" class="text-rose-600">*</span></label>
-                                <input name="payment_reference" x-bind:required="paymentMethod === 'siplah'" value="{{ $transaction->payment_reference }}" class="ui-input mt-1 text-sm" placeholder="No. cek/CMS/kuitansi">
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Kuitansi <span class="text-rose-600">*</span></label>
-                                <input name="receipt_recipient_name" required value="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}" class="ui-input mt-1 text-sm" placeholder="Boleh berbeda dari penerima BKU">
-                            </div>
-                        </div>
-                    </div>
-
-                    <fieldset x-show="paymentMethod === 'siplah'" :disabled="paymentMethod !== 'siplah'" x-cloak class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data Pembelian SiPLah</p>
-                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Nomor Pesanan SiPLah adalah nomor order marketplace dan berbeda dari Nomor Surat Pesanan SPJ yang diterbitkan aplikasi.</p>
-                        <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Penyedia SiPLah</label><input name="vendor_name" value="{{ $transaction->vendor_name }}" class="ui-input mt-1 text-sm" placeholder="Nama penyedia"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Pemilik/Penanggung Jawab</label><input name="vendor_owner" value="{{ $transaction->vendor_owner }}" class="ui-input mt-1 text-sm" placeholder="Opsional"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">NPWP Penyedia</label><input name="vendor_npwp" value="{{ $transaction->vendor_npwp }}" class="ui-input mt-1 text-sm" placeholder="NPWP penyedia"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nomor Pesanan SiPLah</label><input name="siplah_order_number" value="{{ $transaction->siplah_order_number }}" class="ui-input mt-1 text-sm" placeholder="Nomor order marketplace" required></div>
-                        </div>
-                    </fieldset>
-
-                    <div x-show="['BARANG','KONSUMSI'].includes(category)" x-cloak x-data="{ orderDate: @js($purchaseOrderDate), bapDate: @js($purchaseBapDate), bastDate: @js($purchaseBastDate), invoiceDate: @js($purchaseInvoiceDate) }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data pembelian barang/konsumsi</p>
-                        <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-4">
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. Invoice/Faktur <span x-show="paymentMethod === 'siplah'" class="text-rose-600">*</span></label><input name="invoice_number" x-bind:required="paymentMethod === 'siplah'" value="{{ $transaction->invoice_number }}" class="ui-input mt-1 text-sm" placeholder="No. invoice"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Invoice <span x-show="paymentMethod === 'siplah'" class="text-rose-600">*</span></label><input type="date" name="invoice_date" x-model="invoiceDate" x-bind:required="paymentMethod === 'siplah'" :min="paymentMethod === 'siplah' ? null : (bastDate || null)" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Status Invoice</label><input name="invoice_status" value="{{ $transaction->invoice_status }}" class="ui-input mt-1 text-sm" placeholder="Contoh: Lunas"></div>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. Pesanan <span class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input readonly name="order_number" value="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}" class="ui-input ui-input-readonly mt-1 text-sm"></div></template>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Pesanan</label><input type="date" name="order_date" x-model="orderDate" :max="bapDate || @js($transactionDateLimit)" class="ui-input mt-1 text-sm"></div></template>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAP <span class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input readonly name="bap_number" value="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}" class="ui-input ui-input-readonly mt-1 text-sm" placeholder="Terbit setelah penomoran"></div></template>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl BAP</label><input type="date" name="bap_date" x-model="bapDate" :min="orderDate || null" :max="bastDate || @js($transactionDateLimit)" class="ui-input mt-1 text-sm"></div></template>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAST <span class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input readonly name="bast_number" value="{{ $purchaseDetails?->bast_number ?: $transaction->bast_number }}" class="ui-input ui-input-readonly mt-1 text-sm" placeholder="Terbit setelah penomoran"></div></template>
-                            <template x-if="paymentMethod !== 'siplah'"><div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl BAST</label><input type="date" name="bast_date" x-model="bastDate" :min="bapDate || null" :max="invoiceDate || @js($transactionDateLimit)" class="ui-input mt-1 text-sm"></div></template>
-                        </div>
-                    </div>
-
-                    <fieldset x-show="category === 'KONSUMSI'" :disabled="category !== 'KONSUMSI'" x-cloak x-data="{ rows: @js($participantRows), dapodikRows: @js($dapodikParticipantRows), participantCount: {{ (int) old('participant_count', $transaction->participant_count ?: collect($participantRows)->sum('portions')) }}, dragIndex: null, get portionTotal() { return this.rows.reduce((total, row) => total + (parseInt(row.portions) || 0), 0); }, fillTeachers() { this.rows = this.dapodikRows.map(row => ({...row})); this.participantCount = this.portionTotal; }, move(index, direction) { const target = index + direction; if (target < 0 || target >= this.rows.length) return; [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]]; this.rows = [...this.rows]; }, dropAt(index) { if (this.dragIndex === null || this.dragIndex === index) return; const [row] = this.rows.splice(this.dragIndex, 1); this.rows.splice(index, 0, row); this.rows = [...this.rows]; this.dragIndex = null; } }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data acara & peserta konsumsi</p><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Peserta digunakan sebagai dasar porsi konsumsi.</p></div>
-                            <div class="flex flex-wrap gap-2"><button type="button" @click="fillTeachers()" class="ui-btn ui-btn-secondary px-2.5 py-1.5 text-xs font-bold">Ambil semua pegawai terdaftar</button><button type="button" @click="rows.push({name:'', position:'', portions:1})" class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Peserta manual</button></div>
-                        </div>
-                        <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nama Acara/Rapat <span class="text-rose-600">*</span></label><input required name="event_name" value="{{ old('event_name', $transaction->event_name) }}" class="ui-input mt-1 text-sm" placeholder="Nama acara/rapat"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tempat Pelaksanaan <span class="text-rose-600">*</span></label><input required name="event_location" value="{{ old('event_location', $transaction->event_location) }}" class="ui-input mt-1 text-sm" placeholder="Tempat"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tanggal Kegiatan <span class="text-rose-600">*</span></label><input required type="date" name="event_date" value="{{ old('event_date', $transaction->event_date?->format('Y-m-d') ?: $transactionDateLimit) }}" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Jumlah Peserta <span class="text-rose-600">*</span></label><input required type="number" min="1" step="1" name="participant_count" x-model.number="participantCount" class="ui-input mt-1 text-sm" :class="participantCount === portionTotal ? '' : 'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200'"></div>
-                        </div>
-                        <p x-show="participantCount !== portionTotal" class="mt-2 rounded-md border border-rose-300 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300" x-text="'Jumlah peserta harus sama dengan total porsi (' + portionTotal + ').'"></p>
-                        <div class="mt-2 overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead><tr class="border-b border-[var(--ui-line)] text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]"><th class="px-2 py-1.5">No</th><th class="px-2 py-1.5">Nama peserta</th><th class="px-2 py-1.5">Jabatan/Instansi</th><th class="px-2 py-1.5 text-right">Porsi</th><th class="px-2 py-1.5 text-right">Aksi</th></tr></thead>
-                                <tbody>
-                                    <template x-for="(row, index) in rows" :key="index">
-                                        <tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-[var(--ui-surface-base)] shadow-sm' : ''" class="border-b border-[var(--ui-line-subtle)]">
-                                            <td class="px-2 py-1.5 font-semibold text-[var(--ui-fg-muted)]"><div class="flex items-center gap-2"><button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-1.5 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span x-text="index + 1"></span></div></td>
-                                            <td class="px-2 py-1.5"><input :name="`participants[${index}][name]`" x-model="row.name" aria-label="Nama peserta" class="ui-input py-1.5 text-sm" placeholder="Nama lengkap"></td>
-                                            <td class="px-2 py-1.5"><input :name="`participants[${index}][position]`" x-model="row.position" aria-label="Jabatan atau instansi" class="ui-input py-1.5 text-sm" placeholder="Jabatan/instansi"></td>
-                                            <td class="px-2 py-1.5"><input required type="number" min="1" step="1" :name="`participants[${index}][portions]`" x-model.number="row.portions" aria-label="Jumlah porsi" class="ui-input py-1.5 text-right text-sm w-20"></td>
-                                            <td class="px-2 py-1.5"><div class="flex items-center justify-end gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:cursor-not-allowed disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:cursor-not-allowed disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-300 dark:border-rose-800 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40">Hapus</button></div></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </fieldset>
-
-                    <fieldset x-show="category === 'PEMELIHARAAN'" :disabled="category !== 'PEMELIHARAAN'" x-cloak x-data="{ rows: @js($workerRows), dragIndex: null, move(index, direction) { const target = index + direction; if (target < 0 || target >= this.rows.length) return; [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]]; this.rows = [...this.rows]; }, dropAt(index) { if (this.dragIndex === null || this.dragIndex === index) return; const [row] = this.rows.splice(this.dragIndex, 1); this.rows.splice(index, 0, row); this.rows = [...this.rows]; this.dragIndex = null; } }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Work order pemeliharaan</p><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">1 transaksi pemeliharaan → 1 work order → banyak pekerja.</p></div>
-                            <button type="button" @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})" class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Pekerja</button>
-                        </div>
-                        <div class="mt-2 grid gap-2 lg:grid-cols-4">
-                            <div class="lg:col-span-1">
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Deskripsi Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
-                                <input name="work_description" value="{{ $workDetails?->work_description ?: $transaction->work_description }}" class="ui-input mt-1 text-sm" placeholder="Uraian pekerjaan" required>
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Lokasi Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
-                                <input name="work_location" value="{{ $workDetails?->work_location ?: $transaction->work_location }}" class="ui-input mt-1 text-sm" placeholder="Lokasi pekerjaan" required>
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. SPK <span class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label>
-                                <input readonly name="spk_number" value="{{ $workDetails?->spk_number ?: $transaction->spk_number }}" class="ui-input ui-input-readonly mt-1 text-sm" placeholder="Terbit setelah penomoran">
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl SPK</label>
-                                <input type="date" name="spk_date" value="{{ $workDetails?->spk_date?->format('Y-m-d') ?: $transaction->spk_date?->format('Y-m-d') ?: $transactionDateLimit }}" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
-                            </div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. RAB <span class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input readonly name="rab_number" value="{{ $workDetails?->rab_number }}" class="ui-input ui-input-readonly mt-1 text-sm" placeholder="Terbit setelah penomoran"></div>
-                            <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl RAB</label><input type="date" name="rab_date" value="{{ $workDetails?->rab_date?->format('Y-m-d') ?: $transactionDateLimit }}" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Mulai</label>
-                                <input type="date" name="work_started_at" value="{{ $transaction->work_started_at?->format('Y-m-d') ?: $transactionDateLimit }}" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Selesai</label>
-                                <input type="date" name="work_completed_at" value="{{ $transaction->work_completed_at?->format('Y-m-d') ?: $transactionDateLimit }}" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
-                            </div>
-                        </div>
-                        <div class="mt-2 overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead>
-                                    <tr class="border-b border-[var(--ui-line)] text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
-                                        <th class="w-10 px-2 py-1.5">No</th>
-                                        <th class="min-w-44 px-2 py-1">Nama Pekerja</th>
-                                        <th class="min-w-52 px-2 py-1">Uraian Pekerjaan</th>
-                                        <th class="w-24 px-2 py-1">Hari</th>
-                                        <th class="w-32 px-2 py-1">Tarif</th>
-                                        <th class="w-36 px-2 py-1">Penerima</th>
-                                        <th class="min-w-44 px-2 py-1.5">Catatan</th>
-                                        <th class="w-20 px-2 py-1.5 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="(row, index) in rows" :key="index">
-                                        <tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-[var(--ui-surface-base)] shadow-sm' : ''" class="border-b border-[var(--ui-line-subtle)]">
-                                            <td class="px-2 py-1 font-semibold text-[var(--ui-fg-muted)]"><div class="flex items-center gap-2">
-                                                <button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span x-text="index + 1"></span></div></td>
-                                            <td class="px-2 py-1">
-                                                <input :name="`workers[${index}][name]`" x-model="row.name" class="ui-input py-1.5 text-sm" placeholder="Nama pekerja"></td>
-                                            <td class="px-2 py-1">
-                                                <input :name="`workers[${index}][job_description]`" x-model="row.job_description" class="ui-input py-1.5 text-sm" placeholder="Jenis pekerjaan"></td>
-                                            <td class="px-2 py-1">
-                                                <input type="number" min="0" step=".5" :name="`workers[${index}][work_days]`" x-model="row.work_days" class="ui-input py-1.5 text-right text-sm w-20" placeholder="Hari"></td>
-                                            <td class="px-2 py-1">
-                                                <input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="ui-input py-1.5 text-right text-sm w-28" placeholder="0"></td>
-                                            <td class="px-2 py-1 text-center">
-                                                <span class="inline-flex items-center gap-1.5 rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs text-[var(--ui-fg)]"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient" class="rounded border-[var(--ui-line)] text-[var(--theme-action-bg)]"> Ya</span></td>
-                                            <td class="px-2 py-1">
-                                                <input :name="`workers[${index}][notes]`" x-model="row.notes" class="ui-input py-1.5 text-sm" placeholder="Catatan"></td>
-                                            <td class="px-2 py-1"><div class="flex items-center justify-end gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-300 dark:border-rose-800 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40">Hapus</button></div></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </fieldset>
-
-                    <fieldset x-show="category === 'SPPD'" :disabled="category !== 'SPPD'" x-cloak x-data="{ rows: @js($travelRows), employees: @js($employeeOptions), dragIndex: null, addEmployee() { const employee = this.employees.find(item => String(item.id) === String(this.$refs.employeePicker.value)); if (!employee || this.rows.some(row => row.employee_id === employee.id)) return; this.rows.push({employee_id:employee.id, traveler_name:employee.name, destination:'', purpose:'', assignment_letter_number:'', assignment_letter_date:@js($transactionDateLimit), departure_date:@js($transactionDateLimit), return_date:@js($transactionDateLimit), transport_mode:'', amount:0, notes:'', position:employee.position}); this.$refs.employeePicker.value = ''; }, move(index, direction) { const target = index + direction; if (target < 0 || target >= this.rows.length) return; [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]]; this.rows = [...this.rows]; }, dropAt(index) { if (this.dragIndex === null || this.dragIndex === index) return; const [row] = this.rows.splice(this.dragIndex, 1); this.rows.splice(index, 0, row); this.rows = [...this.rows]; this.dragIndex = null; } }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Pelaksana perjalanan dinas</p><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Satu pembayaran dapat memuat lebih dari satu pelaksana.</p></div>
-                            <div class="flex flex-wrap gap-2"><select x-ref="employeePicker" class="ui-select min-w-56 px-2.5 py-1.5 text-xs"><option value="">Pilih pegawai terdaftar</option><template x-for="employee in employees" :key="employee.id"><option :value="employee.id" x-text="employee.name + (employee.position ? ' · ' + employee.position : '')"></option></template></select><button type="button" @click="addEmployee()" class="ui-btn ui-btn-secondary px-2.5 py-1.5 text-xs font-bold">Ambil pegawai</button><button type="button" @click="rows.push({traveler_name:'', destination:'', purpose:'', assignment_letter_number:'', assignment_letter_date:@js($transactionDateLimit), departure_date:@js($transactionDateLimit), return_date:@js($transactionDateLimit), transport_mode:'', amount:0, notes:''})" class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Manual</button></div>
-                        </div>
-                        <div class="mt-2 space-y-2">
-                            <template x-for="(row, index) in rows" :key="index">
-                                <div @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'ring-2 ring-[var(--theme-focus-ring)]' : ''" class="grid gap-2 rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2 md:grid-cols-6">
-                                    <div class="flex items-center gap-2 md:col-span-6"><button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span class="text-xs font-bold text-[var(--theme-content-accent)]" x-text="'Urutan ' + (index + 1)"></span></div>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nama Pelaksana <span class="text-rose-600">*</span></span><input :name="`travels[${index}][traveler_name]`" x-model="row.traveler_name" class="ui-input mt-1 text-sm" placeholder="Nama pelaksana" required></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tujuan</span><input :name="`travels[${index}][destination]`" x-model="row.destination" class="ui-input mt-1 text-sm" placeholder="Tujuan"></label>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Maksud Perjalanan</span><input :name="`travels[${index}][purpose]`" x-model="row.purpose" class="ui-input mt-1 text-sm" placeholder="Maksud perjalanan"></label>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. Surat Tugas <span class="text-emerald-700 dark:text-emerald-400">(otomatis)</span></span><input readonly :name="`travels[${index}][assignment_letter_number]`" x-model="row.assignment_letter_number" class="ui-input ui-input-readonly mt-1 text-sm" placeholder="Terbit setelah penomoran"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Surat Tugas</span><input type="date" :name="`travels[${index}][assignment_letter_date]`" x-model="row.assignment_letter_date" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Transport</span><input :name="`travels[${index}][transport_mode]`" x-model="row.transport_mode" class="ui-input mt-1 text-sm" placeholder="Transport"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Berangkat</span><input type="date" :name="`travels[${index}][departure_date]`" x-model="row.departure_date" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Pulang</span><input type="date" :name="`travels[${index}][return_date]`" x-model="row.return_date" max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></label>
-                                    <label class="block"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nilai</span><input type="number" min="0" step="0.01" :name="`travels[${index}][amount]`" x-model="row.amount" class="ui-input mt-1 text-right text-sm" placeholder="Nilai"></label>
-                                    <label class="block md:col-span-2"><span class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Catatan</span><input :name="`travels[${index}][notes]`" x-model="row.notes" class="ui-input mt-1 text-sm" placeholder="Catatan"></label>
-                                    <div class="flex items-end gap-1"><button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm font-bold disabled:opacity-35">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm font-bold disabled:opacity-35">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-300 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40">Hapus</button></div>
+                            <div x-show="category === 'BARANG'" x-cloak
+                                class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
+                                <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Jenis
+                                    Belanja Barang</p>
+                                <input type="hidden" name="is_siplah" x-model="isSiplah">
+                                <div class="mt-2 flex flex-wrap gap-3 text-sm text-[var(--ui-fg)]">
+                                    <label class="inline-flex items-center gap-2"><input type="radio"
+                                            :checked="isSiplah" @change="isSiplah = true; paymentMethod = 'siplah'">
+                                        Belanja SiPLah</label>
+                                    <label class="inline-flex items-center gap-2"><input type="radio"
+                                            :checked="!isSiplah"
+                                            @change="isSiplah = false; if (paymentMethod === 'siplah') paymentMethod = 'tunai'">
+                                        Belanja offline</label>
                                 </div>
-                            </template>
+                                <p class="mt-2 text-xs text-[var(--ui-fg-muted)]"
+                                    x-text="isSiplah ? 'Gunakan data marketplace SiPLah.' : 'Gunakan data pesanan, BAP, dan BAST internal.'">
+                                </p>
+                            </div>
+                            <div
+                                class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/80 p-2.5">
+                                @foreach ($spjGuidance as $type => $guidance)
+                                    <div x-show="category === '{{ $type }}'"
+                                        class="text-xs text-[var(--ui-fg)]">
+                                        <p class="font-bold text-[var(--ui-fg-strong)]">{{ $guidance['title'] }}</p>
+                                        <p class="mt-0.5 leading-relaxed text-[var(--ui-fg-muted)]">
+                                            {{ $guidance['description'] }}</p>
+                                    </div>
+                                @endforeach
+                                <p x-show="!category" class="text-xs text-[var(--ui-fg-muted)]">Pilih kategori untuk
+                                    menampilkan isian manual yang sesuai.</p>
+                            </div>
                         </div>
-                    </fieldset>
 
-                    <fieldset x-show="category === 'HONOR_PEGAWAI'" :disabled="category !== 'HONOR_PEGAWAI'" x-cloak x-data="{ rows: @js($honorRows), transactionTotal: {{ (float) $transaction->gross_amount }}, dragIndex: null, get detailTotal() { return this.rows.reduce((total, row) => total + ((parseInt(row.work_days) || 0) * (Number(row.daily_rate) || 0)), 0); }, move(index, direction) { const target = index + direction; if (target < 0 || target >= this.rows.length) return; [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]]; this.rows = [...this.rows]; }, dropAt(index) { if (this.dragIndex === null || this.dragIndex === index) return; const [row] = this.rows.splice(this.dragIndex, 1); this.rows.splice(index, 0, row); this.rows = [...this.rows]; this.dragIndex = null; } }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data penerima honor</p><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Gunakan baris ini untuk beberapa penerima honor dalam satu transaksi.</p></div>
-                            <button type="button" @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})" class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs">+ Penerima</button>
+                        <div class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Isian umum
+                                semua kategori</p>
+                            <div class="mt-2 grid gap-2 lg:grid-cols-4">
+                                <div class="lg:col-span-2">
+                                    <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dari ARKAS
+                                        <span class="font-normal text-[var(--ui-fg-muted)]">(referensi
+                                            readonly)</span></label>
+                                    <textarea name="description" rows="2" readonly class="ui-textarea ui-input-readonly mt-1 text-sm">{{ $transaction->description }}</textarea>
+                                </div>
+                                <div class="lg:col-span-2">
+                                    <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian dokumen /
+                                        pembayaran <span class="text-rose-600">*</span></label>
+                                    <textarea name="payment_description" rows="2" required class="ui-textarea mt-1 text-sm"
+                                        placeholder="Uraian yang akan dipakai pada dokumen SPJ">{{ $transaction->payment_description }}</textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode Pembayaran
+                                        <span class="text-rose-600">*</span></label>
+                                    <select name="payment_method" x-model="paymentMethod" required
+                                        class="ui-select mt-1 text-sm">
+                                        <option value="transfer_bank" @selected($paymentMethod === 'transfer_bank')>Transfer Bank (CMS /
+                                            Non Tunai)</option>
+                                        <option value="siplah" @selected($paymentMethod === 'siplah')>SiPLah Kemdikbud</option>
+                                        <option value="tunai" @selected($paymentMethod === 'tunai')>Tunai Kas BOS</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi
+                                        Pembayaran <span x-show="paymentMethod === 'siplah'"
+                                            class="text-rose-600">*</span></label>
+                                    <input name="payment_reference" x-bind:required="paymentMethod === 'siplah'"
+                                        value="{{ $transaction->payment_reference }}" class="ui-input mt-1 text-sm"
+                                        placeholder="No. cek/CMS/kuitansi">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Kuitansi
+                                        <span class="text-rose-600">*</span></label>
+                                    <input name="receipt_recipient_name" required
+                                        value="{{ $transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name }}"
+                                        class="ui-input mt-1 text-sm" placeholder="Boleh berbeda dari penerima BKU">
+                                </div>
+                            </div>
                         </div>
-                        <div class="mt-2 overflow-x-auto rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                            <table class="min-w-full text-sm">
-                                <thead>
-                                    <tr class="text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
-                                        <th class="w-10 px-2 py-1.5">No</th>
-                                        <th class="min-w-44 px-2 py-1">Nama Penerima <span class="text-rose-600">*</span></th>
-                                        <th class="min-w-52 px-2 py-1">Jabatan/Jenis Honor <span class="text-rose-600">*</span></th>
-                                        <th class="w-24 px-2 py-1">Bulan/Kali <span class="text-rose-600">*</span></th>
-                                        <th class="w-32 px-2 py-1">Tarif <span class="text-rose-600">*</span></th>
-                                        <th class="w-36 px-2 py-1">Penerima Kuitansi</th>
-                                        <th class="w-36 px-2 py-1">Catatan</th>
-                                        <th class="w-20 px-2 py-1.5">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="(row, index) in rows" :key="index">
-                                <tr @dragover.prevent @drop.prevent="dropAt(index)" :class="dragIndex === index ? 'bg-[var(--ui-surface-soft)]' : ''" class="border-t border-[var(--ui-line)]">
-                                    <td class="px-2 py-2"><div class="flex items-center gap-2">
-                                        <button type="button" draggable="true" @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'" @dragend="dragIndex = null" title="Seret untuk mengubah urutan" class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span class="text-xs font-bold text-[var(--theme-content-accent)]" x-text="index + 1"></span></div>
-                                    </td>
-                                    <td class="px-2 py-2"><input :name="`workers[${index}][name]`" x-model="row.name" required class="ui-input px-2 py-1.5 text-sm" placeholder="Nama penerima"></td>
-                                    <td class="px-2 py-2"><input :name="`workers[${index}][job_description]`" x-model="row.job_description" required class="ui-input px-2 py-1.5 text-sm" placeholder="Jabatan/jenis honor"></td>
-                                        <td class="px-2 py-2"><input type="number" min="1" step="1" required :name="`workers[${index}][work_days]`" :value="parseInt(row.work_days) || 1" @input="row.work_days = parseInt($event.target.value) || 1" class="ui-input px-2 py-1.5 text-right text-sm" placeholder="1">
-                                        </td>
-                                        <td class="px-2 py-2"><input type="hidden" :name="`workers[${index}][daily_rate]`" :value="row.daily_rate"><input type="text" inputmode="numeric" required :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) || 0)" @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)" class="ui-input px-2 py-1.5 text-right text-sm" placeholder="0">
-                                        </td>
-                                        <td class="px-2 py-2 text-center"><label class="inline-flex items-center gap-1.5 rounded-md border border-[var(--ui-line)] px-2 py-1.5 text-[var(--ui-fg)]"><input type="hidden" :name="`workers[${index}][is_receipt_recipient]`" value="0"><input type="checkbox" :name="`workers[${index}][is_receipt_recipient]`" value="1" x-model="row.is_receipt_recipient"> Ya</label></td>
-                                        <td class="px-2 py-2"><input :name="`workers[${index}][notes]`" x-model="row.notes" class="ui-input px-2 py-1.5 text-sm" placeholder="Catatan"></td>
-                                        <td class="px-2 py-2"><div class="flex items-center gap-1">
-                                            <button type="button" @click="move(index, -1)" :disabled="index === 0" title="Naikkan urutan" class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm">↑</button><button type="button" @click="move(index, 1)" :disabled="index === rows.length - 1" title="Turunkan urutan" class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm">↓</button><button type="button" @click="rows.splice(index, 1)" class="rounded-md border border-rose-200 px-2 py-1.5 text-xs font-bold text-rose-700 dark:border-rose-800 dark:text-rose-300">Hapus</button></div>
-                                        </td>
-                                    </tr>
 
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                            <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2"><p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Nilai transaksi</p><p class="mt-1 font-mono text-sm font-bold text-[var(--ui-fg-strong)]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(transactionTotal)"></p></div>
-                            <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2"><p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Total rincian honor</p><p class="mt-1 font-mono text-sm font-bold" :class="Math.abs(detailTotal-transactionTotal)<0.01?'text-emerald-700 dark:text-emerald-300':'text-rose-700 dark:text-rose-300'" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(detailTotal)"></p></div>
-                            <div class="rounded-lg border px-3 py-2" :class="Math.abs(detailTotal-transactionTotal)<0.01?'border-emerald-200 bg-emerald-50':'border-rose-200 bg-rose-50'"><p class="text-[11px] font-bold uppercase" :class="Math.abs(detailTotal-transactionTotal)<0.01?'text-emerald-700':'text-rose-700'">Kesesuaian</p><p class="mt-1 text-sm font-bold" :class="Math.abs(detailTotal-transactionTotal)<0.01?'text-emerald-800':'text-rose-800'" x-text="Math.abs(detailTotal-transactionTotal)<0.01?'Sesuai':'Selisih Rp ' + new Intl.NumberFormat('id-ID').format(Math.abs(detailTotal-transactionTotal))"></p></div>
-                        </div>
-                    </fieldset>
+                        <fieldset x-show="paymentMethod === 'siplah'" :disabled="paymentMethod !== 'siplah'" x-cloak
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <p
+                                class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                Data Pembelian SiPLah</p>
+                            <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Nomor Pesanan SiPLah adalah nomor order
+                                marketplace dan berbeda dari Nomor Surat Pesanan SPJ yang diterbitkan aplikasi.</p>
+                            <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Penyedia
+                                        SiPLah</label><input name="vendor_name"
+                                        value="{{ $transaction->vendor_name }}" class="ui-input mt-1 text-sm"
+                                        placeholder="Nama penyedia"></div>
+                                <div><label
+                                        class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Pemilik/Penanggung
+                                        Jawab</label><input name="vendor_owner"
+                                        value="{{ $transaction->vendor_owner }}" class="ui-input mt-1 text-sm"
+                                        placeholder="Opsional"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">NPWP
+                                        Penyedia</label><input name="vendor_npwp"
+                                        value="{{ $transaction->vendor_npwp }}" class="ui-input mt-1 text-sm"
+                                        placeholder="NPWP penyedia"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nomor Pesanan
+                                        SiPLah</label><input name="siplah_order_number"
+                                        value="{{ $transaction->siplah_order_number }}" class="ui-input mt-1 text-sm"
+                                        placeholder="Nomor order marketplace" required></div>
+                            </div>
+                        </fieldset>
 
-                    @php($serviceRecipientRows = old('service_recipients', $transaction->serviceRecipients->map(fn ($recipient) => $recipient->only(['name', 'service_type', 'quantity', 'unit', 'rental_days', 'daily_rate', 'usage_started_at', 'usage_completed_at', 'payment_reference', 'agreement_number', 'agreement_date']))->map(fn ($recipient) => [...$recipient, 'usage_started_at' => optional($recipient['usage_started_at'])->format('Y-m-d'), 'usage_completed_at' => optional($recipient['usage_completed_at'])->format('Y-m-d'), 'agreement_date' => optional($recipient['agreement_date'])->format('Y-m-d')])->values()->all() ?: [['name'=>'','service_type'=>'Jasa sewa harian','quantity'=>1,'unit'=>'unit','rental_days'=>1,'daily_rate'=>0,'usage_started_at'=>$transactionDateLimit,'usage_completed_at'=>$transactionDateLimit,'payment_reference'=>'','agreement_number'=>'','agreement_date'=>$transactionDateLimit]]))
-                    <fieldset x-show="category === 'JASA_LAINNYA'" :disabled="category !== 'JASA_LAINNYA'" x-cloak x-data="{ rows:@js($serviceRecipientRows), dragIndex:null, total(){return this.rows.reduce((sum,row)=>sum+(Number(row.quantity)||0)*(Number(row.rental_days)||0)*(Number(row.daily_rate)||0),0)}, add(){this.rows.push({name:'',service_type:'Jasa sewa harian',quantity:1,unit:'unit',rental_days:1,daily_rate:0,usage_started_at:@js($transactionDateLimit),usage_completed_at:@js($transactionDateLimit),payment_reference:'',agreement_number:'',agreement_date:@js($transactionDateLimit)})}, move(i,d){const t=i+d;if(t<0||t>=this.rows.length)return;[this.rows[i],this.rows[t]]=[this.rows[t],this.rows[i]];this.rows=[...this.rows]}, dropAt(i){if(this.dragIndex===null||this.dragIndex===i)return;const [row]=this.rows.splice(this.dragIndex,1);this.rows.splice(i,0,row);this.rows=[...this.rows];this.dragIndex=null} }" class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Daftar penerima pembayaran jasa</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Lampiran pembayaran menjadi bukti; total harus sama dengan BKU.</p></div><button type="button" @click="add()" class="ui-btn ui-btn-secondary px-3 py-1.5 text-xs font-bold">+ Penerima</button></div><div class="mt-3 overflow-x-auto"><table class="min-w-[1100px] w-full text-sm"><thead class="text-left text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]"><tr><th>No</th><th>Nama penerima</th><th>Jenis jasa</th><th>Jumlah</th><th>Satuan</th><th>Hari</th><th>Tarif/hari</th><th>Mulai</th><th>Selesai</th><th>Ref. bayar</th><th>PKS</th><th class="text-right">Aksi</th></tr></thead><tbody><template x-for="(row,index) in rows" :key="index"><tr @dragover.prevent @drop.prevent="dropAt(index)" class="border-t border-[var(--ui-line)]"><td><button type="button" draggable="true" @dragstart="dragIndex=index" @dragend="dragIndex=null" class="cursor-grab px-2">⋮⋮</button><span x-text="index+1"></span></td><td><input required :name="`service_recipients[${index}][name]`" x-model="row.name" class="ui-input text-sm"></td><td><input required :name="`service_recipients[${index}][service_type]`" x-model="row.service_type" class="ui-input text-sm"></td><td><input type="number" :name="`service_recipients[${index}][quantity]`" x-model.number="row.quantity" class="ui-input w-16 text-sm"></td><td><input :name="`service_recipients[${index}][unit]`" x-model="row.unit" class="ui-input w-16 text-sm"></td><td><input type="number" step=".5" :name="`service_recipients[${index}][rental_days]`" x-model.number="row.rental_days" class="ui-input w-16 text-sm"></td><td><input type="number" :name="`service_recipients[${index}][daily_rate]`" x-model.number="row.daily_rate" class="ui-input w-28 text-sm"></td><td><input type="date" :name="`service_recipients[${index}][usage_started_at]`" x-model="row.usage_started_at" max="{{ $transactionDateLimit }}" class="ui-input text-sm"></td><td><input type="date" :name="`service_recipients[${index}][usage_completed_at]`" x-model="row.usage_completed_at" max="{{ $transactionDateLimit }}" class="ui-input text-sm"></td><td><input :name="`service_recipients[${index}][payment_reference]`" x-model="row.payment_reference" class="ui-input text-sm"></td><td><input :name="`service_recipients[${index}][agreement_number]`" x-model="row.agreement_number" class="ui-input text-sm"></td><td class="text-right"><button type="button" @click="move(index,-1)" :disabled="index===0" class="ui-btn ui-btn-ghost px-2">↑</button><button type="button" @click="move(index,1)" :disabled="index===rows.length-1" class="ui-btn ui-btn-ghost px-2">↓</button><button type="button" @click="rows.splice(index,1)" class="ui-btn ui-btn-ghost px-2 text-rose-700">Hapus</button></td></tr></template></tbody></table></div></fieldset>
-                    <div class="mt-3 flex flex-wrap items-center gap-3">
-                        <button @disabled(($transaction->spjPackage && !$transaction->spjPackage->isEditable()) || $transaction->items->isEmpty()) class="ui-btn ui-btn-primary justify-center px-4 py-2 text-sm">
-                            {{ $transaction->spjPackage ? ($transaction->spjPackage->isEditable() ? 'Simpan Perbaikan Paket' : 'Paket Terkunci') : 'Buat Paket SPJ' }}
-                        </button>
-                        <p class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->spjPackage?->isEditable() ? 'Paket sudah ada tetapi belum dikunci. Koreksi data lalu simpan kembali.' : 'Isi hanya bagian yang sesuai kategori. Bagian lain otomatis disembunyikan.' }}</p>
-                    </div>
-                    @if($transaction->items->isEmpty())
-                        <p class="mt-2 text-xs text-rose-600">Paket belum dapat dibuat karena rincian transaksi belum tersedia.</p>
-                    @elseif(!$descriptionsComplete)
-                        <p class="mt-2 text-xs text-amber-700">{{ $descriptionsFilled }} dari {{ $transaction->items->count() }} uraian item sudah lengkap. Simpan uraian di tabel bawah sebelum membuat paket.</p>
-                    @endif
+                        <div x-show="['BARANG','KONSUMSI'].includes(category)" x-cloak x-data="{ orderDate: @js($purchaseOrderDate), bapDate: @js($purchaseBapDate), bastDate: @js($purchaseBastDate), invoiceDate: @js($purchaseInvoiceDate) }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <p
+                                class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                Data pembelian barang/konsumsi</p>
+                            <div class="mt-2 grid gap-2 md:grid-cols-3 xl:grid-cols-4">
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No.
+                                        Invoice/Faktur <span x-show="paymentMethod === 'siplah'"
+                                            class="text-rose-600">*</span></label><input name="invoice_number"
+                                        x-bind:required="paymentMethod === 'siplah'"
+                                        value="{{ $transaction->invoice_number }}" class="ui-input mt-1 text-sm"
+                                        placeholder="No. invoice"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Invoice
+                                        <span x-show="paymentMethod === 'siplah'"
+                                            class="text-rose-600">*</span></label><input type="date"
+                                        name="invoice_date" x-model="invoiceDate"
+                                        x-bind:required="paymentMethod === 'siplah'"
+                                        :min="paymentMethod === 'siplah' ? null : (bastDate || null)"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Status
+                                        Invoice</label><input name="invoice_status"
+                                        value="{{ $transaction->invoice_status }}" class="ui-input mt-1 text-sm"
+                                        placeholder="Contoh: Lunas"></div>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No.
+                                            Pesanan <span
+                                                class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input
+                                            readonly name="order_number"
+                                            value="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}"
+                                            class="ui-input ui-input-readonly mt-1 text-sm"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            Pesanan</label><input type="date" name="order_date"
+                                            x-model="orderDate" :max="bapDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAP
+                                            <span
+                                                class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input
+                                            readonly name="bap_number"
+                                            value="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}"
+                                            class="ui-input ui-input-readonly mt-1 text-sm"
+                                            placeholder="Terbit setelah penomoran"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            BAP</label><input type="date" name="bap_date" x-model="bapDate"
+                                            :min="orderDate || null" :max="bastDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. BAST
+                                            <span
+                                                class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input
+                                            readonly name="bast_number"
+                                            value="{{ $purchaseDetails?->bast_number ?: $transaction->bast_number }}"
+                                            class="ui-input ui-input-readonly mt-1 text-sm"
+                                            placeholder="Terbit setelah penomoran"></div>
+                                </template>
+                                <template x-if="paymentMethod !== 'siplah'">
+                                    <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                            BAST</label><input type="date" name="bast_date" x-model="bastDate"
+                                            :min="bapDate || null" :max="invoiceDate || @js($transactionDateLimit)"
+                                            class="ui-input mt-1 text-sm"></div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <fieldset x-show="category === 'KONSUMSI'" :disabled="category !== 'KONSUMSI'" x-cloak
+                            x-data="{
+                                rows: @js($participantRows),
+                                dapodikRows: @js($dapodikParticipantRows),
+                                participantCount: {{ (int) old('participant_count', $transaction->participant_count ?: collect($participantRows)->sum('portions')) }},
+                                dragIndex: null,
+                                get portionTotal() { return this.rows.reduce((total, row) => total + (parseInt(row.portions) || 0), 0); },
+                                fillTeachers() {
+                                    this.rows = this.dapodikRows.map(row => ({ ...row }));
+                                    this.participantCount = this.portionTotal;
+                                },
+                                move(index, direction) {
+                                    const target = index + direction;
+                                    if (target < 0 || target >= this.rows.length) return;
+                                    [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]];
+                                    this.rows = [...this.rows];
+                                },
+                                dropAt(index) {
+                                    if (this.dragIndex === null || this.dragIndex === index) return;
+                                    const [row] = this.rows.splice(this.dragIndex, 1);
+                                    this.rows.splice(index, 0, row);
+                                    this.rows = [...this.rows];
+                                    this.dragIndex = null;
+                                }
+                            }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p
+                                        class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                        Data acara & peserta konsumsi</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Peserta digunakan sebagai dasar
+                                        porsi konsumsi.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2"><button type="button" @click="fillTeachers()"
+                                        class="ui-btn ui-btn-secondary px-2.5 py-1.5 text-xs font-bold">Ambil semua
+                                        pegawai terdaftar</button><button type="button"
+                                        @click="rows.push({name:'', position:'', portions:1})"
+                                        class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Peserta
+                                        manual</button></div>
+                            </div>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nama
+                                        Acara/Rapat <span class="text-rose-600">*</span></label><input required
+                                        name="event_name" value="{{ old('event_name', $transaction->event_name) }}"
+                                        class="ui-input mt-1 text-sm" placeholder="Nama acara/rapat"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tempat
+                                        Pelaksanaan <span class="text-rose-600">*</span></label><input required
+                                        name="event_location"
+                                        value="{{ old('event_location', $transaction->event_location) }}"
+                                        class="ui-input mt-1 text-sm" placeholder="Tempat"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tanggal
+                                        Kegiatan <span class="text-rose-600">*</span></label><input required
+                                        type="date" name="event_date"
+                                        value="{{ old('event_date', $transaction->event_date?->format('Y-m-d') ?: $transactionDateLimit) }}"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Jumlah Peserta
+                                        <span class="text-rose-600">*</span></label><input required type="number"
+                                        min="1" step="1" name="participant_count"
+                                        x-model.number="participantCount" class="ui-input mt-1 text-sm"
+                                        :class="participantCount === portionTotal ? '' :
+                                            'border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200'">
+                                </div>
+                            </div>
+                            <p x-show="participantCount !== portionTotal"
+                                class="mt-2 rounded-md border border-rose-300 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300"
+                                x-text="'Jumlah peserta harus sama dengan total porsi (' + portionTotal + ').'"></p>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead>
+                                        <tr
+                                            class="border-b border-[var(--ui-line)] text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                            <th class="px-2 py-1.5">No</th>
+                                            <th class="px-2 py-1.5">Nama peserta</th>
+                                            <th class="px-2 py-1.5">Jabatan/Instansi</th>
+                                            <th class="px-2 py-1.5 text-right">Porsi</th>
+                                            <th class="px-2 py-1.5 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(row, index) in rows" :key="index">
+                                            <tr @dragover.prevent @drop.prevent="dropAt(index)"
+                                                :class="dragIndex === index ? 'bg-[var(--ui-surface-base)] shadow-sm' : ''"
+                                                class="border-b border-[var(--ui-line-subtle)]">
+                                                <td class="px-2 py-1.5 font-semibold text-[var(--ui-fg-muted)]">
+                                                    <div class="flex items-center gap-2"><button type="button"
+                                                            draggable="true"
+                                                            @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'"
+                                                            @dragend="dragIndex = null"
+                                                            title="Seret untuk mengubah urutan"
+                                                            class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-1.5 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span
+                                                            x-text="index + 1"></span></div>
+                                                </td>
+                                                <td class="px-2 py-1.5"><input :name="`participants[${index}][name]`"
+                                                        x-model="row.name" aria-label="Nama peserta"
+                                                        class="ui-input py-1.5 text-sm" placeholder="Nama lengkap">
+                                                </td>
+                                                <td class="px-2 py-1.5"><input
+                                                        :name="`participants[${index}][position]`"
+                                                        x-model="row.position" aria-label="Jabatan atau instansi"
+                                                        class="ui-input py-1.5 text-sm"
+                                                        placeholder="Jabatan/instansi"></td>
+                                                <td class="px-2 py-1.5"><input required type="number" min="1"
+                                                        step="1" :name="`participants[${index}][portions]`"
+                                                        x-model.number="row.portions" aria-label="Jumlah porsi"
+                                                        class="ui-input py-1.5 text-right text-sm w-20"></td>
+                                                <td class="px-2 py-1.5">
+                                                    <div class="flex items-center justify-end gap-1"><button
+                                                            type="button" @click="move(index, -1)"
+                                                            :disabled="index === 0" title="Naikkan urutan"
+                                                            class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:cursor-not-allowed disabled:opacity-35">↑</button><button
+                                                            type="button" @click="move(index, 1)"
+                                                            :disabled="index === rows.length - 1"
+                                                            title="Turunkan urutan"
+                                                            class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:cursor-not-allowed disabled:opacity-35">↓</button><button
+                                                            type="button" @click="rows.splice(index, 1)"
+                                                            class="rounded-md border border-rose-300 dark:border-rose-800 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40">Hapus</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </fieldset>
+
+                        <fieldset x-show="category === 'PEMELIHARAAN'" :disabled="category !== 'PEMELIHARAAN'"
+                            x-cloak x-data="{
+                                rows: @js($workerRows),
+                                dragIndex: null,
+                                move(index, direction) {
+                                    const target = index + direction;
+                                    if (target < 0 || target >= this.rows.length) return;
+                                    [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]];
+                                    this.rows = [...this.rows];
+                                },
+                                dropAt(index) {
+                                    if (this.dragIndex === null || this.dragIndex === index) return;
+                                    const [row] = this.rows.splice(this.dragIndex, 1);
+                                    this.rows.splice(index, 0, row);
+                                    this.rows = [...this.rows];
+                                    this.dragIndex = null;
+                                }
+                            }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p
+                                        class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                        Work order pemeliharaan</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">1 transaksi pemeliharaan → 1
+                                        work order → banyak pekerja.</p>
+                                </div>
+                                <button type="button"
+                                    @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})"
+                                    class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Pekerja</button>
+                            </div>
+                            <div class="mt-2 grid gap-2 lg:grid-cols-4">
+                                <div class="lg:col-span-1">
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Deskripsi
+                                        Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
+                                    <input name="work_description"
+                                        value="{{ $workDetails?->work_description ?: $transaction->work_description }}"
+                                        class="ui-input mt-1 text-sm" placeholder="Uraian pekerjaan" required>
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Lokasi
+                                        Pekerjaan <span class="text-rose-600">* Wajib diisi</span></label>
+                                    <input name="work_location"
+                                        value="{{ $workDetails?->work_location ?: $transaction->work_location }}"
+                                        class="ui-input mt-1 text-sm" placeholder="Lokasi pekerjaan" required>
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. SPK <span
+                                            class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label>
+                                    <input readonly name="spk_number"
+                                        value="{{ $workDetails?->spk_number ?: $transaction->spk_number }}"
+                                        class="ui-input ui-input-readonly mt-1 text-sm"
+                                        placeholder="Terbit setelah penomoran">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl SPK</label>
+                                    <input type="date" name="spk_date"
+                                        value="{{ $workDetails?->spk_date?->format('Y-m-d') ?: $transaction->spk_date?->format('Y-m-d') ?: $transactionDateLimit }}"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
+                                </div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. RAB <span
+                                            class="font-normal text-emerald-600 dark:text-emerald-400">(otomatis)</span></label><input
+                                        readonly name="rab_number" value="{{ $workDetails?->rab_number }}"
+                                        class="ui-input ui-input-readonly mt-1 text-sm"
+                                        placeholder="Terbit setelah penomoran"></div>
+                                <div><label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                        RAB</label><input type="date" name="rab_date"
+                                        value="{{ $workDetails?->rab_date?->format('Y-m-d') ?: $transactionDateLimit }}"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm"></div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                        Mulai</label>
+                                    <input type="date" name="work_started_at"
+                                        value="{{ $transaction->work_started_at?->format('Y-m-d') ?: $transactionDateLimit }}"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                        Selesai</label>
+                                    <input type="date" name="work_completed_at"
+                                        value="{{ $transaction->work_completed_at?->format('Y-m-d') ?: $transactionDateLimit }}"
+                                        max="{{ $transactionDateLimit }}" class="ui-input mt-1 text-sm">
+                                </div>
+                            </div>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead>
+                                        <tr
+                                            class="border-b border-[var(--ui-line)] text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                            <th class="w-10 px-2 py-1.5">No</th>
+                                            <th class="min-w-44 px-2 py-1">Nama Pekerja</th>
+                                            <th class="min-w-52 px-2 py-1">Uraian Pekerjaan</th>
+                                            <th class="w-24 px-2 py-1">Hari</th>
+                                            <th class="w-32 px-2 py-1">Tarif</th>
+                                            <th class="w-36 px-2 py-1">Penerima</th>
+                                            <th class="min-w-44 px-2 py-1.5">Catatan</th>
+                                            <th class="w-20 px-2 py-1.5 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(row, index) in rows" :key="index">
+                                            <tr @dragover.prevent @drop.prevent="dropAt(index)"
+                                                :class="dragIndex === index ? 'bg-[var(--ui-surface-base)] shadow-sm' : ''"
+                                                class="border-b border-[var(--ui-line-subtle)]">
+                                                <td class="px-2 py-1 font-semibold text-[var(--ui-fg-muted)]">
+                                                    <div class="flex items-center gap-2">
+                                                        <button type="button" draggable="true"
+                                                            @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'"
+                                                            @dragend="dragIndex = null"
+                                                            title="Seret untuk mengubah urutan"
+                                                            class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span
+                                                            x-text="index + 1"></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <input :name="`workers[${index}][name]`" x-model="row.name"
+                                                        class="ui-input py-1.5 text-sm" placeholder="Nama pekerja">
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <input :name="`workers[${index}][job_description]`"
+                                                        x-model="row.job_description" class="ui-input py-1.5 text-sm"
+                                                        placeholder="Jenis pekerjaan">
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <input type="number" min="0" step=".5"
+                                                        :name="`workers[${index}][work_days]`" x-model="row.work_days"
+                                                        class="ui-input py-1.5 text-right text-sm w-20"
+                                                        placeholder="Hari">
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <input type="hidden" :name="`workers[${index}][daily_rate]`"
+                                                        :value="row.daily_rate"><input type="text"
+                                                        inputmode="numeric"
+                                                        :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) ||
+                                                            0)"
+                                                        @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)"
+                                                        class="ui-input py-1.5 text-right text-sm w-28"
+                                                        placeholder="0">
+                                                </td>
+                                                <td class="px-2 py-1 text-center">
+                                                    <span
+                                                        class="inline-flex items-center gap-1.5 rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs text-[var(--ui-fg)]"><input
+                                                            type="hidden"
+                                                            :name="`workers[${index}][is_receipt_recipient]`"
+                                                            value="0"><input type="checkbox"
+                                                            :name="`workers[${index}][is_receipt_recipient]`"
+                                                            value="1" x-model="row.is_receipt_recipient"
+                                                            class="rounded border-[var(--ui-line)] text-[var(--theme-action-bg)]">
+                                                        Ya</span>
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <input :name="`workers[${index}][notes]`" x-model="row.notes"
+                                                        class="ui-input py-1.5 text-sm" placeholder="Catatan">
+                                                </td>
+                                                <td class="px-2 py-1">
+                                                    <div class="flex items-center justify-end gap-1"><button
+                                                            type="button" @click="move(index, -1)"
+                                                            :disabled="index === 0" title="Naikkan urutan"
+                                                            class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:opacity-35">↑</button><button
+                                                            type="button" @click="move(index, 1)"
+                                                            :disabled="index === rows.length - 1"
+                                                            title="Turunkan urutan"
+                                                            class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-[var(--ui-fg)] disabled:opacity-35">↓</button><button
+                                                            type="button" @click="rows.splice(index, 1)"
+                                                            class="rounded-md border border-rose-300 dark:border-rose-800 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40">Hapus</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </fieldset>
+
+                        <fieldset x-show="category === 'SPPD'" :disabled="category !== 'SPPD'" x-cloak
+                            x-data="{
+                                rows: @js($travelRows),
+                                employees: @js($employeeOptions),
+                                dragIndex: null,
+                                addEmployee() {
+                                    const employee = this.employees.find(item => String(item.id) === String(this.$refs.employeePicker.value));
+                                    if (!employee || this.rows.some(row => row.employee_id === employee.id)) return;
+                                    this.rows.push({ employee_id: employee.id, traveler_name: employee.name, destination: '', purpose: '', assignment_letter_number: '', assignment_letter_date: @js($transactionDateLimit), departure_date: @js($transactionDateLimit), return_date: @js($transactionDateLimit), transport_mode: '', amount: 0, notes: '', position: employee.position });
+                                    this.$refs.employeePicker.value = '';
+                                },
+                                move(index, direction) {
+                                    const target = index + direction;
+                                    if (target < 0 || target >= this.rows.length) return;
+                                    [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]];
+                                    this.rows = [...this.rows];
+                                },
+                                dropAt(index) {
+                                    if (this.dragIndex === null || this.dragIndex === index) return;
+                                    const [row] = this.rows.splice(this.dragIndex, 1);
+                                    this.rows.splice(index, 0, row);
+                                    this.rows = [...this.rows];
+                                    this.dragIndex = null;
+                                }
+                            }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p
+                                        class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                        Pelaksana perjalanan dinas</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Satu pembayaran dapat memuat
+                                        lebih dari satu pelaksana.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2"><select x-ref="employeePicker"
+                                        class="ui-select min-w-56 px-2.5 py-1.5 text-xs">
+                                        <option value="">Pilih pegawai terdaftar</option><template
+                                            x-for="employee in employees" :key="employee.id">
+                                            <option :value="employee.id"
+                                                x-text="employee.name + (employee.position ? ' · ' + employee.position : '')">
+                                            </option>
+                                        </template>
+                                    </select><button type="button" @click="addEmployee()"
+                                        class="ui-btn ui-btn-secondary px-2.5 py-1.5 text-xs font-bold">Ambil
+                                        pegawai</button><button type="button"
+                                        @click="rows.push({traveler_name:'', destination:'', purpose:'', assignment_letter_number:'', assignment_letter_date:@js($transactionDateLimit), departure_date:@js($transactionDateLimit), return_date:@js($transactionDateLimit), transport_mode:'', amount:0, notes:''})"
+                                        class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs font-bold">+ Manual</button>
+                                </div>
+                            </div>
+                            <div class="mt-2 space-y-2">
+                                <template x-for="(row, index) in rows" :key="index">
+                                    <div @dragover.prevent @drop.prevent="dropAt(index)"
+                                        :class="dragIndex === index ? 'ring-2 ring-[var(--theme-focus-ring)]' : ''"
+                                        class="grid gap-2 rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2 md:grid-cols-6">
+                                        <div class="flex items-center gap-2 md:col-span-6"><button type="button"
+                                                draggable="true"
+                                                @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'"
+                                                @dragend="dragIndex = null" title="Seret untuk mengubah urutan"
+                                                class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span
+                                                class="text-xs font-bold text-[var(--theme-content-accent)]"
+                                                x-text="'Urutan ' + (index + 1)"></span></div>
+                                        <label class="block md:col-span-2"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nama
+                                                Pelaksana <span class="text-rose-600">*</span></span><input
+                                                :name="`travels[${index}][traveler_name]`" x-model="row.traveler_name"
+                                                class="ui-input mt-1 text-sm" placeholder="Nama pelaksana"
+                                                required></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tujuan</span><input
+                                                :name="`travels[${index}][destination]`" x-model="row.destination"
+                                                class="ui-input mt-1 text-sm" placeholder="Tujuan"></label>
+                                        <label class="block md:col-span-2"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Maksud
+                                                Perjalanan</span><input :name="`travels[${index}][purpose]`"
+                                                x-model="row.purpose" class="ui-input mt-1 text-sm"
+                                                placeholder="Maksud perjalanan"></label>
+                                        <label class="block md:col-span-2"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">No. Surat
+                                                Tugas <span
+                                                    class="text-emerald-700 dark:text-emerald-400">(otomatis)</span></span><input
+                                                readonly :name="`travels[${index}][assignment_letter_number]`"
+                                                x-model="row.assignment_letter_number"
+                                                class="ui-input ui-input-readonly mt-1 text-sm"
+                                                placeholder="Terbit setelah penomoran"></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl Surat
+                                                Tugas</span><input type="date"
+                                                :name="`travels[${index}][assignment_letter_date]`"
+                                                x-model="row.assignment_letter_date"
+                                                max="{{ $transactionDateLimit }}"
+                                                class="ui-input mt-1 text-sm"></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Transport</span><input
+                                                :name="`travels[${index}][transport_mode]`"
+                                                x-model="row.transport_mode" class="ui-input mt-1 text-sm"
+                                                placeholder="Transport"></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                                Berangkat</span><input type="date"
+                                                :name="`travels[${index}][departure_date]`"
+                                                x-model="row.departure_date" max="{{ $transactionDateLimit }}"
+                                                class="ui-input mt-1 text-sm"></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Tgl
+                                                Pulang</span><input type="date"
+                                                :name="`travels[${index}][return_date]`" x-model="row.return_date"
+                                                max="{{ $transactionDateLimit }}"
+                                                class="ui-input mt-1 text-sm"></label>
+                                        <label class="block"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Nilai</span><input
+                                                type="number" min="0" step="0.01"
+                                                :name="`travels[${index}][amount]`" x-model="row.amount"
+                                                class="ui-input mt-1 text-right text-sm" placeholder="Nilai"></label>
+                                        <label class="block md:col-span-2"><span
+                                                class="text-[11px] font-semibold text-[var(--ui-fg-strong)]">Catatan</span><input
+                                                :name="`travels[${index}][notes]`" x-model="row.notes"
+                                                class="ui-input mt-1 text-sm" placeholder="Catatan"></label>
+                                        <div class="flex items-end gap-1"><button type="button"
+                                                @click="move(index, -1)" :disabled="index === 0"
+                                                title="Naikkan urutan"
+                                                class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm font-bold disabled:opacity-35">↑</button><button
+                                                type="button" @click="move(index, 1)"
+                                                :disabled="index === rows.length - 1" title="Turunkan urutan"
+                                                class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm font-bold disabled:opacity-35">↓</button><button
+                                                type="button" @click="rows.splice(index, 1)"
+                                                class="rounded-md border border-rose-300 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40">Hapus</button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </fieldset>
+
+                        <fieldset x-show="category === 'HONOR_PEGAWAI'" :disabled="category !== 'HONOR_PEGAWAI'"
+                            x-cloak x-data="{
+                                rows: @js($honorRows),
+                                transactionTotal: {{ (float) $transaction->gross_amount }},
+                                dragIndex: null,
+                                get detailTotal() { return this.rows.reduce((total, row) => total + ((parseInt(row.work_days) || 0) * (Number(row.daily_rate) || 0)), 0); },
+                                move(index, direction) {
+                                    const target = index + direction;
+                                    if (target < 0 || target >= this.rows.length) return;
+                                    [this.rows[index], this.rows[target]] = [this.rows[target], this.rows[index]];
+                                    this.rows = [...this.rows];
+                                },
+                                dropAt(index) {
+                                    if (this.dragIndex === null || this.dragIndex === index) return;
+                                    const [row] = this.rows.splice(this.dragIndex, 1);
+                                    this.rows.splice(index, 0, row);
+                                    this.rows = [...this.rows];
+                                    this.dragIndex = null;
+                                }
+                            }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p
+                                        class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                        Data penerima honor</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Gunakan baris ini untuk
+                                        beberapa penerima honor dalam satu transaksi.</p>
+                                </div>
+                                <button type="button"
+                                    @click="rows.push({name:'', job_description:'', work_days:1, daily_rate:0, is_receipt_recipient:false, notes:''})"
+                                    class="ui-btn ui-btn-primary px-2.5 py-1.5 text-xs">+ Penerima</button>
+                            </div>
+                            <div
+                                class="mt-2 overflow-x-auto rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
+                                <table class="min-w-full text-sm">
+                                    <thead>
+                                        <tr
+                                            class="text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                            <th class="w-10 px-2 py-1.5">No</th>
+                                            <th class="min-w-44 px-2 py-1">Nama Penerima <span
+                                                    class="text-rose-600">*</span></th>
+                                            <th class="min-w-52 px-2 py-1">Jabatan/Jenis Honor <span
+                                                    class="text-rose-600">*</span></th>
+                                            <th class="w-24 px-2 py-1">Bulan/Kali <span class="text-rose-600">*</span>
+                                            </th>
+                                            <th class="w-32 px-2 py-1">Tarif <span class="text-rose-600">*</span></th>
+                                            <th class="w-36 px-2 py-1">Penerima Kuitansi</th>
+                                            <th class="w-36 px-2 py-1">Catatan</th>
+                                            <th class="w-20 px-2 py-1.5">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(row, index) in rows" :key="index">
+                                            <tr @dragover.prevent @drop.prevent="dropAt(index)"
+                                                :class="dragIndex === index ? 'bg-[var(--ui-surface-soft)]' : ''"
+                                                class="border-t border-[var(--ui-line)]">
+                                                <td class="px-2 py-2">
+                                                    <div class="flex items-center gap-2">
+                                                        <button type="button" draggable="true"
+                                                            @dragstart="dragIndex = index; $event.dataTransfer.effectAllowed = 'move'"
+                                                            @dragend="dragIndex = null"
+                                                            title="Seret untuk mengubah urutan"
+                                                            class="cursor-grab rounded border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-2 py-1 text-[var(--ui-fg-muted)] active:cursor-grabbing">⋮⋮</button><span
+                                                            class="text-xs font-bold text-[var(--theme-content-accent)]"
+                                                            x-text="index + 1"></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-2 py-2"><input :name="`workers[${index}][name]`"
+                                                        x-model="row.name" required
+                                                        class="ui-input px-2 py-1.5 text-sm"
+                                                        placeholder="Nama penerima"></td>
+                                                <td class="px-2 py-2"><input
+                                                        :name="`workers[${index}][job_description]`"
+                                                        x-model="row.job_description" required
+                                                        class="ui-input px-2 py-1.5 text-sm"
+                                                        placeholder="Jabatan/jenis honor"></td>
+                                                <td class="px-2 py-2"><input type="number" min="1"
+                                                        step="1" required :name="`workers[${index}][work_days]`"
+                                                        :value="parseInt(row.work_days) || 1"
+                                                        @input="row.work_days = parseInt($event.target.value) || 1"
+                                                        class="ui-input px-2 py-1.5 text-right text-sm"
+                                                        placeholder="1">
+                                                </td>
+                                                <td class="px-2 py-2"><input type="hidden"
+                                                        :name="`workers[${index}][daily_rate]`"
+                                                        :value="row.daily_rate"><input type="text"
+                                                        inputmode="numeric" required
+                                                        :value="new Intl.NumberFormat('en-US').format(Number(row.daily_rate) ||
+                                                            0)"
+                                                        @input="row.daily_rate = Number($event.target.value.replace(/[^0-9]/g, '')); $event.target.value = new Intl.NumberFormat('en-US').format(row.daily_rate)"
+                                                        class="ui-input px-2 py-1.5 text-right text-sm"
+                                                        placeholder="0">
+                                                </td>
+                                                <td class="px-2 py-2 text-center"><label
+                                                        class="inline-flex items-center gap-1.5 rounded-md border border-[var(--ui-line)] px-2 py-1.5 text-[var(--ui-fg)]"><input
+                                                            type="hidden"
+                                                            :name="`workers[${index}][is_receipt_recipient]`"
+                                                            value="0"><input type="checkbox"
+                                                            :name="`workers[${index}][is_receipt_recipient]`"
+                                                            value="1" x-model="row.is_receipt_recipient">
+                                                        Ya</label></td>
+                                                <td class="px-2 py-2"><input :name="`workers[${index}][notes]`"
+                                                        x-model="row.notes" class="ui-input px-2 py-1.5 text-sm"
+                                                        placeholder="Catatan"></td>
+                                                <td class="px-2 py-2">
+                                                    <div class="flex items-center gap-1">
+                                                        <button type="button" @click="move(index, -1)"
+                                                            :disabled="index === 0" title="Naikkan urutan"
+                                                            class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm">↑</button><button
+                                                            type="button" @click="move(index, 1)"
+                                                            :disabled="index === rows.length - 1"
+                                                            title="Turunkan urutan"
+                                                            class="ui-btn ui-btn-secondary px-3 py-1.5 text-sm">↓</button><button
+                                                            type="button" @click="rows.splice(index, 1)"
+                                                            class="rounded-md border border-rose-200 px-2 py-1.5 text-xs font-bold text-rose-700 dark:border-rose-800 dark:text-rose-300">Hapus</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                                <div
+                                    class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2">
+                                    <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Nilai
+                                        transaksi</p>
+                                    <p class="mt-1 font-mono text-sm font-bold text-[var(--ui-fg-strong)]"
+                                        x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(transactionTotal)"></p>
+                                </div>
+                                <div
+                                    class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2">
+                                    <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Total rincian
+                                        honor</p>
+                                    <p class="mt-1 font-mono text-sm font-bold"
+                                        :class="Math.abs(detailTotal - transactionTotal) < 0.01 ?
+                                            'text-emerald-700 dark:text-emerald-300' :
+                                            'text-rose-700 dark:text-rose-300'"
+                                        x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(detailTotal)"></p>
+                                </div>
+                                <div class="rounded-lg border px-3 py-2"
+                                    :class="Math.abs(detailTotal - transactionTotal) < 0.01 ?
+                                        'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'">
+                                    <p class="text-[11px] font-bold uppercase"
+                                        :class="Math.abs(detailTotal - transactionTotal) < 0.01 ? 'text-emerald-700' :
+                                            'text-rose-700'">
+                                        Kesesuaian</p>
+                                    <p class="mt-1 text-sm font-bold"
+                                        :class="Math.abs(detailTotal - transactionTotal) < 0.01 ? 'text-emerald-800' :
+                                            'text-rose-800'"
+                                        x-text="Math.abs(detailTotal-transactionTotal)<0.01?'Sesuai':'Selisih Rp ' + new Intl.NumberFormat('id-ID').format(Math.abs(detailTotal-transactionTotal))">
+                                    </p>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        @php($serviceRecipientRows = old('service_recipients', $transaction->serviceRecipients->map(fn($recipient) => $recipient->only(['name', 'service_type', 'quantity', 'unit', 'rental_days', 'daily_rate', 'usage_started_at', 'usage_completed_at', 'payment_reference', 'agreement_number', 'agreement_date']))->map(fn($recipient) => [...$recipient, 'usage_started_at' => optional($recipient['usage_started_at'])->format('Y-m-d'), 'usage_completed_at' => optional($recipient['usage_completed_at'])->format('Y-m-d'), 'agreement_date' => optional($recipient['agreement_date'])->format('Y-m-d')])->values()->all() ?: [['name' => '', 'service_type' => 'Jasa sewa harian', 'quantity' => 1, 'unit' => 'unit', 'rental_days' => 1, 'daily_rate' => 0, 'usage_started_at' => $transactionDateLimit, 'usage_completed_at' => $transactionDateLimit, 'payment_reference' => '', 'agreement_number' => '', 'agreement_date' => $transactionDateLimit]]))
+                        <fieldset x-show="category === 'JASA_LAINNYA'" :disabled="category !== 'JASA_LAINNYA'"
+                            x-cloak x-data="{
+                                rows: @js($serviceRecipientRows),
+                                dragIndex: null,
+                                total() { return this.rows.reduce((sum, row) => sum + (Number(row.quantity) || 0) * (Number(row.rental_days) || 0) * (Number(row.daily_rate) || 0), 0) },
+                                add() { this.rows.push({ name: '', service_type: 'Jasa sewa harian', quantity: 1, unit: 'unit', rental_days: 1, daily_rate: 0, usage_started_at: @js($transactionDateLimit), usage_completed_at: @js($transactionDateLimit), payment_reference: '', agreement_number: '', agreement_date: @js($transactionDateLimit) }) },
+                                move(i, d) {
+                                    const t = i + d;
+                                    if (t < 0 || t >= this.rows.length) return;
+                                    [this.rows[i], this.rows[t]] = [this.rows[t], this.rows[i]];
+                                    this.rows = [...this.rows]
+                                },
+                                dropAt(i) {
+                                    if (this.dragIndex === null || this.dragIndex === i) return;
+                                    const [row] = this.rows.splice(this.dragIndex, 1);
+                                    this.rows.splice(i, 0, row);
+                                    this.rows = [...this.rows];
+                                    this.dragIndex = null
+                                }
+                            }"
+                            class="mt-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p
+                                        class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">
+                                        Daftar penerima pembayaran jasa</p>
+                                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Lampiran pembayaran menjadi
+                                        bukti; total harus sama dengan BKU.</p>
+                                </div><button type="button" @click="add()"
+                                    class="ui-btn ui-btn-secondary px-3 py-1.5 text-xs font-bold">+ Penerima</button>
+                            </div>
+                            <div class="mt-3 overflow-x-auto">
+                                <table class="min-w-[1100px] w-full text-sm">
+                                    <thead class="text-left text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nama penerima</th>
+                                            <th>Jenis jasa</th>
+                                            <th>Jumlah</th>
+                                            <th>Satuan</th>
+                                            <th>Hari</th>
+                                            <th>Tarif/hari</th>
+                                            <th>Mulai</th>
+                                            <th>Selesai</th>
+                                            <th>Ref. bayar</th>
+                                            <th>PKS</th>
+                                            <th class="text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody><template x-for="(row,index) in rows" :key="index">
+                                            <tr @dragover.prevent @drop.prevent="dropAt(index)"
+                                                class="border-t border-[var(--ui-line)]">
+                                                <td><button type="button" draggable="true"
+                                                        @dragstart="dragIndex=index" @dragend="dragIndex=null"
+                                                        class="cursor-grab px-2">⋮⋮</button><span
+                                                        x-text="index+1"></span></td>
+                                                <td><input required :name="`service_recipients[${index}][name]`"
+                                                        x-model="row.name" class="ui-input text-sm"></td>
+                                                <td><input required
+                                                        :name="`service_recipients[${index}][service_type]`"
+                                                        x-model="row.service_type" class="ui-input text-sm"></td>
+                                                <td><input type="number"
+                                                        :name="`service_recipients[${index}][quantity]`"
+                                                        x-model.number="row.quantity" class="ui-input w-16 text-sm">
+                                                </td>
+                                                <td><input :name="`service_recipients[${index}][unit]`"
+                                                        x-model="row.unit" class="ui-input w-16 text-sm"></td>
+                                                <td><input type="number" step=".5"
+                                                        :name="`service_recipients[${index}][rental_days]`"
+                                                        x-model.number="row.rental_days"
+                                                        class="ui-input w-16 text-sm"></td>
+                                                <td><input type="number"
+                                                        :name="`service_recipients[${index}][daily_rate]`"
+                                                        x-model.number="row.daily_rate" class="ui-input w-28 text-sm">
+                                                </td>
+                                                <td><input type="date"
+                                                        :name="`service_recipients[${index}][usage_started_at]`"
+                                                        x-model="row.usage_started_at"
+                                                        max="{{ $transactionDateLimit }}" class="ui-input text-sm">
+                                                </td>
+                                                <td><input type="date"
+                                                        :name="`service_recipients[${index}][usage_completed_at]`"
+                                                        x-model="row.usage_completed_at"
+                                                        max="{{ $transactionDateLimit }}" class="ui-input text-sm">
+                                                </td>
+                                                <td><input :name="`service_recipients[${index}][payment_reference]`"
+                                                        x-model="row.payment_reference" class="ui-input text-sm"></td>
+                                                <td><input :name="`service_recipients[${index}][agreement_number]`"
+                                                        x-model="row.agreement_number" class="ui-input text-sm"></td>
+                                                <td class="text-right"><button type="button" @click="move(index,-1)"
+                                                        :disabled="index === 0"
+                                                        class="ui-btn ui-btn-ghost px-2">↑</button><button
+                                                        type="button" @click="move(index,1)"
+                                                        :disabled="index === rows.length - 1"
+                                                        class="ui-btn ui-btn-ghost px-2">↓</button><button
+                                                        type="button" @click="rows.splice(index,1)"
+                                                        class="ui-btn ui-btn-ghost px-2 text-rose-700">Hapus</button>
+                                                </td>
+                                            </tr>
+                                        </template></tbody>
+                                </table>
+                            </div>
+                        </fieldset>
+                        <div class="mt-3 flex flex-wrap items-center gap-3">
+                            <button @disabled(($transaction->spjPackage && !$transaction->spjPackage->isEditable()) || $transaction->items->isEmpty())
+                                class="ui-btn ui-btn-primary justify-center px-4 py-2 text-sm">
+                                {{ $transaction->spjPackage ? ($transaction->spjPackage->isEditable() ? 'Simpan Perbaikan Paket' : 'Paket Terkunci') : 'Buat Paket SPJ' }}
+                            </button>
+                            <p class="text-xs text-[var(--ui-fg-muted)]">
+                                {{ $transaction->spjPackage?->isEditable() ? 'Paket sudah ada tetapi belum dikunci. Koreksi data lalu simpan kembali.' : 'Isi hanya bagian yang sesuai kategori. Bagian lain otomatis disembunyikan.' }}
+                            </p>
+                        </div>
+                        @if ($transaction->items->isEmpty())
+                            <p class="mt-2 text-xs text-rose-600">Paket belum dapat dibuat karena rincian transaksi
+                                belum tersedia.</p>
+                        @elseif(!$descriptionsComplete)
+                            <p class="mt-2 text-xs text-amber-700">{{ $descriptionsFilled }} dari
+                                {{ $transaction->items->count() }} uraian item sudah lengkap. Simpan uraian di tabel
+                                bawah sebelum membuat paket.</p>
+                        @endif
                     </fieldset>
                 </form>
-                @if($packageLocked)
-                        </div>
-                    </details>
-                @endif
-
+                @if ($packageLocked)
             </div>
-        </section>
+            </details>
+            @endif
 
-        <section id="rincian-transaksi" class="order-1 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
-            <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Barang dan Jasa</h2><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Item pembentuk transaksi {{ $transaction->no_bukti }}. Uraian manual diprioritaskan bila tersedia.</p></div><span class="rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold text-[var(--theme-content-accent)]">{{ $transaction->items->count() }} baris detail</span></div>
-            <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}">@csrf @method('PUT')
+    </div>
+    </section>
+
+    <section id="rincian-transaksi"
+        class="order-1 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
+        <div
+            class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Barang dan Jasa</h2>
+                <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Item pembentuk transaksi
+                    {{ $transaction->no_bukti }}. Uraian manual diprioritaskan bila tersedia.</p>
+            </div><span
+                class="rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold text-[var(--theme-content-accent)]">{{ $transaction->items->count() }}
+                baris detail</span>
+        </div>
+        <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}">@csrf
+            @method('PUT')
             <fieldset @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-[var(--ui-line)] text-base">
-                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="w-14 px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">No</th><th class="min-w-[320px] px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian Barang/Jasa untuk SPJ</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Rekening</th><th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Volume</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Satuan</th><th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Harga Satuan</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th></tr></thead>
-                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                        @forelse($transaction->items as $index => $item)
-                            <tr class="transition hover:bg-[var(--ui-surface-soft)]"><td class="px-5 py-3.5 text-center text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $index + 1 }}</td><td class="max-w-xl px-4 py-3.5"><p class="mb-1 text-xs text-[var(--ui-fg-muted)]">Asli: {{ $item->description }}</p><input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}"><input name="items[{{ $index }}][item_description]" value="{{ $item->item_description ?: $item->description }}" class="ui-input px-3 py-2 text-base" placeholder="Contoh: Buku tulis"></td><td class="px-4 py-3.5 font-mono text-xs text-[var(--theme-content-accent)]">{{ $item->account_code ?: $transaction->account_code ?: '—' }}</td><td class="px-4 py-3.5 text-right font-medium text-[var(--ui-fg)]">{{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}</td><td class="px-4 py-3.5 text-[var(--ui-fg)]">{{ $item->unit ?: '—' }}</td><td class="whitespace-nowrap px-4 py-3.5 text-right text-[var(--ui-fg)]">{{ $rupiah($item->unit_price) }}</td><td class="whitespace-nowrap px-5 py-3.5 text-right font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($item->amount) }}</td></tr>
-                        @empty
-                            <tr><td colspan="7" class="px-5 py-14 text-center"><p class="font-semibold text-[var(--ui-fg-strong)]">Rincian transaksi belum tersedia.</p><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Periksa kembali hasil sinkronisasi BKU untuk nomor bukti ini.</p></td></tr>
-                        @endforelse
-                    </tbody>
-                    @if($transaction->items->isNotEmpty())<tfoot class="border-t-2 border-[var(--ui-line)] bg-[var(--ui-surface-soft)]"><tr><td colspan="6" class="px-5 py-4 text-right text-base font-bold uppercase tracking-wide text-[var(--ui-fg)]">Total rincian</td><td class="px-5 py-4 text-right text-base font-bold text-[var(--theme-content-accent)]">{{ $rupiah($totalItems) }}</td></tr></tfoot>@endif
-                </table>
-            </div>
-            @if($transaction->items->isNotEmpty())<div class="flex justify-end border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3"><button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan Uraian Barang/Jasa</button></div>@endif
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-[var(--ui-line)] text-base">
+                        <thead class="bg-[var(--ui-surface-soft)]">
+                            <tr>
+                                <th
+                                    class="w-14 px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    No</th>
+                                <th
+                                    class="min-w-[320px] px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Uraian Barang/Jasa untuk SPJ</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Rekening</th>
+                                <th
+                                    class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Volume</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Satuan</th>
+                                <th
+                                    class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Harga Satuan</th>
+                                <th
+                                    class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                    Nilai</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
+                            @forelse($transaction->items as $index => $item)
+                                <tr class="transition hover:bg-[var(--ui-surface-soft)]">
+                                    <td
+                                        class="px-5 py-3.5 text-center text-xs font-semibold text-[var(--ui-fg-muted)]">
+                                        {{ $index + 1 }}</td>
+                                    <td class="max-w-xl px-4 py-3.5">
+                                        <p class="mb-1 text-xs text-[var(--ui-fg-muted)]">Asli:
+                                            {{ $item->description }}</p><input type="hidden"
+                                            name="items[{{ $index }}][id]" value="{{ $item->id }}"><input
+                                            name="items[{{ $index }}][item_description]"
+                                            value="{{ $item->item_description ?: $item->description }}"
+                                            class="ui-input px-3 py-2 text-base" placeholder="Contoh: Buku tulis">
+                                    </td>
+                                    <td class="px-4 py-3.5 font-mono text-xs text-[var(--theme-content-accent)]">
+                                        {{ $item->account_code ?: $transaction->account_code ?: '—' }}</td>
+                                    <td class="px-4 py-3.5 text-right font-medium text-[var(--ui-fg)]">
+                                        {{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-[var(--ui-fg)]">{{ $item->unit ?: '—' }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3.5 text-right text-[var(--ui-fg)]">
+                                        {{ $rupiah($item->unit_price) }}</td>
+                                    <td
+                                        class="whitespace-nowrap px-5 py-3.5 text-right font-bold text-[var(--ui-fg-strong)]">
+                                        {{ $rupiah($item->amount) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-5 py-14 text-center">
+                                        <p class="font-semibold text-[var(--ui-fg-strong)]">Rincian transaksi belum
+                                            tersedia.</p>
+                                        <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Periksa kembali hasil
+                                            sinkronisasi BKU untuk nomor bukti ini.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if ($transaction->items->isNotEmpty())
+                            <tfoot class="border-t-2 border-[var(--ui-line)] bg-[var(--ui-surface-soft)]">
+                                <tr>
+                                    <td colspan="6"
+                                        class="px-5 py-4 text-right text-base font-bold uppercase tracking-wide text-[var(--ui-fg)]">
+                                        Total rincian</td>
+                                    <td
+                                        class="px-5 py-4 text-right text-base font-bold text-[var(--theme-content-accent)]">
+                                        {{ $rupiah($totalItems) }}</td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+                @if ($transaction->items->isNotEmpty())
+                    <div
+                        class="flex justify-end border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3">
+                        <button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan Uraian Barang/Jasa</button>
+                    </div>
+                @endif
             </fieldset>
-            </form>
-        </section>
+        </form>
+    </section>
 
-        <section class="grid gap-4 lg:grid-cols-2">
-            <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow"><div class="flex items-center justify-between gap-3"><h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Pajak</h2><span class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</span></div><div class="mt-4 grid gap-x-6 gap-y-3 text-base sm:grid-cols-2">@forelse($taxBreakdown as $label => $value)<div class="flex justify-between gap-3 border-b border-[var(--ui-line)] pb-2"><span class="text-[var(--ui-fg-muted)]">{{ $label }}</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($value) }}</span></div>@empty<div class="text-sm text-[var(--ui-fg-muted)]">Tidak ada potongan pajak pada transaksi ini.</div>@endforelse</div></article>
-            <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow"><h2 class="font-bold text-[var(--ui-fg-strong)]">Informasi Dokumen SPJ</h2><dl class="mt-4 space-y-3 text-base"><div class="flex justify-between gap-4"><dt class="text-[var(--ui-fg-muted)]">Nomor SPJ</dt><dd class="text-right font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 line-through dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">{{ $transaction->spjPackage?->document_number ?: 'Belum ditetapkan' }}</dd></div><div class="flex justify-between gap-4"><dt class="text-[var(--ui-fg-muted)]">Status paket</dt><dd class="font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">{{ $transaction->spjPackage?->status === 'CANCELLED' ? 'Nomor dibatalkan' : ($transaction->spjPackage?->status ?: 'Belum dibuat') }}</dd></div><div class="flex justify-between gap-4"><dt class="text-[var(--ui-fg-muted)]">Referensi pembayaran</dt><dd class="text-right font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_reference ?: 'Belum ada referensi' }}</dd></div><div class="flex justify-between gap-4"><dt class="text-[var(--ui-fg-muted)]">Pembelian SIPLah</dt><dd class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->is_siplah ? 'Ya' : 'Tidak' }}</dd></div></dl></article>
-        </section>
+    <section class="grid gap-4 lg:grid-cols-2">
+        <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Pajak</h2><span
+                    class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</span>
+            </div>
+            <div class="mt-4 grid gap-x-6 gap-y-3 text-base sm:grid-cols-2">
+                @forelse($taxBreakdown as $label => $value)
+                    <div class="flex justify-between gap-3 border-b border-[var(--ui-line)] pb-2"><span
+                            class="text-[var(--ui-fg-muted)]">{{ $label }}</span><span
+                        class="font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($value) }}</span></div>@empty
+                    <div class="text-sm text-[var(--ui-fg-muted)]">Tidak ada potongan pajak pada transaksi ini.</div>
+                @endforelse
+            </div>
+        </article>
+        <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow">
+            <h2 class="font-bold text-[var(--ui-fg-strong)]">Informasi Dokumen SPJ</h2>
+            <dl class="mt-4 space-y-3 text-base">
+                <div class="flex justify-between gap-4">
+                    <dt class="text-[var(--ui-fg-muted)]">Nomor SPJ</dt>
+                    <dd
+                        class="text-right font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 line-through dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
+                        {{ $transaction->spjPackage?->document_number ?: 'Belum ditetapkan' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-[var(--ui-fg-muted)]">Status paket</dt>
+                    <dd
+                        class="font-semibold {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'text-rose-700 dark:text-rose-300' : 'text-[var(--ui-fg-strong)]' }}">
+                        {{ $transaction->spjPackage?->status === 'CANCELLED' ? 'Nomor dibatalkan' : ($transaction->spjPackage?->status ?: 'Belum dibuat') }}
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-[var(--ui-fg-muted)]">Referensi pembayaran</dt>
+                    <dd class="text-right font-semibold text-[var(--ui-fg-strong)]">
+                        {{ $transaction->payment_reference ?: 'Belum ada referensi' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-[var(--ui-fg-muted)]">Pembelian SIPLah</dt>
+                    <dd class="font-semibold text-[var(--ui-fg-strong)]">
+                        {{ $transaction->is_siplah ? 'Ya' : 'Tidak' }}</dd>
+                </div>
+            </dl>
+        </article>
+    </section>
     </div>
 </x-layouts.tailwind-app>

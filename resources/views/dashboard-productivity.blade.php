@@ -10,10 +10,6 @@
                     <x-ui-icon name="transaction" class="h-4 w-4" />
                     <span>Semua Transaksi</span>
                 </x-ui.button>
-                <x-ui.button :href="route('dashboard.operational')" variant="secondary">
-                    <x-ui-icon name="dashboard" class="h-4 w-4" />
-                    <span>Dashboard Lama</span>
-                </x-ui.button>
             </x-slot:actions>
 
             <div class="grid gap-px bg-[var(--ui-line)] sm:grid-cols-2 xl:grid-cols-4">
@@ -42,13 +38,12 @@
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="grid gap-0 lg:grid-cols-[1.25fr_.75fr]">
-                <div class="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 px-6 py-7 text-white lg:px-8 lg:py-8">
-                    <div class="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-white/10 blur-3xl"></div>
+                <div class="relative overflow-hidden px-6 py-7 lg:px-8 lg:py-8" style="background: linear-gradient(135deg, var(--theme-sidebar-deep), var(--theme-sidebar)); color: var(--text-comfort-on-dark)">
                     <div class="relative">
-                        <p class="text-xs font-bold uppercase tracking-[.16em] text-indigo-200">{{ $priority['eyebrow'] }}</p>
-                        <h2 class="mt-3 max-w-3xl text-2xl font-extrabold leading-tight sm:text-3xl">{{ $priority['title'] }}</h2>
-                        <p class="mt-3 max-w-2xl text-sm leading-6 text-indigo-100">{{ $priority['description'] }}</p>
-                        <a href="{{ $priority['url'] }}" class="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-extrabold text-indigo-950 shadow-sm transition hover:bg-indigo-50">
+                        <p class="text-xs font-bold uppercase tracking-[.16em]" style="color: var(--text-comfort-on-dark-muted)">{{ $priority['eyebrow'] }}</p>
+                        <h2 class="mt-3 max-w-3xl text-2xl font-extrabold leading-tight sm:text-3xl" style="color: var(--text-comfort-on-dark)">{{ $priority['title'] }}</h2>
+                        <p class="mt-3 max-w-2xl text-sm leading-6" style="color: var(--text-comfort-on-dark-muted)">{{ $priority['description'] }}</p>
+                        <a href="{{ $priority['url'] }}" class="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-extrabold text-[var(--theme-sidebar-deep)] shadow-sm transition hover:bg-[var(--ui-surface-soft)]">
                             {{ $priority['action'] }} →
                         </a>
                     </div>
@@ -78,7 +73,7 @@
         <section class="grid gap-4 xl:grid-cols-2">
             <article class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <header class="border-b border-[var(--ui-line)] px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-amber-700">Lanjutkan Pekerjaan</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Lanjutkan Pekerjaan</p>
                     <h2 class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Selesaikan yang sudah dimulai</h2>
                 </header>
                 <div class="p-5">
@@ -121,42 +116,6 @@
             </article>
         </section>
 
-        <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            <header class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Alur Kerja Operator</h2>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Setiap angka adalah antrean nyata yang perlu bergerak ke tahap berikutnya.</p>
-                </div>
-                @if($productivity['not_numbered'] > 0)
-                    <span class="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">{{ $productivity['not_numbered'] }} transaksi belum bernomor</span>
-                @endif
-            </header>
-            <div class="grid gap-px bg-[var(--ui-line)] md:grid-cols-5">
-                @php
-                    $workflowStages = [
-                        ['label' => 'Belum Dikerjakan', 'count' => $productivity['unworked'], 'hint' => 'Mulai isi SPJ'],
-                        ['label' => 'Sedang Dikerjakan', 'count' => $productivity['in_progress'], 'hint' => 'Lengkapi checklist'],
-                        ['label' => 'Siap Dinomori', 'count' => $productivity['ready'], 'hint' => 'Masuk penomoran'],
-                        ['label' => 'Sudah Bernomor', 'count' => $productivity['numbered'], 'hint' => 'Tinjau dokumen'],
-                        ['label' => 'Final', 'count' => $productivity['final'], 'hint' => 'Selesai'],
-                    ];
-                @endphp
-                @foreach($workflowStages as $index => $stage)
-                    <div class="relative bg-[var(--ui-surface-base)] p-5">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="grid h-7 w-7 place-items-center rounded-full bg-[var(--ui-surface-soft)] text-xs font-extrabold text-[var(--ui-fg-strong)]">{{ $index + 1 }}</span>
-                            @if($index < count($workflowStages) - 1)
-                                <span class="text-[var(--ui-fg-muted)]">→</span>
-                            @endif
-                        </div>
-                        <p class="mt-4 text-2xl font-extrabold text-[var(--ui-fg-strong)]">{{ $stage['count'] }}</p>
-                        <p class="mt-1 text-sm font-bold text-[var(--ui-fg-strong)]">{{ $stage['label'] }}</p>
-                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $stage['hint'] }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </section>
-
         <section class="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
             <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <div class="border-b border-[var(--ui-line)] px-5 py-4">
@@ -193,15 +152,20 @@
 
             <aside class="space-y-4">
                 <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penomoran</p>
-                    <p class="mt-2 text-3xl font-extrabold text-[var(--ui-fg-strong)]">{{ $productivity['not_numbered'] }}</p>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">transaksi belum mencapai tahap bernomor.</p>
-                    <div class="mt-4 space-y-2 text-sm">
-                        <div class="flex items-center justify-between"><span class="text-[var(--ui-fg-muted)]">Siap sekarang</span><strong class="text-[var(--theme-content-accent)]">{{ $productivity['ready'] }}</strong></div>
-                        <div class="flex items-center justify-between"><span class="text-[var(--ui-fg-muted)]">Masih draft</span><strong class="text-amber-800">{{ $productivity['in_progress'] }}</strong></div>
-                        <div class="flex items-center justify-between"><span class="text-[var(--ui-fg-muted)]">Belum Dikerjakan</span><strong class="text-[var(--ui-fg-strong)]">{{ $productivity['unworked'] }}</strong></div>
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Progres SPJ</p>
+                            <p class="mt-2 text-3xl font-extrabold text-[var(--ui-fg-strong)]">{{ $productivity['completion_percent'] }}%</p>
+                        </div>
+                        <span class="rounded-full bg-[var(--theme-accent-soft)] px-2.5 py-1 text-xs font-bold text-[var(--theme-content-accent)]">{{ $productivity['completed'] }} selesai</span>
                     </div>
-                    <x-ui.button class="mt-5 w-full" :href="route('spj.numbering-workflow')" variant="secondary">Buka Penomoran SPJ</x-ui.button>
+                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Transaksi sudah bernomor atau final.</p>
+                    <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-[var(--ui-surface-muted)]"><div class="h-full rounded-full bg-[var(--theme-accent)]" style="width: {{ $productivity['completion_percent'] }}%"></div></div>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                        <div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><p class="text-[var(--ui-fg-muted)]">Belum selesai</p><strong class="mt-1 block text-base text-[var(--ui-fg-strong)]">{{ $productivity['not_numbered'] }}</strong></div>
+                        <div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><p class="text-[var(--ui-fg-muted)]">Siap dinomori</p><strong class="mt-1 block text-base text-[var(--theme-content-accent)]">{{ $productivity['ready'] }}</strong></div>
+                    </div>
+                    <x-ui.button class="mt-4 w-full" :href="route('spj.numbering-workflow')" variant="secondary">Buka Penomoran SPJ</x-ui.button>
                 </section>
 
                 <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">

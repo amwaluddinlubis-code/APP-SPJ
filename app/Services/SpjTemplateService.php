@@ -25,7 +25,7 @@ class SpjTemplateService
     {
         return [
             'Dokumen & periode' => ['NOMOR_SPJ', 'NOMOR_DOKUMEN', 'NO_BUKTI', 'NOMOR_BUKTI', 'TANGGAL_TRANSAKSI', 'TANGGAL_DOKUMEN', 'TAHUN_ANGGARAN', 'SUMBER_DANA', 'SUMBER_DANA_PERIODE', 'TRIWULAN', 'SEMESTER', 'JENIS_SPJ'],
-            'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
+            'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
             'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
             'Transaksi & pembayaran' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
             'Pembelian SiPLah' => ['SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_REFERENSI_BAYAR'],
@@ -71,6 +71,7 @@ class SpjTemplateService
             'NAMA_SEKOLAH' => (string) $school->name,
             'NPSN' => (string) $school->npsn,
             'ALAMAT_SEKOLAH' => (string) $school->address,
+            'DESA' => (string) $school->desa,
             'KECAMATAN' => (string) $school->district,
             'KABUPATEN_KOTA' => (string) $school->regency,
             'PROVINSI' => (string) $school->province,

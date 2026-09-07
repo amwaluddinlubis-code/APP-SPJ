@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class School extends Model
 {
-    protected $fillable = ['npsn', 'school_code', 'name', 'address', 'district', 'regency', 'province', 'letterhead_path'];
+    protected $fillable = ['npsn', 'school_code', 'name', 'address', 'desa', 'district', 'regency', 'province', 'letterhead_path'];
 
     public function databaseRecord(): HasOne
     {

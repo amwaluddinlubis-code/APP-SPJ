@@ -169,6 +169,8 @@ class TransactionsTableLivewireTest extends TestCase
             $table->decimal('tax_total', 18, 2)->default(0);
             $table->decimal('net_amount', 18, 2)->default(0);
             $table->boolean('is_siplah')->default(false);
+            $table->string('source_status', 30)->default('ACTIVE');
+            $table->boolean('requires_reconciliation')->default(false);
             $table->string('status')->nullable();
             $table->string('spj_category')->nullable();
             $table->timestamps();

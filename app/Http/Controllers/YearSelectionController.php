@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ArkasSource;
 use App\Models\FiscalYear;
 use App\Models\School;
+use App\Services\ArkasBridgeClient;
 use App\Services\ArkasFullSynchronizationService;
 use App\Services\SchoolDatabaseManager;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +16,12 @@ use Illuminate\View\View;
 
 class YearSelectionController extends Controller
 {
-    public function create(Request $request, SchoolDatabaseManager $databases): View
+    public function create(Request $request, SchoolDatabaseManager $databases, ArkasBridgeClient $bridgeClient): View
     {
         abort_unless($request->user()->isAdministrator() || $request->user()->school_id === (int) session('active_school_id'), 403);
 
         $school = School::query()->findOrFail(session('active_school_id'));
+        $arkasSource = ArkasSource::where('school_id', $school->id)->first();
         $databases->activate($school);
         $hasFundSourceContext = Schema::connection('school')->hasTable('fund_sources')
             && Schema::connection('school')->hasColumn('fiscal_years', 'fund_source_id');
@@ -46,6 +48,8 @@ class YearSelectionController extends Controller
             'years' => $years,
             'hasFundSourceContext' => $hasFundSourceContext,
             'school' => $school,
+            'arkasSource' => $arkasSource,
+            'defaultBridgePath' => $arkasSource?->bridge_path ?: $bridgeClient->resolveBridgeExecutable(),
         ]);
     }
 

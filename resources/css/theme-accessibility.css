@@ -10,6 +10,24 @@
     --theme-focus-halo: color-mix(in srgb, var(--theme-accent) 24%, transparent);
 }
 
+/* Public/auth/setup pages use light surfaces and must not inherit the
+   on-dark heading hierarchy used by application chrome. */
+html[data-ui-appearance='light'] .public-layout-main :is(h1, h2, h3, h4, h5, h6) {
+    color: #1f2937 !important;
+}
+
+html[data-ui-appearance='light'] .public-layout-main :is(p, li, label, legend) {
+    color: #334155;
+}
+
+html[data-ui-appearance='dark'] .public-layout-main :is(h1, h2, h3, h4, h5, h6) {
+    color: #dce3ec !important;
+}
+
+html[data-ui-appearance='dark'] .public-layout-main :is(p, li, label, legend) {
+    color: #c4cfdd;
+}
+
 /* Neutral/dark accents are dark enough to carry light foreground text. */
 html[data-theme='dark'],
 html[data-theme='slate'],
@@ -52,7 +70,7 @@ html[data-theme] .pagination .active span {
     background-color: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-action-fg) 14%, transparent),
-                0 5px 14px color-mix(in srgb, var(--theme-action-bg) 22%, transparent);
+        0 5px 14px color-mix(in srgb, var(--theme-action-bg) 22%, transparent);
 }
 
 .app-sidebar-brand-mark {
@@ -88,11 +106,11 @@ html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/95 .text-whi
 .module-breadcrumb a,
 .ui-badge-theme,
 .app-runtime-badge,
-main :is(.text-indigo-500,.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-indigo-900,
-         .text-violet-500,.text-violet-600,.text-violet-700,.text-violet-800,.text-violet-900,
-         .text-blue-500,.text-blue-600,.text-blue-700,.text-blue-800,.text-blue-900,
-         .text-sky-500,.text-sky-600,.text-sky-700,.text-sky-800,.text-sky-900,
-         .text-cyan-500,.text-cyan-600,.text-cyan-700,.text-cyan-800,.text-cyan-900) {
+main :is(.text-indigo-500, .text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900,
+    .text-violet-500, .text-violet-600, .text-violet-700, .text-violet-800, .text-violet-900,
+    .text-blue-500, .text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900,
+    .text-sky-500, .text-sky-600, .text-sky-700, .text-sky-800, .text-sky-900,
+    .text-cyan-500, .text-cyan-600, .text-cyan-700, .text-cyan-800, .text-cyan-900) {
     color: var(--theme-content-accent) !important;
 }
 
@@ -117,13 +135,11 @@ html[data-ui-header='soft'] .page-header-description {
    across the entire gradient. This intentionally overrides the generic dark
    sidebar gradient used by non-soft page headers. */
 html[data-theme='yellow'][data-ui-header='soft'] .page-header-main {
-    background: linear-gradient(
-        112deg,
-        var(--theme-accent) 0%,
-        color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 46%,
-        color-mix(in srgb, var(--theme-accent) 26%, var(--theme-accent-soft)) 76%,
-        var(--theme-accent-soft) 100%
-    ) !important;
+    background: linear-gradient(112deg,
+            var(--theme-accent) 0%,
+            color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 46%,
+            color-mix(in srgb, var(--theme-accent) 26%, var(--theme-accent-soft)) 76%,
+            var(--theme-accent-soft) 100%) !important;
 }
 
 /* Legacy transaction/SPJ heroes predate the canonical .page-header-actions
@@ -159,8 +175,8 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button
     color: #0f172a !important;
 }
 
-html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) :is(a[href*='/data-sinkron/bku'],a[href='/spj']) :is(svg,.app-nav-icon),
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[href='/transaksi'],button[data-tab='monitoring']) :is(svg,.app-nav-icon) {
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) :is(a[href*='/data-sinkron/bku'], a[href='/spj']) :is(svg, .app-nav-icon),
+html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[href='/transaksi'], button[data-tab='monitoring']) :is(svg, .app-nav-icon) {
     color: currentColor !important;
 }
 
@@ -230,8 +246,8 @@ html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.t
     color: var(--theme-action-fg) !important;
 }
 
-html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) :is(a.bg-white\/10.text-white,a.bg-white.text-indigo-900) :is(svg,.app-nav-icon),
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) :is(a.bg-white\/10.text-white,button.bg-white.text-indigo-900) :is(svg,.app-nav-icon) {
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) :is(a.bg-white\/10.text-white, a.bg-white.text-indigo-900) :is(svg, .app-nav-icon),
+html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) :is(a.bg-white\/10.text-white, button.bg-white.text-indigo-900) :is(svg, .app-nav-icon) {
     color: currentColor !important;
 }
 
@@ -242,7 +258,7 @@ html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) :is(a.bg-white\/1
     box-shadow: 0 0 0 4px var(--theme-focus-halo) !important;
 }
 
-:is(.ui-input,.ui-select,.ui-textarea,.app-topbar-select):focus-visible {
+:is(.ui-input, .ui-select, .ui-textarea, .app-topbar-select):focus-visible {
     border-color: var(--theme-focus-ring) !important;
 }
 
@@ -304,6 +320,7 @@ main a:not(.ui-btn):not(.btn):not(.app-nav):not([class*='button']):hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
