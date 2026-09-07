@@ -148,9 +148,10 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
         setCategoryStatus(form, 'Kategori tersimpan tanpa reload halaman.', 'success');
         try {
             await refreshPackagePanels();
-            setPanelsBusy(false);
         } catch (_) {
             setCategoryStatus(form, 'Kategori tersimpan. Panel dokumen belum diperbarui; simpan isian untuk memuat ulang panel.', 'error');
+        } finally {
+            setPanelsBusy(false);
         }
 
         document.dispatchEvent(new CustomEvent('spj:category-changed', {
