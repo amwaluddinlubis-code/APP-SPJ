@@ -2,9 +2,37 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diverifikasi terhadap branch aktif: **2026-09-07**.
+Terakhir diverifikasi terhadap branch aktif: **2026-09-08**.
 
 Dokumentasi status tidak lagi menyimpan daftar PASS panjang. Gap aktif dikumpulkan di `docs/CURRENT_PROGRESS.md`; aturan bisnis permanen ada di `docs/SPJ_DESIGN_DECISIONS.md`; roadmap hanya berisi pekerjaan yang belum selesai.
+
+## URGENT — migrasi Detail Transaksi ↔ Paket SPJ
+
+Prioritas pengembangan aktif saat ini adalah memisahkan ownership data agar Operator tidak mengisi data SPJ dua kali.
+
+Kontrak target:
+
+```text
+Detail Transaksi = source ARKAS/BKU + item_description
+Paket SPJ        = seluruh isian dokumen pertanggungjawaban
+```
+
+Keputusan penting:
+
+- `item_description` hanya diedit di Detail Transaksi dan wajib tersimpan sebelum Paket SPJ dapat dibuat/dibuka;
+- quantity, satuan, harga satuan, dan nilai item readonly;
+- PPN, PPh 21/22/23/4(2), SSPD, total pajak, dan netto tetap milik transaksi/source;
+- Paket SPJ hanya membaca pajak sebagai referensi readonly;
+- kategori, payment description/method/reference, penerima kuitansi, vendor/invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
+- pergantian kategori Paket SPJ tidak boleh full page reload.
+
+Rencana, sisa compatibility path, dan Definition of Done migrasi ada di:
+
+```text
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
+```
+
+Migrasi belum dinyatakan final sampai write-path SPJ legacy di route/use-case lama dipensiunkan dan keenam kategori lulus end-to-end tanpa input ganda.
 
 ## Stack
 
@@ -27,7 +55,10 @@ Orkestrasi SPJ utama:
 ```text
 app/UseCases/Spj/
 ├── SpjWorkspaceUseCase.php
-├── SpjPackageUseCase.php
+├── CreateSpjDraftUseCase.php
+├── UpdateSpjPackageDetailsUseCase.php
+├── SpjPackageCategoryUseCase.php
+├── SpjPackageUseCase.php              # compatibility path lama, sedang dimigrasikan
 ├── SpjNumberingUseCase.php
 ├── SpjDocumentUseCase.php
 └── SpjReportUseCase.php
@@ -75,7 +106,11 @@ D:/lrvProject/spj-bosp-data/
 Login
 → Pilih sekolah/tahun/sumber dana
 → Sinkronisasi ARKAS/BKU
-→ Lengkapi Detail Transaksi
+→ Detail Transaksi
+   → periksa source
+   → simpan item_description
+→ Siapkan / Lihat Paket SPJ
+→ lengkapi data dokumen di Paket SPJ
 → DRAFT / READY
 → Penomoran
 → Preview / Unduh
@@ -94,7 +129,7 @@ Tanggal Pesanan <= Tanggal BAP
 Tanggal BAP <= Tanggal BAST
 ```
 
-Untuk `PEMELIHARAAN`, Detail Transaksi dapat menautkan transaksi bahan/barang dan transaksi upah. Preview/download memakai document context yang mengambil rincian material dari sisi bahan dan daftar pekerja dari sisi upah tanpa menulis ulang source BKU.
+Untuk `PEMELIHARAAN`, transaksi bahan/barang dan transaksi upah dapat saling ditautkan. Preview/download memakai document context yang mengambil rincian material dari sisi bahan dan daftar pekerja dari sisi upah tanpa menulis ulang source BKU.
 
 ## Status aktif
 
@@ -104,7 +139,7 @@ Jangan gunakan README sebagai checklist PASS/FAIL. Sumber tunggal gap aktif adal
 docs/CURRENT_PROGRESS.md
 ```
 
-Source terbaru masih membutuhkan runtime verification untuk kronologi pengadaan, workflow canonical, linkage dokumen pemeliharaan, APP DATA eksternal, dan SiPLah. Gap implementasi yang benar-benar masih terbuka terutama JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, dan Pusat Laporan.
+Prioritas aktif adalah migrasi URGENT Detail Transaksi ↔ Paket SPJ. Gap lain yang masih terbuka mencakup JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, Pusat Laporan, serta runtime verification APP DATA.
 
 ## Menjalankan project
 
@@ -139,7 +174,8 @@ php vendor/bin/pint --dirty --format agent
 
 ## Dokumentasi utama
 
-- `docs/CURRENT_PROGRESS.md` — register FAIL/RVR/PLANNED aktif.
+- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — **prioritas URGENT** pemisahan Detail Transaksi dan Paket SPJ.
+- `docs/CURRENT_PROGRESS.md` — register URGENT/FAIL/RVR/PLANNED aktif.
 - `docs/DEVELOPMENT_ROADMAP.md` — urutan pekerjaan yang belum selesai.
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen.
 - `docs/ARCHITECTURE_COMPLETE.md` — referensi arsitektur.
