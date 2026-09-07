@@ -29,6 +29,97 @@ main.transaction-detail-page .transaction-detail-icon-heading {
     gap: .5rem;
 }
 
+/* Main SPJ form: 2/5 information + numbering, 3/5 operator input. */
+main.transaction-detail-page .transaction-detail-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+    margin-top: .75rem;
+}
+
+main.transaction-detail-page .transaction-detail-form-panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--ui-line);
+    border-radius: .875rem;
+    background: var(--ui-surface-base);
+}
+
+main.transaction-detail-page .transaction-detail-form-panel-heading {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    min-height: 2.75rem;
+    border-bottom: 1px solid var(--ui-line);
+    padding: .7rem .85rem;
+    background: var(--ui-surface-soft);
+    color: var(--ui-fg-strong);
+}
+
+main.transaction-detail-page .transaction-detail-form-panel-heading .transaction-detail-inline-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--theme-content-accent);
+}
+
+main.transaction-detail-page .transaction-detail-form-panel-heading h3 {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 800;
+    line-height: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+}
+
+main.transaction-detail-page .transaction-detail-form-panel-content {
+    min-width: 0;
+    padding: .85rem;
+}
+
+main.transaction-detail-page .transaction-detail-operator-panel .transaction-detail-form-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+main.transaction-detail-page .transaction-detail-operator-panel .transaction-detail-form-panel-content > * {
+    margin-top: 0 !important;
+}
+
+main.transaction-detail-page .transaction-detail-info-panel {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 24%, var(--ui-line));
+}
+
+main.transaction-detail-page .transaction-detail-info-panel .transaction-detail-form-panel-heading {
+    background: color-mix(in srgb, var(--theme-content-accent) 7%, var(--ui-surface-soft));
+}
+
+main.transaction-detail-page .transaction-detail-operator-panel {
+    border-color: color-mix(in srgb, #0f766e 20%, var(--ui-line));
+}
+
+main.transaction-detail-page .transaction-detail-operator-panel .transaction-detail-form-panel-heading .transaction-detail-inline-icon {
+    color: #0f766e;
+}
+
+main.transaction-detail-page .transaction-detail-fullwidth-sections {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+main.transaction-detail-page .transaction-detail-fullwidth-sections[hidden] {
+    display: none !important;
+}
+
+main.transaction-detail-page .transaction-detail-fullwidth-sections > fieldset {
+    width: 100%;
+    min-width: 0;
+    margin-top: 0 !important;
+    border-radius: .875rem;
+}
+
 main.transaction-detail-page .page-header-summary .transaction-detail-stat-icon {
     width: 2.25rem;
     height: 2.25rem;
@@ -60,7 +151,7 @@ main.transaction-detail-page .page-header-summary .ui-stat[data-detail-tone='sky
 
 /* ARKAS is a source reference: render it as readable information, never as an input. */
 main.transaction-detail-page .transaction-detail-reference-block {
-    grid-column: 1 / -1;
+    grid-column: auto;
     min-width: 0;
 }
 
@@ -261,9 +352,19 @@ html[data-ui-appearance='dark'] main.transaction-detail-page .page-header-summar
     color: #7dd3fc !important;
 }
 
+@media (min-width: 1024px) {
+    main.transaction-detail-page .transaction-detail-form-layout {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    }
+}
+
 @media (max-width: 639px) {
     main.transaction-detail-page .transaction-detail-auto-number-row {
         grid-template-columns: 1fr;
         gap: .2rem;
+    }
+
+    main.transaction-detail-page .transaction-detail-form-panel-content {
+        padding: .7rem;
     }
 }
