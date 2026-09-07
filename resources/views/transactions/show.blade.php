@@ -496,9 +496,10 @@
                                             class="flex h-5 w-5 items-center justify-center rounded-full {{ $item['ready'] ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white' }} text-[11px] font-bold">{{ $item['ready'] ? '✓' : '!' }}</span>
                                         <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $item['label'] }}
                                         </p>
+
+                                        <span class="text-xs text-[var(--ui-fg-muted)]">
+                                            {{ $item['ready'] ? 'Sudah tersedia.' : $item['hint'] }}</span>
                                     </div>
-                                    <p class="mt-1 pl-7 text-xs text-[var(--ui-fg-muted)]">
-                                        {{ $item['ready'] ? 'Sudah tersedia.' : $item['hint'] }}</p>
                                 </div>
                             @endforeach
                         </div>
