@@ -37,6 +37,49 @@ main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-pane
     color: #059669 !important;
 }
 
+/* Filter summary is one outer card, not four independent cards.
+   Only the outer panel owns radius, and only on its bottom corners. */
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel {
+    overflow: hidden !important;
+    border-radius: 0 0 .75rem .75rem !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child {
+    overflow: hidden;
+    border-radius: 0 0 .75rem .75rem !important;
+    background: var(--ui-surface-base) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Coloured separators make each subtotal category readable without turning
+   every statistic into its own rounded card. */
+@media (min-width: 640px) and (max-width: 1023px) {
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(1),
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(3) {
+        border-right: 2px solid color-mix(in srgb, #64748b 46%, var(--ui-line)) !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(1) {
+        border-right: 2px solid color-mix(in srgb, #64748b 46%, var(--ui-line)) !important;
+    }
+
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(2) {
+        border-right: 2px solid color-mix(in srgb, #4f46e5 48%, var(--ui-line)) !important;
+    }
+
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(3) {
+        border-right: 2px solid color-mix(in srgb, #d97706 52%, var(--ui-line)) !important;
+    }
+}
+
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-column,
 main:has(a[href*="/data-sinkron/bku"]) .transaction-action-cell {
     border-left: 1px solid color-mix(in srgb, var(--theme-content-accent) 18%, var(--ui-line)) !important;
