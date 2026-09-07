@@ -120,6 +120,28 @@ var(--profile-section-gap)
 <button class="ui-btn ui-btn-danger">Hapus</button>
 ```
 
+Untuk Blade baru, prefer `<x-ui.button>` dan icon canonical:
+
+```blade
+<x-ui.button type="submit">
+    <x-ui.icon name="save" size="sm" />
+    Simpan
+</x-ui.button>
+
+<x-ui.button variant="danger">
+    <x-ui.icon name="trash" size="sm" />
+    Hapus
+</x-ui.button>
+```
+
+`x-ui.icon` menggunakan SVG `currentColor`, jadi tidak membutuhkan warna icon hard-coded. Ukuran tersedia: `xs`, `sm`, `md`, `lg`, `xl`. Untuk tombol normal gunakan `size="sm"`; untuk icon standalone gunakan `md` kecuali hierarchy membutuhkan ukuran lain.
+
+Icon dekoratif di dalam tombol berlabel dibiarkan tanpa `label`. Icon standalone harus diberi label aksesibel:
+
+```blade
+<x-ui.icon name="info" label="Informasi" />
+```
+
 ### Form control
 
 ```html
@@ -394,6 +416,8 @@ text-indigo-700
 
 Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, output print/PDF, atau kasus yang sengaja tidak mengikuti theme.
 
+Jangan menambah emoji action atau SVG icon manual baru bila `x-ui.icon` sudah menyediakan icon yang setara.
+
 ---
 
 ## 16. Checklist sebelum commit UI
@@ -407,6 +431,7 @@ Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, 
 - mobile width;
 - hierarchy panel jelas;
 - spacing sibling konsisten;
+- icon action memakai `x-ui.icon` bila tersedia;
 - tidak menambah hard-coded surface/accent baru;
 - `npm run build` setelah CSS/JS/Blade berubah.
 
@@ -415,7 +440,7 @@ Hard-coded hex hanya untuk semantic khusus, branding/ilustrasi, fallback token, 
 ## 17. Urutan pilihan untuk kode baru
 
 ```text
-1. Blade component existing
+1. Blade component existing (`x-ui.icon` untuk icon)
 2. class ui-*
 3. token CSS canonical
 4. Tailwind layout/spacing/responsive
