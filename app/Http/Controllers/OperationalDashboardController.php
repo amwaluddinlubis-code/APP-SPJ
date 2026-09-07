@@ -8,13 +8,18 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageValidationService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class OperationalDashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(): View|RedirectResponse
     {
+        if (request()->routeIs('dashboard.operational')) {
+            return redirect()->route('dashboard');
+        }
+
         $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
         $school = School::query()->find(session('active_school_id'));
 
