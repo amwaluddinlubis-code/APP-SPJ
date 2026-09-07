@@ -9,7 +9,8 @@
             class="rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold text-[var(--theme-content-accent)]">{{ $transaction->items->count() }}
             baris detail</span>
     </div>
-    <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}">@csrf
+    <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}"
+        @submit="itemDescriptionsDirty = false">@csrf
         @method('PUT')
         <fieldset @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
             <div class="overflow-x-auto">
@@ -34,6 +35,7 @@
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                     <input name="items[{{ $index }}][item_description]"
                                         value="{{ $item->item_description ?: $item->description }}"
+                                        @input="itemDescriptionsDirty = true"
                                         class="ui-input px-3 py-2 text-base" placeholder="Contoh: Buku tulis">
                                 </td>
                                 <td class="px-4 py-3.5 font-mono text-xs text-[var(--theme-content-accent)]">{{ $item->account_code ?: $transaction->account_code ?: '—' }}</td>
@@ -62,7 +64,10 @@
                 </table>
             </div>
             @if ($transaction->items->isNotEmpty())
-                <div class="flex justify-end border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3">
+                <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
+                    <p x-show="itemDescriptionsDirty" x-cloak class="text-xs font-semibold text-amber-700">
+                        Ada perubahan uraian yang belum tersimpan.
+                    </p>
                     <button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan Uraian Barang/Jasa</button>
                 </div>
             @endif
