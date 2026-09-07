@@ -48,13 +48,15 @@ SiPLah bukan kategori SPJ; gunakan `payment_method = siplah`.
 
 ## APP DATA
 
-Data tenant ditempatkan di luar source project melalui:
+Data tenant dapat ditempatkan di luar source project melalui:
 
 ```env
 SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
-Struktur target:
+Jika `SPJ_DATA_PATH` tidak diisi, aplikasi memakai `storage/app` agar setup development tetap portable.
+
+Struktur target root eksternal:
 
 ```text
 D:/lrvProject/spj-bosp-data/
@@ -65,7 +67,7 @@ D:/lrvProject/spj-bosp-data/
 └── exports/
 ```
 
-`SchoolDatabaseManager` memakai root tersebut untuk database sekolah/dummy. Backup sekolah juga memakai `{SPJ_DATA_PATH}/backups/{NPSN}`. Operasi runtime tetap harus diverifikasi pada dataset nyata sebelum dianggap release-ready.
+`SchoolDatabaseManager` memakai root tersebut untuk database sekolah/dummy. Backup sekolah memakai `{SPJ_DATA_PATH}/backups/{NPSN}`. Operasi runtime tetap harus diverifikasi pada dataset nyata sebelum dianggap release-ready.
 
 ## Workflow operator
 
@@ -82,6 +84,18 @@ Login
 
 Preview/download tidak boleh menerbitkan nomor secara diam-diam. NUMBERED/FINAL mengikuti locking dan lifecycle backend.
 
+Workflow status operator memakai kontrak bersama `SpjWorkflowFilterService`; keberadaan `transaction_items` tidak digunakan sebagai penanda apakah operator sudah mulai mengerjakan SPJ.
+
+Kronologi pengadaan canonical:
+
+```text
+Tanggal Pesanan <= Tanggal Transaksi
+Tanggal Pesanan <= Tanggal BAP
+Tanggal BAP <= Tanggal BAST
+```
+
+Untuk `PEMELIHARAAN`, Detail Transaksi dapat menautkan transaksi bahan/barang dan transaksi upah. Preview/download memakai document context yang mengambil rincian material dari sisi bahan dan daftar pekerja dari sisi upah tanpa menulis ulang source BKU.
+
 ## Status aktif
 
 Jangan gunakan README sebagai checklist PASS/FAIL. Sumber tunggal gap aktif adalah:
@@ -90,7 +104,7 @@ Jangan gunakan README sebagai checklist PASS/FAIL. Sumber tunggal gap aktif adal
 docs/CURRENT_PROGRESS.md
 ```
 
-Saat ini fokus utama yang masih terbuka meliputi konsistensi validasi tanggal, konsistensi workflow Dashboard/Persiapan, PEMELIHARAAN bahan+upah sampai RAB, JASA_LAINNYA multi-penerima sampai dokumen, SiPLah end-to-end, generator/lifecycle/authorization hardening, tenant runtime verification, mobile QA, dan Pusat Laporan.
+Source terbaru masih membutuhkan runtime verification untuk kronologi pengadaan, workflow canonical, linkage dokumen pemeliharaan, APP DATA eksternal, dan SiPLah. Gap implementasi yang benar-benar masih terbuka terutama JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, dan Pusat Laporan.
 
 ## Menjalankan project
 
@@ -105,7 +119,7 @@ npm run build
 php artisan serve
 ```
 
-Pastikan `.env` lokal memuat `SPJ_DATA_PATH` yang sesuai lingkungan.
+Jika menggunakan data root eksternal, isi `.env` dengan `SPJ_DATA_PATH` sesuai lingkungan.
 
 Minimum verification setelah perubahan relevan:
 
