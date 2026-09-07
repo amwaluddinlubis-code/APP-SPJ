@@ -8,6 +8,7 @@ use App\UseCases\Spj\SpjPackageCategoryUseCase;
 use App\UseCases\Spj\SpjPackageUseCase;
 use App\UseCases\Spj\SpjReportUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
+use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -87,14 +88,14 @@ class SpjController extends Controller
     public function updateDetails(
         string $packageId,
         Request $request,
-        SpjPackageUseCase $useCase,
+        UpdateSpjPackageDetailsUseCase $useCase,
         SpjPackageCategoryUseCase $categoryUseCase,
     ): RedirectResponse {
         if ($request->boolean('category_switch')) {
             return $categoryUseCase->switchCategory($packageId, $request);
         }
 
-        return $useCase->updateDetails($packageId, $request);
+        return $useCase->handle($packageId, $request);
     }
 
     public function download(string $packageId, SpjDocumentUseCase $useCase)
