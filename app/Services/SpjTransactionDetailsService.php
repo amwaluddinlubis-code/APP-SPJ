@@ -228,25 +228,58 @@ class SpjTransactionDetailsService
             return;
         }
 
-        $transaction->serviceRecipients()->delete();
-        foreach ($details['service_recipients'] ?? [] as $sortOrder => $recipient) {
-            if (blank($recipient['name'] ?? null)) {
-                continue;
-            }
+        $recipients = collect($details['service_recipients'] ?? [])
+            ->filter(fn (array $recipient): bool => filled($recipient['name'] ?? null))
+            ->values()
+            ->map(function (array $recipient): array {
+                $quantity = max(0, (float) ($recipient['quantity'] ?? 0));
+                $days = max(0, (float) ($recipient['rental_days'] ?? 0));
+                $rate = max(0, (float) ($recipient['daily_rate'] ?? 0));
 
-            $quantity = max(0, (float) ($recipient['quantity'] ?? 0));
-            $days = max(0, (float) ($recipient['rental_days'] ?? 0));
-            $rate = max(0, (float) ($recipient['daily_rate'] ?? 0));
+                return [
+                    ...$recipient,
+                    '_gross' => round($quantity * $days * $rate, 2),
+                    '_quantity' => $quantity,
+                    '_days' => $days,
+                    '_rate' => $rate,
+                ];
+            });
+
+        $transaction->serviceRecipients()->delete();
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $detailGross = (float) $recipients->sum('_gross');
+        $sourceTax = (float) $transaction->tax_total;
+        $sourceNet = (float) $transaction->net_amount;
+        $allocatedTax = 0.0;
+        $allocatedNet = 0.0;
+        $lastIndex = $recipients->count() - 1;
+
+        foreach ($recipients as $sortOrder => $recipient) {
+            $ratio = $detailGross > 0 ? (float) $recipient['_gross'] / $detailGross : 0.0;
+            $tax = $sortOrder === $lastIndex
+                ? round($sourceTax - $allocatedTax, 2)
+                : round($sourceTax * $ratio, 2);
+            $net = $sortOrder === $lastIndex
+                ? round($sourceNet - $allocatedNet, 2)
+                : round($sourceNet * $ratio, 2);
+            $allocatedTax += $tax;
+            $allocatedNet += $net;
+
             $transaction->serviceRecipients()->create([
                 'name' => trim($recipient['name']),
                 'npwp' => blank($recipient['npwp'] ?? null) ? null : trim($recipient['npwp']),
                 'service_type' => blank($recipient['service_type'] ?? null) ? 'Jasa sewa harian' : trim($recipient['service_type']),
                 'service_description' => blank($recipient['service_description'] ?? null) ? null : trim($recipient['service_description']),
-                'quantity' => $quantity,
+                'quantity' => $recipient['_quantity'],
                 'unit' => blank($recipient['unit'] ?? null) ? 'unit' : trim($recipient['unit']),
-                'rental_days' => $days,
-                'daily_rate' => $rate,
-                'amount' => $quantity * $days * $rate,
+                'rental_days' => $recipient['_days'],
+                'daily_rate' => $recipient['_rate'],
+                'amount' => $recipient['_gross'],
+                'tax_amount' => $tax,
+                'net_amount' => $net,
                 'usage_started_at' => $recipient['usage_started_at'] ?? null,
                 'usage_completed_at' => $recipient['usage_completed_at'] ?? null,
                 'receipt_number' => blank($recipient['receipt_number'] ?? null) ? null : trim($recipient['receipt_number']),
