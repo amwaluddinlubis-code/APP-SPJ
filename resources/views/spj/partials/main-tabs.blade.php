@@ -7,6 +7,11 @@
     ]" :activeTab="$tab" />
 </div>
 
-{{-- Report and monitoring live outside the legacy Paket wrapper so each tab remains independently visible. --}}
-@include('spj.partials.laporan')
-@include('spj.partials.monitoring')
+{{-- Laporan dan Monitoring dirender berdasarkan tab server-side.
+     Navigasi tab melakukan full URL navigation, jadi kedua panel tidak perlu
+     bergantung pada x-show atau struktur DOM Paket yang masih legacy. --}}
+@if(($tab ?? 'persiapan') === 'laporan')
+    @include('spj.partials.laporan')
+@elseif(($tab ?? 'persiapan') === 'monitoring')
+    @include('spj.partials.monitoring')
+@endif
