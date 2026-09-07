@@ -22,45 +22,11 @@ Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branc
 
 ## 2. RVR — source sudah diperbaiki, menunggu verifikasi lokal
 
-### R01 — Kronologi tanggal pengadaan
-
-`TransactionController` sudah disamakan dengan rule Paket SPJ:
-
-```text
-order_date <= transaction_date
-order_date <= bap_date
-bap_date <= bast_date
-```
-
-Pembatas lama `bap_date <= transaction_date` dan `bast_date <= transaction_date` sudah dihapus. Focused regression test tersedia di `TransactionPurchaseDateValidationTest`.
-
-### R02 — Dashboard memakai workflow canonical
+### R01 — Dashboard memakai workflow canonical
 
 `ProductivityDashboardController` tidak lagi memakai `->has('items')` untuk menentukan pekerjaan operator. Bucket `unprepared`, `draft`, `ready`, dan `attention` sekarang memakai `SpjWorkflowFilterService` yang sama dengan Transaksi/Persiapan.
 
-### R03 — Persiapan tidak lagi menampilkan istilah `needs_details`
-
-Compatibility markup lama di view besar masih dipertahankan untuk menghindari rewrite berisiko, tetapi runtime UI sekarang menormalisasi:
-
-```text
-needs_details / Rincian belum ada -> attention / Perlu Perhatian
-ready / Siap dibuat               -> ready / Siap Dinomori
-```
-
-Backend tetap menerima alias lama hanya untuk URL/bookmark historis.
-
-### R04 — PEMELIHARAAN: dokumen membaca transaksi bahan + upah terkait
-
-`SpjMaintenanceDocumentContextService` sudah ditambahkan. Pada preview/download dokumen kategori `PEMELIHARAAN`:
-
-- rincian barang/material berasal dari transaksi bahan/barang terkait;
-- rincian pekerja/upah berasal dari transaksi upah terkait;
-- current transaction tetap menjadi identitas Paket SPJ;
-- context hanya in-memory dan tidak menulis ulang source BKU.
-
-Focused test tersedia di `MaintenanceDocumentContextTest`.
-
-### R05 — APP DATA eksternal
+### R02 — APP DATA eksternal
 
 Konfigurasi tidak lagi mengunci path mesin developer. `SPJ_DATA_PATH` bersifat opsional dengan fallback `storage/app`. Pada deployment Windows yang sedang dipakai:
 
@@ -69,19 +35,6 @@ SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
 Masih perlu runtime check provision/migrate/reset/backup/restore pada database nyata sekolah.
-
-### R06 — Rekonsiliasi gross/tax/net JASA_LAINNYA
-
-Migration baru menambah `tax_amount` dan `net_amount` pada setiap service recipient. Sinkronisasi mengalokasikan tax/net dari source secara proporsional terhadap gross dengan koreksi rounding pada baris terakhir. `SpjPackageValidationService` sekarang memblokir ketidaksesuaian:
-
-```text
-Σ gross detail != transaction.gross_amount
-Σ tax detail   != transaction.tax_total
-Σ net detail   != transaction.net_amount
-net per line   != gross - tax
-```
-
-Focused test tersedia di `ServiceRecipientReconciliationTest`.
 
 ---
 
@@ -131,15 +84,13 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 4. Verification queue setelah pull
 
-Jalankan minimal:
+Yang masih perlu diverifikasi:
 
 ```powershell
 php vendor/bin/pint --dirty --format agent
 
-php artisan test --compact tests/Feature/TransactionPurchaseDateValidationTest.php
-php artisan test --compact tests/Feature/TransactionsWorkflowFilterTest.php tests/Feature/SpjPreparationFilterTest.php
-php artisan test --compact tests/Feature/MaintenanceTransactionLinkTest.php tests/Feature/MaintenanceDocumentContextTest.php
-php artisan test --compact tests/Feature/ServiceRecipientReconciliationTest.php
+php artisan test --compact tests/Feature/TransactionsWorkflowFilterTest.php
+php artisan test --compact tests/Feature/MaintenanceTransactionLinkTest.php
 
 npm run theme:qa
 npm run build
@@ -147,7 +98,7 @@ php artisan view:cache --no-interaction
 git diff --check
 ```
 
-Karena ada migration tenant baru, database sekolah aktif juga harus dimigrasikan melalui mekanisme aktivasi tenant yang benar sebelum menguji JASA_LAINNYA.
+APP DATA masih memerlukan runtime check provision/migrate/reset/backup/restore pada database sekolah nyata.
 
 ---
 
