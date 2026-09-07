@@ -75,26 +75,28 @@ Source sudah memiliki policy, persistence metadata, package flow, pemisahan nomo
 
 Belum boleh disebut PASS sampai suite tersebut dijalankan pada working copy terbaru dan preview/download nyata diverifikasi.
 
+### R07 — Rekonsiliasi gross/tax/net JASA_LAINNYA
+
+Migration baru menambah `tax_amount` dan `net_amount` pada setiap service recipient. Sinkronisasi mengalokasikan tax/net dari source secara proporsional terhadap gross dengan koreksi rounding pada baris terakhir. `SpjPackageValidationService` sekarang memblokir ketidaksesuaian:
+
+```text
+Σ gross detail != transaction.gross_amount
+Σ tax detail   != transaction.tax_total
+Σ net detail   != transaction.net_amount
+net per line   != gross - tax
+```
+
+Focused test tersedia di `ServiceRecipientReconciliationTest`.
+
 ---
 
 ## 3. FAIL / belum tuntas yang masih aktif
 
 ### F01 — JASA_LAINNYA multi-penerima belum sepenuhnya end-to-end
 
-Sudah tersedia:
-
-- relation/model penerima jasa;
-- request validation dan UI daftar penerima;
-- `quantity × rental_days × daily_rate`;
-- blocker total bruto terhadap transaksi;
-- `tax_amount` dan `net_amount` per penerima;
-- alokasi tax/net proporsional dengan koreksi rounding pada penerima terakhir;
-- focused test `ServiceRecipientReconciliationTest`.
-
 Yang masih belum selesai:
 
 - tampilkan gross/tax/net secara eksplisit pada output template per penerima;
-- validasi legacy row yang belum direkonsiliasi setelah migration;
 - dokumen/kuitansi per penerima bila template membutuhkannya;
 - end-to-end test sampai preview/download/final.
 
