@@ -38,29 +38,35 @@ class CreateSpjDraftUseCase
             ]);
         }
 
-        $package = SpjPackage::create([
-            'transaction_id' => $transaction->id,
-            'quarter_code' => $this->quarter($transaction),
-            'semester_code' => $this->semester($transaction),
-            'status' => 'DRAFT',
-        ]);
-
-        $quarter = (int) ceil((int) $transaction->transaction_date->format('n') / 3);
-        if (app(FiscalPeriodWorkflowService::class)->isLateEntry($transaction->fiscal_year_id, $quarter)) {
-            $package->forceFill(['is_late_entry' => true])->save();
-        }
-
-        app(OperationalAuditService::class)->record(
-            $transaction->fiscal_year_id,
-            'SPJ_PACKAGE',
-            $package->id,
-            'BUAT_DRAFT',
-            'Draft paket SPJ dibuat dari transaksi '.$transaction->no_bukti,
+        $package = SpjPackage::firstOrCreate(
+            ['transaction_id' => $transaction->id],
+            [
+                'quarter_code' => $this->quarter($transaction),
+                'semester_code' => $this->semester($transaction),
+                'status' => 'DRAFT',
+            ],
         );
+
+        if ($package->wasRecentlyCreated) {
+            $quarter = (int) ceil((int) $transaction->transaction_date->format('n') / 3);
+            if (app(FiscalPeriodWorkflowService::class)->isLateEntry($transaction->fiscal_year_id, $quarter)) {
+                $package->forceFill(['is_late_entry' => true])->save();
+            }
+
+            app(OperationalAuditService::class)->record(
+                $transaction->fiscal_year_id,
+                'SPJ_PACKAGE',
+                $package->id,
+                'BUAT_DRAFT',
+                'Draft paket SPJ dibuat dari transaksi '.$transaction->no_bukti,
+            );
+        }
 
         return redirect()
             ->route('spj.index', ['tab' => 'paket', 'package_id' => $package->id])
-            ->with('success', 'Draft paket SPJ dibuat. Lengkapi seluruh data dokumen di halaman Paket SPJ.');
+            ->with('success', $package->wasRecentlyCreated
+                ? 'Draft paket SPJ dibuat. Lengkapi seluruh data dokumen di halaman Paket SPJ.'
+                : 'Paket SPJ yang sudah ada dibuka kembali.');
     }
 
     private function quarter(Transaction $transaction): string
