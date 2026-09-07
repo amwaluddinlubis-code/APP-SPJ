@@ -24,7 +24,6 @@
         collapsed: true,
         groups: {
             finance: {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
-            dashboards: {{ request()->routeIs('dashboard.operational', 'dashboard.v2') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
@@ -52,16 +51,7 @@
             <button type="button" @click="toggleSidebar()" :aria-expanded="(!collapsed).toString()" class="app-sidebar-toggle hidden p-2 lg:inline-flex" :aria-label="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'" :title="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"><span x-text="collapsed ? '»' : '«'" class="text-xl leading-none"></span></button>
         </div>
         <nav class="space-y-1 text-base" aria-label="Navigasi utama">
-            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard Utama"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard Utama</span></a>
-
-            <div>
-                <button type="button" @click="toggleGroup('dashboards')" :aria-expanded="groups.dashboards.toString()" aria-controls="nav-dashboards" class="app-nav w-full text-left {{ request()->routeIs('dashboard.operational', 'dashboard.v2') ? 'app-nav-section-active' : '' }}" title="Dashboard Uji Coba"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" class="nav-label flex-1">Dashboard Uji Coba</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.dashboards ? 'rotate-180' : ''">⌄</span></button>
-                <div id="nav-dashboards" x-show="(!collapsed || open) && groups.dashboards" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                    <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}"><x-ui-icon name="dashboard" /><span class="nav-label">Dashboard Produktivitas</span></a>
-                    <a class="app-nav {{ request()->routeIs('dashboard.operational') ? 'app-nav-active' : '' }}" href="{{ route('dashboard.operational') }}"><x-ui-icon name="dashboard" /><span class="nav-label">Dashboard Operasional</span></a>
-                    <a class="app-nav {{ request()->routeIs('dashboard.v2') ? 'app-nav-active' : '' }}" href="{{ route('dashboard.v2') }}"><x-ui-icon name="dashboard" /><span class="nav-label">Dashboard v.2</span></a>
-                </div>
-            </div>
+            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
 
             <div class="pt-3">
                 <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}" title="Keuangan"><x-ui-icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.finance ? 'rotate-180' : ''">⌄</span></button>
