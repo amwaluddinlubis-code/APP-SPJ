@@ -50,11 +50,35 @@ const iconFromTemplate = (name) => {
     return icon instanceof SVGElement ? icon : null;
 };
 
+const directActionIconChildren = (element) => Array.from(element.children).filter((child) => {
+    if (child instanceof SVGElement) return true;
+    if (child.classList?.contains('transaction-detail-inline-icon')) return true;
+    return child.getAttribute?.('aria-hidden') === 'true' && Boolean(child.querySelector?.('svg'));
+});
+
+const reconcileActionIcons = (element) => {
+    if (!(element instanceof HTMLElement)) return false;
+
+    const directSvgIcons = Array.from(element.children).filter((child) => child instanceof SVGElement);
+    const detailIcons = Array.from(element.children).filter((child) => child.classList?.contains('transaction-detail-inline-icon'));
+
+    // Prefer the canonical/global SVG when both systems have already decorated the same action.
+    if (directSvgIcons.length && detailIcons.length) {
+        detailIcons.forEach((icon) => icon.remove());
+    } else if (detailIcons.length > 1) {
+        detailIcons.slice(1).forEach((icon) => icon.remove());
+    }
+
+    return directActionIconChildren(element).length > 0;
+};
+
 const migrateAction = (element) => {
     if (!(element instanceof HTMLElement)) return;
-    if (element.dataset.uiIconMigrated === 'true') return;
     if (element.closest('[data-ui-icon-templates]')) return;
-    if (element.querySelector(':scope > svg')) {
+
+    const hasExistingIcon = reconcileActionIcons(element);
+    if (element.dataset.uiIconMigrated === 'true') return;
+    if (hasExistingIcon) {
         element.dataset.uiIconMigrated = 'true';
         return;
     }
@@ -92,6 +116,16 @@ const migrateLegacyActionIcons = (root = document) => {
     candidates.forEach(migrateAction);
 };
 
+const migrateAddedNode = (node) => {
+    if (!(node instanceof Element)) return;
+
+    // If another normalizer injects an icon into an already-migrated action,
+    // reconcile the parent action as well as any actions inside the added subtree.
+    const parentAction = node.closest('button, a[href]');
+    if (parentAction instanceof HTMLElement) migrateAction(parentAction);
+    migrateLegacyActionIcons(node);
+};
+
 const initializeLegacyActionIcons = () => migrateLegacyActionIcons(document);
 
 if (document.readyState === 'loading') {
@@ -104,8 +138,6 @@ document.addEventListener('livewire:navigated', initializeLegacyActionIcons);
 
 new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) migrateLegacyActionIcons(node);
-        });
+        mutation.addedNodes.forEach(migrateAddedNode);
     });
 }).observe(document.body, { childList: true, subtree: true });
