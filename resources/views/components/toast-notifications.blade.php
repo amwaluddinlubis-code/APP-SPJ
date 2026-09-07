@@ -1,6 +1,7 @@
 @vite('resources/js/theme-profiles.js')
 @vite('resources/js/maintenance-transaction-links.js')
 @vite('resources/js/transaction-category-controls.js')
+@vite('resources/js/spj-preparation-state-normalizer.js')
 
 @php
     $initialNotifications = collect([
