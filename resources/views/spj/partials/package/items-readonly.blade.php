@@ -8,9 +8,17 @@
                                         <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-[11px] font-bold text-slate-500">{{ $index + 1 }}</span>
                                         <div class="min-w-0 flex-1">
                                             <p class="text-base font-medium leading-tight text-slate-800">{{ $item->item_description ?: $item->description }}</p>
-                                            <p class="mt-0.5 text-xs text-slate-500">{{ $item->quantity }} {{ $item->unit }} · {{ $item->account_code ?: $transaction->account_code }}</p>
+                                            <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                                <span><span class="font-semibold text-slate-600">Volume:</span> {{ $item->quantity }}</span>
+                                                <span><span class="font-semibold text-slate-600">Satuan:</span> {{ $item->unit ?: '—' }}</span>
+                                                <span><span class="font-semibold text-slate-600">Harga Satuan:</span> {{ $rupiah($item->unit_price) }}</span>
+                                                <span><span class="font-semibold text-slate-600">Rekening:</span> {{ $item->account_code ?: $transaction->account_code ?: '—' }}</span>
+                                            </div>
                                         </div>
-                                        <p class="shrink-0 text-base font-semibold text-slate-800">{{ $rupiah($item->amount) }}</p>
+                                        <div class="shrink-0 text-right">
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Nilai</p>
+                                            <p class="mt-0.5 text-base font-semibold text-slate-800">{{ $rupiah($item->amount) }}</p>
+                                        </div>
                                     </div>
                                 @empty
                                     <p class="px-4 py-8 text-center text-base text-slate-500">Tidak ada rincian barang/jasa.</p>
