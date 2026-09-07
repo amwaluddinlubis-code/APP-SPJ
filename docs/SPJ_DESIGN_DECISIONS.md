@@ -26,11 +26,13 @@ Database utama menyimpan user, sekolah, konfigurasi tenant, metadata global, dan
 
 Database tenant menyimpan RKAS/BKU hasil sinkronisasi, transaksi, detail SPJ, package, numbering, audit, dan data kerja sekolah.
 
-Root data aplikasi dikonfigurasi melalui:
+Root data aplikasi dapat dikonfigurasi melalui:
 
 ```env
 SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
+
+Jika env tersebut tidak tersedia, aplikasi fallback ke `storage/app` agar source project tidak mengunci path mesin tertentu.
 
 Database sekolah canonical:
 
@@ -157,7 +159,9 @@ Aturan UI/domain linkage:
 - label pilihan memakai `NOMOR BUKTI - PAYMENT DESCRIPTION`;
 - kandidat tetap harus berada dalam konteks tahun anggaran/sumber dana aktif dan source yang layak.
 
-Linkage tidak boleh dianggap selesai untuk RAB sampai generator benar-benar menggabungkan sumber bahan + upah dan rekonsiliasi nilainya jelas.
+Pada rendering dokumen kategori `PEMELIHARAAN`, context dokumen boleh mengambil rincian barang/material dari transaksi bahan terkait dan pekerja/upah dari transaksi upah terkait. Penggabungan ini hanya untuk rendering; source BKU dan nilai transaksi asal tidak boleh ditulis ulang atau digabung permanen.
+
+Nilai transaksi pada kuitansi/A2 tetap mengikuti transaksi Paket SPJ yang sedang diproses. Bila template RAB memerlukan nilai total pekerjaan gabungan, sumber total harus berasal dari detail bahan + upah yang dirender, bukan dengan menimpa `gross_amount` transaksi asal.
 
 ---
 
@@ -182,7 +186,7 @@ Satu transaksi boleh memiliki banyak penerima honor. Honor tidak boleh dicampur 
 
 Satu transaksi BKU boleh memiliki banyak penerima/penyedia jasa tanpa memecah transaction/package.
 
-Implementasi dasar aktif menggunakan `serviceRecipients` dengan dimensi seperti:
+Implementasi detail menggunakan `serviceRecipients` dengan dimensi seperti:
 
 ```text
 recipient/vendor
@@ -192,6 +196,9 @@ quantity
 unit
 rental_days
 daily_rate
+gross/amount
+tax_amount
+net_amount
 usage period
 payment reference
 agreement
@@ -200,10 +207,10 @@ agreement
 Perhitungan dasar sewa harian:
 
 ```text
-quantity × rental_days × daily_rate = amount penerima
+quantity × rental_days × daily_rate = gross/amount penerima
 ```
 
-Target domain yang wajib sebelum dianggap end-to-end:
+Kontrak agregat:
 
 ```text
 Σ gross penerima = transaction.gross_amount
@@ -211,7 +218,9 @@ Target domain yang wajib sebelum dianggap end-to-end:
 Σ net penerima   = transaction.net_amount
 ```
 
-Pajak harus dapat dipertahankan pada level penerima/service line bila dasar potong/identitas berbeda. Package belum boleh READY bila rekonsiliasi yang diwajibkan tidak sesuai.
+Jika source hanya menyediakan pajak/netto agregat transaksi, aplikasi boleh mengalokasikan tax/net ke penerima secara proporsional terhadap gross dengan koreksi rounding pada baris terakhir agar total kembali persis ke source. Jika data pajak per penerima tersedia dari sumber yang lebih akurat, data tersebut harus diprioritaskan daripada alokasi proporsional.
+
+Package belum boleh READY bila rekonsiliasi yang diwajibkan tidak sesuai. Output dokumen yang menampilkan penerima jamak harus mempertahankan identitas, gross, tax, dan net tiap penerima.
 
 Jangan membuat kategori baru `SEWA_LAPTOP`, `SEWA_MOBIL`, dan sejenisnya. Gunakan subtype/detail di bawah `JASA_LAINNYA`.
 
