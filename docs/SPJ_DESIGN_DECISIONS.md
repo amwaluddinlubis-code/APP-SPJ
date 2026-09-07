@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Keputusan Desain & Aturan Bisnis
 
-Terakhir diperbarui: **2026-09-07**
+Terakhir diperbarui: **2026-09-08**
 
 Dokumen ini adalah sumber keputusan bisnis permanen. Status implementasi/gap aktif ada di `docs/CURRENT_PROGRESS.md`.
 
@@ -17,6 +17,7 @@ Dokumen ini adalah sumber keputusan bisnis permanen. Status implementasi/gap akt
 7. `manual_description` tidak digunakan.
 8. `recipient_name` adalah source; `receipt_recipient_name` adalah overlay operator.
 9. UI tidak boleh melemahkan aturan backend.
+10. Detail Transaksi dan Paket SPJ harus memiliki ownership data tunggal; field yang sama tidak boleh diedit dari dua workspace.
 
 ---
 
@@ -65,7 +66,97 @@ Safe sync:
 
 ---
 
-## 4. Kategori SPJ canonical
+## 4. Ownership Detail Transaksi ↔ Paket SPJ
+
+Keputusan ini bersifat permanen dan menjadi dasar migrasi aktif.
+
+### 4.1 Detail Transaksi
+
+Detail Transaksi adalah workspace fakta transaksi/source. Ia boleh menampilkan:
+
+```text
+nomor bukti/source key
+tanggal transaksi
+uraian source
+kegiatan/rekening
+penerima source
+gross
+PPN
+PPh 21
+PPh 22
+PPh 23
+PPh 4(2)
+SSPD / Pajak Daerah
+total pajak
+netto
+rincian item source
+status source/reconciliation
+status Paket SPJ
+```
+
+Satu-satunya field rincian item yang boleh dikoreksi operator di Detail Transaksi adalah:
+
+```text
+item_description
+```
+
+Aturan item:
+
+```text
+description       = readonly source
+item_description  = editable di Detail Transaksi
+quantity          = readonly
+unit              = readonly
+unit_price        = readonly
+amount            = readonly
+```
+
+`item_description` harus tersimpan sebelum Paket SPJ dapat dibuat/dibuka. Nilai yang baru diketik tetapi belum disimpan tidak dianggap valid untuk membuka Paket.
+
+### 4.2 Paket SPJ
+
+Paket SPJ adalah satu-satunya workspace untuk mutation data dokumen pertanggungjawaban:
+
+```text
+spj_category
+payment_description
+payment_method
+payment_reference
+receipt_recipient_name
+vendor/rekanan
+invoice / metadata SiPLah
+data pengadaan
+data konsumsi/peserta
+data pemeliharaan/pekerja
+data SPPD/pelaksana
+data honor/penerima
+data JASA_LAINNYA/penerima jasa
+penomoran
+preview/generate/download/finalisasi
+```
+
+Paket SPJ hanya membaca `item_description`, quantity, unit, unit price, amount, dan pajak dari transaksi. Paket tidak boleh menyediakan edit kedua untuk data tersebut.
+
+### 4.3 Pajak
+
+Pajak adalah data source transaksi dan tetap dibedakan:
+
+```text
+PPN
+PPh 21
+PPh 22
+PPh 23
+PPh 4(2)
+SSPD / Pajak Daerah
+Total Pajak
+Nilai Netto
+```
+
+Paket SPJ tidak boleh menghitung ulang atau menulis ulang PPN/PPh/SSPD/tax_total/net_amount. Bila UI Paket menampilkan tarif/nilai pajak, sifatnya readonly reference.
+
+---
+
+## 5. Kategori SPJ canonical
 
 ```text
 BARANG
@@ -88,9 +179,11 @@ LAINNYA            -> JASA_LAINNYA
 
 SiPLah bukan kategori. Gunakan `payment_method = siplah`.
 
+Pergantian kategori pada Paket SPJ harus dapat dilakukan tanpa full page reload. Persist backend tetap authoritative; bila persist gagal, UI harus kembali ke kategori sebelumnya.
+
 ---
 
-## 5. Workflow status canonical
+## 6. Workflow status canonical
 
 ```text
 Perlu Perhatian   -> SOURCE_MISSING / requires_reconciliation
@@ -102,9 +195,11 @@ Sudah Bernomor    -> NUMBERED / FINAL
 
 `transaction_items` berasal dari source/sinkronisasi dan **bukan** indikator status pekerjaan operator.
 
+Gateway Detail Transaksi → Paket SPJ wajib memvalidasi `item_description` tersimpan sebelum draft dibuat/dibuka.
+
 ---
 
-## 6. Pengadaan barang/konsumsi
+## 7. Pengadaan barang/konsumsi
 
 Surat Pesanan internal Non-SiPLah memiliki dua tahap:
 
@@ -126,15 +221,17 @@ Jangan menambah rule BAP/BAST <= tanggal transaksi sebagai keputusan domain baru
 
 ---
 
-## 7. Konsumsi
+## 8. Konsumsi
 
-Auto-fill peserta pada Detail Transaksi hanya mengambil `Employee.source_type = DAPODIK`. Participant manual tetap diperbolehkan.
+Auto-fill peserta di workspace Paket SPJ hanya mengambil `Employee.source_type = DAPODIK` bila fitur auto-fill digunakan. Participant manual tetap diperbolehkan.
 
 Jumlah peserta harus konsisten dengan total porsi sesuai rule aktif.
 
+Konsumsi tidak menampilkan isian SiPLah sebagai blok terpisah bila kategori/flow tidak memenuhi kondisi SiPLah yang sah.
+
 ---
 
-## 8. Pemeliharaan
+## 9. Pemeliharaan
 
 Domain utama:
 
@@ -165,7 +262,7 @@ Nilai transaksi pada kuitansi/A2 tetap mengikuti transaksi Paket SPJ yang sedang
 
 ---
 
-## 9. SPPD
+## 10. SPPD
 
 ```text
 1 transaction
@@ -176,13 +273,15 @@ Surat tugas/numbering tetap mengikuti lifecycle dokumen; preview tidak boleh men
 
 ---
 
-## 10. Honor Pegawai
+## 11. Honor Pegawai
 
 Satu transaksi boleh memiliki banyak penerima honor. Honor tidak boleh dicampur dengan worker pemeliharaan tanpa mapping domain yang eksplisit.
 
+Rincian honor adalah data Paket SPJ, bukan field yang harus diisi ulang di Detail Transaksi.
+
 ---
 
-## 11. JASA_LAINNYA multi-penerima
+## 12. JASA_LAINNYA multi-penerima
 
 Satu transaksi BKU boleh memiliki banyak penerima/penyedia jasa tanpa memecah transaction/package.
 
@@ -226,7 +325,7 @@ Jangan membuat kategori baru `SEWA_LAPTOP`, `SEWA_MOBIL`, dan sejenisnya. Gunaka
 
 ---
 
-## 12. Lifecycle dan locking
+## 13. Lifecycle dan locking
 
 Status package:
 
@@ -247,7 +346,7 @@ Prinsip:
 
 ---
 
-## 13. Penomoran
+## 14. Penomoran
 
 1. Setiap jenis dokumen memiliki domain nomor sendiri.
 2. Nomor mengikuti tanggal/peristiwa dokumen bila tersedia.
@@ -259,17 +358,19 @@ Prinsip:
 
 ---
 
-## 14. UI Paket SPJ
+## 15. UI Paket SPJ
 
 Sub-tab package:
 
 ```text
 Rincian
-├── Rincian Transaksi
+├── Rincian Transaksi (readonly)
 └── Dokumen & Template
 Isian Manual
 Penomoran
 ```
+
+Rincian transaksi di Paket SPJ tidak menjadi pintu kedua untuk edit `item_description`, quantity, unit, harga, nilai, atau pajak.
 
 Perubahan UI tidak boleh mengubah validation, lifecycle, atau numbering.
 
@@ -277,13 +378,28 @@ Gunakan primitive/theme token canonical (`x-ui.*`, `ui-*`, `--ui-*`, `--theme-*`
 
 ---
 
-## 15. Audit
+## 16. Compatibility path selama migrasi
 
-Aktivitas sensitif yang perlu audited mencakup sync, perubahan overlay, prepare/READY, numbering, cancellation/reissue, finalization/reopen, reconciliation, reset/restore tenant, dan perubahan konfigurasi penting.
+Compatibility path yang masih dapat menulis data SPJ dari arsitektur lama harus dianggap sementara, bukan bagian desain final.
+
+Target final:
+
+- create/open draft melalui gateway Detail Transaksi → `CreateSpjDraftUseCase`;
+- update data Paket melalui use case Paket SPJ;
+- `TransactionController` hanya mengubah data transaksi yang memang dimiliki Detail Transaksi, terutama `item_description`;
+- route/use-case prepare lama yang menerima payload SPJ dari transaksi dipensiunkan setelah pemanggil aktif tidak ada.
+
+Rencana penutupan compatibility path ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
 ---
 
-## 16. Status implementasi
+## 17. Audit
+
+Aktivitas sensitif yang perlu audited mencakup sync, perubahan overlay, create/open draft, perubahan kategori, update Paket, READY, numbering, cancellation/reissue, finalization/reopen, reconciliation, reset/restore tenant, dan perubahan konfigurasi penting.
+
+---
+
+## 18. Status implementasi
 
 Jangan menaruh daftar PASS panjang di dokumen ini. Gap implementasi aktif dipusatkan di:
 
@@ -295,4 +411,10 @@ Roadmap penyelesaiannya ada di:
 
 ```text
 docs/DEVELOPMENT_ROADMAP.md
+```
+
+Rencana migrasi prioritas:
+
+```text
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 ```
