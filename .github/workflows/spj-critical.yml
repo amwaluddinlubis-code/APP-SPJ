@@ -1,0 +1,67 @@
+name: SPJ Critical Verification
+
+on:
+  push:
+    branches:
+      - gui-standardization
+  pull_request:
+    branches:
+      - gui-standardization
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spj-critical-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build and SPJ critical tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite, zip, gd
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views
+          touch database/testing.sqlite
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate application key
+        run: php artisan key:generate --no-interaction
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Pint check
+        run: php vendor/bin/pint --test
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Blade compile check
+        run: php artisan view:cache --no-interaction
+
+      - name: SPJ critical tests
+        run: php artisan test --testsuite="SPJ Critical" --compact
