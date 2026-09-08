@@ -45,13 +45,11 @@
 <x-page-header :title="$transaction->no_bukti"
     :subtitle="$transaction->description ?: 'Uraian transaksi belum tersedia.'"
     kicker="{{ $headerVisual['label'] }} · Detail transaksi ARKAS / BKU">
-    <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid sm:grid-cols-3">
         <x-stat-item label="Nilai bruto" :value="$rupiah($transaction->gross_amount)"
             :hint="$transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" />
-        <x-stat-item label="Total pajak" :value="$rupiah($transaction->tax_total)"
-            hint="PPN, PPh, dan SSPD ditampilkan terpisah di bawah" />
         <x-stat-item label="Nilai netto" :value="$rupiah($transaction->net_amount)"
-            hint="Nilai bruto dikurangi total pajak" />
+            hint="Nilai setelah potongan pajak" />
         <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item"
             :hint="'Akumulasi: '.$rupiah($totalItems)" />
     </div>
@@ -66,7 +64,7 @@
             </div>
         </x-slot:title>
 
-        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
             <div class="px-5 py-4">
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima / Penyedia</p>
                 <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p>
@@ -80,6 +78,11 @@
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Rekening</p>
                 <p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">{{ $transaction->account_code ?: '—' }}</p>
                 <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->account_name ?: 'Rekening belum tersedia' }}</p>
+            </div>
+            <div class="px-5 py-4">
+                <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Pajak</p>
+                <p class="mt-1 font-mono text-base font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->tax_total) }}</p>
+                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Total pajak sesuai sumber BKU/ARKAS.</p>
             </div>
         </div>
     </x-ui.panel>
