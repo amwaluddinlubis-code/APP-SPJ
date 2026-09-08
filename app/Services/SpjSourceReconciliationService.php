@@ -3,12 +3,19 @@
 namespace App\Services;
 
 use App\Models\Transaction;
+use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class SpjSourceReconciliationService
 {
+    public const REVIEWED_NO_BUSINESS_CHANGE = 'REVIEWED_NO_BUSINESS_CHANGE';
+
+    public const ACCEPT_SOURCE = 'ACCEPT_SOURCE';
+
+    public const KEEP_OVERLAY = 'KEEP_OVERLAY';
+
     /**
      * @return array{
      *     needs_attention:bool,
@@ -16,6 +23,8 @@ class SpjSourceReconciliationService
      *     requires_reconciliation:bool,
      *     events:Collection<int,object>,
      *     latest:?object,
+     *     resolutions:Collection<int,object>,
+     *     latest_resolution:?object,
      *     action_hint:?string
      * }
      */
@@ -25,6 +34,7 @@ class SpjSourceReconciliationService
         $requiresReconciliation = (bool) $transaction->requires_reconciliation;
         $events = $this->events($transaction->id);
         $latest = $events->first();
+        $resolutions = $this->resolutions($transaction->id);
 
         return [
             'needs_attention' => $sourceStatus === 'SOURCE_MISSING' || $requiresReconciliation,
@@ -32,6 +42,8 @@ class SpjSourceReconciliationService
             'requires_reconciliation' => $requiresReconciliation,
             'events' => $events,
             'latest' => $latest,
+            'resolutions' => $resolutions,
+            'latest_resolution' => $resolutions->first(),
             'action_hint' => $this->actionHint($transaction, $sourceStatus, $requiresReconciliation, $latest),
         ];
     }
@@ -60,6 +72,102 @@ class SpjSourceReconciliationService
 
                 return $event;
             });
+    }
+
+    /** @return Collection<int,object> */
+    public function resolutions(int $transactionId): Collection
+    {
+        if (! Schema::connection('school')->hasTable('transaction_source_reconciliations')) {
+            return collect();
+        }
+
+        return DB::connection('school')
+            ->table('transaction_source_reconciliations')
+            ->where('transaction_id', $transactionId)
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get()
+            ->map(function (object $resolution): object {
+                $resolution->label = $this->resolutionLabel((string) $resolution->resolution);
+
+                return $resolution;
+            });
+    }
+
+    /**
+     * @return array{id:int,resolution:string,label:string,resolved_at:mixed}
+     */
+    public function resolve(
+        Transaction $transaction,
+        string $resolution,
+        ?string $notes,
+        ?int $resolvedBy,
+        ?int $sourceEventId = null,
+    ): array {
+        $resolution = strtoupper(trim($resolution));
+        if (! in_array($resolution, [self::REVIEWED_NO_BUSINESS_CHANGE, self::ACCEPT_SOURCE, self::KEEP_OVERLAY], true)) {
+            throw new DomainException('Keputusan rekonsiliasi tidak valid.');
+        }
+
+        return DB::connection('school')->transaction(function () use ($transaction, $resolution, $notes, $resolvedBy, $sourceEventId): array {
+            DB::connection('school')->table('transactions')->where('id', $transaction->id)->lockForUpdate()->first();
+            $transaction->refresh()->load('spjPackage');
+            $report = $this->forTransaction($transaction);
+
+            if ($report['source_status'] === 'SOURCE_MISSING') {
+                throw new DomainException('Transaksi masih hilang dari sumber ARKAS/BKU. Sinkronkan atau verifikasi sumber terlebih dahulu.');
+            }
+            if (! $report['requires_reconciliation']) {
+                throw new DomainException('Transaksi ini tidak lagi memerlukan rekonsiliasi.');
+            }
+
+            $latest = $report['latest'];
+            if ($latest === null) {
+                throw new DomainException('Peristiwa perubahan sumber tidak ditemukan. Sinkronkan ulang ARKAS/BKU sebelum menyelesaikan rekonsiliasi.');
+            }
+            if ($sourceEventId !== null && (int) $latest->id !== $sourceEventId) {
+                throw new DomainException('Sumber ARKAS/BKU berubah lagi sejak panel dibuka. Muat ulang halaman dan tinjau perubahan terbaru.');
+            }
+
+            $hasBusinessDiff = $latest->changes !== [];
+            $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
+            $lockedPackage = in_array($packageStatus, ['NUMBERED', 'FINAL'], true);
+
+            if ($resolution === self::REVIEWED_NO_BUSINESS_CHANGE && $hasBusinessDiff) {
+                throw new DomainException('Masih ada perubahan nilai sumber yang harus diputuskan. Gunakan keputusan menerima sumber atau mempertahankan overlay SPJ.');
+            }
+            if (in_array($resolution, [self::ACCEPT_SOURCE, self::KEEP_OVERLAY], true) && ! $hasBusinessDiff) {
+                throw new DomainException('Tidak ada perubahan nilai bisnis aktif. Gunakan Tandai Sudah Ditinjau.');
+            }
+            if ($lockedPackage && $hasBusinessDiff) {
+                throw new DomainException('Paket sudah bernomor/final. Perubahan nilai sumber harus ditangani melalui workflow pembatalan, reissue, atau revisi resmi.');
+            }
+
+            $now = now();
+            $id = DB::connection('school')->table('transaction_source_reconciliations')->insertGetId([
+                'transaction_id' => $transaction->id,
+                'source_event_id' => $latest->id,
+                'resolution' => $resolution,
+                'notes' => filled($notes) ? trim((string) $notes) : null,
+                'resolved_by' => $resolvedBy,
+                'resolved_at' => $now,
+                'source_hash' => $transaction->source_hash,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            DB::connection('school')->table('transactions')->where('id', $transaction->id)->update([
+                'requires_reconciliation' => false,
+                'updated_at' => $now,
+            ]);
+
+            return [
+                'id' => $id,
+                'resolution' => $resolution,
+                'label' => $this->resolutionLabel($resolution),
+                'resolved_at' => $now,
+            ];
+        });
     }
 
     /**
@@ -131,6 +239,16 @@ class SpjSourceReconciliationService
         };
     }
 
+    private function resolutionLabel(string $resolution): string
+    {
+        return match ($resolution) {
+            self::REVIEWED_NO_BUSINESS_CHANGE => 'Sudah ditinjau — tidak ada perubahan nilai bisnis',
+            self::ACCEPT_SOURCE => 'Perubahan sumber diterima',
+            self::KEEP_OVERLAY => 'Overlay SPJ dipertahankan',
+            default => str_replace('_', ' ', $resolution),
+        };
+    }
+
     private function fieldLabel(string $field): string
     {
         return match ($field) {
@@ -174,11 +292,15 @@ class SpjSourceReconciliationService
                 : null;
         }
 
+        if ($latest && $latest->changes === []) {
+            return 'Perubahan sumber terdeteksi pada metadata/snapshot, tetapi tidak ada perubahan nilai bisnis aktif. Setelah diperiksa, tandai rekonsiliasi sebagai sudah ditinjau.';
+        }
+
         $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
         if (in_array($packageStatus, ['NUMBERED', 'FINAL'], true)) {
             return 'Dokumen sudah bernomor/final. Jangan mengubahnya diam-diam; tinjau perbedaan lalu gunakan workflow pembatalan/reissue/revisi resmi bila perubahan sumber harus diadopsi.';
         }
 
-        return 'Tinjau perbedaan sumber di bawah. Overlay manual tetap dipertahankan; sesuaikan Paket SPJ hanya bila perubahan ARKAS memang harus diadopsi.';
+        return 'Tinjau perbedaan sumber di bawah. Pilih apakah perubahan sumber diterima atau overlay manual SPJ tetap dipertahankan.';
     }
 }
