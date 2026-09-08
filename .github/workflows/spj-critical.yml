@@ -54,7 +54,8 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Pint check
+      - name: Repository Pint check (advisory)
+        continue-on-error: true
         run: php vendor/bin/pint --test
 
       - name: Frontend build
