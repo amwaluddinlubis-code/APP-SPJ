@@ -21,6 +21,7 @@ class Transaction extends Model
         'id_kas_umum',
         'no_bukti',
         'transaction_date',
+        'rkas_date',
         'source_created_at',
         'source_last_updated_at',
         'description',
@@ -186,6 +187,6 @@ class Transaction extends Model
 
     protected function casts(): array
     {
-        return ['transaction_date' => 'date', 'source_created_at' => 'datetime', 'source_last_updated_at' => 'datetime', 'invoice_date' => 'date', 'event_date' => 'date', 'participant_count' => 'integer', 'source_missing_since' => 'datetime', 'requires_reconciliation' => 'boolean', 'gross_amount' => 'decimal:2', 'ppn' => 'decimal:2', 'ppn_rate' => 'decimal:4', 'pph21' => 'decimal:2', 'pph21_rate' => 'decimal:4', 'pph22' => 'decimal:2', 'pph22_rate' => 'decimal:4', 'pph23' => 'decimal:2', 'pph23_rate' => 'decimal:4', 'pph4' => 'decimal:2', 'pph4_rate' => 'decimal:4', 'sspd' => 'decimal:2', 'sspd_rate' => 'decimal:4', 'tax_total' => 'decimal:2', 'net_amount' => 'decimal:2', 'is_siplah' => 'boolean'];
+        return ['transaction_date' => 'date', 'rkas_date' => 'date', 'source_created_at' => 'datetime', 'source_last_updated_at' => 'datetime', 'invoice_date' => 'date', 'event_date' => 'date', 'participant_count' => 'integer', 'source_missing_since' => 'datetime', 'requires_reconciliation' => 'boolean', 'gross_amount' => 'decimal:2', 'ppn' => 'decimal:2', 'ppn_rate' => 'decimal:4', 'pph21' => 'decimal:2', 'pph21_rate' => 'decimal:4', 'pph22' => 'decimal:2', 'pph22_rate' => 'decimal:4', 'pph23' => 'decimal:2', 'pph23_rate' => 'decimal:4', 'pph4' => 'decimal:2', 'pph4_rate' => 'decimal:4', 'sspd' => 'decimal:2', 'sspd_rate' => 'decimal:4', 'tax_total' => 'decimal:2', 'net_amount' => 'decimal:2', 'is_siplah' => 'boolean'];
     }
 }
