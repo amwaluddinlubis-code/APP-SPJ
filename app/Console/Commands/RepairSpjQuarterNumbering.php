@@ -58,6 +58,7 @@ class RepairSpjQuarterNumbering extends Command
         foreach ($documents as $document) {
             if ($document->status === 'FINAL') {
                 $skippedFinal++;
+
                 continue;
             }
             if ($document->status !== 'NUMBERED') {
