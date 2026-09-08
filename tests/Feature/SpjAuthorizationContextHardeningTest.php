@@ -60,6 +60,8 @@ class SpjAuthorizationContextHardeningTest extends TestCase
     public function test_sensitive_administrator_routes_remain_administrator_only(): void
     {
         foreach ([
+            'spj.documents.cancel',
+            'spj.documents.replace',
             'spj.quarter-numbering',
             'spj.quarter-close',
             'spj.quarter-reopen',
