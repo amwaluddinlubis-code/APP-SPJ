@@ -4,14 +4,12 @@ namespace App\Livewire;
 
 use App\Models\FiscalYear;
 use App\Models\Transaction;
-use App\Services\SpjTransactionDetailsService;
 use App\Services\SpjWorkflowFilterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -37,19 +35,6 @@ class TransactionsTable extends Component
 
     #[Url(except: 15)]
     public int|string $perPage = 15;
-
-    public bool $showEditor = false;
-
-    public ?int $editingTransactionId = null;
-
-    /** @var array<string, mixed> */
-    public array $form = [
-        'spj_category' => '',
-        'payment_description' => '',
-        'payment_method' => '',
-        'payment_reference' => '',
-        'receipt_recipient_name' => '',
-    ];
 
     public function mount(): void
     {
@@ -78,82 +63,6 @@ class TransactionsTable extends Component
     {
         $this->reset(['q', 'status', 'month', 'quarter', 'semester']);
         $this->resetPage();
-    }
-
-    public function edit(int $transactionId): void
-    {
-        $transaction = $this->findActiveTransaction($transactionId);
-
-        if (! $transaction) {
-            $this->dispatch('app-notify', type: 'error', message: 'Transaksi tidak ditemukan pada tahun aktif.');
-
-            return;
-        }
-
-        if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
-            $this->dispatch('app-notify', type: 'error', message: 'Transaksi dikunci karena paket SPJ sudah bernomor atau final.');
-
-            return;
-        }
-
-        $this->editingTransactionId = $transaction->id;
-        $this->form = [
-            'spj_category' => (string) ($transaction->spj_category ?: ''),
-            'payment_description' => (string) ($transaction->payment_description ?: $transaction->description ?: ''),
-            'payment_method' => (string) ($transaction->payment_method ?: ''),
-            'payment_reference' => (string) ($transaction->payment_reference ?: ''),
-            'receipt_recipient_name' => (string) ($transaction->receipt_recipient_name ?: $transaction->effective_receipt_recipient_name ?: ''),
-        ];
-        $this->resetValidation();
-        $this->showEditor = true;
-    }
-
-    public function closeEditor(): void
-    {
-        $this->showEditor = false;
-        $this->editingTransactionId = null;
-        $this->resetValidation();
-    }
-
-    public function save(SpjTransactionDetailsService $details): void
-    {
-        $transaction = $this->findActiveTransaction($this->editingTransactionId);
-
-        if (! $transaction) {
-            $this->dispatch('app-notify', type: 'error', message: 'Transaksi tidak ditemukan pada tahun aktif.');
-            $this->closeEditor();
-
-            return;
-        }
-
-        if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
-            $this->dispatch('app-notify', type: 'error', message: 'Transaksi dikunci karena paket SPJ sudah bernomor atau final.');
-            $this->closeEditor();
-
-            return;
-        }
-
-        $data = $this->validate([
-            'form.spj_category' => ['nullable', Rule::in(['BARANG', 'KONSUMSI', 'PEMELIHARAAN', 'JASA_LAINNYA', 'SPPD', 'HONOR_PEGAWAI'])],
-            'form.payment_description' => ['nullable', 'string', 'max:4000'],
-            'form.payment_method' => ['nullable', Rule::in(['transfer_bank', 'siplah', 'tunai'])],
-            'form.payment_reference' => ['nullable', 'string', 'max:160'],
-            'form.receipt_recipient_name' => ['nullable', 'string', 'max:255'],
-        ])['form'];
-
-        $transaction->update([
-            'spj_category' => blank($data['spj_category'] ?? null) ? null : $data['spj_category'],
-            'payment_description' => blank($data['payment_description'] ?? null) ? null : trim($data['payment_description']),
-            'payment_method' => blank($data['payment_method'] ?? null) ? null : trim($data['payment_method']),
-            'payment_reference' => blank($data['payment_reference'] ?? null) ? null : trim($data['payment_reference']),
-            'receipt_recipient_name' => blank($data['receipt_recipient_name'] ?? null) ? null : trim($data['receipt_recipient_name']),
-        ]);
-
-        $transaction->load('items');
-        $details->synchronize($transaction, $data);
-
-        $this->dispatch('app-notify', type: 'success', message: 'Data SPJ transaksi berhasil disimpan.');
-        $this->closeEditor();
     }
 
     public function getStatsProperty(): object
@@ -294,15 +203,6 @@ class TransactionsTable extends Component
         }
 
         return $query;
-    }
-
-    private function findActiveTransaction(?int $transactionId): ?Transaction
-    {
-        if (! $transactionId) {
-            return null;
-        }
-
-        return Transaction::query()->with('spjPackage')->activeContext()->find($transactionId);
     }
 
     private function activeYear(): FiscalYear
