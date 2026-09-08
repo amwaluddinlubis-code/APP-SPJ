@@ -21,8 +21,9 @@
                             @else
                                 <div class="mt-4 rounded-lg border border-dashed border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] p-6 text-center">
                                     <p class="text-base font-medium text-slate-700">Belum bernomor</p>
-                                    <p class="mt-1 text-xs text-slate-500">Klik tombol di bawah untuk menerbitkan nomor SPJ sesuai urutan BKU.</p>
-                                    <form class="mt-4" method="POST" action="{{ route('spj.assign-number', $package->id) }}">@csrf<button class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700">Terbitkan nomor SPJ</button><p class="mt-2 text-xs text-slate-500">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan, BAP, dan BAST diterbitkan terpisah menurut tanggal dokumennya.</p></form>
+                                    <p class="mt-1 text-xs text-slate-500">Periksa kembali data sumber dan Data Umum sebelum menerbitkan nomor.</p>
+                                    @include('spj.partials.package.numbering-preflight-modal')
+                                    <p class="mt-2 text-xs text-slate-500">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan, BAP, dan BAST diterbitkan terpisah menurut tanggal dokumennya.</p>
                                 </div>
                             @endif
                             @if($package->documents->isNotEmpty())
