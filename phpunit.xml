@@ -15,6 +15,7 @@
             <file>tests/Unit/SpjScenarioFactoryTest.php</file>
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
+            <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
             <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
             <file>tests/Feature/SecurityHardeningTest.php</file>
             <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
