@@ -43,13 +43,17 @@ class VerifySpj extends Command
         }
 
         if (! $this->option('skip-tests')) {
-            if (! $this->runStep('SPJ Critical tests', [
-                PHP_BINARY,
-                base_path('artisan'),
-                'test',
-                '--testsuite=SPJ Critical',
-                '--compact',
-            ])) {
+            if (! $this->runStep(
+                'SPJ Critical tests',
+                [
+                    PHP_BINARY,
+                    base_path('artisan'),
+                    'test',
+                    '--testsuite=SPJ Critical',
+                    '--compact',
+                ],
+                environment: ['APP_ENV' => 'testing'],
+            )) {
                 return $this->finish(false);
             }
         } else {
@@ -97,10 +101,13 @@ class VerifySpj extends Command
         return $this->finish(true);
     }
 
-    /** @param array<int, string> $command */
-    private function runStep(string $name, array $command, bool $blocking = true): bool
+    /**
+     * @param  array<int, string>  $command
+     * @param  array<string, string>|null  $environment
+     */
+    private function runStep(string $name, array $command, bool $blocking = true, ?array $environment = null): bool
     {
-        $process = new Process($command, base_path(), null, null, 1200);
+        $process = new Process($command, base_path(), $environment, null, 1200);
 
         $this->components->task($name, function () use ($process): bool {
             $process->run(function (string $type, string $buffer): void {
