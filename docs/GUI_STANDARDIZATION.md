@@ -1,23 +1,19 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-07**
+Terakhir diverifikasi: **2026-09-08**
 
-Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`. Tujuannya menjaga aplikasi operasional sekolah tetap konsisten, mudah dipahami, dan mengikuti tema yang dipilih user.
-
----
+Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 
 ## 1. Prinsip utama
 
 - UI harus terasa sebagai aplikasi kerja operator sekolah, bukan admin panel generik.
 - Data ARKAS/BKU harus terlihat sebagai readonly source; data operator SPJ terlihat editable.
+- Detail Transaksi dan Paket SPJ tidak boleh menyediakan input ganda untuk field yang sama.
 - Komponen sejenis memakai primitive yang sama.
-- Accent non-semantik tidak boleh hard-coded.
-- Tailwind terutama untuk layout/spacing/responsive; theme warna berasal dari token.
-- Alpine hanya untuk interaksi UI ringan; Livewire untuk state server-backed; Laravel untuk auth/validation/business rule.
+- Tailwind terutama untuk layout/spacing/responsive; warna non-semantik mengikuti token theme.
+- Alpine/JS hanya menangani interaksi UI; business rule tetap backend.
 - Jangan membuat satu halaman menjadi satu card raksasa.
-- Perubahan visual tidak boleh mengubah business rule secara implisit.
-
----
+- Perubahan visual tidak boleh mengubah lifecycle/validation/numbering secara implisit.
 
 ## 2. Layout global
 
@@ -35,11 +31,11 @@ Sticky action / utility
 
 Pada halaman panjang tersedia kontrol sticky **Ke atas**.
 
----
+Header kanan authenticated memakai menu **Profil User**, bukan badge teknis runtime. Dropdown dapat menampilkan identitas user, role, akses manajemen user untuk admin, dan logout.
 
 ## 3. Sistem tema
 
-Token utama:
+Gunakan token utama:
 
 ```text
 --theme-accent
@@ -50,11 +46,7 @@ Token utama:
 --theme-action-fg
 --theme-action-hover-bg
 --theme-action-hover-fg
-```
 
-Surface/text/border:
-
-```text
 --ui-surface-base
 --ui-surface-soft
 --ui-surface-muted
@@ -65,148 +57,92 @@ Surface/text/border:
 --ui-fg-muted
 ```
 
-Profile/density:
-
-```text
---profile-card-radius
---profile-control-radius
---profile-card-shadow
---profile-content-padding
---profile-section-gap
---profile-control-height
-```
-
-Aturan: dark appearance memakai token yang sama; semantic success/warning/danger/status tetap bermakna; compatibility layer boleh mengoreksi markup lama, tetapi markup baru memakai token canonical.
-
-### 3.1 Audit warna lintas-view
-
-Seluruh authenticated application workspace di bawah `<main>` kini memiliki global compatibility layer:
-
-```text
-resources/css/view-theme-hardening.css
-```
-
-Layer ini dijalankan setelah seluruh compatibility CSS fitur dan mengubah ownership warna legacy non-semantik dari Tailwind palette statis ke token theme aktif. Sesudahnya hanya ada satu exception terkontrol:
-
-```text
-resources/css/semantic-status-colors.css
-```
-
-Exception tersebut hanya menjaga perbedaan visual status workflow canonical pada `<x-ui.status-badge>`; ia bukan layer dekorasi umum.
-
-Cakupan hardening utama:
-
-```text
-background/surface neutral
-foreground/font neutral
-accent indigo/violet/blue/sky/cyan
-border/divider neutral + accent
-gradient hero/chrome
-hover/focus/ring
-variant background dengan opacity
-```
-
-Dengan demikian class lama seperti `bg-white`, `bg-slate-*`, `text-slate-*`, `bg-indigo-*`, `text-indigo-*`, atau hover/focus sejenis dapat tetap ada sementara sebagai **compatibility hook**, tetapi warna aktual non-semantik pada authenticated view tidak lagi dimiliki oleh palette tersebut.
-
-Pengecualian yang sengaja dipertahankan:
-
-- emerald/green untuk success;
-- amber/yellow/orange untuk warning/attention;
-- rose/red untuk danger/error;
-- sky/indigo/violet yang memang merepresentasikan status workflow canonical melalui `ui-status-badge`;
-- `text-white` serta overlay putih transparan pada hero gelap bila dibutuhkan untuk kontras;
-- PDF/print/template-preview yang membutuhkan warna output tetap;
-- public/auth/setup/pre-login yang tidak berada pada authenticated `<main>` dan dapat memiliki branding sendiri.
-
-Kode baru tetap **tidak boleh** menambah hard-coded palette hanya karena compatibility layer tersedia.
-
----
+Semantic success/warning/danger tetap boleh memakai semantic color. Kode baru tidak boleh bergantung pada hard-coded palette non-semantik hanya karena compatibility layer tersedia.
 
 ## 4. Primitive UI resmi
 
-Utamakan `x-ui.page-shell`, `x-ui.alert`, `x-ui.empty-state`, `x-ui.badge`, `x-ui.detail-list`, `x-ui.detail-item`, `x-ui.toolbar`, `x-ui.modal`, `x-ui.action-menu`, `x-ui.loading`, `x-ui.sticky-actions`, `x-ui.danger-zone`, `x-ui.table`, `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, `x-ui.icon`, `x-ui.form-section`, dan `x-ui.status-badge`.
-
-Legacy components yang sudah diarahkan ke sistem baru termasuk `page-filter`, `page-table-per-page`, `tabs`, `stat-item`, `error-alert`, dan `loading-spinner`.
-
-### 4.1 Icon canonical
-
-Gunakan `<x-ui.icon>` untuk icon pada button, link, action, status helper, dan navigasi baru. Component menggunakan inline SVG `stroke="currentColor"`, sehingga warna mengikuti foreground parent dan otomatis cocok dengan theme aktif.
-
-Contoh:
-
-```blade
-<x-ui.button type="submit">
-    <x-ui.icon name="save" size="sm" />
-    Simpan
-</x-ui.button>
-
-<x-ui.button variant="secondary" :href="route('transactions.index')">
-    <x-ui.icon name="arrow-left" size="sm" />
-    Kembali
-</x-ui.button>
-```
-
-Ukuran canonical:
+Utamakan:
 
 ```text
-xs -> 14px
-sm -> 16px  (default untuk button compact/normal)
-md -> 20px  (default component)
-lg -> 24px
-xl -> 32px
+x-ui.page-shell
+x-ui.alert
+x-ui.empty-state
+x-ui.badge
+x-ui.detail-list / detail-item
+x-ui.toolbar
+x-ui.modal
+x-ui.action-menu
+x-ui.loading
+x-ui.sticky-actions
+x-ui.danger-zone
+x-ui.table
+x-ui.field
+x-ui.input
+x-ui.select
+x-ui.textarea
+x-ui.button
+x-ui.icon
+x-ui.form-section
+x-ui.status-badge
 ```
 
-Nama icon yang tersedia saat ini:
-
-```text
-save, edit/pencil, trash/delete, plus/add, minus,
-search, filter, refresh/reload, download, upload,
-arrow-left/back, arrow-right/next, arrow-up, arrow-down,
-chevron-left, chevron-right, chevron-up, chevron-down,
-check/success, x/close, eye/view, printer/print,
-document/file, database, settings/gear, home,
-user, users, calendar, clock, info, warning/alert,
-lock, unlock, external-link, menu
-```
-
-Aturan aksesibilitas:
-
-- icon dekoratif di dalam button berlabel tidak perlu `label`; component menghasilkan `aria-hidden="true"`;
-- icon yang berdiri sendiri harus diberi `label`, contoh `<x-ui.icon name="info" label="Informasi" />`;
-- jangan memakai emoji sebagai pengganti icon action canonical;
-- jangan menduplikasi SVG manual jika icon yang sama sudah tersedia di `x-ui.icon`.
-
----
+Icon action baru sebaiknya memakai `<x-ui.icon>` ketika markup native dirapikan. Icon dekoratif pada button berlabel menggunakan `aria-hidden`; icon standalone diberi label aksesibel.
 
 ## 5. Form dan input
 
-Gunakan `ui-input`, `ui-select`, `ui-textarea`, atau primitive Blade terkait. Label, required, hint/error, readonly/disabled, dan focus ring harus jelas. Form panjang dibagi menjadi panel bermakna dan top-level panel memakai spacing konsisten.
-
-`dark-form-controls.css` adalah safety layer agar control pada dark appearance tidak kembali putih.
-
----
+- label, required, hint/error, readonly/disabled, focus ring harus jelas;
+- form panjang dibagi menjadi section bermakna;
+- input numeric mengikuti tipe data sebenarnya;
+- uang/tarif/harga menggunakan accounting Indonesia tanpa `Rp` dan tanpa desimal (`1.000`);
+- hari/porsi/bulan/kali menggunakan integer tanpa koma/desimal;
+- width field mengikuti pola datanya, bukan semua dibuat sama lebar.
 
 ## 6. Tabel dan daftar
 
-Header konsisten, angka rata kanan bila relevan, hover mengikuti token theme, tabel lebar memakai horizontal scroll, pagination/per-page mengikuti pola global, dan daftar repetitif sebaiknya compact.
+Kontrak umum:
 
----
+- row compact untuk data repetitif;
+- angka rata kanan;
+- tabel lebar memakai horizontal scroll;
+- hover mengikuti token theme;
+- satu tabel hanya boleh mempunyai satu pagination;
+- jika sebuah tabel sudah memiliki pager lokal Alpine, beri `data-pagination="none"` agar `table-ui-standardization.js` tidak menyuntik pager kedua.
 
-## 7. Detail Transaksi dan filter workflow
+Untuk tabel kategori SPJ non-BARANG:
 
-Detail Transaksi adalah workspace operator:
+- pagination/filter/per-page berada di bawah tabel;
+- satu radio **Penerima Utama**;
+- row height/input dibuat compact;
+- currency accounting, count integer.
+
+## 7. Daftar Transaksi
+
+Setiap transaksi menampilkan **satu tombol Aksi** pada layout aktif. Tombol membuka modal yang berisi pilihan navigasi seperti Detail Transaksi dan Paket SPJ.
+
+Jangan menghidupkan kembali editor SPJ di `TransactionsTable` Livewire. Tabel transaksi bukan workspace mutation kategori/payment/vendor SPJ.
+
+Markup mobile dan desktop boleh sama-sama memiliki trigger pada source template, tetapi hanya layout yang relevan yang tampil pada viewport masing-masing.
+
+## 8. Detail Transaksi
+
+Detail Transaksi adalah workspace source/context, bukan builder SPJ.
+
+Urutan canonical:
 
 ```text
-Data ARKAS/BKU readonly
-→ Data Umum SPJ
-→ Detail Kategori
-→ Kelengkapan
-→ Buat/Perbarui Paket
+Header Transaksi
+→ Informasi Referensi ARKAS/BKU + Total Pajak
+→ Rincian Barang/Jasa
+→ Status Paket SPJ
 ```
 
-Rincian item dibuat compact. Untuk `KONSUMSI`, auto-fill `fillTeachers()` adalah **Dapodik-only**.
+`item_description` adalah satu-satunya field item yang editable. `description`, quantity, unit, unit price, amount readonly.
 
-Filter status pada halaman `/transaksi` dan `/spj?tab=persiapan` memakai konsep workflow operator yang sama dan tidak lagi memakai status mentah transaksi sumber. Kontrak canonical:
+Rincian pajak PPN/PPh/SSPD tidak perlu menjadi panel besar di Detail Transaksi. Detail lengkap tersedia pada Paket SPJ → **Rincian Pajak**.
+
+## 9. Filter workflow
+
+Kontrak canonical:
 
 ```text
 Perlu Perhatian   -> SOURCE_MISSING atau requires_reconciliation
@@ -216,170 +152,164 @@ Siap Dinomori     -> paket READY
 Sudah Bernomor    -> paket NUMBERED atau FINAL
 ```
 
-Kelompok normal harus eksklusif terhadap **Perlu Perhatian** agar satu transaksi tidak dihitung sekaligus sebagai masalah sumber dan pekerjaan normal. Keberadaan `transaction_items` bukan indikator pekerjaan operator karena rincian berasal dari sinkronisasi `kas_umum`; karena itu state `needs_details` bukan lagi konsep workflow canonical. URL legacy `state=needs_details` hanya dipertahankan sementara sebagai alias kompatibilitas ke **Perlu Perhatian** sampai markup Persiapan lama dirapikan.
+Keberadaan `transaction_items` bukan indikator pekerjaan operator.
 
-Filter periode memakai prioritas **Bulan → Triwulan → Semester** bila lebih dari satu parameter ada; filter yang lebih spesifik tidak boleh bertabrakan dengan filter periode yang lebih luas.
+## 10. Paket SPJ — toolbar dan summary
 
----
+URL utama: `/spj?tab=paket&package_id=...`.
 
-## 8. SPJ Package — struktur canonical saat ini
-
-URL `/spj?tab=paket&package_id=...` memiliki sub-tab `Rincian`, `Isian Manual`, dan `Penomoran`.
-
-### 8.1 Rincian
-
-Tab Rincian harus memperlihatkan dua sibling panel jelas: **Rincian Transaksi** dan **Dokumen & Template**. Keduanya memiliki border/radius/shadow sendiri, header berbeda tetapi tetap theme-aware, dan gap konsisten.
-
-`Dokumen & Template` berada di sub-tab Rincian agar Isian Manual/Penomoran tidak ikut memanjang. Placement saat ini dilakukan oleh `resources/js/spj-package-document-placement.js` dan `resources/css/spj-package-document-placement.css`.
-
-### 8.2 Dokumen & Template
-
-Gunakan compact list `status / nama / tipe-format / actions`; group header subordinate, metadata padat, action mudah ditemukan, zebra/hover theme-aware, status tetap semantic.
-
-### 8.3 Isian Manual
-
-Background panel, header, text hierarchy, control, readonly/disabled, panel kategori, panel pajak, focus, dan spacing harus mengikuti theme aktif. Compatibility layer utama: `resources/css/spj-package-theme-fix.css`.
-
-### 8.4 Penomoran
-
-Normal/hover/active state harus memadukan current surface dan current theme accent; hindari light-only hover.
-
----
-
-## 9. Dashboard canonical dan produktivitas
-
-Dashboard utama route `/` adalah dashboard produktivitas operator:
+Toolbar canonical:
 
 ```text
-ProductivityDashboardController
-resources/views/dashboard-productivity.blade.php
+[ Semua Paket ] [ Paket Sebelumnya ] [ Paket Setelahnya ]          [ Lihat Transaksi ]
 ```
 
-Dashboard utama harus menjawab pertanyaan **“apa yang harus saya kerjakan berikutnya?”**. Hierarki utamanya:
+- semua action memiliki icon/hover/title yang jelas;
+- previous/next hanya bernavigasi dalam sekolah+tahun+sumber dana aktif yang sama;
+- bila previous/next tidak ada, tombol tetap terlihat dalam disabled/muted state dan klik memberikan warning operator.
+
+Summary canonical:
 
 ```text
-Pekerjaan Anda
-→ Prioritas berikutnya
-→ Lanjutkan pekerjaan yang sudah dimulai
-→ Transaksi berikutnya
-→ Alur kerja operator
-→ Antrean kerja terdekat
-→ Status penomoran/sistem
+Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
 ```
 
-Istilah canonical pada dashboard produktivitas:
+Nilai uang menggunakan accounting tanpa `Rp`/desimal.
+
+## 11. Paket SPJ — sub-tab
+
+Urutan canonical:
 
 ```text
-Belum Dikerjakan
-Sedang Dikerjakan
-Siap Dinomori
-Sudah Bernomor
-Final
+1. Rincian
+2. Isian Manual
+3. Rincian Pajak
+4. Penomoran
 ```
 
-Jangan menggunakan kembali label **Belum disentuh**. `Belum Dikerjakan` saat ini adalah definisi persisted: transaksi aktif belum memiliki Paket SPJ dan bukan rekonsiliasi/source missing. Ini bukan analytics literal tentang apakah halaman pernah dibuka.
+### Rincian
 
-Pekerjaan `DRAFT` harus diprioritaskan sebelum membuka pekerjaan baru agar operator menyelesaikan pekerjaan setengah jadi. Rekonsiliasi/source missing mempunyai prioritas lebih tinggi daripada antrean normal. `Belum Bernomor` merangkum antrean normal yang masih berada pada tahap Belum Dikerjakan + DRAFT + READY.
+Memuat Rincian Transaksi readonly dan Dokumen & Template sebagai panel yang jelas dan terpisah.
 
-Dashboard operasional sebelumnya **harus tetap dipertahankan** sebagai pembanding/legacy pada:
+### Isian Manual
+
+Hanya berisi data yang memang boleh diubah operator.
+
+### Rincian Pajak
+
+Readonly reference dari transaksi/BKU. Tidak boleh memiliki input PPN/PPh/SSPD.
+
+### Penomoran
+
+Mengelola lifecycle/numbering sesuai backend. Nomor otomatis tidak diedit melalui Isian Manual.
+
+## 12. Isian Manual — Kategori SPJ
+
+Baris atas desktop:
 
 ```text
-/dashboard-operasional
-OperationalDashboardController
-resources/views/dashboard-operational-v3.blade.php
+Kategori SPJ 1/4 | Konteks kategori 3/4
 ```
 
-Jangan menimpa atau menghapus view tersebut ketika iterasi dashboard produktivitas dilakukan.
-
-Route `/dashboard-v2` adalah dashboard pembanding/QA lain dan memakai:
+BARANG:
 
 ```text
-resources/views/dashboard.blade.php
+Kategori | ○ SiPLah  ○ Non SiPLah
 ```
 
-`resources/views/dashboard.blade.php` tetap protected working file sesuai `.ai/rules/index.md`; jangan overwrite/commit tanpa instruksi eksplisit user.
+Kedua radio harus berada pada radio group yang sama dan hanya satu dapat aktif. Bila source memaksa SiPLah, Non SiPLah dapat disabled.
 
-View legacy `dashboard-operational.blade.php` dan `dashboard-operational-v2.blade.php` tetap sudah dihapus dan tidak boleh dihidupkan kembali hanya untuk eksperimen. Eksperimen baru harus memiliki nama yang jelas dan tidak menimpa source pembanding yang sudah dipertahankan.
-
----
-
-## 10. Pengaturan → Database Aktif
-
-Halaman `/pengaturan/database-aktif` adalah **Pusat Kontrol Database Sekolah**, bukan halaman debug mentah. Struktur canonical:
+PEMELIHARAAN:
 
 ```text
-Page Header + status database aktif
-→ Ringkasan
-→ Database Sekolah
-→ Explorer Tabel
-→ Diagnostik
-→ Maintenance
+Kategori | Combo transaksi pasangan
 ```
 
-Prinsip UX:
+Selector harus benar-benar tampil di baris kategori, bukan sebagai panel besar di bawah yang kemudian secara visual terasa terpisah.
 
-- status sekolah/NPSN/koneksi aktif harus terlihat tanpa membuka tab;
-- health, integrity, writable, file existence, DB/WAL/SHM, migrasi terakhir, dan path harus mudah dibaca;
-- daftar database harus searchable dan database aktif harus paling mudah dikenali;
-- Explorer Tabel bersifat read-only, dengan pencarian/sort/pagination serta pemisahan Schema vs Data;
-- tindakan rutin seperti integrity/checkpoint/migrate boleh tersedia sebagai quick action;
-- tindakan maintenance harus dipisahkan menurut tingkat risiko;
-- reset total selalu berada pada **Zona berbahaya** dan tetap menuju konfirmasi terpisah;
-- backup harus mudah dicapai sebelum tindakan berisiko;
-- teknis seperti path/config boleh tampil, tetapi tidak boleh menjadi informasi utama di atas status operasional;
-- semua surface, text, hover, focus, dan active state mengikuti theme.
+Keterangan/hint yang tidak diperlukan operator dihilangkan.
 
-CSS halaman ini dimiliki oleh `resources/css/settings-database-standardization.css` dan harus scoped ke `#database-control-center`.
+## 13. Informasi nomor otomatis
 
----
+Setelah Kategori SPJ terdapat strip informasi horizontal untuk nomor otomatis yang relevan:
 
-## 11. Header panel theme-aware
+```text
+SPJ | PESANAN/BAP/BAST atau SPK/RAB | ...
+```
 
-Untuk panel setingkat, header boleh memiliki accent strength berbeda agar hierarchy jelas, tetapi tetap memakai token theme. Jangan mengunci header ke `bg-indigo-*`, `bg-slate-*`, atau putih jika panel harus mengikuti theme.
+Status tanpa nomor menggunakan teks seperti `Belum diterbitkan`.
 
----
+Nomor otomatis bukan `<input readonly>` pada form manual.
 
-## 12. Status dan badge
+Nomor marketplace/manual seperti nomor SiPLah/invoice tetap dapat menjadi field bila memang operator perlu mengisinya.
 
-Gunakan `<x-ui.status-badge>` untuk status teknis dan `<x-ui.badge>` untuk kategori/role/metode pembayaran. Status harus memakai bahasa manusiawi dan semantic color yang konsisten. `semantic-status-colors.css` hanya berlaku pada `ui-status-badge` agar warna workflow tetap berbeda tanpa mengunci surface ke light mode.
+## 14. Data Umum Dokumen
 
----
+Desktop menggunakan dua kolom besar:
 
-## 13. Compatibility layer
+```text
+┌──────────────────────────────┬──────────────────────────────┐
+│ Uraian pembayaran            │ Metode | Referensi          │
+│ textarea 5 baris             │ Utama  | Penyedia           │
+│                              │ Pemilik| NPWP               │
+└──────────────────────────────┴──────────────────────────────┘
+```
 
-CSS scoped boleh mengoreksi markup legacy yang masih memakai warna Tailwind statis. Compatibility layer feature harus terlokalisasi; kode baru tidak boleh memperbanyak markup legacy. Layer SPJ aktif mencakup `spj-workspace-standardization.css`, `spj-package-theme-fix.css`, dan `spj-package-document-placement.css`.
+Semua input umum selain `payment_description` harus berada di kolom kanan, tidak turun menjadi row penuh di bawah textarea pada desktop.
 
-Untuk Database Aktif, `settings-database-standardization.css` menjadi style layer canonical untuk root `#database-control-center`.
+Istilah canonical: **Penerima Utama**.
 
-`view-theme-hardening.css` berbeda: layer ini sengaja global tetapi hanya berlaku pada authenticated `<main>`. Tugasnya menangkap sisa palette non-semantik lintas halaman setelah seluruh feature layer selesai, bukan menjadi tempat menambah aturan khusus satu halaman. `semantic-status-colors.css` adalah exception sempit setelahnya khusus status canonical.
+## 15. Tabel kategori non-BARANG
 
----
+KONSUMSI, PEMELIHARAAN, HONOR_PEGAWAI, SPPD, dan JASA_LAINNYA memakai pola compact.
 
-## 14. Responsive dan mobile
+- filter/per-page/pager hanya satu dan berada di bawah tabel;
+- Penerima Utama menggunakan radio;
+- Hari/Porsi/Bulan-Kali = integer;
+- Tarif/Harga/Nilai = accounting `1.000`;
+- field sekunder tidak perlu membuat row utama terlalu lebar; gunakan detail row/editor bila diperlukan.
 
-Desktop tetap workspace utama, tetapi mobile/tablet harus usable. Perubahan dashboard produktivitas, package, Database Aktif, dan hardening palette lintas-view belum menutup QA mobile. Status resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+## 16. PEMELIHARAAN linkage
 
----
+Selector pasangan transaksi ditampilkan di Paket SPJ, tetapi state relasi tetap dimiliki transaction/context dan disimpan lewat endpoint maintenance-link khusus.
 
-## 15. Checklist UI sebelum selesai
+UI tidak boleh mengubah relasi tersebut menjadi field package form biasa.
 
-- breadcrumb tidak double;
-- page header mengikuti pola global;
-- hierarchy panel jelas;
-- readonly vs editable jelas;
-- warna mengikuti theme;
-- dark appearance terbaca;
-- hover/focus/active tidak kembali ke warna light-only;
-- spacing antar panel konsisten;
-- mobile tidak overflow tanpa alasan;
-- status memakai bahasa manusiawi;
-- tindakan berisiko dipisahkan secara visual;
-- icon action baru memakai `x-ui.icon` bila tersedia;
-- perubahan UI tidak melemahkan validation/authorization;
-- `npm run build` dijalankan setelah CSS/JS/Blade berubah.
+## 17. Dokumen & Template
 
----
+Gunakan compact list `status / nama / tipe-format / actions`. Metadata padat, status semantic, action mudah ditemukan, dan theme-aware.
 
-## 16. Dokumen pendamping
+## 18. Dashboard dan Database Aktif
 
-Aturan CSS praktis: `docs/CSS_USAGE_GUIDE.md`. Kondisi implementasi terbaru: `docs/CURRENT_PROGRESS.md`.
+Dashboard utama harus memprioritaskan pekerjaan operator, terutama masalah source/reconciliation, DRAFT yang belum selesai, READY, lalu pekerjaan baru.
+
+Halaman Database Aktif tetap menjadi Pusat Kontrol Database Sekolah dengan pemisahan status, explorer read-only, diagnostik, maintenance, backup, dan zona berbahaya untuk reset.
+
+## 19. Compatibility layer
+
+Compatibility CSS/JS boleh ada sementara, tetapi markup baru harus menuju primitive/token canonical. Jangan menghidupkan kembali stale selector atau standalone Vite entry lama.
+
+Vite canonical:
+
+```text
+resources/css/app.css
+resources/js/app.js
+```
+
+## 20. Responsive dan mobile
+
+Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA mobile resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+
+## 21. Checklist UI sebelum selesai
+
+- ownership source vs editable jelas;
+- tidak ada input ganda Detail Transaksi/Paket;
+- icon/hover/focus/disabled state jelas;
+- tidak ada pagination ganda;
+- radio group benar-benar exclusive;
+- accounting dan integer sesuai pola field;
+- tabel compact namun masih terbaca;
+- Data Umum tidak pecah ke bawah textarea pada desktop;
+- dark/theme tidak rusak;
+- mobile minimum usable;
+- perubahan UI tidak melemahkan backend validation/lifecycle.
