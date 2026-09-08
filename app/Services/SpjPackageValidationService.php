@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SpjPackage;
+use Illuminate\Support\Carbon;
 
 class SpjPackageValidationService
 {
@@ -24,12 +25,34 @@ class SpjPackageValidationService
         $channel = $policy['channel_label'];
 
         $this->addCheck($checks, 'procurement_channel', 'Cara pengadaan', 'Jalur transaksi', true, 'Transaksi dikenali sebagai '.$channel.'.', 'Jalur transaksi belum dapat dikenali.', $packageUrl);
-        $this->addCheck($checks, 'recipient', 'Umum', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi belum tersedia.', $packageUrl);
+        $this->addCheck($checks, 'spj_category', 'Data Umum Dokumen', 'Kategori SPJ', filled($transaction->spj_category), 'Kategori SPJ sudah tersedia.', 'Kategori SPJ wajib dipilih sebelum penomoran.', $packageUrl);
+        $this->addCheck($checks, 'payment_description', 'Data Umum Dokumen', 'Uraian pembayaran', filled($transaction->payment_description), 'Uraian pembayaran sudah tersedia.', 'Uraian pembayaran wajib diisi sebelum penomoran.', $packageUrl);
+        $this->addCheck($checks, 'recipient', 'Data Umum Dokumen', 'Penerima kuitansi', filled($transaction->effective_receipt_recipient_name), 'Penerima kuitansi sudah tersedia.', 'Penerima kuitansi wajib diisi sebelum penomoran.', $packageUrl);
+        $this->addCheck($checks, 'payment_method', 'Data Umum Dokumen', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar wajib dipilih sebelum penomoran.', $packageUrl);
+        $this->addCheck($checks, 'rkas_date', 'Sumber RKAS', 'Tanggal RKAS', $transaction->rkas_date !== null, 'Tanggal RKAS sumber sudah tersedia.', 'Tanggal RKAS belum tersedia. Sinkronkan ulang ARKAS dengan Bridge terbaru sebelum penomoran.', $transactionUrl);
+
+        $orderDates = $transaction->goods->pluck('order_date')->filter();
+        $orderMonthValid = $transaction->rkas_date === null || $orderDates->isEmpty() || $orderDates->every(function ($date) use ($transaction): bool {
+            $rkasMonth = Carbon::parse($transaction->rkas_date)->startOfMonth();
+            $orderMonth = Carbon::parse($date)->startOfMonth();
+
+            return $orderMonth->greaterThanOrEqualTo($rkasMonth);
+        });
+        $this->addCheck(
+            $checks,
+            'order_month_after_rkas',
+            'Sumber RKAS',
+            'Bulan Pesanan ≥ Bulan RKAS',
+            $orderMonthValid,
+            'Bulan Pesanan tidak lebih awal dari bulan RKAS.',
+            'Bulan Pesanan tidak boleh lebih awal dari bulan RKAS. Koreksi Tanggal Pesanan sebelum penomoran.',
+            $packageUrl,
+        );
+
         $this->addCheck($checks, 'activity_code', 'Umum', 'Kode kegiatan', filled($transaction->activity_code), 'Kode kegiatan sudah tersedia.', 'Kode kegiatan belum tersedia.', $transactionUrl);
         $this->addCheck($checks, 'activity_name', 'Umum', 'Nama kegiatan', filled($transaction->activity_name), 'Nama kegiatan sudah tersedia.', 'Nama kegiatan belum tersedia.', $transactionUrl);
         $this->addCheck($checks, 'account_code', 'Umum', 'Kode rekening', filled($transaction->account_code), 'Kode rekening sudah tersedia.', 'Kode rekening belum tersedia.', $transactionUrl);
         $this->addCheck($checks, 'account_name', 'Umum', 'Nama rekening', filled($transaction->account_name), 'Nama rekening sudah tersedia.', 'Nama rekening belum tersedia.', $transactionUrl);
-        $this->addCheck($checks, 'payment_method', 'Umum', 'Cara bayar', filled($transaction->payment_method), 'Cara bayar sudah dipilih.', 'Cara bayar belum tersedia.', $packageUrl);
 
         $a2Ready = filled($transaction->effective_receipt_recipient_name)
             && filled($transaction->payment_description ?: $transaction->description)
