@@ -107,8 +107,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');
             Route::post('/spj/paket/{packageId}/dokumen/{documentType}/nomor', [SpjController::class, 'assignDocumentNumber'])->name('spj.documents.assign-number');
             Route::post('/spj/dokumen/{documentId}/final', [SpjController::class, 'finalizeDocument'])->name('spj.documents.finalize');
-            Route::post('/spj/dokumen/{documentId}/batal', [SpjController::class, 'cancelDocument'])->name('spj.documents.cancel');
-            Route::post('/spj/dokumen/{documentId}/ganti', [SpjController::class, 'replaceDocument'])->name('spj.documents.replace');
+            Route::post('/spj/dokumen/{documentId}/batal', [SpjController::class, 'cancelDocument'])->middleware('administrator')->name('spj.documents.cancel');
+            Route::post('/spj/dokumen/{documentId}/ganti', [SpjController::class, 'replaceDocument'])->middleware('administrator')->name('spj.documents.replace');
             Route::post('/spj/transaksi/{transactionId}/pembayaran', [SpjController::class, 'storePayment'])->name('spj.payments.store');
             Route::post('/spj/transaksi/{transactionId}/penerimaan', [SpjController::class, 'storeGoodsReceipt'])->name('spj.receipts.store');
 
