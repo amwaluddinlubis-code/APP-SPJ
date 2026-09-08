@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\FiscalYear;
 use App\Models\FundSource;
-use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
