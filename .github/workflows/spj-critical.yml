@@ -60,9 +60,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Repository Pint check (advisory)
-        continue-on-error: true
-        run: php vendor/bin/pint --test
+      - name: Repository Pint diagnostic
+        run: |
+          php vendor/bin/pint
+          git diff -- app tests
 
       - name: Frontend build
         run: npm run build
