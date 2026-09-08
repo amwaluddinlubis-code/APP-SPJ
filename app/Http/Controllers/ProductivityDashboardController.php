@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Services\SpjWorkflowFilterService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class ProductivityDashboardController extends Controller
