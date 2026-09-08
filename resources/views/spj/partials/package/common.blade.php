@@ -5,9 +5,9 @@
     </div>
 
     <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="sm:col-span-2 lg:col-span-2">
+        <div class="sm:col-span-2 lg:col-span-2 lg:row-span-2">
             <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran</label>
-            <x-ui.textarea name="payment_description" rows="2" class="mt-1 !min-h-0 !py-1.5 !text-sm">{{ old('payment_description', $transaction->payment_description) }}</x-ui.textarea>
+            <x-ui.textarea name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm">{{ old('payment_description', $transaction->payment_description) }}</x-ui.textarea>
         </div>
 
         <div>
@@ -25,7 +25,7 @@
         </div>
 
         <div>
-            <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima kuitansi</label>
+            <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama</label>
             <x-ui.input name="receipt_recipient_name" :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" />
         </div>
 
