@@ -162,7 +162,7 @@ class SpjQuarterAuditCommandTest extends TestCase
             );
         SQL);
 
-        $pdo->exec("INSERT INTO fiscal_years (id, year) VALUES (1, 2026)");
+        $pdo->exec('INSERT INTO fiscal_years (id, year) VALUES (1, 2026)');
         $pdo->exec(<<<'SQL'
             INSERT INTO transactions (
                 id, fiscal_year_id, fund_source_id, no_bukti, transaction_date,
@@ -176,7 +176,7 @@ class SpjQuarterAuditCommandTest extends TestCase
         SQL);
         $pdo->exec("INSERT INTO transaction_items (id, transaction_id, description, item_description, amount) VALUES (100, 10, 'ATK', 'Alat tulis kantor', 1000000)");
         $pdo->exec("INSERT INTO spj_packages (id, transaction_id, status) VALUES (200, 10, 'DRAFT')");
-        $pdo->exec("INSERT INTO spj_goods (id, transaction_item_id) VALUES (300, 100)");
+        $pdo->exec('INSERT INTO spj_goods (id, transaction_item_id) VALUES (300, 100)');
         $pdo->exec("INSERT INTO migrations (id, migration, batch) VALUES (1, '2026_09_01_000000_create_complete_spj_tenant_tables', 1)");
         $pdo = null;
     }

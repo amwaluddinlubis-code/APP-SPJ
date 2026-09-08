@@ -83,7 +83,7 @@ class SpjQuarterAuditPolicyTest extends TestCase
             );
         SQL);
 
-        $pdo->exec("INSERT INTO fiscal_years (id, year) VALUES (1, 2026)");
+        $pdo->exec('INSERT INTO fiscal_years (id, year) VALUES (1, 2026)');
         $pdo->exec(<<<'SQL'
             INSERT INTO transactions (
                 id, fiscal_year_id, fund_source_id, no_bukti, transaction_date, spj_category,
@@ -94,7 +94,7 @@ class SpjQuarterAuditPolicyTest extends TestCase
         SQL);
         $pdo->exec("INSERT INTO transaction_items (id, transaction_id, description, item_description, amount) VALUES (11, 1, 'Barang', 'Barang SiPLah', 100000), (12, 2, 'Jasa', 'Jasa tenaga', 100000)");
         $pdo->exec("INSERT INTO spj_packages (id, transaction_id, status) VALUES (21, 1, 'DRAFT'), (22, 2, 'DRAFT')");
-        $pdo->exec("INSERT INTO spj_service_recipients (id, transaction_id, amount, tax_amount, net_amount) VALUES (31, 2, 100000, 0, 100000)");
+        $pdo->exec('INSERT INTO spj_service_recipients (id, transaction_id, amount, tax_amount, net_amount) VALUES (31, 2, 100000, 0, 100000)');
         $pdo = null;
 
         return app(SpjQuarterAuditService::class)->audit($this->path, 1, 2026);

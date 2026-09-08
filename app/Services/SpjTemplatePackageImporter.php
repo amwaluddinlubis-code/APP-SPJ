@@ -12,9 +12,7 @@ use Throwable;
 
 final class SpjTemplatePackageImporter
 {
-    public function __construct(private readonly SpjTemplateValidator $validator)
-    {
-    }
+    public function __construct(private readonly SpjTemplateValidator $validator) {}
 
     /**
      * Memeriksa workbook master terhadap seluruh kontrak document type canonical.
@@ -51,6 +49,7 @@ final class SpjTemplatePackageImporter
                     'code' => 'PACKAGE_SHEET_MISSING',
                     'message' => $documentType.' memerlukan sheet '.$expectedSheet.'.',
                 ];
+
                 continue;
             }
 

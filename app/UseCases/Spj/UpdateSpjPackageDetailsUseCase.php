@@ -186,6 +186,7 @@ class UpdateSpjPackageDetailsUseCase
                 $recipients = collect($value)->filter(fn (array $recipient): bool => filled($recipient['name'] ?? null));
                 if ($recipients->isEmpty()) {
                     $fail('Jasa Lainnya memerlukan minimal satu penerima pembayaran.');
+
                     return;
                 }
 

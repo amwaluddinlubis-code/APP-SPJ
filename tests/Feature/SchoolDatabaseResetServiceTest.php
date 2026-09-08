@@ -51,7 +51,8 @@ class SchoolDatabaseResetServiceTest extends TestCase
             'status' => 'READY',
         ]));
 
-        $manager = new class($this->databasePath) extends SchoolDatabaseManager {
+        $manager = new class($this->databasePath) extends SchoolDatabaseManager
+        {
             public function __construct(private readonly string $path) {}
 
             public function provision(School $school): SchoolDatabase

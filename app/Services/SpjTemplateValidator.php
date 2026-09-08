@@ -301,7 +301,7 @@ final class SpjTemplateValidator
     }
 
     /**
-     * @param array<int,string> $markers
+     * @param  array<int,string>  $markers
      * @return array<string,array<int,string>>
      */
     private function repeatGroups(array $markers): array

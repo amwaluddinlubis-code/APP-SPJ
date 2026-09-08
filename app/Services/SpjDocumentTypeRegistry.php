@@ -7,22 +7,35 @@ final class SpjDocumentTypeRegistry
     public const EMPTY_SCALAR_VALUE = '-';
 
     public const SPJ_COVER = 'SPJ_COVER';
+
     public const SPJ_CHECKLIST = 'SPJ_CHECKLIST';
+
     public const KUITANSI_A2 = 'KUITANSI_A2';
+
     public const RINCIAN_BELANJA = 'RINCIAN_BELANJA';
+
     public const REKAP_PAJAK = 'REKAP_PAJAK';
+
     public const SURAT_PESANAN = 'SURAT_PESANAN';
+
     public const BAP = 'BAP';
+
     public const BAST = 'BAST';
+
     public const INVOICE = 'INVOICE';
+
     public const RAB_PEMELIHARAAN = 'RAB_PEMELIHARAAN';
+
     public const SPK_PEMELIHARAAN = 'SPK_PEMELIHARAAN';
 
     public const SCOPE_PACKAGE = 'PACKAGE';
+
     public const SCOPE_TRANSACTION = 'TRANSACTION';
 
     public const SOURCE_PACKAGE_GENERATED = 'PACKAGE_GENERATED';
+
     public const SOURCE_GENERATED = 'GENERATED';
+
     public const SOURCE_EXTERNAL = 'EXTERNAL';
 
     public const USAGE_ADMIN_REPRINT = 'ADMIN_REPRINT';

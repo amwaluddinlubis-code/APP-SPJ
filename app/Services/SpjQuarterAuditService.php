@@ -203,6 +203,7 @@ class SpjQuarterAuditService
 
             if ($category === null) {
                 $unassigned++;
+
                 continue;
             }
 
@@ -704,7 +705,7 @@ class SpjQuarterAuditService
             $anomalies[] = $this->anomaly('CRITICAL', 'ORPHAN_PACKAGE', null, (int) $row['id'], 'Paket tidak memiliki transaksi parent.');
         }
 
-        $duplicates = $this->fetchAll($pdo, "SELECT fiscal_year_id, no_bukti, COUNT(*) AS total FROM transactions GROUP BY fiscal_year_id, no_bukti HAVING COUNT(*) > 1");
+        $duplicates = $this->fetchAll($pdo, 'SELECT fiscal_year_id, no_bukti, COUNT(*) AS total FROM transactions GROUP BY fiscal_year_id, no_bukti HAVING COUNT(*) > 1');
         foreach ($duplicates as $row) {
             $anomalies[] = $this->anomaly('CRITICAL', 'DUPLICATE_NO_BUKTI', null, null, 'Duplicate no_bukti '.$row['no_bukti'].' pada fiscal_year_id '.$row['fiscal_year_id'].'.');
         }
@@ -712,7 +713,7 @@ class SpjQuarterAuditService
         if (! in_array('spj_documents', $tables, true)) {
             return;
         }
-        $duplicateNumbers = $this->fetchAll($pdo, <<<SQL
+        $duplicateNumbers = $this->fetchAll($pdo, <<<'SQL'
             SELECT document_number, COUNT(*) AS total
             FROM spj_documents
             WHERE document_number IS NOT NULL

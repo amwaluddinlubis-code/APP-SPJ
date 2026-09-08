@@ -190,6 +190,7 @@ class SpjReportUseCase
                 $package->setAttribute('report_document_number', $package->document_number ?: $cancelledDocument?->document_number);
                 $package->setAttribute('report_status', $package->document_number ? $package->status : 'CANCELLED');
                 $package->setAttribute('report_cancellation_reason', $package->document_number ? null : $cancelledDocument?->cancellation_reason);
+
                 return $package;
             });
         };
@@ -263,6 +264,7 @@ class SpjReportUseCase
             $semester = $request->integer('semester');
             $query->whereBetween('transaction_date', [now()->setYear($year->year)->setMonth($semester === 1 ? 1 : 7)->startOfMonth(), now()->setYear($year->year)->setMonth($semester === 1 ? 6 : 12)->endOfMonth()]);
         }
+
         return $query;
     }
 
