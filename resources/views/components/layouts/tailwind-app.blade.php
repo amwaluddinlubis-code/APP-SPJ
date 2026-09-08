@@ -122,7 +122,43 @@
             <div class="flex items-center gap-2">
                 <label class="sr-only" for="theme-select">Tema tampilan</label>
                 <select id="theme-select" data-theme-selector class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold" aria-label="Tema tampilan"></select>
-                <span class="app-runtime-badge hidden px-3 py-1 text-xs font-semibold sm:inline-flex">Livewire + Filament</span>
+                <div class="relative" x-data="{ profileMenuOpen: false }" @click.outside="profileMenuOpen = false">
+                    <button type="button" @click="profileMenuOpen = !profileMenuOpen"
+                        :aria-expanded="profileMenuOpen.toString()" aria-haspopup="menu" title="Profil User"
+                        class="app-runtime-badge inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold">
+                        <x-ui-icon name="employee" class="h-4 w-4" />
+                        <span class="hidden sm:inline">Profil User</span>
+                        <span class="hidden max-w-[10rem] truncate lg:inline">{{ auth()->user()->name }}</span>
+                        <span aria-hidden="true" class="text-[10px]">⌄</span>
+                    </button>
+                    <div x-show="profileMenuOpen" x-cloak x-transition.origin.top.right role="menu"
+                        class="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-xl">
+                        <div class="border-b border-[var(--ui-line)] px-4 py-3">
+                            <p class="truncate text-sm font-bold text-[var(--ui-fg-strong)]">{{ auth()->user()->name }}</p>
+                            <p class="mt-0.5 truncate text-xs text-[var(--ui-fg-muted)]">{{ auth()->user()->email }}</p>
+                            <p class="mt-2 text-xs font-semibold text-[var(--theme-content-accent)]">
+                                {{ \App\Models\User::roleOptions()[auth()->user()->role] ?? auth()->user()->role }}
+                            </p>
+                        </div>
+                        <div class="p-2">
+                            @if(auth()->user()->isAdministrator())
+                                <a href="{{ route('users.index') }}" role="menuitem"
+                                    class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]">
+                                    <x-ui-icon name="employee" class="h-4 w-4" />
+                                    <span>Manajemen User</span>
+                                </a>
+                            @endif
+                            <form method="post" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem"
+                                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50">
+                                    <x-ui-icon name="logout" class="h-4 w-4" />
+                                    <span>Keluar</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
         <div class="app-main-content mx-auto max-w-screen-2xl p-5 lg:p-8">
