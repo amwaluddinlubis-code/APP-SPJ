@@ -20,6 +20,8 @@
             <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
             <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
+            <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
+            <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
             <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
             <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
