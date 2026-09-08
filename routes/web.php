@@ -46,7 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('active-school')->group(function () {
         Route::get('/pilih-tahun', [YearSelectionController::class, 'create'])->name('years.select');
         Route::post('/pilih-tahun', [YearSelectionController::class, 'store'])->name('years.activate');
-        Route::post('/pilih-tahun/sinkronisasi', [YearSelectionController::class, 'synchronize'])->middleware('throttle:3,1')->name('years.synchronize');
+        Route::post('/pilih-tahun/sinkronisasi', [YearSelectionController::class, 'synchronize'])
+            ->middleware(['operator-or-administrator', 'throttle:3,1'])
+            ->name('years.synchronize');
     });
     Route::middleware('administrator')->group(function () {
         Route::get('/pengaturan/sekolah', [SchoolConfigurationController::class, 'index'])->name('schools.settings');
@@ -75,7 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/impersonate', [ImpersonationController::class, 'index'])->name('impersonation.index');
         Route::post('/pengaturan/impersonate/{userId}', [ImpersonationController::class, 'start'])->name('impersonation.start');
     });
-    Route::middleware(['active-school', 'active-year'])->group(function () {
+    Route::middleware(['active-school', 'active-year', 'spj-active-context'])->group(function () {
         Route::get('/', ProductivityDashboardController::class)->name('dashboard');
         Route::get('/dashboard-operasional', OperationalDashboardController::class)->name('dashboard.operational');
         Route::get('/dashboard-v2', DashboardController::class)->name('dashboard.v2');
@@ -83,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/rekonsiliasi', [ReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::get('/pegawai', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/siswa', [StudentController::class, 'index'])->name('students.index');
+
         Route::middleware('operator-or-administrator')->group(function () {
             Route::get('/pegawai/tambah/baru', [EmployeeController::class, 'create'])->name('employees.create');
             Route::post('/pegawai', [EmployeeController::class, 'store'])->name('employees.store');
@@ -94,26 +97,34 @@ Route::middleware('auth')->group(function () {
             Route::get('/siswa/{studentId}/ubah', [StudentController::class, 'edit'])->name('students.edit');
             Route::put('/siswa/{studentId}', [StudentController::class, 'update'])->name('students.update');
             Route::delete('/siswa/{studentId}', [StudentController::class, 'destroy'])->name('students.destroy');
+
+            Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
+            Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
+            Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
+
+            Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
+            Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
+            Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');
+            Route::post('/spj/paket/{packageId}/dokumen/{documentType}/nomor', [SpjController::class, 'assignDocumentNumber'])->name('spj.documents.assign-number');
+            Route::post('/spj/dokumen/{documentId}/final', [SpjController::class, 'finalizeDocument'])->name('spj.documents.finalize');
+            Route::post('/spj/dokumen/{documentId}/batal', [SpjController::class, 'cancelDocument'])->name('spj.documents.cancel');
+            Route::post('/spj/dokumen/{documentId}/ganti', [SpjController::class, 'replaceDocument'])->name('spj.documents.replace');
+            Route::post('/spj/transaksi/{transactionId}/pembayaran', [SpjController::class, 'storePayment'])->name('spj.payments.store');
+            Route::post('/spj/transaksi/{transactionId}/penerimaan', [SpjController::class, 'storeGoodsReceipt'])->name('spj.receipts.store');
+
+            Route::get('/pengaturan/format-penomoran', [DocumentNumberFormatController::class, 'index'])->name('document-number-formats.index');
+            Route::put('/pengaturan/format-penomoran/{documentType}', [DocumentNumberFormatController::class, 'update'])->name('document-number-formats.update');
+
+            Route::post('/sinkronisasi/arkas', ArkasSyncController::class)->middleware('throttle:3,1')->name('arkas.sync');
         });
+
         Route::get('/pegawai/{employeeId}', [EmployeeController::class, 'show'])->whereNumber('employeeId')->name('employees.show');
         Route::get('/siswa/{studentId}', [StudentController::class, 'show'])->whereNumber('studentId')->name('students.show');
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
-        Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
-        Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
-        Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
-        Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
-        Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
-        Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');
-        Route::post('/spj/paket/{packageId}/dokumen/{documentType}/nomor', [SpjController::class, 'assignDocumentNumber'])->name('spj.documents.assign-number');
-        Route::post('/spj/dokumen/{documentId}/final', [SpjController::class, 'finalizeDocument'])->name('spj.documents.finalize');
-        Route::post('/spj/dokumen/{documentId}/batal', [SpjController::class, 'cancelDocument'])->name('spj.documents.cancel');
-        Route::post('/spj/dokumen/{documentId}/ganti', [SpjController::class, 'replaceDocument'])->name('spj.documents.replace');
-        Route::post('/spj/transaksi/{transactionId}/pembayaran', [SpjController::class, 'storePayment'])->name('spj.payments.store');
-        Route::post('/spj/transaksi/{transactionId}/penerimaan', [SpjController::class, 'storeGoodsReceipt'])->name('spj.receipts.store');
         Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
         Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
@@ -122,12 +133,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh-pdf', [SpjController::class, 'downloadTemplatePdf'])->name('spj.download-template-pdf');
         Route::get('/spj/laporan/honor/{format}', [SpjController::class, 'exportHonorPayments'])->name('spj.honor-payments.export');
         Route::get('/spj/unduh/{format}', [SpjController::class, 'export'])->name('spj.export');
-        Route::middleware('operator-or-administrator')->group(function () {
-            Route::get('/pengaturan/format-penomoran', [DocumentNumberFormatController::class, 'index'])->name('document-number-formats.index');
-            Route::put('/pengaturan/format-penomoran/{documentType}', [DocumentNumberFormatController::class, 'update'])->name('document-number-formats.update');
-        });
         Route::get('/laporan-audit', [AuditReportController::class, 'index'])->name('audit-reports.index');
         Route::get('/laporan-audit/unduh/{format}', [AuditReportController::class, 'export'])->name('audit-reports.export');
+
         Route::middleware('administrator')->group(function () {
             Route::get('/pengaturan/dapodik', [DapodikIntegrationController::class, 'index'])->name('dapodik.index');
             Route::put('/pengaturan/dapodik', [DapodikIntegrationController::class, 'store'])->name('dapodik.store');
@@ -144,10 +152,10 @@ Route::middleware('auth')->group(function () {
             Route::put('/pengaturan/template-dokumen/{templateId}/pemetaan', [DocumentTemplateController::class, 'updateMapping'])->name('document-templates.mapping.update');
             Route::delete('/pengaturan/template-dokumen/{templateId}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
         });
+
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');
         Route::get('/data-sinkron/{type}', [SyncedDataController::class, 'index'])->name('synced-data.show');
-        Route::post('/sinkronisasi/arkas', ArkasSyncController::class)->middleware('throttle:3,1')->name('arkas.sync');
     });
 });
