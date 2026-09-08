@@ -2,21 +2,13 @@
 
 Status: **PARTIAL / IN PROGRESS**
 
-Terakhir diperbarui: **2026-09-07**
+Terakhir diperbarui: **2026-09-08**
 
-Branch target:
+Branch target: `gui-standardization`.
 
-```text
-gui-standardization
-```
-
-Dokumen ini tidak lagi menggambarkan SiPLah sebagai fitur yang belum disentuh. Dukungan dasar sudah ada; pekerjaan berikutnya adalah memastikan ownership data, dokumen, safe sync, dan end-to-end flow konsisten.
-
----
+SiPLah bukan kategori SPJ. Dukungan dasar sudah ada; pekerjaan tersisa adalah end-to-end output dokumen, safe sync, dan browser flow.
 
 ## 1. Prinsip domain
-
-SiPLah **bukan kategori SPJ**.
 
 Kategori SPJ tetap:
 
@@ -29,27 +21,16 @@ HONOR_PEGAWAI
 JASA_LAINNYA
 ```
 
-SiPLah adalah karakteristik/metode/channel pembelian atau pembayaran.
+SiPLah adalah mode/channel pembelian atau pembayaran.
 
-Contoh:
+Contoh canonical UI saat ini:
 
 ```text
-payment_method = siplah
 spj_category = BARANG
-```
-
-atau:
-
-```text
 payment_method = siplah
-spj_category = KONSUMSI
 ```
 
----
-
-## 2. Dukungan yang sudah tersedia
-
-Codebase saat ini sudah memiliki dukungan berikut:
+## 2. Dukungan yang tersedia
 
 ```text
 payment_method = siplah
@@ -65,7 +46,7 @@ receipt_recipient_name
 transaction items
 ```
 
-Template placeholder juga sudah menyediakan identifier SiPLah:
+Placeholder SiPLah mencakup identifier seperti:
 
 ```text
 SIPLAH_NOMOR_PESANAN
@@ -75,77 +56,64 @@ SIPLAH_TANGGAL_INVOICE
 SIPLAH_REFERENSI_BAYAR
 ```
 
-`SpjDocumentRequirementService` dan procurement policy sudah membedakan kebutuhan SiPLah dan Non-SiPLah.
+Requirement service/procurement policy membedakan SiPLah dan Non-SiPLah.
 
----
+## 3. Surat Pesanan internal vs SiPLah
 
-## 3. Surat Pesanan internal dan transaksi SiPLah
+Transaksi SiPLah tidak memakai Surat Pesanan internal aplikasi sebagai kewajiban workflow SiPLah.
 
-Keputusan canonical:
+Untuk `payment_method = siplah`:
 
-> **Transaksi SiPLah tidak memakai Surat Pesanan internal aplikasi.**
+- nomor marketplace memakai `siplah_order_number`;
+- invoice/reference/vendor mengikuti field SiPLah yang relevan;
+- nomor Surat Pesanan internal aplikasi bukan nomor marketplace;
+- preview/download tetap tidak boleh mengalokasikan nomor diam-diam.
 
-Untuk transaksi dengan:
-
-```text
-payment_method = siplah
-```
-
-maka:
-
-- tidak ada kewajiban isi Surat Pesanan internal;
-- tidak ada kewajiban Nomor Surat Pesanan internal;
-- Surat Pesanan internal tidak menjadi blocker DRAFT/READY/NUMBERED/FINAL;
-- aplikasi tidak perlu menerbitkan nomor `order_number` untuk kebutuhan SiPLah;
-- bukti pengadaan menggunakan data marketplace/source yang relevan seperti `siplah_order_number`, invoice, dan `payment_reference`.
-
-Nomor marketplace SiPLah tetap disimpan terpisah:
-
-```text
-siplah_order_number = nomor pesanan/order marketplace SiPLah
-```
-
-`order_number` hanya digunakan untuk Surat Pesanan internal pada pengadaan **Non-SiPLah** bila aturan transaksi tersebut memang memerlukannya.
-
-Untuk Non-SiPLah + kategori barang/konsumsi, Surat Pesanan internal tetap mengikuti rule content + numbering aplikasi.
-
----
+Untuk Non-SiPLah, Surat Pesanan internal tetap mengikuti policy content + numbering aplikasi bila applicable.
 
 ## 4. Ownership field
 
 ### Source ARKAS/BKU
 
-Field source tetap readonly dan boleh berubah saat sync sesuai safe sync.
+Readonly dan mengikuti safe sync.
 
 ### Operator/manual
 
-Field operator harus dipertahankan dan tidak boleh ditimpa hanya karena source sync berubah.
+Field vendor/invoice/reference yang menjadi tanggung jawab operator dipertahankan sebagai overlay dan tidak boleh ditimpa source sync tanpa rule eksplisit.
 
-Saat menambah dukungan SiPLah baru, jangan membuat field duplikat jika field generic existing sudah memiliki makna yang sama.
-
----
+Field SiPLah tidak boleh diedit dari Detail Transaksi. Mutation dokumen dilakukan di Paket SPJ.
 
 ## 5. UI saat ini
 
 ### Detail Transaksi
 
-Jika `payment_method === 'siplah'`, block data SiPLah dapat menampilkan/menyimpan penyedia, nomor pesanan marketplace, invoice, dan referensi pembayaran sesuai field existing.
+Tidak menjadi tempat input SiPLah. Detail Transaksi hanya menampilkan source/context dan `item_description` editable.
 
-Surat Pesanan internal tidak perlu ditampilkan sebagai kewajiban transaksi SiPLah.
+### Paket SPJ — BARANG
 
-### Paket SPJ
+Baris kategori:
 
-Package tetap mengikuti kategori SPJ normal. SiPLah tidak membuat tab/lifecycle/numbering baru.
+```text
+Kategori SPJ | ○ SiPLah  ○ Non SiPLah
+```
 
-Template/dokumen tetap berada di sub-tab Rincian bersama panel Dokumen & Template.
+Kedua radio adalah satu group dan mutually-exclusive. Pemilihan disinkronkan dengan `payment_method`.
 
----
+Jika source menandai transaksi SiPLah secara authoritative, Non SiPLah dapat disabled.
 
-## 6. Dokumen
+Radio SiPLah/Non SiPLah eksplisit saat ini hanya ditampilkan pada kategori BARANG sesuai desain workspace terbaru.
 
-Dokumen ditentukan oleh kategori SPJ dan lifecycle package.
+### Data Umum
 
-SiPLah boleh memengaruhi data yang dicetak, tetapi tidak otomatis membuat domain nomor baru dan tidak memakai domain nomor Surat Pesanan internal.
+`payment_method` tetap field canonical backend. Radio context bukan field domain baru; ia hanya kontrol UI yang menyinkronkan field canonical.
+
+## 6. Dokumen dan numbering
+
+Dokumen tetap ditentukan oleh kategori SPJ dan lifecycle package.
+
+SiPLah tidak membuat tab/lifecycle/numbering baru.
+
+Nomor internal otomatis tidak menjadi input manual pada Isian Manual; informasi nomor ditampilkan dalam strip readonly di bawah Kategori SPJ.
 
 Aturan tetap:
 
@@ -153,33 +121,26 @@ Aturan tetap:
 preview/download != numbering
 ```
 
----
-
 ## 7. Sinkronisasi
 
 Wajib:
 
-- source ARKAS/BKU tetap readonly;
+- source ARKAS/BKU readonly;
 - safe sync tidak menimpa operator field;
-- source SiPLah yang berubah dapat memicu reconciliation;
+- perubahan source SiPLah dapat memicu reconciliation;
 - package/manual data tidak dihapus saat source berubah/hilang.
-
----
 
 ## 8. Gap yang masih harus diverifikasi
 
-1. ownership setiap field SiPLah source vs operator;
-2. apakah semua placeholder mengambil field canonical yang benar;
-3. apakah preview/download Word/Excel/PDF konsisten;
-4. apakah safe sync mempertahankan manual SiPLah fields;
-5. apakah package Barang/Konsumsi SiPLah lolos requirement tanpa Surat Pesanan internal;
-6. apakah browser flow source → transaction → package → document bebas side effect numbering.
-
----
+1. ownership setiap field SiPLah source vs operator pada dataset nyata;
+2. semua placeholder mengambil field canonical yang benar;
+3. preview/download Word/Excel/PDF konsisten;
+4. safe sync mempertahankan manual SiPLah fields;
+5. package BARANG SiPLah lolos requirement tanpa Surat Pesanan internal;
+6. browser flow source → transaction → package → document bebas side effect numbering;
+7. radio SiPLah/Non SiPLah dan field `payment_method` selalu sinkron setelah category switch/reload.
 
 ## 9. Di luar scope MVP
-
-Belum dikerjakan:
 
 - API eksternal SiPLah;
 - SSO SiPLah;
@@ -189,21 +150,19 @@ Belum dikerjakan:
 - numbering system khusus SiPLah;
 - lifecycle khusus SiPLah.
 
----
-
 ## 10. Testing minimum
 
 ```text
 1. payment_method=siplah dapat disimpan tanpa mengubah spj_category
-2. manual SiPLah fields tidak ditimpa safe sync
-3. package dibuat berdasarkan kategori SPJ normal
-4. preview/download tidak menyebabkan numbering
-5. placeholder SiPLah mengambil source yang benar
-6. SiPLah tidak memiliki requirement Surat Pesanan internal
-7. Non-SiPLah tetap mengikuti Surat Pesanan internal sesuai policy
+2. radio SiPLah/Non SiPLah mutually-exclusive
+3. source SiPLah authoritative tidak dapat dibalik oleh UI biasa jika dikunci
+4. manual SiPLah fields tidak ditimpa safe sync
+5. package dibuat berdasarkan kategori SPJ normal
+6. preview/download tidak menyebabkan numbering
+7. placeholder SiPLah mengambil field yang benar
+8. SiPLah tidak memiliki requirement Surat Pesanan internal yang salah
+9. Non-SiPLah tetap mengikuti policy Surat Pesanan internal
 ```
-
----
 
 ## 11. Definition of Done MVP
 
@@ -211,21 +170,15 @@ MVP dianggap stabil jika:
 
 - transaksi SiPLah dikenali;
 - kategori SPJ tetap canonical;
-- field minimum tersedia tanpa duplikasi tidak perlu;
-- operator dapat melihat/mengisi field yang memang menjadi tanggung jawabnya;
+- field minimum tersedia tanpa duplikasi;
+- operator hanya mengisi field pada Paket SPJ;
+- radio UI sinkron dengan `payment_method`;
 - safe sync aman;
 - requirement policy benar;
-- tidak ada Surat Pesanan internal pada workflow SiPLah;
 - dokumen menggunakan field SiPLah yang tepat;
 - numbering/lifecycle existing tetap aman;
 - focused tests dan browser flow lulus.
 
----
-
 ## 12. Next action
 
-Bukan lagi “audit apakah ada dukungan SiPLah”. Dukungan sudah ada.
-
-Next action yang benar:
-
-> Verifikasi ownership field dan end-to-end output dokumen SiPLah, lalu jalankan focused tests untuk safe sync, requirement policy, placeholder, dan browser flow.
+Verifikasi end-to-end output dokumen SiPLah dan safe sync, lalu tutup browser QA untuk radio/category switching pada workspace Paket terbaru.
