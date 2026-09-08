@@ -2,67 +2,36 @@
 
 Terakhir diperbarui: **2026-09-08**
 
-Dokumen ini hanya memuat kondisi yang **belum dapat dinyatakan PASS** pada branch `gui-standardization`. Item yang sudah selesai dan telah diverifikasi tidak dipelihara sebagai daftar progres di sini.
+Dokumen ini hanya memuat kondisi yang **belum release-ready** pada branch `gui-standardization`. Item yang sudah selesai tidak dipelihara sebagai daftar PASS panjang.
 
----
+## Baseline yang sudah ditutup
 
-## URGENT — Migrasi Detail Transaksi ↔ Paket SPJ
-
-**Prioritas: URGENT**
-
-Rencana lengkap ada di:
-
-```text
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
-```
-
-Target arsitektur final:
+Ownership migration **Detail Transaksi ↔ Paket SPJ** sudah PASS:
 
 ```text
 Detail Transaksi = source transaksi + item_description
 Paket SPJ        = seluruh data dokumen pertanggungjawaban
 ```
 
-Keputusan aktif:
+Write-path legacy sudah dipensiunkan, pajak immutable dari Paket, category switch berjalan tanpa reload, dan focused regression suite SPJ dilaporkan user **ALL PASS** pada 2026-09-08.
 
-- `item_description` tetap hanya diedit di Detail Transaksi;
-- quantity, unit, unit price, dan amount selalu readonly;
-- `item_description` harus benar-benar tersimpan sebelum Paket SPJ dapat dibuat/dibuka;
-- PPN, PPh 21/22/23/4(2), SSPD, total pajak, dan netto tetap milik transaksi/source;
-- Paket SPJ hanya membaca pajak sebagai referensi readonly;
-- kategori, uraian dokumen, metode/referensi pembayaran, penerima kuitansi, vendor, invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
-- pergantian kategori Paket SPJ tidak boleh melakukan full page reload.
+Refinement UI yang juga sudah masuk source:
 
-### Status implementasi migrasi saat ini
+- Detail Transaksi disederhanakan: Informasi Referensi ARKAS/BKU + Total Pajak, lalu Rincian Barang/Jasa, lalu Status Paket SPJ;
+- daftar transaksi memakai satu tombol `Aksi` yang membuka modal navigasi Detail/Paket;
+- topbar `Livewire + Filament` diganti menu Profil User;
+- toolbar Paket memiliki `Semua Paket`, `Paket Sebelumnya`, `Paket Setelahnya` dalam konteks tahun+sumber dana aktif;
+- summary Paket menjadi `Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan`;
+- nilai uang UI memakai accounting Indonesia tanpa `Rp`/desimal (`1.000`);
+- tab Paket menjadi `Rincian | Isian Manual | Rincian Pajak | Penomoran`;
+- Kategori SPJ + kontrol konteks sejajar; BARANG memakai radio `SiPLah / Non SiPLah` mutually-exclusive;
+- PEMELIHARAAN menampilkan selector pasangan transaksi di baris kategori;
+- Data Umum Dokumen memakai textarea 5 baris di kiri dan seluruh input umum lain di kanan;
+- nomor otomatis tidak lagi menjadi input operator dan ditampilkan sebagai informasi horizontal;
+- tabel kategori non-BARANG compact, integer/accounting sesuai tipe data, satu `Penerima Utama`, dan hanya satu pagination lokal;
+- Vite canonical kembali ke `resources/css/app.css` + `resources/js/app.js`; stale standalone asset entry dihapus.
 
-Source utama sudah bergerak ke arsitektur baru:
-
-- Detail Transaksi tidak lagi merender builder/form kategori SPJ;
-- `item_description` tetap editable di `#rincian-transaksi`;
-- gateway `transactions.prepare-spj` memvalidasi uraian item sudah tersimpan sebelum membuka/membuat Paket;
-- draft/open package memakai `CreateSpjDraftUseCase`;
-- penyimpanan Paket memakai `UpdateSpjPackageDetailsUseCase` dan tidak menulis ulang pajak source;
-- validator mengarahkan masalah ke workspace pemiliknya;
-- Combo Kategori SPJ sekarang persist via AJAX tanpa full reload;
-- `SpjDocumentController` (dead controller) sudah dihapus;
-- `SpjReportController` (dead controller) sudah dihapus;
-- Stale JS selectors (`transaction-detail-ui.js`, `transaction-detail-common-fields-layout.js`, `transaction-detail-category-layout.js`, `maintenance-transaction-links.js`) sudah dihapus;
-- Duplikat div wrapper di `spj/index.blade.php` sudah diperbaiki;
-- Tax reference sudah native Blade readonly tanpa JS compatibility;
-- 20 regression tests baru meliputi seluruh kontrak migrasi.
-
-### Gap URGENT yang masih aktif
-
-Semua item URGENT sudah diselesaikan:
-
-- **U01** — PASS: route legacy `spj.prepare` tidak ada, `SpjPackageUseCase` tidak ada, dead controllers dihapus.
-- **U02** — PASS: `transactions.manual-description.update` tidak ada, `TransactionController` hanya menulis `item_description`.
-- **U03** — PASS: partial Paket SPJ sudah terpisah per kategori dengan `data-spj-section`.
-- **U04** — PASS: semua kategori di-render di DOM, switching tanpa reload, tidak ada `form.submit()`.
-- **U05** — PASS: pajak adalah native Blade readonly, JS compatibility dibersihkan.
-- **U06** — PASS: 20 regression tests meliputi gateway, ownership boundary, tax immutability, category switch, dan keenam kategori.
-
-Migrasi **sudah dapat dinyatakan PASS** untuk komponen ownership boundary.
+Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser QA setelah pull/build. Jangan menganggap browser QA sama dengan PHPUnit.
 
 ---
 
@@ -71,26 +40,50 @@ Migrasi **sudah dapat dinyatakan PASS** untuk komponen ownership boundary.
 - ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah bukan kategori; gunakan `payment_method = siplah`.
-- Transaksi SiPLah tidak memakai Surat Pesanan internal aplikasi; gunakan nomor/reference marketplace, invoice, payment reference, dan metadata penyedia sesuai kebutuhan.
+- Detail Transaksi hanya boleh menulis `item_description`.
+- Paket SPJ adalah satu-satunya workspace mutation kategori/payment/vendor/data kategori.
+- Pajak source tidak boleh diubah atau dihitung ulang dari Paket SPJ.
+- Nomor otomatis bukan input manual operator.
+- `NUMBERED`/`FINAL` terkunci dari edit normal.
+- Preview/download tidak boleh mengalokasikan nomor diam-diam.
 - Workflow Transaksi/Persiapan/Dashboard memakai `SpjWorkflowFilterService` sebagai kontrak status operator.
-- Root data eksternal dapat diatur dengan `SPJ_DATA_PATH`; bila tidak diisi aplikasi kembali ke `storage/app`.
+- Root data eksternal dapat diatur dengan `SPJ_DATA_PATH`; fallback `storage/app`.
 - Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
 - Dummy: `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
-- Backup baru: `{SPJ_DATA_PATH}/backups/{NPSN}/...`.
+- Backup: `{SPJ_DATA_PATH}/backups/{NPSN}/...`.
 
 ---
 
-## 2. RVR — source sudah diperbaiki, menunggu verifikasi runtime
+## 2. RVR — source tersedia, menunggu verifikasi runtime
 
 ### R01 — APP DATA eksternal
 
-Konfigurasi tidak lagi mengunci path mesin developer. `SPJ_DATA_PATH` bersifat opsional dengan fallback `storage/app`. Pada deployment Windows yang sedang dipakai:
+Konfigurasi path sudah portable, tetapi masih perlu runtime check pada database sekolah nyata untuk:
 
-```env
-SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
+```text
+provision
+reset total tenant + sqlite_sequence
+backup
+restore
+WAL/SHM cleanup
+switch sekolah
 ```
 
-Masih perlu runtime check provision/reset/backup/restore pada database nyata sekolah sebelum dianggap release-ready.
+Sebelum checkpoint tersebut PASS, APP DATA belum release-ready.
+
+### R02 — Browser QA refinement Paket SPJ terbaru
+
+Perubahan markup/JS terakhir perlu diverifikasi di browser setelah `npm run build`:
+
+- radio SiPLah/Non SiPLah hanya satu yang aktif;
+- selector PEMELIHARAAN benar-benar berada di baris kategori;
+- Data Umum Dokumen tidak turun ke bawah textarea pada desktop;
+- tabel non-BARANG hanya memiliki satu pagination;
+- tab Rincian Pajak menjadi tab ke-3;
+- previous/next Package dan warning state tampil benar;
+- responsive/mobile tidak pecah.
+
+Ini adalah QA visual/runtime, bukan gap ownership backend.
 
 ---
 
@@ -100,13 +93,13 @@ Masih perlu runtime check provision/reset/backup/restore pada database nyata sek
 
 Yang masih belum selesai:
 
-- tampilkan gross/tax/net secara eksplisit pada output template per penerima;
-- dokumen/kuitansi per penerima bila template membutuhkannya;
-- end-to-end test sampai preview/download/final.
+- gross/tax/net tiap penerima pada output template;
+- kuitansi/dokumen per penerima bila template membutuhkan;
+- end-to-end preview/download/final.
 
 ### F02 — Generator dokumen belum release-hardened untuk seluruh kategori
 
-Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per template, dan package export sudah ada. Yang masih perlu dibuktikan sebagai satu checkpoint release:
+Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per template, dan package export sudah ada. Masih perlu satu checkpoint yang membuktikan:
 
 - seluruh template aktif per kategori menghasilkan output valid;
 - preview tidak mempunyai side effect;
@@ -116,21 +109,29 @@ Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per t
 
 ### F03 — Lifecycle / authorization / reconciliation belum release-hardened terpadu
 
-Masih perlu suite terpadu untuk cancellation/reissue/reopen, backend locking NUMBERED/FINAL, mutation ADMIN/OPERATOR/VIEWER, snapshot/diff reconciliation, dan perlindungan final document terhadap sync.
+Masih perlu suite terpadu untuk cancellation/reissue/reopen, locking NUMBERED/FINAL, role ADMIN/OPERATOR/VIEWER, snapshot/diff reconciliation, dan perlindungan final document terhadap sync.
 
-### F04 — End-to-end keenam kategori belum ditutup
+### F04 — End-to-end keenam kategori sampai FINAL belum ditutup
 
-Belum ada satu checkpoint yang membuktikan seluruh kategori berjalan:
+Belum ada satu checkpoint release yang membuktikan seluruh kategori berjalan penuh:
 
 ```text
-source -> Detail Transaksi -> DRAFT -> READY -> NUMBERED -> FINAL -> preview/download
+source
+→ Detail Transaksi
+→ DRAFT
+→ READY
+→ NUMBERED
+→ FINAL
+→ preview/download
 ```
 
-tanpa edit database manual dan tanpa pengisian data yang sama di Detail Transaksi serta Paket SPJ.
+tanpa edit database manual dan tanpa input ganda.
+
+Focused tests kategori yang PASS tidak sama dengan full document/lifecycle E2E.
 
 ### F05 — Mobile visual QA masih terbuka
 
-`docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup. Status tetap RVR/FAIL sampai visual minimum diverifikasi.
+`docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup.
 
 ### F06 — Pusat Laporan dan laporan BOS resmi masih roadmap
 
@@ -138,38 +139,44 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ---
 
-## 4. Verification queue setelah pull
+## 4. Verification queue
 
-Checkpoint migrasi URGENT sudah tercapai:
+Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user.
+
+Setelah refinement UI terbaru, minimum local verification:
 
 ```powershell
-php vendor/bin/pint --dirty --format agent          # PASS
-npm run build                                         # PASS
-php artisan view:cache --no-interaction               # PASS
-php artisan test --compact --filter=Spj               # PASS (93 tests, 611 assertions)
-php artisan test --compact --filter=Transaction       # PASS
+npm run build
+php artisan view:cache --no-interaction
+php artisan optimize:clear
+php artisan test --compact --filter="SpjWorkspaceMigrationTest|SpjOwnershipMigrationTest|SpjMaintenanceLinkWorkspaceTest"
 ```
 
-APP DATA masih memerlukan runtime check provision/reset/backup/restore pada database sekolah nyata.
+Untuk perubahan PHP gunakan juga:
+
+```powershell
+php vendor/bin/pint --dirty --format agent
+git diff --check
+```
+
+Browser QA tetap diperlukan untuk item R02.
 
 ---
 
 ## 5. Aturan status dokumentasi
 
-- **URGENT** — prioritas program yang harus didahulukan; bukan pengganti PASS/FAIL/RVR/PLANNED.
-- **FAIL** — masih ada gap implementasi/domain yang nyata.
-- **RVR** — source sudah diperbaiki atau cakupan test sudah tersedia tetapi belum diverifikasi pada working copy/runtime terbaru.
+- **FAIL** — masih ada gap implementasi/domain nyata.
+- **RVR** — source sudah tersedia tetapi runtime/browser/dataset terbaru belum diverifikasi.
 - **PLANNED** — belum diimplementasikan.
-
-Setelah user melaporkan hasil **PASS**, item RVR terkait dihapus dari dokumen ini, bukan dipindahkan ke daftar PASS panjang.
+- **PASS** tidak disimpan sebagai backlog aktif; keputusan permanennya dipindahkan ke dokumen desain/arsitektur.
 
 Baca bersama:
 
 ```text
 README.md
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 docs/SPJ_DESIGN_DECISIONS.md
+docs/ARCHITECTURE_COMPLETE.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/GUI_STANDARDIZATION.md
-docs/CSS_USAGE_GUIDE.md
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 ```
