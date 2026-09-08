@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-08**
 
-Dokumen ini hanya memuat kondisi yang **belum release-ready** pada branch `gui-standardization`. Item yang sudah selesai tidak dipelihara sebagai daftar PASS panjang.
+Dokumen ini memuat kondisi yang masih relevan untuk release pada branch `gui-standardization`. Item yang sudah ditutup diringkas sebagai baseline, bukan dipelihara sebagai backlog aktif.
 
 ## Baseline yang sudah ditutup
 
@@ -13,303 +13,223 @@ Detail Transaksi = source transaksi + item_description
 Paket SPJ        = seluruh data dokumen pertanggungjawaban
 ```
 
-Write-path legacy sudah dipensiunkan, pajak immutable dari Paket, category switch berjalan tanpa reload, dan focused regression suite SPJ sebelumnya dilaporkan user **ALL PASS** pada 2026-09-08.
+Write-path legacy sudah dipensiunkan, pajak immutable dari Paket, category switch berjalan tanpa reload, dan Paket menjadi satu-satunya workspace mutation data dokumen SPJ.
 
-Refinement UI yang juga sudah masuk source:
+### P0-03 — Numbering + lifecycle hardening: FUNCTIONAL PASS
 
-- Detail Transaksi disederhanakan: Informasi Referensi ARKAS/BKU + Total Pajak, lalu Rincian Barang/Jasa, lalu Status Paket SPJ;
-- daftar transaksi memakai satu tombol `Aksi` yang membuka modal navigasi Detail/Paket;
-- topbar `Livewire + Filament` diganti menu Profil User;
-- toolbar Paket memiliki `Semua Paket`, `Paket Sebelumnya`, `Paket Setelahnya` dalam konteks tahun+sumber dana aktif;
-- summary Paket menjadi `Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan`;
-- nilai uang UI memakai accounting Indonesia tanpa `Rp`/desimal (`1.000`);
-- tab Paket menjadi `Rincian | Isian Manual | Rincian Pajak | Penomoran`;
-- Kategori SPJ + kontrol konteks sejajar; BARANG memakai radio `SiPLah / Non SiPLah` mutually-exclusive;
-- PEMELIHARAAN menampilkan selector pasangan transaksi di baris kategori;
-- Data Umum Dokumen memakai textarea 5 baris di kiri dan seluruh input umum lain di kanan;
-- nomor otomatis tidak lagi menjadi input operator dan ditampilkan sebagai informasi horizontal;
-- tabel kategori non-BARANG compact, integer/accounting sesuai tipe data, satu `Penerima Utama`, dan hanya satu pagination lokal;
-- Vite canonical kembali ke `resources/css/app.css` + `resources/js/app.js`; stale standalone asset entry dihapus.
+Kontrak yang sudah diregresikan:
 
-Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser QA setelah pull/build. Jangan menganggap browser QA sama dengan PHPUnit.
+- numbering identik bersifat idempotent;
+- sequence tidak meloncat akibat submit ulang;
+- NUMBERED/FINAL terkunci dari edit normal;
+- cancellation wajib mempunyai alasan;
+- nomor dokumen yang dibatalkan tetap tersimpan sebagai histori;
+- CANCELLED dapat dibuka kembali ke DRAFT tanpa menghapus histori dokumen batal;
+- FINAL tidak dapat dibuka langsung melalui unlock normal;
+- cancelled document dapat diterbitkan ulang melalui workflow yang tersedia;
+- preview/download tidak memanggil number allocator.
+
+Test utama: `tests/Feature/SpjLifecycleHardeningTest.php` dan `tests/Feature/DocumentNumberingWorkflowTest.php`.
+
+### P0-04 — Authorization backend: FUNCTIONAL PASS
+
+Boundary role aktif:
+
+```text
+VIEWER        = read-only
+OPERATOR      = mutation operasional normal
+ADMINISTRATOR = mutation sensitif / maintenance / lifecycle administratif
+```
+
+Mutation transaksi/Paket, prepare draft, READY, numbering individual, finalization, payment/receipt, ARKAS sync, dan data operasional dilindungi `operator-or-administrator`.
+
+Aksi sensitif tetap administrator-only, termasuk:
+
+- cancellation/replacement dokumen bernomor;
+- numbering triwulan;
+- close/reopen triwulan;
+- unlock Paket;
+- template mutation;
+- reset database;
+- backup/restore;
+- konfigurasi administratif.
+
+Behavior middleware juga diuji: VIEWER ditolak 403 pada mutation guard, OPERATOR/ADMIN lolos pada mutation normal, dan hanya ADMIN yang lolos administrator guard.
+
+### P0-06 — Tenant/context isolation: FUNCTIONAL PASS
+
+Boundary yang dikunci:
+
+```text
+Sekolah + Tahun Anggaran + Sumber Dana
+```
+
+`spj-active-context` sekarang menolak forged `transactionId`, `packageId`, dan `documentId` jika resource berada di tahun atau sumber dana lain. Cross-school session untuk OPERATOR juga ditolak sebelum tenant database yang salah diaktifkan. ADMIN tetap dapat mengelola sekolah yang dipilih sesuai role-nya.
+
+Previous/next Paket juga telah diregresikan agar tidak keluar dari sumber dana aktif.
+
+Test utama:
+
+```text
+tests/Feature/SpjAuthorizationContextHardeningTest.php
+tests/Feature/SpjRoleAuthorizationMiddlewareTest.php
+tests/Feature/SpjSchoolIsolationTest.php
+tests/Feature/SpjPackageNavigationContextTest.php
+```
+
+### CI checkpoint terbaru
+
+GitHub Actions `SPJ Critical Verification` pada commit `364e2776634ff7353f275246e2211767ebf781e3`:
+
+```text
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 99 tests / 677 assertions
+```
+
+Repository-wide Pint masih **WARN: 12 style issues** dan tetap advisory. Gunakan `php artisan spj:verify --strict-style` bila style akan dijadikan blocking gate.
 
 ---
 
 ## 1. P0-01 — E2E enam kategori berbasis database nyata
 
-**Status: RVR — audit source, auditor read-only, verification kit reusable, dan CI functional sudah tersedia; menunggu laptop/database SDN 10208183.**
+**Status: RVR — menunggu laptop/database SDN 10208183.**
 
-Dataset target pertama adalah database tenant SDN **10208183** yang sudah berisi pekerjaan SPJ satu triwulan.
-
-Urutan P0-01 yang dikunci:
+Tool yang sudah tersedia:
 
 ```text
-P0-01A  Audit database nyata secara read-only
-P0-01B  Petakan coverage + pilih kandidat enam kategori
-P0-01C  Jalankan E2E kandidat nyata
-P0-01D  Catat/fix blocker
-P0-01E  Ulangi sampai 6/6 PASS
+spj:audit-quarter
+spj:audit-diff
+spj:verify
+SpjScenarioFactory
+SPJ Critical suite
+GitHub CI
 ```
 
-Source audit utama:
-
-```text
-app/Console/Commands/AuditSpjQuarter.php
-app/Services/SpjQuarterAuditService.php
-tests/Feature/SpjQuarterAuditCommandTest.php
-docs/P0_01_SOURCE_AUDIT.md
-```
-
-Verification kit reusable yang sudah masuk source:
-
-```text
-tests/Support/SpjScenarioFactory.php
-tests/Unit/SpjScenarioFactoryTest.php
-app/Console/Commands/VerifySpj.php
-app/Console/Commands/DiffSpjAudit.php
-tests/Feature/SpjAuditDiffCommandTest.php
-tests/Feature/SpjVerifyCommandTest.php
-.github/workflows/spj-critical.yml
-docs/P0_VERIFICATION_KIT.md
-```
-
-`phpunit.xml` sekarang mempunyai suite canonical **SPJ Critical**, sehingga checkpoint source tidak perlu lagi memilih nama test satu per satu.
-
-Entry point static verification:
-
-```powershell
-php artisan spj:verify
-```
-
-Entry point saat database nyata tersedia:
+Saat database nyata tersedia:
 
 ```powershell
 php artisan spj:verify --npsn=10208183 --quarter=1
-```
-
-Auditor tetap sengaja tidak memanggil `SchoolDatabaseManager::activate/provision/ensureMigrated`, tidak membuat database bila file hilang, memaksa `PRAGMA query_only=ON`, dan hanya melakukan pemeriksaan read-only.
-
-Auditor juga sekarang dapat menyimpan baseline JSON:
-
-```powershell
 php artisan spj:audit-quarter 10208183 --quarter=1 --output=storage/app/audits/10208183-tw1-before.json
-```
-
-dan membandingkan hasil setelah patch:
-
-```powershell
-php artisan spj:audit-diff before.json after.json --fail-on-regression
-```
-
-Cakupan auditor:
-
-- SQLite integrity + foreign-key check;
-- schema/migration snapshot;
-- transaksi/item/item_description/source status/reconciliation;
-- gross/tax/net dan indikator komponen pajak;
-- lifecycle Paket;
-- coverage keenam kategori;
-- detail BARANG/KONSUMSI/PEMELIHARAAN/SPPD/HONOR/JASA_LAINNYA;
-- duplicate active document number;
-- rekomendasi satu kandidat E2E per kategori.
-
-### CI checkpoint verification kit
-
-GitHub Actions `SPJ Critical Verification` pada commit `9dc0db47cbd6097ee8806ed31f54d7f78e393497` sudah **functional PASS**:
-
-```text
-composer install       PASS
-npm ci                 PASS
-frontend build         PASS
-Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 81 tests / 561 assertions
-```
-
-Repository-wide Pint masih menemukan **12 style issues**. Pint sengaja advisory supaya style debt tidak menyembunyikan hasil functional gate; statusnya **WARN**, bukan PASS. `php artisan spj:verify --strict-style` tetap tersedia bila style perlu dijadikan blocking gate.
-
-Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save detail keenam kategori, validation/requirements, numbering, preview/download, dan happy-path FINAL tersedia. Status P0-01 tetap RVR karena dataset nyata, template nyata, dan runtime enam kategori belum dapat dijalankan saat laptop off. Detail audit ada di `docs/P0_01_SOURCE_AUDIT.md`.
-
-### TODO P0-01 berikutnya
-
-Saat laptop/database tersedia:
-
-```powershell
-php artisan spj:verify
-php artisan spj:verify --npsn=10208183 --quarter=1
 ```
 
 Lalu:
 
-1. simpan baseline audit JSON;
-2. review semua CRITICAL/WARNING;
-3. pastikan enam kategori mempunyai coverage nyata;
-4. pilih satu kandidat terbaik per kategori dari output auditor;
-5. jalankan Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
-6. jangan memperbaiki data dengan SQL manual;
-7. catat titik gagal pertama per kategori dan patch source/test;
-8. buat audit `after` dan gunakan `spj:audit-diff --fail-on-regression`;
-9. ulangi sampai 6/6 PASS.
+1. review CRITICAL/WARNING;
+2. konfirmasi coverage BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, HONOR_PEGAWAI;
+3. pilih satu kandidat nyata per kategori;
+4. jalankan Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
+5. patch blocker melalui source/workflow, bukan SQL manual;
+6. simpan audit sesudah patch dan bandingkan dengan `spj:audit-diff --fail-on-regression`;
+7. ulangi sampai 6/6 PASS.
 
 ---
 
-## 2. Kontrak aktif
+## 2. P0-02 — Generator dokumen release-hardening
 
-- ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
-- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
-- SiPLah bukan kategori; gunakan `payment_method = siplah`.
-- Detail Transaksi hanya boleh menulis `item_description`.
-- Paket SPJ adalah satu-satunya workspace mutation kategori/payment/vendor/data kategori.
-- Pajak source tidak boleh diubah atau dihitung ulang dari Paket SPJ.
-- Nomor otomatis bukan input manual operator.
-- `NUMBERED`/`FINAL` terkunci dari edit normal.
-- Preview/download tidak boleh mengalokasikan nomor diam-diam.
-- Workflow Transaksi/Persiapan/Dashboard memakai `SpjWorkflowFilterService` sebagai kontrak status operator.
-- Root data eksternal dapat diatur dengan `SPJ_DATA_PATH`; fallback `storage/app`.
-- Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
-- Dummy: `{SPJ_DATA_PATH}/school-databases/_unselected.sqlite`.
-- Backup: `{SPJ_DATA_PATH}/backups/{NPSN}/...`.
+**Status: RVR/OPEN.**
+
+Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per template, dan package export tersedia. Masih perlu pembuktian menggunakan template/output nyata untuk enam kategori:
+
+- seluruh template applicable menghasilkan output valid;
+- tidak ada placeholder unresolved;
+- identitas sekolah/vendor/penerima/pajak/nomor benar;
+- preview/download bebas side effect;
+- output multi-template benar;
+- file nyata dapat dibuka.
 
 ---
 
-## 3. RVR — source tersedia, menunggu verifikasi runtime
+## 3. P0-05 — Safe sync + reconciliation
 
-### R01 — APP DATA eksternal
+**Status: NEXT ACTIVE P0.**
 
-Konfigurasi path sudah portable, tetapi masih perlu runtime check pada database sekolah nyata untuk:
+Yang masih harus ditutup secara source/CI:
+
+- source unchanged tidak mengubah overlay;
+- source changed memicu reconciliation yang benar;
+- source missing tidak menghapus pekerjaan operator;
+- source returning menyambung kembali ke state lama;
+- `item_description`, payment/vendor/category detail tetap aman;
+- NUMBERED/FINAL tidak berubah diam-diam akibat sync;
+- snapshot/diff cukup untuk menentukan tindakan operator.
+
+Sebagian fondasi sudah ada di `SafeArkasSynchronizationTest`, tetapi kontrak NUMBERED/FINAL + reconciliation masih perlu diperluas menjadi release-safety suite terpadu.
+
+---
+
+## 4. P0-07 — APP DATA / backup / reset / restore nyata
+
+**Status: RVR — memerlukan runtime tenant nyata.**
+
+Perlu diuji pada database sekolah nyata:
 
 ```text
 provision
-reset total tenant + sqlite_sequence
+switch tenant
 backup
+reset total + sqlite_sequence
 restore
 WAL/SHM cleanup
-switch sekolah
 ```
 
-Sebelum checkpoint tersebut PASS, APP DATA belum release-ready.
-
-### R02 — Browser QA refinement Paket SPJ terbaru
-
-Perubahan markup/JS terakhir perlu diverifikasi di browser setelah `npm run build`:
-
-- radio SiPLah/Non SiPLah hanya satu yang aktif;
-- selector PEMELIHARAAN benar-benar berada di baris kategori;
-- Data Umum Dokumen tidak turun ke bawah textarea pada desktop;
-- tabel non-BARANG hanya memiliki satu pagination;
-- tab Rincian Pajak menjadi tab ke-3;
-- previous/next Package dan warning state tampil benar;
-- responsive/mobile tidak pecah.
-
-Ini adalah QA visual/runtime, bukan gap ownership backend.
-
-### R03 — Verification kit lokal / tenant nyata
-
-GitHub functional CI sudah PASS. Yang masih RVR:
-
-- first local `php artisan spj:verify` pada laptop operator;
-- first `php artisan spj:verify --npsn=10208183 --quarter=1` terhadap tenant nyata;
-- repository Pint debt masih WARN sampai dibersihkan atau `--strict-style` PASS.
-
-Workflow CI tidak memakai database nyata dan tidak menggantikan R01/P0-01 real-tenant audit.
+Database utama tidak boleh ikut berubah/rusak dan restore harus mengembalikan data yang benar.
 
 ---
 
-## 4. FAIL / belum tuntas yang masih aktif
+## 5. P1 aktif
 
-### F01 — JASA_LAINNYA multi-penerima belum sepenuhnya end-to-end
+Masih terbuka:
 
-Yang masih belum selesai:
+- JASA_LAINNYA multi-penerima sampai output dokumen nyata;
+- PEMELIHARAAN bahan + upah full-document QA;
+- SiPLah end-to-end output;
+- Browser QA Paket SPJ **desktop/laptop**;
+- audit trail operasional end-to-end.
 
-- gross/tax/net tiap penerima pada output template;
-- kuitansi/dokumen per penerima bila template membutuhkan;
-- end-to-end preview/download/final.
-
-### F02 — Generator dokumen belum release-hardened untuk seluruh kategori
-
-Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per template, dan package export sudah ada. Masih perlu satu checkpoint yang membuktikan:
-
-- seluruh template aktif per kategori menghasilkan output valid;
-- preview tidak mempunyai side effect;
-- placeholder identitas/pajak/nomor konsisten;
-- error template terbaca operator;
-- output paket multi-template benar.
-
-### F03 — Lifecycle / authorization / reconciliation belum release-hardened terpadu
-
-Masih perlu suite terpadu untuk cancellation/reissue/reopen, locking NUMBERED/FINAL, role ADMIN/OPERATOR/VIEWER, snapshot/diff reconciliation, dan perlindungan final document terhadap sync.
-
-### F04 — P0-01 E2E keenam kategori belum ditutup
-
-Tool audit dan audit source sudah tersedia, tetapi belum ada checkpoint database nyata yang membuktikan seluruh kategori berjalan penuh:
-
-```text
-source
-→ Detail Transaksi
-→ DRAFT
-→ READY
-→ NUMBERED
-→ preview/download
-→ FINAL
-```
-
-Focused/critical tests yang PASS tidak sama dengan full document/lifecycle E2E pada dataset sekolah nyata.
-
-### F05 — Mobile visual QA masih terbuka
-
-`docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup.
-
-### F06 — Pusat Laporan dan laporan BOS resmi masih roadmap
-
-Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori, serta monitoring/audit terpadu belum dianggap fitur release. Format resmi harus dikonfirmasi sebelum klaim compliance.
+Browser QA release saat ini hanya menargetkan perangkat utama operator: **laptop/desktop**. Checklist visual penting mencakup radio SiPLah, selector PEMELIHARAAN, layout Data Umum, satu pagination non-BARANG, tab Rincian Pajak, previous/next Paket, dan usability desktop.
 
 ---
 
-## 5. Verification queue
+## 6. Mobile — future development, bukan release scope saat ini
 
-GitHub Actions sudah membuktikan functional gate verification kit: **build PASS, Blade PASS, SPJ Critical 81 tests / 561 assertions PASS**. Repository Pint masih **WARN (12 style issues)**. Real tenant tetap RVR.
+Mobile/responsive QA penuh sengaja **dikeluarkan dari P0–P2 aktif** karena pengguna utama aplikasi memakai laptop. `docs/MOBILE_VISUAL_QA_TODO.md` dipertahankan sebagai backlog pengembangan masa depan dan tidak menjadi blocker release saat ini.
 
-Command canonical sekarang:
+---
+
+## 7. P2 aktif
+
+- field-level validation UX;
+- GUI/compatibility cleanup dan pengurangan JS DOM mover;
+- repository Pint/style cleanup;
+- icon/action consistency;
+- performance profiling;
+- report foundation.
+
+---
+
+## 8. Kontrak aktif yang tidak boleh diregresikan
+
+- ARKAS/BKU = source readonly; data operator SPJ = overlay.
+- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
+- SiPLah bukan kategori; gunakan `payment_method = siplah` dan source SiPLah tetap authoritative.
+- Detail Transaksi hanya menulis `item_description`.
+- Paket SPJ adalah workspace mutation dokumen.
+- Pajak source tidak dapat ditulis dari Paket.
+- Nomor otomatis bukan input manual operator.
+- NUMBERED/FINAL terkunci.
+- Preview/download tidak mengalokasikan nomor.
+- Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
+- Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
+
+Command canonical:
 
 ```powershell
 php artisan spj:verify
 ```
 
-Saat database SDN 10208183 tersedia:
+Saat SDN 10208183 tersedia:
 
 ```powershell
 php artisan spj:verify --npsn=10208183 --quarter=1
-```
-
-Jika ingin menjalankan komponen secara terpisah:
-
-```powershell
-php vendor/bin/pint --test
-php artisan test --testsuite="SPJ Critical" --compact
-npm run build
-php artisan view:cache --no-interaction
-php artisan spj:audit-quarter 10208183 --quarter=1
-```
-
-Browser QA tetap diperlukan untuk item R02.
-
----
-
-## 6. Aturan status dokumentasi
-
-- **FAIL** — masih ada gap implementasi/domain nyata.
-- **RVR** — source sudah tersedia tetapi runtime/browser/dataset terbaru belum diverifikasi.
-- **PLANNED** — belum diimplementasikan.
-- **PASS** tidak disimpan sebagai backlog aktif; keputusan permanennya dipindahkan ke dokumen desain/arsitektur.
-
-Baca bersama:
-
-```text
-README.md
-docs/P0_VERIFICATION_KIT.md
-docs/P0_01_SOURCE_AUDIT.md
-docs/SPJ_DESIGN_DECISIONS.md
-docs/ARCHITECTURE_COMPLETE.md
-docs/DEVELOPMENT_ROADMAP.md
-docs/GUI_STANDARDIZATION.md
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 ```
