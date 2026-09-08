@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class DocumentNumberFormatController extends Controller
 {
     /** @var list<string> */
-    private const PLACEHOLDERS = ['SEQ', 'TYPE', 'SCHOOL', 'NPSN', 'YEAR', 'MONTH', 'ROMAN_MONTH'];
+    private const PLACEHOLDERS = ['SEQ', 'TYPE', 'SCHOOL', 'NPSN', 'YEAR', 'MONTH', 'ROMAN_MONTH', 'TW'];
 
     public function index(): View
     {
