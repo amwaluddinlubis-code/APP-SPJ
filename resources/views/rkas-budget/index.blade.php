@@ -130,6 +130,7 @@
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-5 py-3 text-center text-[13px] font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Tanggal RKAS</th>
                             <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Kode Rekening</th>
                             <th class="min-w-[260px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Uraian / Barang</th>
                             <th class="min-w-[220px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Kegiatan</th>
@@ -145,6 +146,7 @@
                         @forelse($items as $index => $item)
                             <tr class="transition hover:bg-indigo-50/50">
                                 <td class="px-5 py-4 text-center text-[13px] font-semibold text-slate-400">{{ $items->firstItem() + $index }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-[13px] font-semibold text-slate-700">{{ $item->source_created_at ? \Illuminate\Support\Carbon::parse($item->source_created_at)->translatedFormat('d M Y') : '—' }}</td>
                                 <td class="px-4 py-4"><span class="font-mono text-[13px] font-bold text-indigo-700">{{ $item->account_code ?: '—' }}</span></td>
                                 <td class="px-4 py-4"><p class="line-clamp-2 text-sm font-semibold text-slate-800">{{ $item->description ?: 'Tanpa uraian' }}</p><p class="mt-1 font-mono text-[13px] text-slate-400">{{ $item->source_rapbs_id }}</p></td>
                                 <td class="px-4 py-4"><p class="font-mono text-[13px] font-semibold text-sky-700">{{ $item->activity_code ?: '—' }}</p><p class="mt-1 line-clamp-2 text-[13px] text-slate-500">{{ $item->activity_name ?: 'Kegiatan belum diisi' }}</p></td>
@@ -157,7 +159,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-5 py-14 text-center">
+                                <td colspan="11" class="px-5 py-14 text-center">
                                     <p class="text-sm font-semibold text-slate-700">Belum ada RKAS.</p>
                                     <p class="mt-1 text-base text-slate-500">Jalankan sinkronisasi atau ubah kata kunci pencarian.</p>
                                 </td>
