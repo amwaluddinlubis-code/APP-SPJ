@@ -2,7 +2,7 @@
     $accounting = fn ($value) => number_format((float) $value, 0, ',', '.');
 @endphp
 
-<div data-package-navigation class="mx-5 flex flex-wrap items-center justify-between gap-2 py-4">
+<div data-package-navigation hidden class="mx-5 flex flex-wrap items-center justify-between gap-2 py-4">
     <div class="flex flex-wrap items-center gap-2">
         <a href="{{ route('spj.index', ['tab' => 'paket']) }}" title="Kembali ke semua Paket SPJ" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
             <span aria-hidden="true">☷</span><span>Semua Paket</span>
