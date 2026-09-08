@@ -90,7 +90,7 @@
     <input type="hidden" name="primary_recipient_index" :value="primaryIndex ?? ''">
 
     <div class="mt-3 overflow-x-auto rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-        <table class="min-w-full border-collapse text-xs">
+        <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
                     <th class="w-10 px-1.5 py-1.5 text-center">No</th>
