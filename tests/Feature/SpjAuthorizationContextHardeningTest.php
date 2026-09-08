@@ -107,7 +107,7 @@ class SpjAuthorizationContextHardeningTest extends TestCase
     public function test_active_context_middleware_rejects_cross_fund_package_and_document(): void
     {
         [$activeYear, $activeFund] = $this->contextFixtures();
-        $otherFund = FundSource::query()->create(['code' => 'KINERJA', 'name' => 'BOSP Kinerja']);
+        $otherFund = FundSource::query()->create(['id' => 2, 'code' => 'KINERJA', 'name' => 'BOSP Kinerja']);
         $transaction = $this->transaction($activeYear, $otherFund, 'OTHER-FUND');
         $package = SpjPackage::query()->create(['transaction_id' => $transaction->id, 'status' => 'DRAFT']);
         $document = SpjDocument::query()->create([
@@ -158,9 +158,9 @@ class SpjAuthorizationContextHardeningTest extends TestCase
     /** @return array{FiscalYear, FundSource, FiscalYear} */
     private function contextFixtures(): array
     {
-        $activeFund = FundSource::query()->create(['code' => 'REGULER', 'name' => 'BOSP Reguler']);
-        $activeYear = FiscalYear::query()->create(['year' => 2026, 'fund_source_id' => $activeFund->id, 'is_active' => true]);
-        $otherYear = FiscalYear::query()->create(['year' => 2025, 'fund_source_id' => $activeFund->id, 'is_active' => false]);
+        $activeFund = FundSource::query()->create(['id' => 1, 'code' => 'REGULER', 'name' => 'BOSP Reguler']);
+        $activeYear = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'REGULER', 'fund_source_id' => $activeFund->id, 'is_active' => true]);
+        $otherYear = FiscalYear::query()->create(['year' => 2025, 'fund_source' => 'REGULER', 'fund_source_id' => $activeFund->id, 'is_active' => false]);
 
         return [$activeYear, $activeFund, $otherYear];
     }
