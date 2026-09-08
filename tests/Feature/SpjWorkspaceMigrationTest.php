@@ -211,7 +211,8 @@ class SpjWorkspaceMigrationTest extends TestCase
         }
         $taxHtml = view('spj.partials.package.tax-reference', $viewData)->render();
         $this->assertStringContainsString('PPh 4(2)', $taxHtml);
-        $this->assertStringContainsString('Rp 805', $taxHtml);
+        $this->assertStringContainsString('805', $taxHtml);
+        $this->assertStringNotContainsString('Rp 805', $taxHtml);
         $this->assertStringNotContainsString('<input', $taxHtml);
     }
 
