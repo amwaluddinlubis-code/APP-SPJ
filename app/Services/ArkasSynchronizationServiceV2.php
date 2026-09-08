@@ -75,7 +75,10 @@ class ArkasSynchronizationServiceV2
                 ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'activity_code' => $record['KODE_KEGIATAN'] ?? null, 'activity_name' => $record['NAMA_KEGIATAN'] ?? null,
                     'account_code' => $record['KODE_REKENING'] ?? null, 'description' => $record['URAIAN'] ?? null,
-                    'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
+                    'amount' => $this->amount($record['JUMLAH'] ?? 0),
+                    'source_created_at' => $this->sourceTimestamp($record, ['CREATE_DATE', 'create_date']),
+                    'source_last_updated_at' => $this->sourceTimestamp($record, ['LAST_UPDATE', 'last_update']),
+                    'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
                     'updated_at' => now(), 'created_at' => now()]
             );
         }
@@ -145,9 +148,16 @@ class ArkasSynchronizationServiceV2
             $sourceKey = hash('sha256', implode('|', $sourceItemIds));
             $sourceCreatedAt = $this->earliestSourceTimestamp($items, ['CREATE_DATE', 'CREATED_AT', 'create_date', 'created_at']);
             $sourceLastUpdatedAt = $this->earliestSourceTimestamp($items, ['LAST_UPDATE', 'LAST_UPDATED_AT', 'UPDATED_AT', 'last_update', 'updated_at']);
+            $rkasDate = collect($items)
+                ->map(fn (array $item) => $rkas[$item['ID_RAPBS'] ?? '']->source_created_at ?? null)
+                ->filter()
+                ->map(fn ($date) => Carbon::parse($date))
+                ->sortDesc()
+                ->first();
             $isSiplah = (bool) ($first['IS_SIPLAH'] ?? false);
             $data = ['fund_source_id' => $first['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                 'id_kas_umum' => $first['ID_KAS_UMUM'], 'transaction_date' => $first['TANGGAL_TRANSAKSI'],
+                'rkas_date' => $rkasDate?->toDateString(),
                 'source_created_at' => $sourceCreatedAt, 'source_last_updated_at' => $sourceLastUpdatedAt,
                 'description' => $first['URAIAN'] ?? null, 'payment_method' => $this->paymentMethod($first),
                 'activity_code' => $reference->activity_code ?? null, 'activity_name' => $reference->activity_name ?? null,
@@ -162,17 +172,25 @@ class ArkasSynchronizationServiceV2
             if ($isSiplah) {
                 $vendorName = $this->firstText($first, ['NAMA_TOKO']);
                 $vendorNpwp = $this->firstText($first, ['NPWP_REKANAN']);
+                $invoiceNumber = $this->firstText($first, ['NO_NOTA']);
+                $invoiceDate = $this->firstText($first, ['TANGGAL_NOTA']);
                 if ($vendorName !== null) {
                     $data['vendor_name'] = $vendorName;
                 }
                 if ($vendorNpwp !== null) {
                     $data['vendor_npwp'] = $vendorNpwp;
                 }
+                if ($invoiceNumber !== null) {
+                    $data['invoice_number'] = $invoiceNumber;
+                }
+                if ($invoiceDate !== null) {
+                    $data['invoice_date'] = $invoiceDate;
+                }
             }
             $hashPayload = $data;
             unset($hashPayload['last_seen_sync_run_id'], $hashPayload['source_missing_since'], $hashPayload['source_status'], $hashPayload['updated_at']);
             $hashWithOrderingMetadata = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
-            unset($hashPayload['source_created_at'], $hashPayload['source_last_updated_at']);
+            unset($hashPayload['source_created_at'], $hashPayload['source_last_updated_at'], $hashPayload['rkas_date']);
             $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
             $existing = DB::connection('school')->table('transactions')
                 ->where('fiscal_year_id', $year->id)->where('source_key', $sourceKey)->first();
@@ -200,6 +218,12 @@ class ArkasSynchronizationServiceV2
             }
             if ($existing && filled($existing->vendor_npwp)) {
                 unset($data['vendor_npwp']);
+            }
+            if ($existing && filled($existing->invoice_number)) {
+                unset($data['invoice_number']);
+            }
+            if ($existing && filled($existing->invoice_date)) {
+                unset($data['invoice_date']);
             }
             if (! $existing || blank($existing->spj_category)) {
                 $accountCode = $first['KODE_REKENING'] ?? $reference?->account_code;
