@@ -24,6 +24,7 @@
             <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
             <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
             <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
+            <file>tests/Feature/SpjPackageNavigationContextTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
