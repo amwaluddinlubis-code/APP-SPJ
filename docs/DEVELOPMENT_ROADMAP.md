@@ -2,70 +2,23 @@
 
 Terakhir diperbarui: **2026-09-08**
 
-Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Item yang sudah PASS tidak dipelihara sebagai milestone aktif.
+Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Migrasi ownership Detail Transaksi ↔ Paket SPJ sudah PASS dan tidak lagi menjadi milestone aktif; detail historisnya ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
----
+## P1 — browser QA refinement Paket SPJ terbaru
 
-## P0 URGENT — migrasi Detail Transaksi ↔ Paket SPJ
+Tutup QA visual/runtime untuk perubahan terakhir:
 
-**Status: PASS**
+- radio `SiPLah / Non SiPLah` mutually-exclusive;
+- selector PEMELIHARAAN di baris Kategori SPJ;
+- Data Umum Dokumen: textarea 5 baris kiri, seluruh field umum kanan;
+- summary 5 kolom `Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan`;
+- tab ke-3 `Rincian Pajak`;
+- informasi nomor otomatis horizontal, bukan input;
+- tabel kategori non-BARANG compact dan hanya satu pagination;
+- previous/next Package sesuai konteks tahun+sumber dana;
+- mobile/responsive minimum.
 
-Rencana lengkap ada di:
-
-```text
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
-```
-
-Target final:
-
-```text
-Detail Transaksi = source transaksi + item_description
-Paket SPJ        = seluruh data dokumen pertanggungjawaban
-```
-
-Semua item U01–U06 sudah selesai dan terverifikasi. Ownership boundary sudah final:
-
-- Detail Transaksi hanya menulis `item_description`;
-- Paket SPJ adalah satu-satunya workspace kategori/payment/vendor/data kategori;
-- Pajak tidak dapat diubah dari Paket SPJ;
-- Category switch tanpa reload;
-- 20 regression tests meliputi seluruh kontrak migrasi.
-
-Definition of Done P0 tercapai:
-
-```text
-Detail Transaksi
-  ✅ item_description editable & wajib tersimpan
-  ✅ quantity/unit/harga/nilai readonly
-  ✅ PPN/PPh/SSPD readonly source
-
-Paket SPJ
-  ✅ satu-satunya workspace kategori/payment/vendor/data kategori
-  ✅ pajak source tidak dapat diubah
-  ✅ category switch tanpa reload
-  ✅ save -> validation -> READY -> numbering -> preview/download berjalan
-```
-
----
-
-## P0 — tutup verification queue terbaru
-
-Setelah perubahan P0 URGENT, verifikasi source terbaru untuk:
-
-```text
-ownership Detail Transaksi vs Paket SPJ
-validasi item_description sebelum buka Paket
-category switch AJAX tanpa reload
-pajak Paket readonly dan immutable
-kronologi tanggal pengadaan
-workflow Dashboard/Transaksi/Persiapan
-PEMELIHARAAN bahan + upah pada preview/download
-APP DATA eksternal
-SiPLah MVP
-rekonsiliasi gross/tax/net JASA_LAINNYA
-```
-
-Daftar perintah canonical berada di `docs/CURRENT_PROGRESS.md`.
+Perubahan ini tidak boleh membuka kembali write-path legacy atau mengubah ownership backend.
 
 ---
 
@@ -145,7 +98,24 @@ source
 
 tanpa edit database manual dan tanpa input field SPJ yang sama pada dua halaman.
 
-Untuk `PEMELIHARAAN`, RAB/dokumen harus membaca material dari transaksi bahan dan pekerja/upah dari transaksi upah yang ditautkan.
+Untuk `PEMELIHARAAN`, RAB/dokumen harus membaca material dari transaksi bahan dan pekerja/upah dari transaksi upah yang ditautkan tanpa menimpa source BKU.
+
+---
+
+## P1 — APP DATA runtime hardening
+
+Validasi pada database sekolah nyata:
+
+```text
+provision
+switch tenant
+reset total + sqlite_sequence
+backup
+restore
+WAL/SHM cleanup
+```
+
+Database utama tidak boleh ikut terhapus pada reset tenant.
 
 ---
 
@@ -153,9 +123,10 @@ Untuk `PEMELIHARAAN`, RAB/dokumen harus membaca material dari transaksi bahan da
 
 - tutup `docs/MOBILE_VISUAL_QA_TODO.md`;
 - tambah field-level validation UX pada area yang masih generik;
-- kurangi runtime compatibility layer hanya ketika refactor markup aman;
+- kurangi compatibility layer hanya jika markup canonical sudah stabil;
 - pertahankan theme token dan primitive `x-ui.*` / `ui-*`;
-- pertahankan pergantian kategori Paket SPJ tanpa full page reload.
+- pertahankan category switch Paket tanpa full page reload;
+- standardisasi icon action baru ke `x-ui.icon` ketika markup native dirapikan.
 
 ---
 
@@ -189,10 +160,9 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 
 Release candidate belum selesai sampai:
 
-- migrasi URGENT Detail Transaksi ↔ Paket SPJ dinyatakan PASS;
-- seluruh item FAIL di `CURRENT_PROGRESS.md` selesai atau dinyatakan out-of-scope secara eksplisit;
+- seluruh item FAIL penting di `CURRENT_PROGRESS.md` selesai atau out-of-scope secara eksplisit;
 - seluruh RVR penting mendapat hasil runtime PASS;
-- keenam kategori lulus end-to-end;
+- keenam kategori lulus end-to-end sampai FINAL + preview/download;
 - preview/download bebas side effect;
 - numbering/lifecycle/revision aman;
 - safe sync tidak merusak overlay/final document;
@@ -204,10 +174,9 @@ Release candidate belum selesai sampai:
 Baca bersama:
 
 ```text
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
-docs/USER_SCENARIOS.md
+docs/ARCHITECTURE_COMPLETE.md
 docs/GUI_STANDARDIZATION.md
-docs/CSS_USAGE_GUIDE.md
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 ```
