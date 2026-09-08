@@ -11,6 +11,7 @@ import './spj-package-workspace-ui';
 import './spj-package-transaction-boundary';
 import './legacy-action-icon-migrator';
 import './action-icon-deduplicator';
+import './sync-progress';
 
 window.axios = axios;
 
