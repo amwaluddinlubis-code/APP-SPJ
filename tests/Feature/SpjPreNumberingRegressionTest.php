@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\FiscalYear;
 use App\Models\FundSource;
+use App\Models\SpjMaintenance;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjDocumentNumberService;
@@ -90,7 +91,13 @@ class SpjPreNumberingRegressionTest extends TestCase
             'payment_method' => 'tunai',
             'receipt_recipient_name' => 'Pelaksana Pemeliharaan',
         ]);
+        $maintenance = SpjMaintenance::query()->create([
+            'fiscal_year_id' => $package->transaction->fiscal_year_id,
+            'name' => 'Pemeliharaan ruang kelas',
+            'status' => 'ACTIVE',
+        ]);
         $workOrder = $package->transaction->workOrder()->create([
+            'maintenance_id' => $maintenance->id,
             'work_description' => 'Pemeliharaan ruang kelas',
             'spk_date' => '2026-02-10',
             'rab_date' => '2026-03-01',
