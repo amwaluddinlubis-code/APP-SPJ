@@ -165,6 +165,7 @@ class SpjWorkspaceUseCase
         $validationIssues = $validator->validate($package);
         $templates = DocumentTemplate::query()->where(['fiscal_year_id' => session('active_fiscal_year_id'), 'is_active' => true])->orderBy('document_type')->get()
             ->filter(fn (DocumentTemplate $template) => empty($template->applicable_categories) || in_array('SEMUA', $template->applicable_categories, true) || in_array($category, $template->applicable_categories, true));
+        $navigation = $this->packageNavigation($package);
 
         return view('spj.index', [
             'tab' => 'paket',
@@ -174,10 +175,53 @@ class SpjWorkspaceUseCase
             'templates' => $templates,
             'transactions' => null,
             ...$this->overviewMetrics(),
+            ...$navigation,
             'spjTypes' => [],
             'filters' => [],
             'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', session('active_fiscal_year_id'))->orderBy('quarter')->get()->keyBy('quarter'),
             'participantRoster' => $participantRoster,
         ]);
+    }
+
+    /** @return array{previousPackageId: int|null, nextPackageId: int|null} */
+    private function packageNavigation(SpjPackage $package): array
+    {
+        $transaction = $package->transaction;
+        $transactionDate = $transaction->transaction_date;
+
+        $previousTransaction = Transaction::query()
+            ->activeContext()
+            ->whereHas('spjPackage')
+            ->where(function ($query) use ($transactionDate, $transaction): void {
+                $query->whereDate('transaction_date', '<', $transactionDate)
+                    ->orWhere(function ($sameDate) use ($transactionDate, $transaction): void {
+                        $sameDate->whereDate('transaction_date', $transactionDate)
+                            ->where('id', '<', $transaction->id);
+                    });
+            })
+            ->with('spjPackage:id,transaction_id')
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->first();
+
+        $nextTransaction = Transaction::query()
+            ->activeContext()
+            ->whereHas('spjPackage')
+            ->where(function ($query) use ($transactionDate, $transaction): void {
+                $query->whereDate('transaction_date', '>', $transactionDate)
+                    ->orWhere(function ($sameDate) use ($transactionDate, $transaction): void {
+                        $sameDate->whereDate('transaction_date', $transactionDate)
+                            ->where('id', '>', $transaction->id);
+                    });
+            })
+            ->with('spjPackage:id,transaction_id')
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->first();
+
+        return [
+            'previousPackageId' => $previousTransaction?->spjPackage?->id,
+            'nextPackageId' => $nextTransaction?->spjPackage?->id,
+        ];
     }
 }
