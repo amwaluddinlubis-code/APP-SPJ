@@ -9,9 +9,8 @@ class SpjTransactionDetailsService
 {
     /**
      * Copy category-specific form values to their dedicated SPJ relations.
-     *
-     * Legacy transaction columns remain populated during the transition so
-     * previously generated documents and incomplete historical records work.
+     * Automatic document numbers are owned by the numbering workflow and are
+     * never cleared merely because the manual package form does not submit them.
      *
      * @param  array<string, mixed>  $details
      */
@@ -48,13 +47,16 @@ class SpjTransactionDetailsService
     private function synchronizeGoods(Transaction $transaction, array $details): void
     {
         $purchaseDetails = [
-            'order_number' => $details['order_number'] ?? null,
             'order_date' => $details['order_date'] ?? null,
-            'bap_number' => $details['bap_number'] ?? null,
             'bap_date' => $details['bap_date'] ?? null,
-            'bast_number' => $details['bast_number'] ?? null,
             'bast_date' => $details['bast_date'] ?? null,
         ];
+
+        foreach (['order_number', 'bap_number', 'bast_number'] as $numberField) {
+            if (array_key_exists($numberField, $details)) {
+                $purchaseDetails[$numberField] = $details[$numberField];
+            }
+        }
 
         if (collect($purchaseDetails)->filter(fn ($value) => filled($value))->isNotEmpty()) {
             foreach ($transaction->items as $item) {
@@ -74,25 +76,33 @@ class SpjTransactionDetailsService
             ['fiscal_year_id' => $transaction->fiscal_year_id, 'name' => 'Transaksi '.$transaction->no_bukti],
             ['description' => $details['work_description'], 'default_location' => $details['work_location'] ?? null]
         );
-        $transaction->workOrder()->updateOrCreate([], [
+
+        $workOrderDetails = [
             'maintenance_id' => $maintenance->id,
             'expense_type' => 'UPAH',
             'work_description' => $details['work_description'],
             'work_location' => $details['work_location'] ?? null,
             'work_started_at' => $details['work_started_at'] ?? null,
             'work_completed_at' => $details['work_completed_at'] ?? null,
-            'spk_number' => $details['spk_number'] ?? null,
             'spk_date' => $details['spk_date'] ?? null,
-            'rab_number' => $details['rab_number'] ?? null,
             'rab_date' => $details['rab_date'] ?? null,
-            'work_started_at' => $details['work_started_at'] ?? null,
-            'work_completed_at' => $details['work_completed_at'] ?? null,
-        ]);
+        ];
+        foreach (['spk_number', 'rab_number'] as $numberField) {
+            if (array_key_exists($numberField, $details)) {
+                $workOrderDetails[$numberField] = $details[$numberField];
+            }
+        }
+
+        $transaction->workOrder()->updateOrCreate([], $workOrderDetails);
 
         $workOrder = $transaction->workOrder()->first();
         if (! $workOrder || ! array_key_exists('workers', $details)) {
             return;
         }
+
+        $primaryIndex = ($details['primary_recipient_group'] ?? null) === 'workers'
+            ? (int) ($details['primary_recipient_index'] ?? -1)
+            : -1;
 
         $workOrder->workers()->delete();
         foreach ($details['workers'] ?? [] as $sortOrder => $worker) {
@@ -108,7 +118,7 @@ class SpjTransactionDetailsService
                 'work_days' => $days,
                 'daily_rate' => $rate,
                 'amount' => $days * $rate,
-                'is_receipt_recipient' => (bool) ($worker['is_receipt_recipient'] ?? false),
+                'is_receipt_recipient' => $primaryIndex === (int) $sortOrder || (bool) ($worker['is_receipt_recipient'] ?? false),
                 'notes' => blank($worker['notes'] ?? null) ? null : trim($worker['notes']),
                 'sort_order' => $sortOrder,
             ]);
@@ -250,6 +260,9 @@ class SpjTransactionDetailsService
             return;
         }
 
+        $primaryIndex = ($details['primary_recipient_group'] ?? null) === 'service_recipients'
+            ? (int) ($details['primary_recipient_index'] ?? -1)
+            : -1;
         $detailGross = (float) $recipients->sum('_gross');
         $sourceTax = (float) $transaction->tax_total;
         $sourceNet = (float) $transaction->net_amount;
@@ -286,7 +299,7 @@ class SpjTransactionDetailsService
                 'payment_reference' => blank($recipient['payment_reference'] ?? null) ? null : trim($recipient['payment_reference']),
                 'agreement_number' => blank($recipient['agreement_number'] ?? null) ? null : trim($recipient['agreement_number']),
                 'agreement_date' => $recipient['agreement_date'] ?? null,
-                'is_receipt_recipient' => (bool) ($recipient['is_receipt_recipient'] ?? false),
+                'is_receipt_recipient' => $primaryIndex === (int) $sortOrder || (bool) ($recipient['is_receipt_recipient'] ?? false),
                 'notes' => blank($recipient['notes'] ?? null) ? null : trim($recipient['notes']),
                 'sort_order' => $sortOrder,
             ]);
