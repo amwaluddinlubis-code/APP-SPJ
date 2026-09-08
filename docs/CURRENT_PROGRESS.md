@@ -37,7 +37,7 @@ Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser Q
 
 ## 1. P0-01 — E2E enam kategori berbasis database nyata
 
-**Status: RVR — audit source dan tool audit sudah tersedia; menunggu laptop/database SDN 10208183.**
+**Status: RVR — audit source, auditor read-only, dan verification kit reusable sudah tersedia; menunggu laptop/database SDN 10208183.**
 
 Dataset target pertama adalah database tenant SDN **10208183** yang sudah berisi pekerjaan SPJ satu triwulan.
 
@@ -51,7 +51,7 @@ P0-01D  Catat/fix blocker
 P0-01E  Ulangi sampai 6/6 PASS
 ```
 
-Source baru:
+Source audit utama:
 
 ```text
 app/Console/Commands/AuditSpjQuarter.php
@@ -60,13 +60,46 @@ tests/Feature/SpjQuarterAuditCommandTest.php
 docs/P0_01_SOURCE_AUDIT.md
 ```
 
-Command canonical:
+Verification kit reusable yang sudah masuk source:
 
-```powershell
-php artisan spj:audit-quarter 10208183 --quarter=1
+```text
+tests/Support/SpjScenarioFactory.php
+tests/Unit/SpjScenarioFactoryTest.php
+app/Console/Commands/VerifySpj.php
+app/Console/Commands/DiffSpjAudit.php
+tests/Feature/SpjAuditDiffCommandTest.php
+tests/Feature/SpjVerifyCommandTest.php
+.github/workflows/spj-critical.yml
+docs/P0_VERIFICATION_KIT.md
 ```
 
-Auditor sengaja tidak memanggil `SchoolDatabaseManager::activate/provision/ensureMigrated`, tidak membuat database bila file hilang, memaksa `PRAGMA query_only=ON`, dan hanya melakukan pemeriksaan read-only.
+`phpunit.xml` sekarang mempunyai suite canonical **SPJ Critical**, sehingga checkpoint source tidak perlu lagi memilih nama test satu per satu.
+
+Entry point static verification:
+
+```powershell
+php artisan spj:verify
+```
+
+Entry point saat database nyata tersedia:
+
+```powershell
+php artisan spj:verify --npsn=10208183 --quarter=1
+```
+
+Auditor tetap sengaja tidak memanggil `SchoolDatabaseManager::activate/provision/ensureMigrated`, tidak membuat database bila file hilang, memaksa `PRAGMA query_only=ON`, dan hanya melakukan pemeriksaan read-only.
+
+Auditor juga sekarang dapat menyimpan baseline JSON:
+
+```powershell
+php artisan spj:audit-quarter 10208183 --quarter=1 --output=storage/app/audits/10208183-tw1-before.json
+```
+
+dan membandingkan hasil setelah patch:
+
+```powershell
+php artisan spj:audit-diff before.json after.json --fail-on-regression
+```
 
 Cakupan auditor:
 
@@ -80,7 +113,7 @@ Cakupan auditor:
 - duplicate active document number;
 - rekomendasi satu kandidat E2E per kategori.
 
-Regression test read-only sudah **ditambahkan ke source**, tetapi **belum dijalankan dalam sesi ini**. Test tersebut membandingkan hash file tenant sebelum/sesudah command dan memastikan metadata `school_databases.updated_at` tidak berubah.
+Regression test auditor, scenario factory, diff, dan verification command sudah **ditambahkan ke source**, tetapi test terbaru belum diklaim PASS sampai dijalankan lokal atau CI benar-benar hijau.
 
 Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save detail keenam kategori, validation/requirements, numbering, preview/download, dan happy-path FINAL tersedia. Status tetap RVR karena dataset nyata, template nyata, dan runtime enam kategori belum dapat dijalankan saat laptop off. Detail audit ada di `docs/P0_01_SOURCE_AUDIT.md`.
 
@@ -89,19 +122,21 @@ Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save det
 Saat laptop/database tersedia:
 
 ```powershell
-php artisan test --compact --filter=SpjQuarterAuditCommandTest
-php artisan spj:audit-quarter 10208183 --quarter=1
+php artisan spj:verify
+php artisan spj:verify --npsn=10208183 --quarter=1
 ```
 
 Lalu:
 
-1. review semua CRITICAL/WARNING;
-2. pastikan enam kategori mempunyai coverage nyata;
-3. pilih satu kandidat terbaik per kategori dari output auditor;
-4. jalankan Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
-5. jangan memperbaiki data dengan SQL manual;
-6. catat titik gagal pertama per kategori dan patch source/test;
-7. ulangi sampai 6/6 PASS.
+1. simpan baseline audit JSON;
+2. review semua CRITICAL/WARNING;
+3. pastikan enam kategori mempunyai coverage nyata;
+4. pilih satu kandidat terbaik per kategori dari output auditor;
+5. jalankan Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
+6. jangan memperbaiki data dengan SQL manual;
+7. catat titik gagal pertama per kategori dan patch source/test;
+8. buat audit `after` dan gunakan `spj:audit-diff --fail-on-regression`;
+9. ulangi sampai 6/6 PASS.
 
 ---
 
@@ -154,6 +189,15 @@ Perubahan markup/JS terakhir perlu diverifikasi di browser setelah `npm run buil
 - responsive/mobile tidak pecah.
 
 Ini adalah QA visual/runtime, bukan gap ownership backend.
+
+### R03 — Verification kit / CI pertama
+
+Source verification kit sudah tersedia, tetapi status runtime baru boleh dinaikkan setelah:
+
+- `php artisan spj:verify` berhasil lokal; dan/atau
+- GitHub Actions `SPJ Critical Verification` selesai hijau pada head terbaru.
+
+Workflow CI tidak memakai database nyata dan tidak menggantikan R01/P0-01 real-tenant audit.
 
 ---
 
@@ -209,24 +253,28 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 5. Verification queue
 
-Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user. Perubahan auditor terbaru belum mendapat runtime checkpoint.
+Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user. Verification kit yang ditambahkan setelah checkpoint tersebut belum boleh diasumsikan PASS sampai runtime/CI membuktikannya.
 
-Prioritas pertama setelah pull:
+Command canonical sekarang:
 
 ```powershell
-php vendor/bin/pint --dirty --format agent
-php artisan test --compact --filter=SpjQuarterAuditCommandTest
-php artisan spj:audit-quarter 10208183 --quarter=1
+php artisan spj:verify
 ```
 
-Untuk UI terbaru tetap jalankan bila relevan:
+Saat database SDN 10208183 tersedia:
 
 ```powershell
+php artisan spj:verify --npsn=10208183 --quarter=1
+```
+
+Jika ingin menjalankan komponen secara terpisah:
+
+```powershell
+php vendor/bin/pint --test
+php artisan test --testsuite="SPJ Critical" --compact
 npm run build
 php artisan view:cache --no-interaction
-php artisan optimize:clear
-php artisan test --compact --filter="SpjWorkspaceMigrationTest|SpjOwnershipMigrationTest|SpjMaintenanceLinkWorkspaceTest"
-git diff --check
+php artisan spj:audit-quarter 10208183 --quarter=1
 ```
 
 Browser QA tetap diperlukan untuk item R02.
@@ -244,6 +292,7 @@ Baca bersama:
 
 ```text
 README.md
+docs/P0_VERIFICATION_KIT.md
 docs/P0_01_SOURCE_AUDIT.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/ARCHITECTURE_COMPLETE.md
