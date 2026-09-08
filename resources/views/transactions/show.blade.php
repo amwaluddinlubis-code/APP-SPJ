@@ -12,19 +12,13 @@
             'HONOR_PEGAWAI' => 'Honor Pegawai',
             default => str_replace('_', ' ', (string) $value),
         };
-        $pphTotal = collect([
-            $transaction->pph21,
-            $transaction->pph22,
-            $transaction->pph23,
-            $transaction->pph4,
-        ])->sum(fn($value) => (float) $value);
         $sourceStatus = strtoupper((string) ($transaction->source_status ?: 'ACTIVE'));
         $needsAttention = $sourceStatus === 'SOURCE_MISSING' || (bool) $transaction->requires_reconciliation;
     @endphp
 
     <div class="flex flex-col gap-6" x-data="{ itemDescriptionsDirty: false }">
         @include('transactions.partials.detail.overview-header')
-        @include('transactions.partials.detail.overview-status')
         @include('transactions.partials.detail.items')
+        @include('transactions.partials.detail.overview-status')
     </div>
 </x-layouts.tailwind-app>
