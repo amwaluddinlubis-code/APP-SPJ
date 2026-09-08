@@ -14,7 +14,7 @@ class SpjVerifyCommandTest extends TestCase
             '--skip-tests' => true,
         ])
             ->expectsOutputToContain('SPJ VERIFICATION KIT')
-            ->expectsOutputToContain('real tenant audit masih RVR')
+            ->expectsOutputToContain('REAL TENANT RVR')
             ->assertExitCode(0);
     }
 }
