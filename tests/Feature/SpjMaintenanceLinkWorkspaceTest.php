@@ -40,7 +40,7 @@ class SpjMaintenanceLinkWorkspaceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_maintenance_partial_uses_link_endpoints_without_duplicating_spj_form_fields(): void
+    public function test_maintenance_partial_exposes_only_link_endpoints_for_the_compact_category_selector(): void
     {
         $transaction = $this->transaction('Pemeliharaan ruang kelas');
         $package = $transaction->spjPackage()->create([
@@ -62,8 +62,9 @@ class SpjMaintenanceLinkWorkspaceTest extends TestCase
         $this->assertStringContainsString('data-spj-maintenance-links', $html);
         $this->assertStringContainsString(route('transactions.maintenance-links.show', $transaction->id), $html);
         $this->assertStringContainsString(route('transactions.maintenance-links.update', $transaction->id), $html);
-        $this->assertStringContainsString('Transaksi bahan / barang terkait', $html);
-        $this->assertStringContainsString('Transaksi upah terkait', $html);
+        $this->assertStringNotContainsString('data-maintenance-link-select', $html);
+        $this->assertStringNotContainsString('Transaksi bahan / barang terkait', $html);
+        $this->assertStringNotContainsString('Transaksi upah terkait', $html);
         $this->assertStringNotContainsString('name="maintenance_material_transaction_id"', $html);
         $this->assertStringNotContainsString('name="maintenance_labor_transaction_id"', $html);
     }
