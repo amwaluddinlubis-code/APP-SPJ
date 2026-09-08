@@ -22,7 +22,9 @@ const initializeMaintenanceBlock = (block) => {
     const materialSelect = block.querySelector('[data-maintenance-link-select="material"]');
     const laborSelect = block.querySelector('[data-maintenance-link-select="labor"]');
     const roleText = block.querySelector('[data-maintenance-link-role]');
-    const status = block.querySelector('[data-maintenance-link-status]');
+    const originalStatus = block.querySelector('[data-maintenance-link-status]');
+    const quickSlot = document.querySelector('[data-spj-maintenance-quick-slot]');
+    const quickStatus = document.querySelector('[data-spj-maintenance-quick-status]');
     const categorySelect = document.querySelector('#spj-type');
 
     if (!(materialSelect instanceof HTMLSelectElement)
@@ -32,6 +34,25 @@ const initializeMaintenanceBlock = (block) => {
 
     block.dataset.maintenanceLinksBound = 'true';
 
+    if (quickSlot instanceof HTMLElement) {
+        const materialLabel = materialWrapper.querySelector('label');
+        const laborLabel = laborWrapper.querySelector('label');
+        if (materialLabel instanceof HTMLElement) materialLabel.textContent = 'Bahan';
+        if (laborLabel instanceof HTMLElement) laborLabel.textContent = 'Upah';
+
+        materialWrapper.querySelectorAll('p').forEach((hint) => { hint.hidden = true; });
+        laborWrapper.querySelectorAll('p').forEach((hint) => { hint.hidden = true; });
+        materialWrapper.classList.add('min-w-0');
+        laborWrapper.classList.add('min-w-0');
+        quickSlot.append(materialWrapper, laborWrapper);
+
+        // Panel linkage lama tetap menjadi holder endpoint/state, tetapi UI selector dipindah
+        // ke baris kategori seperti versi sebelumnya.
+        block.hidden = true;
+        block.classList.add('hidden');
+        block.setAttribute('aria-hidden', 'true');
+    }
+
     const editable = block.dataset.editable === '1';
     let loaded = false;
     let loading = false;
@@ -39,11 +60,12 @@ const initializeMaintenanceBlock = (block) => {
     let currentRole = 'unknown';
     let lastSaved = { material: '', labor: '' };
 
+    const statusElement = quickStatus instanceof HTMLElement ? quickStatus : originalStatus;
     const setStatus = (message = '', state = 'idle') => {
-        if (!(status instanceof HTMLElement)) return;
-        status.textContent = message;
-        status.classList.remove('text-emerald-700', 'text-rose-700', 'text-[var(--ui-fg-muted)]');
-        status.classList.add(state === 'success'
+        if (!(statusElement instanceof HTMLElement)) return;
+        statusElement.textContent = message;
+        statusElement.classList.remove('text-emerald-700', 'text-rose-700', 'text-[var(--ui-fg-muted)]');
+        statusElement.classList.add(state === 'success'
             ? 'text-emerald-700'
             : (state === 'error' ? 'text-rose-700' : 'text-[var(--ui-fg-muted)]'));
     };
@@ -75,9 +97,16 @@ const initializeMaintenanceBlock = (block) => {
 
         materialWrapper.hidden = materialHidden;
         laborWrapper.hidden = laborHidden;
+        materialWrapper.classList.toggle('md:col-span-2', !materialHidden && laborHidden);
+        laborWrapper.classList.toggle('md:col-span-2', !laborHidden && materialHidden);
 
         materialSelect.disabled = materialHidden || !editable || loading || saving;
         laborSelect.disabled = laborHidden || !editable || loading || saving;
+
+        if (quickSlot instanceof HTMLElement) {
+            quickSlot.hidden = !active;
+            quickSlot.classList.toggle('hidden', !active);
+        }
 
         if (roleText instanceof HTMLElement) {
             roleText.textContent = currentRole === 'material'
@@ -143,8 +172,8 @@ const initializeMaintenanceBlock = (block) => {
             populate(await response.json());
             loaded = true;
             setStatus(editable
-                ? 'Link transaksi bahan/upah siap dipilih.'
-                : 'Link transaksi bahan/upah hanya dapat diubah saat Paket SPJ masih editable.');
+                ? 'Transaksi terkait siap dipilih.'
+                : 'Transaksi terkait hanya dapat diubah saat Paket SPJ masih editable.');
         } catch (error) {
             setStatus(error?.message || 'Daftar transaksi terkait tidak dapat dimuat.', 'error');
         } finally {
