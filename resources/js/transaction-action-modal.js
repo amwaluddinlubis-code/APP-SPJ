@@ -95,12 +95,20 @@ const openModalForCell = (cell) => {
     window.requestAnimationFrame(() => modal.querySelector('[data-transaction-action-close]')?.focus());
 };
 
+const bindTrigger = (button, cell) => {
+    if (!(button instanceof HTMLButtonElement) || button.dataset.transactionActionBound === 'true') return;
+
+    button.dataset.transactionActionBound = 'true';
+    button.addEventListener('click', () => openModalForCell(cell));
+};
+
 const initializeActionCell = (cell) => {
     if (!(cell instanceof HTMLElement) || cell.dataset.transactionActionModalBound === 'true') return;
 
+    const existingButton = cell.querySelector('[data-transaction-action-trigger]');
     const { packageLink, detailLink } = transactionLinks(cell);
-    const packageUrl = packageLink?.href || cell.dataset.packageUrl || '';
-    const detailUrl = detailLink?.href || cell.dataset.detailUrl || '';
+    const packageUrl = existingButton?.dataset.packageUrl || packageLink?.href || cell.dataset.packageUrl || '';
+    const detailUrl = existingButton?.dataset.detailUrl || detailLink?.href || cell.dataset.detailUrl || '';
 
     if (!packageUrl && !detailUrl) return;
 
@@ -111,17 +119,21 @@ const initializeActionCell = (cell) => {
     packageLink?.remove();
     detailLink?.remove();
 
-    const existingButton = cell.querySelector('[data-transaction-action-trigger]');
-    if (existingButton) return;
+    if (existingButton instanceof HTMLButtonElement) {
+        bindTrigger(existingButton, cell);
+        return;
+    }
 
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.transactionActionTrigger = 'true';
+    button.dataset.detailUrl = detailUrl;
+    button.dataset.packageUrl = packageUrl;
     button.className = 'transaction-action-button transaction-action-edit';
     button.setAttribute('title', 'Tampilkan aksi transaksi');
     button.setAttribute('aria-haspopup', 'dialog');
     button.innerHTML = '<span aria-hidden="true">⋯</span><span>Aksi</span>';
-    button.addEventListener('click', () => openModalForCell(cell));
+    bindTrigger(button, cell);
     cell.appendChild(button);
 };
 
