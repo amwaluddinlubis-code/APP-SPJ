@@ -239,6 +239,9 @@ class SpjTransactionDetailsService
         }
 
         $recipients = collect($details['service_recipients'] ?? [])
+            ->map(function (array $recipient, int|string $rowIndex): array {
+                return [...$recipient, '_row_index' => (int) $rowIndex];
+            })
             ->filter(fn (array $recipient): bool => filled($recipient['name'] ?? null))
             ->values()
             ->map(function (array $recipient): array {
@@ -299,7 +302,7 @@ class SpjTransactionDetailsService
                 'payment_reference' => blank($recipient['payment_reference'] ?? null) ? null : trim($recipient['payment_reference']),
                 'agreement_number' => blank($recipient['agreement_number'] ?? null) ? null : trim($recipient['agreement_number']),
                 'agreement_date' => $recipient['agreement_date'] ?? null,
-                'is_receipt_recipient' => $primaryIndex === (int) $sortOrder || (bool) ($recipient['is_receipt_recipient'] ?? false),
+                'is_receipt_recipient' => $primaryIndex === (int) $recipient['_row_index'] || (bool) ($recipient['is_receipt_recipient'] ?? false),
                 'notes' => blank($recipient['notes'] ?? null) ? null : trim($recipient['notes']),
                 'sort_order' => $sortOrder,
             ]);
