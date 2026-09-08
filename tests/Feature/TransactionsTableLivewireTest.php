@@ -35,7 +35,7 @@ class TransactionsTableLivewireTest extends TestCase
         $this->assertContains(EnsureActiveFiscalYear::class, $middleware);
     }
 
-    public function test_transaction_spj_data_can_be_edited_from_livewire_modal(): void
+    public function test_transaction_actions_are_navigation_only_and_livewire_has_no_spj_editor_write_path(): void
     {
         $this->prepareSchoolConnection();
 
@@ -46,7 +46,7 @@ class TransactionsTableLivewireTest extends TestCase
             'fund_source_id' => $fundSource->id,
             'is_active' => true,
         ]);
-        $transaction = Transaction::query()->create([
+        Transaction::query()->create([
             'fiscal_year_id' => $year->id,
             'fund_source_id' => $fundSource->id,
             'no_bukti' => 'BKU-001',
@@ -68,20 +68,12 @@ class TransactionsTableLivewireTest extends TestCase
 
         Livewire::test(TransactionsTable::class)
             ->assertSee('BKU-001')
-            ->call('edit', $transaction->id)
-            ->assertSet('showEditor', true)
-            ->set('form.spj_category', 'BARANG')
-            ->set('form.payment_description', 'Pembayaran alat tulis kantor')
-            ->set('form.payment_method', 'transfer_bank')
-            ->call('save')
-            ->assertSet('showEditor', false);
+            ->assertSee('Paket SPJ')
+            ->assertSee('Detail');
 
-        $this->assertDatabaseHas('transactions', [
-            'id' => $transaction->id,
-            'spj_category' => 'BARANG',
-            'payment_description' => 'Pembayaran alat tulis kantor',
-            'payment_method' => 'transfer_bank',
-        ], 'school');
+        $this->assertFalse(method_exists(TransactionsTable::class, 'edit'));
+        $this->assertFalse(method_exists(TransactionsTable::class, 'save'));
+        $this->assertFalse(method_exists(TransactionsTable::class, 'closeEditor'));
     }
 
     public function test_second_page_from_url_displays_transaction_rows(): void
