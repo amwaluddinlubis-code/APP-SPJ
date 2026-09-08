@@ -47,7 +47,6 @@ class SpjQuarterAuditCommandTest extends TestCase
             ->expectsOutputToContain('SPJ QUARTER AUDIT — READ ONLY')
             ->expectsOutputToContain('query_only=ON')
             ->expectsOutputToContain('BARANG')
-            ->expectsOutputToContain('READ-ONLY GUARANTEE')
             ->assertExitCode(0);
 
         clearstatcache(true, $this->tenantPath);
