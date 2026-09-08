@@ -11,6 +11,20 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="SPJ Critical">
+            <file>tests/Unit/SpjScenarioFactoryTest.php</file>
+            <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
+            <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
+            <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
+            <file>tests/Feature/SecurityHardeningTest.php</file>
+            <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
+            <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
+            <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
+            <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
+            <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
+            <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
+            <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
+        </testsuite>
     </testsuites>
     <source>
         <include>
