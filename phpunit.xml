@@ -26,6 +26,7 @@
             <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
+            <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
             <file>tests/Feature/SpjVerifyCommandTest.php</file>
             <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
         </testsuite>
