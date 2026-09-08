@@ -7,6 +7,7 @@ import './spj-purchase-date-validation';
 import './spj-package-document-placement';
 import './spj-package-manual-category';
 import './spj-package-maintenance-links';
+import './spj-package-workspace-ui';
 import './spj-package-transaction-boundary';
 import './legacy-action-icon-migrator';
 import './action-icon-deduplicator';
