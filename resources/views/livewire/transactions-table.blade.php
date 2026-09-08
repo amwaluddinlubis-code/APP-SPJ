@@ -182,14 +182,19 @@
                                 <p class="mt-0.5 font-semibold text-amber-700">Pajak: {{ $rupiah($transaction->tax_total) }}</p>
                             </div>
                         </div>
-                        <div class="transaction-action-cell mt-3 flex justify-end gap-2 border-t border-[var(--ui-line)] pt-3">
-                            <a href="{{ route('transactions.prepare-spj', $transaction->id) }}" title="Buka Paket SPJ" class="transaction-action-button transaction-action-edit">
-                                    <x-ui.icon name="document" size="sm" /><span>Paket SPJ</span>
-                                </a>
-                            <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
-                                    <x-ui.icon name="document" size="sm" />
-                                    <span>Detail</span>
-                                </a>
+                        <div class="transaction-action-cell mt-3 flex justify-end border-t border-[var(--ui-line)] pt-3">
+                            <button
+                                type="button"
+                                data-transaction-action-trigger
+                                data-detail-url="{{ route('transactions.show', $transaction) }}"
+                                data-package-url="{{ route('transactions.prepare-spj', $transaction->id) }}"
+                                class="transaction-action-button transaction-action-edit"
+                                title="Tampilkan aksi transaksi"
+                                aria-haspopup="dialog"
+                            >
+                                <span aria-hidden="true">⋯</span>
+                                <span>Aksi</span>
+                            </button>
                         </div>
                     </article>
                 @endforeach
@@ -244,14 +249,19 @@
                                     <p class="mt-1 text-[13px] font-semibold text-amber-700"><span class="font-medium">Pajak:</span> {{ $rupiah($transaction->tax_total) }}</p>
                                 </td>
                                 <td class="transaction-action-column px-3 py-3 align-middle">
-                                    <div class="flex items-center justify-center gap-2" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
-                                        <a href="{{ route('transactions.prepare-spj', $transaction->id) }}" title="Buka Paket SPJ" class="transaction-action-button transaction-action-edit">
-                                    <x-ui.icon name="document" size="sm" /><span>Paket SPJ</span>
-                                </a>
-                                        <a href="{{ route('transactions.show', $transaction) }}" wire:navigate title="Buka detail" class="transaction-action-button transaction-action-detail">
-                                                <x-ui.icon name="document" size="sm" />
-                                                <span>Detail</span>
-                                            </a>
+                                    <div class="transaction-action-cell flex items-center justify-center" aria-label="Aksi transaksi {{ $transaction->no_bukti }}">
+                                        <button
+                                            type="button"
+                                            data-transaction-action-trigger
+                                            data-detail-url="{{ route('transactions.show', $transaction) }}"
+                                            data-package-url="{{ route('transactions.prepare-spj', $transaction->id) }}"
+                                            class="transaction-action-button transaction-action-edit"
+                                            title="Tampilkan aksi transaksi"
+                                            aria-haspopup="dialog"
+                                        >
+                                            <span aria-hidden="true">⋯</span>
+                                            <span>Aksi</span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
