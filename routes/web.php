@@ -20,6 +20,7 @@ use App\Http\Controllers\RkasBudgetController;
 use App\Http\Controllers\SchoolBackupController;
 use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
+use App\Http\Controllers\SourceReconciliationController;
 use App\Http\Controllers\SpjController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
 use App\Http\Controllers\SpjPackageChecklistController;
@@ -99,6 +100,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/siswa/{studentId}', [StudentController::class, 'destroy'])->name('students.destroy');
 
             Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
+            Route::post('/transaksi/{transactionId}/rekonsiliasi-sumber/selesaikan', [SourceReconciliationController::class, 'resolve'])->name('transactions.source-reconciliation.resolve');
             Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
             Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
 
