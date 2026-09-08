@@ -250,6 +250,17 @@ class SpjDocumentNumberService
         });
     }
 
+    public function renderConfiguredNumber(
+        DocumentNumberFormat $format,
+        string $documentType,
+        int $sequence,
+        CarbonInterface $documentDate,
+        string $schoolCode,
+        ?string $npsn = null,
+    ): string {
+        return $this->renderNumber($format, strtoupper(trim($documentType)), $sequence, $documentDate, $schoolCode, $npsn);
+    }
+
     private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback): CarbonInterface
     {
         $package->loadMissing(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
@@ -280,7 +291,7 @@ class SpjDocumentNumberService
         };
 
         return [
-            'format_pattern' => '{SEQ}/'.$prefix.'/{SCHOOL}/{ROMAN_MONTH}/{YEAR}',
+            'format_pattern' => '{SEQ}/'.$prefix.'/{SCHOOL}/{TW}/{YEAR}',
             'reset_period' => 'YEAR',
             'padding' => 4,
             'is_active' => true,
@@ -307,7 +318,15 @@ class SpjDocumentNumberService
             '{YEAR}' => $documentDate->format('Y'),
             '{MONTH}' => $documentDate->format('m'),
             '{ROMAN_MONTH}' => $this->romanMonth((int) $documentDate->format('n')),
+            '{TW}' => $this->quarterToken($documentDate),
         ]);
+    }
+
+    private function quarterToken(CarbonInterface $date): string
+    {
+        $quarter = (int) ceil((int) $date->format('n') / 3);
+
+        return 'TW.'.[1 => 'I', 'II', 'III', 'IV'][$quarter];
     }
 
     private function romanMonth(int $month): string
