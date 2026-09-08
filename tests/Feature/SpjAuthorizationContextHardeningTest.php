@@ -9,7 +9,6 @@ use App\Models\SpjDocument;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Route as IlluminateRoute;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -195,10 +194,16 @@ class SpjAuthorizationContextHardeningTest extends TestCase
     private function runMiddleware(array $parameters): Response
     {
         $request = Request::create('/spj-boundary-test', 'GET');
-        $route = new IlluminateRoute('GET', '/spj-boundary-test', fn () => null);
-        foreach ($parameters as $key => $value) {
-            $route->setParameter($key, $value);
-        }
+        $route = new class($parameters)
+        {
+            /** @param array<string, int> $parameters */
+            public function __construct(private array $parameters) {}
+
+            public function parameter(string $key, mixed $default = null): mixed
+            {
+                return $this->parameters[$key] ?? $default;
+            }
+        };
         $request->setRouteResolver(fn () => $route);
 
         return app(EnsureSpjActiveContext::class)->handle(
