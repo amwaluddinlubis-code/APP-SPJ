@@ -34,6 +34,7 @@
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
             <file>tests/Feature/SpjSafeSyncReconciliationHardeningTest.php</file>
             <file>tests/Feature/SpjSchoolIsolationTest.php</file>
+            <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
             <file>tests/Feature/SpjVerifyCommandTest.php</file>
             <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
         </testsuite>
