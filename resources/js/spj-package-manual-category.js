@@ -1,39 +1,13 @@
 const packageManualForm = () => document.querySelector('#spj-manual-form');
 
-const categoryStatus = (form) => {
-    let status = form.querySelector('[data-spj-category-status]');
-    if (status) return status;
-
-    const select = form.querySelector('#spj-type');
-    if (!select) return null;
-
-    status = document.createElement('p');
-    status.dataset.spjCategoryStatus = 'true';
-    status.className = 'mt-1 text-xs text-[var(--ui-fg-muted)]';
-    status.setAttribute('aria-live', 'polite');
-    select.insertAdjacentElement('afterend', status);
-
-    return status;
+const notify = (type, message) => {
+    if (!message) return;
+    window.dispatchEvent(new CustomEvent('app-notify', { detail: { type, message } }));
 };
 
-const setCategoryStatus = (form, message = '', state = 'idle') => {
-    const status = categoryStatus(form);
-    if (!status) return;
-
-    status.textContent = message;
-    status.classList.remove('text-emerald-700', 'text-rose-700', 'text-[var(--ui-fg-muted)]');
-
-    if (state === 'success') {
-        status.classList.add('text-emerald-700');
-        return;
-    }
-
-    if (state === 'error') {
-        status.classList.add('text-rose-700');
-        return;
-    }
-
-    status.classList.add('text-[var(--ui-fg-muted)]');
+const setCategoryStatus = (_form, message = '', state = 'idle') => {
+    if (state === 'error') notify('error', message);
+    if (state === 'success') notify('success', message);
 };
 
 const ensureCategoryContext = (form, categorySelect) => {
@@ -48,17 +22,14 @@ const ensureCategoryContext = (form, categorySelect) => {
     categoryField.classList.add('lg:col-span-1', 'min-w-0');
 
     const hint = Array.from(categoryGrid.children).find((child) => child.tagName === 'P');
-    if (hint instanceof HTMLElement) {
-        hint.classList.add('lg:col-span-4', '!mt-0');
-    }
+    if (hint instanceof HTMLElement) hint.remove();
 
     context = document.createElement('div');
     context.dataset.spjCategoryContext = 'true';
     context.className = 'min-w-0 lg:col-span-3';
     context.innerHTML = `
         <div data-spj-category-context-panel="BARANG" hidden>
-            <label class="text-xs font-bold text-amber-900">Jenis pembelian</label>
-            <div class="mt-1 flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-2 text-sm">
+            <div class="flex min-h-10 flex-wrap items-center gap-x-7 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm">
                 <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
                     <input type="radio" data-spj-siplah-mode value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>SiPLah</span>
@@ -67,20 +38,13 @@ const ensureCategoryContext = (form, categorySelect) => {
                     <input type="radio" data-spj-siplah-mode value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>Non SiPLah</span>
                 </label>
-                <span data-spj-siplah-source-note hidden class="text-[11px] font-medium text-amber-800">Mengikuti penanda SiPLah dari sumber ARKAS.</span>
             </div>
         </div>
         <div data-spj-category-context-panel="PEMELIHARAAN" hidden>
-            <div data-spj-maintenance-quick-slot class="grid min-w-0 gap-2 md:grid-cols-2"></div>
-            <p data-spj-maintenance-quick-status aria-live="polite" class="mt-1 text-[11px] text-[var(--ui-fg-muted)]"></p>
+            <div data-spj-maintenance-quick-slot class="min-w-0"></div>
         </div>
     `;
-
-    if (hint instanceof HTMLElement) {
-        categoryGrid.insertBefore(context, hint);
-    } else {
-        categoryGrid.appendChild(context);
-    }
+    categoryGrid.appendChild(context);
 
     const paymentMethod = form.querySelector('[name="payment_method"]');
     if (paymentMethod instanceof HTMLSelectElement && paymentMethod.value !== 'siplah') {
@@ -103,6 +67,7 @@ const ensureCategoryContext = (form, categorySelect) => {
         });
     });
 
+    document.dispatchEvent(new CustomEvent('spj:category-context-ready'));
     return context;
 };
 
@@ -135,11 +100,8 @@ const syncCategoryContext = (form, categorySelect) => {
     if (nonSiplahRadio instanceof HTMLInputElement) {
         nonSiplahRadio.checked = !sourceSiplah && method !== 'siplah';
         nonSiplahRadio.disabled = sourceSiplah;
-        nonSiplahRadio.closest('label')?.classList.toggle('opacity-50', sourceSiplah);
+        nonSiplahRadio.closest('label')?.classList.toggle('opacity-40', sourceSiplah);
     }
-
-    const sourceNote = context.querySelector('[data-spj-siplah-source-note]');
-    if (sourceNote instanceof HTMLElement) sourceNote.hidden = !sourceSiplah;
 };
 
 const applyPackageManualCategory = () => {
@@ -175,6 +137,7 @@ const applyPackageManualCategory = () => {
     });
 
     syncCategoryContext(form, categorySelect);
+    document.dispatchEvent(new CustomEvent('spj:category-ui-updated', { detail: { category } }));
 };
 
 const errorMessage = async (response) => {
@@ -182,9 +145,7 @@ const errorMessage = async (response) => {
         const payload = await response.json();
         if (payload?.message) return payload.message;
 
-        const firstError = Object.values(payload?.errors || {})
-            .flat()
-            .find(Boolean);
+        const firstError = Object.values(payload?.errors || {}).flat().find(Boolean);
         if (firstError) return firstError;
     } catch (_) {
         // Response bukan JSON; gunakan pesan umum di bawah.
@@ -226,7 +187,6 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
     form.dataset.categorySaving = 'true';
     setPanelsBusy(true);
     categorySelect.setAttribute('aria-busy', 'true');
-    setCategoryStatus(form, 'Menyimpan kategori…');
 
     const payload = new FormData();
     if (csrf) payload.append('_token', csrf);
@@ -245,19 +205,17 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
             },
         });
 
-        if (!response.ok) {
-            throw new Error(await errorMessage(response));
-        }
+        if (!response.ok) throw new Error(await errorMessage(response));
 
         const result = await response.json();
         categorySelect.dataset.persistedCategory = result.spj_category || category;
         categorySelect.value = categorySelect.dataset.persistedCategory;
         applyPackageManualCategory();
-        setCategoryStatus(form, 'Kategori tersimpan tanpa reload halaman.', 'success');
+        setCategoryStatus(form, 'Kategori SPJ tersimpan.', 'success');
         try {
             await refreshPackagePanels();
         } catch (_) {
-            setCategoryStatus(form, 'Kategori tersimpan. Panel dokumen belum diperbarui; simpan isian untuk memuat ulang panel.', 'error');
+            setCategoryStatus(form, 'Kategori tersimpan, tetapi panel dokumen belum dapat diperbarui.', 'error');
         } finally {
             setPanelsBusy(false);
         }
@@ -304,17 +262,15 @@ const bindPackageManualCategory = () => {
         if (form.dataset.categorySaving === 'true') {
             event.preventDefault();
             event.stopImmediatePropagation();
-            setCategoryStatus(form, 'Tunggu sampai kategori selesai disimpan.');
+            notify('warning', 'Tunggu sampai kategori selesai disimpan.');
         }
     }, true);
 
     categorySelect.addEventListener('change', async () => {
         const previousCategory = categorySelect.dataset.persistedCategory || '';
         const selectedCategory = String(categorySelect.value || '').toUpperCase();
-
         if (selectedCategory === previousCategory) return;
 
-        // Ganti section terlebih dahulu agar respons UI instan, kemudian simpan via AJAX.
         applyPackageManualCategory();
         await persistCategory(form, categorySelect, previousCategory);
     });
@@ -326,9 +282,7 @@ document.addEventListener('DOMContentLoaded', schedulePackageManualCategory);
 document.addEventListener('livewire:navigated', schedulePackageManualCategory);
 
 const observer = new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.addedNodes.length > 0)) {
-        schedulePackageManualCategory();
-    }
+    if (mutations.some((mutation) => mutation.addedNodes.length > 0)) schedulePackageManualCategory();
 });
 
 observer.observe(document.documentElement, { childList: true, subtree: true });
