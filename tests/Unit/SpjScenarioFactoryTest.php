@@ -31,7 +31,7 @@ class SpjScenarioFactoryTest extends TestCase
 
     public function test_money_driven_scenarios_reconcile_to_the_requested_gross_amount(): void
     {
-        $gross = 1250000;
+        $gross = 1250000.0;
 
         $maintenance = SpjScenarioFactory::payload('PEMELIHARAAN', $gross);
         $this->assertSame($gross, (float) $maintenance['workers'][0]['work_days'] * (float) $maintenance['workers'][0]['daily_rate']);
