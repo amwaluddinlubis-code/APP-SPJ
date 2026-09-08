@@ -153,16 +153,17 @@ class AuditSpjQuarter extends Command
 
     private function resolveExistingDatabasePath(School $school): ?string
     {
-        $paths = [];
-        if (filled($school->databaseRecord?->database_path)) {
-            $paths[] = (string) $school->databaseRecord->database_path;
-        }
-
+        // Mirror SchoolDatabaseManager::activate() without writing metadata:
+        // when the canonical managed path exists, runtime would prefer it over a stale recorded path.
         $managedPath = rtrim((string) config('spj.data_path'), '/\\')
             .DIRECTORY_SEPARATOR.'school-databases'
             .DIRECTORY_SEPARATOR.preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn)
             .DIRECTORY_SEPARATOR.'spj.sqlite';
-        $paths[] = $managedPath;
+
+        $paths = [$managedPath];
+        if (filled($school->databaseRecord?->database_path)) {
+            $paths[] = (string) $school->databaseRecord->database_path;
+        }
 
         foreach (array_unique($paths) as $path) {
             $candidate = $this->absolutePath($path);
@@ -176,7 +177,7 @@ class AuditSpjQuarter extends Command
 
     private function absolutePath(string $path): string
     {
-        if (str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1) {
+        if (str_starts_with($path, '/') || preg_match('~^[A-Za-z]:[\\\\/]~', $path) === 1) {
             return $path;
         }
 
