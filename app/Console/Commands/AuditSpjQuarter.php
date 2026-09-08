@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\School;
 use App\Services\SpjQuarterAuditService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 
 class AuditSpjQuarter extends Command
 {
@@ -14,6 +15,7 @@ class AuditSpjQuarter extends Command
         {--year= : Tahun anggaran; bila kosong auditor memilih tahun terbaru yang memiliki transaksi}
         {--fund-source= : ID, kode, atau nama sumber dana}
         {--json : Tampilkan hasil lengkap dalam JSON}
+        {--output= : Simpan snapshot JSON audit ke file tanpa mengubah database tenant}
         {--limit=30 : Maksimum anomaly yang ditampilkan pada output manusia}';
 
     protected $description = 'Audit read-only database SPJ sekolah per triwulan tanpa memodifikasi data tenant.';
@@ -66,8 +68,21 @@ class AuditSpjQuarter extends Command
             'name' => $school->name,
         ];
 
+        $encodedReport = (string) json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $outputOption = trim((string) ($this->option('output') ?? ''));
+        $snapshotPath = null;
+        if ($outputOption !== '') {
+            try {
+                $snapshotPath = $this->writeSnapshot($outputOption, $encodedReport);
+            } catch (\Throwable $exception) {
+                $this->error('Snapshot audit tidak dapat disimpan: '.$exception->getMessage());
+
+                return self::FAILURE;
+            }
+        }
+
         if ((bool) $this->option('json')) {
-            $this->line((string) json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $this->line($encodedReport);
 
             return $report['integrity']['status'] === 'PASS' && $report['query_only'] ? self::SUCCESS : self::FAILURE;
         }
@@ -76,6 +91,9 @@ class AuditSpjQuarter extends Command
         $this->info('SPJ QUARTER AUDIT — READ ONLY');
         $this->line('Sekolah        : '.$school->name.' ('.$school->npsn.')');
         $this->line('Database       : '.$databasePath);
+        if ($snapshotPath !== null) {
+            $this->line('Snapshot JSON  : '.$snapshotPath);
+        }
         $this->line('Mode SQLite    : '.($report['query_only'] ? 'query_only=ON' : 'query_only=OFF'));
         $this->line('Tahun/Triwulan : '.$report['context']['year'].' / TW'.$report['context']['quarter'].' ('.$report['context']['date_from'].' s.d. '.$report['context']['date_to'].')');
         $this->line('Sumber Dana    : '.($report['context']['fund_source_id'] ?? 'SEMUA'));
@@ -149,6 +167,17 @@ class AuditSpjQuarter extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function writeSnapshot(string $path, string $content): string
+    {
+        $path = $this->absolutePath($path);
+        File::ensureDirectoryExists(dirname($path));
+        if (File::put($path, $content.PHP_EOL) === false) {
+            throw new \RuntimeException('Gagal menulis file '.$path);
+        }
+
+        return $path;
     }
 
     private function resolveExistingDatabasePath(School $school): ?string
