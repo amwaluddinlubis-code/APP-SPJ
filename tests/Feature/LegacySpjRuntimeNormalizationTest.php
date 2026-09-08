@@ -116,7 +116,7 @@ class LegacySpjRuntimeNormalizationTest extends TestCase
 
         $this->assertIsString($source);
         $this->assertStringNotContainsString("'status' => 'DICETAK'", $source);
-        $this->assertStringNotContainsString('generated_at\' => now()', $source);
+        $this->assertStringNotContainsString("'generated_at' => now()", $source);
     }
 
     private function runNormalizationMigration(): void
