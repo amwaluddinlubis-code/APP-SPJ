@@ -1,72 +1,57 @@
-# URGENT — Migrasi Detail Transaksi ↔ Paket SPJ
+# Migrasi Detail Transaksi ↔ Paket SPJ
 
 Terakhir diperbarui: **2026-09-08**
 
-> **STATUS: URGENT**
+> **STATUS: PASS / ARCHIVED**
 >
-> Migrasi ini adalah prioritas arsitektur/UX tertinggi sampai batas tanggung jawab **Detail Transaksi** dan **Paket SPJ** benar-benar tunggal, tidak ada input ganda, dan tidak ada write-path lama yang dapat mengubah data SPJ dari halaman transaksi.
+> Ownership migration selesai. Dokumen ini dipertahankan sebagai referensi keputusan migrasi dan guardrail agar write-path lama tidak dihidupkan kembali.
 
-Dokumen ini adalah rencana kerja khusus migrasi. Keputusan bisnis permanen tetap berada di `docs/SPJ_DESIGN_DECISIONS.md`; gap aktif diringkas di `docs/CURRENT_PROGRESS.md`.
+Keputusan bisnis permanen berada di `docs/SPJ_DESIGN_DECISIONS.md`; gap release aktif ada di `docs/CURRENT_PROGRESS.md`.
 
----
-
-## 1. Tujuan akhir
-
-Prinsip final:
+## 1. Tujuan akhir yang sudah dicapai
 
 ```text
-Detail Transaksi = fakta transaksi/source + koreksi nama item SPJ
+Detail Transaksi = fakta transaksi/source + koreksi item_description
 Paket SPJ        = seluruh data dokumen pertanggungjawaban
 ```
 
-Operator tidak boleh lagi bolak-balik karena field yang sama tersedia di dua halaman.
+Operator tidak mengisi field SPJ yang sama pada dua workspace.
 
-### Detail Transaksi menjawab
+## 2. Ownership final
 
-> Apa yang terjadi di ARKAS/BKU dan apa rincian transaksi yang menjadi sumber dokumen?
+### Detail Transaksi
 
-### Paket SPJ menjawab
-
-> Bagaimana transaksi tersebut dipertanggungjawabkan dalam paket dokumen SPJ?
-
----
-
-## 2. Ownership data final
-
-### 2.1 Detail Transaksi
-
-Tetap berada di Detail Transaksi:
-
-- nomor bukti/source key;
-- tanggal transaksi;
-- uraian source ARKAS/BKU;
-- kegiatan dan rekening;
-- penerima source;
-- gross/bruto;
-- pajak source;
-- netto;
-- rincian item source;
-- `item_description` sebagai satu-satunya field item yang boleh dikoreksi operator;
+- source ARKAS/BKU;
 - status source/reconciliation;
-- status Paket SPJ;
-- aksi `Siapkan Paket SPJ` / `Lihat Paket SPJ`.
-
-Pada rincian item:
+- informasi Paket SPJ;
+- rincian item source;
+- `item_description` sebagai satu-satunya field item editable.
 
 ```text
-description       = readonly, uraian source
-item_description  = editable, nama/uraian item untuk dokumen SPJ
-quantity          = readonly
-unit              = readonly
-unit_price        = readonly
-amount            = readonly
+description       readonly
+item_description  editable
+quantity          readonly
+unit              readonly
+unit_price        readonly
+amount            readonly
 ```
 
-`item_description` **harus tersimpan** sebelum Paket SPJ dapat dibuat/dibuka. Perubahan yang baru diketik tetapi belum disimpan juga harus memblokir navigasi ke Paket SPJ.
+`item_description` wajib tersimpan sebelum Paket dapat dibuat/dibuka.
 
-### 2.2 Pajak transaksi
+UI Detail Transaksi sekarang ringkas:
 
-Pajak tetap dibedakan dan dimiliki transaksi/source:
+```text
+Header
+→ Informasi Referensi ARKAS/BKU + Total Pajak
+→ Rincian Barang/Jasa
+→ Status Paket SPJ
+```
+
+Rincian PPN/PPh/SSPD tidak lagi menjadi panel besar di Detail Transaksi.
+
+### Pajak
+
+Pajak tetap source transaction:
 
 ```text
 PPN
@@ -74,238 +59,157 @@ PPh 21
 PPh 22
 PPh 23
 PPh 4(2)
-SSPD / Pajak Daerah
+SSPD
 Total Pajak
 Nilai Netto
 ```
 
-Paket SPJ hanya membaca nilai tersebut sebagai referensi readonly. Paket SPJ tidak boleh menghitung ulang, menulis ulang, atau mengubah PPN/PPh/SSPD source.
+Paket SPJ hanya membaca nilai tersebut. Rincian lengkap tersedia pada tab readonly **Rincian Pajak**.
 
-### 2.3 Paket SPJ
+### Paket SPJ
 
-Seluruh data dokumen berikut hanya diedit di Paket SPJ:
+Mutation dokumen hanya di Paket:
 
 - `spj_category`;
 - `payment_description`;
 - `payment_method`;
 - `payment_reference`;
-- `receipt_recipient_name`;
+- `receipt_recipient_name` / Penerima Utama;
 - vendor/rekanan;
-- data SiPLah/invoice;
-- tanggal/dokumen pengadaan;
-- data konsumsi dan peserta;
-- data pemeliharaan dan pekerja;
-- data SPPD/pelaksana perjalanan;
-- data honor/penerima;
-- data JASA_LAINNYA/penerima jasa;
-- penomoran;
+- SiPLah/invoice;
+- data kategori;
+- numbering;
 - preview/generate/download/finalisasi.
 
-Rincian Paket SPJ hanya menampilkan `item_description`, quantity, unit, harga, dan nilai secara readonly dari transaksi.
+## 3. Write-path final
 
----
-
-## 3. Alur operator target
+Create/open draft:
 
 ```text
-Daftar Transaksi
-      ↓
-Detail Transaksi
-      ├── lihat source ARKAS/BKU
-      ├── lihat PPN / PPh / SSPD
-      ├── koreksi item_description
-      ├── Simpan Uraian Barang/Jasa
-      └── Siapkan / Lihat Paket SPJ
-                      ↓
-                 Paket SPJ
-                      ├── pilih kategori
-                      ├── isi data umum dokumen
-                      ├── isi data kategori
-                      ├── validasi
-                      ├── READY
-                      ├── penomoran
-                      ├── preview/download
-                      └── FINAL
+transactions.prepare-spj
+→ SpjPreparationController
+→ CreateSpjDraftUseCase
 ```
 
-Tidak boleh ada form kategori SPJ di Detail Transaksi.
-
----
-
-## 4. Implementasi yang sudah masuk source
-
-Status implementasi saat dokumen ini dibuat:
-
-### Detail Transaksi
-
-- `resources/views/transactions/show.blade.php` sudah menjadi shell detail transaksi;
-- builder dan partial kategori SPJ lama di bawah modul transaksi sudah dipensiunkan;
-- `item_description` tetap editable di bagian `#rincian-transaksi`;
-- tombol Paket SPJ melewati gateway `transactions.prepare-spj`;
-- gateway memvalidasi seluruh `item_description` sudah tersimpan;
-- UI mendeteksi perubahan uraian yang belum disimpan dan memblokir navigasi Paket SPJ;
-- PPN, rincian PPh, SSPD, total pajak, dan netto ditampilkan terpisah.
-
-### Paket SPJ
-
-- draft dibuat/dibuka melalui `CreateSpjDraftUseCase`;
-- penyimpanan isian Paket menggunakan `UpdateSpjPackageDetailsUseCase`;
-- write-path Paket tidak menulis ulang field pajak source;
-- field tarif pajak lama di UI ditandai readonly sebagai referensi BKU;
-- validator mengarahkan masalah milik Paket ke workspace Paket SPJ dan masalah rincian transaksi ke Detail Transaksi;
-- perubahan Combo Kategori SPJ disimpan via AJAX tanpa full page reload;
-- bila persist kategori gagal, UI kembali ke kategori sebelumnya.
-
----
-
-## 5. Sisa migrasi — wajib ditutup sebelum migrasi dinyatakan selesai
-
-### U01 — pensiunkan compatibility write-path lama
-
-**Status: PASS**
-
-Route legacy `spj.prepare` dan `SpjPackageUseCase::prepare()` sudah tidak ada.
-
-- `SpjDocumentController` (dead controller, tidak ada route) sudah dihapus.
-- Stale JS selectors yang merujuk `form[action*="/spj/"][action*="/siapkan"]` sudah dihapus.
-- Gateway tunggal pembuatan/open DRAFT adalah `transactions.prepare-spj` → `SpjPreparationController` → `CreateSpjDraftUseCase`.
-- Test `test_legacy_routes_and_use_case_are_retired` memastikan route lama tidak ada.
-- Test `test_legacy_spj_prepare_route_does_not_exist` memverifikasi POST ke path lama return 404.
-
-### U02 — pensiunkan write-path SPJ lama di TransactionController
-
-**Status: PASS**
-
-Route `transactions.manual-description.update` dan method `updateManualDescription()` tidak ada di codebase.
-
-- `TransactionController::updateSpjDescriptions()` hanya menulis `item_description`.
-- Endpoint `transactions.spj-descriptions.update` adalah satu-satunya write-path item_description.
-- TransactionController tidak mengubah spj_category, payment_description, payment_method, vendor, atau field SPJ lainnya.
-- Test `test_transaction_controller_only_writes_item_description` memverifikasi isolasi write-path.
-
-### U03 — partial Paket SPJ per kategori
-
-**Status: PASS**
-
-Struktur partial sudah terpisah dengan benar:
+Update Paket:
 
 ```text
-resources/views/spj/partials/package/
-├── common.blade.php
-├── tax-reference.blade.php
-├── items-readonly.blade.php
-├── numbering.blade.php
-├── validation.blade.php
-├── documents.blade.php
-├── transaction-summary.blade.php
-├── row-editor.blade.php
-└── categories/
-    ├── barang.blade.php
-    ├── konsumsi.blade.php
-    ├── pemeliharaan.blade.php
-    ├── sppd.blade.php
-    ├── honor-pegawai.blade.php
-    └── jasa-lainnya.blade.php
+spj.update
+→ UpdateSpjPackageDetailsUseCase
 ```
 
-Semua partial kategori memiliki `data-spj-section` attribute dan di-render di DOM untuk switching tanpa reload.
-
-### U04 — hilangkan asumsi server-render kategori yang memaksa reload
-
-**Status: PASS**
-
-- Duplikat `<div x-show="tab === 'paket'">` wrapper sudah diperbaiki.
-- Semua 6 kategori canonical di-render di DOM dengan `data-spj-section` dan visibility via JS.
-- `spj-package-manual-category.js` menghandle AJAX category switch tanpa reload.
-- Tidak ada `form.submit()` pada category switch.
-- Event `spj:category-changed` tersedia untuk komponen yang perlu refresh parsial.
-
-### U05 — pajak readonly harus menjadi markup canonical
-
-**Status: PASS**
-
-- `tax-reference.blade.php` sudah native Blade readonly — tidak ada `<input>` field.
-- `spj-package-transaction-boundary.js` sudah dibersihkan: `markTaxReference()` (JS runtime readonly) dihapus.
-- Field `ppn_rate`, `pph*_rate`, `sspd_rate` tidak dikirim dari form Paket SPJ.
-- Backend `UpdateSpjPackageDetailsUseCase` tidak menulis pajak transaksi.
-- Test `test_tax_reference_partial_renders_readonly_display` memverifikasi tidak ada `<input>` di partial.
-- Test `test_updating_spj_package_does_not_change_transaction_tax_values` memverifikasi backend immutability.
-
-### U06 — verifikasi semua kategori tanpa input ganda
-
-**Status: PASS**
-
-Keenam kategori canonical terverifikasi:
-
-- `test_each_category_can_be_selected_and_saved_in_draft` — kategori bisa dipilih dan disimpan sebagai DRAFT.
-- `test_each_category_can_be_selected_saved_and_rendered_in_the_package` — kategori bisa dipilih, disimpan, dan dirender.
-- `test_category_switch_is_ajax_persists_and_returns_json` — switch kategori via AJAX.
-- `test_category_partials_use_data_spj_section_attribute` — semua partial memiliki `data-spj-section`.
-- `test_package_update_cannot_change_tax_values` — pajak tidak bisa diubah dari Paket.
-- `test_package_update_cannot_change_item_descriptions` — item_description tidak bisa diubah dari Paket.
-- `test_numbered_package_blocks_description_update` — NUMBERED/FINAL terkunci.
-
----
-
-## 6. Urutan implementasi URGENT
+Update `item_description`:
 
 ```text
-U01/U02  Tutup write-path lama              ✅ PASS
-   ↓
-U03      Partial Paket per kategori         ✅ PASS
-   ↓
-U04      Audit dynamic category tanpa reload ✅ PASS
-   ↓
-U05      Pajak readonly native Blade        ✅ PASS
-   ↓
-U06      E2E enam kategori                  ✅ PASS
-   ↓
+transactions.spj-descriptions.update
+→ TransactionController::updateSpjDescriptions()
 ```
 
-Selama U01/U02 belum selesai, migrasi belum boleh disebut final meskipun UX utama sudah mengikuti arsitektur baru.
+Write-path berikut sudah dipensiunkan dan tidak boleh dihidupkan kembali:
 
----
+```text
+spj.prepare
+SpjPackageUseCase
+transactions.manual-description.update
+TransactionController::updateManualDescription()
+SpjDocumentController legacy
+SpjReportController legacy
+```
 
-## 7. Guardrail
+## 4. Category switching
 
-Selama migrasi:
+Keenam kategori canonical:
 
-- jangan memindahkan `item_description` ke Paket SPJ;
-- jangan membuka edit quantity/unit/harga/amount di Detail Transaksi maupun Paket SPJ;
-- jangan menggabungkan PPN/PPh/SSPD menjadi satu field input;
-- jangan membuat pajak editable di Paket SPJ;
-- jangan membuat kategori baru untuk SiPLah;
-- jangan menghapus data source/overlay saat memindahkan ownership view;
+```text
+BARANG
+KONSUMSI
+PEMELIHARAAN
+JASA_LAINNYA
+SPPD
+HONOR_PEGAWAI
+```
+
+Semua partial memiliki `data-spj-section` dan dapat di-switch tanpa full page reload. Persist kategori dilakukan via AJAX; backend tetap authoritative.
+
+SiPLah bukan kategori. Untuk BARANG, UI memakai radio mutually-exclusive `SiPLah / Non SiPLah` yang disinkronkan dengan `payment_method`.
+
+## 5. Pajak readonly
+
+`tax-reference.blade.php` adalah readonly display dan tidak mengirim field tax ke Paket.
+
+Backend Paket tidak menulis:
+
+```text
+gross_amount
+ppn
+pph21
+pph22
+pph23
+pph4
+sspd
+tax_total
+net_amount
+```
+
+Forged request tidak boleh mengubah source tax.
+
+## 6. PEMELIHARAAN linkage
+
+Selector pasangan bahan/upah sekarang ditampilkan di workspace Paket SPJ untuk UX, tetapi relationship state tetap transaction/context-owned melalui endpoint maintenance-link khusus.
+
+Selector bukan field package form.
+
+## 7. Refinement UI setelah ownership migration
+
+Setelah migration boundary ditutup, workspace Paket dirapikan tanpa mengubah ownership:
+
+- toolbar `Semua Paket / Paket Sebelumnya / Paket Setelahnya`;
+- summary `Periode / Penerima / Bruto / Pajak / Nilai Dibayarkan`;
+- tab `Rincian / Isian Manual / Rincian Pajak / Penomoran`;
+- nomor otomatis menjadi strip informasi, bukan input readonly;
+- Data Umum Dokumen compact: textarea 5 baris kiri, field umum kanan;
+- tabel non-BARANG compact dengan satu pagination dan Penerima Utama;
+- format uang accounting `1.000` tanpa `Rp`/desimal;
+- BARANG SiPLah/Non SiPLah satu radio group;
+- PEMELIHARAAN selector pasangan berada di baris kategori.
+
+Refinement ini adalah presentation/workspace work, bukan perubahan ownership domain.
+
+## 8. Verification
+
+Focused regression suite SPJ setelah refactor workspace besar dilaporkan user **ALL PASS** pada 2026-09-08.
+
+Cakupan test ownership meliputi:
+
+- gateway create/open draft;
+- `item_description` ownership;
+- tax immutability;
+- category switch AJAX;
+- category partial rendering;
+- NUMBERED/FINAL locking;
+- maintenance linkage endpoints;
+- request legacy tidak dapat menulis lewat path lama.
+
+Perubahan visual/JS yang masuk setelah checkpoint test tersebut tetap perlu browser QA/rebuild. Full release E2E sampai preview/download/FINAL seluruh kategori tetap dicatat terpisah di `CURRENT_PROGRESS.md`.
+
+## 9. Guardrail permanen
+
+- jangan memindahkan edit `item_description` ke Paket SPJ;
+- jangan membuka edit quantity/unit/harga/amount di Paket;
+- jangan membuat pajak editable di Paket;
+- jangan menggabungkan SiPLah menjadi kategori baru;
+- jangan menghidupkan kembali route/use-case legacy;
+- jangan menggunakan JS sebagai satu-satunya enforcement business rule;
 - jangan mengubah lifecycle/numbering hanya demi refactor UI;
-- jangan mengandalkan JavaScript sebagai satu-satunya enforcement untuk aturan backend penting.
+- jangan menganggap focused test ownership sama dengan full release E2E generator/lifecycle.
 
----
+## 10. Status akhir
 
-## 8. Definition of Done migrasi
+Ownership migration: **PASS**.
 
-Migrasi Detail Transaksi ↔ Paket SPJ baru dinyatakan **PASS** jika seluruh kondisi berikut terpenuhi:
+Pekerjaan berikutnya bukan lagi “menyelesaikan migrasi”, melainkan release hardening yang ada di:
 
-1. Detail Transaksi tidak mempunyai mutation SPJ selain `item_description` dan aksi membuka/menyiapkan package.
-2. `item_description` wajib tersimpan sebelum Paket dapat dibuka/dibuat.
-3. Paket SPJ adalah satu-satunya workspace mutation kategori/payment/vendor/data kategori.
-4. PPN/PPh/SSPD tidak dapat diubah melalui Paket SPJ, termasuk request manual.
-5. Route/use-case compatibility lama yang menulis SPJ dari transaksi sudah dipensiunkan.
-6. Pergantian kategori tidak menyebabkan full page reload.
-7. Keenam kategori lulus save → validation → READY → numbering → preview/download tanpa input ganda.
-8. Regression tests dan runtime QA terkait migration lulus.
-
----
-
-## 9. Verification minimum
-
-```powershell
-php vendor/bin/pint --dirty --format agent
-npm run theme:qa
-npm run build
-php artisan view:cache --no-interaction
-git diff --check
-php artisan test --compact --filter=SpjPackage
-php artisan test --compact --filter=Transaction
+```text
+docs/CURRENT_PROGRESS.md
+docs/DEVELOPMENT_ROADMAP.md
 ```
-
-Tambahkan focused test untuk setiap compatibility path yang dipensiunkan sebelum menghapus route lama.
