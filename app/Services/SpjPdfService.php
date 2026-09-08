@@ -27,7 +27,8 @@ class SpjPdfService
         $fileName = 'PAKET-SPJ-'.$this->safeFileName($package->document_number).'.pdf';
         $contents = $pdf->output();
 
-        $package->forceFill(['generated_at' => now(), 'status' => 'DICETAK'])->save();
+        // Download/preview adalah operasi baca. Lifecycle Paket hanya boleh berubah
+        // melalui workflow READY/NUMBERED/FINAL/CANCELLED yang eksplisit.
 
         return response($contents, 200, [
             'Content-Type' => 'application/pdf',
