@@ -29,14 +29,14 @@ const ensureModal = () => {
             </div>
 
             <div class="mt-5 grid gap-3">
-                <a data-transaction-action-detail class="flex items-center justify-between gap-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 text-sm font-bold text-[var(--ui-fg-strong)] transition hover:bg-[var(--ui-surface-soft)]">
+                <a data-transaction-action-detail href="#" class="flex items-center justify-between gap-3 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 text-sm font-bold text-[var(--ui-fg-strong)] transition hover:bg-[var(--ui-surface-soft)]">
                     <span>
                         <span class="block">Detail Transaksi</span>
                         <span class="mt-0.5 block text-xs font-normal text-[var(--ui-fg-muted)]">Periksa source ARKAS/BKU dan uraian item untuk SPJ.</span>
                     </span>
                     <span aria-hidden="true">→</span>
                 </a>
-                <a data-transaction-action-package class="flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800 transition hover:bg-indigo-100">
+                <a data-transaction-action-package href="#" class="flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800 transition hover:bg-indigo-100">
                     <span>
                         <span class="block">Paket SPJ</span>
                         <span class="mt-0.5 block text-xs font-normal text-indigo-700">Siapkan atau buka workspace dokumen SPJ transaksi ini.</span>
@@ -64,7 +64,9 @@ const ensureModal = () => {
     modal.addEventListener('click', (event) => {
         if (event.target === modal) close();
     });
-    modal.querySelectorAll('a[href]').forEach((link) => link.addEventListener('click', close));
+    modal.querySelectorAll('[data-transaction-action-detail], [data-transaction-action-package]').forEach((link) => {
+        link.addEventListener('click', close);
+    });
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !modal.hidden) close();
     });
@@ -73,18 +75,19 @@ const ensureModal = () => {
 };
 
 const openModalForCell = (cell) => {
-    const { packageLink, detailLink } = transactionLinks(cell);
     const modal = ensureModal();
     const modalDetail = modal.querySelector('[data-transaction-action-detail]');
     const modalPackage = modal.querySelector('[data-transaction-action-package]');
+    const detailUrl = cell.dataset.detailUrl || '';
+    const packageUrl = cell.dataset.packageUrl || '';
 
     if (modalDetail instanceof HTMLAnchorElement) {
-        modalDetail.href = detailLink?.href || '#';
-        modalDetail.hidden = !detailLink;
+        modalDetail.href = detailUrl || '#';
+        modalDetail.hidden = !detailUrl;
     }
     if (modalPackage instanceof HTMLAnchorElement) {
-        modalPackage.href = packageLink?.href || '#';
-        modalPackage.hidden = !packageLink;
+        modalPackage.href = packageUrl || '#';
+        modalPackage.hidden = !packageUrl;
     }
 
     modal.hidden = false;
@@ -96,17 +99,24 @@ const initializeActionCell = (cell) => {
     if (!(cell instanceof HTMLElement) || cell.dataset.transactionActionModalBound === 'true') return;
 
     const { packageLink, detailLink } = transactionLinks(cell);
-    if (!packageLink && !detailLink) return;
+    const packageUrl = packageLink?.href || cell.dataset.packageUrl || '';
+    const detailUrl = detailLink?.href || cell.dataset.detailUrl || '';
+
+    if (!packageUrl && !detailUrl) return;
 
     cell.dataset.transactionActionModalBound = 'true';
-    [packageLink, detailLink].filter(Boolean).forEach((link) => {
-        link.hidden = true;
-        link.setAttribute('aria-hidden', 'true');
-        link.setAttribute('tabindex', '-1');
-    });
+    cell.dataset.packageUrl = packageUrl;
+    cell.dataset.detailUrl = detailUrl;
+
+    packageLink?.remove();
+    detailLink?.remove();
+
+    const existingButton = cell.querySelector('[data-transaction-action-trigger]');
+    if (existingButton) return;
 
     const button = document.createElement('button');
     button.type = 'button';
+    button.dataset.transactionActionTrigger = 'true';
     button.className = 'transaction-action-button transaction-action-edit';
     button.setAttribute('title', 'Tampilkan aksi transaksi');
     button.setAttribute('aria-haspopup', 'dialog');
