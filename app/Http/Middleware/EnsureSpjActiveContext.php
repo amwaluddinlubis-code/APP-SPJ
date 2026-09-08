@@ -18,10 +18,17 @@ class EnsureSpjActiveContext
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $yearId = (int) session('active_fiscal_year_id');
+        $fundSourceId = (int) session('active_fund_source_id');
+
         $transactionId = $request->route('transactionId');
         if ($transactionId !== null) {
             abort_unless(
-                Transaction::query()->activeContext()->whereKey($transactionId)->exists(),
+                Transaction::query()
+                    ->whereKey($transactionId)
+                    ->where('fiscal_year_id', $yearId)
+                    ->where('fund_source_id', $fundSourceId)
+                    ->exists(),
                 404
             );
         }
@@ -29,7 +36,12 @@ class EnsureSpjActiveContext
         $packageId = $request->route('packageId');
         if ($packageId !== null) {
             abort_unless(
-                SpjPackage::query()->activeContext()->whereKey($packageId)->exists(),
+                SpjPackage::query()
+                    ->whereKey($packageId)
+                    ->whereHas('transaction', fn (Builder $transaction): Builder => $transaction
+                        ->where('fiscal_year_id', $yearId)
+                        ->where('fund_source_id', $fundSourceId))
+                    ->exists(),
                 404
             );
         }
@@ -39,7 +51,9 @@ class EnsureSpjActiveContext
             abort_unless(
                 SpjDocument::query()
                     ->whereKey($documentId)
-                    ->whereHas('package', fn (Builder $package): Builder => $package->activeContext())
+                    ->whereHas('package.transaction', fn (Builder $transaction): Builder => $transaction
+                        ->where('fiscal_year_id', $yearId)
+                        ->where('fund_source_id', $fundSourceId))
                     ->exists(),
                 404
             );
