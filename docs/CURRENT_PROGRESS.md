@@ -56,6 +56,32 @@ Aksi sensitif tetap administrator-only, termasuk:
 
 Behavior middleware juga diuji: VIEWER ditolak 403 pada mutation guard, OPERATOR/ADMIN lolos pada mutation normal, dan hanya ADMIN yang lolos administrator guard.
 
+### P0-05 — Safe sync + reconciliation: FUNCTIONAL PASS
+
+Kontrak safe-sync sekarang diregresikan secara terpadu:
+
+- source yang tidak berubah tidak membuat reconciliation baru dan tidak mengubah overlay;
+- perubahan source transaction membuat event `SOURCE_CHANGED` dan menandai `requires_reconciliation` bila Paket sudah ada;
+- perubahan rincian source yang tidak selalu terlihat dari agregat transaksi dipantau sebagai `SOURCE_ITEM_CHANGED`;
+- source yang hilang ditandai `SOURCE_MISSING` tanpa menghapus transaksi, item manual, maupun Paket;
+- source yang kembali menghasilkan `SOURCE_RETURNED` dan menyambung ke transaction/package identity yang sama;
+- `item_description`, payment description, penerima kuitansi, vendor manual, kategori SPJ, dan detail Paket tetap aman dari overwrite sync;
+- NUMBERED/FINAL tidak diubah diam-diam: status, nomor, dan snapshot Paket/dokumen tetap utuh saat source berubah;
+- histori before/after source disimpan di `transaction_source_events`;
+- `SpjSourceReconciliationService` membentuk diff field-level serta action hint sesuai lifecycle;
+- Detail Transaksi menampilkan panel **Rekonsiliasi Sumber ARKAS/BKU** ketika ada source event atau kondisi yang membutuhkan perhatian.
+
+Source utama:
+
+```text
+database/migrations/school/2026_09_08_151500_add_source_reconciliation_events.php
+app/Services/SpjSourceReconciliationService.php
+resources/views/transactions/partials/detail/source-reconciliation.blade.php
+tests/Feature/SpjSafeSyncReconciliationHardeningTest.php
+```
+
+`SafeArkasSynchronizationTest` tetap menjadi regression dasar importer, sedangkan `SpjSafeSyncReconciliationHardeningTest` menjadi release-safety contract untuk overlay, missing/returning, item-level source changes, FINAL locking, snapshot/diff, dan panel operator.
+
 ### P0-06 — Tenant/context isolation: FUNCTIONAL PASS
 
 Boundary yang dikunci:
@@ -79,15 +105,15 @@ tests/Feature/SpjPackageNavigationContextTest.php
 
 ### CI checkpoint terbaru
 
-GitHub Actions `SPJ Critical Verification` pada commit `364e2776634ff7353f275246e2211767ebf781e3`:
+GitHub Actions `SPJ Critical Verification` pada commit `d83fc7154a4871461bea68a80acc373d82f855a7` selesai **SUCCESS**:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 99 tests / 677 assertions
+SPJ Critical PHPUnit   PASS
 ```
 
-Repository-wide Pint masih **WARN: 12 style issues** dan tetap advisory. Gunakan `php artisan spj:verify --strict-style` bila style akan dijadikan blocking gate.
+Suite critical sekarang juga memuat `SpjSafeSyncReconciliationHardeningTest.php`. Repository-wide Pint tetap advisory dan tidak digunakan untuk menyembunyikan hasil functional gate.
 
 ---
 
@@ -140,25 +166,7 @@ Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per t
 
 ---
 
-## 3. P0-05 — Safe sync + reconciliation
-
-**Status: NEXT ACTIVE P0.**
-
-Yang masih harus ditutup secara source/CI:
-
-- source unchanged tidak mengubah overlay;
-- source changed memicu reconciliation yang benar;
-- source missing tidak menghapus pekerjaan operator;
-- source returning menyambung kembali ke state lama;
-- `item_description`, payment/vendor/category detail tetap aman;
-- NUMBERED/FINAL tidak berubah diam-diam akibat sync;
-- snapshot/diff cukup untuk menentukan tindakan operator.
-
-Sebagian fondasi sudah ada di `SafeArkasSynchronizationTest`, tetapi kontrak NUMBERED/FINAL + reconciliation masih perlu diperluas menjadi release-safety suite terpadu.
-
----
-
-## 4. P0-07 — APP DATA / backup / reset / restore nyata
+## 3. P0-07 — APP DATA / backup / reset / restore nyata
 
 **Status: RVR — memerlukan runtime tenant nyata.**
 
@@ -177,7 +185,7 @@ Database utama tidak boleh ikut berubah/rusak dan restore harus mengembalikan da
 
 ---
 
-## 5. P1 aktif
+## 4. P1 aktif
 
 Masih terbuka:
 
@@ -191,13 +199,13 @@ Browser QA release saat ini hanya menargetkan perangkat utama operator: **laptop
 
 ---
 
-## 6. Mobile — future development, bukan release scope saat ini
+## 5. Mobile — future development, bukan release scope saat ini
 
 Mobile/responsive QA penuh sengaja **dikeluarkan dari P0–P2 aktif** karena pengguna utama aplikasi memakai laptop. `docs/MOBILE_VISUAL_QA_TODO.md` dipertahankan sebagai backlog pengembangan masa depan dan tidak menjadi blocker release saat ini.
 
 ---
 
-## 7. P2 aktif
+## 6. P2 aktif
 
 - field-level validation UX;
 - GUI/compatibility cleanup dan pengurangan JS DOM mover;
@@ -208,9 +216,12 @@ Mobile/responsive QA penuh sengaja **dikeluarkan dari P0–P2 aktif** karena pen
 
 ---
 
-## 8. Kontrak aktif yang tidak boleh diregresikan
+## 7. Kontrak aktif yang tidak boleh diregresikan
 
 - ARKAS/BKU = source readonly; data operator SPJ = overlay.
+- Sync source tidak menghapus overlay; perubahan source dicatat sebagai reconciliation event.
+- Source missing/returning tidak membuat transaction/package identity baru.
+- NUMBERED/FINAL tidak dimutasi diam-diam oleh sync; perubahan source harus ditinjau melalui reconciliation/revision workflow.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah bukan kategori; gunakan `payment_method = siplah` dan source SiPLah tetap authoritative.
 - Detail Transaksi hanya menulis `item_description`.
