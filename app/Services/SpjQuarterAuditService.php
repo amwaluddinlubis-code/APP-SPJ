@@ -134,6 +134,7 @@ class SpjQuarterAuditService
         $blankItemDescriptionCount = 0;
 
         foreach ($transactions as $transaction) {
+            $transactionAnomalyStart = count($anomalies);
             $transactionId = (int) $transaction['id'];
             $packageId = filled($transaction['package_id'] ?? null) ? (int) $transaction['package_id'] : null;
             $category = $this->normalizeCategory($transaction['spj_category'] ?? null);
@@ -218,7 +219,12 @@ class SpjQuarterAuditService
                 $this->auditCategoryDetails($category, $transactionId, $packageId, $transaction, $detailStats, $anomalies);
             }
 
-            $candidateIssues = $this->candidateIssues($transaction, $items, $financialMismatch);
+            $candidateIssues = $this->candidateIssues(
+                $transaction,
+                $items,
+                $financialMismatch,
+                array_slice($anomalies, $transactionAnomalyStart),
+            );
             if ($candidateIssues === []) {
                 $categories[$category]['candidate_count']++;
             }
@@ -573,9 +579,7 @@ class SpjQuarterAuditService
         $count = fn (string $group, string $field = 'row_count'): int => (int) ($details[$group][$transactionId][$field] ?? 0);
 
         match ($category) {
-            'BARANG' => $count('goods') < 1
-                ? $anomalies[] = $this->anomaly('WARNING', 'BARANG_DETAIL_EMPTY', $transactionId, $packageId, 'Paket BARANG belum memiliki detail pengadaan pada spj_goods.')
-                : null,
+            'BARANG' => $this->auditBarangDetails($transactionId, $packageId, $transaction, $count('goods'), $anomalies),
             'KONSUMSI' => $count('participants') < 1
                 ? $anomalies[] = $this->anomaly('WARNING', 'KONSUMSI_PARTICIPANT_EMPTY', $transactionId, $packageId, 'Paket KONSUMSI belum memiliki peserta.')
                 : null,
@@ -589,6 +593,37 @@ class SpjQuarterAuditService
             'JASA_LAINNYA' => $this->auditServiceRecipientDetails($transactionId, $packageId, $transaction, $details, $anomalies),
             default => null,
         };
+    }
+
+    /** @param array<int, array<string, mixed>> $anomalies */
+    private function auditBarangDetails(int $transactionId, int $packageId, array $transaction, int $goodsCount, array &$anomalies): void
+    {
+        if ($this->isSiplahTransaction($transaction)) {
+            $hasMarketplaceReference = filled($transaction['siplah_order_number'] ?? null)
+                || filled($transaction['payment_reference'] ?? null)
+                || filled($transaction['invoice_number'] ?? null);
+            if (! $hasMarketplaceReference) {
+                $anomalies[] = $this->anomaly(
+                    'WARNING',
+                    'SIPLAH_REFERENCE_EMPTY',
+                    $transactionId,
+                    $packageId,
+                    'Paket BARANG SiPLah belum memiliki referensi pesanan, pembayaran, atau invoice marketplace.'
+                );
+            }
+
+            return;
+        }
+
+        if ($goodsCount < 1) {
+            $anomalies[] = $this->anomaly('WARNING', 'BARANG_DETAIL_EMPTY', $transactionId, $packageId, 'Paket BARANG non-SiPLah belum memiliki detail pengadaan pada spj_goods.');
+        }
+    }
+
+    private function isSiplahTransaction(array $transaction): bool
+    {
+        return (bool) ($transaction['is_siplah'] ?? false)
+            || strtolower(trim((string) ($transaction['payment_method'] ?? ''))) === 'siplah';
     }
 
     /** @param array<int, array<string, mixed>> $anomalies */
@@ -630,7 +665,7 @@ class SpjQuarterAuditService
     }
 
     /** @return array<int, string> */
-    private function candidateIssues(array $transaction, array $items, bool $financialMismatch): array
+    private function candidateIssues(array $transaction, array $items, bool $financialMismatch, array $transactionAnomalies = []): array
     {
         $issues = [];
         if (strtoupper((string) ($transaction['source_status'] ?? 'ACTIVE')) !== 'ACTIVE') {
@@ -652,7 +687,13 @@ class SpjQuarterAuditService
             $issues[] = 'gross_tax_net_mismatch';
         }
 
-        return $issues;
+        foreach ($transactionAnomalies as $anomaly) {
+            if (in_array($anomaly['severity'] ?? null, ['CRITICAL', 'WARNING'], true)) {
+                $issues[] = strtolower((string) ($anomaly['code'] ?? 'audit_warning'));
+            }
+        }
+
+        return array_values(array_unique($issues));
     }
 
     /** @param array<int, array<string, mixed>> $anomalies */
