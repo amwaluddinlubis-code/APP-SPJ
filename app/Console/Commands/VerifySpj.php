@@ -12,6 +12,7 @@ class VerifySpj extends Command
         {--quarter=1 : Triwulan untuk audit tenant nyata}
         {--year= : Tahun anggaran audit tenant nyata}
         {--fund-source= : ID, kode, atau nama sumber dana audit tenant nyata}
+        {--strict-style : Jadikan Pint repository-wide sebagai blocking gate}
         {--skip-style : Lewati Pint check}
         {--skip-build : Lewati npm build dan view cache}
         {--skip-tests : Lewati SPJ Critical test suite}';
@@ -29,11 +30,16 @@ class VerifySpj extends Command
         $this->newLine();
 
         if (! $this->option('skip-style')) {
-            if (! $this->runStep('Pint', [PHP_BINARY, base_path('vendor/bin/pint'), '--test'])) {
+            $styleBlocking = (bool) $this->option('strict-style');
+            if (! $this->runStep(
+                'Repository Pint',
+                [PHP_BINARY, base_path('vendor/bin/pint'), '--test'],
+                blocking: $styleBlocking,
+            )) {
                 return $this->finish(false);
             }
         } else {
-            $this->results[] = ['name' => 'Pint', 'status' => 'SKIP'];
+            $this->results[] = ['name' => 'Repository Pint', 'status' => 'SKIP'];
         }
 
         if (! $this->option('skip-tests')) {
@@ -92,26 +98,37 @@ class VerifySpj extends Command
     }
 
     /** @param array<int, string> $command */
-    private function runStep(string $name, array $command): bool
+    private function runStep(string $name, array $command, bool $blocking = true): bool
     {
-        $this->components->task($name, function () use ($name, $command): bool {
-            $process = new Process($command, base_path(), null, null, 1200);
+        $process = new Process($command, base_path(), null, null, 1200);
+
+        $this->components->task($name, function () use ($process): bool {
             $process->run(function (string $type, string $buffer): void {
                 $this->output->write($buffer);
             });
 
-            $passed = $process->isSuccessful();
-            $this->results[] = ['name' => $name, 'status' => $passed ? 'PASS' : 'FAIL'];
-
-            if (! $passed) {
-                $this->newLine();
-                $this->error($name.' gagal dengan exit code '.$process->getExitCode().'.');
-            }
-
-            return $passed;
+            return $process->isSuccessful();
         });
 
-        return end($this->results)['status'] === 'PASS';
+        if ($process->isSuccessful()) {
+            $this->results[] = ['name' => $name, 'status' => 'PASS'];
+
+            return true;
+        }
+
+        $status = $blocking ? 'FAIL' : 'WARN';
+        $this->results[] = ['name' => $name, 'status' => $status];
+        $this->newLine();
+
+        if ($blocking) {
+            $this->error($name.' gagal dengan exit code '.$process->getExitCode().'.');
+
+            return false;
+        }
+
+        $this->warn($name.' belum bersih (exit code '.$process->getExitCode().'). Style debt dicatat sebagai WARN; verification release-safety tetap dilanjutkan. Gunakan --strict-style untuk menjadikannya blocking.');
+
+        return true;
     }
 
     private function finish(bool $passed): int
@@ -124,14 +141,25 @@ class VerifySpj extends Command
 
         if ($passed) {
             $hasRvr = collect($this->results)->contains(fn (array $result): bool => $result['status'] === 'RVR');
-            $this->info($hasRvr
-                ? 'STATIC VERIFICATION PASS; real tenant audit masih RVR.'
-                : 'SPJ VERIFICATION PASS.');
+            $hasWarnings = collect($this->results)->contains(fn (array $result): bool => $result['status'] === 'WARN');
+
+            if ($hasRvr || $hasWarnings) {
+                $parts = [];
+                if ($hasWarnings) {
+                    $parts[] = 'style/advisory WARN';
+                }
+                if ($hasRvr) {
+                    $parts[] = 'real tenant RVR';
+                }
+                $this->warn('STATIC VERIFICATION PASS WITH '.strtoupper(implode(' + ', $parts)).'.');
+            } else {
+                $this->info('SPJ VERIFICATION PASS.');
+            }
 
             return self::SUCCESS;
         }
 
-        $this->error('SPJ VERIFICATION FAIL. Hentikan release checkpoint dan perbaiki step pertama yang gagal.');
+        $this->error('SPJ VERIFICATION FAIL. Hentikan release checkpoint dan perbaiki step blocking pertama yang gagal.');
 
         return self::FAILURE;
     }
