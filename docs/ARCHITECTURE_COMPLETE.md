@@ -1,10 +1,8 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-06**
+Terakhir diverifikasi: **2026-09-08**
 
-Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk kondisi implementasi paling mutakhir, baca bersama `CURRENT_PROGRESS.md`. Untuk aturan bisnis yang tidak boleh berubah, baca `SPJ_DESIGN_DECISIONS.md`.
-
----
+Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk gap implementasi baca `CURRENT_PROGRESS.md`; untuk aturan bisnis permanen baca `SPJ_DESIGN_DECISIONS.md`.
 
 ## 1. Ringkasan
 
@@ -15,14 +13,12 @@ Tujuan arsitektur:
 - memisahkan source ARKAS/BKU dan data operator;
 - mendukung banyak sekolah melalui database tenant terpisah;
 - menyediakan workflow transaksi → paket → validasi → numbering → dokumen → final;
-- mempertahankan data manual saat source berubah/hilang;
+- mempertahankan overlay operator saat source berubah/hilang;
 - menyediakan audit, rekonsiliasi, backup/reset tenant, dan authorization;
-- memisahkan HTTP/controller dari orchestration/domain;
+- memisahkan controller dari orchestration/use case/domain;
 - menggunakan design system internal theme-aware.
 
-Stack utama: PHP 8.2+, Laravel 12, Livewire 3, Alpine.js, Tailwind CSS 4, Vite 6, Filament components, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 11.
-
----
+Stack utama: PHP 8.2+, Laravel 12, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite 6, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 11.
 
 ## 2. Multi-database
 
@@ -51,9 +47,7 @@ purge koneksi tenant
 
 Database utama tidak ikut dihapus.
 
----
-
-## 3. Source data vs operator data
+## 3. Source data vs operator overlay
 
 ### Source ARKAS/BKU
 
@@ -61,10 +55,11 @@ Contoh: nomor bukti, tanggal transaksi, uraian sumber, rekening, kegiatan, pener
 
 Source tidak diedit dari workspace operator.
 
-### Data operator SPJ
+### Overlay operator SPJ
 
 Contoh:
 
+- `item_description` pada Detail Transaksi;
 - `payment_description`;
 - `payment_method` / `payment_reference`;
 - `receipt_recipient_name`;
@@ -75,263 +70,290 @@ Contoh:
 
 `manual_description` tidak digunakan.
 
----
+## 4. Ownership workspace
 
-## 4. Entitas dan relasi utama
+### Detail Transaksi
+
+Workspace source/context. Mutation SPJ yang diperbolehkan hanya `item_description`.
+
+```text
+description      readonly
+item_description editable
+quantity         readonly
+unit             readonly
+unit_price       readonly
+amount           readonly
+```
+
+Gateway Paket memblokir create/open draft bila `item_description` belum tersimpan.
+
+### Paket SPJ
+
+Satu-satunya workspace mutation untuk kategori, payment/vendor, data kategori, nomor/lifecycle, dan dokumen.
+
+Paket hanya membaca item/source tax; ia tidak boleh menulis ulang pajak atau `item_description`.
+
+## 5. Entitas dan relasi utama
 
 ### Transaction
 
-Merepresentasikan transaksi BKU yang sudah diproyeksikan menjadi entitas aplikasi.
-
-Relasi penting mencakup item transaksi, goods, workers/work order, participants, travels, honors, payments, package, dan detail dokumen terkait.
+Representasi transaksi BKU aplikasi. Relasi penting mencakup items, goods, workOrder/workers, participants, travels, honors, serviceRecipients, payments, package, dan dokumen terkait.
 
 ### Employee
 
-Data pegawai dapat berasal dari beberapa source. Untuk kebutuhan tertentu source harus eksplisit.
-
-Khusus auto-fill peserta kategori `KONSUMSI` pada Detail Transaksi, daftar `$dapodikTeachers` hanya berisi `Employee` aktif dengan:
-
-```text
-source_type = DAPODIK
-```
-
-Data yang hanya berasal dari ARKAS tidak dipakai oleh `fillTeachers()`.
+Auto-fill peserta `KONSUMSI` di Paket SPJ memakai Employee aktif dengan `source_type = DAPODIK`. Participant manual tetap diperbolehkan.
 
 ### SpjPackage
 
-Merepresentasikan paket SPJ untuk sebuah transaksi. Status aktif yang digunakan codebase mencakup `DRAFT`, `READY`, `NUMBERED`, `FINAL`, dan `CANCELLED` pada alur yang relevan.
-
-`isEditable()` membatasi perubahan normal pada kondisi yang belum terkunci.
-
----
-
-## 5. Safe synchronization
-
-Alur konseptual:
+Satu Paket SPJ per transaksi pada alur aktif. Lifecycle:
 
 ```text
-ARKAS Bridge/source
-→ ambil RKAS/BKU
-→ simpan/update source
-→ proyeksikan transaction/items
-→ tandai source hilang/berubah
-→ pertahankan manual overlay
-→ rekonsiliasi bila diperlukan
+DRAFT
+READY
+NUMBERED
+FINAL
+CANCELLED
 ```
 
-Prinsip:
-
-- source hilang tidak otomatis menghapus transaksi manual;
-- `receipt_recipient_name` dan field operator tidak ditimpa;
-- perubahan dapat memicu `requires_reconciliation`;
-- final/numbered document tidak boleh berubah diam-diam karena sync.
-
----
+`isEditable()` membatasi mutation normal pada package yang belum terkunci.
 
 ## 6. Layer aplikasi
 
 ### Controllers
 
-Menangani request/response, entry point authorization/validation, lalu delegasi.
+Controller menangani HTTP entry point, authorization/request validation, kemudian mendelegasikan pekerjaan domain/orchestration.
 
-### Use cases SPJ
+### Use cases SPJ aktif
 
 ```text
 app/UseCases/Spj/
 ├── SpjWorkspaceUseCase.php
-├── SpjPackageUseCase.php
+├── CreateSpjDraftUseCase.php
+├── UpdateSpjPackageDetailsUseCase.php
 ├── SpjNumberingUseCase.php
 ├── SpjDocumentUseCase.php
 └── SpjReportUseCase.php
 ```
 
-- `SpjWorkspaceUseCase`: workspace, tab, query/filter/metrics.
-- `SpjPackageUseCase`: prepare/update package, kategori, pajak, detail package.
-- `SpjNumberingUseCase`: penomoran, quarter workflow, lifecycle numbering.
-- `SpjDocumentUseCase`: preview/download/generator.
-- `SpjReportUseCase`: reporting/export/monitoring.
+- `SpjWorkspaceUseCase` — workspace/tab/query/metrics/package navigation;
+- `CreateSpjDraftUseCase` — gateway idempotent create/open DRAFT;
+- `UpdateSpjPackageDetailsUseCase` — update data Paket tanpa menulis source tax/item;
+- `SpjNumberingUseCase` — workflow penomoran;
+- `SpjDocumentUseCase` — preview/download/generator;
+- `SpjReportUseCase` — reporting/export/monitoring.
+
+`SpjPackageUseCase` legacy sudah tidak ada dan tidak boleh direferensikan kembali.
 
 ### Services
 
-Menangani aturan reusable/domain, misalnya `SpjTransactionDetailsService`, package validator, document requirements, procurement policy, numbering service, ARKAS sync, tenant database, dan audit.
+Contoh service domain/reusable: `SpjTransactionDetailsService`, `SpjPackageValidationService`, document requirements, procurement policy, numbering service, ARKAS sync, tenant database manager, dan operational audit.
 
-### Livewire / Alpine
+### Frontend state
 
-Livewire memegang state server-backed. Alpine digunakan untuk state UI ringan seperti tab internal, modal, drag/reorder, dan helper form. Business validation tetap backend.
-
----
+- Alpine: tab, row editor, pagination lokal, form helper;
+- JS module: category AJAX, maintenance linkage, package workspace UI, action modal, document placement;
+- Livewire: state server-backed pada area yang memang Livewire;
+- business validation tetap backend.
 
 ## 7. Workflow SPJ aktif
 
 ```text
 Sinkronisasi ARKAS/BKU
-→ Daftar transaksi
+→ Daftar Transaksi
 → Detail Transaksi
-→ Lengkapi data SPJ
-→ Prepare package
-→ Package validation
+   → periksa source
+   → simpan item_description
+→ Create/Open Paket
+→ Isian Manual Paket
+→ validation
 → READY
 → Numbering
 → Preview/Download
-→ Final
+→ FINAL
 ```
 
 Preview/download tidak boleh menjadi shortcut tersembunyi untuk numbering.
 
----
+## 8. Workspace Paket SPJ
 
-## 8. Arsitektur validasi Surat Pesanan
+Toolbar:
 
-`SpjDocumentRequirementService` memisahkan Surat Pesanan internal menjadi dua requirement:
+```text
+Semua Paket | Paket Sebelumnya | Paket Setelahnya
+```
 
-### `internal_order_content`
+`SpjWorkspaceUseCase::packageNavigation()` mencari Paket previous/next pada active context dan mengurutkan transaksi berdasarkan `transaction_date` lalu `id`.
 
-Applicable untuk Non-SiPLah + kategori barang (`BARANG`, `BELANJA_MODAL`, `KONSUMSI`).
+Summary:
 
-Blocking sampai substansi tersedia:
+```text
+Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
+```
 
-- vendor;
-- tanggal pesanan;
-- item transaksi;
-- uraian item;
-- quantity > 0;
-- satuan;
-- unit price/amount valid;
-- gross amount > 0.
+Sub-tab:
 
-### `internal_order_number`
+```text
+1. Rincian
+2. Isian Manual
+3. Rincian Pajak
+4. Penomoran
+```
 
-Applicable pada transaksi yang sama, tetapi baru `required=true` ketika package `NUMBERED` atau `FINAL`.
+`Rincian Pajak` bersifat readonly dan mengambil source transaction tax.
 
-Ini mencegah circular dependency: nomor PESANAN diterbitkan oleh aplikasi saat numbering, sehingga nomor tidak boleh menjadi blocker sebelum proses tersebut.
+### Isian Manual
 
----
+Struktur utama:
 
-## 9. Arsitektur tanggal pengadaan
+```text
+Kategori SPJ + kontrol konteks
+→ Informasi nomor otomatis
+→ Data Umum Dokumen
+→ partial kategori
+→ Simpan
+```
 
-`SpjPackageUseCase` menggunakan constraint utama:
+BARANG menampilkan mode SiPLah/Non SiPLah sebagai radio group mutually-exclusive. PEMELIHARAAN menampilkan selector pasangan transaksi di context row.
+
+Nomor otomatis tidak lagi menjadi form input operator. Backend detail synchronization menjaga nomor yang sudah diterbitkan bila request manual tidak mengirim field nomor tersebut.
+
+## 9. Tabel kategori non-BARANG
+
+`row-editor.blade.php` menjadi tabel compact untuk kategori yang memakai editor generik. KONSUMSI dan PEMELIHARAAN memiliki tabel compact sendiri.
+
+Kontrak UI:
+
+- satu pagination lokal per tabel;
+- tabel menandai `data-pagination="none"` agar global table standardizer tidak menambah pager kedua;
+- satu radio `Penerima Utama`;
+- integer untuk hari/porsi/kali;
+- accounting `1.000` tanpa `Rp`/desimal untuk uang/tarif;
+- field width mengikuti tipe data.
+
+`primary_recipient_index` dipetakan backend ke `receipt_recipient_name`; model yang memiliki row-level flag dapat ikut disinkronkan.
+
+## 10. Pemeliharaan bahan + upah
+
+Relationship state:
+
+```text
+maintenance_material_transaction_id
+maintenance_labor_transaction_id
+```
+
+Tetap transaction/context-owned dan disimpan melalui endpoint `transactions.maintenance-links.*`.
+
+Selector ditampilkan di Paket SPJ untuk UX, tetapi tidak menjadi field package form.
+
+Document context dapat membaca material dari transaksi bahan terkait dan pekerja/upah dari transaksi pasangan tanpa menulis ulang source BKU.
+
+## 11. Pajak
+
+PPN/PPh/SSPD/tax_total/net_amount adalah source transaction.
+
+- Detail Transaksi menampilkan Total Pajak secara ringkas bersama Informasi Referensi ARKAS/BKU;
+- summary Paket menampilkan Pajak;
+- tab Rincian Pajak menampilkan detail readonly;
+- `UpdateSpjPackageDetailsUseCase` mengabaikan request tax forged.
+
+## 12. Tanggal pengadaan
+
+Rule canonical:
 
 ```text
 order_date <= transaction_date
-bap_date >= order_date
-bast_date >= bap_date
+order_date <= bap_date
+bap_date <= bast_date
 ```
 
-Frontend helper `spj-purchase-date-validation.js` menyelaraskan min/max dan custom validity pada form yang memiliki `order_date`, `bap_date`, dan `bast_date`.
+Frontend helper `spj-purchase-date-validation.js` mengikuti rule tersebut.
 
-**Perbedaan aktif yang harus dicatat:** `TransactionController::updateManualDescription()` masih menambahkan upper bound `bap_date <= transaction_date` dan `bast_date <= transaction_date`. Jadi dua entry point backend belum 100% identik. Ini technical debt, bukan aturan domain baru yang sengaja ditetapkan.
+Tidak ada lagi compatibility backend `TransactionController::updateManualDescription()`; method/route tersebut sudah dipensiunkan.
 
----
-
-## 10. Penomoran dokumen
-
-Aturan arsitektur:
+## 13. Penomoran dokumen
 
 - domain nomor dipisahkan per jenis dokumen;
-- nomor tidak mengikuti urutan input transaksi;
-- tanggal peristiwa/dokumen menjadi basis urutan bila tersedia;
-- numbering harus idempotent/aman terhadap nomor aktif;
-- nomor dibatalkan disimpan sebagai histori, bukan dihapus;
-- package bernomor/final dikunci dari edit normal.
+- nomor mengikuti tanggal/peristiwa dokumen bila tersedia;
+- nomor aktif tidak boleh ditimpa;
+- cancelled number tetap menjadi history;
+- NUMBERED/FINAL terkunci;
+- nomor otomatis ditampilkan sebagai informasi, bukan input operator.
 
-`SpjDocumentNumberService` menangani mapping otomatis termasuk `PESANAN`, `BAP`, `BAST`, `SPK`, `RAB`, dan dokumen lain yang dikonfigurasi.
+`SpjDocumentNumberService` menangani mapping otomatis termasuk PESANAN, BAP, BAST, SPK, RAB, dan dokumen yang dikonfigurasi.
 
----
-
-## 11. SiPLah
+## 14. SiPLah
 
 SiPLah adalah procurement/payment channel, bukan `spj_category`.
 
-Dukungan saat ini:
+Dukungan aktif:
 
 - `payment_method = siplah`;
 - `siplah_order_number`;
 - vendor/owner/NPWP;
 - invoice/reference;
-- placeholder template SiPLah;
-- policy requirement yang membedakan SiPLah/Non-SiPLah.
+- placeholder template;
+- policy requirement SiPLah/Non-SiPLah.
 
-Dokumen tetap ditentukan oleh kategori SPJ. Surat Pesanan internal Non-SiPLah dan nomor marketplace SiPLah adalah konsep berbeda.
+Surat Pesanan internal Non-SiPLah dan nomor marketplace SiPLah adalah konsep berbeda.
 
----
+## 15. Vite dan asset frontend
 
-## 12. Arsitektur GUI/theme
+Entry Vite canonical:
 
-Acuan utama:
+```text
+resources/css/app.css
+resources/js/app.js
+```
+
+Feature JS diimpor melalui bootstrap/app bundle. View tidak boleh menghidupkan kembali stale standalone `@vite` entry hanya untuk memperbaiki manifest lama.
+
+## 16. GUI/theme
+
+Acuan:
 
 ```text
 docs/GUI_STANDARDIZATION.md
 docs/CSS_USAGE_GUIDE.md
 ```
 
-Entry point CSS:
+Gunakan token `--ui-*`, `--theme-*`, primitive `x-ui.*`, dan class `ui-*` untuk markup baru.
 
-```text
-resources/css/app.css
-└── resources/css/theme-system.css
-```
-
-Layer relevan:
-
-- `token-native-components.css` — contract `ui-*`;
-- `transactions-standardization.css` — transaksi/detail;
-- `spj-workspace-standardization.css` — SPJ workspace;
-- `dark-form-controls.css` — dark form safety;
-- `spj-package-theme-fix.css` — Paket/Isian Manual compatibility/theme;
-- `spj-package-document-placement.css` — layout panel Rincian + Dokumen Template.
-
-### Paket SPJ
-
-Pada Paket, sub-tab internal adalah `Rincian`, `Isian Manual`, `Penomoran`.
-
-`Dokumen & Template` secara DOM dipindahkan ke sub-tab `Rincian` oleh `resources/js/spj-package-document-placement.js`. Di Rincian, transaksi dan template ditampilkan sebagai panel terpisah dengan header theme-aware. Ini presentation layer; business workflow tetap backend.
-
----
-
-## 13. Security/authorization
+## 17. Security/authorization
 
 Target role utama: ADMIN, OPERATOR, VIEWER/read-only.
 
-Mutation penting harus dilindungi backend, terutama numbering, cancel/reopen/finalization, reset/restore tenant, configuration, dan reconciliation.
+Mutation sensitif harus dilindungi backend, terutama numbering, cancel/reopen/finalization, reset/restore tenant, configuration, dan reconciliation.
 
----
+## 18. Testing
 
-## 14. Testing
+Focused regression suite SPJ dilaporkan user ALL PASS pada 2026-09-08 setelah refactor workspace besar.
 
-Database testing dipisahkan dari database utama.
+Perubahan visual/JS setelah checkpoint tersebut tetap memerlukan browser QA dan rebuild. Jangan menyimpulkan browser runtime PASS hanya dari PHPUnit.
 
-Setelah perubahan backend gunakan focused test yang relevan. Setelah perubahan frontend jalankan `npm run build`.
+## 19. Area belum final
 
-Jangan menyimpulkan full suite hijau hanya dari satu focused test.
+1. browser QA refinement Paket terbaru;
+2. APP DATA runtime pada database nyata;
+3. JASA_LAINNYA output multi-penerima end-to-end;
+4. generator/preview Word/Excel/PDF release hardening;
+5. lifecycle/locking/revision terpadu;
+6. reconciliation snapshot/diff;
+7. authorization per role;
+8. end-to-end semua kategori sampai FINAL;
+9. mobile regression;
+10. laporan BOS/Pusat Laporan.
 
----
-
-## 15. Area belum final
-
-1. konsistensi backend purchase-date rules;
-2. generator/preview PDF/Word/Excel end-to-end;
-3. lifecycle/locking/revision lengkap;
-4. numbering quarter hardening;
-5. reconciliation snapshot/diff;
-6. authorization per role;
-7. end-to-end browser test semua kategori;
-8. mobile regression;
-9. migration view legacy ke primitive canonical;
-10. laporan BOS dan production hardening.
-
----
-
-## 16. Dokumen acuan
+## 20. Dokumen acuan
 
 ```text
 README.md
 AGENTS.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
-docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
 docs/CSS_USAGE_GUIDE.md
 docs/DEVELOPMENT_ROADMAP.md
+docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
 docs/SIPLAH_MVP_PLAN.md
 docs/MOBILE_VISUAL_QA_TODO.md
