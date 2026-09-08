@@ -168,14 +168,13 @@ class SpjOwnershipMigrationTest extends TestCase
     public function test_tax_reference_partial_renders_readonly_display(): void
     {
         $transaction = $this->createTransaction();
-        $viewData = [
+        $html = view('spj.partials.package.tax-reference', [
             'transaction' => $transaction,
-            'rupiah' => fn ($value): string => 'Rp '.number_format((float) $value, 0, ',', '.'),
-        ];
-        $html = view('spj.partials.package.tax-reference', $viewData)->render();
+        ])->render();
 
         $this->assertStringContainsString('PPh 4(2)', $html);
-        $this->assertStringContainsString('Rp 805', $html);
+        $this->assertStringContainsString('805', $html);
+        $this->assertStringNotContainsString('Rp 805', $html);
         $this->assertStringNotContainsString('<input', $html);
         $this->assertStringNotContainsString('name="ppn_rate"', $html);
         $this->assertStringNotContainsString('name="pph21_rate"', $html);
