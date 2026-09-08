@@ -98,6 +98,7 @@ class SpjPreNumberingRegressionTest extends TestCase
         ]);
         $workOrder = $package->transaction->workOrder()->create([
             'maintenance_id' => $maintenance->id,
+            'expense_type' => 'MATERIAL',
             'work_description' => 'Pemeliharaan ruang kelas',
             'spk_date' => '2026-02-10',
             'rab_date' => '2026-03-01',
