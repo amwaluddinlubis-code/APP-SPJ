@@ -92,6 +92,23 @@ const captureLegacyAutomaticNumbers = (form) => {
     });
 };
 
+const appendNumberInfo = (strip, label, value) => {
+    const item = document.createElement('div');
+    item.className = 'min-w-[9rem] flex-1 rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5';
+
+    const heading = document.createElement('p');
+    heading.className = 'text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]';
+    heading.textContent = label;
+
+    const number = document.createElement('p');
+    number.className = 'mt-0.5 truncate font-mono text-xs font-bold text-[var(--ui-fg-strong)]';
+    number.textContent = value || 'Belum diterbitkan';
+    number.title = value || 'Belum diterbitkan';
+
+    item.append(heading, number);
+    strip.appendChild(item);
+};
+
 const initializeAutomaticNumberStrip = () => {
     const form = document.querySelector('#spj-manual-form');
     const categorySelect = form?.querySelector('#spj-type');
@@ -129,15 +146,7 @@ const initializeAutomaticNumberStrip = () => {
         }
 
         strip.replaceChildren();
-        entries.forEach(([label, value]) => {
-            const item = document.createElement('div');
-            item.className = 'min-w-[9rem] flex-1 rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5';
-            item.innerHTML = `
-                <p class="text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">${label}</p>
-                <p class="mt-0.5 truncate font-mono text-xs font-bold text-[var(--ui-fg-strong)]" title="${value || 'Belum diterbitkan'}">${value || 'Belum diterbitkan'}</p>
-            `;
-            strip.appendChild(item);
-        });
+        entries.forEach(([label, value]) => appendNumberInfo(strip, label, value));
     };
 
     if (strip.dataset.spjAutoNumberBound !== 'true') {
