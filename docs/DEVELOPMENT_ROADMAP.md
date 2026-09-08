@@ -8,11 +8,11 @@ Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Migrasi ownership D
 
 P0 harus selesai sebelum aplikasi disebut aman menghasilkan SPJ pada data nyata.
 
-## P0 Verification Kit — source tersedia, runtime/CI RVR
+## P0 Verification Kit — functional CI PASS, real tenant RVR
 
 Agar milestone P0 tidak mengulang fixture, daftar test, build command, dan audit dari awal, verification kit canonical sekarang tersedia. Detail penggunaan: `docs/P0_VERIFICATION_KIT.md`.
 
-### Sudah masuk source
+### Sudah masuk source / terverifikasi
 
 - [x] `tests/Support/SpjScenarioFactory.php` sebagai payload factory enam kategori;
 - [x] unit contract untuk scenario factory;
@@ -21,21 +21,23 @@ Agar milestone P0 tidak mengulang fixture, daftar test, build command, dan audit
 - [x] `spj:audit-quarter --output=...` untuk menyimpan baseline audit JSON;
 - [x] `spj:audit-diff before.json after.json` untuk membandingkan audit tanpa membaca ulang database;
 - [x] `--fail-on-regression` sebagai gate diff;
-- [x] `.github/workflows/spj-critical.yml` untuk static/build/critical-test CI pada branch `gui-standardization`.
+- [x] `.github/workflows/spj-critical.yml` untuk static/build/critical-test CI pada branch `gui-standardization`;
+- [x] first functional green GitHub Actions run: frontend build PASS, Blade compile PASS, `SPJ Critical` PASS **81 tests / 561 assertions**;
+- [x] CI docs-only changes di-skip agar dokumentasi tidak memicu verification run yang tidak perlu.
 
-### Masih RVR
+### Masih RVR / TODO
 
-- [ ] first green GitHub Actions run untuk workflow baru;
 - [ ] first local `php artisan spj:verify` lengkap;
-- [ ] first `spj:verify --npsn=10208183 --quarter=1` pada database nyata.
+- [ ] first `spj:verify --npsn=10208183 --quarter=1` pada database nyata;
+- [ ] bersihkan repository-wide Pint debt: saat checkpoint CI pertama terdapat 12 style issues; status sementara WARN/advisory, bukan functional blocker.
 
-Checklist source berarti implementasi tersedia, **bukan** bukti runtime PASS.
+Gunakan `php artisan spj:verify --strict-style` bila Pint perlu dijadikan blocking gate.
 
 ---
 
 ## P0-01 — E2E enam kategori berbasis database nyata
 
-**Status: RVR — source auditor + verification kit siap; menunggu database SDN 10208183.**
+**Status: RVR — source auditor + verification kit siap dan CI functional PASS; menunggu database SDN 10208183.**
 
 Detail checkpoint: `docs/P0_01_SOURCE_AUDIT.md`.
 
@@ -283,12 +285,13 @@ Tutup `docs/MOBILE_VISUAL_QA_TODO.md` pada breakpoint mobile/tablet/desktop term
 - backend tetap authoritative;
 - tidak membuat business rule baru hanya di JavaScript.
 
-## P2-03 — GUI/compatibility cleanup
+## P2-03 — GUI/compatibility + style cleanup
 
 - kurangi CSS compatibility layer setelah markup canonical stabil;
 - kurangi JS DOM mover bila native Blade bisa memiliki struktur yang benar;
 - pertahankan `x-ui.*`, `ui-*`, theme token;
-- jangan hidupkan kembali legacy write-path.
+- jangan hidupkan kembali legacy write-path;
+- bersihkan repository-wide Pint style debt dan kembalikan `spj:verify --strict-style` menjadi PASS.
 
 ## P2-04 — Icon/action consistency
 
