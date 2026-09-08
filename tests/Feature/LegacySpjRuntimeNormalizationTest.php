@@ -68,6 +68,7 @@ class LegacySpjRuntimeNormalizationTest extends TestCase
             [
                 'transaction_id' => $transaction->id,
                 'name' => 'Penerima A',
+                'service_type' => 'Jasa sewa harian',
                 'quantity' => 1,
                 'unit' => 'unit',
                 'rental_days' => 1,
@@ -82,6 +83,7 @@ class LegacySpjRuntimeNormalizationTest extends TestCase
             [
                 'transaction_id' => $transaction->id,
                 'name' => 'Penerima B',
+                'service_type' => 'Jasa sewa harian',
                 'quantity' => 1,
                 'unit' => 'unit',
                 'rental_days' => 1,
