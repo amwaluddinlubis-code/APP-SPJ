@@ -13,7 +13,7 @@ Detail Transaksi = source transaksi + item_description
 Paket SPJ        = seluruh data dokumen pertanggungjawaban
 ```
 
-Write-path legacy sudah dipensiunkan, pajak immutable dari Paket, category switch berjalan tanpa reload, dan focused regression suite SPJ dilaporkan user **ALL PASS** pada 2026-09-08.
+Write-path legacy sudah dipensiunkan, pajak immutable dari Paket, category switch berjalan tanpa reload, dan focused regression suite SPJ sebelumnya dilaporkan user **ALL PASS** pada 2026-09-08.
 
 Refinement UI yang juga sudah masuk source:
 
@@ -35,7 +35,77 @@ Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser Q
 
 ---
 
-## 1. Kontrak aktif
+## 1. P0-01 — E2E enam kategori berbasis database nyata
+
+**Status: RVR — audit source dan tool audit sudah tersedia; menunggu laptop/database SDN 10208183.**
+
+Dataset target pertama adalah database tenant SDN **10208183** yang sudah berisi pekerjaan SPJ satu triwulan.
+
+Urutan P0-01 yang dikunci:
+
+```text
+P0-01A  Audit database nyata secara read-only
+P0-01B  Petakan coverage + pilih kandidat enam kategori
+P0-01C  Jalankan E2E kandidat nyata
+P0-01D  Catat/fix blocker
+P0-01E  Ulangi sampai 6/6 PASS
+```
+
+Source baru:
+
+```text
+app/Console/Commands/AuditSpjQuarter.php
+app/Services/SpjQuarterAuditService.php
+tests/Feature/SpjQuarterAuditCommandTest.php
+docs/P0_01_SOURCE_AUDIT.md
+```
+
+Command canonical:
+
+```powershell
+php artisan spj:audit-quarter 10208183 --quarter=1
+```
+
+Auditor sengaja tidak memanggil `SchoolDatabaseManager::activate/provision/ensureMigrated`, tidak membuat database bila file hilang, memaksa `PRAGMA query_only=ON`, dan hanya melakukan pemeriksaan read-only.
+
+Cakupan auditor:
+
+- SQLite integrity + foreign-key check;
+- schema/migration snapshot;
+- transaksi/item/item_description/source status/reconciliation;
+- gross/tax/net dan indikator komponen pajak;
+- lifecycle Paket;
+- coverage keenam kategori;
+- detail BARANG/KONSUMSI/PEMELIHARAAN/SPPD/HONOR/JASA_LAINNYA;
+- duplicate active document number;
+- rekomendasi satu kandidat E2E per kategori.
+
+Regression test read-only sudah **ditambahkan ke source**, tetapi **belum dijalankan dalam sesi ini**. Test tersebut membandingkan hash file tenant sebelum/sesudah command dan memastikan metadata `school_databases.updated_at` tidak berubah.
+
+Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save detail keenam kategori, validation/requirements, numbering, preview/download, dan happy-path FINAL tersedia. Status tetap RVR karena dataset nyata, template nyata, dan runtime enam kategori belum dapat dijalankan saat laptop off. Detail audit ada di `docs/P0_01_SOURCE_AUDIT.md`.
+
+### TODO P0-01 berikutnya
+
+Saat laptop/database tersedia:
+
+```powershell
+php artisan test --compact --filter=SpjQuarterAuditCommandTest
+php artisan spj:audit-quarter 10208183 --quarter=1
+```
+
+Lalu:
+
+1. review semua CRITICAL/WARNING;
+2. pastikan enam kategori mempunyai coverage nyata;
+3. pilih satu kandidat terbaik per kategori dari output auditor;
+4. jalankan Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
+5. jangan memperbaiki data dengan SQL manual;
+6. catat titik gagal pertama per kategori dan patch source/test;
+7. ulangi sampai 6/6 PASS.
+
+---
+
+## 2. Kontrak aktif
 
 - ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay terpisah.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
@@ -54,7 +124,7 @@ Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser Q
 
 ---
 
-## 2. RVR — source tersedia, menunggu verifikasi runtime
+## 3. RVR — source tersedia, menunggu verifikasi runtime
 
 ### R01 — APP DATA eksternal
 
@@ -87,7 +157,7 @@ Ini adalah QA visual/runtime, bukan gap ownership backend.
 
 ---
 
-## 3. FAIL / belum tuntas yang masih aktif
+## 4. FAIL / belum tuntas yang masih aktif
 
 ### F01 — JASA_LAINNYA multi-penerima belum sepenuhnya end-to-end
 
@@ -111,9 +181,9 @@ Foundation Word/Excel/PDF, unresolved-placeholder guard, preview, download per t
 
 Masih perlu suite terpadu untuk cancellation/reissue/reopen, locking NUMBERED/FINAL, role ADMIN/OPERATOR/VIEWER, snapshot/diff reconciliation, dan perlindungan final document terhadap sync.
 
-### F04 — End-to-end keenam kategori sampai FINAL belum ditutup
+### F04 — P0-01 E2E keenam kategori belum ditutup
 
-Belum ada satu checkpoint release yang membuktikan seluruh kategori berjalan penuh:
+Tool audit dan audit source sudah tersedia, tetapi belum ada checkpoint database nyata yang membuktikan seluruh kategori berjalan penuh:
 
 ```text
 source
@@ -121,11 +191,9 @@ source
 → DRAFT
 → READY
 → NUMBERED
-→ FINAL
 → preview/download
+→ FINAL
 ```
-
-tanpa edit database manual dan tanpa input ganda.
 
 Focused tests kategori yang PASS tidak sama dengan full document/lifecycle E2E.
 
@@ -139,23 +207,25 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ---
 
-## 4. Verification queue
+## 5. Verification queue
 
-Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user.
+Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user. Perubahan auditor terbaru belum mendapat runtime checkpoint.
 
-Setelah refinement UI terbaru, minimum local verification:
+Prioritas pertama setelah pull:
+
+```powershell
+php vendor/bin/pint --dirty --format agent
+php artisan test --compact --filter=SpjQuarterAuditCommandTest
+php artisan spj:audit-quarter 10208183 --quarter=1
+```
+
+Untuk UI terbaru tetap jalankan bila relevan:
 
 ```powershell
 npm run build
 php artisan view:cache --no-interaction
 php artisan optimize:clear
 php artisan test --compact --filter="SpjWorkspaceMigrationTest|SpjOwnershipMigrationTest|SpjMaintenanceLinkWorkspaceTest"
-```
-
-Untuk perubahan PHP gunakan juga:
-
-```powershell
-php vendor/bin/pint --dirty --format agent
 git diff --check
 ```
 
@@ -163,7 +233,7 @@ Browser QA tetap diperlukan untuk item R02.
 
 ---
 
-## 5. Aturan status dokumentasi
+## 6. Aturan status dokumentasi
 
 - **FAIL** — masih ada gap implementasi/domain nyata.
 - **RVR** — source sudah tersedia tetapi runtime/browser/dataset terbaru belum diverifikasi.
@@ -174,6 +244,7 @@ Baca bersama:
 
 ```text
 README.md
+docs/P0_01_SOURCE_AUDIT.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/ARCHITECTURE_COMPLETE.md
 docs/DEVELOPMENT_ROADMAP.md
