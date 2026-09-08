@@ -31,11 +31,11 @@ const ensureCategoryContext = (form, categorySelect) => {
         <div data-spj-category-context-panel="BARANG" hidden>
             <div class="flex min-h-10 flex-wrap items-center gap-x-7 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm">
                 <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                    <input type="radio" data-spj-siplah-mode value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>SiPLah</span>
                 </label>
                 <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                    <input type="radio" data-spj-siplah-mode value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>Non SiPLah</span>
                 </label>
             </div>
@@ -56,10 +56,21 @@ const ensureCategoryContext = (form, categorySelect) => {
             if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
             if (!(paymentMethod instanceof HTMLSelectElement)) return;
 
+            context.querySelectorAll('[data-spj-siplah-mode]').forEach((otherRadio) => {
+                if (otherRadio instanceof HTMLInputElement && otherRadio !== radio) {
+                    otherRadio.checked = false;
+                }
+            });
+
             if (radio.value === 'siplah') {
                 paymentMethod.value = 'siplah';
             } else {
-                if (form.dataset.sourceSiplah === '1') return;
+                if (form.dataset.sourceSiplah === '1') {
+                    radio.checked = false;
+                    const siplahRadio = context.querySelector('[data-spj-siplah-mode="siplah"]');
+                    if (siplahRadio instanceof HTMLInputElement) siplahRadio.checked = true;
+                    return;
+                }
                 paymentMethod.value = form.dataset.lastNonSiplahPayment || 'tunai';
             }
 
@@ -101,6 +112,11 @@ const syncCategoryContext = (form, categorySelect) => {
         nonSiplahRadio.checked = !sourceSiplah && method !== 'siplah';
         nonSiplahRadio.disabled = sourceSiplah;
         nonSiplahRadio.closest('label')?.classList.toggle('opacity-40', sourceSiplah);
+    }
+
+    if (siplahRadio instanceof HTMLInputElement && nonSiplahRadio instanceof HTMLInputElement) {
+        if (siplahRadio.checked) nonSiplahRadio.checked = false;
+        if (nonSiplahRadio.checked) siplahRadio.checked = false;
     }
 };
 
