@@ -11,17 +11,21 @@ class SecurityHardeningTest extends TestCase
 
     public function test_login_endpoint_is_rate_limited(): void
     {
-        for ($attempt = 0; $attempt < 5; $attempt++) {
-            $this->from('/masuk')
-                ->post('/masuk', [
-                    'email' => 'invalid@example.test',
-                    'password' => 'invalid-password',
-                ]);
-        }
-
-        $this->post('/masuk', [
+        $csrfToken = 'security-hardening-test-token';
+        $credentials = [
+            '_token' => $csrfToken,
             'email' => 'invalid@example.test',
             'password' => 'invalid-password',
-        ])->assertTooManyRequests();
+        ];
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->withSession(['_token' => $csrfToken])
+                ->from('/masuk')
+                ->post('/masuk', $credentials);
+        }
+
+        $this->withSession(['_token' => $csrfToken])
+            ->post('/masuk', $credentials)
+            ->assertTooManyRequests();
     }
 }
