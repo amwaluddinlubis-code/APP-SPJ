@@ -2,64 +2,70 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diverifikasi terhadap branch aktif: **2026-09-08**.
+Terakhir diperbarui terhadap branch aktif: **2026-09-08**.
 
-Dokumentasi status tidak lagi menyimpan daftar PASS panjang. Gap aktif dikumpulkan di `docs/CURRENT_PROGRESS.md`; aturan bisnis permanen ada di `docs/SPJ_DESIGN_DECISIONS.md`; roadmap hanya berisi pekerjaan yang belum selesai.
+Sumber status utama:
 
-## URGENT — migrasi Detail Transaksi ↔ Paket SPJ
+- `docs/CURRENT_PROGRESS.md` — gap aktif yang belum release-ready;
+- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen;
+- `docs/DEVELOPMENT_ROADMAP.md` — pekerjaan berikutnya;
+- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — arsip migrasi ownership Detail Transaksi ↔ Paket SPJ yang sudah selesai.
 
-**Status: PASS**
+## Status migrasi ownership SPJ
 
-Prioritas pengembangan aktif sebelumnya adalah memisahkan ownership data agar Operator tidak mengisi data SPJ dua kali. Migrasi ini sudah selesai dan terverifikasi.
+**PASS — ownership boundary selesai.**
 
-Kontrak target:
+Kontrak final:
 
 ```text
 Detail Transaksi = source ARKAS/BKU + item_description
 Paket SPJ        = seluruh isian dokumen pertanggungjawaban
 ```
 
-Keputusan penting:
+Aturan utama:
 
 - `item_description` hanya diedit di Detail Transaksi dan wajib tersimpan sebelum Paket SPJ dapat dibuat/dibuka;
-- quantity, satuan, harga satuan, dan nilai item readonly;
-- PPN, PPh 21/22/23/4(2), SSPD, total pajak, dan netto tetap milik transaksi/source;
+- `description`, quantity, unit, unit price, amount adalah readonly source;
+- PPN, PPh 21/22/23/4(2), SSPD, `tax_total`, dan `net_amount` tetap milik transaksi/source;
 - Paket SPJ hanya membaca pajak sebagai referensi readonly;
-- kategori, payment description/method/reference, penerima kuitansi, vendor/invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
-- pergantian kategori Paket SPJ tidak boleh full page reload.
+- `spj_category`, payment fields, penerima utama, vendor/invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
+- category switch Paket SPJ berjalan tanpa full page reload;
+- route/use-case/write-path legacy yang menulis SPJ dari halaman transaksi sudah dipensiunkan.
 
-Rencana, sisa compatibility path, dan Definition of Done migrasi ada di:
-
-```text
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
-```
-
-Migrasi belum dinyatakan final sampai write-path SPJ legacy di route/use-case lama dipensiunkan dan keenam kategori lulus end-to-end tanpa input ganda.
+Focused regression suite SPJ yang dijalankan user pada 2026-09-08 dilaporkan **ALL PASS**. Perubahan visual setelah checkpoint tersebut tetap perlu browser QA setelah pull/build.
 
 ## Stack
 
 - PHP 8.2+
 - Laravel 12
 - Livewire 3
-- Tailwind CSS 4
 - Alpine.js 3
+- Tailwind CSS 4
 - Vite 6
 - SQLite multi-koneksi
 - DomPDF / PhpSpreadsheet / PHPWord
 - PHPUnit 11
 
+Vite canonical hanya memakai entry utama:
+
+```text
+resources/css/app.css
+resources/js/app.js
+```
+
+Feature JS aktif diimpor melalui bundle aplikasi, bukan melalui `@vite` standalone di view.
+
 ## Arsitektur inti
 
-Aplikasi menggunakan database utama dan database tenant/sekolah. ARKAS/BKU adalah source readonly; data operator SPJ disimpan sebagai overlay terpisah.
+Aplikasi memakai database utama dan database tenant/sekolah. ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay yang dipertahankan saat sinkronisasi ulang.
 
-Orkestrasi SPJ utama:
+Use case SPJ utama:
 
 ```text
 app/UseCases/Spj/
 ├── SpjWorkspaceUseCase.php
 ├── CreateSpjDraftUseCase.php
 ├── UpdateSpjPackageDetailsUseCase.php
-├── SpjPackageCategoryUseCase.php
 ├── SpjNumberingUseCase.php
 ├── SpjDocumentUseCase.php
 └── SpjReportUseCase.php
@@ -76,30 +82,7 @@ SPPD
 HONOR_PEGAWAI
 ```
 
-SiPLah bukan kategori SPJ; gunakan `payment_method = siplah`.
-
-## APP DATA
-
-Data tenant dapat ditempatkan di luar source project melalui:
-
-```env
-SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
-```
-
-Jika `SPJ_DATA_PATH` tidak diisi, aplikasi memakai `storage/app` agar setup development tetap portable.
-
-Struktur target root eksternal:
-
-```text
-D:/lrvProject/spj-bosp-data/
-├── school-databases/
-│   ├── _unselected.sqlite
-│   └── {NPSN}/spj.sqlite
-├── backups/
-└── exports/
-```
-
-`SchoolDatabaseManager` memakai root tersebut untuk database sekolah/dummy. Backup sekolah memakai `{SPJ_DATA_PATH}/backups/{NPSN}`. Operasi runtime tetap harus diverifikasi pada dataset nyata sebelum dianggap release-ready.
+SiPLah bukan kategori SPJ; ia adalah mode pembelian/pembayaran (`payment_method = siplah`).
 
 ## Workflow operator
 
@@ -107,42 +90,122 @@ D:/lrvProject/spj-bosp-data/
 Login
 → Pilih sekolah/tahun/sumber dana
 → Sinkronisasi ARKAS/BKU
+→ Daftar Transaksi
 → Detail Transaksi
-   → periksa source
-   → simpan item_description
+   → periksa Informasi Referensi ARKAS/BKU
+   → koreksi & simpan item_description
 → Siapkan / Lihat Paket SPJ
-→ lengkapi data dokumen di Paket SPJ
-→ DRAFT / READY
+→ Isian Manual Paket SPJ
+→ READY
 → Penomoran
 → Preview / Unduh
 → FINAL / Arsip
 ```
 
-Preview/download tidak boleh menerbitkan nomor secara diam-diam. NUMBERED/FINAL mengikuti locking dan lifecycle backend.
+Detail Transaksi tidak lagi menjadi workspace pengisian kategori/payment/vendor SPJ.
 
-Workflow status operator memakai kontrak bersama `SpjWorkflowFilterService`; keberadaan `transaction_items` tidak digunakan sebagai penanda apakah operator sudah mulai mengerjakan SPJ.
+## Workspace Paket SPJ saat ini
+
+Navigasi Paket:
+
+```text
+Semua Paket | Paket Sebelumnya | Paket Setelahnya
+```
+
+Prev/next dibatasi pada konteks **sekolah + tahun anggaran + sumber dana aktif** dan mengikuti urutan transaksi (`transaction_date`, lalu `id`).
+
+Ringkasan Paket:
+
+```text
+Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
+```
+
+Format nilai uang UI menggunakan accounting Indonesia tanpa simbol `Rp` dan tanpa desimal, contoh `1.000`, `1.250.000`.
+
+Sub-tab Paket:
+
+```text
+1. Rincian
+2. Isian Manual
+3. Rincian Pajak
+4. Penomoran
+```
+
+Pada Isian Manual:
+
+- Kategori SPJ berada di baris atas;
+- `BARANG` menampilkan radio mutually-exclusive `SiPLah / Non SiPLah`;
+- `PEMELIHARAAN` menampilkan selector transaksi pasangan di baris kategori;
+- nomor otomatis tidak menjadi input operator dan ditampilkan sebagai strip informasi;
+- Data Umum Dokumen: textarea uraian 5 baris di kiri, seluruh field umum lain terkumpul di kanan;
+- tabel kategori non-BARANG dibuat compact, memiliki satu pagination lokal, radio `Penerima Utama`, integer untuk hari/porsi/kali, dan accounting untuk tarif/nilai.
+
+Pajak detail tidak berada di Isian Manual. Ia tampil readonly di tab **Rincian Pajak**.
+
+## Detail Transaksi saat ini
+
+Urutan utama disederhanakan menjadi:
+
+```text
+Header transaksi
+→ Informasi Referensi ARKAS/BKU + Total Pajak
+→ Rincian Barang/Jasa
+→ Status Paket SPJ
+```
+
+Rincian PPN/PPh/SSPD tidak mendominasi halaman transaksi; detail pajak tersedia di Paket SPJ pada tab Rincian Pajak.
+
+Daftar transaksi memakai satu tombol **Aksi** per row yang membuka pilihan navigasi Detail/Paket SPJ melalui modal. Write-path editor SPJ lama di Livewire tabel transaksi sudah dihapus.
+
+## APP DATA
+
+Root data tenant dapat dipindahkan dari source project:
+
+```env
+SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
+```
+
+Fallback bila env kosong: `storage/app`.
+
+Struktur target:
+
+```text
+{SPJ_DATA_PATH}/
+├── school-databases/
+│   ├── _unselected.sqlite
+│   └── {NPSN}/spj.sqlite
+├── backups/
+└── exports/
+```
+
+Reset tenant hanya boleh merebuild database sekolah aktif, termasuk WAL/SHM dan sequence; database utama tidak ikut dihapus.
+
+## Aturan penting
 
 Kronologi pengadaan canonical:
 
 ```text
-Tanggal Pesanan <= Tanggal Transaksi
-Tanggal Pesanan <= Tanggal BAP
-Tanggal BAP <= Tanggal BAST
+order_date <= transaction_date
+order_date <= bap_date
+bap_date <= bast_date
 ```
 
-Untuk `PEMELIHARAAN`, transaksi bahan/barang dan transaksi upah dapat saling ditautkan. Preview/download memakai document context yang mengambil rincian material dari sisi bahan dan daftar pekerja dari sisi upah tanpa menulis ulang source BKU.
+Jangan menambahkan rule `bap_date <= transaction_date` atau `bast_date <= transaction_date` tanpa keputusan domain baru.
+
+Untuk `PEMELIHARAAN`, transaksi bahan/barang dan transaksi upah dapat ditautkan melalui endpoint khusus. Relationship state tetap milik transaksi/context, walaupun selector ditampilkan di workspace Paket SPJ.
+
+Preview/download tidak boleh menerbitkan nomor secara diam-diam. `NUMBERED`/`FINAL` terkunci dari edit normal.
 
 ## Status aktif
 
-Jangan gunakan README sebagai checklist PASS/FAIL. Sumber tunggal gap aktif adalah:
+Ownership migration sudah selesai. Gap release yang masih terbuka dipusatkan di `docs/CURRENT_PROGRESS.md`, terutama:
 
-```text
-docs/CURRENT_PROGRESS.md
-```
-
-Migrasi URGENT Detail Transaksi ↔ Paket SPJ sudah dinyatakan PASS. Komponen U01–U06 sudah selesai dan terverifikasi. Seluruh legacy write-path (`SpjDocumentController`, `SpjReportController`, `SpjPackageUseCase`, stale JS selectors) sudah dihapus. Ownership boundary sudah final.
-
-Gap lain yang masih terbuka mencakup JASA_LAINNYA multi-penerima sampai output dokumen, release-hardening generator/lifecycle/authorization/reconciliation, end-to-end semua kategori, mobile QA, Pusat Laporan, serta runtime verification APP DATA.
+- JASA_LAINNYA multi-penerima sampai output dokumen;
+- generator/lifecycle/authorization/reconciliation release hardening;
+- end-to-end semua kategori sampai FINAL + preview/download;
+- APP DATA runtime pada database nyata;
+- mobile visual QA;
+- Pusat Laporan dan laporan BOS resmi.
 
 ## Menjalankan project
 
@@ -157,8 +220,6 @@ npm run build
 php artisan serve
 ```
 
-Jika menggunakan data root eksternal, isi `.env` dengan `SPJ_DATA_PATH` sesuai lingkungan.
-
 Minimum verification setelah perubahan relevan:
 
 ```powershell
@@ -169,7 +230,7 @@ git diff --check
 php artisan test --compact <focused-test>
 ```
 
-Untuk perubahan PHP, jalankan juga:
+Untuk perubahan PHP:
 
 ```powershell
 php vendor/bin/pint --dirty --format agent
@@ -177,13 +238,12 @@ php vendor/bin/pint --dirty --format agent
 
 ## Dokumentasi utama
 
-- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — **prioritas URGENT** pemisahan Detail Transaksi dan Paket SPJ.
-- `docs/CURRENT_PROGRESS.md` — register URGENT/FAIL/RVR/PLANNED aktif.
-- `docs/DEVELOPMENT_ROADMAP.md` — urutan pekerjaan yang belum selesai.
+- `docs/CURRENT_PROGRESS.md` — gap aktif.
+- `docs/DEVELOPMENT_ROADMAP.md` — pekerjaan berikutnya.
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen.
-- `docs/ARCHITECTURE_COMPLETE.md` — referensi arsitektur.
-- `docs/USER_SCENARIOS.md` — skenario operator.
+- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aktif.
 - `docs/GUI_STANDARDIZATION.md` — contract GUI.
 - `docs/CSS_USAGE_GUIDE.md` — contract CSS/theme.
+- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — arsip migrasi ownership yang sudah PASS.
 - `docs/SIPLAH_MVP_PLAN.md` — batas MVP SiPLah.
 - `docs/MOBILE_VISUAL_QA_TODO.md` — QA mobile yang belum ditutup.
