@@ -36,10 +36,116 @@ const setCategoryStatus = (form, message = '', state = 'idle') => {
     status.classList.add('text-[var(--ui-fg-muted)]');
 };
 
+const ensureCategoryContext = (form, categorySelect) => {
+    let context = form.querySelector('[data-spj-category-context]');
+    if (context instanceof HTMLElement) return context;
+
+    const categoryField = categorySelect.parentElement;
+    const categoryGrid = categoryField?.parentElement;
+    if (!(categoryField instanceof HTMLElement) || !(categoryGrid instanceof HTMLElement)) return null;
+
+    categoryGrid.classList.add('lg:grid-cols-4', 'lg:items-end');
+    categoryField.classList.add('lg:col-span-1', 'min-w-0');
+
+    const hint = Array.from(categoryGrid.children).find((child) => child.tagName === 'P');
+    if (hint instanceof HTMLElement) {
+        hint.classList.add('lg:col-span-4', '!mt-0');
+    }
+
+    context = document.createElement('div');
+    context.dataset.spjCategoryContext = 'true';
+    context.className = 'min-w-0 lg:col-span-3';
+    context.innerHTML = `
+        <div data-spj-category-context-panel="BARANG" hidden>
+            <label class="text-xs font-bold text-amber-900">Jenis pembelian</label>
+            <div class="mt-1 flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-2 text-sm">
+                <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
+                    <input type="radio" data-spj-siplah-mode value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>SiPLah</span>
+                </label>
+                <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
+                    <input type="radio" data-spj-siplah-mode value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>Non SiPLah</span>
+                </label>
+                <span data-spj-siplah-source-note hidden class="text-[11px] font-medium text-amber-800">Mengikuti penanda SiPLah dari sumber ARKAS.</span>
+            </div>
+        </div>
+        <div data-spj-category-context-panel="PEMELIHARAAN" hidden>
+            <div data-spj-maintenance-quick-slot class="grid min-w-0 gap-2 md:grid-cols-2"></div>
+            <p data-spj-maintenance-quick-status aria-live="polite" class="mt-1 text-[11px] text-[var(--ui-fg-muted)]"></p>
+        </div>
+    `;
+
+    if (hint instanceof HTMLElement) {
+        categoryGrid.insertBefore(context, hint);
+    } else {
+        categoryGrid.appendChild(context);
+    }
+
+    const paymentMethod = form.querySelector('[name="payment_method"]');
+    if (paymentMethod instanceof HTMLSelectElement && paymentMethod.value !== 'siplah') {
+        form.dataset.lastNonSiplahPayment = paymentMethod.value || 'tunai';
+    }
+
+    context.querySelectorAll('[data-spj-siplah-mode]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
+            if (!(paymentMethod instanceof HTMLSelectElement)) return;
+
+            if (radio.value === 'siplah') {
+                paymentMethod.value = 'siplah';
+            } else {
+                if (form.dataset.sourceSiplah === '1') return;
+                paymentMethod.value = form.dataset.lastNonSiplahPayment || 'tunai';
+            }
+
+            paymentMethod.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
+    return context;
+};
+
+const syncCategoryContext = (form, categorySelect) => {
+    const context = ensureCategoryContext(form, categorySelect);
+    if (!(context instanceof HTMLElement)) return;
+
+    const category = String(categorySelect.value || '').toUpperCase();
+    context.querySelectorAll('[data-spj-category-context-panel]').forEach((panel) => {
+        if (!(panel instanceof HTMLElement)) return;
+        const active = panel.dataset.spjCategoryContextPanel === category;
+        panel.hidden = !active;
+        panel.classList.toggle('hidden', !active);
+        panel.setAttribute('aria-hidden', String(!active));
+    });
+
+    const paymentMethod = form.querySelector('[name="payment_method"]');
+    const sourceSiplah = form.dataset.sourceSiplah === '1';
+    const method = paymentMethod instanceof HTMLSelectElement ? paymentMethod.value : '';
+
+    if (paymentMethod instanceof HTMLSelectElement && method && method !== 'siplah') {
+        form.dataset.lastNonSiplahPayment = method;
+    }
+
+    const siplahRadio = context.querySelector('[data-spj-siplah-mode="siplah"]');
+    const nonSiplahRadio = context.querySelector('[data-spj-siplah-mode="non_siplah"]');
+    if (siplahRadio instanceof HTMLInputElement) {
+        siplahRadio.checked = sourceSiplah || method === 'siplah';
+    }
+    if (nonSiplahRadio instanceof HTMLInputElement) {
+        nonSiplahRadio.checked = !sourceSiplah && method !== 'siplah';
+        nonSiplahRadio.disabled = sourceSiplah;
+        nonSiplahRadio.closest('label')?.classList.toggle('opacity-50', sourceSiplah);
+    }
+
+    const sourceNote = context.querySelector('[data-spj-siplah-source-note]');
+    if (sourceNote instanceof HTMLElement) sourceNote.hidden = !sourceSiplah;
+};
+
 const applyPackageManualCategory = () => {
     const form = packageManualForm();
     const categorySelect = form?.querySelector('#spj-type');
-    if (!categorySelect) return;
+    if (!form || !(categorySelect instanceof HTMLSelectElement)) return;
 
     const category = String(categorySelect.value || '').toUpperCase();
     form.querySelectorAll('fieldset[data-spj-section]').forEach((section) => {
@@ -67,6 +173,8 @@ const applyPackageManualCategory = () => {
         const control = form.querySelector('[name="' + name + '"]');
         if (control) control.required = category === 'KONSUMSI' && !isSiplah;
     });
+
+    syncCategoryContext(form, categorySelect);
 };
 
 const errorMessage = async (response) => {
@@ -177,12 +285,21 @@ const bindPackageManualCategory = () => {
     if (!form || form.dataset.spjCategoryBound === 'true') return;
 
     const categorySelect = form.querySelector('#spj-type');
-    if (!categorySelect) return;
+    if (!(categorySelect instanceof HTMLSelectElement)) return;
 
     form.dataset.spjCategoryBound = 'true';
     categorySelect.dataset.persistedCategory = String(categorySelect.value || '').toUpperCase();
+    ensureCategoryContext(form, categorySelect);
     applyPackageManualCategory();
-    form.querySelector('[name="payment_method"]')?.addEventListener('change', applyPackageManualCategory);
+
+    const paymentMethod = form.querySelector('[name="payment_method"]');
+    paymentMethod?.addEventListener('change', () => {
+        if (paymentMethod instanceof HTMLSelectElement && paymentMethod.value !== 'siplah') {
+            form.dataset.lastNonSiplahPayment = paymentMethod.value || 'tunai';
+        }
+        applyPackageManualCategory();
+    });
+
     form.addEventListener('submit', (event) => {
         if (form.dataset.categorySaving === 'true') {
             event.preventDefault();
