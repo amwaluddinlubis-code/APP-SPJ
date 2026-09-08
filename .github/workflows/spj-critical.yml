@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: spj-critical-${{ github.ref }}
@@ -60,16 +60,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Apply repository Pint formatting
-        run: |
-          php vendor/bin/pint
-          if ! git diff --quiet -- app tests; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add app tests
-            git commit -m "style: apply Pint formatting [skip ci]"
-            git push origin HEAD:gui-standardization
-          fi
+      - name: Repository Pint check (advisory)
+        continue-on-error: true
+        run: php vendor/bin/pint --test
 
       - name: Frontend build
         run: npm run build
