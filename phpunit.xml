@@ -13,6 +13,7 @@
         </testsuite>
         <testsuite name="SPJ Critical">
             <file>tests/Unit/SpjScenarioFactoryTest.php</file>
+            <file>tests/Unit/QuarterNumberingPlaceholderTest.php</file>
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
