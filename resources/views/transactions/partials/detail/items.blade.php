@@ -1,5 +1,5 @@
 <section id="rincian-transaksi"
-    class="order-1 overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
+    class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
     <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Barang dan Jasa</h2>
