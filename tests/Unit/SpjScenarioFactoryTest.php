@@ -11,9 +11,12 @@ class SpjScenarioFactoryTest extends TestCase
     /** @return array<string, array{0:string}> */
     public static function categories(): array
     {
-        return collect(SpjScenarioFactory::CATEGORIES)
-            ->mapWithKeys(fn (string $category): array => [$category => [$category]])
-            ->all();
+        $rows = [];
+        foreach (SpjScenarioFactory::CATEGORIES as $category) {
+            $rows[$category] = [$category];
+        }
+
+        return $rows;
     }
 
     #[DataProvider('categories')]
