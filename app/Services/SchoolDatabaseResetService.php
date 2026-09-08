@@ -11,8 +11,7 @@ class SchoolDatabaseResetService
 {
     public function __construct(
         private readonly SchoolDatabaseManager $databaseManager,
-    ) {
-    }
+    ) {}
 
     public function reset(School $school): void
     {
