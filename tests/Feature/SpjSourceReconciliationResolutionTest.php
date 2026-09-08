@@ -183,7 +183,6 @@ class SpjSourceReconciliationResolutionTest extends TestCase
             'before_snapshot' => json_encode($before, JSON_THROW_ON_ERROR),
             'after_snapshot' => json_encode($after, JSON_THROW_ON_ERROR),
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 }
