@@ -1,19 +1,19 @@
 <section class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Data Umum Dokumen</h3>
-        <span class="text-[11px] font-medium text-[var(--ui-fg-muted)]">Isian umum Paket SPJ</span>
+        <span class="text-[11px] font-medium text-[var(--ui-fg-muted)]">Field bertanda * wajib diisi sebelum penomoran</span>
     </div>
 
     <div class="mt-2 grid gap-3 lg:grid-cols-2 lg:items-start">
         <div class="min-w-0">
-            <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran</label>
-            <x-ui.textarea name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm">{{ old('payment_description', $transaction->payment_description) }}</x-ui.textarea>
+            <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran <span class="text-rose-600">*</span></label>
+            <x-ui.textarea name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm" required>{{ old('payment_description', $transaction->payment_description) }}</x-ui.textarea>
         </div>
 
         <div class="grid min-w-0 gap-2 sm:grid-cols-2">
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran</label>
-                <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm">
+                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran <span class="text-rose-600">*</span></label>
+                <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm" required>
                     @foreach(['tunai' => 'Tunai', 'transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah'] as $value => $label)
                         <option value="{{ $value }}" @selected(old('payment_method', $transaction->payment_method ?: ($transaction->is_siplah ? 'siplah' : 'tunai')) === $value)>{{ $label }}</option>
                     @endforeach
@@ -24,8 +24,8 @@
                 <x-ui.input name="payment_reference" :value="old('payment_reference', $transaction->payment_reference)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama</label>
-                <x-ui.input name="receipt_recipient_name" :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" />
+                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama <span class="text-rose-600">*</span></label>
+                <x-ui.input name="receipt_recipient_name" :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" required />
             </div>
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Nama penyedia / penerima</label>
