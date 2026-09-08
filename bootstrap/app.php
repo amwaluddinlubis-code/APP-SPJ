@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureActiveFiscalYear;
 use App\Http\Middleware\EnsureActiveSchool;
 use App\Http\Middleware\EnsureAdministrator;
 use App\Http\Middleware\EnsureOperatorOrAdministrator;
+use App\Http\Middleware\EnsureSpjActiveContext;
 use App\Http\Middleware\MeasureRequestPerformance;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active-school' => EnsureActiveSchool::class,
             'administrator' => EnsureAdministrator::class,
             'operator-or-administrator' => EnsureOperatorOrAdministrator::class,
+            'spj-active-context' => EnsureSpjActiveContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
