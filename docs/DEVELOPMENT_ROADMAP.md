@@ -4,35 +4,174 @@ Terakhir diperbarui: **2026-09-08**
 
 Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Migrasi ownership Detail Transaksi ↔ Paket SPJ sudah PASS dan tidak lagi menjadi milestone aktif; detail historisnya ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
-## P1 — browser QA refinement Paket SPJ terbaru
+# P0 — Core Release Safety
 
-Tutup QA visual/runtime untuk perubahan terakhir:
+P0 harus selesai sebelum aplikasi disebut aman menghasilkan SPJ pada data nyata.
 
-- radio `SiPLah / Non SiPLah` mutually-exclusive;
-- selector PEMELIHARAAN di baris Kategori SPJ;
-- Data Umum Dokumen: textarea 5 baris kiri, seluruh field umum kanan;
-- summary 5 kolom `Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan`;
-- tab ke-3 `Rincian Pajak`;
-- informasi nomor otomatis horizontal, bukan input;
-- tabel kategori non-BARANG compact dan hanya satu pagination;
-- previous/next Package sesuai konteks tahun+sumber dana;
-- mobile/responsive minimum.
+## P0-01 — E2E enam kategori berbasis database nyata
 
-Perubahan ini tidak boleh membuka kembali write-path legacy atau mengubah ownership backend.
+**Status: RVR — source auditor siap; menunggu database SDN 10208183.**
+
+Detail checkpoint: `docs/P0_01_SOURCE_AUDIT.md`.
+
+### Sudah masuk source
+
+- [x] audit static jalur produksi Detail → DRAFT → save → validation → numbering → preview/download → FINAL;
+- [x] `SpjQuarterAuditService` read-only;
+- [x] command `spj:audit-quarter`;
+- [x] coverage matrix enam kategori;
+- [x] anomaly check integrity/FK/source/item/finansial/package/category detail;
+- [x] kandidat E2E per kategori;
+- [x] regression test yang membuktikan tenant file/metadata tidak ditulis oleh command **sudah ditambahkan ke source**.
+
+> Checklist test di atas berarti coverage test sudah ditulis, **bukan** bahwa test terbaru sudah dijalankan.
+
+### TODO saat laptop/database tersedia
+
+- [ ] pull source terbaru;
+- [ ] jalankan `php artisan test --compact --filter=SpjQuarterAuditCommandTest`;
+- [ ] jalankan `php artisan spj:audit-quarter 10208183 --quarter=1`;
+- [ ] review seluruh CRITICAL/WARNING;
+- [ ] konfirmasi coverage BARANG;
+- [ ] konfirmasi coverage KONSUMSI;
+- [ ] konfirmasi coverage PEMELIHARAAN;
+- [ ] konfirmasi coverage JASA_LAINNYA;
+- [ ] konfirmasi coverage SPPD;
+- [ ] konfirmasi coverage HONOR_PEGAWAI;
+- [ ] pilih satu kandidat nyata per kategori;
+- [ ] jalankan kandidat melalui Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
+- [ ] patch blocker pertama yang ditemukan per kategori;
+- [ ] ulangi sampai 6/6 PASS;
+- [ ] catat hasil runtime final di `CURRENT_PROGRESS.md`.
+
+Tidak boleh memperbaiki anomaly dengan SQL manual. Perbaikan harus melalui workflow/source code agar dapat diregresikan.
 
 ---
 
-## P1 — JASA_LAINNYA multi-penerima end-to-end
+## P0-02 — Generator dokumen release-hardening
 
-Fondasi aktif sudah mencakup penerima jamak, quantity × hari × tarif, gross detail, tax/net per penerima, alokasi rounding-safe, dan blocker rekonsiliasi gross/tax/net.
+Setelah kandidat P0-01 tersedia, verifikasi seluruh template applicable untuk keenam kategori:
 
-Yang harus diselesaikan:
+- [ ] Word/Excel/PDF dapat dihasilkan;
+- [ ] preview/download bebas side effect numbering;
+- [ ] tidak ada placeholder unresolved;
+- [ ] identitas sekolah/vendor/penerima/pajak/nomor benar;
+- [ ] output Paket multi-template benar;
+- [ ] error template manusiawi;
+- [ ] output dapat dibuka secara nyata.
 
-1. tampilkan gross/tax/net setiap penerima pada output template;
-2. dukung kuitansi/dokumen per penerima bila template mensyaratkan;
-3. tambah test preview/download dan lifecycle sampai FINAL.
+P0-01 dan P0-02 boleh menemukan bug secara bersamaan, tetapi PASS generator dicatat terpisah dari PASS lifecycle.
 
-Rule agregat tetap:
+---
+
+## P0-03 — Numbering + lifecycle hardening
+
+Tutup kontrak:
+
+```text
+DRAFT → READY → NUMBERED → FINAL
+```
+
+beserta:
+
+- [ ] double-submit/idempotensi numbering;
+- [ ] nomor aktif tidak ganda;
+- [ ] locking NUMBERED/FINAL;
+- [ ] cancellation dengan alasan;
+- [ ] reopen/unlock;
+- [ ] reissue/replacement;
+- [ ] histori nomor tidak hilang;
+- [ ] package FINAL konsisten dengan lifecycle dokumen;
+- [ ] preview/download tidak mengalokasikan nomor.
+
+---
+
+## P0-04 — Authorization backend
+
+Buktikan ADMIN/OPERATOR/VIEWER pada request backend, bukan hanya visibility UI:
+
+- [ ] transaction mutation;
+- [ ] Paket mutation;
+- [ ] numbering/finalization;
+- [ ] cancellation/reissue/reopen;
+- [ ] template/configuration;
+- [ ] reconciliation;
+- [ ] reset/backup/restore tenant.
+
+Forged POST/PUT/DELETE dan direct URL harus ditolak sesuai role.
+
+---
+
+## P0-05 — Safe sync + reconciliation
+
+- [ ] source unchanged tidak mengubah overlay;
+- [ ] source changed memicu reconciliation yang benar;
+- [ ] source missing tidak menghapus pekerjaan operator;
+- [ ] source returning menyambung kembali ke state lama;
+- [ ] `item_description`, payment/vendor/category detail tetap aman;
+- [ ] NUMBERED/FINAL tidak berubah diam-diam karena sync;
+- [ ] snapshot/diff cukup untuk operator menentukan tindakan.
+
+---
+
+## P0-06 — Tenant/context isolation
+
+Boundary wajib:
+
+```text
+Sekolah + Tahun Anggaran + Sumber Dana
+```
+
+TODO:
+
+- [ ] cross-school read ditolak;
+- [ ] cross-school mutation ditolak;
+- [ ] cross-year package/transaction ditolak;
+- [ ] cross-fund-source package/transaction ditolak;
+- [ ] previous/next Package tidak keluar context;
+- [ ] forged `transaction_id/package_id` tidak menjadi IDOR.
+
+---
+
+## P0-07 — APP DATA / backup / reset / restore nyata
+
+Validasi pada database sekolah nyata:
+
+```text
+provision
+switch tenant
+backup
+reset total + sqlite_sequence
+restore
+WAL/SHM cleanup
+```
+
+TODO:
+
+- [ ] database utama tidak ikut terhapus;
+- [ ] tenant file benar;
+- [ ] WAL/SHM tidak meninggalkan state rusak;
+- [ ] `sqlite_sequence` kembali bersih setelah reset;
+- [ ] backup dapat direstore;
+- [ ] restore mempertahankan data yang dibackup;
+- [ ] switch sekolah setelah maintenance tetap aman.
+
+---
+
+# P1 — Feature Completeness & Operational Quality
+
+P1 dikerjakan setelah core P0 sudah cukup stabil atau sebagai follow-up blocker kategori yang tidak mengubah release-safety boundary.
+
+## P1-01 — JASA_LAINNYA multi-penerima end-to-end
+
+Fondasi aktif sudah mencakup penerima jamak, quantity × hari × tarif, gross detail, tax/net per penerima, alokasi rounding-safe, dan blocker rekonsiliasi.
+
+TODO:
+
+- [ ] gross/tax/net tiap penerima tampil pada output yang membutuhkan;
+- [ ] kuitansi/dokumen per penerima bila template mensyaratkan;
+- [ ] preview/download/final multi-penerima;
+- [ ] agregat tetap:
 
 ```text
 Σ gross = transaction.gross_amount
@@ -44,115 +183,120 @@ Jangan membuat kategori baru seperti `SEWA_LAPTOP` atau `SEWA_MOBIL`; gunakan su
 
 ---
 
-## P1 — generator dan lifecycle release hardening
+## P1-02 — PEMELIHARAAN bahan + upah full-document QA
 
-### Generator dokumen
-
-Verifikasi seluruh template aktif untuk keenam kategori:
-
-- Word/Excel/PDF;
-- package preview/export;
-- unresolved-placeholder guard;
-- identitas sekolah/vendor/penerima/pajak/nomor;
-- preview/download bebas side effect;
-- error template terbaca operator.
-
-### Lifecycle / authorization / reconciliation
-
-Tutup suite terpadu untuk:
-
-```text
-DRAFT -> READY -> NUMBERED -> FINAL
-```
-
-beserta cancellation/reissue/reopen, backend locking, role ADMIN/OPERATOR/VIEWER, reconciliation snapshot/diff, dan perlindungan final document saat sync.
+- [ ] linkage bahan/upah memakai transaksi active context;
+- [ ] material dokumen diambil dari transaksi bahan;
+- [ ] pekerja/upah diambil dari transaksi upah;
+- [ ] RAB/SPK/kuitansi/A2 konsisten;
+- [ ] source BKU dua transaksi tidak ditimpa/digabung permanen;
+- [ ] kandidat real P0-01 membuktikan hasil dokumen.
 
 ---
 
-## P1 — end-to-end semua kategori
+## P1-03 — SiPLah E2E
 
-Wajib membuktikan:
-
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
-
-melalui alur:
-
-```text
-source
--> Detail Transaksi
--> simpan item_description
--> create/open DRAFT
--> lengkapi Paket SPJ
--> READY
--> NUMBERED
--> FINAL
--> preview/download
-```
-
-tanpa edit database manual dan tanpa input field SPJ yang sama pada dua halaman.
-
-Untuk `PEMELIHARAAN`, RAB/dokumen harus membaca material dari transaksi bahan dan pekerja/upah dari transaksi upah yang ditautkan tanpa menimpa source BKU.
+- [ ] source SiPLah tetap authoritative;
+- [ ] radio SiPLah/Non SiPLah benar di browser;
+- [ ] vendor/marketplace order/invoice/payment reference tersimpan;
+- [ ] Surat Pesanan internal tidak diwajibkan untuk SiPLah;
+- [ ] placeholder/output SiPLah benar;
+- [ ] preview/download bebas side effect.
 
 ---
 
-## P1 — APP DATA runtime hardening
+## P1-04 — Browser QA Paket SPJ
 
-Validasi pada database sekolah nyata:
-
-```text
-provision
-switch tenant
-reset total + sqlite_sequence
-backup
-restore
-WAL/SHM cleanup
-```
-
-Database utama tidak boleh ikut terhapus pada reset tenant.
+- [ ] radio `SiPLah / Non SiPLah` mutually-exclusive;
+- [ ] selector PEMELIHARAAN berada di baris kategori;
+- [ ] Data Umum Dokumen: textarea kiri, field umum kanan;
+- [ ] summary 5 kolom benar;
+- [ ] tab ke-3 `Rincian Pajak`;
+- [ ] nomor otomatis hanya informasi;
+- [ ] tabel non-BARANG compact;
+- [ ] pagination non-BARANG hanya satu;
+- [ ] previous/next Package sesuai context;
+- [ ] minimum responsive desktop/tablet/mobile usable.
 
 ---
 
-## P2 — UX dan QA
+## P1-05 — Audit trail operasional
 
-- tutup `docs/MOBILE_VISUAL_QA_TODO.md`;
-- tambah field-level validation UX pada area yang masih generik;
-- kurangi compatibility layer hanya jika markup canonical sudah stabil;
-- pertahankan theme token dan primitive `x-ui.*` / `ui-*`;
-- pertahankan category switch Paket tanpa full page reload;
-- standardisasi icon action baru ke `x-ui.icon` ketika markup native dirapikan.
+Pastikan aktivitas sensitif dapat ditelusuri:
+
+```text
+BUAT_DRAFT
+UBAH_KATEGORI
+PERBARUI_ISIAN
+READY
+NUMBERING
+CANCEL
+REISSUE
+FINAL
+REOPEN
+RECONCILE
+RESET_DB
+RESTORE_DB
+```
+
+Setiap audit minimal mempunyai actor, waktu, school/context, entity, action, dan keterangan yang cukup.
 
 ---
 
-## P3 — Pusat Laporan
+# P2 — Product Polish & Maintainability
 
-Implementasi bertahap setelah workflow dan generator stabil:
+## P2-01 — Mobile/responsive QA penuh
+
+Tutup `docs/MOBILE_VISUAL_QA_TODO.md` pada breakpoint mobile/tablet/desktop termasuk table scroll, modal, tab, dropdown, sticky action, toast, dan form panjang.
+
+## P2-02 — Field-level validation UX
+
+- pesan error manusiawi;
+- fokus/tab diarahkan ke lokasi masalah;
+- backend tetap authoritative;
+- tidak membuat business rule baru hanya di JavaScript.
+
+## P2-03 — GUI/compatibility cleanup
+
+- kurangi CSS compatibility layer setelah markup canonical stabil;
+- kurangi JS DOM mover bila native Blade bisa memiliki struktur yang benar;
+- pertahankan `x-ui.*`, `ui-*`, theme token;
+- jangan hidupkan kembali legacy write-path.
+
+## P2-04 — Icon/action consistency
+
+Standardisasi action baru ke `<x-ui.icon>` serta hover/focus/disabled/tooltip yang konsisten.
+
+## P2-05 — Performance
+
+Profil sebelum optimasi:
+
+- N+1 package/transaction;
+- tabel transaksi;
+- dashboard;
+- preview/document context;
+- template generator.
+
+## P2-06 — Report foundation
+
+Mulai dari laporan internal yang source/meaning-nya sudah jelas:
 
 ```text
-Laporan Keuangan
-Laporan SPJ
-Laporan BOS
-Laporan Pajak
-Laporan per Kategori
-Monitoring & Audit
+BKU / rekap transaksi
+RKAS vs realisasi
+status workflow SPJ
+register penomoran
+rekap pajak
+audit/reconciliation
 ```
-
-Prioritas awal:
-
-- BKU / rekap transaksi;
-- RKAS vs realisasi;
-- status workflow SPJ;
-- register penomoran;
-- rekap pajak;
-- audit/reconciliation.
 
 K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant setelah template/aturan resmi yang dipakai project dikonfirmasi.
+
+---
+
+# P3 — Laporan resmi / ekspansi setelah core stabil
+
+Implementasi bertahap laporan BOS resmi dan ekspansi non-core setelah P0 release safety serta P1 workflow utama stabil.
 
 ---
 
@@ -160,20 +304,20 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 
 Release candidate belum selesai sampai:
 
-- seluruh item FAIL penting di `CURRENT_PROGRESS.md` selesai atau out-of-scope secara eksplisit;
-- seluruh RVR penting mendapat hasil runtime PASS;
-- keenam kategori lulus end-to-end sampai FINAL + preview/download;
+- seluruh P0 mendapat runtime checkpoint PASS atau keputusan out-of-scope eksplisit;
+- keenam kategori lulus E2E nyata sampai FINAL + preview/download;
 - preview/download bebas side effect;
 - numbering/lifecycle/revision aman;
 - safe sync tidak merusak overlay/final document;
 - authorization sensitif diuji;
 - tenant operation pada `SPJ_DATA_PATH` diuji;
-- mobile QA ditutup;
-- build dan critical tests berhasil.
+- critical build/tests berhasil;
+- gap P1 yang benar-benar diperlukan untuk sekolah target ditutup.
 
 Baca bersama:
 
 ```text
+docs/P0_01_SOURCE_AUDIT.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/ARCHITECTURE_COMPLETE.md
