@@ -37,7 +37,7 @@ Perubahan visual terakhir setelah checkpoint test ALL PASS tetap perlu browser Q
 
 ## 1. P0-01 — E2E enam kategori berbasis database nyata
 
-**Status: RVR — audit source, auditor read-only, dan verification kit reusable sudah tersedia; menunggu laptop/database SDN 10208183.**
+**Status: RVR — audit source, auditor read-only, verification kit reusable, dan CI functional sudah tersedia; menunggu laptop/database SDN 10208183.**
 
 Dataset target pertama adalah database tenant SDN **10208183** yang sudah berisi pekerjaan SPJ satu triwulan.
 
@@ -113,9 +113,21 @@ Cakupan auditor:
 - duplicate active document number;
 - rekomendasi satu kandidat E2E per kategori.
 
-Regression test auditor, scenario factory, diff, dan verification command sudah **ditambahkan ke source**, tetapi test terbaru belum diklaim PASS sampai dijalankan lokal atau CI benar-benar hijau.
+### CI checkpoint verification kit
 
-Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save detail keenam kategori, validation/requirements, numbering, preview/download, dan happy-path FINAL tersedia. Status tetap RVR karena dataset nyata, template nyata, dan runtime enam kategori belum dapat dijalankan saat laptop off. Detail audit ada di `docs/P0_01_SOURCE_AUDIT.md`.
+GitHub Actions `SPJ Critical Verification` pada commit `9dc0db47cbd6097ee8806ed31f54d7f78e393497` sudah **functional PASS**:
+
+```text
+composer install       PASS
+npm ci                 PASS
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 81 tests / 561 assertions
+```
+
+Repository-wide Pint masih menemukan **12 style issues**. Pint sengaja advisory supaya style debt tidak menyembunyikan hasil functional gate; statusnya **WARN**, bukan PASS. `php artisan spj:verify --strict-style` tetap tersedia bila style perlu dijadikan blocking gate.
+
+Audit source P0-01 menyimpulkan jalur produksi untuk create/open DRAFT, save detail keenam kategori, validation/requirements, numbering, preview/download, dan happy-path FINAL tersedia. Status P0-01 tetap RVR karena dataset nyata, template nyata, dan runtime enam kategori belum dapat dijalankan saat laptop off. Detail audit ada di `docs/P0_01_SOURCE_AUDIT.md`.
 
 ### TODO P0-01 berikutnya
 
@@ -190,12 +202,13 @@ Perubahan markup/JS terakhir perlu diverifikasi di browser setelah `npm run buil
 
 Ini adalah QA visual/runtime, bukan gap ownership backend.
 
-### R03 — Verification kit / CI pertama
+### R03 — Verification kit lokal / tenant nyata
 
-Source verification kit sudah tersedia, tetapi status runtime baru boleh dinaikkan setelah:
+GitHub functional CI sudah PASS. Yang masih RVR:
 
-- `php artisan spj:verify` berhasil lokal; dan/atau
-- GitHub Actions `SPJ Critical Verification` selesai hijau pada head terbaru.
+- first local `php artisan spj:verify` pada laptop operator;
+- first `php artisan spj:verify --npsn=10208183 --quarter=1` terhadap tenant nyata;
+- repository Pint debt masih WARN sampai dibersihkan atau `--strict-style` PASS.
 
 Workflow CI tidak memakai database nyata dan tidak menggantikan R01/P0-01 real-tenant audit.
 
@@ -239,7 +252,7 @@ source
 → FINAL
 ```
 
-Focused tests kategori yang PASS tidak sama dengan full document/lifecycle E2E.
+Focused/critical tests yang PASS tidak sama dengan full document/lifecycle E2E pada dataset sekolah nyata.
 
 ### F05 — Mobile visual QA masih terbuka
 
@@ -253,7 +266,7 @@ Pusat Laporan, K7/K7A/K8/SPTJM/K7B/K7C, laporan pajak lengkap, laporan kategori,
 
 ## 5. Verification queue
 
-Checkpoint focused SPJ sebelumnya dilaporkan **ALL PASS** oleh user. Verification kit yang ditambahkan setelah checkpoint tersebut belum boleh diasumsikan PASS sampai runtime/CI membuktikannya.
+GitHub Actions sudah membuktikan functional gate verification kit: **build PASS, Blade PASS, SPJ Critical 81 tests / 561 assertions PASS**. Repository Pint masih **WARN (12 style issues)**. Real tenant tetap RVR.
 
 Command canonical sekarang:
 
