@@ -14,10 +14,12 @@ class SpjRoleAuthorizationMiddlewareTest extends TestCase
 {
     public function test_viewer_is_denied_by_operator_or_administrator_middleware(): void
     {
-        $this->expectException(HttpException::class);
-        $this->expectExceptionCode(0);
-
-        $this->runOperatorGuard(User::ROLE_VIEWER);
+        try {
+            $this->runOperatorGuard(User::ROLE_VIEWER);
+            $this->fail('VIEWER unexpectedly passed operator-or-administrator guard.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
     }
 
     public function test_operator_and_administrator_pass_operator_guard(): void
