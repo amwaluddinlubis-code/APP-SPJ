@@ -27,6 +27,7 @@
             <file>tests/Feature/SpjPackageNavigationContextTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
+            <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
             <file>tests/Feature/SpjSafeSyncReconciliationHardeningTest.php</file>
             <file>tests/Feature/SpjSchoolIsolationTest.php</file>
