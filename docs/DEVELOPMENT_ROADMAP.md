@@ -8,9 +8,34 @@ Roadmap ini hanya memuat pekerjaan yang masih belum selesai. Migrasi ownership D
 
 P0 harus selesai sebelum aplikasi disebut aman menghasilkan SPJ pada data nyata.
 
+## P0 Verification Kit — source tersedia, runtime/CI RVR
+
+Agar milestone P0 tidak mengulang fixture, daftar test, build command, dan audit dari awal, verification kit canonical sekarang tersedia. Detail penggunaan: `docs/P0_VERIFICATION_KIT.md`.
+
+### Sudah masuk source
+
+- [x] `tests/Support/SpjScenarioFactory.php` sebagai payload factory enam kategori;
+- [x] unit contract untuk scenario factory;
+- [x] PHPUnit suite `SPJ Critical` sebagai daftar regression release-safety canonical;
+- [x] `php artisan spj:verify` sebagai satu entry point style → critical tests → frontend build → Blade compile → optional real-tenant audit;
+- [x] `spj:audit-quarter --output=...` untuk menyimpan baseline audit JSON;
+- [x] `spj:audit-diff before.json after.json` untuk membandingkan audit tanpa membaca ulang database;
+- [x] `--fail-on-regression` sebagai gate diff;
+- [x] `.github/workflows/spj-critical.yml` untuk static/build/critical-test CI pada branch `gui-standardization`.
+
+### Masih RVR
+
+- [ ] first green GitHub Actions run untuk workflow baru;
+- [ ] first local `php artisan spj:verify` lengkap;
+- [ ] first `spj:verify --npsn=10208183 --quarter=1` pada database nyata.
+
+Checklist source berarti implementasi tersedia, **bukan** bukti runtime PASS.
+
+---
+
 ## P0-01 — E2E enam kategori berbasis database nyata
 
-**Status: RVR — source auditor siap; menunggu database SDN 10208183.**
+**Status: RVR — source auditor + verification kit siap; menunggu database SDN 10208183.**
 
 Detail checkpoint: `docs/P0_01_SOURCE_AUDIT.md`.
 
@@ -22,15 +47,16 @@ Detail checkpoint: `docs/P0_01_SOURCE_AUDIT.md`.
 - [x] coverage matrix enam kategori;
 - [x] anomaly check integrity/FK/source/item/finansial/package/category detail;
 - [x] kandidat E2E per kategori;
-- [x] regression test yang membuktikan tenant file/metadata tidak ditulis oleh command **sudah ditambahkan ke source**.
-
-> Checklist test di atas berarti coverage test sudah ditulis, **bukan** bahwa test terbaru sudah dijalankan.
+- [x] regression test yang membuktikan tenant file/metadata tidak ditulis oleh command;
+- [x] reusable six-category payload factory;
+- [x] audit baseline/diff tooling.
 
 ### TODO saat laptop/database tersedia
 
 - [ ] pull source terbaru;
-- [ ] jalankan `php artisan test --compact --filter=SpjQuarterAuditCommandTest`;
-- [ ] jalankan `php artisan spj:audit-quarter 10208183 --quarter=1`;
+- [ ] jalankan `php artisan spj:verify`;
+- [ ] jalankan `php artisan spj:verify --npsn=10208183 --quarter=1`;
+- [ ] simpan baseline dengan `spj:audit-quarter ... --output=storage/app/audits/10208183-tw1-before.json`;
 - [ ] review seluruh CRITICAL/WARNING;
 - [ ] konfirmasi coverage BARANG;
 - [ ] konfirmasi coverage KONSUMSI;
@@ -41,6 +67,7 @@ Detail checkpoint: `docs/P0_01_SOURCE_AUDIT.md`.
 - [ ] pilih satu kandidat nyata per kategori;
 - [ ] jalankan kandidat melalui Detail → DRAFT → READY → NUMBERED → preview/download → FINAL;
 - [ ] patch blocker pertama yang ditemukan per kategori;
+- [ ] simpan audit sesudah patch dan jalankan `spj:audit-diff --fail-on-regression`;
 - [ ] ulangi sampai 6/6 PASS;
 - [ ] catat hasil runtime final di `CURRENT_PROGRESS.md`.
 
@@ -317,6 +344,7 @@ Release candidate belum selesai sampai:
 Baca bersama:
 
 ```text
+docs/P0_VERIFICATION_KIT.md
 docs/P0_01_SOURCE_AUDIT.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
