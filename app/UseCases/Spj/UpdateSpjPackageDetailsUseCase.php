@@ -8,7 +8,6 @@ use App\Services\OperationalAuditService;
 use App\Services\SpjTransactionDetailsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class UpdateSpjPackageDetailsUseCase
 {
@@ -29,15 +28,8 @@ class UpdateSpjPackageDetailsUseCase
 
         $data = $request->validate($this->rules($request, $package), $this->purchaseDateMessages());
         $data['spj_category'] = $this->canonicalCategory($data['spj_category'] ?? $package->transaction->spj_category);
+        $data = $this->withDefaultPrimaryRecipient($data);
         $primaryRecipient = $this->primaryRecipientName($data);
-
-        if (in_array($data['spj_category'], ['KONSUMSI', 'PEMELIHARAAN', 'JASA_LAINNYA', 'SPPD', 'HONOR_PEGAWAI'], true)
-            && $this->categoryHasRows($data['spj_category'], $data)
-            && blank($primaryRecipient)) {
-            throw ValidationException::withMessages([
-                'primary_recipient_index' => 'Pilih satu Penerima Utama pada tabel rincian.',
-            ]);
-        }
 
         // Nilai pajak (PPN/PPh/SSPD), tax_total, dan net_amount adalah data sumber transaksi.
         // Paket SPJ tidak boleh mengubah atau menghitung ulang nilai tersebut.
@@ -230,6 +222,39 @@ class UpdateSpjPackageDetailsUseCase
     }
 
     /** @param array<string, mixed> $data */
+    private function withDefaultPrimaryRecipient(array $data): array
+    {
+        if (isset($data['primary_recipient_group'], $data['primary_recipient_index'])) {
+            return $data;
+        }
+
+        $group = match ($data['spj_category'] ?? null) {
+            'KONSUMSI' => 'participants',
+            'PEMELIHARAAN', 'HONOR_PEGAWAI' => 'workers',
+            'SPPD' => 'travels',
+            'JASA_LAINNYA' => 'service_recipients',
+            default => null,
+        };
+        if (! $group) {
+            return $data;
+        }
+
+        foreach ($data[$group] ?? [] as $index => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $name = $group === 'travels' ? ($row['traveler_name'] ?? null) : ($row['name'] ?? null);
+            if (filled($name)) {
+                $data['primary_recipient_group'] = $group;
+                $data['primary_recipient_index'] = (int) $index;
+                break;
+            }
+        }
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data */
     private function primaryRecipientName(array $data): ?string
     {
         $group = $data['primary_recipient_group'] ?? null;
@@ -249,29 +274,6 @@ class UpdateSpjPackageDetailsUseCase
         };
 
         return filled($name) ? trim((string) $name) : null;
-    }
-
-    /** @param array<string, mixed> $data */
-    private function categoryHasRows(string $category, array $data): bool
-    {
-        $group = match ($category) {
-            'KONSUMSI' => 'participants',
-            'PEMELIHARAAN', 'HONOR_PEGAWAI' => 'workers',
-            'SPPD' => 'travels',
-            'JASA_LAINNYA' => 'service_recipients',
-            default => null,
-        };
-
-        if (! $group) {
-            return false;
-        }
-
-        return collect($data[$group] ?? [])->contains(function ($row) use ($group): bool {
-            if (! is_array($row)) {
-                return false;
-            }
-            return filled($group === 'travels' ? ($row['traveler_name'] ?? null) : ($row['name'] ?? null));
-        });
     }
 
     private function purchaseDateMessages(): array
