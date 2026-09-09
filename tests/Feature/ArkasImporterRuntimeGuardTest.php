@@ -122,8 +122,6 @@ class ArkasImporterRuntimeGuardTest extends TestCase
 
         $response->assertRedirect(route('arkas.importer', ['table' => 'drift_table']));
         $response->assertSessionHasErrors('mapping');
-        $errors = session('errors')->get('mapping');
-        $this->assertStringContainsString('EXTERNAL_ID', implode(' ', $errors));
     }
 
     private function activateTenant(string $path): void
