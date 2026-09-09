@@ -32,6 +32,7 @@
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
             <file>tests/Feature/SpjDocumentGeneratorHardeningTest.php</file>
+            <file>tests/Feature/SpjGeneratedDocumentValidatorTest.php</file>
             <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
             <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
             <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
