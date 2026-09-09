@@ -42,15 +42,25 @@ CI job : 102647980543
 result : PASS — 169 tests / 1407 assertions
 ```
 
-Repository-wide Pint tetap advisory dan masih mempunyai **1 pre-existing** `single_quote` warning pada `tests/Feature/SyncProgressUiTest.php`. Frontend build dan Blade compile pada checkpoint P0-01 PASS.
+### P0-01 — real-data category/lifecycle hardening
+
+```text
+commit : 45c7acb58950cc5cba219142d94868e99dc0b9d3
+subject: test: gate category lifecycle regression in critical suite
+CI run : 34414132079
+CI job : 102675070244
+result : PASS — 171 tests / 1418 assertions
+```
+
+Repository-wide Pint tetap advisory dan masih mempunyai **1 pre-existing** `single_quote` warning pada `tests/Feature/SyncProgressUiTest.php`. Frontend build dan Blade compile pada checkpoint P0-01 real-data hardening PASS.
 
 ---
 
 ## P0-01 — E2E enam kategori
 
-**Status: FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-TENANT RVR / READY FOR REAL-DATA VERIFICATION.**
+**Status: FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-DATA VERIFICATION STARTED / INSTALLED-RUNTIME RVR.**
 
-Regression deterministic baru `tests/Feature/SpjSixCategoryE2eTest.php` menjalankan keenam kategori canonical melalui jalur runtime yang sama:
+Regression deterministic `tests/Feature/SpjSixCategoryE2eTest.php` menjalankan keenam kategori canonical melalui jalur runtime yang sama:
 
 ```text
 BARANG
@@ -87,15 +97,38 @@ SPJ Critical PHPUnit   PASS — 169 tests / 1407 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
 
-Yang masih RVR dan tidak boleh diklaim PASS hanya dari fixture deterministic:
+Real-data verification yang sudah dilakukan pada salinan database sekolah nyata:
 
-- transaksi ARKAS/BKU dari database sekolah target;
-- nominal, pajak, vendor, penerima, NPWP, dan metadata sumber pada data sekolah nyata;
-- official-template/output visual yang masih menjadi RVR P0-02;
-- audit before/after real tenant melalui `spj:audit-quarter` dan `spj:audit-diff --fail-on-regression`;
-- alur operator pada installed runtime sekolah sampai FINAL dan membuka hasil dokumen sebenarnya.
+- SQLite source lolos `integrity_check` dan tidak mempunyai foreign-key violation;
+- transaksi dan `transaction_items` diperlakukan sebagai source-authoritative dan hash/proyeksinya dibuktikan tetap sama sebelum/sesudah percobaan penomoran;
+- format nomor SPJ default canonical dapat dibuat dari source aplikasi ketika tenant belum mempunyai format khusus;
+- penomoran source-rule-equivalent pada isolated working copy berhasil menerbitkan **7 paket valid pertama secara berurutan** dan berhenti pada blocker pertama, tanpa melompati paket bermasalah;
+- tidak ditemukan duplicate active document number setelah penomoran parsial;
+- real-data menemukan kasus Paket `READY` yang kategorinya diubah sesudah READY, sehingga status READY menjadi stale terhadap requirement kategori baru;
+- `SpjPackageCategoryUseCase` sekarang mengembalikan Paket `READY` ke `DRAFT` ketika kategori benar-benar berubah dan mencatat alasan revalidation pada audit;
+- pemilihan kategori yang sama tidak mengubah Paket READY menjadi DRAFT;
+- regression baru `tests/Feature/SpjCategoryLifecycleRegressionTest.php` masuk `SPJ Critical` dan PASS.
 
-**P0-01 sekarang READY FOR REAL-DATA VERIFICATION.** Ini menutup gap functional enam kategori, tetapi belum membuat keseluruhan aplikasi release-ready tanpa real-tenant verification.
+CI real-data hardening pada `45c7acb58950cc5cba219142d94868e99dc0b9d3`:
+
+```text
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 171 tests / 1418 assertions
+repository Pint        WARN — 1 pre-existing style issue
+```
+
+Batas verifikasi yang masih berlaku:
+
+- percobaan numbering pada database upload adalah **source-rule-equivalent pada isolated copy**, bukan eksekusi HTTP/session Laravel pada installed runtime karena central application database/runtime sekolah tidak ikut tersedia;
+- penomoran sengaja berhenti pada paket pertama yang gagal requirement kategori; data penerima/vendor yang tidak tersedia tidak diisi dengan tebakan;
+- tidak ada `FINAL` atau rendered official-template dari tenant nyata yang dapat dibuktikan ketika tenant belum mempunyai template dokumen aktif;
+- enam kategori dengan transaksi ARKAS/BKU sekolah target masih perlu dituntaskan melalui installed runtime sampai FINAL;
+- official-template/output visual tetap RVR P0-02;
+- audit before/after real tenant melalui `spj:audit-quarter` dan `spj:audit-diff --fail-on-regression` masih perlu dilakukan pada runtime yang mengaktifkan tenant melalui database utama;
+- hasil akhir tetap perlu dibuka pada Microsoft Word/Excel/PDF viewer target.
+
+**P0-01 sudah melewati functional gate dan real-data verification telah dimulai.** Status belum dinaikkan menjadi real-tenant end-to-end verified sebelum installed runtime menyelesaikan seluruh lifecycle yang masih terblokir.
 
 ---
 
@@ -206,7 +239,7 @@ Yang masih RVR dan tidak boleh diklaim PASS hanya dari CI Linux/fixture:
 
 ### P0-03 — Numbering + lifecycle
 
-**FUNCTIONAL PASS.** Numbering idempotent, sequence stabil, NUMBERED/FINAL terkunci, cancel/reissue/reopen menyimpan histori, dan preview/download tidak mengalokasikan nomor.
+**FUNCTIONAL PASS.** Numbering idempotent, sequence stabil, NUMBERED/FINAL terkunci, cancel/reissue/reopen menyimpan histori, preview/download tidak mengalokasikan nomor, dan perubahan kategori pada Paket READY sekarang memaksa revalidation melalui DRAFT.
 
 ### P0-04 — Authorization backend
 
@@ -230,9 +263,9 @@ School + Fiscal Year + Fund Source
 
 ## P0 yang masih memerlukan data/runtime nyata
 
-P0 functional gate utama sekarang sudah mempunyai deterministic CI coverage. Release verification berikutnya tetap membutuhkan nilai/runtime nyata:
+P0 functional gate utama sekarang sudah mempunyai deterministic CI coverage. P0-01 juga sudah mempunyai evidence dari database sekolah nyata pada isolated copy, tetapi release verification berikutnya tetap membutuhkan runtime/nilai lengkap:
 
-- P0-01: database sekolah target + audit before/after;
+- P0-01: tuntaskan blocker data Paket, jalankan lifecycle sampai FINAL pada installed tenant runtime, lalu audit before/after;
 - P0-02: official template + visual/output operator verification;
 - P0-07: installed Windows runtime + file tenant nyata;
 - P0-08: real-tenant/operator importer verification.
@@ -275,6 +308,7 @@ Mobile/responsive QA penuh bukan release blocker saat ini.
 - Detail Transaksi hanya menulis `item_description`.
 - Paket SPJ adalah workspace mutation dokumen.
 - Pajak source immutable dari Paket.
+- Paket READY yang benar-benar berganti kategori wajib kembali ke DRAFT untuk validasi requirement kategori baru sebelum penomoran.
 - Preview/download tidak mengalokasikan nomor.
 - Generated DOCX/XLSX/PDF wajib lolos output validation dan tidak menyisakan placeholder unresolved.
 - Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
