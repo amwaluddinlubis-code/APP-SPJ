@@ -121,9 +121,12 @@ class ArkasImporterTenantBoundaryTest extends TestCase
         ]);
 
         $this->mock(SchoolDatabaseManager::class, function (MockInterface $mock) use ($paths): void {
-            $mock->shouldReceive('ensureMigrated')->andReturnUsing(function (School $school) use ($paths): void {
+            $activate = function (School $school) use ($paths): void {
                 $this->activateTenant($paths[$school->id]);
-            });
+            };
+
+            $mock->shouldReceive('ensureMigrated')->andReturnUsing($activate);
+            $mock->shouldReceive('activate')->andReturnUsing($activate);
         });
         $this->mock(ArkasDatabaseExplorer::class);
 
