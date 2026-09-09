@@ -6,20 +6,20 @@ use App\Models\ArkasSource;
 
 final class ArkasTenantLockKey
 {
-    public static function import(ArkasSource $source, int $profileId, int $fiscalYearId): string
+    public static function import(ArkasSource $source, string $sourceTable, int $fiscalYearId): string
     {
-        return sprintf(
-            'arkas-import:%s:profile:%d:year:%d',
-            self::tenantIdentity($source),
-            $profileId,
-            $fiscalYearId,
-        );
+        return self::resource($source, $sourceTable, $fiscalYearId);
     }
 
     public static function staging(ArkasSource $source, string $sourceTable, int $fiscalYearId): string
     {
+        return self::resource($source, $sourceTable, $fiscalYearId);
+    }
+
+    private static function resource(ArkasSource $source, string $sourceTable, int $fiscalYearId): string
+    {
         return sprintf(
-            'arkas-staging:%s:table:%s:year:%d',
+            'arkas-sync:%s:table:%s:year:%d',
             self::tenantIdentity($source),
             $sourceTable,
             $fiscalYearId,
