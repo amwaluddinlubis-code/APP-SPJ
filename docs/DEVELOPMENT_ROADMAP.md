@@ -13,6 +13,15 @@ test: prove ARKAS sync paths share tenant resource locks
 
 Checkpoint tersebut mencakup source-key, tenant boundary, tiga mode sinkronisasi, preview read-only, raw stable-key policy, source-empty semantics, schema-drift blocking, queue/background tenant activation, tenant-scoped concurrency lock, timestamp semantics, dan semantic import metrics Generic ARKAS Importer.
 
+Checkpoint functional P0-02 terbaru:
+
+```text
+d13004663e5f95cf678abaea772e6095b811c4e2
+test: add output validator to SPJ critical suite
+```
+
+Checkpoint ini mencakup preflight seluruh jalur preview/download/package, unresolved-placeholder blocking, real DOCX/XLSX/PDF output validation, multi-template package output, dan regression side-effect numbering.
+
 # P0 — Core Release Safety
 
 P0 harus cukup stabil sebelum aplikasi disebut aman menghasilkan SPJ pada data nyata. Correctness dan tenant safety selalu lebih prioritas daripada fitur baru atau polish GUI.
@@ -41,7 +50,8 @@ Sudah tersedia:
 - [x] tenant-scoped staging/import resource lock regression;
 - [x] first-created `created_at` preservation regression;
 - [x] semantic import metrics regression (`read/write/new/changed/unchanged/removed`);
-- [x] CI pada `111de8c` PASS: `145 tests / 993 assertions`;
+- [x] document-generator real artifact + output-validator regression;
+- [x] CI pada `d130046` PASS: `155 tests / 1082 assertions`;
 - [x] docs-only changes tidak memicu verification run yang tidak perlu.
 
 Masih RVR/TODO:
@@ -75,15 +85,31 @@ Perbaikan anomaly harus melalui workflow/source code, bukan SQL manual.
 
 ## P0-02 — Generator dokumen release-hardening
 
-**Status: RVR/OPEN — perlu template/output nyata.**
+**Status: FUNCTIONAL GENERATOR PASS / OFFICIAL-TEMPLATE + REAL-TENANT RVR / READY FOR OPERATOR TEMPLATE TEST.**
 
-- [ ] Word/Excel/PDF dapat dihasilkan;
-- [ ] preview/download bebas side effect numbering;
-- [ ] tidak ada placeholder unresolved;
-- [ ] identitas sekolah/vendor/penerima/pajak/nomor benar;
-- [ ] output Paket multi-template benar;
-- [ ] error template manusiawi;
-- [ ] output dapat dibuka secara nyata.
+Functional generator yang sudah ditutup:
+
+- [x] DOCX dan XLSX benar-benar digenerate dan dapat dibuka kembali oleh parser Office;
+- [x] PDF individual/package divalidasi sebagai output PDF nyata dengan signature `%PDF-` dan marker akhir `%%EOF`;
+- [x] preview template, preview Paket, PDF template, PDF Paket, dan Excel Paket menjalankan render preflight sebelum output disajikan;
+- [x] direct download template tetap melewati unresolved-placeholder guard;
+- [x] marker placeholder yang tidak terselesaikan memblokir output dengan error manusiawi sebelum file diberikan ke operator;
+- [x] output final XLSX/DOCX divalidasi sebagai paket Office yang lengkap; workbook XLSX dibuka kembali sebagai validasi akhir;
+- [x] Paket multi-template menghasilkan workbook dengan template/sheet yang benar dan PDF Paket aktual;
+- [x] preview/download/package generation yang diregresikan tidak menambah `spj_documents` maupun `document_number_sequences`;
+- [x] nilai umum enam kategori canonical (`BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`) mempunyai placeholder sekolah, nomor, nilai bruto, pajak, neto, kepala sekolah, dan bendahara yang terisi;
+- [x] `tests/Feature/SpjDocumentGeneratorHardeningTest.php` dan `tests/Feature/SpjGeneratedDocumentValidatorTest.php` masuk `SPJ Critical`;
+- [x] CI checkpoint `d130046` PASS `155 tests / 1082 assertions`.
+
+Masih RVR sebelum P0-02 disebut real-template PASS:
+
+- [ ] jalankan template resmi/aktual yang dipakai sekolah untuk setiap document type yang aktif;
+- [ ] verifikasi vendor/penerima/NPWP/pajak/nomor pada data transaksi sekolah nyata, bukan hanya fixture deterministic;
+- [ ] visual/layout fidelity Word/Excel/PDF pada template resmi termasuk page break, print area, header/footer, tabel dinamis, dan hasil cetak;
+- [ ] jalankan paket dokumen nyata untuk keenam kategori dan pastikan seluruh template applicable ikut keluar dengan urutan/isi yang benar;
+- [ ] operator membuka file hasil generate memakai Microsoft Word/Excel/PDF viewer target pada runtime sekolah.
+
+**Exit criteria P0-02 saat ini:** engine generator dan artifact safety sudah FUNCTIONAL PASS dan siap operator-template test. Status keseluruhan tetap RVR sampai template resmi + real-tenant visual/output verification selesai.
 
 ---
 
@@ -302,7 +328,7 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 
 ```text
 1. P0-01 real-data E2E enam kategori
-2. P0-02 generator dokumen nyata
+2. P0-02 official-template + real-tenant operator verification
 3. P0-07 APP DATA nyata
 4. P0-08 real-tenant operator verification
 5. P1 blocker yang ditemukan dari kandidat nyata
@@ -320,7 +346,7 @@ Release candidate belum selesai sampai:
 - seluruh P0 mendapat runtime checkpoint PASS atau keputusan RVR/out-of-scope eksplisit;
 - P0-08 mempertahankan source-key + tenant + sync-mode + release-guard + hardening PASS pada real-tenant verification;
 - keenam kategori lulus E2E nyata sampai FINAL + preview/download;
-- generator dokumen nyata tervalidasi;
+- generator dokumen nyata tervalidasi pada template resmi sekolah;
 - numbering/lifecycle/revision aman;
 - safe sync tidak merusak overlay/final document;
 - authorization sensitif diuji;
