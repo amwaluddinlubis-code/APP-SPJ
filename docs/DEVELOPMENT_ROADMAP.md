@@ -4,23 +4,22 @@ Terakhir diperbarui: **2026-09-10**
 
 Roadmap ini memusatkan pekerjaan yang masih perlu diselesaikan pada branch `gui-standardization`. Detail historis migrasi ownership Detail Transaksi ↔ Paket SPJ tetap ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
-Baseline correctness P0-08 terbaru:
+## Checkpoint functional utama
 
 ```text
-111de8c2781af6c8413661bcc512b651b09acc72
-test: prove ARKAS sync paths share tenant resource locks
+P0-08  111de8c2781af6c8413661bcc512b651b09acc72
+       test: prove ARKAS sync paths share tenant resource locks
+
+P0-02  1a633f766179e709abdba015c6b8433330c74aad
+       test: resolve template upload controller dependencies
+
+P0-07  9721fb7f84e4a655389e90f315612380bda6b1be
+       test: prove same-second backups stay distinct
+       CI 34404104837 / job 102642898023
+       163 tests / 1127 assertions
 ```
 
-Checkpoint tersebut mencakup source-key, tenant boundary, tiga mode sinkronisasi, preview read-only, raw stable-key policy, source-empty semantics, schema-drift blocking, queue/background tenant activation, tenant-scoped concurrency lock, timestamp semantics, dan semantic import metrics Generic ARKAS Importer.
-
-Checkpoint functional P0-02 terbaru:
-
-```text
-d13004663e5f95cf678abaea772e6095b811c4e2
-test: add output validator to SPJ critical suite
-```
-
-Checkpoint ini mencakup preflight seluruh jalur preview/download/package, unresolved-placeholder blocking, real DOCX/XLSX/PDF output validation, multi-template package output, dan regression side-effect numbering.
+`FUNCTIONAL PASS` pada roadmap ini berarti sudah dibuktikan oleh source + CI deterministic. `RVR` tetap membutuhkan real-value/runtime verification sebelum release target dinyatakan selesai.
 
 # P0 — Core Release Safety
 
@@ -39,27 +38,25 @@ Sudah tersedia:
 - [x] `spj:audit-diff before.json after.json`;
 - [x] `--fail-on-regression`;
 - [x] `.github/workflows/spj-critical.yml`;
-- [x] source-key Generic Importer regression;
-- [x] tenant activation/isolation + cross-school/cross-year regression;
-- [x] Upsert / Incremental / Full Refresh regression;
-- [x] preview full reconciliation read-only regression;
-- [x] raw stable-key policy regression;
-- [x] source kosong regression;
-- [x] schema drift blocking regression;
-- [x] queue/background tenant activation regression;
-- [x] tenant-scoped staging/import resource lock regression;
-- [x] first-created `created_at` preservation regression;
-- [x] semantic import metrics regression (`read/write/new/changed/unchanged/removed`);
+- [x] source-key + tenant isolation + sync-mode Generic Importer regression;
+- [x] preview reconciliation read-only + source-empty + schema-drift + queue activation regression;
+- [x] tenant-scoped importer lock + timestamp + semantic import metrics regression;
 - [x] document-generator real artifact + output-validator regression;
-- [x] CI pada `d130046` PASS: `155 tests / 1082 assertions`;
+- [x] tenant maintenance backup/reset/restore regression;
+- [x] primary-database deletion guard;
+- [x] reset `sqlite_sequence` + WAL/SHM cleanup regression;
+- [x] restore rollback + corrupt-backup rejection + same-second backup uniqueness regression;
+- [x] CI canonical terbaru pada `9721fb7` PASS: **163 tests / 1127 assertions**;
 - [x] docs-only changes tidak memicu verification run yang tidak perlu.
 
 Masih RVR/TODO:
 
 - [ ] first local `php artisan spj:verify` lengkap;
 - [ ] first real-tenant verification pada database sekolah target;
+- [ ] official-template generator verification;
+- [ ] installed-runtime backup/reset/restore verification;
 - [ ] evaluasi Bridge fetch limit `100000` pada tabel sangat besar;
-- [ ] Bridge-side incremental delta fetch sebagai optimasi scale/performance;
+- [ ] Bridge-side incremental delta fetch;
 - [ ] bersihkan repository-wide Pint debt; `SyncProgressUiTest.php` masih mempunyai pre-existing `single_quote` warning.
 
 ---
@@ -89,27 +86,24 @@ Perbaikan anomaly harus melalui workflow/source code, bukan SQL manual.
 
 Functional generator yang sudah ditutup:
 
-- [x] DOCX dan XLSX benar-benar digenerate dan dapat dibuka kembali oleh parser Office;
-- [x] PDF individual/package divalidasi sebagai output PDF nyata dengan signature `%PDF-` dan marker akhir `%%EOF`;
-- [x] preview template, preview Paket, PDF template, PDF Paket, dan Excel Paket menjalankan render preflight sebelum output disajikan;
-- [x] direct download template tetap melewati unresolved-placeholder guard;
-- [x] marker placeholder yang tidak terselesaikan memblokir output dengan error manusiawi sebelum file diberikan ke operator;
-- [x] output final XLSX/DOCX divalidasi sebagai paket Office yang lengkap; workbook XLSX dibuka kembali sebagai validasi akhir;
-- [x] Paket multi-template menghasilkan workbook dengan template/sheet yang benar dan PDF Paket aktual;
-- [x] preview/download/package generation yang diregresikan tidak menambah `spj_documents` maupun `document_number_sequences`;
-- [x] nilai umum enam kategori canonical (`BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`) mempunyai placeholder sekolah, nomor, nilai bruto, pajak, neto, kepala sekolah, dan bendahara yang terisi;
-- [x] `tests/Feature/SpjDocumentGeneratorHardeningTest.php` dan `tests/Feature/SpjGeneratedDocumentValidatorTest.php` masuk `SPJ Critical`;
-- [x] CI checkpoint `d130046` PASS `155 tests / 1082 assertions`.
+- [x] DOCX/XLSX benar-benar digenerate dan dapat dibuka kembali oleh parser Office;
+- [x] PDF individual/package divalidasi dengan signature `%PDF-` + `%%EOF`;
+- [x] preview/download/package memakai render preflight;
+- [x] unresolved placeholder memblokir output;
+- [x] output final Office divalidasi dan workbook XLSX dibuka kembali;
+- [x] Paket multi-template menghasilkan workbook multi-sheet dan PDF aktual;
+- [x] generation tidak menambah `spj_documents` atau `document_number_sequences`;
+- [x] nilai umum enam kategori canonical mempunyai placeholder sekolah, nomor, bruto, pajak, neto, kepala sekolah, dan bendahara;
+- [x] upload template invalid tidak mengganti template aktif;
+- [x] generator regression masuk `SPJ Critical`.
 
 Masih RVR sebelum P0-02 disebut real-template PASS:
 
-- [ ] jalankan template resmi/aktual yang dipakai sekolah untuk setiap document type yang aktif;
-- [ ] verifikasi vendor/penerima/NPWP/pajak/nomor pada data transaksi sekolah nyata, bukan hanya fixture deterministic;
-- [ ] visual/layout fidelity Word/Excel/PDF pada template resmi termasuk page break, print area, header/footer, tabel dinamis, dan hasil cetak;
-- [ ] jalankan paket dokumen nyata untuk keenam kategori dan pastikan seluruh template applicable ikut keluar dengan urutan/isi yang benar;
-- [ ] operator membuka file hasil generate memakai Microsoft Word/Excel/PDF viewer target pada runtime sekolah.
-
-**Exit criteria P0-02 saat ini:** engine generator dan artifact safety sudah FUNCTIONAL PASS dan siap operator-template test. Status keseluruhan tetap RVR sampai template resmi + real-tenant visual/output verification selesai.
+- [ ] template resmi/aktual untuk setiap document type aktif;
+- [ ] vendor/penerima/NPWP/pajak/nomor pada transaksi nyata;
+- [ ] visual/layout fidelity Word/Excel/PDF termasuk page break, print area, header/footer, tabel dinamis, hasil cetak;
+- [ ] Paket nyata keenam kategori dengan seluruh template applicable;
+- [ ] operator membuka output dengan Word/Excel/PDF viewer target.
 
 ---
 
@@ -138,7 +132,7 @@ Masih RVR sebelum P0-02 disebut real-template PASS:
 - [x] template/configuration sensitif;
 - [x] reconciliation guard;
 - [x] reset/backup/restore tenant guard;
-- [x] Generic ARKAS Importer tetap administrator-only.
+- [x] Generic ARKAS Importer administrator-only.
 
 ---
 
@@ -173,24 +167,46 @@ School + Fiscal Year + Fund Source
 - [x] previous/next Paket tidak keluar context;
 - [x] forged SPJ resource ID tidak menjadi IDOR;
 - [x] Generic Importer menjalankan `active-school` sebelum `active-year`;
-- [x] forged profile lintas sekolah pada preview/sync ditolak;
+- [x] forged importer profile lintas sekolah ditolak;
 - [x] save mapping hanya menulis tenant aktif;
-- [x] stale fiscal-year context lintas tenant ditolak;
-- [x] background job mengaktifkan school tenant sebelum membaca profile/fiscal year tenant.
+- [x] background job mengaktifkan tenant sebelum membaca model tenant.
 
 ---
 
-## P0-07 — APP DATA / backup / reset / restore nyata
+## P0-07 — APP DATA / backup / reset / restore
 
-**Status: RVR — memerlukan runtime tenant nyata.**
+**Status: FUNCTIONAL MAINTENANCE PASS / REAL-RUNTIME RVR / READY FOR OPERATOR RUNTIME TEST.**
 
-- [ ] database utama tidak ikut terhapus;
-- [ ] tenant file benar;
-- [ ] WAL/SHM tidak meninggalkan state rusak;
-- [ ] `sqlite_sequence` kembali bersih setelah reset;
-- [ ] backup dapat direstore;
-- [ ] restore mempertahankan data yang dibackup;
-- [ ] switch sekolah setelah maintenance tetap aman.
+Functional maintenance yang sudah ditutup:
+
+- [x] reset menolak database tenant yang path-nya sama dengan database utama aplikasi;
+- [x] reset hanya menghapus/rebuild tenant target;
+- [x] file tenant `spj.sqlite`, `-wal`, dan `-shm` dibersihkan;
+- [x] tenant diprovision ulang setelah reset;
+- [x] `sqlite_sequence` bersih dan AUTOINCREMENT restart pada database baru;
+- [x] backup melakukan WAL checkpoint sebelum snapshot;
+- [x] source dan artifact backup melewati SQLite integrity check;
+- [x] corrupt backup ditolak sebelum active tenant diganti;
+- [x] restore memakai verified temporary copy;
+- [x] restore membuat backup `SEBELUM_PEMULIHAN`;
+- [x] post-restore integrity failure menjalankan rollback otomatis;
+- [x] source backup tetap dipertahankan dan dilindungi dari retention selama restore;
+- [x] retention backup SQLite-safe;
+- [x] backup pada detik yang sama menghasilkan artifact path berbeda;
+- [x] tenant tetap dapat switch sekolah setelah restore;
+- [x] central test database dan tenant fixtures terisolasi sehingga maintenance tidak membocorkan lock antar-test;
+- [x] `SchoolDatabaseMaintenanceHardeningTest` + `SchoolDatabaseResetServiceTest` masuk `SPJ Critical`;
+- [x] CI `9721fb7` PASS **163 tests / 1127 assertions**.
+
+Masih RVR sebelum P0-07 disebut runtime PASS:
+
+- [ ] locking SQLite/WAL/SHM pada Windows installed runtime;
+- [ ] backup/reset/restore pada file database sekolah nyata;
+- [ ] restore database tenant berukuran produksi;
+- [ ] alur operator nyata backup -> reset -> restore -> switch sekolah -> buka modul SPJ;
+- [ ] recovery terhadap gangguan OS/power-loss bila masuk target release.
+
+**Exit criteria P0-07 saat ini:** source-level maintenance safety sudah FUNCTIONAL PASS dan siap operator-runtime test; Windows/real-tenant runtime tetap RVR.
 
 ---
 
@@ -198,49 +214,26 @@ School + Fiscal Year + Fund Source
 
 **Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
 
-Fondasi:
-
-```text
-Bridge
--> ArkasStagingService
--> ArkasImportProfile / arkas_import_rows
--> reconciliation preview
--> ArkasDomainAdapter
--> target domain / raw snapshot
-```
-
 Correctness/release guard yang sudah ditutup:
 
 - [x] shared `ArkasSourceKeyResolver`;
 - [x] configured key case-insensitive + canonical fallback;
-- [x] non-empty Generic Import runtime path;
 - [x] administrator + active-school + active-year boundary;
-- [x] GET/save mapping/preview/sync cross-tenant regression;
-- [x] **Upsert deterministic:** update stable key, insert key baru, preserve row yang absen dari snapshot berikutnya;
-- [x] **Incremental deterministic:** hanya timestamp `> last_synced_at` yang diproses;
-- [x] **Full Refresh scoped:** active profile/year staging diganti, active fiscal-year domain diganti, fiscal year/profile lain tetap utuh;
-- [x] preview full reconciliation tidak menulis staging/domain/import history;
-- [x] raw Upsert/Incremental tanpa effective stable source key ditolak sebelum fetch;
-- [x] raw Full Refresh tanpa stable key tetap diperbolehkan dan memakai payload-hash identity untuk snapshot penuh;
-- [x] source kosong: Upsert/Incremental preserve, Full Refresh membersihkan hanya active scope;
-- [x] schema drift pada mapped/key/incremental timestamp column memblokir sync;
-- [x] controller store/sync menerapkan release guard, bukan hanya helper/service internal;
-- [x] background queue mengaktifkan tenant sebelum membaca model tenant dan menerapkan guard yang sama;
-- [x] staging dan import memakai lock resource yang sama: `school identity + source_table + fiscal_year_id`;
-- [x] tenant berbeda tidak false-contention dan resource tenant/tabel/tahun yang sama tidak dapat berjalan paralel;
-- [x] insert row menetapkan first-created `created_at`, update row tidak meresetnya, unchanged row tidak menyentuh timestamp;
-- [x] histori import menyimpan `records_read`, `records_written`, `records_new`, `records_changed`, `records_unchanged`, `records_removed`;
-- [x] `records_written` sekarang berarti insert + update aktual, sedangkan delete Full Refresh dihitung pada `records_removed`;
-- [x] background operation result membawa semantic metrics yang sama;
-- [x] `tests/Feature/ArkasImportHardeningTest.php` masuk `SPJ Critical`;
-- [x] CI critical PASS `145 tests / 993 assertions` pada `111de8c`.
+- [x] Upsert / Incremental / Full Refresh deterministic;
+- [x] preview full reconciliation read-only;
+- [x] raw Upsert/Incremental tanpa stable source key ditolak;
+- [x] source kosong mempunyai semantics aman;
+- [x] schema drift blocking;
+- [x] background tenant activation;
+- [x] shared resource lock `school identity + source_table + fiscal_year_id`;
+- [x] first-created `created_at` preservation;
+- [x] semantic metrics `read/write/new/changed/unchanged/removed`;
+- [x] CI checkpoint `111de8c` PASS `145 tests / 993 assertions`.
 
-Scale/performance lanjutan, bukan blocker operator-test correctness saat ini:
+Scale/performance lanjutan:
 
 - [ ] Bridge-side delta fetch untuk Incremental;
-- [ ] evaluasi/paginasi di atas Bridge row limit `100000` untuk sumber sangat besar.
-
-**Exit criteria P0-08:** correctness, tenant isolation, release guard, concurrency lock, timestamp semantics, dan import metrics utama sudah PASS. Generic Importer sekarang `READY FOR OPERATOR TEST`; real-tenant verification tetap harus dilakukan sebelum keseluruhan aplikasi disebut release-ready.
+- [ ] evaluasi/paginasi di atas Bridge row limit `100000`.
 
 ---
 
@@ -251,7 +244,7 @@ Scale/performance lanjutan, bukan blocker operator-test correctness saat ini:
 - [ ] gross/tax/net tiap penerima benar;
 - [ ] kuitansi/dokumen per penerima bila diperlukan;
 - [ ] preview/download/final multi-penerima;
-- [ ] agregat gross/tax/net tetap reconcile.
+- [ ] agregat gross/tax/net reconcile.
 
 ## P1-02 — PEMELIHARAAN bahan + upah
 
@@ -329,7 +322,7 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 ```text
 1. P0-01 real-data E2E enam kategori
 2. P0-02 official-template + real-tenant operator verification
-3. P0-07 APP DATA nyata
+3. P0-07 installed-runtime + real-tenant operator verification
 4. P0-08 real-tenant operator verification
 5. P1 blocker yang ditemukan dari kandidat nyata
 6. P2 cleanup / performance / GUI polish
@@ -346,11 +339,11 @@ Release candidate belum selesai sampai:
 - seluruh P0 mendapat runtime checkpoint PASS atau keputusan RVR/out-of-scope eksplisit;
 - P0-08 mempertahankan source-key + tenant + sync-mode + release-guard + hardening PASS pada real-tenant verification;
 - keenam kategori lulus E2E nyata sampai FINAL + preview/download;
-- generator dokumen nyata tervalidasi pada template resmi sekolah;
+- generator dokumen tervalidasi pada template resmi sekolah;
 - numbering/lifecycle/revision aman;
 - safe sync tidak merusak overlay/final document;
 - authorization sensitif diuji;
-- tenant operation pada `SPJ_DATA_PATH` diuji;
+- tenant maintenance pada `SPJ_DATA_PATH` lulus installed-runtime verification;
 - critical build/tests berhasil;
 - gap P1 yang benar-benar dibutuhkan sekolah target ditutup.
 
