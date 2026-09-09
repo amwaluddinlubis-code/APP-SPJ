@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\SpjPackage;
+use App\Models\Transaction;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SpjPackageValidationService
 {
@@ -32,8 +34,10 @@ class SpjPackageValidationService
         $this->addCheck($checks, 'rkas_date', 'Sumber RKAS', 'Tanggal RKAS', $transaction->rkas_date !== null, 'Tanggal RKAS sumber sudah tersedia.', 'Tanggal RKAS belum tersedia. Sinkronkan ulang ARKAS dengan Bridge terbaru sebelum penomoran.', $transactionUrl);
 
         $orderDates = $transaction->goods->pluck('order_date')->filter();
-        $orderMonthValid = $transaction->rkas_date === null || $orderDates->isEmpty() || $orderDates->every(function ($date) use ($transaction): bool {
-            $rkasMonth = Carbon::parse($transaction->rkas_date)->startOfMonth();
+        $rkasPeriodDate = $this->rkasPeriodDate($transaction);
+        $rkasDateForValidation = $rkasPeriodDate ?: $transaction->rkas_date;
+        $orderMonthValid = $rkasDateForValidation === null || $orderDates->isEmpty() || $orderDates->every(function ($date) use ($rkasDateForValidation): bool {
+            $rkasMonth = Carbon::parse($rkasDateForValidation)->startOfMonth();
             $orderMonth = Carbon::parse($date)->startOfMonth();
 
             return $orderMonth->greaterThanOrEqualTo($rkasMonth);
@@ -185,6 +189,42 @@ class SpjPackageValidationService
         }
 
         return $checks;
+    }
+
+    private function rkasPeriodDate(Transaction $transaction): ?Carbon
+    {
+        $sourceRapbsIds = DB::connection('school')->table('arkas_bku_rows')
+            ->where('fiscal_year_id', $transaction->fiscal_year_id)
+            ->when(filled($transaction->id_kas_umum), fn ($query) => $query->where('source_kas_id', $transaction->id_kas_umum))
+            ->when(blank($transaction->id_kas_umum), fn ($query) => $query->where('no_bukti', $transaction->no_bukti))
+            ->pluck('payload')
+            ->flatMap(function ($payload): array {
+                $row = is_array($payload) ? $payload : json_decode((string) $payload, true);
+
+                return is_array($row) && filled($row['ID_RAPBS'] ?? null) ? [(string) $row['ID_RAPBS']] : [];
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($sourceRapbsIds === []) {
+            return null;
+        }
+
+        $periodQuery = DB::connection('school')->table('arkas_rkas_periods')
+            ->where('fiscal_year_id', $transaction->fiscal_year_id)
+            ->whereIn('source_rapbs_id', $sourceRapbsIds)
+            ->whereNotNull('month_number');
+        $month = (clone $periodQuery)->where('amount', '>', 0)->min('month_number')
+            ?: $periodQuery->min('month_number');
+
+        if (! $month) {
+            return null;
+        }
+
+        $year = ($transaction->transaction_date ?: $transaction->rkas_date)?->year ?? now()->year;
+
+        return Carbon::create($year, (int) $month, 1)->startOfMonth();
     }
 
     /** @return array<int,array{label:string,message:string,url:string}> */

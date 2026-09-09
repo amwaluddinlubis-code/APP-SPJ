@@ -69,4 +69,46 @@ class SpjPackageManualCategoryTest extends TestCase
         $response->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]));
         $this->assertSame('KONSUMSI', $transaction->fresh()->spj_category);
     }
+
+    public function test_incompatible_goods_details_are_removed_only_when_manual_details_are_saved(): void
+    {
+        $transaction = Transaction::query()->create([
+            'fiscal_year_id' => 1,
+            'fund_source_id' => 1,
+            'no_bukti' => 'BPU04',
+            'transaction_date' => '2026-01-15',
+            'gross_amount' => 220000,
+            'net_amount' => 220000,
+            'spj_category' => 'BARANG',
+        ]);
+        $item = $transaction->items()->create([
+            'description' => 'Paket Data',
+            'item_description' => 'Paket Data',
+            'quantity' => 2,
+            'unit' => 'paket',
+            'unit_price' => 110000,
+            'amount' => 220000,
+        ]);
+        $item->goods()->create(['order_date' => '2026-01-10']);
+        $package = $transaction->spjPackage()->create(['status' => 'DRAFT']);
+
+        $this->withoutMiddleware()
+            ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->put(route('spj.update', $package->id), [
+                'spj_category' => 'JASA_LAINNYA',
+                'payment_description' => 'Pembayaran jasa',
+                'payment_method' => 'tunai',
+                'receipt_recipient_name' => 'Penyedia Jasa',
+                'service_recipients' => [[
+                    'name' => 'Penyedia Jasa',
+                    'quantity' => 1,
+                    'rental_days' => 1,
+                    'daily_rate' => 220000,
+                ]],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(0, $transaction->fresh()->goods()->count());
+        $this->assertSame(1, $transaction->fresh()->serviceRecipients()->count());
+    }
 }

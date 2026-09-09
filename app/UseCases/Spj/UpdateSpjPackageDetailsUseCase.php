@@ -51,6 +51,7 @@ class UpdateSpjPackageDetailsUseCase
 
         $package->transaction->load('items');
         app(SpjTransactionDetailsService::class)->synchronize($package->transaction, $data);
+        $this->clearIncompatibleGoodsDetails($package->transaction, (string) $data['spj_category']);
 
         $receiptRecipient = $primaryRecipient
             ?: $package->transaction->workOrder?->workers()->where('is_receipt_recipient', true)->value('name');
@@ -69,6 +70,17 @@ class UpdateSpjPackageDetailsUseCase
         );
 
         return back()->with('success', 'Isian Paket SPJ berhasil disimpan. Nilai PPN, PPh, dan SSPD tetap mengikuti transaksi/BKU.');
+    }
+
+    private function clearIncompatibleGoodsDetails(Transaction $transaction, string $category): void
+    {
+        if (in_array(strtoupper($category), ['BARANG', 'KONSUMSI'], true)) {
+            return;
+        }
+
+        foreach ($transaction->items as $item) {
+            $item->goods()->delete();
+        }
     }
 
     /** @return array<string, array<int, mixed>> */

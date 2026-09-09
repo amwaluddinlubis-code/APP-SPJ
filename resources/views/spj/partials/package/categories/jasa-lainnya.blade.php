@@ -9,8 +9,7 @@
 @endphp
 <fieldset data-spj-section="JASA_LAINNYA" @disabled($selectedSpjType !== 'JASA_LAINNYA') @if($selectedSpjType !== 'JASA_LAINNYA') hidden @endif class="min-w-0 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
     <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Penerima Pembayaran Jasa</h3>
-    @include('spj.partials.package.row-editor', [
-        'prefix' => 'service_recipients',
+    @include('spj.partials.package.categories.jasa-recipient-editor', [
         'rowLabel' => 'Penerima Jasa',
         'rows' => $serviceRows,
         'primaryNameKey' => 'name',

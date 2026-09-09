@@ -54,6 +54,51 @@ class SpjPreNumberingRegressionTest extends TestCase
         $this->assertTrue($checks['order_month_after_rkas']['passed']);
     }
 
+    public function test_order_month_uses_rkas_period_instead_of_rkas_source_creation_date(): void
+    {
+        $package = $this->package([
+            'rkas_date' => '2026-06-09',
+        ]);
+        $goods = $package->transaction->items->first()->goods()->create([
+            'order_date' => '2026-07-12',
+        ]);
+
+        DB::connection('school')->table('arkas_bku_rows')->insert([
+            'fiscal_year_id' => $package->transaction->fiscal_year_id,
+            'fund_source_id' => $package->transaction->fund_source_id,
+            'source_kas_id' => $package->transaction->id_kas_umum,
+            'category' => 'BELANJA',
+            'no_bukti' => $package->transaction->no_bukti,
+            'amount' => 1000,
+            'payload' => json_encode(['ID_RAPBS' => 'rapbs-100'], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::connection('school')->table('arkas_rkas_periods')->insert([
+            'fiscal_year_id' => $package->transaction->fiscal_year_id,
+            'fund_source_id' => $package->transaction->fund_source_id,
+            'source_rapbs_id' => 'rapbs-100',
+            'source_period_id' => 'period-8',
+            'period_name' => 'Agustus',
+            'month_number' => 8,
+            'quarter_number' => 3,
+            'semester_number' => 2,
+            'volume' => 1,
+            'amount' => 1000,
+            'payload' => json_encode([], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $checks = $this->checks($package->fresh());
+        $this->assertFalse($checks['order_month_after_rkas']['passed']);
+
+        $goods->forceFill(['order_date' => '2026-08-01'])->save();
+
+        $checks = $this->checks($package->fresh());
+        $this->assertTrue($checks['order_month_after_rkas']['passed']);
+    }
+
     public function test_core_common_document_fields_are_numbering_blockers_until_completed(): void
     {
         $package = $this->package([
