@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use RuntimeException;
 use ZipArchive;
 
@@ -27,6 +28,18 @@ final class SpjUnresolvedPlaceholderGuard
     public function assertResolved(string $documentType, string $path, ?string $format = null): void
     {
         $markers = $this->findInFile($documentType, $path, $format);
+        $this->assertNoMarkers($markers);
+    }
+
+    public function assertSpreadsheetResolved(string $documentType, Spreadsheet $spreadsheet): void
+    {
+        $markers = $this->findInSpreadsheet($documentType, $spreadsheet);
+        $this->assertNoMarkers($markers);
+    }
+
+    /** @param array<int,string> $markers */
+    private function assertNoMarkers(array $markers): void
+    {
         if ($markers === []) {
             return;
         }
@@ -39,13 +52,18 @@ final class SpjUnresolvedPlaceholderGuard
     /** @return array<int,string> */
     private function findInExcel(string $documentType, string $path): array
     {
+        return $this->findInSpreadsheet($documentType, IOFactory::load($path));
+    }
+
+    /** @return array<int,string> */
+    private function findInSpreadsheet(string $documentType, Spreadsheet $spreadsheet): array
+    {
         $canonical = SpjDocumentTypeRegistry::canonical($documentType);
         $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
         if (! $definition) {
             throw new RuntimeException('Document type tidak dikenal untuk pemeriksaan hasil generate.');
         }
 
-        $spreadsheet = IOFactory::load($path);
         $expectedSheet = (string) $definition['sheet'];
         $selected = $spreadsheet->getSheetByName($expectedSheet);
 
