@@ -18,10 +18,19 @@ class SchoolDatabaseMaintenanceHardeningTest extends TestCase
 {
     private string $dataPath;
 
+    private string $centralPath;
+
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->centralPath = storage_path('framework/testing/p0-07-central-'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($this->centralPath));
+        File::put($this->centralPath, '');
+        config()->set('database.default', 'sqlite');
+        config()->set('database.connections.sqlite.database', $this->centralPath);
+        config()->set('database.connections.sqlite.journal_mode', null);
+        DB::purge('sqlite');
         Artisan::call('migrate:fresh', ['--database' => 'sqlite', '--force' => true]);
 
         $this->dataPath = storage_path('framework/testing/p0-07-'.uniqid());
@@ -35,7 +44,11 @@ class SchoolDatabaseMaintenanceHardeningTest extends TestCase
     protected function tearDown(): void
     {
         DB::purge('school');
+        DB::purge('sqlite');
         File::deleteDirectory($this->dataPath);
+        foreach ([$this->centralPath, $this->centralPath.'-wal', $this->centralPath.'-shm'] as $file) {
+            File::delete($file);
+        }
 
         parent::tearDown();
     }
@@ -110,6 +123,59 @@ class SchoolDatabaseMaintenanceHardeningTest extends TestCase
         app(SchoolDatabaseManager::class)->activate($school);
         $this->assertSame(['SAFE-TENANT'], DB::connection('school')->table('maintenance_rows')->pluck('value')->all());
         $this->assertSame(1, SchoolBackup::query()->where('school_id', $school->id)->count());
+    }
+
+    public function test_failed_post_restore_integrity_check_rolls_back_pre_restore_database(): void
+    {
+        config()->set('spj.backup_retention', 3);
+        $school = $this->makeSchool('10000004', 'ORIGINAL');
+        $manager = new class extends SchoolDatabaseManager
+        {
+            public bool $failNextIntegrityCheck = false;
+
+            public function integrityCheck(School $school): string
+            {
+                if ($this->failNextIntegrityCheck) {
+                    $this->failNextIntegrityCheck = false;
+
+                    return 'forced-integrity-failure';
+                }
+
+                return parent::integrityCheck($school);
+            }
+        };
+        $backups = new SchoolBackupService($manager);
+        $backup = $backups->create($school, 'MANUAL', null);
+
+        $manager->activate($school);
+        DB::connection('school')->table('maintenance_rows')->delete();
+        DB::connection('school')->table('maintenance_rows')->insert(['value' => 'MUTATED-BEFORE-RESTORE']);
+        $manager->failNextIntegrityCheck = true;
+
+        try {
+            $backups->restore($school, $backup, null);
+            $this->fail('Restore wajib dianggap gagal ketika integrity check hasil pemulihan gagal.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('rollback otomatis dijalankan', $exception->getMessage());
+        }
+
+        $manager->activate($school);
+        $this->assertSame(
+            ['MUTATED-BEFORE-RESTORE'],
+            DB::connection('school')->table('maintenance_rows')->pluck('value')->all(),
+        );
+        $this->assertTrue(File::exists($this->backupPath($backup)));
+        $this->assertSame(
+            ['ORIGINAL'],
+            $this->databaseValues($this->backupPath($backup)),
+            'Backup sumber harus tetap menjadi snapshot yang dipilih operator.',
+        );
+        $this->assertSame(
+            ['MUTATED-BEFORE-RESTORE'],
+            $this->databaseValues($this->backupPath(
+                SchoolBackup::query()->where('school_id', $school->id)->where('reason', 'SEBELUM_PEMULIHAN')->sole(),
+            )),
+        );
     }
 
     private function makeSchool(string $npsn, string $value): School
