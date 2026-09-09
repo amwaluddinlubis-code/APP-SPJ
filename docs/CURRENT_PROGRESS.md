@@ -8,13 +8,13 @@ Checkpoint correctness P0-08 terbaru:
 
 ```text
 branch : gui-standardization
-commit : 56aefd25a50489151b77a155bf72b21fbebfd9d9
-subject: test: keep ARKAS route guard assertion session-safe
+commit : 111de8c2781af6c8413661bcc512b651b09acc72
+subject: test: prove ARKAS sync paths share tenant resource locks
 ```
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING OPEN.**
+**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
 
 Alur canonical:
 
@@ -38,7 +38,11 @@ Correctness yang sudah FUNCTIONAL PASS:
 - **Raw stable-key policy PASS:** raw Upsert/Incremental wajib mempunyai effective stable source key; raw tanpa stable key hanya diperbolehkan pada Full Refresh;
 - **Source kosong PASS:** Upsert/Incremental mempertahankan staging lama; Full Refresh membersihkan hanya scope profile/year/domain aktif dan menjaga tahun lain;
 - **Schema drift blocking PASS:** source key, incremental timestamp, atau mapped source column yang hilang memblokir sync sebelum importer berjalan;
-- **Queue/background tenant activation PASS:** job mengaktifkan sekolah yang benar sebelum membaca `ArkasImportProfile`/`FiscalYear`, lalu menerapkan configuration/schema guard yang sama.
+- **Queue/background tenant activation PASS:** job mengaktifkan sekolah yang benar sebelum membaca `ArkasImportProfile`/`FiscalYear`, lalu menerapkan configuration/schema guard yang sama;
+- **Concurrency lock PASS:** staging dan Generic Import menggunakan resource lock yang sama berdasarkan `school identity + source_table + fiscal_year_id`; tenant berbeda tidak saling memblokir, resource yang sama tidak bisa berjalan paralel;
+- **Timestamp semantics PASS:** row baru menetapkan `created_at` + `updated_at`; row berubah hanya memperbarui `updated_at`; row unchanged mempertahankan keduanya;
+- **Import metrics PASS:** histori menyimpan `records_read`, `records_written`, `records_new`, `records_changed`, `records_unchanged`, dan `records_removed`; `records_written` sekarang berarti insert + update aktual, sedangkan delete Full Refresh tercatat terpisah di `records_removed`;
+- background operation result juga membawa metric semantic tersebut.
 
 Regression canonical P0-08 yang sudah masuk `SPJ Critical`:
 
@@ -47,17 +51,18 @@ tests/Unit/ArkasSourceKeyResolverTest.php
 tests/Feature/ArkasGenericImportSourceKeyTest.php
 tests/Feature/ArkasGenericImportSyncModeTest.php
 tests/Feature/ArkasGenericImportReleaseSafetyTest.php
+tests/Feature/ArkasImportHardeningTest.php
 tests/Feature/ArkasImporterTenantBoundaryTest.php
 tests/Feature/ArkasImporterRuntimeGuardTest.php
 tests/Feature/ArkasImportQueueTenantTest.php
 ```
 
-CI `SPJ Critical Verification` pada `56aefd25a50489151b77a155bf72b21fbebfd9d9`:
+CI `SPJ Critical Verification` pada `111de8c2781af6c8413661bcc512b651b09acc72`:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 141 tests / 954 assertions
+SPJ Critical PHPUnit   PASS — 145 tests / 993 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
 
@@ -65,13 +70,13 @@ Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`.
 
 ### P0-08 yang masih terbuka
 
-- staging/import lock harus tenant-scoped, bukan hanya profile/year atau source-table/year lokal;
-- `created_at` existing staging/import row tidak boleh di-reset bila bermakna first-created timestamp;
-- histori import perlu membedakan read/new/changed/unchanged/removed, bukan sekadar processed count;
-- `records_written` saat ini masih berarti record yang diproses, belum actual changed-row metric;
-- Bridge-side incremental delta fetch tetap optimasi setelah correctness selesai; implementasi sekarang membaca snapshot lalu memfilter di aplikasi.
+Correctness/hardening release-critical yang ditargetkan untuk operator test sudah ditutup. Sisa pekerjaan Generic Importer sekarang berupa optimasi/scale verification, bukan blocker correctness yang sudah dikenal:
 
-**Generic Importer belum release-ready / belum READY FOR OPERATOR TEST.** Seluruh release-guard behavior yang sebelumnya terbuka (preview/raw/source-empty/schema-drift/queue) sudah PASS, tetapi hardening concurrency/timestamp/import-metrics di atas masih harus ditutup agar histori dan eksekusi lintas tenant benar-benar aman untuk operator test.
+- Bridge-side incremental delta fetch agar mode Incremental tidak perlu membaca snapshot penuh lalu memfilter di aplikasi;
+- evaluasi batas fetch Bridge `100000` row pada sumber besar agar tidak terjadi truncation diam-diam pada deployment dengan tabel sangat besar;
+- real-tenant/operator verification dengan database sekolah target.
+
+**Generic Importer sekarang READY FOR OPERATOR TEST**, tetapi status tersebut bukan berarti keseluruhan aplikasi release-ready. P0-01, P0-02, P0-07, dan runtime nyata tetap harus diverifikasi.
 
 Panduan teknis: `docs/ARKAS_IMPORTER.md`.
 
@@ -203,6 +208,9 @@ Mobile/responsive QA penuh bukan release blocker saat ini dan tetap berada pada 
 - Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
 - Generic ARKAS Importer wajib melewati `administrator -> active-school -> active-year` sebelum query/write connection `school`.
 - Raw Generic Importer pada Upsert/Incremental wajib mempunyai stable source key; raw tanpa stable key hanya boleh Full Refresh.
+- ARKAS sync lock harus resource-scoped dengan school identity + source table + fiscal year.
+- Existing staging/import row tidak boleh kehilangan first-created `created_at` ketika payload berubah.
+- Histori import wajib membedakan read/write/new/changed/unchanged/removed.
 - Auto-fill peserta KONSUMSI tetap `Employee.source_type = DAPODIK`; participant manual tetap diperbolehkan.
 
 Command verification canonical:
