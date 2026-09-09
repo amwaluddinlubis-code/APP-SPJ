@@ -10,7 +10,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class SpjTemplateRenderPreflight
 {
-    public function __construct(private readonly SpjTemplateService $templates) {}
+    public function __construct(
+        private readonly SpjTemplateService $templates,
+        private readonly SpjGeneratedDocumentValidator $outputs,
+    ) {}
 
     public function assertRenderable(DocumentTemplate $template, SpjPackage $package, School $school): void
     {
@@ -21,9 +24,12 @@ final class SpjTemplateRenderPreflight
 
         $path = $response->getFile()->getPathname();
         try {
-            if (! is_file($path) || filesize($path) === 0) {
-                throw new \RuntimeException('Dokumen hasil generate kosong atau tidak dapat dibuka.');
-            }
+            $this->outputs->assertBinaryResponse(
+                $response,
+                (string) $template->format,
+                'Dokumen '.(string) $template->document_type,
+                (string) $template->document_type,
+            );
         } finally {
             if (is_file($path)) {
                 @unlink($path);
