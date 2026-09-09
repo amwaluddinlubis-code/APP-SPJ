@@ -12,14 +12,22 @@ use App\Services\ArkasDatabaseExplorer;
 use App\Services\ArkasDomainAdapter;
 use App\Services\ArkasGenericImportService;
 use App\Services\ArkasReconciliationService;
+use App\Services\ArkasSourceKeyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class ArkasImporterController
+class ArkasImporterController implements HasMiddleware
 {
-    public function __invoke(Request $request, ArkasDatabaseExplorer $explorer): View
+    /** @return array<int, string> */
+    public static function middleware(): array
+    {
+        return ['active-school', 'active-year'];
+    }
+
+    public function __invoke(Request $request, ArkasDatabaseExplorer $explorer, ArkasSourceKeyResolver $sourceKeys): View
     {
         $source = ArkasSource::query()->where('school_id', session('active_school_id'))->first();
         $profiles = ArkasImportProfile::query()->where('source_table', 'not like', '__%')->latest('source_table')->get();
@@ -73,7 +81,7 @@ class ArkasImporterController
                             ->pluck('payload_hash', 'source_key');
                         $previewDiff = ['new' => 0, 'changed' => 0, 'unchanged' => 0, 'sample' => count($rows)];
                         foreach ($rows as $row) {
-                            $key = $this->sourceKey($row, $effectiveSourceKeyColumn);
+                            $key = $sourceKeys->resolve($row, $effectiveSourceKeyColumn);
                             $payload = json_encode($row, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
                             $hash = hash('sha256', $payload);
                             if (! $staged->has($key)) {
@@ -172,19 +180,5 @@ class ArkasImporterController
         }
 
         return redirect()->route('arkas.importer', ['table' => $profile->source_table])->with('success', "Sinkronisasi {$profile->source_table} selesai: {$run->records_written} baris tersimpan.");
-    }
-
-    /** @param array<string, mixed> $record */
-    private function sourceKey(array $record, ?string $configuredColumn): string
-    {
-        foreach (array_filter([$configuredColumn, 'ID_REF_KODE', 'id_ref_kode', 'ID_RAPBS', 'id_rapbs', 'ID_KAS_UMUM', 'id_kas_umum', 'ID']) as $candidate) {
-            foreach ($record as $key => $value) {
-                if (strcasecmp((string) $key, (string) $candidate) === 0 && filled($value)) {
-                    return (string) $value;
-                }
-            }
-        }
-
-        return hash('sha256', json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
     }
 }
