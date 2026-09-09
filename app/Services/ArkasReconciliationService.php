@@ -10,7 +10,14 @@ use Illuminate\Support\Facades\DB;
 /** Compares a Bridge snapshot with tenant staging without writing either side. */
 class ArkasReconciliationService
 {
-    public function __construct(private readonly ArkasStagingService $staging) {}
+    private readonly ArkasSourceKeyResolver $sourceKeys;
+
+    public function __construct(
+        private readonly ArkasStagingService $staging,
+        ?ArkasSourceKeyResolver $sourceKeys = null,
+    ) {
+        $this->sourceKeys = $sourceKeys ?? new ArkasSourceKeyResolver;
+    }
 
     /** @return array<string, mixed> */
     public function preview(ArkasImportProfile $profile, FiscalYear $year, ArkasSource $source): array
@@ -27,9 +34,10 @@ class ArkasReconciliationService
         $stagedHashes = $staged->pluck('payload_hash', 'source_key');
         $incomingKeys = [];
         $counts = ['new' => 0, 'changed' => 0, 'unchanged' => 0, 'removed' => 0];
+        $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
         foreach ($records as $record) {
             $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
-            $key = $this->sourceKey($record, $profile->source_key_column ?: $preset['source_key_column']);
+            $key = $this->sourceKeys->resolve($record, $sourceKeyColumn);
             $incomingKeys[$key] = true;
             if (! $stagedHashes->has($key)) {
                 $counts['new']++;
@@ -70,19 +78,5 @@ class ArkasReconciliationService
         }
 
         return $errors;
-    }
-
-    /** @param array<string, mixed> $record */
-    private function sourceKey(array $record, ?string $configuredColumn): string
-    {
-        foreach (array_filter([$configuredColumn, 'ID_REF_KODE', 'id_ref_kode', 'ID_RAPBS', 'id_rapbs', 'ID_KAS_NOTA', 'id_kas_nota', 'ID_KAS_UMUM', 'id_kas_umum', 'ID']) as $candidate) {
-            foreach ($record as $key => $value) {
-                if (strcasecmp((string) $key, (string) $candidate) === 0 && filled($value)) {
-                    return (string) $value;
-                }
-            }
-        }
-
-        return hash('sha256', json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
     }
 }
