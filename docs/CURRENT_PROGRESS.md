@@ -8,11 +8,11 @@ Checkpoint kode yang menjadi acuan review saat ini:
 
 ```text
 branch : gui-standardization
-commit : 6aed816a4034c6351498922f6dfdaf74a76d7566
-subject: test: add ARKAS source key regressions to critical suite
+commit : b3aa081c1a16e51ccdf80466877d2398b2b0de3e
+subject: test: verify ARKAS GET tenant isolation at connection boundary
 ```
 
-### P0-08 — Importer ARKAS kanonik: IMPLEMENTED / SOURCE-KEY PASS / TENANT BLOCKER OPEN
+### P0-08 — Importer ARKAS kanonik: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / HARDENING OPEN
 
 Modul importer sudah mempunyai fondasi alur tunggal:
 
@@ -31,47 +31,50 @@ Fitur yang sudah tersedia di source:
 - parent-child staging melalui `parent_source_key` dan `relation_type`;
 - background import melalui queue `operations` bila `ARKAS_SYNC_ASYNC=true`;
 - coordinator runtime `ArkasCanonicalSyncService` untuk dashboard, pemilihan tahun, dan job sinkronisasi utama;
-- source-key resolver bersama `ArkasSourceKeyResolver` yang dipakai Generic Import, Staging, dan Reconciliation.
+- source-key resolver bersama `ArkasSourceKeyResolver` yang dipakai Generic Import, Staging, Reconciliation, dan preview importer.
 
-Blocker source-key hasil review `ceb8df6` **sudah ditutup** pada checkpoint `6aed816`:
+Dua blocker correctness utama hasil review awal sekarang **sudah ditutup**:
 
-- `ArkasGenericImportService` tidak lagi memanggil method `sourceKey()` yang tidak tersedia;
-- configured source key diprioritaskan secara case-insensitive;
-- bila configured key kosong/tidak tersedia, resolver memakai fallback identity ARKAS canonical;
-- bila tidak ada stable identity, fallback terakhir tetap hash payload deterministic;
-- dedup staging, reconciliation preview, dan generic import sekarang memakai resolver yang sama sehingga identitas source tidak berbeda antarjalur.
+1. **Source-key runtime PASS.** `ArkasGenericImportService` tidak lagi memanggil method `sourceKey()` yang tidak tersedia. Resolver bersama memprioritaskan configured key secara case-insensitive, memakai fallback identity ARKAS canonical, lalu hash payload deterministic sebagai fallback terakhir.
+2. **Tenant boundary PASS.** Seluruh action `ArkasImporterController` wajib melewati `active-school` lalu `active-year` sebelum model connection `school` dibaca/ditulis, sementara guard `administrator` tetap dipertahankan oleh route group.
 
 Regression yang sudah menjadi bagian suite `SPJ Critical`:
 
 ```text
 tests/Unit/ArkasSourceKeyResolverTest.php
 tests/Feature/ArkasGenericImportSourceKeyTest.php
+tests/Feature/ArkasImporterTenantBoundaryTest.php
 ```
 
-Regression tersebut membuktikan configured key, fallback canonical, case-insensitive lookup, payload-hash fallback, serta sinkronisasi Generic Import dengan record non-kosong.
+Regression tenant menggunakan dua file SQLite tenant terpisah dan membuktikan:
 
-**Blocker utama yang masih terbuka sebelum READY FOR OPERATOR TEST:** route importer berada pada guard administrator, tetapi belum secara konsisten berada di boundary `active-school` + `active-year`, sementara `ArkasImportProfile` dan `FiscalYear` memakai koneksi tenant `school`. Request importer harus mengaktifkan tenant yang benar sebelum model tenant dibaca/ditulis.
+- semua route importer membawa `administrator`, `active-school`, dan `active-year`;
+- `active-school` dijalankan sebelum `active-year`;
+- GET importer mengaktifkan database sekolah yang benar;
+- profile tenant lain tidak terlihat pada connection aktif;
+- forged profile ID tenant lain pada preview/sync menghasilkan 404;
+- save mapping hanya menulis pada database tenant aktif;
+- fiscal-year ID yang hanya valid di tenant lain ditolak setelah koneksi dipindahkan ke sekolah aktif.
 
-Regression P0-08 yang masih diperlukan:
+CI `SPJ Critical Verification` pada `b3aa081` membuktikan **131 tests / 867 assertions PASS**. Dengan demikian source-key dan tenant activation/isolation Generic Importer adalah **FUNCTIONAL PASS**.
 
-- tenant activation/isolation pada GET, save mapping, preview, dan sync;
-- cross-school/cross-year importer;
-- Upsert, Incremental, dan Full refresh;
-- schema drift;
+P0-08 belum disebut release-ready karena regression/hardening berikut masih terbuka:
+
+- preview full reconciliation harus dibuktikan tidak menulis domain;
+- Upsert deterministic;
+- Incremental deterministic;
+- Full refresh hanya membersihkan scope tenant/fiscal year/domain aktif;
+- schema drift blocking behavior;
 - source kosong;
-- queue/background execution;
-- raw profile tanpa stable key agar tidak menyisakan versi record lama secara diam-diam.
-
-Hardening lanjutan:
-
-- lock staging harus tenant-scoped, bukan hanya profile/table + fiscal year lokal;
-- `created_at` tidak boleh di-reset pada setiap upsert bila dimaksudkan sebagai waktu pertama record dibuat;
-- histori import sebaiknya membedakan read/new/changed/unchanged/removed, bukan hanya jumlah row diproses;
-- profile raw tanpa stable key harus memiliki aturan eksplisit, misalnya wajib full refresh atau wajib stable source key.
+- queue/background execution dengan tenant activation yang benar;
+- raw profile tanpa stable key agar tidak menyisakan versi record lama secara diam-diam;
+- lock staging/import harus tenant-scoped;
+- `created_at` existing row tidak boleh di-reset bila dimaksudkan sebagai waktu pertama dibuat;
+- histori import sebaiknya membedakan read/new/changed/unchanged/removed.
 
 Panduan operator/teknis: `docs/ARKAS_IMPORTER.md`.
 
-Catatan: mode Incremental saat ini menyaring hasil snapshot Bridge di aplikasi. Delta fetch langsung dari database ARKAS belum tersedia pada Bridge dan tetap menjadi optimasi berikutnya, bukan blocker correctness utama.
+Catatan: mode Incremental saat ini menyaring hasil snapshot Bridge di aplikasi. Delta fetch langsung dari database ARKAS belum tersedia pada Bridge dan tetap menjadi optimasi berikutnya, bukan blocker correctness utama selama hasil sinkronisasi deterministic.
 
 ## Baseline yang sudah ditutup
 
@@ -125,7 +128,7 @@ Aksi sensitif tetap administrator-only, termasuk:
 
 Behavior middleware juga diuji: VIEWER ditolak 403 pada mutation guard, OPERATOR/ADMIN lolos pada mutation normal, dan hanya ADMIN yang lolos administrator guard.
 
-Catatan: status PASS authorization SPJ tidak otomatis menutup P0-08. Generic ARKAS Importer tetap harus diregresikan pada tenant context-nya sendiri.
+Generic ARKAS Importer tetap administrator-only dan sekarang juga diregresikan untuk active-school + active-year sebelum tenant access.
 
 ### P0-05 — Safe sync + reconciliation: FUNCTIONAL PASS
 
@@ -151,9 +154,9 @@ resources/views/transactions/partials/detail/source-reconciliation.blade.php
 tests/Feature/SpjSafeSyncReconciliationHardeningTest.php
 ```
 
-`SafeArkasSynchronizationTest` tetap menjadi regression dasar adapter transaksi, sedangkan `SpjSafeSyncReconciliationHardeningTest` menjadi release-safety contract untuk overlay, missing/returning, item-level source changes, FINAL locking, snapshot/diff, dan panel operator. Keduanya tidak menggantikan regression khusus Generic Importer pada P0-08.
+`SafeArkasSynchronizationTest` tetap menjadi regression dasar adapter transaksi, sedangkan `SpjSafeSyncReconciliationHardeningTest` menjadi release-safety contract untuk overlay, missing/returning, item-level source changes, FINAL locking, snapshot/diff, dan panel operator. Generic Importer mempunyai regression tambahan sendiri pada P0-08.
 
-### P0-06 — Tenant/context isolation: FUNCTIONAL PASS untuk resource SPJ
+### P0-06 — Tenant/context isolation: FUNCTIONAL PASS untuk resource SPJ + Generic Importer boundary
 
 Boundary yang dikunci:
 
@@ -165,6 +168,8 @@ Sekolah + Tahun Anggaran + Sumber Dana
 
 Previous/next Paket juga telah diregresikan agar tidak keluar dari sumber dana aktif.
 
+Generic Importer sekarang mempunyai boundary tersendiri: `administrator → active-school → active-year → connection school`. Cross-school profile access, cross-year stale context, dan mapping write isolation sudah diregresikan.
+
 Test utama:
 
 ```text
@@ -172,24 +177,23 @@ tests/Feature/SpjAuthorizationContextHardeningTest.php
 tests/Feature/SpjRoleAuthorizationMiddlewareTest.php
 tests/Feature/SpjSchoolIsolationTest.php
 tests/Feature/SpjPackageNavigationContextTest.php
+tests/Feature/ArkasImporterTenantBoundaryTest.php
 ```
-
-Status ini tidak boleh dipakai untuk mengasumsikan route Generic Importer sudah benar; gap importer dicatat terpisah di P0-08.
 
 ### CI checkpoint terbaru
 
-GitHub Actions `SPJ Critical Verification` pada commit `6aed816a4034c6351498922f6dfdaf74a76d7566` membuktikan:
+GitHub Actions `SPJ Critical Verification` pada commit `b3aa081c1a16e51ccdf80466877d2398b2b0de3e` membuktikan:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 129 tests / 823 assertions
+SPJ Critical PHPUnit   PASS — 131 tests / 867 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
 
-Dua regression source-key baru PASS di suite critical. Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`; workflow dapat berstatus success karena repository-wide Pint masih advisory/`continue-on-error`.
+Source-key dan tenant-boundary regression Generic ARKAS Importer PASS di suite critical. Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`; workflow dapat berstatus success karena repository-wide Pint masih advisory/`continue-on-error`.
 
-Dengan demikian blocker runtime source-key **FUNCTIONAL PASS**, tetapi P0-08 belum boleh disebut operator-ready sampai tenant activation/isolation importer ditutup.
+Dengan demikian blocker runtime source-key dan tenant boundary **FUNCTIONAL PASS**. Generic Importer tetap mempunyai regression/hardening lanjutan sebelum dinilai release-ready.
 
 ---
 
@@ -309,7 +313,7 @@ Mobile/responsive QA penuh sengaja **dikeluarkan dari P0–P2 aktif** karena pen
 - NUMBERED/FINAL terkunci.
 - Preview/download tidak mengalokasikan nomor.
 - Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
-- Generic ARKAS Importer yang membaca model tenant harus mengaktifkan School + Fiscal Year yang benar sebelum query/write tenant dilakukan.
+- Generic ARKAS Importer yang membaca model tenant wajib melewati `administrator → active-school → active-year` sebelum query/write connection `school`.
 - Auto-fill peserta `KONSUMSI` tetap mengikuti keputusan desain Dapodik-only sampai ada keputusan domain baru.
 - Database sekolah: `{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite`.
 
