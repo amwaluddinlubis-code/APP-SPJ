@@ -2,9 +2,9 @@
 
 Terakhir diperbarui: **2026-09-10**
 
-Dokumen ini memuat kondisi yang masih relevan untuk release pada branch `gui-standardization`. Item yang sudah ditutup diringkas sebagai baseline, bukan dipelihara sebagai backlog aktif.
+Dokumen ini memuat kondisi yang masih relevan untuk release pada branch `gui-standardization`. Item yang sudah ditutup diringkas sebagai baseline, bukan dipelihara sebagai backlog aktif. Status P0-08 di dokumen ini sudah disinkronkan setelah regression tenant boundary PASS; tenant activation/isolation bukan lagi blocker aktif.
 
-Checkpoint kode yang menjadi acuan review saat ini:
+Checkpoint correctness terakhir yang menjadi acuan status P0-08:
 
 ```text
 branch : gui-standardization
@@ -71,6 +71,8 @@ P0-08 belum disebut release-ready karena regression/hardening berikut masih terb
 - lock staging/import harus tenant-scoped;
 - `created_at` existing row tidak boleh di-reset bila dimaksudkan sebagai waktu pertama dibuat;
 - histori import sebaiknya membedakan read/new/changed/unchanged/removed.
+
+Prioritas P0-08 berikutnya adalah regression **Upsert / Incremental / Full Refresh**, lalu raw stable-key policy, schema drift/source kosong, queue/background, dan hardening concurrency/timestamp. Tenant boundary tidak kembali menjadi TODO kecuali ada regression baru yang membuktikan kebocoran context.
 
 Panduan operator/teknis: `docs/ARKAS_IMPORTER.md`.
 
