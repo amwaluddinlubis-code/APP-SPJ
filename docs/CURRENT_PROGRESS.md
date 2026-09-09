@@ -8,13 +8,13 @@ Checkpoint correctness P0-08 terbaru:
 
 ```text
 branch : gui-standardization
-commit : 50794b4872d3be273ee73fbaccdd438fcca4569d
-subject: test: prove ARKAS upsert preserves absent rows
+commit : 56aefd25a50489151b77a155bf72b21fbebfd9d9
+subject: test: keep ARKAS route guard assertion session-safe
 ```
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / HARDENING OPEN.**
+**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING OPEN.**
 
 Alur canonical:
 
@@ -33,7 +33,12 @@ Correctness yang sudah FUNCTIONAL PASS:
 - stale fiscal-year ID tenant lain ditolak setelah tenant sekolah aktif dipilih;
 - **Upsert PASS:** stable key yang sama di-update, key baru ditambah, dan record lama yang tidak ada pada snapshot berikutnya tidak disapu;
 - **Incremental PASS:** hanya record dengan source-updated timestamp setelah `last_synced_at` yang diproses; record stale tidak menimpa staging;
-- **Full Refresh PASS:** staging hanya diganti untuk `profile_id + fiscal_year_id` aktif dan domain RKAS hanya diganti pada fiscal year aktif; staging profile lain dan fiscal year lain tetap utuh.
+- **Full Refresh PASS:** staging hanya diganti untuk `profile_id + fiscal_year_id` aktif dan domain RKAS hanya diganti pada fiscal year aktif; staging profile lain dan fiscal year lain tetap utuh;
+- **Preview reconciliation read-only PASS:** preview tidak menulis staging, domain target, maupun histori import;
+- **Raw stable-key policy PASS:** raw Upsert/Incremental wajib mempunyai effective stable source key; raw tanpa stable key hanya diperbolehkan pada Full Refresh;
+- **Source kosong PASS:** Upsert/Incremental mempertahankan staging lama; Full Refresh membersihkan hanya scope profile/year/domain aktif dan menjaga tahun lain;
+- **Schema drift blocking PASS:** source key, incremental timestamp, atau mapped source column yang hilang memblokir sync sebelum importer berjalan;
+- **Queue/background tenant activation PASS:** job mengaktifkan sekolah yang benar sebelum membaca `ArkasImportProfile`/`FiscalYear`, lalu menerapkan configuration/schema guard yang sama.
 
 Regression canonical P0-08 yang sudah masuk `SPJ Critical`:
 
@@ -41,15 +46,18 @@ Regression canonical P0-08 yang sudah masuk `SPJ Critical`:
 tests/Unit/ArkasSourceKeyResolverTest.php
 tests/Feature/ArkasGenericImportSourceKeyTest.php
 tests/Feature/ArkasGenericImportSyncModeTest.php
+tests/Feature/ArkasGenericImportReleaseSafetyTest.php
 tests/Feature/ArkasImporterTenantBoundaryTest.php
+tests/Feature/ArkasImporterRuntimeGuardTest.php
+tests/Feature/ArkasImportQueueTenantTest.php
 ```
 
-CI `SPJ Critical Verification` pada `50794b4872d3be273ee73fbaccdd438fcca4569d`:
+CI `SPJ Critical Verification` pada `56aefd25a50489151b77a155bf72b21fbebfd9d9`:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 134 tests / 896 assertions
+SPJ Critical PHPUnit   PASS — 141 tests / 954 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
 
@@ -57,17 +65,13 @@ Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`.
 
 ### P0-08 yang masih terbuka
 
-- preview full reconciliation harus dibuktikan read-only terhadap domain target;
-- raw profile tanpa stable key perlu policy eksplisit agar perubahan payload tidak meninggalkan versi record lama pada Upsert/Incremental;
-- source kosong harus diregresikan untuk ketiga mode yang relevan;
-- schema drift harus diregresikan, termasuk hilangnya source-key/mandatory mapping;
-- queue/background import harus membuktikan tenant diaktifkan sebelum profile/fiscal year tenant dibaca;
-- staging/import lock harus tenant-scoped, bukan hanya profile/year lokal;
-- `created_at` existing staging row tidak boleh di-reset bila bermakna first-created timestamp;
+- staging/import lock harus tenant-scoped, bukan hanya profile/year atau source-table/year lokal;
+- `created_at` existing staging/import row tidak boleh di-reset bila bermakna first-created timestamp;
 - histori import perlu membedakan read/new/changed/unchanged/removed, bukan sekadar processed count;
+- `records_written` saat ini masih berarti record yang diproses, belum actual changed-row metric;
 - Bridge-side incremental delta fetch tetap optimasi setelah correctness selesai; implementasi sekarang membaca snapshot lalu memfilter di aplikasi.
 
-**Generic Importer belum release-ready.** Source-key, tenant boundary, dan tiga mode sinkronisasi utama sudah PASS, tetapi raw/source-empty/schema-drift/queue dan hardening di atas masih harus ditutup sebelum status dinaikkan.
+**Generic Importer belum release-ready / belum READY FOR OPERATOR TEST.** Seluruh release-guard behavior yang sebelumnya terbuka (preview/raw/source-empty/schema-drift/queue) sudah PASS, tetapi hardening concurrency/timestamp/import-metrics di atas masih harus ditutup agar histori dan eksekusi lintas tenant benar-benar aman untuk operator test.
 
 Panduan teknis: `docs/ARKAS_IMPORTER.md`.
 
@@ -198,6 +202,7 @@ Mobile/responsive QA penuh bukan release blocker saat ini dan tetap berada pada 
 - Preview/download tidak mengalokasikan nomor.
 - Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
 - Generic ARKAS Importer wajib melewati `administrator -> active-school -> active-year` sebelum query/write connection `school`.
+- Raw Generic Importer pada Upsert/Incremental wajib mempunyai stable source key; raw tanpa stable key hanya boleh Full Refresh.
 - Auto-fill peserta KONSUMSI tetap `Employee.source_type = DAPODIK`; participant manual tetap diperbolehkan.
 
 Command verification canonical:
