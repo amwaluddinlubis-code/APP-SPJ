@@ -18,6 +18,7 @@
             <file>tests/Feature/ArkasGenericImportSourceKeyTest.php</file>
             <file>tests/Feature/ArkasGenericImportSyncModeTest.php</file>
             <file>tests/Feature/ArkasGenericImportReleaseSafetyTest.php</file>
+            <file>tests/Feature/ArkasImportHardeningTest.php</file>
             <file>tests/Feature/ArkasImporterTenantBoundaryTest.php</file>
             <file>tests/Feature/ArkasImporterRuntimeGuardTest.php</file>
             <file>tests/Feature/ArkasImportQueueTenantTest.php</file>
