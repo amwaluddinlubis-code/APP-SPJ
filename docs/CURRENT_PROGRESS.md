@@ -1,8 +1,32 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-08**
+Terakhir diperbarui: **2026-09-10**
 
 Dokumen ini memuat kondisi yang masih relevan untuk release pada branch `gui-standardization`. Item yang sudah ditutup diringkas sebagai baseline, bukan dipelihara sebagai backlog aktif.
+
+### P0-08 - Importer ARKAS kanonik: IMPLEMENTED / READY FOR OPERATOR TEST
+
+Modul importer sekarang memakai alur tunggal:
+
+```text
+Bridge -> staging -> mapping -> reconciliation -> domain adapter
+```
+
+Fitur yang tersedia:
+
+- preset mapping dan mapping awal otomatis berdasarkan nama kolom;
+- validasi kunci, peran kolom, dan mode incremental;
+- preview rekonsiliasi penuh dengan status Baru/Berubah/Tetap/Hilang;
+- histori 10 import terakhir;
+- mode Incremental, Upsert, dan Full refresh;
+- schema drift warning berdasarkan snapshot daftar kolom;
+- parent-child staging melalui `parent_source_key` dan `relation_type`;
+- background import melalui queue `operations` bila `ARKAS_SYNC_ASYNC=true`;
+- coordinator runtime baru `ArkasCanonicalSyncService` untuk dashboard, pemilihan tahun, dan job sinkronisasi utama.
+
+Panduan operator: `docs/ARKAS_IMPORTER.md`.
+
+Catatan: mode Incremental saat ini menyaring hasil snapshot Bridge di aplikasi. Delta fetch langsung dari database ARKAS belum tersedia pada Bridge dan menjadi optimasi berikutnya.
 
 ## Baseline yang sudah ditutup
 

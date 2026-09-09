@@ -151,6 +151,19 @@ class SiplahPurchaseMvpTest extends TestCase
             'payment_method' => 'siplah', 'vendor_name' => 'Toko SiPLah Nusantara',
             'siplah_order_number' => 'SIPL-2026-12345', 'invoice_number' => 'INV-88231',
             'invoice_date' => '2026-01-14', 'payment_reference' => 'PAY-7788',
+            'siplah_metadata' => [
+                'siplahResponse' => [
+                    'marketplace_displayname' => 'SIPLah Toko Uji',
+                    'transaction_id' => 'transaksi-uji-1',
+                    'merchant_address' => 'Jalan Uji Nomor 1',
+                    'merchant_npwp' => '01.234.567.8-999.000',
+                    'is_dq_passed' => true,
+                ],
+            ],
+            'siplah_marketplace' => 'SIPLah Toko Uji',
+            'siplah_transaction_id' => 'transaksi-uji-1',
+            'siplah_merchant_address' => 'Jalan Uji Nomor 1',
+            'siplah_dq_passed' => true,
         ]);
         $item = $transaction->items()->create([
             'description' => 'Kertas A4', 'item_description' => 'Kertas A4', 'quantity' => 1,
@@ -169,6 +182,12 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertSame('INV-88231', $values['SIPLAH_NOMOR_INVOICE']);
         $this->assertSame('14 Januari 2026', $values['SIPLAH_TANGGAL_INVOICE']);
         $this->assertSame('PAY-7788', $values['SIPLAH_REFERENSI_BAYAR']);
+        $this->assertSame('SIPLah Toko Uji', $values['SIPLAH_MARKETPLACE']);
+        $this->assertSame('transaksi-uji-1', $values['SIPLAH_TRANSACTION_ID']);
+        $this->assertSame('Jalan Uji Nomor 1', $values['SIPLAH_ALAMAT_PENYEDIA']);
+        $this->assertSame('01.234.567.8-999.000', $values['SIPLAH_NPWP_PENYEDIA']);
+        $this->assertSame('Lulus', $values['SIPLAH_STATUS_DQ']);
+        $this->assertSame('Pemetaan lengkap', $values['SIPLAH_STATUS_MAPPING']);
         $this->assertSame('017/SP/BOS/IX/2026', $values['NOMOR_PESANAN']);
         $this->assertNotSame($values['SIPLAH_NOMOR_PESANAN'], $values['NOMOR_PESANAN']);
     }

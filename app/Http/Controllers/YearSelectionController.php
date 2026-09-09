@@ -6,7 +6,7 @@ use App\Models\ArkasSource;
 use App\Models\FiscalYear;
 use App\Models\School;
 use App\Services\ArkasBridgeClient;
-use App\Services\ArkasFullSynchronizationService;
+use App\Services\ArkasCanonicalSyncService;
 use App\Services\SchoolDatabaseManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -77,7 +77,7 @@ class YearSelectionController extends Controller
         return redirect()->route('dashboard');
     }
 
-    public function synchronize(Request $request, SchoolDatabaseManager $databases, ArkasFullSynchronizationService $synchronizer): RedirectResponse
+    public function synchronize(Request $request, SchoolDatabaseManager $databases, ArkasCanonicalSyncService $synchronizer): RedirectResponse
     {
         abort_unless($request->user()->isAdministrator() || $request->user()->school_id === (int) session('active_school_id'), 403);
 

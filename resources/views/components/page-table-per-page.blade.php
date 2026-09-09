@@ -13,7 +13,7 @@
     <label class="font-semibold" style="color: var(--ui-fg-muted)">{{ $label }}</label>
     <select
         aria-label="{{ $label }} per halaman"
-        onchange="const u=new URL(window.location); u.searchParams.set('{{ $name }}', this.value); u.searchParams.delete('page'); window.location=u.toString()"
+        onchange="try{const u=new window.URL(window.location.href);u.searchParams.set('{{ $name }}',this.value);u.searchParams.delete('page');window.location.href=u.toString()}catch(e){window.location.reload()}"
         class="ui-select !min-h-9 !w-auto !py-1.5 !text-xs"
     >
         @foreach($options as $opt)

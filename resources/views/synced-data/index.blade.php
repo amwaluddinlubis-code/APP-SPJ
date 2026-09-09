@@ -14,26 +14,23 @@
     @endphp
 
     <div class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-sky-200"><span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/15 text-white ring-1 ring-white/20">DB</span> PUSAT DATA SEKOLAH</div>
-                        <h1 class="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Data Hasil Sinkron</h1>
-                        <p class="mt-1 text-base text-indigo-100">Data baca-saja dari ARKAS dan hasil pengolahan SPJ pada sekolah serta tahun aktif.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base font-medium text-white">{{ number_format($totalRows, 0, ',', '.') }} total baris</span>
-                        @if($type !== 'overview')<a href="{{ route('synced-data.index') }}" class="rounded-lg bg-indigo-600 px-3.5 py-2 text-base font-semibold text-white shadow transition hover:bg-indigo-700">Ringkasan Data</a>@endif
-                    </div>
-                </div>
-            </div>
+        <x-page-header
+            title="Data Hasil Sinkron"
+            subtitle="Data baca-saja dari ARKAS dan hasil pengolahan SPJ pada sekolah serta tahun aktif."
+            kicker="Pusat Data Sekolah"
+            icon="database"
+        >
+            <x-slot:actions>
+                <span class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base font-medium text-white">{{ number_format($totalRows, 0, ',', '.') }} total baris</span>
+                @if($type !== 'overview')<a href="{{ route('synced-data.index') }}" class="rounded-lg bg-indigo-600 px-3.5 py-2 text-base font-semibold text-white shadow transition hover:bg-indigo-700">Ringkasan Data</a>@endif
+            </x-slot:actions>
+
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <div class="px-5 py-3.5"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Kelompok Tabel</p><p class="mt-1 text-lg font-bold text-slate-800">{{ $groups->count() }} kelompok</p></div>
                 <div class="px-5 py-3.5"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tabel Terdaftar</p><p class="mt-1 text-lg font-bold text-slate-800">{{ count($tables) }} tabel</p></div>
                 <div class="px-5 py-3.5"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Mode Tampilan</p><p class="mt-1 text-lg font-bold text-emerald-700">Baca-saja</p></div>
             </div>
-        </section>
+        </x-page-header>
 
         <nav class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3 shadow" aria-label="Navigasi kelompok data">
             <div class="flex flex-wrap gap-2">

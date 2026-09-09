@@ -192,6 +192,8 @@ class SpjTransactionDetailsService
             $item->participants()->create([
                 'name' => trim($participant['name']),
                 'position' => blank($participant['position'] ?? null) ? null : trim($participant['position']),
+                'nip' => blank($participant['nip'] ?? null) ? null : trim($participant['nip']),
+                'nuptk' => blank($participant['nuptk'] ?? null) ? null : trim($participant['nuptk']),
                 'portions' => (float) ($participant['portions'] ?? 1),
                 'sort_order' => $sortOrder,
             ]);

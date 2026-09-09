@@ -1,8 +1,8 @@
-@props(['paginator', 'noun' => 'data'])
+@props(['paginator', 'noun' => 'data', 'compact' => false])
 
 <div {{ $attributes->class(['flex flex-col gap-3 border-t px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between']) }}
     style="border-color: var(--ui-line); background: var(--ui-surface-soft)" data-pagination="server">
-    <span style="color: var(--ui-fg-muted)">
+    <span class="{{ $compact ? 'hidden' : '' }}" style="color: var(--ui-fg-muted)">
         Menampilkan
         <span class="font-semibold"
             style="color: var(--ui-fg-strong)">{{ $paginator->firstItem() ?: 0 }}–{{ $paginator->lastItem() ?: 0 }}</span>
@@ -12,7 +12,6 @@
         {{ $noun }}
     </span>
 
-    @if ($paginator->hasPages())
-        <div class="w-full sm:w-auto [&>nav]:text-sm">{{ $paginator->links() }}</div>
-    @endif
+
+    <div class="w-full sm:w-auto [&>nav]:text-sm">{{ $paginator->links() }}</div>
 </div>

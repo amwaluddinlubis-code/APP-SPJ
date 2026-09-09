@@ -31,6 +31,7 @@ internal static class Program
             parsed.TryGetValue("year", out var year);
             parsed.TryGetValue("table", out var table);
             parsed.TryGetValue("fund-source", out var fundSource);
+            parsed.TryGetValue("limit", out var limitText);
 
             dbPath = Path.GetFullPath(dbPath);
             if (!File.Exists(dbPath))
@@ -78,6 +79,20 @@ internal static class Program
                             return Fail("Command schema membutuhkan --table.");
                         }
                         WriteSchema(connection, table.Trim());
+                        break;
+                    case "tables":
+                        WriteTables(connection);
+                        break;
+                    case "rows":
+                        if (string.IsNullOrWhiteSpace(table))
+                        {
+                            return Fail("Command rows membutuhkan --table.");
+                        }
+                        if (!int.TryParse(limitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit))
+                        {
+                            limit = 10000;
+                        }
+                        WriteRows(connection, table.Trim(), year, fundSource, limit);
                         break;
                     case "profile":
                         if (string.IsNullOrWhiteSpace(year))
@@ -521,10 +536,88 @@ LIMIT 1;";
         }
     }
 
+    private static void WriteTables(SqliteConnection con)
+    {
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"SELECT name
+FROM sqlite_master
+WHERE type = 'table'
+  AND name NOT LIKE 'sqlite_%'
+ORDER BY name;";
+
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            Console.WriteLine("TABLE|" + Clean(Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? ""));
+        }
+    }
+
+    private static void WriteRows(SqliteConnection con, string table, string? year, string? fundSource, int limit)
+    {
+        Dictionary<string, string> columns = ReadTableColumns(con, table);
+        if (columns.Count == 0)
+        {
+            throw new InvalidOperationException("Tabel '" + table + "' tidak ditemukan atau tidak memiliki kolom.");
+        }
+
+        if (limit < 1 || limit > 100000)
+        {
+            throw new InvalidOperationException("Parameter limit harus berada di antara 1 dan 100000.");
+        }
+
+        Console.WriteLine("SCHEMA|" + table + "|1");
+        Console.WriteLine("FIELDS|" + string.Join("|", columns.Keys.Select(Clean)));
+
+        string? yearColumn = FindColumn(columns, "tahun_anggaran", "tahun", "fiscal_year", "year");
+        string? fundSourceColumn = FindColumn(columns, "id_ref_sumber_dana", "fund_source_id", "id_sumber_dana");
+        var predicates = new List<string>();
+
+        using var cmd = con.CreateCommand();
+        if (!string.IsNullOrWhiteSpace(year) && yearColumn != null)
+        {
+            predicates.Add("CAST(" + QuoteIdentifier(yearColumn) + " AS TEXT) = $year");
+            cmd.Parameters.AddWithValue("$year", year.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(fundSource) && fundSourceColumn != null)
+        {
+            predicates.Add("CAST(" + QuoteIdentifier(fundSourceColumn) + " AS TEXT) = $fund_source");
+            cmd.Parameters.AddWithValue("$fund_source", fundSource.Trim());
+        }
+
+        string where = predicates.Count > 0 ? " WHERE " + string.Join(" AND ", predicates) : "";
+        cmd.CommandText = "SELECT " + string.Join(", ", columns.Keys.Select(QuoteIdentifier))
+            + " FROM " + QuoteIdentifier(table) + where + " LIMIT " + limit.ToString(CultureInfo.InvariantCulture) + ";";
+
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            string[] row = new string[reader.FieldCount];
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                object value = reader.GetValue(i);
+                row[i] = value switch
+                {
+                    double number => number.ToString("0.################", CultureInfo.InvariantCulture),
+                    float number => number.ToString("0.################", CultureInfo.InvariantCulture),
+                    decimal number => number.ToString(CultureInfo.InvariantCulture),
+                    _ => Clean(Convert.ToString(value, CultureInfo.InvariantCulture) ?? "")
+                };
+            }
+
+            Console.WriteLine("DATA|" + string.Join("|", row));
+        }
+    }
+
     private static void WriteRkas(SqliteConnection con, string year, string? fundSource)
     {
+        Dictionary<string, string> rapbsColumns = ReadTableColumns(con, "rapbs");
+        string? createdAtColumn = FindColumn(rapbsColumns, "create_date", "created_at", "tanggal_buat", "tgl_buat");
+        string? lastUpdatedAtColumn = FindColumn(rapbsColumns, "last_update", "updated_at", "tanggal_update", "tgl_update");
+        string createdAtExpression = createdAtColumn == null ? "''" : "COALESCE(r." + QuoteIdentifier(createdAtColumn) + ", '')";
+        string lastUpdatedAtExpression = lastUpdatedAtColumn == null ? "''" : "COALESCE(r." + QuoteIdentifier(lastUpdatedAtColumn) + ", '')";
+
         Console.WriteLine("SCHEMA|RKAS|2");
-        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_RAPBS|ID_ANGGARAN|ID_REF_KODE|KODE_KEGIATAN|NAMA_KEGIATAN|KODE_REKENING|ID_BARANG|URAIAN|SATUAN|HARGA_SATUAN|VOL_TW1|VOL_TW2|VOL_TW3|VOL_TW4|TW_1|TW_2|TW_3|TW_4|VOLUME_TOTAL|JUMLAH");
+        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_RAPBS|ID_ANGGARAN|ID_REF_KODE|KODE_KEGIATAN|NAMA_KEGIATAN|KODE_REKENING|ID_BARANG|URAIAN|SATUAN|HARGA_SATUAN|VOL_TW1|VOL_TW2|VOL_TW3|VOL_TW4|TW_1|TW_2|TW_3|TW_4|VOLUME_TOTAL|JUMLAH|CREATE_DATE|LAST_UPDATE");
 
         string? anggaranSourceColumn = FindColumn(ReadTableColumns(con, "anggaran"), "id_ref_sumber_dana");
         string sourceExpression = anggaranSourceColumn == null
@@ -592,7 +685,9 @@ SELECT
     CASE WHEN COALESCE(p.has_triwulan,0) = 1 THEN COALESCE(p.tw3_direct,0) ELSE COALESCE(p.tw3_month,0) END,
     CASE WHEN COALESCE(p.has_triwulan,0) = 1 THEN COALESCE(p.tw4_direct,0) ELSE COALESCE(p.tw4_month,0) END,
     COALESCE(r.volume,0),
-    COALESCE(r.jumlah,0)
+    COALESCE(r.jumlah,0),
+    " + createdAtExpression + @",
+    " + lastUpdatedAtExpression + @"
 FROM rapbs r
 INNER JOIN latest_anggaran a ON a.id_anggaran = r.id_anggaran AND a.rn = 1
 LEFT JOIN (
@@ -611,8 +706,8 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            string[] row = new string[21];
-            for (int i = 0; i < 21; i++)
+            string[] row = new string[23];
+            for (int i = 0; i < 23; i++)
             {
                 object val = reader.GetValue(i);
                 string strVal = val switch
@@ -642,9 +737,10 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
     private static void WriteBku(SqliteConnection con, string year, string? fundSource)
     {
         Console.WriteLine("SCHEMA|BKU|1");
-        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_KAS_UMUM|ID_KAS_NOTA|ID_RAPBS_PERIODE|ID_RAPBS|ID_ANGGARAN|ID_REF_BKU|PARENT_ID_KAS_UMUM|TANGGAL_TRANSAKSI|NO_BUKTI|KODE_REKENING|URAIAN|URAIAN_PAJAK|VOLUME|JUMLAH|STATUS_BKU|KODE_BKU|REK_BKU|KATEGORI_BKU|IS_SPJ|IS_PPN|IS_PPH21|IS_PPH22|IS_PPH23|IS_PPH4|IS_SSPD|TANGGAL_NOTA|NO_NOTA|NAMA_TOKO|ALAMAT_TOKO|NO_TELP_TOKO|IS_BADAN_USAHA|NPWP_REKANAN|TOTAL_NOTA|HAS_PPN_NOTA|HAS_PPH22_NOTA|IS_SIPLAH|CREATE_DATE|LAST_UPDATE");
+        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_KAS_UMUM|ID_KAS_NOTA|ID_RAPBS_PERIODE|ID_RAPBS|ID_ANGGARAN|ID_REF_BKU|PARENT_ID_KAS_UMUM|TANGGAL_TRANSAKSI|NO_BUKTI|KODE_REKENING|URAIAN|URAIAN_PAJAK|VOLUME|JUMLAH|STATUS_BKU|KODE_BKU|REK_BKU|KATEGORI_BKU|IS_SPJ|IS_PPN|IS_PPH21|IS_PPH22|IS_PPH23|IS_PPH4|IS_SSPD|TANGGAL_NOTA|NO_NOTA|NAMA_TOKO|ALAMAT_TOKO|NO_TELP_TOKO|IS_BADAN_USAHA|NPWP_REKANAN|TOTAL_NOTA|HAS_PPN_NOTA|HAS_PPH22_NOTA|IS_SIPLAH|DETAILS_JSON_HEX|CREATE_DATE|LAST_UPDATE");
 
         string? anggaranSourceColumn = FindColumn(ReadTableColumns(con, "anggaran"), "id_ref_sumber_dana");
+        string? notaDetailsColumn = FindColumn(ReadTableColumns(con, "kas_umum_nota"), "details");
         string sourceExpression = anggaranSourceColumn == null
             ? "$fund_source"
             : "a." + QuoteIdentifier(anggaranSourceColumn);
@@ -758,6 +854,7 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
     COALESCE(n.has_ppn,0),
     COALESCE(n.has_pph_22,0),
     COALESCE(n.is_beli_di_siplah,0),
+    " + (notaDetailsColumn == null ? "''" : "hex(CAST(COALESCE(n." + QuoteIdentifier(notaDetailsColumn) + ",'') AS BLOB))") + @",
     COALESCE(k.create_date,''),
     COALESCE(k.last_update,'')
 FROM kas_umum k

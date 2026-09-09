@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
 use App\Models\Transaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -68,35 +67,10 @@ class TransactionController extends Controller
         ]);
         $headerVisual = $this->headerVisual($transaction);
         $paymentMethod = $this->normalizePaymentMethod($transaction->payment_method, $transaction);
-        $employmentStatusId = static function (Employee $employee): int {
-            $statusId = $employee->payload['status_kepegawaian_id']
-                ?? $employee->payload['STATUS_KEPEGAWAIAN_ID']
-                ?? null;
 
-            return is_numeric($statusId) ? (int) $statusId : PHP_INT_MAX;
-        };
-        $dapodikEmployees = Employee::query()->where('is_active', true)
-            ->orderBy('name')->get(['id', 'name', 'nip', 'nuptk', 'position', 'staff_type', 'source_type', 'payload'])
-            ->sortBy(fn (Employee $employee) => sprintf(
-                '%s-%d-%d',
-                mb_strtolower(trim($employee->name)),
-                $employee->source_type === 'DAPODIK' ? 0 : 1,
-                filled($employee->nuptk) ? 0 : 1
-            ))
-            // Satu orang dapat berasal dari Dapodik, PTK, atau ARKAS.
-            // Rekaman dengan nama sama hanya ditampilkan sekali.
-            ->unique(fn (Employee $employee) => mb_strtolower(trim($employee->name)))
-            ->sortBy(fn (Employee $employee) => sprintf(
-                '%010d-%s',
-                $employmentStatusId($employee),
-                mb_strtolower(trim($employee->name))
-            ))
-            ->values();
-        $dapodikTeachers = $dapodikEmployees
-            ->filter(fn (Employee $employee): bool => strtoupper(trim((string) $employee->source_type)) === 'DAPODIK')
-            ->values();
-
-        return view('transactions.show', compact('transaction', 'headerVisual', 'paymentMethod', 'dapodikEmployees', 'dapodikTeachers'));
+        // Catatan: daftar pegawai sengaja tidak dimuat di sini. Data pegawai
+        // hanya dibutuhkan di modul SPJ, bukan di detail transaksi.
+        return view('transactions.show', compact('transaction', 'headerVisual', 'paymentMethod'));
     }
 
     /** Selects a local header visual from the SPJ category, account, and description. */

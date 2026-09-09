@@ -147,6 +147,54 @@ class SafeArkasSynchronizationTest extends TestCase
         $this->assertSame('562500.00', $transaction->net_amount);
     }
 
+    public function test_siplah_details_are_normalized_to_transaction_and_item_metadata(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        $year = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $service = new ArkasSynchronizationServiceV2(Mockery::mock(ArkasBridgeClient::class));
+        $method = new ReflectionMethod($service, 'saveBkuAndTransactions');
+        $details = [
+            'siplahResponse' => [
+                'transaction_id' => 'ladang~6228563',
+                'invoice_number' => '6228563/INV/PO67E04A8A6481F',
+                'marketplace_displayname' => 'SIPLah Toko Ladang',
+                'merchant' => 'Ud. Putra Gemilang',
+                'merchant_address' => 'Desa Dalan Lidang',
+                'merchant_npwp' => '099904443118000',
+                'payment_date' => '2025-03-26T13:55:43+07:00',
+                'is_dq_passed' => true,
+                'items' => [[
+                    'rapbs_id' => 'R-1', 'rkas_item_code' => '01.200',
+                    'rkas_item_name' => 'Kertas HVS Folio', 'siplah_item_name' => 'Kertas HVS F4',
+                    'siplah_item_mpid' => '2972278', 'item_mapped_quantity' => 10,
+                    'quantity_received' => 10, 'unit_item_ppn' => 6442,
+                    'unit_item_dpp' => 58558, 'unit_item_price' => 65000,
+                ]],
+            ],
+        ];
+        $record = $this->sourceRecord(650000) + [
+            'ID_RAPBS' => 'R-1',
+            'DETAILS_JSON_HEX' => bin2hex(json_encode($details, JSON_THROW_ON_ERROR)),
+        ];
+        $record['NAMA_TOKO'] = '';
+        $record['NPWP_REKANAN'] = '';
+
+        $method->invoke($service, $year, [$record], $this->createSyncRun($year));
+
+        $transaction = Transaction::query()->with('items')->firstOrFail();
+        $item = $transaction->items->firstOrFail();
+        $this->assertSame('ladang~6228563', $transaction->siplah_transaction_id);
+        $this->assertSame('SIPLah Toko Ladang', $transaction->siplah_marketplace);
+        $this->assertSame('PO67E04A8A6481F', $transaction->siplah_order_number);
+        $this->assertSame('Ud. Putra Gemilang', $transaction->vendor_name);
+        $this->assertTrue($transaction->siplah_dq_passed);
+        $this->assertSame('2972278', $item->siplah_item_mpid);
+        $this->assertSame('01.200', $item->rkas_item_code);
+        $this->assertSame('Kertas HVS F4', $item->siplah_item_name);
+        $this->assertSame('Kertas HVS F4', $item->item_description);
+        $this->assertSame('65000.00', $item->siplah_unit_price);
+    }
+
     private function createSyncRun(FiscalYear $year): int
     {
         return DB::connection('school')->table('sync_runs')->insertGetId([

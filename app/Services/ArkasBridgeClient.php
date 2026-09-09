@@ -15,7 +15,7 @@ use Symfony\Component\Process\Process;
 class ArkasBridgeClient
 {
     /** Execute one read-only ARKASBridge command for a registered school source. */
-    public function execute(ArkasSource $source, string $command, ?int $year = null, ?string $table = null, ?int $fundSourceId = null): string
+    public function execute(ArkasSource $source, string $command, ?int $year = null, ?string $table = null, ?int $fundSourceId = null, ?int $limit = null): string
     {
         $bridgePath = $this->resolveBridgeExecutable($source);
 
@@ -52,6 +52,10 @@ class ArkasBridgeClient
         if ($fundSourceId !== null) {
             $arguments[] = '--fund-source';
             $arguments[] = (string) $fundSourceId;
+        }
+        if ($limit !== null) {
+            $arguments[] = '--limit';
+            $arguments[] = (string) $limit;
         }
 
         $process = new Process($arguments, base_path(), [

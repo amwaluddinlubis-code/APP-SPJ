@@ -1,14 +1,11 @@
 <x-layouts.tailwind-app>
     <div class="mx-auto max-w-4xl space-y-5">
-        <section class="overflow-hidden rounded-2xl border border-rose-200 bg-[var(--ui-surface-base)] shadow-sm">
-            <div class="bg-gradient-to-br from-slate-950 via-rose-950 to-rose-900 px-5 py-7 text-white sm:px-7">
-                <p class="text-xs font-bold tracking-[.16em] text-rose-200">ADMINISTRASI · DATABASE SEKOLAH</p>
-                <h1 class="mt-2 text-2xl font-bold text-white sm:text-3xl">Reset Database Sekolah</h1>
-                <p class="mt-2 max-w-3xl text-sm text-rose-100">
-                    Menghapus seluruh database tenant sekolah aktif lalu membangun ulang schema dari migration. Semua data sekolah di database tenant, sequence, dan auto-increment akan kembali ke kondisi awal.
-                </p>
-            </div>
-        </section>
+        <x-page-header
+            title="Reset Database Sekolah"
+            subtitle="Menghapus seluruh database tenant sekolah aktif lalu membangun ulang schema dari migration. Semua data sekolah di database tenant, sequence, dan auto-increment akan kembali ke kondisi awal."
+            kicker="Administrasi · Database Sekolah"
+            gradient="from-slate-950 via-rose-950 to-rose-900"
+        />
 
         @if(!$active['school'])
             <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">

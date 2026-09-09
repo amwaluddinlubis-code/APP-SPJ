@@ -15,6 +15,7 @@
         <section class="grid gap-6 lg:grid-cols-[1.25fr_.75fr] lg:items-start">
             <x-ui.form-section title="Sumber ARKAS per Sekolah" description="Path hanya digunakan pada komputer ini. Kata sandi tidak pernah ditampilkan kembali.">
                 <x-slot:actions>
+                    <x-ui.button variant="secondary" :href="route('arkas.importer')">Database Explorer</x-ui.button>
                     <x-ui.button variant="secondary" :href="route('schools.settings')">Profil Sekolah</x-ui.button>
                 </x-slot:actions>
 

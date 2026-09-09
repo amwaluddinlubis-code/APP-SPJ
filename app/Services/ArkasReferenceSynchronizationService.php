@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ArkasSource;
+use App\Models\Employee;
 use App\Models\FiscalYear;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -13,16 +14,19 @@ class ArkasReferenceSynchronizationService
     public function __construct(private ArkasBridgeClient $bridge) {}
 
     /** @return Collection<int, FiscalYear> */
-    public function synchronizeFiscalYearContexts(ArkasSource $source): Collection
+    /** @param array<int, int>|null $stagedYears @param array<int, array<int, array<string, mixed>>>|null $stagedFundSourcesByYear */
+    public function synchronizeFiscalYearContexts(ArkasSource $source, ?array $stagedYears = null, ?array $stagedFundSourcesByYear = null): Collection
     {
-        $years = $this->sourceYears($source);
+        $years = $stagedYears ?? $this->sourceYears($source);
         if ($years === []) {
             throw new \RuntimeException('Database ARKAS tidak mengembalikan tahun anggaran.');
         }
 
         $contexts = [];
         foreach ($years as $year) {
-            foreach (ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources') as $fundSource) {
+            $fundSources = $stagedFundSourcesByYear[$year] ?? null;
+            $fundSources ??= ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources');
+            foreach ($fundSources as $fundSource) {
                 $id = (int) ($fundSource['ID_SUMBER_DANA'] ?? 0);
                 if ($id === 0) {
                     continue;
@@ -59,15 +63,16 @@ class ArkasReferenceSynchronizationService
     }
 
     /** @return array<string,int> */
-    public function synchronizeBase(FiscalYear $year, ArkasSource $source): array
+    /** @param array<string, mixed>|null $staged */
+    public function synchronizeBase(FiscalYear $year, ArkasSource $source, ?array $staged = null): array
     {
-        $fundSources = ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year->year), 'fund-sources');
-        $fiscalYearContexts = $this->fiscalYearContexts($source, $year->year, $fundSources);
-        $profile = ArkasPipePayload::values($this->bridge->execute($source, 'profile', $year->year), 'profile');
-        $pegawai = ArkasPipePayload::decode($this->bridge->execute($source, 'pegawai', $year->year), 'pegawai');
-        $ptk = ArkasPipePayload::decode($this->bridge->execute($source, 'ptk', $year->year), 'ptk');
-        $rekening = ArkasPipePayload::decode($this->bridge->execute($source, 'rekening', $year->year), 'rekening');
-        $periods = ArkasPipePayload::pairs($this->bridge->execute($source, 'periods'), 'periods');
+        $fundSources = $staged['fund_sources'] ?? ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year->year), 'fund-sources');
+        $fiscalYearContexts = $this->fiscalYearContexts($source, $year->year, $fundSources, $staged['fund_sources_by_year'] ?? null, $staged['years'] ?? null);
+        $profile = $staged['profile'] ?? ArkasPipePayload::values($this->bridge->execute($source, 'profile', $year->year), 'profile');
+        $pegawai = $staged['pegawai'] ?? ArkasPipePayload::decode($this->bridge->execute($source, 'pegawai', $year->year), 'pegawai');
+        $ptk = $staged['ptk'] ?? ArkasPipePayload::decode($this->bridge->execute($source, 'ptk', $year->year), 'ptk');
+        $rekening = $staged['rekening'] ?? ArkasPipePayload::decode($this->bridge->execute($source, 'rekening', $year->year), 'rekening');
+        $periods = $staged['periods'] ?? ArkasPipePayload::pairs($this->bridge->execute($source, 'periods'), 'periods');
         $db = DB::connection('school');
         $now = now();
 
@@ -95,12 +100,15 @@ class ArkasReferenceSynchronizationService
                 'treasurer_phone' => $profile['TELP_BENDAHARA'] ?? null,
                 'payload' => json_encode($profile, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
             ]);
+            $seenEmployeeIds = [];
             foreach ($pegawai as $record) {
-                $this->saveEmployee('PEGAWAI', $record['NIP'] ?: sha1(($record['NAMA'] ?? '').'|'.($record['JABATAN'] ?? '')), $record);
+                $seenEmployeeIds[] = $this->saveEmployee('PEGAWAI', $record['NIP'] ?: sha1(($record['NAMA'] ?? '').'|'.($record['JABATAN'] ?? '')), $record);
             }
             foreach ($ptk as $record) {
-                $this->saveEmployee('PTK', $record['PTK_ID_ARKAS'], $record);
+                $seenEmployeeIds[] = $this->saveEmployee('PTK', $record['PTK_ID_ARKAS'], $record);
             }
+            $seenEmployeeIds = array_values(array_filter($seenEmployeeIds));
+            app(EmployeeIdentityService::class)->sweepAfterSync($seenEmployeeIds, 'arkas', $now);
             foreach ($rekening as $record) {
                 $flags = [];
                 foreach (['is_honor' => 'IS_HONOR', 'is_ppn' => 'IS_PPN', 'is_pph21' => 'IS_PPH21', 'is_pph22' => 'IS_PPH22', 'is_pph23' => 'IS_PPH23', 'is_pph4' => 'IS_PPH4', 'is_sspd' => 'IS_SSPD', 'is_buku' => 'IS_BUKU'] as $column => $field) {
@@ -121,16 +129,19 @@ class ArkasReferenceSynchronizationService
     }
 
     /** @return array<int, array{year:int, fund_source_id:int, code:string, name:string, payload:array<string,mixed>}> */
-    private function fiscalYearContexts(ArkasSource $source, int $selectedYear, array $selectedFundSources): array
+    /** @param array<int, array<string, mixed>>|null $stagedFundSourcesByYear @param array<int, int>|null $stagedYears */
+    private function fiscalYearContexts(ArkasSource $source, int $selectedYear, array $selectedFundSources, ?array $stagedFundSourcesByYear = null, ?array $stagedYears = null): array
     {
-        $years = $this->sourceYears($source);
+        $years = $stagedYears ?? $this->sourceYears($source);
         $years = array_values(array_unique([...$years, $selectedYear]));
         $contexts = [];
 
         foreach ($years as $year) {
-            $fundSources = $year === $selectedYear
+            $fundSources = $stagedFundSourcesByYear !== null
+                ? ($stagedFundSourcesByYear[$year] ?? [])
+                : ($year === $selectedYear
                 ? $selectedFundSources
-                : ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources');
+                : ArkasPipePayload::decode($this->bridge->execute($source, 'fund-sources', $year), 'fund-sources'));
             foreach ($fundSources as $fundSource) {
                 $id = (int) ($fundSource['ID_SUMBER_DANA'] ?? 0);
                 if ($id === 0) {
@@ -194,19 +205,67 @@ class ArkasReferenceSynchronizationService
         return ['activities' => $activities, 'partners' => $partners];
     }
 
-    private function saveEmployee(string $type, string $key, array $record): void
+    private function saveEmployee(string $type, string $key, array $record): ?int
     {
         if (blank($key) || blank($record['NAMA'] ?? null)) {
-            return;
+            return null;
         }
+
+        $identity = app(EmployeeIdentityService::class);
+        $now = now();
+        $active = $this->flag($record['STATUS_AKTIF'] ?? true);
         $ptk = $type === 'PTK';
-        DB::connection('school')->table('employees')->updateOrInsert(['source_type' => $type, 'source_key' => $key], [
-            'name' => $record['NAMA'], 'nip' => $record['NIP'] ?? null, 'nik' => $record['NIK'] ?? null, 'nuptk' => $record['NUPTK'] ?? null,
-            'gender' => $record['JENIS_KELAMIN'] ?? null, 'employment_status' => $ptk ? null : ($record['STATUS_PEGAWAI'] ?? null),
-            'staff_type' => $record['JENIS_PTK'] ?? null, 'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
-            'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
-            'is_active' => $this->flag($record['STATUS_AKTIF'] ?? true), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now(),
+
+        $employee = Employee::query()->where('source_type', $type)->where('source_key', $key)->first();
+        if (! $employee instanceof Employee) {
+            $employee = new Employee(['source_type' => $type, 'source_key' => $key]);
+        }
+
+        $locked = $employee->exists && (bool) $employee->operator_locked;
+        $dapodikKnown = $employee->exists && $employee->last_seen_dapodik_at !== null;
+
+        $employee->forceFill([
+            'last_seen_arkas_at' => $now,
+            'last_known_active_arkas' => $active,
+            'payload' => $record,
         ]);
+
+        if (! $locked && ! $dapodikKnown) {
+            $employee->forceFill([
+                'name' => $record['NAMA'],
+                'normalized_name' => $identity->normalize((string) $record['NAMA']),
+                'nip' => $record['NIP'] ?? null, 'nik' => $record['NIK'] ?? null, 'nuptk' => $record['NUPTK'] ?? null,
+                'gender' => $record['JENIS_KELAMIN'] ?? null, 'employment_status' => $ptk ? null : ($record['STATUS_PEGAWAI'] ?? null),
+                'staff_type' => $record['JENIS_PTK'] ?? null, 'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
+                'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
+            ]);
+        } elseif (! $locked) {
+            // Dapodik wins canonical fields; ARKAS only fills blanks.
+            foreach ([
+                'nip' => $record['NIP'] ?? null, 'nik' => $record['NIK'] ?? null, 'nuptk' => $record['NUPTK'] ?? null,
+                'gender' => $record['JENIS_KELAMIN'] ?? null, 'staff_type' => $record['JENIS_PTK'] ?? null,
+                'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
+                'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
+            ] as $column => $value) {
+                if (! filled($employee->getAttribute($column)) && filled($value)) {
+                    $employee->setAttribute($column, $value);
+                }
+            }
+            if (blank($employee->normalized_name)) {
+                $employee->normalized_name = $identity->normalize((string) $employee->name);
+            }
+        }
+
+        if (! $locked) {
+            $employee->is_active = $identity->effectiveActive(
+                $employee->last_known_active_arkas,
+                $employee->last_known_active_dapodik
+            );
+        }
+
+        $employee->save();
+
+        return $employee->id;
     }
 
     private function seedAccountHierarchy(): void

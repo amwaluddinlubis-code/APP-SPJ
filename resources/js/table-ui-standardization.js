@@ -16,7 +16,7 @@ const applyButtonTheme = (button, active = false) => {
     if (active) {
         button.style.borderColor = 'var(--theme-content-accent)';
         button.style.background = 'var(--theme-content-accent)';
-        button.style.color = '#fff';
+        button.style.color = 'var(--theme-action-fg, #fff)';
         return;
     }
 

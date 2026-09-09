@@ -9,7 +9,7 @@ class SpjParticipant extends Model
 {
     protected $connection = 'school';
 
-    protected $fillable = ['transaction_item_id', 'name', 'position', 'portions', 'sort_order'];
+    protected $fillable = ['transaction_item_id', 'name', 'position', 'nip', 'nuptk', 'portions', 'sort_order'];
 
     public function item(): BelongsTo
     {

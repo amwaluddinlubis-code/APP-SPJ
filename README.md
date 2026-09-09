@@ -59,6 +59,8 @@ Feature JS aktif diimpor melalui bundle aplikasi, bukan melalui `@vite` standalo
 
 Aplikasi memakai database utama dan database tenant/sekolah. ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay yang dipertahankan saat sinkronisasi ulang.
 
+Sinkronisasi ARKAS menggunakan pipeline kanonik `Bridge -> staging -> mapping -> domain adapter`. Operator dapat mengatur tabel tambahan, preview rekonsiliasi, histori import, dan mode incremental melalui `/pengaturan/arkas/importer`. Panduan lengkap tersedia di [docs/ARKAS_IMPORTER.md](docs/ARKAS_IMPORTER.md).
+
 Use case SPJ utama:
 
 ```text

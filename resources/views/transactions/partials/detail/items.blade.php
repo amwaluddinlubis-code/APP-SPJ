@@ -4,11 +4,26 @@
         <div>
             <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Barang dan Jasa</h2>
             <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Item pembentuk transaksi
-                {{ $transaction->no_bukti }}. Uraian manual diprioritaskan bila tersedia.</p>
+                {{ $transaction->no_bukti }}. {{ $transaction->is_siplah ? 'Gunakan nama barang dari metadata SiPLah.' : 'Uraian manual diprioritaskan bila tersedia.' }}</p>
         </div><span
             class="rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold text-[var(--theme-content-accent)]">{{ $transaction->items->count() }}
             baris detail</span>
     </div>
+    @php
+        $siplahItems = collect(data_get($transaction->siplah_metadata, 'siplahResponse.items', []))
+            ->merge(data_get($transaction->siplah_metadata, 'siplahResponse.transaction_items', []))
+            ->merge(collect(data_get($transaction->siplah_metadata, 'siplahResponse.activities', []))->flatMap(fn ($activity) => $activity['items'] ?? []));
+        $normalizeItemName = fn ($value) => preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $value)));
+        $siplahNameForItem = function ($item) use ($siplahItems, $normalizeItemName) {
+            $rkasName = $normalizeItemName($item->description);
+            $metadataItem = $siplahItems->first(fn ($candidate) => is_array($candidate)
+                && $normalizeItemName($candidate['rkas_item_name'] ?? null) === $rkasName);
+
+            return is_array($metadataItem) && filled($metadataItem['siplah_item_name'] ?? null)
+                ? $metadataItem['siplah_item_name']
+                : null;
+        };
+    @endphp
     <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}"
         @submit="itemDescriptionsDirty = false">@csrf
         @method('PUT')
@@ -31,12 +46,12 @@
                             <tr class="transition hover:bg-[var(--ui-surface-soft)]">
                                 <td class="px-5 py-3.5 text-center text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $index + 1 }}</td>
                                 <td class="max-w-xl px-4 py-3.5">
-                                    <p class="mb-1 text-xs text-[var(--ui-fg-muted)]">Asli: {{ $item->description }}</p>
+                                    <p class="mb-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->is_siplah ? 'ARKAS: '.$item->description : 'Asli: '.$item->description }}</p>
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                     <input name="items[{{ $index }}][item_description]"
-                                        value="{{ $item->item_description ?: $item->description }}"
+                                        value="{{ $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $siplahNameForItem($item) ?: $item->description) : $item->description) }}"
                                         @input="itemDescriptionsDirty = true"
-                                        class="ui-input px-3 py-2 text-base" placeholder="Contoh: Buku tulis">
+                                        class="ui-input px-3 py-2 text-base" placeholder="{{ $transaction->is_siplah ? 'Nama barang dari SiPLah' : 'Contoh: Buku tulis' }}">
                                 </td>
                                 <td class="px-4 py-3.5 font-mono text-xs text-[var(--theme-content-accent)]">{{ $item->account_code ?: $transaction->account_code ?: '—' }}</td>
                                 <td class="px-4 py-3.5 text-right font-medium text-[var(--ui-fg)]">{{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}</td>

@@ -6,7 +6,7 @@ use App\Models\ArkasSource;
 use App\Models\BackgroundOperation;
 use App\Models\FiscalYear;
 use App\Models\School;
-use App\Services\ArkasFullSynchronizationService;
+use App\Services\ArkasCanonicalSyncService;
 use App\Services\SchoolDatabaseManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,7 +27,7 @@ class SynchronizeArkas implements ShouldQueue
 
     public function __construct(public int $operationId, public int $schoolId, public int $fiscalYearId, public int $sourceId) {}
 
-    public function handle(ArkasFullSynchronizationService $synchronizer, SchoolDatabaseManager $databases): void
+    public function handle(ArkasCanonicalSyncService $synchronizer, SchoolDatabaseManager $databases): void
     {
         $operation = BackgroundOperation::query()->findOrFail($this->operationId);
         $operation->update(['status' => 'RUNNING', 'progress' => 10, 'started_at' => now(), 'message' => 'Menghubungkan sumber ARKAS.']);

@@ -1,21 +1,21 @@
 <x-layouts.tailwind-app>
     <style>
-        .audit-panel { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / .08); }
-        .audit-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #f1f5f9; padding: 1.25rem 1.5rem; }
-        .audit-panel-heading h2 { color: #1e293b; font-size: .95rem; font-weight: 700; }
-        .audit-panel-heading p { margin-top: .25rem; color: #64748b; font-size: .8rem; }
+        .audit-panel { overflow: hidden; border: 1px solid var(--ui-line); border-radius: 1rem; background: var(--ui-surface-base); box-shadow: var(--profile-card-shadow); }
+        .audit-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--ui-line); padding: 1.25rem 1.5rem; }
+        .audit-panel-heading h2 { color: var(--ui-fg-strong); font-size: .95rem; font-weight: 700; }
+        .audit-panel-heading p { margin-top: .25rem; color: var(--ui-fg-muted); font-size: .8rem; }
         .audit-table-wrap { width: 100%; overflow-x: auto; }
         .audit-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
         .audit-table.reconciliation-table { min-width: 1080px; }
         .audit-table.register-table, .audit-table.completeness-table { min-width: 900px; }
         .audit-table.history-table { min-width: 780px; }
-        .audit-table thead { background: #f8fafc; color: #64748b; }
+        .audit-table thead { background: var(--ui-surface-soft); color: var(--ui-fg-muted); }
         .audit-table th { white-space: nowrap; padding: .75rem 1rem; text-align: left; font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-        .audit-table td { border-top: 1px solid #f1f5f9; padding: .7rem 1rem; vertical-align: top; white-space: nowrap; }
+        .audit-table td { border-top: 1px solid var(--ui-line); padding: .7rem 1rem; vertical-align: top; white-space: nowrap; }
         .audit-table th:first-child, .audit-table td:first-child { padding-left: 1.5rem; }
         .audit-table th:last-child, .audit-table td:last-child { padding-right: 1.5rem; }
         .audit-table td.wrap { white-space: normal; overflow-wrap: anywhere; }
-        .audit-panel > nav { border-top: 1px solid #f1f5f9; padding: 1rem 1.5rem; }
+        .audit-panel > nav { border-top: 1px solid var(--ui-line); padding: 1rem 1.5rem; }
         @media (max-width: 640px) {
             .audit-panel-heading { align-items: flex-start; padding: 1rem; }
             .audit-table th, .audit-table td { padding: .55rem .75rem; }
@@ -25,28 +25,24 @@
     </style>
     @php($rupiah = fn ($value) => 'Rp '.number_format((float) $value, 0, ',', '.'))
     <div x-data="{ tab: @js(request('tab', 'overview')) }" class="space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
-            <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-7 text-white sm:px-7 lg:py-8">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p class="text-xs font-bold tracking-[.16em] text-sky-200">AUDIT REPORTING SUITE</p>
-                        <h1 class="mt-2 text-2xl font-bold">Laporan Audit</h1>
-                        <p class="mt-1 text-sm text-slate-300">Pilih tab laporan untuk meninjau data secara lebih terarah.</p>
-                        <p class="mt-2 text-xs font-semibold text-sky-100">{{ $year->year }} · {{ $fundSource?->name ?? $year->fund_source }} · ID {{ session('active_fund_source_id') }}</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('audit-reports.export', 'xlsx') }}" class="rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-bold text-indigo-800 shadow">Unduh XLSX</a>
-                        <a href="{{ route('audit-reports.export', 'pdf') }}" class="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-inset ring-white/30">Cetak PDF</a>
-                    </div>
-                </div>
-            </div>
+        <x-page-header
+            title="Laporan Audit"
+            subtitle="Pilih tab laporan untuk meninjau data secara lebih terarah."
+            kicker="Audit Reporting Suite"
+        >
+            <x-slot:actions>
+                <a href="{{ route('audit-reports.export', 'xlsx') }}" class="rounded-xl bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-bold text-indigo-800 shadow">Unduh XLSX</a>
+                <a href="{{ route('audit-reports.export', 'pdf') }}" class="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-inset ring-white/30">Cetak PDF</a>
+            </x-slot:actions>
+
+            <p class="text-xs font-semibold" style="color: var(--ui-fg-muted)">{{ $year->year }} · {{ $fundSource?->name ?? $year->fund_source }} · ID {{ session('active_fund_source_id') }}</p>
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">RKAS</p><p class="mt-1 text-xl font-bold text-indigo-700">{{ $rupiah($summary['budget']) }}</p></div>
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">BKU Belanja</p><p class="mt-1 text-xl font-bold text-emerald-700">{{ $rupiah($summary['bku']) }}</p></div>
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Transaksi Unik</p><p class="mt-1 text-xl font-bold text-slate-800">{{ number_format($summary['transactionCount'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-slate-500">{{ $rupiah($summary['transactions']) }}</p></div>
                 <div class="px-5 py-4"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Temuan SPJ</p><p class="mt-1 text-xl font-bold {{ $summary['exceptionCount'] ? 'text-rose-600' : 'text-emerald-700' }}">{{ number_format($summary['exceptionCount'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-slate-500">{{ $summary['spjNumbered'] }} bernomor / {{ $summary['spjPackaged'] }} paket</p></div>
             </div>
-        </section>
+        </x-page-header>
 
         <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2 shadow-sm">
             <nav class="grid gap-2 sm:grid-cols-2 lg:grid-cols-6" aria-label="Tab laporan audit">

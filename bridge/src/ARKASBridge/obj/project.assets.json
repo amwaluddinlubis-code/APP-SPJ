@@ -413,11 +413,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\lrvProject\\spj-bosp-web\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
+      "projectUniqueName": "D:\\lrvProject\\spj-bosp-web-clean\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
       "projectName": "ARKASBridge",
-      "projectPath": "D:\\lrvProject\\spj-bosp-web\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
+      "projectPath": "D:\\lrvProject\\spj-bosp-web-clean\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
       "packagesPath": "C:\\Users\\OP5-L85\\.nuget\\packages\\",
-      "outputPath": "D:\\lrvProject\\spj-bosp-web\\bridge\\src\\ARKASBridge\\obj\\",
+      "outputPath": "D:\\lrvProject\\spj-bosp-web-clean\\bridge\\src\\ARKASBridge\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\OP5-L85\\AppData\\Roaming\\NuGet\\NuGet.Config"

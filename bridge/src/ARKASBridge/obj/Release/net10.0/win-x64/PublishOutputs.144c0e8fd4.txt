@@ -1,0 +1,2 @@
+D:\lrvProject\spj-bosp-web-clean\bridge\bin\win-x64\ARKASBridge.pdb
+D:\lrvProject\spj-bosp-web-clean\bridge\bin\win-x64\ARKASBridge.exe

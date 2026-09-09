@@ -24,24 +24,57 @@ class DapodikSynchronizationService
         $students = $this->fetch($connection, 'getPesertaDidik');
 
         return DB::connection('school')->transaction(function () use ($connection, $gtk, $students): array {
+            $identity = app(EmployeeIdentityService::class);
             $employeeIds = [];
             foreach ($gtk as $row) {
-                $normalized = $this->normalize($row['nama'] ?? '');
-                $employee = filled($row['nuptk'] ?? null) ? Employee::where('nuptk', trim($row['nuptk']))->first() : null;
-                $employee ??= Employee::where('normalized_name', $normalized)->first();
-                $employee ??= new Employee;
-                $employee->fill([
-                    'source_type' => 'DAPODIK', 'source_key' => 'DAPODIK:'.($row['ptk_id'] ?? Str::uuid()), 'dapodik_id' => $row['ptk_id'] ?? null,
-                    'name' => $row['nama'] ?? '-', 'normalized_name' => $normalized, 'nip' => $row['nip'] ?? null, 'nik' => $row['nik'] ?? null,
+                $employee = $identity->findMatch($row['nuptk'] ?? null, $row['nip'] ?? null, $row['nik'] ?? null, (string) ($row['nama'] ?? ''));
+                $isNew = ! $employee instanceof Employee;
+                if ($isNew) {
+                    $employee = new Employee;
+                }
+                $locked = ! $isNew && (bool) $employee->operator_locked;
+
+                if ($isNew) {
+                    // Origin is preserved forever; later feeds only add provenance.
+                    $employee->forceFill([
+                        'source_type' => 'DAPODIK', 'source_key' => 'DAPODIK:'.($row['ptk_id'] ?? Str::uuid()), 'dapodik_id' => $row['ptk_id'] ?? null,
+                    ]);
+                }
+
+                $employee->forceFill([
+                    'last_seen_dapodik_at' => now(), 'last_known_active_dapodik' => true,
+                    'payload' => $row, 'last_synced_at' => now(),
+                ]);
+
+                $canonical = [
+                    'name' => $row['nama'] ?? '-', 'normalized_name' => $identity->normalize((string) ($row['nama'] ?? '')),
+                    'nip' => $row['nip'] ?? null, 'nik' => $row['nik'] ?? null,
                     'nuptk' => $row['nuptk'] ?? null, 'gender' => $row['jenis_kelamin'] ?? null, 'employment_status' => $row['status_kepegawaian_id_str'] ?? null,
                     'staff_type' => $row['jenis_ptk_id_str'] ?? null, 'position' => $row['jabatan_ptk_id_str'] ?? null, 'birth_place' => $row['tempat_lahir'] ?? null,
                     'birth_date' => $row['tanggal_lahir'] ?? null, 'religion' => $row['agama_id_str'] ?? null, 'last_education' => $row['pendidikan_terakhir'] ?? null,
                     'last_study_field' => $row['bidang_studi_terakhir'] ?? null, 'rank_group' => $row['pangkat_golongan_terakhir'] ?? null,
-                    'is_primary_school' => (bool) ($row['ptk_induk'] ?? false), 'is_active' => true, 'payload' => $row, 'last_synced_at' => now(),
-                ])->save();
+                    'is_primary_school' => (bool) ($row['ptk_induk'] ?? false),
+                ];
+
+                if (! $locked) {
+                    $employee->fill($canonical + ['dapodik_id' => $row['ptk_id'] ?? null, 'is_active' => true]);
+                    $employee->is_active = $identity->effectiveActive($employee->last_known_active_arkas, true);
+                } else {
+                    // Operator corrections win; Dapodik only fills blanks.
+                    foreach ($canonical as $column => $value) {
+                        if (! filled($employee->getAttribute($column)) && filled($value)) {
+                            $employee->setAttribute($column, $value);
+                        }
+                    }
+                    if (blank($employee->dapodik_id) && filled($row['ptk_id'] ?? null)) {
+                        $employee->dapodik_id = $row['ptk_id'];
+                    }
+                }
+
+                $employee->save();
                 $employeeIds[] = $employee->id;
             }
-            Employee::where('source_type', 'DAPODIK')->whereNotIn('id', $employeeIds)->update(['is_active' => false]);
+            $identity->sweepAfterSync($employeeIds, 'dapodik', now());
 
             $studentIds = [];
             foreach ($students as $row) {

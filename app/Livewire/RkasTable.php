@@ -6,8 +6,6 @@ use App\Models\ArkasRkasItem;
 use App\Models\FiscalYear;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -19,10 +17,9 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
-class RkasTable extends Component implements HasActions, HasForms, HasSchemas, HasTable
+class RkasTable extends Component implements HasActions, HasSchemas, HasTable
 {
     use InteractsWithActions;
-    use InteractsWithForms;
     use InteractsWithSchemas;
     use InteractsWithTable;
 
@@ -49,34 +46,61 @@ class RkasTable extends Component implements HasActions, HasForms, HasSchemas, H
 
                     return trim("{$vol} {$sat} × {$tarif}");
                 })->wrap()->limit(40)->toggleable(),
-                TextColumn::make('amount')->label('Jumlah')->money('IDR', 0)->sortable()->alignEnd()->summarize(Sum::make()->money('IDR', 0)),
+                TextColumn::make('amount')->label('Anggaran Tahunan')->money('IDR', 0)->sortable()->alignEnd()->summarize(Sum::make()->money('IDR', 0)),
             ])
             ->filters([
                 SelectFilter::make('bulan')->label('Bulan')->options([
                     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
                 ])->query(function ($query, $state) {
-                    if (! $state['value']) {
+                    $month = (int) ($state['value'] ?? 0);
+                    if ($month < 1 || $month > 12) {
                         return;
                     }
-                    $tw = (int) ceil((int) $state['value'] / 3);
-                    $query->whereRaw("json_extract(payload, '$.TW_{$tw}') > 0");
+                    $query->whereExists(function ($periodQuery) use ($month): void {
+                        $periodQuery->selectRaw('1')
+                            ->from('arkas_rkas_periods')
+                            ->whereColumn('arkas_rkas_periods.source_rapbs_id', 'arkas_rkas_items.source_rapbs_id')
+                            ->where('arkas_rkas_periods.fiscal_year_id', '=', 'arkas_rkas_items.fiscal_year_id')
+                            ->whereColumn('arkas_rkas_periods.fund_source_id', 'arkas_rkas_items.fund_source_id')
+                            ->where('month_number', $month)
+                            ->where(function ($valueQuery): void {
+                                $valueQuery->where('amount', '>', 0)->orWhere('volume', '>', 0);
+                            });
+                    });
                 }),
                 SelectFilter::make('triwulan')->label('Triwulan')->options([1 => 'Triwulan 1', 2 => 'Triwulan 2', 3 => 'Triwulan 3', 4 => 'Triwulan 4'])->query(function ($query, $state) {
-                    if (! $state['value']) {
+                    $quarter = (int) ($state['value'] ?? 0);
+                    if ($quarter < 1 || $quarter > 4) {
                         return;
                     }
-                    $tw = (int) $state['value'];
-                    $query->whereRaw("json_extract(payload, '$.TW_{$tw}') > 0");
+                    $query->whereExists(function ($periodQuery) use ($quarter): void {
+                        $periodQuery->selectRaw('1')
+                            ->from('arkas_rkas_periods')
+                            ->whereColumn('arkas_rkas_periods.source_rapbs_id', 'arkas_rkas_items.source_rapbs_id')
+                            ->where('arkas_rkas_periods.fiscal_year_id', '=', 'arkas_rkas_items.fiscal_year_id')
+                            ->whereColumn('arkas_rkas_periods.fund_source_id', 'arkas_rkas_items.fund_source_id')
+                            ->where('quarter_number', $quarter)
+                            ->where(function ($valueQuery): void {
+                                $valueQuery->where('amount', '>', 0)->orWhere('volume', '>', 0);
+                            });
+                    });
                 }),
                 SelectFilter::make('semester')->label('Semester')->options([1 => 'Semester 1', 2 => 'Semester 2'])->query(function ($query, $state) {
-                    if (! $state['value']) {
+                    $semester = (int) ($state['value'] ?? 0);
+                    if ($semester < 1 || $semester > 2) {
                         return;
                     }
-                    if ((int) $state['value'] === 1) {
-                        $query->whereRaw("(json_extract(payload,'$.TW_1')+json_extract(payload,'$.TW_2'))>0");
-                    } else {
-                        $query->whereRaw("(json_extract(payload,'$.TW_3')+json_extract(payload,'$.TW_4'))>0");
-                    }
+                    $query->whereExists(function ($periodQuery) use ($semester): void {
+                        $periodQuery->selectRaw('1')
+                            ->from('arkas_rkas_periods')
+                            ->whereColumn('arkas_rkas_periods.source_rapbs_id', 'arkas_rkas_items.source_rapbs_id')
+                            ->where('arkas_rkas_periods.fiscal_year_id', '=', 'arkas_rkas_items.fiscal_year_id')
+                            ->whereColumn('arkas_rkas_periods.fund_source_id', 'arkas_rkas_items.fund_source_id')
+                            ->where('semester_number', $semester)
+                            ->where(function ($valueQuery): void {
+                                $valueQuery->where('amount', '>', 0)->orWhere('volume', '>', 0);
+                            });
+                    });
                 }),
                 SelectFilter::make('tahun')->label('Tahun')->options(function () {
                     $years = FiscalYear::query()

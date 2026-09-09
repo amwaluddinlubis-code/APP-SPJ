@@ -155,7 +155,25 @@ Contoh service domain/reusable: `SpjTransactionDetailsService`, `SpjPackageValid
 - Livewire: state server-backed pada area yang memang Livewire;
 - business validation tetap backend.
 
-## 7. Workflow SPJ aktif
+## 7. Pipeline sinkronisasi ARKAS aktif
+
+Semua entry point runtime memakai coordinator `ArkasCanonicalSyncService`:
+
+```text
+ArkasCanonicalSyncService
+  -> ArkasStagingService
+  -> ArkasReferenceSynchronizationService
+  -> adapter transaksi/SPJ
+  -> reconciliation dan derived references
+```
+
+Importer tambahan memakai `ArkasGenericImportService` dan `ArkasDomainAdapter`, dengan konfigurasi pada `ArkasImportProfile`. Snapshot disimpan pada `arkas_import_rows`; histori disimpan pada `arkas_import_runs`.
+
+`ArkasFullSynchronizationService` dan `ArkasSynchronizationService` tidak digunakan sebagai entry point runtime baru. Adapter transaksi yang menjaga identitas transaksi, overlay manual, paket SPJ, dan reconciliation tetap dipertahankan.
+
+Detail operasional importer ada pada `docs/ARKAS_IMPORTER.md`.
+
+## 8. Workflow SPJ aktif
 
 ```text
 Sinkronisasi ARKAS/BKU
@@ -174,7 +192,7 @@ Sinkronisasi ARKAS/BKU
 
 Preview/download tidak boleh menjadi shortcut tersembunyi untuk numbering.
 
-## 8. Workspace Paket SPJ
+## 9. Workspace Paket SPJ
 
 Toolbar:
 

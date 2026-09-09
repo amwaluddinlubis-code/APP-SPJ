@@ -25,7 +25,7 @@
         groups: {
             finance: {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
-            data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'true' : 'false' }},
+            data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.importer*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
         },
         init() {
@@ -84,6 +84,7 @@
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}" href="{{ route('dapodik.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Integrasi Dapodik</span></a>@endif
                     <form method="post" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="app-nav w-full text-left"><x-ui-icon name="sync" /><span class="nav-label">Sinkron Semua ARKAS</span></button></form>
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Integrasi ARKAS</span></a>@endif
+                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.importer') }}"><x-ui-icon name="database" /><span class="nav-label">Importer ARKAS</span></a>@endif
                 </div>
             </div>
 

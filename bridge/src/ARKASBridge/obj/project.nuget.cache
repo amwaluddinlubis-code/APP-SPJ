@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "aBPnJdWOXfk=",
+  "dgSpecHash": "MPa+8Fn7cmM=",
   "success": true,
-  "projectFilePath": "D:\\lrvProject\\spj-bosp-web\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
+  "projectFilePath": "D:\\lrvProject\\spj-bosp-web-clean\\bridge\\src\\ARKASBridge\\ARKASBridge.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\OP5-L85\\.nuget\\packages\\microsoft.data.sqlite.core\\10.0.11\\microsoft.data.sqlite.core.10.0.11.nupkg.sha512",
     "C:\\Users\\OP5-L85\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.11\\microsoft.net.illink.tasks.10.0.11.nupkg.sha512",

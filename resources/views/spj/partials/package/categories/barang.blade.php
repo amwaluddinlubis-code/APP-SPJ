@@ -19,7 +19,9 @@
 
     <fieldset data-spj-procurement="siplah" class="min-w-0 grid gap-2 sm:grid-cols-2">
         <x-ui.field label="Nomor pesanan SiPLah">
-            <x-ui.input name="siplah_order_number" :value="old('siplah_order_number', $transaction->siplah_order_number)" class="!py-1.5 !text-sm" />
+            @php($siplahInvoice = data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number'))
+            @php($siplahOrder = $transaction->siplah_order_number ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null))
+            <x-ui.input name="siplah_order_number" :value="old('siplah_order_number', $siplahOrder)" class="!py-1.5 !text-sm" />
         </x-ui.field>
     </fieldset>
 

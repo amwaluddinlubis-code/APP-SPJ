@@ -49,11 +49,11 @@
                 @endphp
                     @php
                         $transaction = $package->transaction;
-                        $participantRows = $transaction->participants->map(fn ($participant) => ['name' => $participant->name, 'position' => $participant->position, 'portions' => (int) $participant->portions])->values()->all();
+                        $participantRows = $transaction->participants->map(fn ($participant) => ['name' => $participant->name, 'position' => $participant->position, 'nip' => $participant->nip, 'nuptk' => $participant->nuptk, 'portions' => (int) $participant->portions])->values()->all();
                     @endphp
                     @if(strtoupper((string) $transaction->spj_category) === 'KONSUMSI' && $participantRows === [])
                         @php
-                            $participantRows = collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'portions' => 1])->values()->all();
+                            $participantRows = collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'nip' => $employee->nip, 'nuptk' => $employee->nuptk, 'portions' => 1])->values()->all();
                         @endphp
                     @endif
                     @php

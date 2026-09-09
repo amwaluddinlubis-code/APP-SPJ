@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ARKASBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+75381a3122bb15a04420205d2e8772c9565b05b6")]
 [assembly: System.Reflection.AssemblyProductAttribute("ARKASBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ARKASBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

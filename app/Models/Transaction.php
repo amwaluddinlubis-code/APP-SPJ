@@ -56,6 +56,15 @@ class Transaction extends Model
         'net_amount',
         'is_siplah',
         'siplah_order_number',
+        'siplah_metadata',
+        'siplah_transaction_id',
+        'siplah_marketplace',
+        'siplah_merchant_address',
+        'siplah_payment_date',
+        'siplah_dq_passed',
+        'siplah_backfilled',
+        'siplah_budget_mapping_rejected',
+        'siplah_partially_mapped',
         'status',
         'source_key',
         'source_hash',
@@ -187,6 +196,6 @@ class Transaction extends Model
 
     protected function casts(): array
     {
-        return ['transaction_date' => 'date', 'rkas_date' => 'date', 'source_created_at' => 'datetime', 'source_last_updated_at' => 'datetime', 'invoice_date' => 'date', 'event_date' => 'date', 'participant_count' => 'integer', 'source_missing_since' => 'datetime', 'requires_reconciliation' => 'boolean', 'gross_amount' => 'decimal:2', 'ppn' => 'decimal:2', 'ppn_rate' => 'decimal:4', 'pph21' => 'decimal:2', 'pph21_rate' => 'decimal:4', 'pph22' => 'decimal:2', 'pph22_rate' => 'decimal:4', 'pph23' => 'decimal:2', 'pph23_rate' => 'decimal:4', 'pph4' => 'decimal:2', 'pph4_rate' => 'decimal:4', 'sspd' => 'decimal:2', 'sspd_rate' => 'decimal:4', 'tax_total' => 'decimal:2', 'net_amount' => 'decimal:2', 'is_siplah' => 'boolean'];
+        return ['transaction_date' => 'date', 'rkas_date' => 'date', 'source_created_at' => 'datetime', 'source_last_updated_at' => 'datetime', 'invoice_date' => 'date', 'event_date' => 'date', 'siplah_payment_date' => 'datetime', 'participant_count' => 'integer', 'source_missing_since' => 'datetime', 'requires_reconciliation' => 'boolean', 'siplah_dq_passed' => 'boolean', 'siplah_backfilled' => 'boolean', 'siplah_budget_mapping_rejected' => 'boolean', 'siplah_partially_mapped' => 'boolean', 'gross_amount' => 'decimal:2', 'ppn' => 'decimal:2', 'ppn_rate' => 'decimal:4', 'pph21' => 'decimal:2', 'pph21_rate' => 'decimal:4', 'pph22' => 'decimal:2', 'pph22_rate' => 'decimal:4', 'pph23' => 'decimal:2', 'pph23_rate' => 'decimal:4', 'pph4' => 'decimal:2', 'pph4_rate' => 'decimal:4', 'sspd' => 'decimal:2', 'sspd_rate' => 'decimal:4', 'tax_total' => 'decimal:2', 'net_amount' => 'decimal:2', 'is_siplah' => 'boolean', 'siplah_metadata' => 'array'];
     }
 }

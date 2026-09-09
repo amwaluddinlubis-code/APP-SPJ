@@ -28,7 +28,7 @@ class SpjTemplateService
             'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
             'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
             'Transaksi & pembayaran' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
-            'Pembelian SiPLah' => ['SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_REFERENSI_BAYAR'],
+            'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
             'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
             'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
             'Ringkasan' => ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'],
@@ -59,6 +59,23 @@ class SpjTemplateService
         $handoverDate = $goods?->bast_date?->translatedFormat('d F Y') ?: ($workCompleted ?: $transactionDate);
         $vendorName = (string) ($transaction->vendor_name ?: $transaction->effective_receipt_recipient_name);
         $paymentMethod = $this->paymentMethodLabel((string) $transaction->payment_method);
+        $siplahResponse = data_get($transaction->siplah_metadata, 'siplahResponse', []);
+        $siplahMerchant = (string) (data_get($siplahResponse, 'merchant') ?: $transaction->vendor_name ?: '');
+        $siplahAddress = (string) ($transaction->siplah_merchant_address ?: data_get($siplahResponse, 'merchant_address', ''));
+        $siplahNpwp = (string) ($transaction->vendor_npwp ?: data_get($siplahResponse, 'merchant_npwp', ''));
+        $siplahPaymentDate = $transaction->siplah_payment_date?->translatedFormat('d F Y H:i') ?: '';
+        $siplahItems = $transaction->items->map(function ($item, $index): string {
+            $name = $item->siplah_item_name ?: $item->item_description ?: $item->description;
+            $quantity = $item->siplah_quantity_received ?? $item->siplah_mapped_quantity ?? $item->quantity;
+            $price = $item->siplah_unit_price ?? $item->unit_price;
+
+            return ($index + 1).'. '.$name.' | diterima '.$quantity.' '.$item->unit.' | harga '.$this->rupiah($price).' | MPID '.($item->siplah_item_mpid ?: '-');
+        })->implode("\n");
+        $siplahMappingStatus = empty($siplahResponse)
+            ? ''
+            : ((bool) $transaction->siplah_budget_mapping_rejected
+                ? 'Pemetaan anggaran ditolak'
+                : ((bool) $transaction->siplah_partially_mapped ? 'Pemetaan sebagian' : 'Pemetaan lengkap'));
 
         $values = [
             'NOMOR_SPJ' => (string) $package->document_number,
@@ -94,10 +111,18 @@ class SpjTemplateService
             'CARA_BAYAR' => $paymentMethod,
             'REFERENSI_BAYAR' => (string) $transaction->payment_reference,
             'SIPLAH_NOMOR_PESANAN' => (string) $transaction->siplah_order_number,
-            'SIPLAH_PENYEDIA' => (string) $transaction->vendor_name,
+            'SIPLAH_MARKETPLACE' => (string) (data_get($siplahResponse, 'marketplace_displayname') ?: $transaction->siplah_marketplace ?: ''),
+            'SIPLAH_TRANSACTION_ID' => (string) (data_get($siplahResponse, 'transaction_id') ?: $transaction->siplah_transaction_id ?: ''),
+            'SIPLAH_PENYEDIA' => $siplahMerchant,
+            'SIPLAH_ALAMAT_PENYEDIA' => $siplahAddress,
+            'SIPLAH_NPWP_PENYEDIA' => $siplahNpwp,
             'SIPLAH_NOMOR_INVOICE' => (string) $transaction->invoice_number,
             'SIPLAH_TANGGAL_INVOICE' => $transaction->invoice_date?->translatedFormat('d F Y') ?: '',
+            'SIPLAH_TANGGAL_PEMBAYARAN' => $siplahPaymentDate,
             'SIPLAH_REFERENSI_BAYAR' => (string) $transaction->payment_reference,
+            'SIPLAH_STATUS_DQ' => $transaction->siplah_dq_passed === null ? '' : ($transaction->siplah_dq_passed ? 'Lulus' : 'Belum lulus'),
+            'SIPLAH_STATUS_MAPPING' => $siplahMappingStatus,
+            'SIPLAH_RINCIAN_ITEM' => $siplahItems,
             'NOMOR_PESANAN' => (string) ($goods?->order_number ?: ''),
             'TANGGAL_PESANAN' => $orderDate,
             'NOMOR_INVOICE' => (string) $transaction->invoice_number,
@@ -145,7 +170,7 @@ class SpjTemplateService
             'NILAI_PEKERJAAN_TERBILANG' => $this->terbilang((float) $transaction->gross_amount),
             // Field ini belum tersedia pada schema transaksi saat ini. Tetap dipetakan
             // sebagai placeholder resmi agar template tidak menyisakan marker mentah.
-            'ALAMAT_PENYEDIA' => '',
+            'ALAMAT_PENYEDIA' => $siplahAddress,
             'TELEPON_PENYEDIA' => '',
             // KOP_SURAT ditangani sebagai gambar oleh fillExcelLetterhead().
             'KOP_SURAT' => '',

@@ -7,6 +7,7 @@ use App\Models\FiscalYear;
 use App\Models\School;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Full-refresh importer. It prunes stale ARKAS rows so historical revisions
@@ -16,13 +17,14 @@ class ArkasSynchronizationServiceV2
 {
     public function __construct(private ArkasBridgeClient $bridge) {}
 
-    public function synchronize(School $school, FiscalYear $year, ArkasSource $source): array
+    /** @param array<int, array<string, mixed>>|null $stagedRkas @param array<int, array<string, mixed>>|null $stagedBku @param array<int, array<string, mixed>>|null $stagedPeriods @param array<string, mixed>|null $stagedIdentity */
+    public function synchronize(School $school, FiscalYear $year, ArkasSource $source, ?array $stagedRkas = null, ?array $stagedBku = null, ?array $stagedPeriods = null, ?array $stagedIdentity = null): array
     {
         if (! $year->fund_source_id) {
             throw new \RuntimeException('Tahun anggaran belum memiliki sumber dana. Sinkronkan referensi sumber dana terlebih dahulu.');
         }
 
-        $identity = ArkasPipePayload::values($this->bridge->execute($source, 'identity'), 'identity');
+        $identity = $stagedIdentity ?? ArkasPipePayload::values($this->bridge->execute($source, 'identity'), 'identity');
         if (($identity['NPSN'] ?? '') !== $school->npsn) {
             throw new \RuntimeException('NPSN database ARKAS tidak sesuai dengan sekolah aktif.');
         }
@@ -34,16 +36,18 @@ class ArkasSynchronizationServiceV2
         ]);
 
         try {
-            $rkas = ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year, null, $year->fund_source_id), 'rkas');
-            $bku = ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year, null, $year->fund_source_id), 'bku');
-            $rkas = array_values(array_filter($rkas, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id));
-            $bku = array_values(array_filter($bku, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id));
+            $rkas = $stagedRkas ?? ArkasPipePayload::decode($this->bridge->execute($source, 'rkas', $year->year, null, $year->fund_source_id), 'rkas');
+            $bku = $stagedBku ?? ArkasPipePayload::decode($this->bridge->execute($source, 'bku', $year->year, null, $year->fund_source_id), 'bku');
+            $rkas = $this->uniqueRecordsByField(array_values(array_filter($rkas, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id)), 'ID_RAPBS');
+            $bku = $this->uniqueRecordsByField(array_values(array_filter($bku, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? 0) === (int) $year->fund_source_id)), 'ID_KAS_UMUM');
+            $rkasPeriods = $this->loadRkasPeriods($source, $year, $rkas, $stagedPeriods);
 
-            DB::connection('school')->transaction(function () use ($year, $rkas, $bku, $runId): void {
+            DB::connection('school')->transaction(function () use ($year, $rkas, $rkasPeriods, $bku, $runId): void {
                 // A full refresh updates ARKAS-derived values but must preserve
                 // manually prepared SPJ packages, assigned document numbers, and
                 // worker/payment details as long as the source transaction exists.
                 $this->saveRkas($year, $rkas);
+                $this->saveRkasPeriods($year, $rkasPeriods);
                 $this->saveBkuAndTransactions($year, $bku, $runId);
             });
 
@@ -82,6 +86,122 @@ class ArkasSynchronizationServiceV2
                     'updated_at' => now(), 'created_at' => now()]
             );
         }
+    }
+
+    /** @param array<int, array<string, mixed>> $rkas */
+    private function loadRkasPeriods(ArkasSource $source, FiscalYear $year, array $rkas, ?array $stagedPeriods = null): ?array
+    {
+        $rkasIds = array_fill_keys($this->ids($rkas, 'ID_RAPBS'), true);
+        if ($rkasIds === []) {
+            return [];
+        }
+
+        if ($stagedPeriods !== null) {
+            $rows = $stagedPeriods;
+        } else {
+            try {
+                $rows = ArkasPipePayload::decode(
+                    $this->bridge->execute($source, 'rows', null, 'rapbs_periode', null, 100000),
+                    'rows:rapbs_periode'
+                );
+            } catch (\Throwable $exception) {
+                Log::warning('Detail periode RKAS tidak tersedia; sinkronisasi ringkasan tetap dilanjutkan.', [
+                    'fiscal_year_id' => $year->id,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+
+        return array_values(array_filter(array_map(function (array $row) use ($rkasIds): ?array {
+            $rapbsId = $this->firstText($row, ['id_rapbs', 'ID_RAPBS']);
+            $periodId = $this->firstText($row, ['id_periode', 'ID_PERIODE']);
+            if ($rapbsId === null || $periodId === null || ! isset($rkasIds[$rapbsId])) {
+                return null;
+            }
+
+            return [
+                'source_rapbs_id' => $rapbsId,
+                'source_period_id' => $periodId,
+                'volume' => $this->amount($this->firstText($row, ['volume', 'VOLUME']) ?? 0),
+                'amount' => $this->amount($this->firstText($row, ['jumlah', 'JUMLAH']) ?? 0),
+                'payload' => $row,
+            ];
+        }, $rows), fn (?array $period): bool => $period !== null));
+    }
+
+    /** @param array<int, array<string, mixed>>|null $records */
+    private function saveRkasPeriods(FiscalYear $year, ?array $records): void
+    {
+        if ($records === null) {
+            return;
+        }
+
+        $db = DB::connection('school');
+        $db->table('arkas_rkas_periods')
+            ->where('fiscal_year_id', $year->id)
+            ->where('fund_source_id', $year->fund_source_id)
+            ->delete();
+
+        if ($records === []) {
+            return;
+        }
+
+        $periodNames = $db->table('arkas_periods')->pluck('name', 'source_period_id')->all();
+        $now = now();
+        foreach ($records as $record) {
+            $periodId = (string) $record['source_period_id'];
+            $periodName = (string) ($periodNames[$periodId] ?? '');
+            [$month, $quarter, $semester] = $this->periodCoordinates($periodId, $periodName);
+            $db->table('arkas_rkas_periods')->updateOrInsert(
+                [
+                    'fiscal_year_id' => $year->id,
+                    'fund_source_id' => $year->fund_source_id,
+                    'source_rapbs_id' => $record['source_rapbs_id'],
+                    'source_period_id' => $periodId,
+                ],
+                [
+                    'period_name' => $periodName !== '' ? $periodName : null,
+                    'month_number' => $month,
+                    'quarter_number' => $quarter,
+                    'semester_number' => $semester,
+                    'volume' => $record['volume'],
+                    'amount' => $record['amount'],
+                    'payload' => json_encode($record['payload'], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
+                    'updated_at' => $now,
+                    'created_at' => $now,
+                ]
+            );
+        }
+    }
+
+    /** @return array{0:?int,1:?int,2:?int} */
+    private function periodCoordinates(string $periodId, string $periodName): array
+    {
+        $numericId = (int) $periodId;
+        $normalizedName = mb_strtolower(trim($periodName));
+        $monthNames = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+        $month = array_search($normalizedName, $monthNames, true);
+        if ($month !== false) {
+            $month++;
+        } elseif ($numericId >= 81 && $numericId <= 92) {
+            $month = $numericId - 80;
+        } else {
+            $month = null;
+        }
+
+        if ($month !== null) {
+            $quarter = (int) ceil($month / 3);
+
+            return [$month, $quarter, (int) ceil($month / 6)];
+        }
+
+        if ($numericId >= 1 && $numericId <= 4) {
+            return [null, $numericId, (int) ceil($numericId / 2)];
+        }
+
+        return [null, null, null];
     }
 
     private function saveBkuAndTransactions(FiscalYear $year, array $records, int $runId): void
@@ -155,6 +275,9 @@ class ArkasSynchronizationServiceV2
                 ->sortDesc()
                 ->first();
             $isSiplah = (bool) ($first['IS_SIPLAH'] ?? false);
+            $siplahMetadata = $isSiplah ? $this->siplahMetadata($first['DETAILS_JSON_HEX'] ?? null) : null;
+            $siplahResponse = is_array($siplahMetadata['siplahResponse'] ?? null) ? $siplahMetadata['siplahResponse'] : ($siplahMetadata ?? []);
+            $siplahOrderNumber = $this->siplahOrderNumber($siplahResponse);
             $data = ['fund_source_id' => $first['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                 'id_kas_umum' => $first['ID_KAS_UMUM'], 'transaction_date' => $first['TANGGAL_TRANSAKSI'],
                 'rkas_date' => $rkasDate?->toDateString(),
@@ -167,12 +290,22 @@ class ArkasSynchronizationServiceV2
                 'pph23' => $taxes['pph23'], 'pph4' => $taxes['pph4'], 'sspd' => $taxes['sspd'],
                 'tax_total' => $taxTotal, 'net_amount' => $gross - $taxTotal,
                 'is_siplah' => $isSiplah, 'source_key' => $sourceKey,
+                'siplah_metadata' => $siplahMetadata === null ? null : json_encode($siplahMetadata, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
+                'siplah_order_number' => $siplahOrderNumber,
+                'siplah_transaction_id' => $this->text($siplahResponse, 'transaction_id'),
+                'siplah_marketplace' => $this->text($siplahResponse, 'marketplace_displayname'),
+                'siplah_merchant_address' => $this->text($siplahResponse, 'merchant_address'),
+                'siplah_payment_date' => $this->dateTime($siplahResponse, 'payment_date'),
+                'siplah_dq_passed' => $this->flag($siplahResponse, 'is_dq_passed'),
+                'siplah_backfilled' => $this->flag($siplahResponse, 'is_backfilled'),
+                'siplah_budget_mapping_rejected' => $this->flag($siplahResponse, 'is_rejected_budget_mapping'),
+                'siplah_partially_mapped' => $this->flag($siplahResponse, 'is_partially_mapped'),
                 'source_status' => 'ACTIVE', 'last_seen_sync_run_id' => $runId,
                 'source_missing_since' => null, 'updated_at' => now()];
             if ($isSiplah) {
-                $vendorName = $this->firstText($first, ['NAMA_TOKO']);
-                $vendorNpwp = $this->firstText($first, ['NPWP_REKANAN']);
-                $invoiceNumber = $this->firstText($first, ['NO_NOTA']);
+                $vendorName = $this->firstText($first, ['NAMA_TOKO']) ?: $this->text($siplahResponse, 'merchant');
+                $vendorNpwp = $this->firstText($first, ['NPWP_REKANAN']) ?: $this->text($siplahResponse, 'merchant_npwp');
+                $invoiceNumber = $this->firstText($first, ['NO_NOTA']) ?: $this->text($siplahResponse, 'invoice_number');
                 $invoiceDate = $this->firstText($first, ['TANGGAL_NOTA']);
                 if ($vendorName !== null) {
                     $data['vendor_name'] = $vendorName;
@@ -225,6 +358,9 @@ class ArkasSynchronizationServiceV2
             if ($existing && filled($existing->invoice_date)) {
                 unset($data['invoice_date']);
             }
+            if ($existing && filled($existing->siplah_order_number)) {
+                unset($data['siplah_order_number']);
+            }
             if (! $existing || blank($existing->spj_category)) {
                 $accountCode = $first['KODE_REKENING'] ?? $reference?->account_code;
                 $data['spj_category'] = $this->spjCategory(
@@ -261,11 +397,30 @@ class ArkasSynchronizationServiceV2
                 // apabila versi ARKAS yang digunakan memang mengirimkannya.
                 $unit = $this->firstText($item, ['SATUAN', 'SATUAN_BARANG', 'UNIT'])
                     ?: $this->firstText($referencePayload, ['SATUAN', 'SATUAN_BARANG', 'UNIT']);
+                $rkasItemName = $this->firstText($referencePayload, ['URAIAN', 'DESCRIPTION', 'description'])
+                    ?: $this->firstText($item, ['URAIAN']);
+                $siplahItem = $this->siplahItem($siplahResponse, $item['ID_RAPBS'] ?? null, $rkasItemName);
+                $siplahItemName = $this->text($siplahItem, 'siplah_item_name');
                 $itemKey = ['transaction_id' => $transactionId, 'source_item_id' => $item['ID_KAS_UMUM']];
                 $itemData = ['description' => $item['URAIAN'] ?? '', 'quantity' => $quantity, 'unit' => $unit,
+                    'siplah_item_mpid' => $this->text($siplahItem, 'siplah_item_mpid'),
+                    'rkas_item_code' => $this->text($siplahItem, 'rkas_item_code'),
+                    'rkas_item_name' => $this->text($siplahItem, 'rkas_item_name'),
+                    'siplah_item_name' => $siplahItemName,
+                    'siplah_mapped_quantity' => $this->number($siplahItem, 'item_mapped_quantity'),
+                    'siplah_quantity_received' => $this->number($siplahItem, 'quantity_received'),
+                    'siplah_unit_dpp' => $this->number($siplahItem, 'unit_item_dpp'),
+                    'siplah_unit_ppn' => $this->number($siplahItem, 'unit_item_ppn'),
+                    'siplah_unit_price' => $this->number($siplahItem, 'unit_item_price'),
+                    'siplah_unit_insurance_cost' => $this->number($siplahItem, 'unit_insurance_cost'),
+                    'siplah_unit_packaging_cost' => $this->number($siplahItem, 'unit_packaging_cost'),
+                    'siplah_item_metadata' => $siplahItem === null ? null : json_encode($siplahItem, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
                     'unit_price' => $amount / $quantity, 'amount' => $amount, 'source_status' => 'ACTIVE',
                     'last_seen_sync_run_id' => $runId, 'source_missing_since' => null, 'updated_at' => now()];
-                $existingItem = DB::connection('school')->table('transaction_items')->where($itemKey)->exists();
+                $existingItem = DB::connection('school')->table('transaction_items')->where($itemKey)->first(['id', 'item_description']);
+                if ($isSiplah && $siplahItemName !== null && blank($existingItem?->item_description)) {
+                    $itemData['item_description'] = $siplahItemName;
+                }
                 $existingItem
                     ? DB::connection('school')->table('transaction_items')->where($itemKey)->update($itemData)
                     : DB::connection('school')->table('transaction_items')->insert($itemKey + $itemData + ['created_at' => now()]);
@@ -307,9 +462,139 @@ class ArkasSynchronizationServiceV2
         return $code === 'PBS' || str_contains($description, 'pajak belanja setor') || str_starts_with($description, 'setor ');
     }
 
+    /** @return array<string, mixed>|null */
+    private function siplahMetadata(mixed $value): ?array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $decodedHex = ctype_xdigit($value) ? hex2bin($value) : false;
+        $decoded = json_decode($decodedHex !== false ? $decodedHex : $value, true);
+
+        return is_array($decoded) ? $decoded : ['raw' => $value];
+    }
+
+    /** @param array<string, mixed> $response @return array<string, mixed>|null */
+    private function siplahItem(array $response, ?string $rapbsId, ?string $rkasItemName = null): ?array
+    {
+        if ($rapbsId === null && blank($rkasItemName)) {
+            return null;
+        }
+
+        $candidates = [];
+        foreach (['items', 'transaction_items'] as $key) {
+            if (is_array($response[$key] ?? null)) {
+                $candidates = [...$candidates, ...$response[$key]];
+            }
+        }
+        foreach ($response['activities'] ?? [] as $activity) {
+            if (is_array($activity) && is_array($activity['items'] ?? null)) {
+                $candidates = [...$candidates, ...$activity['items']];
+            }
+        }
+
+        foreach ($candidates as $item) {
+            if ($rapbsId !== null && is_array($item) && (string) ($item['rapbs_id'] ?? '') === $rapbsId) {
+                return $item;
+            }
+        }
+
+        $normalizedRkasItemName = $this->normalizeItemName($rkasItemName);
+        if ($normalizedRkasItemName === null) {
+            return null;
+        }
+
+        foreach ($candidates as $item) {
+            if (is_array($item) && $this->normalizeItemName($item['rkas_item_name'] ?? null) === $normalizedRkasItemName) {
+                return $item;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeItemName(mixed $value): ?string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $value)));
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    /** @param array<string, mixed> $response */
+    private function siplahOrderNumber(array $response): ?string
+    {
+        $invoiceNumber = $this->text($response, 'invoice_number');
+        if ($invoiceNumber === null) {
+            return null;
+        }
+
+        $parts = array_values(array_filter(array_map('trim', explode('/', $invoiceNumber))));
+
+        return $parts === [] ? null : end($parts);
+    }
+
+    /** @param array<string, mixed>|null $record */
+    private function text(?array $record, string $key): ?string
+    {
+        $value = trim((string) ($record[$key] ?? ''));
+
+        return $value === '' ? null : $value;
+    }
+
+    /** @param array<string, mixed>|null $record */
+    private function number(?array $record, string $key): ?float
+    {
+        $value = $record[$key] ?? null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    /** @param array<string, mixed>|null $record */
+    private function flag(?array $record, string $key): ?bool
+    {
+        if (! array_key_exists($key, $record ?? [])) {
+            return null;
+        }
+
+        return filter_var($record[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? ((int) $record[$key] === 1);
+    }
+
+    /** @param array<string, mixed>|null $record */
+    private function dateTime(?array $record, string $key): ?Carbon
+    {
+        $value = $this->text($record, $key);
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function ids(array $records, string $field): array
     {
-        return array_values(array_filter(array_map(fn ($record) => (string) ($record[$field] ?? ''), $records)));
+        return array_values(array_unique(array_filter(array_map(fn ($record) => (string) ($record[$field] ?? ''), $records))));
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function uniqueRecordsByField(array $records, string $field): array
+    {
+        $indexed = [];
+        foreach ($records as $record) {
+            $key = trim((string) ($record[$field] ?? ''));
+            if ($key !== '') {
+                $indexed[$key] = $record;
+            }
+        }
+
+        return array_values($indexed);
     }
 
     /**

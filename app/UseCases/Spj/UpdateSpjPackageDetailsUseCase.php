@@ -26,6 +26,7 @@ class UpdateSpjPackageDetailsUseCase
             return back()->with('error', 'Paket sudah bernomor atau final. Buka kembali paket melalui administrator sebelum mengubah data.');
         }
 
+        $request->merge($this->siplahDefaults($request, $package->transaction));
         $data = $request->validate($this->rules($request, $package), $this->purchaseDateMessages());
         $data['spj_category'] = $this->canonicalCategory($data['spj_category'] ?? $package->transaction->spj_category);
         $data = $this->withDefaultPrimaryRecipient($data);
@@ -129,6 +130,8 @@ class UpdateSpjPackageDetailsUseCase
             'participants' => ['nullable', 'array'],
             'participants.*.name' => ['nullable', 'string', 'max:180'],
             'participants.*.position' => ['nullable', 'string', 'max:180'],
+            'participants.*.nip' => ['nullable', 'string', 'max:40'],
+            'participants.*.nuptk' => ['nullable', 'string', 'max:40'],
             'participants.*.portions' => ['nullable', 'integer', 'min:1'],
 
             'workers' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) use ($request, $package): void {
@@ -284,6 +287,49 @@ class UpdateSpjPackageDetailsUseCase
             'bap_date.after_or_equal' => 'Tanggal BAP harus lebih besar atau sama dengan Tanggal Pesanan.',
             'bast_date.after_or_equal' => 'Tanggal BAST harus lebih besar atau sama dengan Tanggal BAP.',
         ];
+    }
+
+    /** @return array<string, string> */
+    private function siplahDefaults(Request $request, Transaction $transaction): array
+    {
+        if (! $transaction->is_siplah && strtolower((string) $request->input('payment_method')) !== 'siplah') {
+            return [];
+        }
+
+        $response = data_get($transaction->siplah_metadata, 'siplahResponse', []);
+        $items = collect(data_get($response, 'items', []));
+        if ($items->isEmpty()) {
+            $items = collect(data_get($response, 'transaction_items', []));
+        }
+
+        $marketplace = trim((string) data_get($response, 'marketplace_displayname'));
+        $merchant = trim((string) data_get($response, 'merchant'));
+        $merchantNpwp = trim((string) data_get($response, 'merchant_npwp'));
+        $invoice = trim((string) data_get($response, 'invoice_number'));
+        $orderNumber = $transaction->siplah_order_number ?: $this->siplahOrderNumber($invoice);
+        $itemNames = $items->map(fn (mixed $item): string => trim((string) data_get($item, 'siplah_item_name')))
+            ->filter()
+            ->values();
+        $description = $marketplace !== ''
+            ? 'Pembelian barang melalui '.$marketplace.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '')
+            : ($itemNames->isNotEmpty() ? 'Pembelian barang: '.$itemNames->take(3)->implode(', ') : 'Pembelian barang melalui SiPLah');
+
+        return array_filter([
+            'payment_reference' => blank($request->input('payment_reference')) ? $orderNumber : null,
+            'receipt_recipient_name' => blank($request->input('receipt_recipient_name')) ? $merchant : null,
+            'payment_description' => blank($request->input('payment_description')) ? $description : null,
+            'vendor_name' => blank($request->input('vendor_name')) ? $merchant : null,
+            'vendor_npwp' => blank($request->input('vendor_npwp')) ? $merchantNpwp : null,
+            'siplah_order_number' => blank($request->input('siplah_order_number')) ? $orderNumber : null,
+            'invoice_number' => blank($request->input('invoice_number')) ? $invoice : null,
+        ], static fn (?string $value): bool => filled($value));
+    }
+
+    private function siplahOrderNumber(string $invoice): ?string
+    {
+        $parts = array_values(array_filter(explode('/', $invoice), static fn (string $part): bool => $part !== ''));
+
+        return $parts !== [] ? end($parts) : null;
     }
 
     private function canonicalCategory(?string $category): ?string

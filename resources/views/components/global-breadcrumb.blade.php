@@ -7,8 +7,6 @@
 
     if (request()->routeIs('dashboard')) {
         $page = 'Beranda';
-    } elseif (request()->routeIs('dashboard.v2')) {
-        $page = 'Ringkasan Lengkap';
     } elseif (request()->routeIs('rkas-budget.*')) {
         $group = 'Keuangan';
         $page = 'Rencana Anggaran (RKAS)';

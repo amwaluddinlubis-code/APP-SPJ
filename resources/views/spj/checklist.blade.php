@@ -1,19 +1,14 @@
 <x-layouts.tailwind-app>
     <div class="spj-semantic-workspace space-y-6">
-        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            <div class="bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 px-5 py-6 text-white sm:px-7">
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div class="max-w-3xl">
-                        <p class="text-[11px] font-bold uppercase tracking-[.18em] text-sky-200">Checklist paket SPJ</p>
-                        <h1 class="mt-2 text-2xl font-bold tracking-tight">Apa yang masih kurang sebelum siap diberi nomor?</h1>
-                        <p class="mt-2 text-sm leading-6 text-indigo-100">Aplikasi menentukan dokumen berdasarkan jalur SIPLah/Non-SIPLah dan jenis SPJ. Operator cukup melengkapi bagian yang masih kurang.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white">Buka paket lengkap</a>
-                        <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
-                    </div>
-                </div>
-            </div>
+        <x-page-header
+            title="Apa yang masih kurang sebelum siap diberi nomor?"
+            subtitle="Aplikasi menentukan dokumen berdasarkan jalur SIPLah/Non-SIPLah dan jenis SPJ. Operator cukup melengkapi bagian yang masih kurang."
+            kicker="Checklist Paket SPJ"
+        >
+            <x-slot:actions>
+                <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white">Buka paket lengkap</a>
+                <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
+            </x-slot:actions>
 
             <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="bg-[var(--ui-surface-base)] px-5 py-4">
@@ -33,7 +28,7 @@
                     <div class="mt-2"><x-ui.status-badge :status="$package->status" size="xs" /></div>
                 </div>
             </div>
-        </section>
+        </x-page-header>
 
         <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-[var(--ui-surface-base)] shadow-sm">
             <div class="border-b border-indigo-100 bg-indigo-50/70 px-5 py-4 sm:px-6">

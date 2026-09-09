@@ -4,10 +4,11 @@
                             </div>
                             <div class="divide-y divide-[var(--ui-line)]">
                                 @forelse($transaction->items as $index => $item)
+                                    @php($spjDescription = $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $item->description) : $item->description))
                                     <div class="flex gap-3 px-4 py-3">
                                         <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-[11px] font-bold text-slate-500">{{ $index + 1 }}</span>
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-base font-medium leading-tight text-slate-800">{{ $item->item_description ?: $item->description }}</p>
+                                            <p class="text-base font-medium leading-tight text-slate-800">{{ $spjDescription }}</p>
                                             <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                                                 <span><span class="font-semibold text-slate-600">Volume:</span> {{ $item->quantity }}</span>
                                                 <span><span class="font-semibold text-slate-600">Satuan:</span> {{ $item->unit ?: '—' }}</span>

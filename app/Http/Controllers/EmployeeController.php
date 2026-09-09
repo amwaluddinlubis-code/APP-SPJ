@@ -108,6 +108,8 @@ class EmployeeController extends Controller
         $employee->fill($data + ['source_type' => $employee->exists ? $employee->source_type : 'MANUAL', 'source_key' => $employee->exists ? $employee->source_key : 'MANUAL:'.Str::uuid()]);
         $employee->normalized_name = Str::of($data['name'])->lower()->ascii()->replaceMatches('/[^a-z0-9]+/', ' ')->squish();
         $employee->is_active = $request->boolean('is_active', true);
+        // Operator input wins over future syncs; feeds only fill blanks on locked rows.
+        $employee->operator_locked = true;
         $employee->save();
     }
 

@@ -15,13 +15,13 @@
     data-spj-section="KONSUMSI"
     x-data="{
         rows: @js(array_values($participantRows)),
-        roster: @js(collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'portions' => 1])->values()->all()),
+        roster: @js(collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'nip' => $employee->nip, 'nuptk' => $employee->nuptk, 'portions' => 1])->values()->all()),
         participantCount: {{ (int) old('participant_count', $transaction->participant_count ?: collect($participantRows)->sum('portions')) }},
         primaryIndex: @js($participantPrimaryIndex),
         query: '', page: 1, perPage: 10,
         get portionTotal() { return this.rows.reduce((total, row) => total + (parseInt(row.portions) || 0), 0); },
         fillRoster() { this.rows = this.roster.map(row => ({...row})); this.participantCount = this.portionTotal; this.primaryIndex = this.rows.length ? 0 : null; this.page = 1; },
-        addRow() { this.rows.push({name:'', position:'', portions:1}); if (this.primaryIndex === null) this.primaryIndex = 0; this.participantCount = this.portionTotal; this.page = this.pageCount(); },
+        addRow() { this.rows.push({name:'', position:'', nip:'', nuptk:'', portions:1}); if (this.primaryIndex === null) this.primaryIndex = 0; this.participantCount = this.portionTotal; this.page = this.pageCount(); },
         removeRow(index) {
             this.rows.splice(index,1);
             if (this.rows.length === 0) this.primaryIndex = null;
@@ -68,6 +68,8 @@
                     <th class="w-10 px-1.5 py-1.5 text-center">No</th>
                     <th class="min-w-[12rem] px-1.5 py-1.5 text-left">Nama Peserta</th>
                     <th class="min-w-[10rem] px-1.5 py-1.5 text-left">Jabatan / Instansi</th>
+                    <th class="w-28 px-1.5 py-1.5 text-left">NIP</th>
+                    <th class="w-28 px-1.5 py-1.5 text-left">NUPTK</th>
                     <th class="w-20 px-1.5 py-1.5 text-right">Porsi</th>
                     <th class="w-20 px-1.5 py-1.5 text-center">Penerima Utama</th>
                     <th class="w-14 px-1.5 py-1.5 text-center">Aksi</th>
@@ -79,6 +81,8 @@
                         <td class="px-1.5 py-1 text-center font-mono text-[11px]" x-text="index+1"></td>
                         <td class="px-1 py-1"><input required :name="`participants[${index}][name]`" x-model="row.name" class="h-8 w-full rounded border border-sky-200 px-2 text-xs"></td>
                         <td class="px-1 py-1"><input :name="`participants[${index}][position]`" x-model="row.position" class="h-8 w-full rounded border border-sky-200 px-2 text-xs"></td>
+                        <td class="px-1 py-1"><input :name="`participants[${index}][nip]`" x-model="row.nip" class="h-8 w-28 rounded border border-sky-200 px-2 font-mono text-xs"></td>
+                        <td class="px-1 py-1"><input :name="`participants[${index}][nuptk]`" x-model="row.nuptk" class="h-8 w-28 rounded border border-sky-200 px-2 font-mono text-xs"></td>
                         <td class="px-1 py-1"><input required type="number" min="1" step="1" :name="`participants[${index}][portions]`" x-model.number="row.portions" @input="participantCount = portionTotal" class="h-8 w-20 rounded border border-sky-200 px-2 text-right font-mono text-xs"></td>
                         <td class="px-1.5 py-1 text-center"><input type="radio" :checked="primaryIndex === index" @change="primaryIndex = index" title="Jadikan peserta ini sebagai Penerima Utama" class="h-4 w-4 border-sky-300 text-indigo-600 focus:ring-indigo-500"></td>
                         <td class="px-1.5 py-1 text-center"><button type="button" @click="removeRow(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">×</button></td>
