@@ -32,7 +32,70 @@ CI job : 102642898023
 result : PASS — 163 tests / 1127 assertions
 ```
 
-Repository-wide Pint tetap advisory dan masih mempunyai **1 pre-existing** `single_quote` warning pada `tests/Feature/SyncProgressUiTest.php`. Frontend build dan Blade compile pada checkpoint P0-07 PASS.
+### P0-01 — E2E enam kategori
+
+```text
+commit : b9611e3814380e3776bf8327c4df01ecb85e6eb9
+subject: test: gate six-category E2E in SPJ critical suite
+CI run : 34405652728
+CI job : 102647980543
+result : PASS — 169 tests / 1407 assertions
+```
+
+Repository-wide Pint tetap advisory dan masih mempunyai **1 pre-existing** `single_quote` warning pada `tests/Feature/SyncProgressUiTest.php`. Frontend build dan Blade compile pada checkpoint P0-01 PASS.
+
+---
+
+## P0-01 — E2E enam kategori
+
+**Status: FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-TENANT RVR / READY FOR REAL-DATA VERIFICATION.**
+
+Regression deterministic baru `tests/Feature/SpjSixCategoryE2eTest.php` menjalankan keenam kategori canonical melalui jalur runtime yang sama:
+
+```text
+BARANG
+KONSUMSI
+PEMELIHARAAN
+JASA_LAINNYA
+SPPD
+HONOR_PEGAWAI
+```
+
+Functional E2E yang sekarang PASS:
+
+- transaksi mempunyai item SPJ tersimpan lalu melewati gateway prepare menjadi Paket `DRAFT`;
+- update Paket memakai route/runtime use case aplikasi dan menyimpan kategori canonical;
+- BARANG dan KONSUMSI membuat penerimaan barang melalui endpoint canonical sebelum READY;
+- seluruh kategori melewati validasi `READY` yang sama dengan aplikasi;
+- nomor auxiliary applicable dibuat melalui `SpjDocumentNumberService` sebelum nomor SPJ ditetapkan;
+- Paket mencapai `NUMBERED` dan mempunyai identitas dokumen SPJ canonical;
+- preview Paket nyata berhasil dirender dan memuat kategori, identitas sekolah, serta nomor dokumen;
+- download Paket XLSX menghasilkan workbook nyata yang dapat dibuka kembali oleh PhpSpreadsheet dan memuat kategori, sekolah, nomor, serta nilai bruto;
+- download Paket PDF menghasilkan payload PDF aktual;
+- preview/download tidak menambah `spj_documents` dan tidak menambah `document_number_sequences`;
+- seluruh dokumen NUMBERED difinalkan melalui endpoint lifecycle dan Paket berakhir `FINAL` dengan snapshot;
+- Paket FINAL tidak editable dan seluruh dokumennya berstatus FINAL;
+- audit lifecycle dasar terbukti mencatat `BUAT_DRAFT`, `PERBARUI_ISIAN`, `PAKET_READY`, dan `TETAPKAN_NOMOR`;
+- keenam data-provider case berjalan di `SPJ Critical` sehingga regression salah satu kategori menggagalkan release gate.
+
+CI canonical P0-01 pada `b9611e3814380e3776bf8327c4df01ecb85e6eb9`:
+
+```text
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 169 tests / 1407 assertions
+repository Pint        WARN — 1 pre-existing style issue
+```
+
+Yang masih RVR dan tidak boleh diklaim PASS hanya dari fixture deterministic:
+
+- transaksi ARKAS/BKU dari database sekolah target;
+- nominal, pajak, vendor, penerima, NPWP, dan metadata sumber pada data sekolah nyata;
+- official-template/output visual yang masih menjadi RVR P0-02;
+- audit before/after real tenant melalui `spj:audit-quarter` dan `spj:audit-diff --fail-on-regression`;
+- alur operator pada installed runtime sekolah sampai FINAL dan membuka hasil dokumen sebenarnya.
+
+**P0-01 sekarang READY FOR REAL-DATA VERIFICATION.** Ini menutup gap functional enam kategori, tetapi belum membuat keseluruhan aplikasi release-ready tanpa real-tenant verification.
 
 ---
 
@@ -167,24 +230,12 @@ School + Fiscal Year + Fund Source
 
 ## P0 yang masih memerlukan data/runtime nyata
 
-### P0-01 — E2E enam kategori
+P0 functional gate utama sekarang sudah mempunyai deterministic CI coverage. Release verification berikutnya tetap membutuhkan nilai/runtime nyata:
 
-**RVR — menunggu database sekolah nyata.**
-
-Target:
-
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
-
-Jalankan kandidat nyata melalui Detail -> DRAFT -> READY -> NUMBERED -> preview/download -> FINAL, lalu bandingkan audit before/after dengan `spj:audit-diff --fail-on-regression`.
-
-P0-02 masih mempunyai official-template RVR dan P0-07 masih mempunyai installed-runtime RVR sebagaimana dijelaskan pada bagian masing-masing.
+- P0-01: database sekolah target + audit before/after;
+- P0-02: official template + visual/output operator verification;
+- P0-07: installed Windows runtime + file tenant nyata;
+- P0-08: real-tenant/operator importer verification.
 
 ---
 
@@ -234,6 +285,7 @@ Mobile/responsive QA penuh bukan release blocker saat ini.
 - Histori import wajib membedakan read/write/new/changed/unchanged/removed.
 - Reset tenant tidak boleh pernah menghapus database utama aplikasi.
 - Restore harus memverifikasi backup sebelum replacement dan mempertahankan rollback point.
+- Keenam kategori canonical wajib mempertahankan jalur DRAFT -> READY -> NUMBERED -> preview/download -> FINAL pada SPJ Critical.
 - Auto-fill peserta KONSUMSI tetap `Employee.source_type = DAPODIK`; participant manual tetap diperbolehkan.
 
 Command verification canonical:
