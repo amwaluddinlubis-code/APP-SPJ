@@ -7,6 +7,7 @@ use App\Services\OperationalAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SpjPackageCategoryUseCase
 {
@@ -39,26 +40,47 @@ class SpjPackageCategoryUseCase
             return back()->with('error', $message);
         }
 
-        if ($package->transaction->spj_category !== $data['spj_category']) {
-            $package->transaction->forceFill(['spj_category' => $data['spj_category']])->save();
-            app(OperationalAuditService::class)->record(
-                $package->transaction->fiscal_year_id,
-                'SPJ_PACKAGE',
-                $package->id,
-                'UBAH_KATEGORI',
-                'Kategori paket '.$package->transaction->no_bukti.' diubah menjadi '.$data['spj_category'].'.'
-            );
+        $categoryChanged = $package->transaction->spj_category !== $data['spj_category'];
+        $demotedForRevalidation = false;
+
+        if ($categoryChanged) {
+            DB::connection('school')->transaction(function () use ($package, $data, &$demotedForRevalidation): void {
+                $demotedForRevalidation = $package->status === 'READY';
+
+                $package->transaction->forceFill(['spj_category' => $data['spj_category']])->save();
+                if ($demotedForRevalidation) {
+                    $package->forceFill(['status' => 'DRAFT'])->save();
+                }
+
+                $description = 'Kategori paket '.$package->transaction->no_bukti.' diubah menjadi '.$data['spj_category'].'.';
+                if ($demotedForRevalidation) {
+                    $description .= ' Paket dikembalikan ke DRAFT untuk validasi ulang.';
+                }
+
+                app(OperationalAuditService::class)->record(
+                    $package->transaction->fiscal_year_id,
+                    'SPJ_PACKAGE',
+                    $package->id,
+                    'UBAH_KATEGORI',
+                    $description,
+                );
+            });
         }
+
+        $message = $demotedForRevalidation
+            ? 'Kategori SPJ diperbarui. Paket dikembalikan ke DRAFT dan harus divalidasi ulang sebelum penomoran.'
+            : 'Kategori SPJ diperbarui. Isian Manual dimuat sesuai kategori yang dipilih.';
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Kategori SPJ tersimpan.',
+                'message' => $message,
                 'package_id' => $package->id,
                 'spj_category' => $data['spj_category'],
+                'package_status' => $package->status,
             ]);
         }
 
         return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $package->id])
-            ->with('success', 'Kategori SPJ diperbarui. Isian Manual dimuat sesuai kategori yang dipilih.');
+            ->with('success', $message);
     }
 }
