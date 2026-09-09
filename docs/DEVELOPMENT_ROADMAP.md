@@ -7,11 +7,11 @@ Roadmap ini memusatkan pekerjaan yang masih perlu diselesaikan pada branch `gui-
 Baseline correctness P0-08 terbaru:
 
 ```text
-50794b4872d3be273ee73fbaccdd438fcca4569d
-test: prove ARKAS upsert preserves absent rows
+56aefd25a50489151b77a155bf72b21fbebfd9d9
+test: keep ARKAS route guard assertion session-safe
 ```
 
-Checkpoint tersebut mencakup source-key, tenant boundary, dan regression tiga mode sinkronisasi Generic ARKAS Importer.
+Checkpoint tersebut mencakup source-key, tenant boundary, tiga mode sinkronisasi, preview read-only, raw stable-key policy, source-empty semantics, schema-drift blocking, dan queue/background tenant activation Generic ARKAS Importer.
 
 # P0 — Core Release Safety
 
@@ -33,19 +33,21 @@ Sudah tersedia:
 - [x] source-key Generic Importer regression;
 - [x] tenant activation/isolation + cross-school/cross-year regression;
 - [x] Upsert / Incremental / Full Refresh regression;
-- [x] CI pada `50794b4` PASS: `134 tests / 896 assertions`;
+- [x] preview full reconciliation read-only regression;
+- [x] raw stable-key policy regression;
+- [x] source kosong regression;
+- [x] schema drift blocking regression;
+- [x] queue/background tenant activation regression;
+- [x] CI pada `56aefd2` PASS: `141 tests / 954 assertions`;
 - [x] docs-only changes tidak memicu verification run yang tidak perlu.
 
 Masih RVR/TODO:
 
 - [ ] first local `php artisan spj:verify` lengkap;
 - [ ] first real-tenant verification pada database sekolah target;
-- [ ] preview full reconciliation read-only regression;
-- [ ] raw stable-key policy regression;
-- [ ] source kosong regression;
-- [ ] schema drift blocking regression;
-- [ ] queue/background tenant activation regression;
-- [ ] tenant-scoped lock / timestamp / import-metrics hardening;
+- [ ] tenant-scoped staging/import lock;
+- [ ] pertahankan first-created semantics `created_at` pada existing staging/import row;
+- [ ] perbaiki import metrics/histori menjadi read/new/changed/unchanged/removed;
 - [ ] bersihkan repository-wide Pint debt; `SyncProgressUiTest.php` masih mempunyai pre-existing `single_quote` warning.
 
 ---
@@ -145,7 +147,8 @@ School + Fiscal Year + Fund Source
 - [x] Generic Importer menjalankan `active-school` sebelum `active-year`;
 - [x] forged profile lintas sekolah pada preview/sync ditolak;
 - [x] save mapping hanya menulis tenant aktif;
-- [x] stale fiscal-year context lintas tenant ditolak.
+- [x] stale fiscal-year context lintas tenant ditolak;
+- [x] background job mengaktifkan school tenant sebelum membaca profile/fiscal year tenant.
 
 ---
 
@@ -165,7 +168,7 @@ School + Fiscal Year + Fund Source
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / HARDENING OPEN.**
+**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING OPEN.**
 
 Fondasi:
 
@@ -178,7 +181,7 @@ Bridge
 -> target domain / raw snapshot
 ```
 
-Correctness yang sudah ditutup:
+Correctness/release guard yang sudah ditutup:
 
 - [x] shared `ArkasSourceKeyResolver`;
 - [x] configured key case-insensitive + canonical fallback;
@@ -188,25 +191,25 @@ Correctness yang sudah ditutup:
 - [x] **Upsert deterministic:** update stable key, insert key baru, preserve row yang absen dari snapshot berikutnya;
 - [x] **Incremental deterministic:** hanya timestamp `> last_synced_at` yang diproses;
 - [x] **Full Refresh scoped:** active profile/year staging diganti, active fiscal-year domain diganti, fiscal year/profile lain tetap utuh;
-- [x] `tests/Feature/ArkasGenericImportSyncModeTest.php` masuk `SPJ Critical`;
-- [x] CI critical PASS `134 tests / 896 assertions` pada `50794b4`.
+- [x] preview full reconciliation tidak menulis staging/domain/import history;
+- [x] raw Upsert/Incremental tanpa effective stable source key ditolak sebelum fetch;
+- [x] raw Full Refresh tanpa stable key tetap diperbolehkan dan memakai payload-hash identity untuk snapshot penuh;
+- [x] source kosong: Upsert/Incremental preserve, Full Refresh membersihkan hanya active scope;
+- [x] schema drift pada mapped/key/incremental timestamp column memblokir sync;
+- [x] controller store/sync menerapkan release guard, bukan hanya helper/service internal;
+- [x] background queue mengaktifkan tenant sebelum membaca model tenant dan menerapkan guard yang sama;
+- [x] `tests/Feature/ArkasGenericImportReleaseSafetyTest.php`, `ArkasImporterRuntimeGuardTest.php`, dan `ArkasImportQueueTenantTest.php` masuk `SPJ Critical`;
+- [x] CI critical PASS `141 tests / 954 assertions` pada `56aefd2`.
 
-Regression/checklist berikutnya:
-
-- [ ] preview full reconciliation dibuktikan tidak menulis domain;
-- [ ] raw profile mempunyai stable-key policy eksplisit;
-- [ ] source kosong aman dan hasil mode jelas;
-- [ ] schema drift memblokir jika source key/mandatory mapping hilang;
-- [ ] background queue mengaktifkan tenant yang benar sebelum query model tenant.
-
-Hardening setelah regression behavior:
+Hardening berikutnya:
 
 - [ ] tenant-scoped staging/import lock;
-- [ ] `created_at` existing row mempertahankan first-created semantics;
+- [ ] `created_at` existing staging/import row mempertahankan first-created semantics;
 - [ ] histori import membedakan read/new/changed/unchanged/removed;
+- [ ] `records_written` menjadi actual changed/write metric, bukan processed-row count;
 - [ ] Bridge-side delta fetch untuk incremental sebagai optimasi setelah correctness selesai.
 
-**Exit criteria P0-08:** source-key, tenant isolation, dan tiga mode sinkronisasi utama sudah PASS. Status `READY FOR OPERATOR TEST` baru diberikan setelah preview/raw/source-empty/schema-drift/queue mempunyai kontrak regression release-critical yang memadai.
+**Exit criteria P0-08 saat ini:** release-critical behavior preview/raw/source-empty/schema-drift/queue sudah mempunyai regression PASS. Generic Importer tetap belum `READY FOR OPERATOR TEST` sampai hardening concurrency/timestamp/import-metrics utama di atas selesai.
 
 ---
 
@@ -293,18 +296,17 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 ## Urutan kerja efektif dari checkpoint sekarang
 
 ```text
-1. P0-08 preview read-only + raw stable-key policy
-2. P0-08 source kosong + schema drift regression
-3. P0-08 queue/background tenant regression
-4. P0-08 tenant-scoped lock / created_at / import metrics
-5. P0-01 real-data E2E enam kategori
-6. P0-02 generator dokumen nyata
-7. P0-07 APP DATA nyata
-8. P1 blocker yang ditemukan dari kandidat nyata
-9. P2 cleanup / performance / GUI polish
+1. P0-08 tenant-scoped staging/import lock
+2. P0-08 preserve created_at first-created semantics
+3. P0-08 import metrics read/new/changed/unchanged/removed
+4. P0-01 real-data E2E enam kategori
+5. P0-02 generator dokumen nyata
+6. P0-07 APP DATA nyata
+7. P1 blocker yang ditemukan dari kandidat nyata
+8. P2 cleanup / performance / GUI polish
 ```
 
-Tidak menambah fitur baru sebelum regression correctness P0-08 yang tersisa selesai, kecuali perubahan tersebut diperlukan untuk menutup blocker release.
+Bridge-side incremental delta fetch tetap optimasi setelah correctness/hardening release-critical selesai.
 
 ---
 
@@ -313,7 +315,7 @@ Tidak menambah fitur baru sebelum regression correctness P0-08 yang tersisa sele
 Release candidate belum selesai sampai:
 
 - seluruh P0 mendapat runtime checkpoint PASS atau keputusan RVR/out-of-scope eksplisit;
-- P0-08 mempertahankan source-key + tenant + sync-mode PASS dan menutup preview/raw/source-empty/schema-drift/queue behavior release-critical;
+- P0-08 mempertahankan source-key + tenant + sync-mode + release-guard PASS dan menutup hardening concurrency/timestamp/import-metrics;
 - keenam kategori lulus E2E nyata sampai FINAL + preview/download;
 - generator dokumen nyata tervalidasi;
 - numbering/lifecycle/revision aman;
