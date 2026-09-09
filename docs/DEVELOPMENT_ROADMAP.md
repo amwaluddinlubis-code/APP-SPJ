@@ -4,7 +4,7 @@ Terakhir diperbarui: **2026-09-10**
 
 Roadmap ini memusatkan pekerjaan yang masih perlu diselesaikan dan checkpoint P0 yang sudah ditutup pada branch `gui-standardization`. Migrasi ownership Detail Transaksi ↔ Paket SPJ sudah PASS; detail historisnya ada di `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md`.
 
-Baseline review saat ini adalah commit `ceb8df6f2a73c4e69cf13de8048ada2fff245fce` beserta pembaruan dokumentasi setelah review tersebut.
+Baseline kode saat ini adalah commit `6aed816a4034c6351498922f6dfdaf74a76d7566` untuk source-key resolver + regression Generic ARKAS Importer, beserta pembaruan dokumentasi setelah checkpoint tersebut.
 
 # P0 — Core Release Safety
 
@@ -24,16 +24,17 @@ Agar milestone P0 tidak mengulang fixture, daftar test, build command, dan audit
 - [x] `spj:audit-diff before.json after.json` untuk membandingkan audit tanpa membaca ulang database;
 - [x] `--fail-on-regression` sebagai gate diff;
 - [x] `.github/workflows/spj-critical.yml` untuk static/build/critical-test CI pada branch `gui-standardization`;
-- [x] CI pada `ceb8df6` membuktikan frontend build, Blade compile, dan `SPJ Critical` PASS (`124 tests / 810 assertions`);
+- [x] CI pada `6aed816` membuktikan frontend build, Blade compile, dan `SPJ Critical` PASS (`129 tests / 823 assertions`);
+- [x] source-key resolver Generic ARKAS Importer dan regression non-empty import sudah masuk `SPJ Critical`;
 - [x] CI docs-only changes di-skip agar dokumentasi tidak memicu verification run yang tidak perlu.
 
 ### Masih RVR / TODO
 
 - [ ] first local `php artisan spj:verify` lengkap;
 - [ ] first `spj:verify --npsn=10208183 --quarter=1` pada database nyata;
-- [ ] tutup P0-08 Generic ARKAS Importer sebelum operator test;
-- [ ] masukkan regression importer/employee yang release-critical ke gate yang sesuai;
-- [ ] bersihkan repository-wide Pint debt. Pada checkpoint `ceb8df6`, Pint masih WARN karena `single_quote` pada `tests/Feature/SyncProgressUiTest.php`; status style sementara advisory, bukan functional PASS penuh.
+- [ ] tutup tenant boundary P0-08 Generic ARKAS Importer sebelum operator test;
+- [ ] tambahkan regression importer lain yang release-critical (tenant isolation, sync mode, schema drift, queue/raw behavior) ke gate yang sesuai;
+- [ ] bersihkan repository-wide Pint debt. Pada checkpoint `6aed816`, Pint masih WARN karena `single_quote` pada `tests/Feature/SyncProgressUiTest.php`; status style sementara advisory, bukan functional PASS penuh.
 
 Gunakan `php artisan spj:verify --strict-style` bila Pint perlu dijadikan blocking gate.
 
@@ -217,7 +218,7 @@ TODO:
 
 ## P0-08 — Generic ARKAS Importer + tenant boundary
 
-**Status: IMPLEMENTED / BLOCKED BEFORE OPERATOR TEST.**
+**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BLOCKER OPEN.**
 
 Fondasi yang sudah ada:
 
@@ -230,16 +231,24 @@ Bridge
 → target domain / raw snapshot
 ```
 
-Blocker hasil review head `ceb8df6`:
+Source-key correctness yang sudah ditutup pada `6aed816`:
 
-- [ ] sediakan source-key resolver yang benar untuk `ArkasGenericImportService`; pemanggilan `sourceKey()` saat ini tidak memiliki implementasi di service tersebut;
+- [x] `ArkasSourceKeyResolver` menjadi resolver tunggal untuk Generic Import, Staging, dan Reconciliation;
+- [x] configured key diprioritaskan dan lookup nama kolom case-insensitive;
+- [x] fallback identity canonical ARKAS tersedia sebelum fallback hash payload;
+- [x] regression import record non-kosong menutup undefined runtime path lama;
+- [x] unit contract resolver + feature regression Generic Import masuk suite `SPJ Critical`;
+- [x] CI critical PASS `129 tests / 823 assertions`.
+
+Blocker/checklist yang masih terbuka:
+
 - [ ] pastikan semua route Generic Importer mengaktifkan `active-school` + `active-year` sebelum membaca/menulis model connection `school`;
 - [ ] regression cross-school/cross-year untuk GET, save mapping, preview, sync;
-- [ ] regression import record non-kosong agar undefined runtime path tidak lolos CI;
 - [ ] regression Upsert / Incremental / Full refresh;
 - [ ] regression raw profile dan stable-key behavior;
+- [ ] regression schema drift dan source kosong;
 - [ ] regression queue/background import;
-- [ ] masukkan test yang relevan ke gate release-safety.
+- [ ] masukkan regression lanjutan yang release-critical ke gate yang sesuai.
 
 Hardening berikutnya setelah blocker utama:
 
@@ -249,7 +258,7 @@ Hardening berikutnya setelah blocker utama:
 - [ ] kebijakan raw profile tanpa stable key;
 - [ ] Bridge-side delta fetch sebagai optimasi setelah correctness selesai.
 
-**Exit criteria P0-08:** importer baru boleh disebut `READY FOR OPERATOR TEST` setelah dua blocker runtime/context ditutup dan regression non-empty + tenant isolation PASS.
+**Exit criteria P0-08:** importer baru boleh disebut `READY FOR OPERATOR TEST` setelah tenant activation/isolation ditutup dan regression context + mode sinkronisasi utama PASS. Source-key runtime blocker sudah tidak menjadi blocker aktif.
 
 ---
 
@@ -431,8 +440,8 @@ Implementasi bertahap laporan BOS resmi dan ekspansi non-core setelah P0 release
 ## Urutan kerja efektif dari checkpoint sekarang
 
 ```text
-1. P0-08 Generic ARKAS Importer correctness + tenant boundary
-2. Tambahkan regression importer ke release gate
+1. P0-08 Generic ARKAS Importer tenant boundary + regression context
+2. P0-08 regression sync mode / raw / queue / schema drift
 3. P0-01 real-data E2E enam kategori
 4. P0-02 generator dokumen nyata
 5. P0-07 APP DATA nyata
@@ -449,7 +458,7 @@ Tidak menambah fitur baru sebelum P0-08 selesai kecuali perubahan tersebut diper
 Release candidate belum selesai sampai:
 
 - seluruh P0 mendapat runtime checkpoint PASS atau keputusan RVR/out-of-scope eksplisit;
-- P0-08 Generic ARKAS Importer lolos non-empty runtime + tenant isolation sebelum operator test;
+- P0-08 Generic ARKAS Importer lolos tenant isolation + mode sinkronisasi utama sebelum operator test;
 - keenam kategori lulus E2E nyata sampai FINAL + preview/download;
 - preview/download bebas side effect;
 - numbering/lifecycle/revision aman;
