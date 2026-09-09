@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Services\ArkasDatabaseExplorer;
 use App\Services\ArkasDomainAdapter;
 use App\Services\ArkasGenericImportService;
+use App\Services\ArkasImportGuard;
 use App\Services\ArkasReconciliationService;
 use App\Services\ArkasSourceKeyResolver;
 use Illuminate\Http\RedirectResponse;
@@ -104,7 +105,7 @@ class ArkasImporterController implements HasMiddleware
         return view('arkas.importer', compact('tables', 'columns', 'rows', 'selectedTable', 'limit', 'error', 'source', 'profiles', 'profile', 'targetDomains', 'preset', 'effectiveTargetDomain', 'effectiveMapping', 'effectiveSourceKeyColumn', 'currentStatus', 'recentRun', 'runHistory', 'previewDiff', 'reconciliation', 'schemaDrift'));
     }
 
-    public function store(Request $request, ArkasDatabaseExplorer $explorer): RedirectResponse
+    public function store(Request $request, ArkasDatabaseExplorer $explorer, ArkasImportGuard $guard): RedirectResponse
     {
         $data = $request->validate([
             'source_table' => ['required', 'string', 'max:120'],
@@ -123,11 +124,16 @@ class ArkasImporterController implements HasMiddleware
 
         $mapping = array_filter($data['mapping'] ?? [], static fn (mixed $role): bool => $role !== 'ignore' && filled($role));
         $mappingErrors = app(ArkasReconciliationService::class)->validateMapping($mapping, $data['source_key_column'] ?? null, $data['target_domain']);
-        if ($data['sync_mode'] === 'incremental' && blank($data['source_updated_column'] ?? null)) {
-            $mappingErrors[] = 'Mode Incremental memerlukan kolom terakhir berubah.';
-        }
+        $mappingErrors = array_merge($mappingErrors, $guard->configurationErrors(
+            $data['source_table'],
+            $data['target_domain'],
+            $data['sync_mode'],
+            $data['source_key_column'] ?? null,
+            $data['source_updated_column'] ?? null,
+            $mapping,
+        ));
         if ($mappingErrors !== []) {
-            return back()->withInput()->withErrors(['mapping' => $mappingErrors]);
+            return back()->withInput()->withErrors(['mapping' => array_values(array_unique($mappingErrors))]);
         }
         ArkasImportProfile::query()->updateOrCreate(
             ['source_table' => $data['source_table']],
@@ -149,17 +155,37 @@ class ArkasImporterController implements HasMiddleware
         }
     }
 
-    public function sync(int $profileId, ArkasGenericImportService $importer, ArkasReconciliationService $reconciliation): RedirectResponse
-    {
+    public function sync(
+        int $profileId,
+        ArkasGenericImportService $importer,
+        ArkasReconciliationService $reconciliation,
+        ArkasDatabaseExplorer $explorer,
+        ArkasImportGuard $guard,
+    ): RedirectResponse {
         $profile = ArkasImportProfile::query()->findOrFail($profileId);
         $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
         $source = ArkasSource::query()->where('school_id', session('active_school_id'))->firstOrFail();
         $mappingErrors = $reconciliation->validateMapping($profile->mapping ?? [], $profile->source_key_column, $profile->target_domain);
-        if ($profile->sync_mode === 'incremental' && blank($profile->source_updated_column)) {
-            $mappingErrors[] = 'Mode Incremental memerlukan kolom terakhir berubah.';
+        $mappingErrors = array_merge($mappingErrors, $guard->configurationErrors(
+            $profile->source_table,
+            $profile->target_domain,
+            $profile->sync_mode,
+            $profile->source_key_column,
+            $profile->source_updated_column,
+            $profile->mapping ?? [],
+        ));
+        try {
+            $currentColumns = array_map(
+                static fn (array $column): string => $column['name'],
+                $explorer->inspect($source, $profile->source_table, 1)['columns'],
+            );
+            $mappingErrors = array_merge($mappingErrors, $guard->schemaErrors($profile, $currentColumns));
+        } catch (\Throwable $exception) {
+            return redirect()->route('arkas.importer', ['table' => $profile->source_table])
+                ->with('error', 'Validasi schema ARKAS gagal: '.$exception->getMessage());
         }
         if ($mappingErrors !== []) {
-            return redirect()->route('arkas.importer', ['table' => $profile->source_table])->withErrors(['mapping' => $mappingErrors]);
+            return redirect()->route('arkas.importer', ['table' => $profile->source_table])->withErrors(['mapping' => array_values(array_unique($mappingErrors))]);
         }
         if (config('queue.arkas_sync_async')) {
             $school = School::query()->findOrFail(session('active_school_id'));
