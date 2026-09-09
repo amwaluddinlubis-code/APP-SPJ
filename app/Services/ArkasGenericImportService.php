@@ -14,12 +14,16 @@ class ArkasGenericImportService
 {
     private readonly ArkasSourceKeyResolver $sourceKeys;
 
+    private readonly ArkasImportRowSynchronizer $rows;
+
     public function __construct(
         private readonly ArkasStagingService $staging,
         private readonly ArkasDomainAdapter $adapter,
         ?ArkasSourceKeyResolver $sourceKeys = null,
+        ?ArkasImportRowSynchronizer $rows = null,
     ) {
         $this->sourceKeys = $sourceKeys ?? new ArkasSourceKeyResolver;
+        $this->rows = $rows ?? new ArkasImportRowSynchronizer($this->sourceKeys);
     }
 
     public function synchronize(ArkasImportProfile $profile, FiscalYear $year, ArkasSource $source): ArkasImportRun
@@ -38,9 +42,12 @@ class ArkasGenericImportService
             throw new \RuntimeException(implode(' ', $guardErrors));
         }
 
-        $lock = Cache::lock('arkas-import:'.$profile->id.':'.$year->id, 900);
+        $lock = Cache::lock(
+            ArkasTenantLockKey::import($source, (int) $profile->id, (int) $year->id),
+            900,
+        );
         if (! $lock->get()) {
-            throw new \RuntimeException('Importer ARKAS untuk profil dan tahun anggaran ini sedang berjalan. Tunggu sampai proses sebelumnya selesai.');
+            throw new \RuntimeException('Importer ARKAS untuk profil, sekolah, dan tahun anggaran ini sedang berjalan. Tunggu sampai proses sebelumnya selesai.');
         }
 
         $db = DB::connection('school');
@@ -71,26 +78,32 @@ class ArkasGenericImportService
                 }));
             }
 
-            $written = 0;
+            $metrics = [
+                'new' => 0,
+                'changed' => 0,
+                'unchanged' => 0,
+                'removed' => 0,
+                'written' => 0,
+            ];
             $domainWritten = 0;
-            $db->transaction(function () use ($db, $profile, $year, $records, $sourceKeyColumn, &$written, &$domainWritten): void {
-                if ($profile->sync_mode === 'full_refresh') {
-                    $db->table('arkas_import_rows')->where('profile_id', $profile->id)->where('fiscal_year_id', $year->id)->delete();
-                }
-
-                foreach ($records as $record) {
-                    $sourceKey = $this->sourceKeys->resolve($record, $sourceKeyColumn);
-                    $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
-                    $db->table('arkas_import_rows')->updateOrInsert(
-                        ['profile_id' => $profile->id, 'fiscal_year_id' => $year->id, 'source_key' => $sourceKey],
-                        ['parent_source_key' => $this->mappedValue($record, $profile, 'parent'), 'relation_type' => $profile->source_table, 'payload' => $payload, 'payload_hash' => hash('sha256', $payload), 'updated_at' => now(), 'created_at' => now()],
-                    );
-                    $written++;
-                }
+            $db->transaction(function () use ($profile, $year, $records, $sourceKeyColumn, &$metrics, &$domainWritten): void {
+                $metrics = $this->rows->synchronize($profile, $year, $records, $sourceKeyColumn);
                 $domainWritten = $this->adapter->synchronize($profile, $year, $records);
             });
 
-            $run->update(['status' => 'SUCCESS', 'records_read' => count($records), 'records_written' => $written, 'message' => $profile->target_domain === 'raw' ? "Snapshot generik tersimpan melalui Bridge {$bridgeCommand}." : "Snapshot dan {$domainWritten} baris domain {$profile->target_domain} tersimpan melalui Bridge {$bridgeCommand}.", 'finished_at' => now()]);
+            $run->update([
+                'status' => 'SUCCESS',
+                'records_read' => count($records),
+                'records_written' => $metrics['written'],
+                'records_new' => $metrics['new'],
+                'records_changed' => $metrics['changed'],
+                'records_unchanged' => $metrics['unchanged'],
+                'records_removed' => $metrics['removed'],
+                'message' => $profile->target_domain === 'raw'
+                    ? "Snapshot generik tersimpan melalui Bridge {$bridgeCommand}."
+                    : "Snapshot dan {$domainWritten} baris domain {$profile->target_domain} tersimpan melalui Bridge {$bridgeCommand}.",
+                'finished_at' => now(),
+            ]);
             $profile->update(['last_synced_at' => now()]);
         } catch (\Throwable $exception) {
             $run->update(['status' => 'FAILED', 'message' => $exception->getMessage(), 'finished_at' => now()]);
@@ -112,17 +125,5 @@ class ArkasGenericImportService
         }
 
         return null;
-    }
-
-    /** @param array<string, mixed> $record */
-    private function mappedValue(array $record, ArkasImportProfile $profile, string $role): ?string
-    {
-        $column = array_search($role, $profile->mapping ?? [], true);
-        if ($column === false) {
-            return null;
-        }
-        $value = $this->recordValue($record, (string) $column);
-
-        return $value === null ? null : (string) $value;
     }
 }
