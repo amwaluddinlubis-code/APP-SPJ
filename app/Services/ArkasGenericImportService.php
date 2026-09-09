@@ -12,7 +12,15 @@ use Illuminate\Support\Facades\DB;
 
 class ArkasGenericImportService
 {
-    public function __construct(private readonly ArkasStagingService $staging, private readonly ArkasDomainAdapter $adapter) {}
+    private readonly ArkasSourceKeyResolver $sourceKeys;
+
+    public function __construct(
+        private readonly ArkasStagingService $staging,
+        private readonly ArkasDomainAdapter $adapter,
+        ?ArkasSourceKeyResolver $sourceKeys = null,
+    ) {
+        $this->sourceKeys = $sourceKeys ?? new ArkasSourceKeyResolver;
+    }
 
     public function synchronize(ArkasImportProfile $profile, FiscalYear $year, ArkasSource $source): ArkasImportRun
     {
@@ -52,13 +60,14 @@ class ArkasGenericImportService
 
             $written = 0;
             $domainWritten = 0;
-            $db->transaction(function () use ($db, $profile, $year, $records, &$written, &$domainWritten): void {
+            $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
+            $db->transaction(function () use ($db, $profile, $year, $records, $sourceKeyColumn, &$written, &$domainWritten): void {
                 if ($profile->sync_mode === 'full_refresh') {
                     $db->table('arkas_import_rows')->where('profile_id', $profile->id)->where('fiscal_year_id', $year->id)->delete();
                 }
 
                 foreach ($records as $record) {
-                    $sourceKey = $this->sourceKey($record, $profile->source_key_column);
+                    $sourceKey = $this->sourceKeys->resolve($record, $sourceKeyColumn);
                     $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
                     $db->table('arkas_import_rows')->updateOrInsert(
                         ['profile_id' => $profile->id, 'fiscal_year_id' => $year->id, 'source_key' => $sourceKey],
