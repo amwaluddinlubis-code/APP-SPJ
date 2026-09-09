@@ -18,8 +18,11 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
+use PhpOffice\PhpWord\PhpWord;
 use RuntimeException;
 use Tests\TestCase;
+use ZipArchive;
 
 class SpjDocumentGeneratorHardeningTest extends TestCase
 {
@@ -108,9 +111,75 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
         $this->assertSame($sequencesBefore, DB::connection('school')->table('document_number_sequences')->count());
     }
 
-    public function test_preflight_rejects_unresolved_placeholder_before_preview_or_package_output(): void
+    public function test_generated_docx_is_openable_and_has_no_unresolved_markers(): void
     {
         $package = $this->package('BARANG', 2);
+        $template = $this->docxTemplate();
+        $response = app(SpjTemplateService::class)->download($template, $package, $this->school());
+        $path = $response->getFile()->getPathname();
+
+        try {
+            $this->assertGreaterThan(0, filesize($path));
+            $zip = new ZipArchive;
+            $this->assertTrue($zip->open($path) === true);
+            $documentXml = (string) $zip->getFromName('word/document.xml');
+            $zip->close();
+
+            $this->assertStringContainsString('SD Negeri Generator Uji', $documentXml);
+            $this->assertStringContainsString('002/SPJ/2026', $documentXml);
+            $this->assertSame([], app(SpjUnresolvedPlaceholderGuard::class)->findInFile('SPJ_CHECKLIST', $path, 'docx'));
+        } finally {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
+    }
+
+    public function test_package_multitemplate_excel_and_pdf_are_real_outputs_without_numbering_side_effects(): void
+    {
+        $package = $this->package('BARANG', 3);
+        $school = $this->school();
+        $templates = collect([
+            $this->xlsxTemplate([
+                'A1' => 'Rincian {{NOMOR_DOKUMEN}}',
+                'A2' => '{{NAMA_SEKOLAH}}',
+            ]),
+            $this->xlsxTemplate([
+                'A1' => 'Checklist {{NOMOR_DOKUMEN}}',
+                'A2' => '{{NAMA_KEPALA_SEKOLAH}}',
+            ], 'SPJ_CHECKLIST', 'TPL_CHECKLIST_SPJ'),
+        ]);
+        $documentsBefore = DB::connection('school')->table('spj_documents')->count();
+        $sequencesBefore = DB::connection('school')->table('document_number_sequences')->count();
+
+        app(SpjTemplateRenderPreflight::class)->assertAllRenderable($templates, $package, $school);
+        $excelResponse = app(SpjTemplateService::class)->downloadPackageExcel($templates, $package, $school);
+        $excelPath = $excelResponse->getFile()->getPathname();
+
+        try {
+            $workbook = IOFactory::load($excelPath);
+            $this->assertSame(['TPL_RINCIAN', 'TPL_CHECKLIST_SPJ'], $workbook->getSheetNames());
+            $this->assertSame('Rincian 003/SPJ/2026', $workbook->getSheetByName('TPL_RINCIAN')?->getCell('A1')->getValue());
+            $this->assertSame('Checklist 003/SPJ/2026', $workbook->getSheetByName('TPL_CHECKLIST_SPJ')?->getCell('A1')->getValue());
+        } finally {
+            if (is_file($excelPath)) {
+                @unlink($excelPath);
+            }
+        }
+
+        $pdfResponse = app(SpjTemplateService::class)->downloadPackagePdf($templates, $package, $school);
+        $pdf = (string) $pdfResponse->getContent();
+        $this->assertSame('application/pdf', $pdfResponse->headers->get('Content-Type'));
+        $this->assertStringStartsWith('%PDF-', $pdf);
+        $this->assertGreaterThan(1000, strlen($pdf));
+
+        $this->assertSame($documentsBefore, DB::connection('school')->table('spj_documents')->count());
+        $this->assertSame($sequencesBefore, DB::connection('school')->table('document_number_sequences')->count());
+    }
+
+    public function test_preflight_rejects_unresolved_placeholder_before_preview_or_package_output(): void
+    {
+        $package = $this->package('BARANG', 4);
         $template = $this->xlsxTemplate([
             'A1' => '{{NOMOR_DOKUMEN}}',
             'A2' => '{{UNKNOWN_RELEASE_MARKER}}',
@@ -179,8 +248,6 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
             'unit' => 'unit',
             'unit_price' => 1000,
             'amount' => 1000,
-            'account_code' => '5.1.02.01',
-            'account_name' => 'Belanja Barang',
         ]);
 
         return $transaction->spjPackage()->create([
@@ -192,10 +259,13 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
     }
 
     /** @param array<string,string> $cells */
-    private function xlsxTemplate(array $cells): DocumentTemplate
-    {
+    private function xlsxTemplate(
+        array $cells,
+        string $documentType = 'RINCIAN_BELANJA',
+        string $sheetName = 'TPL_RINCIAN',
+    ): DocumentTemplate {
         $book = new Spreadsheet;
-        $sheet = $book->getActiveSheet()->setTitle('TPL_RINCIAN');
+        $sheet = $book->getActiveSheet()->setTitle($sheetName);
         foreach ($cells as $coordinate => $value) {
             $sheet->setCellValue($coordinate, $value);
         }
@@ -207,9 +277,31 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
 
         return new DocumentTemplate([
             'fiscal_year_id' => $this->year->id,
-            'document_type' => 'RINCIAN_BELANJA',
+            'document_type' => $documentType,
             'name' => 'Template Generator Uji',
             'format' => 'xlsx',
+            'file_path' => $relativePath,
+            'applicable_categories' => ['SEMUA'],
+            'is_active' => true,
+        ]);
+    }
+
+    private function docxTemplate(): DocumentTemplate
+    {
+        $word = new PhpWord;
+        $section = $word->addSection();
+        $section->addText('{{NAMA_SEKOLAH}}');
+        $section->addText('{{NOMOR_DOKUMEN}}');
+
+        Storage::disk('local')->makeDirectory('document-templates');
+        $relativePath = 'document-templates/generator-'.uniqid().'.docx';
+        WordIOFactory::createWriter($word, 'Word2007')->save(Storage::disk('local')->path($relativePath));
+
+        return new DocumentTemplate([
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'SPJ_CHECKLIST',
+            'name' => 'Template Word Generator Uji',
+            'format' => 'docx',
             'file_path' => $relativePath,
             'applicable_categories' => ['SEMUA'],
             'is_active' => true,
