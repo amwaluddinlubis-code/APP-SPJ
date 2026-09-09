@@ -12,6 +12,14 @@ commit : 111de8c2781af6c8413661bcc512b651b09acc72
 subject: test: prove ARKAS sync paths share tenant resource locks
 ```
 
+Checkpoint functional P0-02 terbaru:
+
+```text
+branch : gui-standardization
+commit : d13004663e5f95cf678abaea772e6095b811c4e2
+subject: test: add output validator to SPJ critical suite
+```
+
 ## P0-08 — Generic ARKAS Importer
 
 **Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
@@ -57,7 +65,7 @@ tests/Feature/ArkasImporterRuntimeGuardTest.php
 tests/Feature/ArkasImportQueueTenantTest.php
 ```
 
-CI `SPJ Critical Verification` pada `111de8c2781af6c8413661bcc512b651b09acc72`:
+CI P0-08 pada `111de8c2781af6c8413661bcc512b651b09acc72`:
 
 ```text
 frontend build         PASS
@@ -65,8 +73,6 @@ Blade view cache       PASS
 SPJ Critical PHPUnit   PASS — 145 tests / 993 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
-
-Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`. Repository-wide Pint tetap advisory/`continue-on-error`; warning tersebut bukan regression dari pekerjaan importer ini.
 
 ### P0-08 yang masih terbuka
 
@@ -76,9 +82,59 @@ Correctness/hardening release-critical yang ditargetkan untuk operator test suda
 - evaluasi batas fetch Bridge `100000` row pada sumber besar agar tidak terjadi truncation diam-diam pada deployment dengan tabel sangat besar;
 - real-tenant/operator verification dengan database sekolah target.
 
-**Generic Importer sekarang READY FOR OPERATOR TEST**, tetapi status tersebut bukan berarti keseluruhan aplikasi release-ready. P0-01, P0-02, P0-07, dan runtime nyata tetap harus diverifikasi.
+**Generic Importer sekarang READY FOR OPERATOR TEST**, tetapi status tersebut bukan berarti keseluruhan aplikasi release-ready.
 
 Panduan teknis: `docs/ARKAS_IMPORTER.md`.
+
+---
+
+## P0-02 — Generator Dokumen
+
+**Status: FUNCTIONAL GENERATOR PASS / OFFICIAL-TEMPLATE + REAL-TENANT RVR / READY FOR OPERATOR TEMPLATE TEST.**
+
+Hardening yang sekarang FUNCTIONAL PASS:
+
+- seluruh jalur preview template, preview Paket, PDF template, PDF Paket, dan Excel Paket melakukan render preflight sebelum output disajikan;
+- direct download template tetap memakai unresolved-placeholder guard;
+- placeholder yang tidak terselesaikan menyebabkan output ditolak dengan pesan yang menyebut marker bermasalah;
+- `SpjGeneratedDocumentValidator` memeriksa output final: DOCX/XLSX harus berupa paket Office valid, XLSX harus dapat dibuka kembali oleh PhpSpreadsheet, PDF harus mempunyai `%PDF-` dan `%%EOF`;
+- file XLSX nyata berhasil dibuat, dibuka kembali, dan terbukti berisi identitas sekolah, nomor dokumen, nomor bukti, nilai bruto, serta dynamic item row yang sudah dirender;
+- file DOCX nyata berhasil dibuat, dibuka sebagai paket Word, dan tidak menyisakan marker unresolved;
+- Paket multi-template XLSX benar-benar menghasilkan beberapa sheet hasil render dan Paket PDF menghasilkan payload PDF aktual;
+- regression membuktikan proses generate/preview/package yang diuji tidak membuat `spj_documents` baru dan tidak mengubah `document_number_sequences`;
+- placeholder umum enam kategori canonical sudah diregresikan untuk kategori, identitas sekolah, nomor, bruto, pajak, neto, kepala sekolah, dan bendahara;
+- final download artifact juga divalidasi sebelum diberikan kepada operator.
+
+Regression P0-02 yang masuk `SPJ Critical`:
+
+```text
+tests/Feature/SpjDocumentGeneratorHardeningTest.php
+tests/Feature/SpjGeneratedDocumentValidatorTest.php
+tests/Feature/DocumentTemplateUploadValidationTest.php
+```
+
+CI canonical terbaru pada `d13004663e5f95cf678abaea772e6095b811c4e2`:
+
+```text
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 155 tests / 1082 assertions
+repository Pint        WARN — 1 pre-existing style issue
+```
+
+Pint masih hanya menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`. Repository-wide Pint tetap advisory/`continue-on-error`; tidak ada style regression baru dari hardening generator.
+
+### P0-02 yang masih RVR
+
+Functional engine dan artifact safety sudah ditutup. Yang belum dapat disebut PASS tanpa template/data nyata adalah:
+
+- template resmi/aktual sekolah untuk setiap document type aktif;
+- vendor/penerima/NPWP/pajak/nomor pada transaksi sekolah nyata;
+- visual fidelity Word/Excel/PDF: page break, print area, header/footer, row dinamis, ukuran halaman, dan hasil cetak;
+- Paket nyata keenam kategori dengan seluruh template applicable;
+- pembukaan hasil akhir memakai Microsoft Word/Excel/PDF viewer pada runtime sekolah target.
+
+**P0-02 sekarang READY FOR OPERATOR TEMPLATE TEST.** Ini bukan berarti seluruh P0-02 real-template sudah selesai; official-template + real-tenant visual/output verification tetap RVR.
 
 ---
 
@@ -145,10 +201,6 @@ HONOR_PEGAWAI
 
 Saat database tersedia, jalankan kandidat nyata melalui Detail -> DRAFT -> READY -> NUMBERED -> preview/download -> FINAL dan bandingkan audit sebelum/sesudah dengan `spj:audit-diff --fail-on-regression`.
 
-### P0-02 — Generator dokumen
-
-**RVR/OPEN.** Word/Excel/PDF, unresolved-placeholder guard, preview, download, dan package export sudah mempunyai foundation, tetapi output nyata enam kategori masih harus dibuktikan.
-
 ### P0-07 — APP DATA / backup / reset / restore
 
 **RVR — memerlukan runtime tenant nyata.**
@@ -205,6 +257,7 @@ Mobile/responsive QA penuh bukan release blocker saat ini dan tetap berada pada 
 - Paket SPJ adalah workspace mutation dokumen.
 - Pajak source immutable dari Paket.
 - Preview/download tidak mengalokasikan nomor.
+- Generated DOCX/XLSX/PDF wajib lolos output validation dan tidak boleh menyisakan placeholder unresolved.
 - Resource SPJ harus berada dalam School + Fiscal Year + Fund Source aktif.
 - Generic ARKAS Importer wajib melewati `administrator -> active-school -> active-year` sebelum query/write connection `school`.
 - Raw Generic Importer pada Upsert/Incremental wajib mempunyai stable source key; raw tanpa stable key hanya boleh Full Refresh.
