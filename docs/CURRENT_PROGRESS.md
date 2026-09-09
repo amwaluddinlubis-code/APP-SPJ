@@ -8,11 +8,11 @@ Checkpoint kode yang menjadi acuan review saat ini:
 
 ```text
 branch : gui-standardization
-commit : ceb8df6f2a73c4e69cf13de8048ada2fff245fce
-subject: feat: canonicalize ARKAS importer and sync pipeline
+commit : 6aed816a4034c6351498922f6dfdaf74a76d7566
+subject: test: add ARKAS source key regressions to critical suite
 ```
 
-### P0-08 — Importer ARKAS kanonik: IMPLEMENTED / BLOCKED BEFORE OPERATOR TEST
+### P0-08 — Importer ARKAS kanonik: IMPLEMENTED / SOURCE-KEY PASS / TENANT BLOCKER OPEN
 
 Modul importer sudah mempunyai fondasi alur tunggal:
 
@@ -30,25 +30,39 @@ Fitur yang sudah tersedia di source:
 - schema drift warning berdasarkan snapshot daftar kolom;
 - parent-child staging melalui `parent_source_key` dan `relation_type`;
 - background import melalui queue `operations` bila `ARKAS_SYNC_ASYNC=true`;
-- coordinator runtime `ArkasCanonicalSyncService` untuk dashboard, pemilihan tahun, dan job sinkronisasi utama.
+- coordinator runtime `ArkasCanonicalSyncService` untuk dashboard, pemilihan tahun, dan job sinkronisasi utama;
+- source-key resolver bersama `ArkasSourceKeyResolver` yang dipakai Generic Import, Staging, dan Reconciliation.
 
-Namun review terhadap head `ceb8df6` menemukan dua blocker yang harus ditutup sebelum importer disebut **READY FOR OPERATOR TEST**:
+Blocker source-key hasil review `ceb8df6` **sudah ditutup** pada checkpoint `6aed816`:
 
-1. `ArkasGenericImportService::synchronize()` memanggil `sourceKey()` yang belum tersedia pada service tersebut. Sinkronisasi generic dengan record nyata berisiko gagal runtime meskipun critical suite hijau.
-2. Route importer berada pada guard administrator, tetapi belum secara konsisten berada di boundary `active-school` + `active-year`, sementara `ArkasImportProfile` dan `FiscalYear` memakai koneksi tenant `school`. Request importer harus mengaktifkan tenant yang benar sebelum model tenant dibaca/ditulis.
+- `ArkasGenericImportService` tidak lagi memanggil method `sourceKey()` yang tidak tersedia;
+- configured source key diprioritaskan secara case-insensitive;
+- bila configured key kosong/tidak tersedia, resolver memakai fallback identity ARKAS canonical;
+- bila tidak ada stable identity, fallback terakhir tetap hash payload deterministic;
+- dedup staging, reconciliation preview, dan generic import sekarang memakai resolver yang sama sehingga identitas source tidak berbeda antarjalur.
 
-Release-safety test importer juga belum menjadi bagian suite `SPJ Critical`. Sebelum status P0-08 dinaikkan, minimal harus tersedia regression untuk:
+Regression yang sudah menjadi bagian suite `SPJ Critical`:
+
+```text
+tests/Unit/ArkasSourceKeyResolverTest.php
+tests/Feature/ArkasGenericImportSourceKeyTest.php
+```
+
+Regression tersebut membuktikan configured key, fallback canonical, case-insensitive lookup, payload-hash fallback, serta sinkronisasi Generic Import dengan record non-kosong.
+
+**Blocker utama yang masih terbuka sebelum READY FOR OPERATOR TEST:** route importer berada pada guard administrator, tetapi belum secara konsisten berada di boundary `active-school` + `active-year`, sementara `ArkasImportProfile` dan `FiscalYear` memakai koneksi tenant `school`. Request importer harus mengaktifkan tenant yang benar sebelum model tenant dibaca/ditulis.
+
+Regression P0-08 yang masih diperlukan:
 
 - tenant activation/isolation pada GET, save mapping, preview, dan sync;
-- generic import dengan record non-kosong;
+- cross-school/cross-year importer;
 - Upsert, Incremental, dan Full refresh;
-- stable source key dan fallback yang deterministic;
 - schema drift;
 - source kosong;
 - queue/background execution;
 - raw profile tanpa stable key agar tidak menyisakan versi record lama secara diam-diam.
 
-Hardening lanjutan setelah dua blocker utama:
+Hardening lanjutan:
 
 - lock staging harus tenant-scoped, bukan hanya profile/table + fiscal year lokal;
 - `created_at` tidak boleh di-reset pada setiap upsert bila dimaksudkan sebagai waktu pertama record dibuat;
@@ -57,7 +71,7 @@ Hardening lanjutan setelah dua blocker utama:
 
 Panduan operator/teknis: `docs/ARKAS_IMPORTER.md`.
 
-Catatan: mode Incremental saat ini menyaring hasil snapshot Bridge di aplikasi. Delta fetch langsung dari database ARKAS belum tersedia pada Bridge dan tetap menjadi optimasi berikutnya, bukan blocker utama P0-08.
+Catatan: mode Incremental saat ini menyaring hasil snapshot Bridge di aplikasi. Delta fetch langsung dari database ARKAS belum tersedia pada Bridge dan tetap menjadi optimasi berikutnya, bukan blocker correctness utama.
 
 ## Baseline yang sudah ditutup
 
@@ -164,18 +178,18 @@ Status ini tidak boleh dipakai untuk mengasumsikan route Generic Importer sudah 
 
 ### CI checkpoint terbaru
 
-GitHub Actions `SPJ Critical Verification` pada commit `ceb8df6f2a73c4e69cf13de8048ada2fff245fce` membuktikan:
+GitHub Actions `SPJ Critical Verification` pada commit `6aed816a4034c6351498922f6dfdaf74a76d7566` membuktikan:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 124 tests / 810 assertions
-repository Pint        WARN — 1 style issue
+SPJ Critical PHPUnit   PASS — 129 tests / 823 assertions
+repository Pint        WARN — 1 pre-existing style issue
 ```
 
-Pint menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`. Workflow tetap dapat berstatus success karena repository-wide Pint masih advisory/`continue-on-error`.
+Dua regression source-key baru PASS di suite critical. Pint masih menemukan `single_quote` pada `tests/Feature/SyncProgressUiTest.php`; workflow dapat berstatus success karena repository-wide Pint masih advisory/`continue-on-error`.
 
-Dengan demikian **functional critical gate hijau**, tetapi status CI belum boleh disebut seluruhnya clean. Generic Importer dan Employee Identity test juga belum seluruhnya menjadi bagian suite critical sehingga hasil critical PASS tidak membuktikan P0-08 aman pada runtime nyata.
+Dengan demikian blocker runtime source-key **FUNCTIONAL PASS**, tetapi P0-08 belum boleh disebut operator-ready sampai tenant activation/isolation importer ditutup.
 
 ---
 
