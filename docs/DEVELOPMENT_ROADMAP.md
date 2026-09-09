@@ -7,11 +7,11 @@ Roadmap ini memusatkan pekerjaan yang masih perlu diselesaikan pada branch `gui-
 Baseline correctness P0-08 terbaru:
 
 ```text
-56aefd25a50489151b77a155bf72b21fbebfd9d9
-test: keep ARKAS route guard assertion session-safe
+111de8c2781af6c8413661bcc512b651b09acc72
+test: prove ARKAS sync paths share tenant resource locks
 ```
 
-Checkpoint tersebut mencakup source-key, tenant boundary, tiga mode sinkronisasi, preview read-only, raw stable-key policy, source-empty semantics, schema-drift blocking, dan queue/background tenant activation Generic ARKAS Importer.
+Checkpoint tersebut mencakup source-key, tenant boundary, tiga mode sinkronisasi, preview read-only, raw stable-key policy, source-empty semantics, schema-drift blocking, queue/background tenant activation, tenant-scoped concurrency lock, timestamp semantics, dan semantic import metrics Generic ARKAS Importer.
 
 # P0 — Core Release Safety
 
@@ -38,16 +38,18 @@ Sudah tersedia:
 - [x] source kosong regression;
 - [x] schema drift blocking regression;
 - [x] queue/background tenant activation regression;
-- [x] CI pada `56aefd2` PASS: `141 tests / 954 assertions`;
+- [x] tenant-scoped staging/import resource lock regression;
+- [x] first-created `created_at` preservation regression;
+- [x] semantic import metrics regression (`read/write/new/changed/unchanged/removed`);
+- [x] CI pada `111de8c` PASS: `145 tests / 993 assertions`;
 - [x] docs-only changes tidak memicu verification run yang tidak perlu.
 
 Masih RVR/TODO:
 
 - [ ] first local `php artisan spj:verify` lengkap;
 - [ ] first real-tenant verification pada database sekolah target;
-- [ ] tenant-scoped staging/import lock;
-- [ ] pertahankan first-created semantics `created_at` pada existing staging/import row;
-- [ ] perbaiki import metrics/histori menjadi read/new/changed/unchanged/removed;
+- [ ] evaluasi Bridge fetch limit `100000` pada tabel sangat besar;
+- [ ] Bridge-side incremental delta fetch sebagai optimasi scale/performance;
 - [ ] bersihkan repository-wide Pint debt; `SyncProgressUiTest.php` masih mempunyai pre-existing `single_quote` warning.
 
 ---
@@ -168,7 +170,7 @@ School + Fiscal Year + Fund Source
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING OPEN.**
+**Status: IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
 
 Fondasi:
 
@@ -198,18 +200,21 @@ Correctness/release guard yang sudah ditutup:
 - [x] schema drift pada mapped/key/incremental timestamp column memblokir sync;
 - [x] controller store/sync menerapkan release guard, bukan hanya helper/service internal;
 - [x] background queue mengaktifkan tenant sebelum membaca model tenant dan menerapkan guard yang sama;
-- [x] `tests/Feature/ArkasGenericImportReleaseSafetyTest.php`, `ArkasImporterRuntimeGuardTest.php`, dan `ArkasImportQueueTenantTest.php` masuk `SPJ Critical`;
-- [x] CI critical PASS `141 tests / 954 assertions` pada `56aefd2`.
+- [x] staging dan import memakai lock resource yang sama: `school identity + source_table + fiscal_year_id`;
+- [x] tenant berbeda tidak false-contention dan resource tenant/tabel/tahun yang sama tidak dapat berjalan paralel;
+- [x] insert row menetapkan first-created `created_at`, update row tidak meresetnya, unchanged row tidak menyentuh timestamp;
+- [x] histori import menyimpan `records_read`, `records_written`, `records_new`, `records_changed`, `records_unchanged`, `records_removed`;
+- [x] `records_written` sekarang berarti insert + update aktual, sedangkan delete Full Refresh dihitung pada `records_removed`;
+- [x] background operation result membawa semantic metrics yang sama;
+- [x] `tests/Feature/ArkasImportHardeningTest.php` masuk `SPJ Critical`;
+- [x] CI critical PASS `145 tests / 993 assertions` pada `111de8c`.
 
-Hardening berikutnya:
+Scale/performance lanjutan, bukan blocker operator-test correctness saat ini:
 
-- [ ] tenant-scoped staging/import lock;
-- [ ] `created_at` existing staging/import row mempertahankan first-created semantics;
-- [ ] histori import membedakan read/new/changed/unchanged/removed;
-- [ ] `records_written` menjadi actual changed/write metric, bukan processed-row count;
-- [ ] Bridge-side delta fetch untuk incremental sebagai optimasi setelah correctness selesai.
+- [ ] Bridge-side delta fetch untuk Incremental;
+- [ ] evaluasi/paginasi di atas Bridge row limit `100000` untuk sumber sangat besar.
 
-**Exit criteria P0-08 saat ini:** release-critical behavior preview/raw/source-empty/schema-drift/queue sudah mempunyai regression PASS. Generic Importer tetap belum `READY FOR OPERATOR TEST` sampai hardening concurrency/timestamp/import-metrics utama di atas selesai.
+**Exit criteria P0-08:** correctness, tenant isolation, release guard, concurrency lock, timestamp semantics, dan import metrics utama sudah PASS. Generic Importer sekarang `READY FOR OPERATOR TEST`; real-tenant verification tetap harus dilakukan sebelum keseluruhan aplikasi disebut release-ready.
 
 ---
 
@@ -296,17 +301,15 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 ## Urutan kerja efektif dari checkpoint sekarang
 
 ```text
-1. P0-08 tenant-scoped staging/import lock
-2. P0-08 preserve created_at first-created semantics
-3. P0-08 import metrics read/new/changed/unchanged/removed
-4. P0-01 real-data E2E enam kategori
-5. P0-02 generator dokumen nyata
-6. P0-07 APP DATA nyata
-7. P1 blocker yang ditemukan dari kandidat nyata
-8. P2 cleanup / performance / GUI polish
+1. P0-01 real-data E2E enam kategori
+2. P0-02 generator dokumen nyata
+3. P0-07 APP DATA nyata
+4. P0-08 real-tenant operator verification
+5. P1 blocker yang ditemukan dari kandidat nyata
+6. P2 cleanup / performance / GUI polish
 ```
 
-Bridge-side incremental delta fetch tetap optimasi setelah correctness/hardening release-critical selesai.
+Bridge-side incremental delta fetch dan scale handling `>100000` row tetap optimasi/hardening lanjutan setelah operator-test correctness P0-08 selesai.
 
 ---
 
@@ -315,7 +318,7 @@ Bridge-side incremental delta fetch tetap optimasi setelah correctness/hardening
 Release candidate belum selesai sampai:
 
 - seluruh P0 mendapat runtime checkpoint PASS atau keputusan RVR/out-of-scope eksplisit;
-- P0-08 mempertahankan source-key + tenant + sync-mode + release-guard PASS dan menutup hardening concurrency/timestamp/import-metrics;
+- P0-08 mempertahankan source-key + tenant + sync-mode + release-guard + hardening PASS pada real-tenant verification;
 - keenam kategori lulus E2E nyata sampai FINAL + preview/download;
 - generator dokumen nyata tervalidasi;
 - numbering/lifecycle/revision aman;
