@@ -17,6 +17,11 @@ P0-07  9721fb7f84e4a655389e90f315612380bda6b1be
        test: prove same-second backups stay distinct
        CI 34404104837 / job 102642898023
        163 tests / 1127 assertions
+
+P0-01  b9611e3814380e3776bf8327c4df01ecb85e6eb9
+       test: gate six-category E2E in SPJ critical suite
+       CI 34405652728 / job 102647980543
+       169 tests / 1407 assertions
 ```
 
 `FUNCTIONAL PASS` pada roadmap ini berarti sudah dibuktikan oleh source + CI deterministic. `RVR` tetap membutuhkan real-value/runtime verification sebelum release target dinyatakan selesai.
@@ -46,13 +51,16 @@ Sudah tersedia:
 - [x] primary-database deletion guard;
 - [x] reset `sqlite_sequence` + WAL/SHM cleanup regression;
 - [x] restore rollback + corrupt-backup rejection + same-second backup uniqueness regression;
-- [x] CI canonical terbaru pada `9721fb7` PASS: **163 tests / 1127 assertions**;
+- [x] six-category E2E deterministic melalui DRAFT -> READY -> NUMBERED -> preview/download -> FINAL;
+- [x] real XLSX/PDF generation + preview side-effect regression pada keenam kategori;
+- [x] CI canonical terbaru pada `b9611e3` PASS: **169 tests / 1407 assertions**;
 - [x] docs-only changes tidak memicu verification run yang tidak perlu.
 
 Masih RVR/TODO:
 
 - [ ] first local `php artisan spj:verify` lengkap;
 - [ ] first real-tenant verification pada database sekolah target;
+- [ ] real-tenant audit before/after + `spj:audit-diff --fail-on-regression`;
 - [ ] official-template generator verification;
 - [ ] installed-runtime backup/reset/restore verification;
 - [ ] evaluasi Bridge fetch limit `100000` pada tabel sangat besar;
@@ -61,20 +69,35 @@ Masih RVR/TODO:
 
 ---
 
-## P0-01 — E2E enam kategori berbasis database nyata
+## P0-01 — E2E enam kategori
 
-**Status: RVR — verification kit siap, menunggu database nyata.**
+**Status: FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-TENANT RVR / READY FOR REAL-DATA VERIFICATION.**
 
-Target:
+Functional deterministic gate:
 
-- [ ] BARANG sampai FINAL + preview/download;
-- [ ] KONSUMSI sampai FINAL + preview/download;
-- [ ] PEMELIHARAAN sampai FINAL + preview/download;
-- [ ] JASA_LAINNYA sampai FINAL + preview/download;
-- [ ] SPPD sampai FINAL + preview/download;
-- [ ] HONOR_PEGAWAI sampai FINAL + preview/download;
-- [ ] simpan audit before/after;
-- [ ] `spj:audit-diff --fail-on-regression` PASS.
+- [x] BARANG sampai FINAL + preview/download;
+- [x] KONSUMSI sampai FINAL + preview/download;
+- [x] PEMELIHARAAN sampai FINAL + preview/download;
+- [x] JASA_LAINNYA sampai FINAL + preview/download;
+- [x] SPPD sampai FINAL + preview/download;
+- [x] HONOR_PEGAWAI sampai FINAL + preview/download;
+- [x] seluruh kategori memakai gateway DRAFT, READY validation, numbering, preview/download, dan finalization runtime path aplikasi;
+- [x] BARANG/KONSUMSI melewati endpoint penerimaan barang sebelum READY;
+- [x] auxiliary document numbers applicable dibuat melalui numbering service canonical;
+- [x] workbook XLSX nyata dibuka kembali dan PDF aktual diverifikasi;
+- [x] preview/download tidak mengalokasikan document identity atau sequence baru;
+- [x] Paket FINAL mempunyai snapshot, terkunci, dan seluruh dokumen NUMBERED selesai FINAL;
+- [x] lifecycle audit dasar mencatat DRAFT/update/READY/numbering;
+- [x] `tests/Feature/SpjSixCategoryE2eTest.php` masuk `SPJ Critical`;
+- [x] CI `b9611e3` PASS **169 tests / 1407 assertions**.
+
+Masih RVR sebelum P0-01 disebut real-data PASS:
+
+- [ ] jalankan keenam kategori memakai transaksi ARKAS/BKU pada database sekolah target;
+- [ ] verifikasi nilai bruto/pajak/neto, vendor/penerima/NPWP, serta metadata sumber pada transaksi nyata;
+- [ ] simpan audit before/after real tenant;
+- [ ] `spj:audit-diff --fail-on-regression` PASS pada real tenant;
+- [ ] operator menjalankan alur installed runtime sampai FINAL dan membuka hasil dokumen aktual.
 
 Perbaikan anomaly harus melalui workflow/source code, bukan SQL manual.
 
@@ -320,7 +343,7 @@ K7A, K7, K8, SPTJM, K7B, K7C dan format resmi lain baru boleh disebut compliant 
 ## Urutan kerja efektif dari checkpoint sekarang
 
 ```text
-1. P0-01 real-data E2E enam kategori
+1. P0-01 real-tenant/data verification + audit diff
 2. P0-02 official-template + real-tenant operator verification
 3. P0-07 installed-runtime + real-tenant operator verification
 4. P0-08 real-tenant operator verification
