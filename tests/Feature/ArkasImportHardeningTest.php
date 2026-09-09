@@ -129,23 +129,23 @@ class ArkasImportHardeningTest extends TestCase
         $this->assertSame($firstB->updated_at, $secondB->updated_at);
     }
 
-    public function test_import_and_staging_lock_keys_are_scoped_by_school_identity(): void
+    public function test_import_and_staging_share_a_tenant_scoped_resource_lock(): void
     {
         $year = $this->createYear();
         $profile = $this->createRawProfile('hardening_lock', 'upsert');
         $sourceA = new ArkasSource(['school_id' => 201]);
         $sourceB = new ArkasSource(['school_id' => 202]);
 
-        $this->assertNotSame(
-            ArkasTenantLockKey::import($sourceA, $profile->id, $year->id),
-            ArkasTenantLockKey::import($sourceB, $profile->id, $year->id),
-        );
-        $this->assertNotSame(
-            ArkasTenantLockKey::staging($sourceA, $profile->source_table, $year->id),
-            ArkasTenantLockKey::staging($sourceB, $profile->source_table, $year->id),
-        );
+        $importA = ArkasTenantLockKey::import($sourceA, $profile->source_table, $year->id);
+        $stagingA = ArkasTenantLockKey::staging($sourceA, $profile->source_table, $year->id);
+        $importB = ArkasTenantLockKey::import($sourceB, $profile->source_table, $year->id);
+        $stagingB = ArkasTenantLockKey::staging($sourceB, $profile->source_table, $year->id);
 
-        $held = Cache::lock(ArkasTenantLockKey::import($sourceA, $profile->id, $year->id), 900);
+        $this->assertSame($importA, $stagingA);
+        $this->assertSame($importB, $stagingB);
+        $this->assertNotSame($importA, $importB);
+
+        $held = Cache::lock($stagingA, 900);
         $this->assertTrue($held->get());
 
         try {
@@ -162,7 +162,7 @@ class ArkasImportHardeningTest extends TestCase
 
             try {
                 $blockedService->synchronize($profile->refresh(), $year, $sourceA);
-                $this->fail('Importer pada tenant yang lock-nya sedang dipegang harus ditolak.');
+                $this->fail('Importer harus ditolak ketika resource lock staging untuk tenant/tabel/tahun yang sama sedang dipegang.');
             } catch (\RuntimeException $exception) {
                 $this->assertStringContainsString('sedang berjalan', $exception->getMessage());
             }
