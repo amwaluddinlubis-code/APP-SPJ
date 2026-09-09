@@ -6,7 +6,7 @@ Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, meny
 
 ## Status saat ini
 
-**IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING OPEN.**
+**IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
 
 Checkpoint correctness:
 
@@ -22,6 +22,9 @@ Upsert / Incremental / Full Refresh regression
 
 56aefd25a50489151b77a155bf72b21fbebfd9d9
 preview/raw/source-empty/schema-drift/queue release-safety regression
+
+111de8c2781af6c8413661bcc512b651b09acc72
+concurrency lock + timestamp semantics + semantic import metrics regression
 ```
 
 CI pada checkpoint terbaru:
@@ -29,7 +32,7 @@ CI pada checkpoint terbaru:
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 141 tests / 954 assertions
+SPJ Critical PHPUnit   PASS — 145 tests / 993 assertions
 repository Pint        WARN — 1 pre-existing single_quote issue
 ```
 
@@ -170,6 +173,126 @@ other staging profile  : tetap utuh
 
 Full Refresh tidak boleh dipakai untuk menghapus overlay manual SPJ di luar ownership importer.
 
+## Preview rekonsiliasi — PASS read-only
+
+Preview penuh membandingkan source terhadap staging dan menampilkan Baru/Berubah/Tetap/Hilang.
+
+`tests/Feature/ArkasGenericImportReleaseSafetyTest.php` membuktikan preview penuh tidak mengubah:
+
+- `arkas_import_rows` staging;
+- target domain `arkas_rkas_items`;
+- histori `arkas_import_runs`.
+
+## Schema drift — PASS blocking
+
+`ArkasImportGuard::schemaErrors()` memblokir sync bila source column yang masih digunakan hilang, termasuk effective source key, mapped column, incremental timestamp, year column, atau fund-source column yang dikonfigurasi.
+
+## Source kosong — PASS
+
+Semantics release-critical:
+
+- **Upsert:** preserve staging existing;
+- **Incremental:** preserve staging existing;
+- **Full Refresh:** membersihkan hanya active profile/year/domain scope;
+- fiscal year/profile lain tetap utuh.
+
+Exception/failure membaca sumber tetap harus gagal sebagai error, bukan diterjemahkan menjadi empty snapshot secara diam-diam.
+
+## Background queue — PASS tenant activation + metrics
+
+Jika `ARKAS_SYNC_ASYNC=true`, job:
+
+1. mengambil `school_id` dari database utama;
+2. mengaktifkan tenant lewat `SchoolDatabaseManager`;
+3. baru membaca profile/fiscal year tenant;
+4. mengambil `ArkasSource` yang di-scope ke school tersebut;
+5. menjalankan configuration + schema guard;
+6. menjalankan importer pada connection sekolah yang benar;
+7. menyalin metric semantic run ke `BackgroundOperation.result`.
+
+Metric background result:
+
+```text
+run_id
+records_read
+records_written
+records_new
+records_changed
+records_unchanged
+records_removed
+```
+
+## Concurrency lock — PASS
+
+`ArkasTenantLockKey` membentuk resource lock canonical dari:
+
+```text
+school identity + source_table + fiscal_year_id
+```
+
+Generic Import dan Staging menggunakan resource key yang sama. Ini penting karena staging dan importer dapat menyentuh `arkas_import_rows` untuk tabel/tahun yang sama.
+
+Kontrak yang diregresikan:
+
+- tenant A dan tenant B menghasilkan lock berbeda walau nama tabel/tahun sama;
+- staging dan import pada tenant+tabel+tahun yang sama menghasilkan lock identik;
+- ketika lock staging resource yang sama sudah dipegang, Generic Import ditolak sebelum fetch/write;
+- false contention lintas sekolah tidak terjadi.
+
+Bila `ArkasSource.school_id` tidak tersedia, helper memakai hash path database tenant aktif sebagai fallback identity, dan gagal eksplisit bila identitas tenant sama sekali tidak tersedia.
+
+## Timestamp semantics — PASS
+
+`ArkasImportRowSynchronizer` sekarang menjadi jalur bersama untuk write staging/import rows.
+
+Semantics timestamp:
+
+```text
+row baru      -> created_at = now, updated_at = now
+row berubah   -> created_at tetap, updated_at = now
+row unchanged -> created_at tetap, updated_at tetap
+row removed   -> hanya Full Refresh, row dihapus
+```
+
+Dengan demikian `created_at` dapat dibaca sebagai first-created timestamp dan tidak lagi di-reset oleh `updateOrInsert` saat payload berubah.
+
+## Import metrics — PASS
+
+Migration `2026_09_10_000000_add_metrics_to_arkas_import_runs_table.php` menambahkan:
+
+```text
+records_new
+records_changed
+records_unchanged
+records_removed
+```
+
+Bersama field existing:
+
+```text
+records_read
+records_written
+```
+
+Semantics canonical:
+
+- `records_read`: jumlah record yang masuk ke sinkronisasi setelah filter mode Incremental diterapkan;
+- `records_new`: source key yang belum ada pada staging scope;
+- `records_changed`: source key existing dengan payload hash berbeda;
+- `records_unchanged`: source key existing dengan payload hash sama;
+- `records_removed`: row existing yang dihapus oleh Full Refresh karena tidak ada pada incoming snapshot;
+- `records_written`: actual insert + update, yaitu `new + changed`; removal tidak dicampur ke metric ini.
+
+Full Refresh tidak lagi menghapus seluruh staging lebih dulu lalu membuat ulang row unchanged. Karena itu timestamp dan metrics tetap bermakna.
+
+Regression utama:
+
+```text
+tests/Feature/ArkasImportHardeningTest.php
+```
+
+Test tersebut membuktikan Upsert metrics, Full Refresh removed metrics, timestamp preservation, dan shared tenant resource lock.
+
 ## Preset domain
 
 Preset utama:
@@ -187,68 +310,12 @@ Preset utama:
 
 Tabel tanpa adapter domain dapat disimpan sebagai raw snapshot bila source-key contract-nya aman.
 
-## Preview rekonsiliasi — PASS read-only
+## Scale/performance lanjutan
 
-Preview penuh membandingkan source terhadap staging dan menampilkan Baru/Berubah/Tetap/Hilang.
+Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 
-`tests/Feature/ArkasGenericImportReleaseSafetyTest.php` membuktikan preview penuh tidak mengubah:
-
-- `arkas_import_rows` staging;
-- target domain `arkas_rkas_items`;
-- histori `arkas_import_runs`.
-
-Dengan demikian preview adalah read-only terhadap state importer/domain yang diregresikan.
-
-## Schema drift — PASS blocking untuk kolom yang masih dipakai
-
-Daftar kolom source disimpan saat mapping disimpan. `ArkasImportGuard::schemaErrors()` membandingkan schema terkini secara case-insensitive dan menganggap kolom berikut required bila masih digunakan:
-
-- source column yang dipetakan dan bukan `ignore`;
-- effective source key;
-- `source_updated_column` pada Incremental;
-- `year_column` bila dikonfigurasi;
-- `fund_source_column` bila dikonfigurasi.
-
-Jika salah satu hilang, controller sync dan background job memblokir import sebelum write dilakukan. Route-level regression membuktikan missing `EXTERNAL_ID` pada profile yang masih memakainya tidak sampai memanggil importer.
-
-## Source kosong — PASS
-
-Semantics release-critical sudah dikunci:
-
-- **Upsert:** source kosong tidak menghapus staging existing;
-- **Incremental:** source kosong tidak menghapus staging existing;
-- **Full Refresh:** source kosong membersihkan active profile/year staging dan active fiscal-year domain sesuai ownership adapter;
-- fiscal year/profile lain tetap utuh.
-
-Ini adalah semantics mode, bukan indikasi bahwa setiap error Bridge harus dianggap sebagai source kosong. Exception/failure membaca sumber tetap harus gagal sebagai error, bukan diterjemahkan menjadi empty snapshot secara diam-diam.
-
-## Background queue — PASS tenant activation
-
-Jika `ARKAS_SYNC_ASYNC=true`, job sekarang:
-
-1. mengambil `school_id` dari database utama;
-2. mengaktifkan tenant lewat `SchoolDatabaseManager`;
-3. baru membaca profile/fiscal year tenant;
-4. mengambil `ArkasSource` yang juga di-scope ke school tersebut;
-5. menjalankan configuration + schema guard;
-6. baru menjalankan importer pada connection sekolah yang benar.
-
-Regression queue memulai test dari tenant database yang salah dan membuktikan connection sudah berpindah ke sekolah target sebelum profile/year tenant dibaca.
-
-## Lock, timestamp, dan histori — hardening masih terbuka
-
-Hardening yang masih harus ditutup sebelum READY FOR OPERATOR TEST:
-
-- lock staging/import harus memasukkan identitas sekolah karena profile/fiscal-year ID lokal dapat sama antar tenant;
-- `created_at` existing staging/import row harus mempertahankan first-created semantics bila field itu digunakan untuk audit;
-- histori import harus membedakan read/new/changed/unchanged/removed;
-- `records_written` jangan dianggap actual changed-row metric sampai semantics tersebut diperbaiki.
-
-Target lock minimal secara konsep:
-
-```text
-school + profile/source table + fiscal year
-```
+- Bridge-side incremental delta fetch agar Incremental tidak menarik snapshot penuh;
+- fetch limit Bridge saat ini `100000`, sehingga sumber yang lebih besar perlu strategi paging/explicit overflow detection agar tidak berisiko truncation diam-diam.
 
 ## Regression checklist P0-08
 
@@ -266,13 +333,16 @@ school + profile/source table + fiscal year
 [x] 11. schema drift memblokir mapped/key/update column yang hilang
 [x] 12. background queue mengaktifkan tenant sebelum tenant model read
 [x] 13. raw profile mempunyai stable-key policy eksplisit
+[x] 14. staging/import memakai tenant resource lock yang sama
+[x] 15. existing row mempertahankan first-created created_at
+[x] 16. import history membedakan read/write/new/changed/unchanged/removed
 ```
 
 ## Status release
 
-Source-key, tenant boundary, Upsert, Incremental, Full Refresh, preview read-only, raw stable-key policy, source kosong, schema drift, dan queue/background sekarang **FUNCTIONAL PASS** pada suite `SPJ Critical`.
+Generic Importer sekarang **READY FOR OPERATOR TEST** dari sisi functional correctness/hardening yang sudah diketahui dan diregresikan. CI checkpoint `111de8c` PASS `145 tests / 993 assertions`.
 
-Generic Importer **belum release-ready / belum READY FOR OPERATOR TEST** karena hardening concurrency lock, first-created timestamp, dan import-metrics masih terbuka. Bridge-side delta fetch untuk Incremental tetap optimasi lanjutan setelah hardening correctness ini selesai.
+Ini belum berarti keseluruhan aplikasi release-ready: real-tenant verification, E2E enam kategori, generator dokumen nyata, dan APP DATA runtime masih harus ditutup pada roadmap utama.
 
 Status canonical dibaca bersama:
 
