@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Services\SpjMaintenanceDocumentContextService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjTemplateRenderPreflight;
 use App\Services\SpjTemplateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -18,6 +19,7 @@ class SpjDocumentUseCase
     {
         $validator = app(SpjPackageValidationService::class);
         $templates = app(SpjTemplateService::class);
+        $preflight = app(SpjTemplateRenderPreflight::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
@@ -30,6 +32,7 @@ class SpjDocumentUseCase
         $this->applyDocumentContext($package);
         $school = School::query()->findOrFail(session('active_school_id'));
         $activeTemplates = $this->activeTemplatesForPackage($package);
+        $preflight->assertAllRenderable($activeTemplates, $package, $school);
 
         return $templates->downloadPackagePdf($activeTemplates, $package, $school);
     }
@@ -42,8 +45,11 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
+        $school = School::query()->findOrFail(session('active_school_id'));
+        $activeTemplates = $this->activeTemplatesForPackage($package);
+        app(SpjTemplateRenderPreflight::class)->assertAllRenderable($activeTemplates, $package, $school);
 
-        return app(SpjTemplateService::class)->downloadPackageExcel($this->activeTemplatesForPackage($package), $package, School::query()->findOrFail(session('active_school_id')));
+        return app(SpjTemplateService::class)->downloadPackageExcel($activeTemplates, $package, $school);
     }
 
     public function previewPackage(string $packageId): View|RedirectResponse
@@ -56,12 +62,14 @@ class SpjDocumentUseCase
         $validationIssues = app(SpjPackageValidationService::class)->validate($package);
         $this->applyDocumentContext($package);
         $templates = $this->activeTemplatesForPackage($package);
+        $school = School::query()->findOrFail(session('active_school_id'));
+        app(SpjTemplateRenderPreflight::class)->assertAllRenderable($templates, $package, $school);
         $template = new DocumentTemplate(['name' => 'Paket SPJ', 'format' => 'xlsx']);
 
         return view('spj-documents.template-preview', [
             'package' => $package,
             'template' => $template,
-            'previewHtml' => app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, School::query()->findOrFail(session('active_school_id'))),
+            'previewHtml' => app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school),
             'validationIssues' => $validationIssues,
         ]);
     }
@@ -110,8 +118,10 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
+        $school = School::query()->findOrFail(session('active_school_id'));
+        app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
 
-        return $templates->downloadPdf($template, $package, School::query()->findOrFail(session('active_school_id')));
+        return $templates->downloadPdf($template, $package, $school);
     }
 
     public function previewTemplate(string $packageId, string $templateId): View|RedirectResponse
@@ -126,6 +136,7 @@ class SpjDocumentUseCase
         $school = School::query()->findOrFail(session('active_school_id'));
         $validationIssues = $validator->validate($package);
         $this->applyDocumentContext($package);
+        app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
         $previewHtml = $templates->previewHtml($template, $package, $school);
 
         return view('spj-documents.template-preview', [
