@@ -24,6 +24,20 @@ class ArkasGenericImportService
 
     public function synchronize(ArkasImportProfile $profile, FiscalYear $year, ArkasSource $source): ArkasImportRun
     {
+        $preset = ArkasDomainAdapter::presetFor($profile->source_table);
+        $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
+        $guardErrors = (new ArkasImportGuard)->configurationErrors(
+            $profile->source_table,
+            $profile->target_domain,
+            $profile->sync_mode,
+            $profile->source_key_column,
+            $profile->source_updated_column,
+            $profile->mapping ?? [],
+        );
+        if ($guardErrors !== []) {
+            throw new \RuntimeException(implode(' ', $guardErrors));
+        }
+
         $lock = Cache::lock('arkas-import:'.$profile->id.':'.$year->id, 900);
         if (! $lock->get()) {
             throw new \RuntimeException('Importer ARKAS untuk profil dan tahun anggaran ini sedang berjalan. Tunggu sampai proses sebelumnya selesai.');
@@ -38,7 +52,6 @@ class ArkasGenericImportService
         ]);
 
         try {
-            $preset = ArkasDomainAdapter::presetFor($profile->source_table);
             $bridgeCommand = $preset['bridge_command'];
             $bridgeYear = in_array($bridgeCommand, ['bku', 'rkas'], true) ? $year->year : null;
             $bridgeFundSource = in_array($bridgeCommand, ['bku', 'rkas'], true) ? $year->fund_source_id : null;
@@ -60,7 +73,6 @@ class ArkasGenericImportService
 
             $written = 0;
             $domainWritten = 0;
-            $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
             $db->transaction(function () use ($db, $profile, $year, $records, $sourceKeyColumn, &$written, &$domainWritten): void {
                 if ($profile->sync_mode === 'full_refresh') {
                     $db->table('arkas_import_rows')->where('profile_id', $profile->id)->where('fiscal_year_id', $year->id)->delete();
