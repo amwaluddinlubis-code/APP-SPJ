@@ -166,8 +166,8 @@ final class SchoolBackupService
             ->where('school_id', $school->id)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->skip($retention)
-            ->get();
+            ->get()
+            ->slice($retention);
 
         foreach ($expired as $oldBackup) {
             if (in_array((string) $oldBackup->id, $protected, true)) {
