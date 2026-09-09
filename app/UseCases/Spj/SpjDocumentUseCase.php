@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\DocumentTemplate;
 use App\Models\School;
 use App\Models\SpjPackage;
+use App\Services\SpjGeneratedDocumentValidator;
 use App\Services\SpjMaintenanceDocumentContextService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjTemplateRenderPreflight;
@@ -12,6 +13,9 @@ use App\Services\SpjTemplateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class SpjDocumentUseCase
 {
@@ -33,8 +37,9 @@ class SpjDocumentUseCase
         $school = School::query()->findOrFail(session('active_school_id'));
         $activeTemplates = $this->activeTemplatesForPackage($package);
         $preflight->assertAllRenderable($activeTemplates, $package, $school);
+        $response = $templates->downloadPackagePdf($activeTemplates, $package, $school);
 
-        return $templates->downloadPackagePdf($activeTemplates, $package, $school);
+        return $this->assertPdfOutput($response, 'Paket SPJ PDF');
     }
 
     public function downloadPackageExcel(string $packageId)
@@ -48,8 +53,9 @@ class SpjDocumentUseCase
         $school = School::query()->findOrFail(session('active_school_id'));
         $activeTemplates = $this->activeTemplatesForPackage($package);
         app(SpjTemplateRenderPreflight::class)->assertAllRenderable($activeTemplates, $package, $school);
+        $response = app(SpjTemplateService::class)->downloadPackageExcel($activeTemplates, $package, $school);
 
-        return app(SpjTemplateService::class)->downloadPackageExcel($activeTemplates, $package, $school);
+        return $this->assertBinaryOutput($response, 'xlsx', 'Paket SPJ Excel');
     }
 
     public function previewPackage(string $packageId): View|RedirectResponse
@@ -101,7 +107,14 @@ class SpjDocumentUseCase
             $package->setAttribute('document_number', $document->document_number);
         }
 
-        return $templates->download($template, $package, $school);
+        $response = $templates->download($template, $package, $school);
+
+        return $this->assertBinaryOutput(
+            $response,
+            (string) $template->format,
+            'Dokumen '.(string) $template->document_type,
+            (string) $template->document_type,
+        );
     }
 
     public function downloadTemplatePdf(string $packageId, string $templateId)
@@ -120,8 +133,9 @@ class SpjDocumentUseCase
         $this->applyDocumentContext($package);
         $school = School::query()->findOrFail(session('active_school_id'));
         app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
+        $response = $templates->downloadPdf($template, $package, $school);
 
-        return $templates->downloadPdf($template, $package, $school);
+        return $this->assertPdfOutput($response, 'PDF '.(string) $template->document_type);
     }
 
     public function previewTemplate(string $packageId, string $templateId): View|RedirectResponse
@@ -164,5 +178,38 @@ class SpjDocumentUseCase
     private function applyDocumentContext(SpjPackage $package): void
     {
         app(SpjMaintenanceDocumentContextService::class)->apply($package);
+    }
+
+    private function assertBinaryOutput(
+        BinaryFileResponse $response,
+        string $format,
+        string $documentLabel,
+        ?string $documentType = null,
+    ): BinaryFileResponse {
+        $path = $response->getFile()->getPathname();
+
+        try {
+            app(SpjGeneratedDocumentValidator::class)->assertBinaryResponse(
+                $response,
+                $format,
+                $documentLabel,
+                $documentType,
+            );
+        } catch (Throwable $exception) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            throw $exception;
+        }
+
+        return $response;
+    }
+
+    private function assertPdfOutput(Response $response, string $documentLabel): Response
+    {
+        app(SpjGeneratedDocumentValidator::class)->assertPdfResponse($response, $documentLabel);
+
+        return $response;
     }
 }
