@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\SchoolBackup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -28,7 +29,8 @@ final class SchoolBackupService
 
         $folder = $this->backupFolder($school);
         File::ensureDirectoryExists($folder);
-        $name = 'spj-'.$school->npsn.'-'.now()->format('Ymd-His').'-'.strtolower($reason).'.sqlite';
+        $uniqueSuffix = strtolower((string) Str::ulid());
+        $name = 'spj-'.$school->npsn.'-'.now()->format('Ymd-His').'-'.strtolower($reason).'-'.$uniqueSuffix.'.sqlite';
         $target = $folder.DIRECTORY_SEPARATOR.$name;
         $temporaryTarget = $target.'.tmp';
 
