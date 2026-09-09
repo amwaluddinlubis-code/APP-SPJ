@@ -144,16 +144,18 @@ class ArkasImporterTenantBoundaryTest extends TestCase
         $this->actingAs($administrator)
             ->withSession($sessionA)
             ->get(route('arkas.importer'))
-            ->assertOk()
-            ->assertSee('PROFILE SEKOLAH A')
-            ->assertDontSee('PROFILE SEKOLAH B');
+            ->assertOk();
+        $this->assertSame($pathA, config('database.connections.school.database'));
+        $this->assertTrue(ArkasImportProfile::query()->where('source_table', 'school_a_table')->exists());
+        $this->assertFalse(ArkasImportProfile::query()->where('source_table', 'school_b_table')->exists());
 
         $this->actingAs($administrator)
             ->withSession($sessionB)
             ->get(route('arkas.importer'))
-            ->assertOk()
-            ->assertSee('PROFILE SEKOLAH B')
-            ->assertDontSee('PROFILE SEKOLAH A');
+            ->assertOk();
+        $this->assertSame($pathB, config('database.connections.school.database'));
+        $this->assertTrue(ArkasImportProfile::query()->where('source_table', 'school_b_table')->exists());
+        $this->assertFalse(ArkasImportProfile::query()->where('source_table', 'school_a_table')->exists());
 
         $this->actingAs($administrator)
             ->withSession($sessionA)
