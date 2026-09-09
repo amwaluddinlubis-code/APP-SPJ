@@ -51,7 +51,7 @@ class ArkasGenericImportSyncModeTest extends TestCase
             ['EXTERNAL_ID' => 'C', 'VALUE' => 'C-new'],
         ];
 
-        $service = $this->serviceWithSnapshots($initial, $next);
+        $service = $this->serviceWithSnapshots([$initial, $next]);
         $service->synchronize($profile, $year, new ArkasSource);
         $run = $service->synchronize($profile->refresh(), $year, new ArkasSource);
 
@@ -84,7 +84,7 @@ class ArkasGenericImportSyncModeTest extends TestCase
             ['EXTERNAL_ID' => 'C', 'VALUE' => 'C-new', 'UPDATED_AT' => '2026-09-10 10:06:00'],
         ];
 
-        $service = $this->serviceWithSnapshots($initial, $next);
+        $service = $this->serviceWithSnapshots([$initial, $next]);
 
         Carbon::setTestNow('2026-09-10 10:00:00');
         $firstRun = $service->synchronize($profile, $year, new ArkasSource);
@@ -130,7 +130,7 @@ class ArkasGenericImportSyncModeTest extends TestCase
             ['ID_RAPBS' => 'R3', 'KODE_REKENING' => '5.1.03', 'URAIAN' => 'Baru 3', 'JUMLAH' => 3000],
         ];
 
-        $service = $this->serviceWithSnapshots($initial, $replacement, new ArkasDomainAdapter);
+        $service = $this->serviceWithSnapshots([$initial, $replacement], new ArkasDomainAdapter);
         $service->synchronize($profile, $activeYear, new ArkasSource);
 
         $this->seedStagingRow($profile, $otherYear, 'YEAR2');
@@ -192,22 +192,13 @@ class ArkasGenericImportSyncModeTest extends TestCase
         ]);
     }
 
-    /** @param array<int, array<string, mixed>> ...$snapshots */
-    private function serviceWithSnapshots(array ...$snapshots): ArkasGenericImportService
+    /** @param array<int, array<int, array<string, mixed>>> $snapshots */
+    private function serviceWithSnapshots(array $snapshots, ?ArkasDomainAdapter $adapter = null): ArkasGenericImportService
     {
-        $adapter = new ArkasDomainAdapter;
-        if ($snapshots !== [] && end($snapshots) instanceof ArkasDomainAdapter) {
-            /** @var ArkasDomainAdapter $adapter */
-            $adapter = array_pop($snapshots);
-        }
-
         $staging = Mockery::mock(ArkasStagingService::class);
-        $expectation = $staging->shouldReceive('fetch')->times(count($snapshots));
-        foreach ($snapshots as $snapshot) {
-            $expectation->andReturn($snapshot);
-        }
+        $staging->shouldReceive('fetch')->times(count($snapshots))->andReturn(...$snapshots);
 
-        return new ArkasGenericImportService($staging, $adapter, new ArkasSourceKeyResolver);
+        return new ArkasGenericImportService($staging, $adapter ?? new ArkasDomainAdapter, new ArkasSourceKeyResolver);
     }
 
     /** @return array<string, mixed> */
