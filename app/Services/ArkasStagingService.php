@@ -12,7 +12,14 @@ use Illuminate\Support\Facades\DB;
 /** Fetches Bridge payloads into tenant staging before a domain adapter consumes them. */
 class ArkasStagingService
 {
-    public function __construct(private readonly ArkasBridgeClient $bridge) {}
+    private readonly ArkasSourceKeyResolver $sourceKeys;
+
+    public function __construct(
+        private readonly ArkasBridgeClient $bridge,
+        ?ArkasSourceKeyResolver $sourceKeys = null,
+    ) {
+        $this->sourceKeys = $sourceKeys ?? new ArkasSourceKeyResolver;
+    }
 
     /** @return array<int, array<string, mixed>> */
     public function stage(string $sourceTable, string $command, FiscalYear $year, ArkasSource $source, string $parser = 'decode', ?int $bridgeYear = null, ?int $fundSource = null): array
@@ -39,14 +46,15 @@ class ArkasStagingService
             $fundSource ??= in_array($command, ['bku', 'rkas'], true) ? $year->fund_source_id : null;
             $records = $this->fetch($profile, $year, $source, $command, $parser, $bridgeYear, $fundSource);
             $db = DB::connection('school');
-            $db->transaction(function () use ($db, $profile, $year, $records): void {
+            $db->transaction(function () use ($db, $profile, $year, $records, $preset): void {
                 if ($profile->sync_mode === 'full_refresh') {
                     $db->table('arkas_import_rows')->where('profile_id', $profile->id)->where('fiscal_year_id', $year->id)->delete();
                 }
+                $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
                 foreach ($records as $record) {
                     $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
                     $db->table('arkas_import_rows')->updateOrInsert(
-                        ['profile_id' => $profile->id, 'fiscal_year_id' => $year->id, 'source_key' => $this->sourceKey($record, $profile->source_key_column)],
+                        ['profile_id' => $profile->id, 'fiscal_year_id' => $year->id, 'source_key' => $this->sourceKeys->resolve($record, $sourceKeyColumn)],
                         ['parent_source_key' => $this->mappedValue($record, $profile, 'parent'), 'relation_type' => $profile->source_table, 'payload' => $payload, 'payload_hash' => hash('sha256', $payload), 'updated_at' => now(), 'created_at' => now()],
                     );
                 }
@@ -88,25 +96,12 @@ class ArkasStagingService
     private function deduplicate(array $records, ArkasImportProfile $profile, array $preset): array
     {
         $indexed = [];
+        $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
         foreach ($records as $record) {
-            $indexed[$this->sourceKey($record, $profile->source_key_column ?: $preset['source_key_column'])] = $record;
+            $indexed[$this->sourceKeys->resolve($record, $sourceKeyColumn)] = $record;
         }
 
         return array_values($indexed);
-    }
-
-    /** @param array<string, mixed> $record */
-    private function sourceKey(array $record, ?string $column): string
-    {
-        foreach (array_filter([$column, 'ID_RAPBS', 'id_rapbs', 'ID_KAS_UMUM', 'id_kas_umum', 'ID']) as $candidate) {
-            foreach ($record as $key => $value) {
-                if (strcasecmp((string) $key, (string) $candidate) === 0 && filled($value)) {
-                    return (string) $value;
-                }
-            }
-        }
-
-        return hash('sha256', json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
     }
 
     /** @param array<string, mixed> $record */
