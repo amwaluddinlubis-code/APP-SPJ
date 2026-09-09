@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ArkasImportProfile;
 use App\Models\FiscalYear;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class ArkasImportRowSynchronizer
@@ -24,7 +25,7 @@ final class ArkasImportRowSynchronizer
         ArkasImportProfile $profile,
         FiscalYear $year,
         array $records,
-        string $sourceKeyColumn,
+        ?string $sourceKeyColumn,
     ): array {
         $db = DB::connection('school');
         $existing = $this->existingRows($db, $profile, $year);
@@ -101,7 +102,7 @@ final class ArkasImportRowSynchronizer
         return $metrics;
     }
 
-    private function existingRows(ConnectionInterface $db, ArkasImportProfile $profile, FiscalYear $year): \Illuminate\Support\Collection
+    private function existingRows(ConnectionInterface $db, ArkasImportProfile $profile, FiscalYear $year): Collection
     {
         return $db->table('arkas_import_rows')
             ->where('profile_id', $profile->id)
