@@ -43,11 +43,11 @@ class ArkasGenericImportService
         }
 
         $lock = Cache::lock(
-            ArkasTenantLockKey::import($source, (int) $profile->id, (int) $year->id),
+            ArkasTenantLockKey::import($source, $profile->source_table, (int) $year->id),
             900,
         );
         if (! $lock->get()) {
-            throw new \RuntimeException('Importer ARKAS untuk profil, sekolah, dan tahun anggaran ini sedang berjalan. Tunggu sampai proses sebelumnya selesai.');
+            throw new \RuntimeException('Importer ARKAS untuk tabel, sekolah, dan tahun anggaran ini sedang berjalan. Tunggu sampai proses sebelumnya selesai.');
         }
 
         $db = DB::connection('school');
