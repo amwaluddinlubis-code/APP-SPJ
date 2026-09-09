@@ -16,8 +16,8 @@ Checkpoint functional P0-02 terbaru:
 
 ```text
 branch : gui-standardization
-commit : d13004663e5f95cf678abaea772e6095b811c4e2
-subject: test: add output validator to SPJ critical suite
+commit : 1a633f766179e709abdba015c6b8433330c74aad
+subject: test: resolve template upload controller dependencies
 ```
 
 ## P0-08 — Generic ARKAS Importer
@@ -103,6 +103,7 @@ Hardening yang sekarang FUNCTIONAL PASS:
 - Paket multi-template XLSX benar-benar menghasilkan beberapa sheet hasil render dan Paket PDF menghasilkan payload PDF aktual;
 - regression membuktikan proses generate/preview/package yang diuji tidak membuat `spj_documents` baru dan tidak mengubah `document_number_sequences`;
 - placeholder umum enam kategori canonical sudah diregresikan untuk kategori, identitas sekolah, nomor, bruto, pajak, neto, kepala sekolah, dan bendahara;
+- upload template invalid tidak boleh mengganti template aktif; upload valid dengan warning non-blocking tetap disimpan;
 - final download artifact juga divalidasi sebelum diberikan kepada operator.
 
 Regression P0-02 yang masuk `SPJ Critical`:
@@ -113,12 +114,12 @@ tests/Feature/SpjGeneratedDocumentValidatorTest.php
 tests/Feature/DocumentTemplateUploadValidationTest.php
 ```
 
-CI canonical terbaru pada `d13004663e5f95cf678abaea772e6095b811c4e2`:
+CI canonical terbaru pada `1a633f766179e709abdba015c6b8433330c74aad`:
 
 ```text
 frontend build         PASS
 Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 155 tests / 1082 assertions
+SPJ Critical PHPUnit   PASS — 157 tests / 1091 assertions
 repository Pint        WARN — 1 pre-existing style issue
 ```
 
