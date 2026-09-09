@@ -47,7 +47,6 @@ class ArkasGenericImportSyncModeTest extends TestCase
         ];
         $next = [
             ['EXTERNAL_ID' => 'A', 'VALUE' => 'A-new'],
-            ['EXTERNAL_ID' => 'B', 'VALUE' => 'B-stable'],
             ['EXTERNAL_ID' => 'C', 'VALUE' => 'C-new'],
         ];
 
@@ -62,7 +61,7 @@ class ArkasGenericImportSyncModeTest extends TestCase
             ->get();
 
         $this->assertSame('SUCCESS', $run->status);
-        $this->assertSame(3, $run->records_read);
+        $this->assertSame(2, $run->records_read);
         $this->assertSame(3, $rows->count());
         $this->assertSame(['A', 'B', 'C'], $rows->pluck('source_key')->all());
         $this->assertSame('A-new', $this->payloadFor($profile, $year, 'A')['VALUE']);
