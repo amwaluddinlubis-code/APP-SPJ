@@ -14,11 +14,15 @@ class ArkasStagingService
 {
     private readonly ArkasSourceKeyResolver $sourceKeys;
 
+    private readonly ArkasImportRowSynchronizer $rows;
+
     public function __construct(
         private readonly ArkasBridgeClient $bridge,
         ?ArkasSourceKeyResolver $sourceKeys = null,
+        ?ArkasImportRowSynchronizer $rows = null,
     ) {
         $this->sourceKeys = $sourceKeys ?? new ArkasSourceKeyResolver;
+        $this->rows = $rows ?? new ArkasImportRowSynchronizer($this->sourceKeys);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -29,9 +33,12 @@ class ArkasStagingService
             [...ArkasDomainAdapter::presetFor($sourceTable), 'label' => 'Auto '.$sourceTable],
         );
         $preset = ArkasDomainAdapter::presetFor($sourceTable);
-        $lock = Cache::lock('arkas-staging:'.$sourceTable.':'.$year->id, 900);
+        $lock = Cache::lock(
+            ArkasTenantLockKey::staging($source, $sourceTable, (int) $year->id),
+            900,
+        );
         if (! $lock->get()) {
-            throw new \RuntimeException('Staging ARKAS sedang berjalan untuk tabel '.$sourceTable.'.');
+            throw new \RuntimeException('Staging ARKAS sedang berjalan untuk tabel, sekolah, dan tahun anggaran ini.');
         }
 
         $run = ArkasImportRun::query()->create([
@@ -45,21 +52,21 @@ class ArkasStagingService
             $bridgeYear ??= in_array($command, ['bku', 'rkas', 'fund-sources'], true) ? $year->year : null;
             $fundSource ??= in_array($command, ['bku', 'rkas'], true) ? $year->fund_source_id : null;
             $records = $this->fetch($profile, $year, $source, $command, $parser, $bridgeYear, $fundSource);
-            $db = DB::connection('school');
-            $db->transaction(function () use ($db, $profile, $year, $records, $preset): void {
-                if ($profile->sync_mode === 'full_refresh') {
-                    $db->table('arkas_import_rows')->where('profile_id', $profile->id)->where('fiscal_year_id', $year->id)->delete();
-                }
-                $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
-                foreach ($records as $record) {
-                    $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
-                    $db->table('arkas_import_rows')->updateOrInsert(
-                        ['profile_id' => $profile->id, 'fiscal_year_id' => $year->id, 'source_key' => $this->sourceKeys->resolve($record, $sourceKeyColumn)],
-                        ['parent_source_key' => $this->mappedValue($record, $profile, 'parent'), 'relation_type' => $profile->source_table, 'payload' => $payload, 'payload_hash' => hash('sha256', $payload), 'updated_at' => now(), 'created_at' => now()],
-                    );
-                }
-            });
-            $run->update(['status' => 'SUCCESS', 'records_read' => count($records), 'records_written' => count($records), 'message' => 'Payload Bridge tersimpan di staging.', 'finished_at' => now()]);
+            $sourceKeyColumn = $profile->source_key_column ?: $preset['source_key_column'];
+            $metrics = DB::connection('school')->transaction(
+                fn (): array => $this->rows->synchronize($profile, $year, $records, $sourceKeyColumn),
+            );
+            $run->update([
+                'status' => 'SUCCESS',
+                'records_read' => count($records),
+                'records_written' => $metrics['written'],
+                'records_new' => $metrics['new'],
+                'records_changed' => $metrics['changed'],
+                'records_unchanged' => $metrics['unchanged'],
+                'records_removed' => $metrics['removed'],
+                'message' => 'Payload Bridge tersimpan di staging.',
+                'finished_at' => now(),
+            ]);
             $profile->update(['last_synced_at' => now()]);
 
             return $records;
@@ -102,21 +109,5 @@ class ArkasStagingService
         }
 
         return array_values($indexed);
-    }
-
-    /** @param array<string, mixed> $record */
-    private function mappedValue(array $record, ArkasImportProfile $profile, string $role): ?string
-    {
-        $column = array_search($role, $profile->mapping ?? [], true);
-        if ($column === false) {
-            return null;
-        }
-        foreach ($record as $key => $value) {
-            if (strcasecmp((string) $key, (string) $column) === 0) {
-                return filled($value) ? (string) $value : null;
-            }
-        }
-
-        return null;
     }
 }
