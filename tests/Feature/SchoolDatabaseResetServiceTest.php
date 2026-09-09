@@ -9,6 +9,7 @@ use App\Services\SchoolDatabaseResetService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use RuntimeException;
 use Tests\TestCase;
 
 class SchoolDatabaseResetServiceTest extends TestCase
@@ -38,8 +39,11 @@ class SchoolDatabaseResetServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_reset_rebuilds_database_and_restarts_autoincrement_from_one(): void
+    public function test_reset_rebuilds_database_restarts_autoincrement_and_cleans_sidecars(): void
     {
+        File::put($this->databasePath.'-wal', 'stale-wal');
+        File::put($this->databasePath.'-shm', 'stale-shm');
+
         $school = new School([
             'npsn' => '12345678',
             'name' => 'Sekolah Uji',
@@ -77,9 +81,56 @@ class SchoolDatabaseResetServiceTest extends TestCase
 
         (new SchoolDatabaseResetService($manager))->reset($school);
 
+        $this->assertFalse(File::exists($this->databasePath.'-wal'));
+        $this->assertFalse(File::exists($this->databasePath.'-shm'));
         $this->assertSame(0, DB::connection('school')->table('reset_rows')->count());
+        $this->assertSame(0, DB::connection('school')->table('sqlite_sequence')->count());
+
         $id = DB::connection('school')->table('reset_rows')->insertGetId(['name' => 'Baru']);
         $this->assertSame(1, $id);
+    }
+
+    public function test_reset_refuses_to_delete_primary_application_database(): void
+    {
+        Config::set('database.default', 'sqlite');
+        Config::set('database.connections.sqlite.database', $this->databasePath);
+
+        $school = new School([
+            'npsn' => '87654321',
+            'name' => 'Sekolah Salah Path',
+        ]);
+        $school->id = 100;
+        $school->setRelation('databaseRecord', new SchoolDatabase([
+            'school_id' => $school->id,
+            'database_path' => $this->databasePath,
+            'status' => 'READY',
+        ]));
+
+        $manager = new class extends SchoolDatabaseManager
+        {
+            public bool $provisionCalled = false;
+
+            public function provision(School $school): SchoolDatabase
+            {
+                $this->provisionCalled = true;
+
+                throw new RuntimeException('Provision tidak boleh terpanggil.');
+            }
+        };
+
+        try {
+            (new SchoolDatabaseResetService($manager))->reset($school);
+            $this->fail('Reset wajib ditolak ketika path tenant sama dengan database utama.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('database utama aplikasi', $exception->getMessage());
+        }
+
+        $this->assertFalse($manager->provisionCalled);
+        $this->assertTrue(File::exists($this->databasePath));
+
+        $pdo = new \PDO('sqlite:'.$this->databasePath);
+        $this->assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM reset_rows')->fetchColumn());
+        $pdo = null;
     }
 
     private function createDatabaseWithExistingRows(string $path): void
