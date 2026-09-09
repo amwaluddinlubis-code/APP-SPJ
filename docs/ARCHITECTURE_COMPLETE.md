@@ -1,6 +1,6 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-08**
+Terakhir diverifikasi: **2026-09-10** terhadap head implementasi `ceb8df6f2a73c4e69cf13de8048ada2fff245fce`.
 
 Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk gap implementasi baca `CURRENT_PROGRESS.md`; untuk aturan bisnis permanen baca `SPJ_DESIGN_DECISIONS.md`.
 
@@ -28,9 +28,15 @@ Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup, setup, dan me
 
 ### Database tenant/sekolah
 
-Menyimpan tahun anggaran, sumber dana, source RKAS/BKU, transaksi, item, detail kategori SPJ, paket, nomor dokumen, audit, dan data kerja sekolah.
+Menyimpan tahun anggaran, sumber dana, source RKAS/BKU, transaksi, item, detail kategori SPJ, paket, nomor dokumen, audit, importer staging/profile/run, dan data kerja sekolah.
 
-Semua operasi tenant harus berada pada konteks sekolah/tahun/sumber dana aktif.
+Boundary canonical operasi tenant:
+
+```text
+School + Fiscal Year + Fund Source
+```
+
+Model yang memakai connection `school` tidak boleh dibaca/ditulis sebelum sekolah aktif diaktivasi. Untuk request yang bergantung tahun anggaran, fiscal year aktif juga harus divalidasi terlebih dahulu.
 
 ### Reset tenant
 
@@ -101,7 +107,16 @@ Representasi transaksi BKU aplikasi. Relasi penting mencakup items, goods, workO
 
 ### Employee
 
-Auto-fill peserta `KONSUMSI` di Paket SPJ memakai Employee aktif dengan `source_type = DAPODIK`. Participant manual tetap diperbolehkan.
+Identity layer aktif dapat menyimpan provenance dari ARKAS/PTK, Dapodik, dan data manual dengan identifier seperti NUPTK/NIP/NIK serta normalized name.
+
+Keputusan bisnis permanen untuk auto-fill peserta `KONSUMSI` tetap:
+
+```text
+Auto-fill peserta = Employee.source_type DAPODIK
+Participant manual = diperbolehkan
+```
+
+Karena implementasi identity/roster terbaru mulai membuka data lintas sumber, setiap jalur UI yang memperluas auto-fill melampaui Dapodik-only dianggap gap terhadap design contract dan dilacak di `CURRENT_PROGRESS.md` / `DEVELOPMENT_ROADMAP.md`. Arsitektur tidak mengubah rule permanen hanya karena implementasi sementara berbeda.
 
 ### SpjPackage
 
@@ -123,6 +138,8 @@ CANCELLED
 
 Controller menangani HTTP entry point, authorization/request validation, kemudian mendelegasikan pekerjaan domain/orchestration.
 
+`SpjController` saat ini berfungsi sebagai HTTP boundary tipis dan meneruskan orchestration ke use case.
+
 ### Use cases SPJ aktif
 
 ```text
@@ -132,21 +149,25 @@ app/UseCases/Spj/
 ├── UpdateSpjPackageDetailsUseCase.php
 ├── SpjNumberingUseCase.php
 ├── SpjDocumentUseCase.php
+├── SpjPackageCategoryUseCase.php
 └── SpjReportUseCase.php
 ```
 
 - `SpjWorkspaceUseCase` — workspace/tab/query/metrics/package navigation;
 - `CreateSpjDraftUseCase` — gateway idempotent create/open DRAFT;
 - `UpdateSpjPackageDetailsUseCase` — update data Paket tanpa menulis source tax/item;
-- `SpjNumberingUseCase` — workflow penomoran;
+- `SpjPackageCategoryUseCase` — mutation kategori Paket;
+- `SpjNumberingUseCase` — workflow penomoran/lifecycle terkait;
 - `SpjDocumentUseCase` — preview/download/generator;
 - `SpjReportUseCase` — reporting/export/monitoring.
 
 `SpjPackageUseCase` legacy sudah tidak ada dan tidak boleh direferensikan kembali.
 
+`SpjNumberingUseCase` masih cukup besar dan dapat dipecah lebih lanjut setelah P0 correctness selesai, tetapi refactor tersebut bukan alasan menunda blocker importer/tenant.
+
 ### Services
 
-Contoh service domain/reusable: `SpjTransactionDetailsService`, `SpjPackageValidationService`, document requirements, procurement policy, numbering service, ARKAS sync, tenant database manager, dan operational audit.
+Contoh service domain/reusable: `SpjTransactionDetailsService`, `SpjPackageValidationService`, document requirements, procurement policy, numbering service, ARKAS sync, employee identity, tenant database manager, dan operational audit.
 
 ### Frontend state
 
@@ -157,7 +178,9 @@ Contoh service domain/reusable: `SpjTransactionDetailsService`, `SpjPackageValid
 
 ## 7. Pipeline sinkronisasi ARKAS aktif
 
-Semua entry point runtime memakai coordinator `ArkasCanonicalSyncService`:
+### 7.1 Canonical sync transaksi/source
+
+Entry point runtime utama memakai coordinator `ArkasCanonicalSyncService`:
 
 ```text
 ArkasCanonicalSyncService
@@ -167,11 +190,40 @@ ArkasCanonicalSyncService
   -> reconciliation dan derived references
 ```
 
-Importer tambahan memakai `ArkasGenericImportService` dan `ArkasDomainAdapter`, dengan konfigurasi pada `ArkasImportProfile`. Snapshot disimpan pada `arkas_import_rows`; histori disimpan pada `arkas_import_runs`.
+Adapter transaksi yang menjaga identitas transaksi, overlay manual, paket SPJ, source missing/returning, dan reconciliation tetap merupakan boundary release-safety utama.
 
-`ArkasFullSynchronizationService` dan `ArkasSynchronizationService` tidak digunakan sebagai entry point runtime baru. Adapter transaksi yang menjaga identitas transaksi, overlay manual, paket SPJ, dan reconciliation tetap dipertahankan.
+### 7.2 Generic ARKAS Importer
 
-Detail operasional importer ada pada `docs/ARKAS_IMPORTER.md`.
+Importer tambahan memakai:
+
+```text
+ArkasImporterController
+→ ArkasDatabaseExplorer / Bridge
+→ ArkasImportProfile
+→ ArkasStagingService
+→ ArkasReconciliationService
+→ ArkasGenericImportService
+→ ArkasDomainAdapter
+→ target domain / raw snapshot
+```
+
+Snapshot disimpan pada `arkas_import_rows`; histori disimpan pada `arkas_import_runs`.
+
+Kontrak arsitektur importer:
+
+- ARKAS source tetap readonly;
+- request importer yang memakai model tenant harus mengaktifkan sekolah yang benar terlebih dahulu;
+- request yang bergantung tahun anggaran harus memvalidasi fiscal year aktif;
+- source key harus deterministic dan konsisten antara preview, staging, reconciliation, dan sync;
+- full refresh boleh membersihkan target dalam scope fiscal year/domain yang benar, tetapi tidak boleh menyapu tenant/konteks lain;
+- queue job wajib mengaktifkan tenant sebelum query/write connection `school`.
+
+Status implementasi Generic Importer pada head `ceb8df6` **belum operator-ready** karena dua gap release-safety yang dicatat sebagai P0-08:
+
+1. `ArkasGenericImportService` memanggil resolver `sourceKey()` yang belum diimplementasikan pada service tersebut;
+2. route importer belum seluruhnya berada pada boundary `active-school` + `active-year` meskipun membaca model connection `school`.
+
+`ArkasFullSynchronizationService` dan `ArkasSynchronizationService` tidak digunakan sebagai entry point runtime baru. Detail operasional importer ada pada `docs/ARKAS_IMPORTER.md` dan status release pada `docs/CURRENT_PROGRESS.md`.
 
 ## 8. Workflow SPJ aktif
 
@@ -235,7 +287,7 @@ BARANG menampilkan mode SiPLah/Non SiPLah sebagai radio group mutually-exclusive
 
 Nomor otomatis tidak lagi menjadi form input operator. Backend detail synchronization menjaga nomor yang sudah diterbitkan bila request manual tidak mengirim field nomor tersebut.
 
-## 9. Tabel kategori non-BARANG
+## 10. Tabel kategori non-BARANG
 
 `row-editor.blade.php` menjadi tabel compact untuk kategori yang memakai editor generik. KONSUMSI dan PEMELIHARAAN memiliki tabel compact sendiri.
 
@@ -250,7 +302,7 @@ Kontrak UI:
 
 `primary_recipient_index` dipetakan backend ke `receipt_recipient_name`; model yang memiliki row-level flag dapat ikut disinkronkan.
 
-## 10. Pemeliharaan bahan + upah
+## 11. Pemeliharaan bahan + upah
 
 Relationship state:
 
@@ -265,7 +317,7 @@ Selector ditampilkan di Paket SPJ untuk UX, tetapi tidak menjadi field package f
 
 Document context dapat membaca material dari transaksi bahan terkait dan pekerja/upah dari transaksi pasangan tanpa menulis ulang source BKU.
 
-## 11. Pajak
+## 12. Pajak
 
 PPN/PPh/SSPD/tax_total/net_amount adalah source transaction.
 
@@ -274,7 +326,7 @@ PPN/PPh/SSPD/tax_total/net_amount adalah source transaction.
 - tab Rincian Pajak menampilkan detail readonly;
 - `UpdateSpjPackageDetailsUseCase` mengabaikan request tax forged.
 
-## 12. Tanggal pengadaan
+## 13. Tanggal pengadaan
 
 Rule canonical:
 
@@ -288,7 +340,7 @@ Frontend helper `spj-purchase-date-validation.js` mengikuti rule tersebut.
 
 Tidak ada lagi compatibility backend `TransactionController::updateManualDescription()`; method/route tersebut sudah dipensiunkan.
 
-## 13. Penomoran dokumen
+## 14. Penomoran dokumen
 
 - domain nomor dipisahkan per jenis dokumen;
 - nomor mengikuti tanggal/peristiwa dokumen bila tersedia;
@@ -299,7 +351,7 @@ Tidak ada lagi compatibility backend `TransactionController::updateManualDescrip
 
 `SpjDocumentNumberService` menangani mapping otomatis termasuk PESANAN, BAP, BAST, SPK, RAB, dan dokumen yang dikonfigurasi.
 
-## 14. SiPLah
+## 15. SiPLah
 
 SiPLah adalah procurement/payment channel, bukan `spj_category`.
 
@@ -314,7 +366,7 @@ Dukungan aktif:
 
 Surat Pesanan internal Non-SiPLah dan nomor marketplace SiPLah adalah konsep berbeda.
 
-## 15. Vite dan asset frontend
+## 16. Vite dan asset frontend
 
 Entry Vite canonical:
 
@@ -325,7 +377,9 @@ resources/js/app.js
 
 Feature JS diimpor melalui bootstrap/app bundle. View tidak boleh menghidupkan kembali stale standalone `@vite` entry hanya untuk memperbaiki manifest lama.
 
-## 16. GUI/theme
+CSS sekarang memakai ordered entrypoint, tetapi masih memiliki compatibility/theme layers yang cukup banyak. Pengurangan layer/bundle adalah P2 setelah correctness P0 stabil.
+
+## 17. GUI/theme
 
 Acuan:
 
@@ -336,32 +390,49 @@ docs/CSS_USAGE_GUIDE.md
 
 Gunakan token `--ui-*`, `--theme-*`, primitive `x-ui.*`, dan class `ui-*` untuk markup baru.
 
-## 17. Security/authorization
+## 18. Security/authorization
 
 Target role utama: ADMIN, OPERATOR, VIEWER/read-only.
 
 Mutation sensitif harus dilindungi backend, terutama numbering, cancel/reopen/finalization, reset/restore tenant, configuration, dan reconciliation.
 
-## 18. Testing
+Authorization role dan tenant activation adalah dua boundary berbeda. Route administrator-only tetap dapat salah tenant bila connection `school` belum diaktivasi. Oleh karena itu setiap fitur tenant administratif tetap wajib melewati tenant context yang benar.
 
-Focused regression suite SPJ dilaporkan user ALL PASS pada 2026-09-08 setelah refactor workspace besar.
+## 19. Testing
 
-Perubahan visual/JS setelah checkpoint tersebut tetap memerlukan browser QA dan rebuild. Jangan menyimpulkan browser runtime PASS hanya dari PHPUnit.
+Checkpoint GitHub Actions pada head implementasi `ceb8df6`:
 
-## 19. Area belum final
+```text
+frontend build         PASS
+Blade compile/cache    PASS
+SPJ Critical PHPUnit   PASS — 124 tests / 810 assertions
+Pint repository-wide   WARN — 1 style issue
+```
 
-1. browser QA refinement Paket terbaru;
-2. APP DATA runtime pada database nyata;
-3. JASA_LAINNYA output multi-penerima end-to-end;
-4. generator/preview Word/Excel/PDF release hardening;
-5. lifecycle/locking/revision terpadu;
-6. reconciliation snapshot/diff;
-7. authorization per role;
-8. end-to-end semua kategori sampai FINAL;
-9. mobile regression;
-10. laporan BOS/Pusat Laporan.
+Pint masih advisory sehingga workflow dapat hijau walaupun style check belum clean. Generic Importer/Employee Identity belum seluruhnya tercakup oleh release-critical suite, sehingga critical PASS tidak boleh ditafsirkan sebagai pembuktian runtime untuk P0-08/P1-06.
 
-## 20. Dokumen acuan
+Perubahan visual/JS tetap memerlukan browser QA dan rebuild. Jangan menyimpulkan browser runtime PASS hanya dari PHPUnit.
+
+## 20. Area belum final
+
+Urutan gap aktif saat ini:
+
+1. Generic ARKAS Importer correctness + tenant context (P0-08);
+2. E2E enam kategori pada database nyata sampai FINAL (P0-01);
+3. generator/preview Word/Excel/PDF pada output nyata (P0-02);
+4. APP DATA backup/reset/restore pada tenant nyata (P0-07);
+5. browser QA Paket desktop/laptop;
+6. JASA_LAINNYA output multi-penerima end-to-end;
+7. PEMELIHARAAN bahan + upah full-document QA;
+8. SiPLah end-to-end;
+9. Employee/participant roster alignment terhadap kontrak Dapodik-only;
+10. audit trail operasional end-to-end;
+11. GUI/style/performance/repository cleanup;
+12. laporan BOS/Pusat Laporan.
+
+Mobile/responsive penuh adalah future development dan bukan release blocker target operator laptop/desktop saat ini.
+
+## 21. Dokumen acuan
 
 ```text
 README.md
@@ -371,6 +442,7 @@ docs/SPJ_DESIGN_DECISIONS.md
 docs/GUI_STANDARDIZATION.md
 docs/CSS_USAGE_GUIDE.md
 docs/DEVELOPMENT_ROADMAP.md
+docs/ARKAS_IMPORTER.md
 docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
 docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
 docs/SIPLAH_MVP_PLAN.md
