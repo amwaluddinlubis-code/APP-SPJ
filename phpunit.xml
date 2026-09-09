@@ -17,7 +17,10 @@
             <file>tests/Unit/ArkasSourceKeyResolverTest.php</file>
             <file>tests/Feature/ArkasGenericImportSourceKeyTest.php</file>
             <file>tests/Feature/ArkasGenericImportSyncModeTest.php</file>
+            <file>tests/Feature/ArkasGenericImportReleaseSafetyTest.php</file>
             <file>tests/Feature/ArkasImporterTenantBoundaryTest.php</file>
+            <file>tests/Feature/ArkasImporterRuntimeGuardTest.php</file>
+            <file>tests/Feature/ArkasImportQueueTenantTest.php</file>
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
