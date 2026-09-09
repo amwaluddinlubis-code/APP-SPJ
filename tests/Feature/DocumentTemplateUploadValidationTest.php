@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\DocumentTemplateController;
 use App\Models\DocumentTemplate;
-use App\Services\SpjTemplateValidator;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
@@ -79,7 +78,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $request->setLaravelSession(app('session')->driver());
 
         try {
-            app(DocumentTemplateController::class)->store($request, app(SpjTemplateValidator::class));
+            app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
             $this->fail('Upload tanpa placeholder wajib seharusnya ditolak.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('template', $exception->errors());
@@ -114,7 +113,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
         ]);
         $request->setLaravelSession(app('session')->driver());
 
-        $response = app(DocumentTemplateController::class)->store($request, app(SpjTemplateValidator::class));
+        $response = app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
 
         $this->assertTrue($response->getSession()->has('template_validation_warnings'));
         $template = DocumentTemplate::query()->sole();
