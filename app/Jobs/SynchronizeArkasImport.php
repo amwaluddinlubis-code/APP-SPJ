@@ -61,7 +61,21 @@ class SynchronizeArkasImport implements ShouldQueue
         }
 
         $run = $importer->synchronize($profile, $year, $source);
-        $operation->update(['status' => 'COMPLETED', 'progress' => 100, 'result' => ['run_id' => $run->id, 'records_written' => $run->records_written], 'message' => $run->message, 'finished_at' => now()]);
+        $operation->update([
+            'status' => 'COMPLETED',
+            'progress' => 100,
+            'result' => [
+                'run_id' => $run->id,
+                'records_read' => $run->records_read,
+                'records_written' => $run->records_written,
+                'records_new' => $run->records_new,
+                'records_changed' => $run->records_changed,
+                'records_unchanged' => $run->records_unchanged,
+                'records_removed' => $run->records_removed,
+            ],
+            'message' => $run->message,
+            'finished_at' => now(),
+        ]);
     }
 
     public function failed(Throwable $exception): void
