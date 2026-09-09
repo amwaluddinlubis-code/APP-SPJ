@@ -2,13 +2,13 @@
 
 Terakhir diperbarui: **2026-09-10**
 
-Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, menyimpan snapshot staging, memvalidasi mapping, dan mengisi domain aplikasi melalui adapter. Operator tidak perlu mengubah atau rebuild Bridge ketika menambahkan tabel yang didukung konfigurasi importer.
+Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, menyimpan snapshot staging, memvalidasi mapping, melakukan preview rekonsiliasi, dan mengisi domain aplikasi melalui adapter.
 
 ## Status saat ini
 
-**IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / HARDENING OPEN.**
+**IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / HARDENING OPEN.**
 
-Checkpoint correctness yang sudah terverifikasi:
+Checkpoint correctness:
 
 ```text
 6aed816a4034c6351498922f6dfdaf74a76d7566
@@ -16,18 +16,21 @@ source-key resolver + non-empty Generic Import regression
 
 b3aa081c1a16e51ccdf80466877d2398b2b0de3e
 tenant boundary + cross-school/cross-year regression
+
+50794b4872d3be273ee73fbaccdd438fcca4569d
+Upsert / Incremental / Full Refresh regression
 ```
 
-Dua blocker runtime/context hasil review awal sudah ditutup:
+CI pada checkpoint terbaru:
 
-1. Generic Importer sekarang memakai `ArkasSourceKeyResolver` bersama dan tidak lagi memanggil method `sourceKey()` yang tidak tersedia.
-2. Seluruh action `ArkasImporterController` sekarang wajib melewati `active-school` lalu `active-year` sebelum model tenant connection `school` dibaca/ditulis. Route group tetap mempertahankan guard `administrator`.
+```text
+frontend build         PASS
+Blade view cache       PASS
+SPJ Critical PHPUnit   PASS — 134 tests / 896 assertions
+repository Pint        WARN — 1 pre-existing single_quote issue
+```
 
-Regression tenant menggunakan dua file SQLite tenant terpisah dan membuktikan GET importer, save mapping, forged preview/sync profile, serta stale fiscal-year context tidak dapat menyeberang sekolah/tahun aktif. Test ini sudah masuk suite `SPJ Critical`.
-
-Status ini berarti blocker source-key dan tenant activation/isolation sudah **FUNCTIONAL PASS**, tetapi Generic Importer belum disebut release-ready. Regression mode sinkronisasi, schema drift/source kosong, queue/background, raw stable-key policy, dan hardening concurrency/timestamp masih harus ditutup.
-
-Status/exit criteria canonical ada di `docs/CURRENT_PROGRESS.md` P0-08 dan `docs/DEVELOPMENT_ROADMAP.md` P0-08.
+Pint warning tetap berada pada `tests/Feature/SyncProgressUiTest.php` dan bukan regression importer.
 
 ## Alur data
 
@@ -36,224 +39,203 @@ Bridge ARKAS
   -> arkas_import_profiles
   -> arkas_import_rows (staging)
   -> preview rekonsiliasi
-  -> domain adapter / snapshot raw
-  -> laporan, transaksi, dan dokumen SPJ
+  -> ArkasDomainAdapter / snapshot raw
+  -> domain aplikasi
 ```
 
-Data ARKAS tetap readonly. Data manual operator SPJ tidak ditimpa oleh importer.
+Data ARKAS tetap readonly. Data operator SPJ adalah overlay dan tidak boleh ditimpa sembarang jalur importer.
 
-## Boundary tenant wajib
+## Tenant boundary
 
-Importer menyimpan profile, staging, run history, fiscal year, dan domain target di database tenant/sekolah. Karena itu setiap request importer yang menyentuh connection `school` wajib berjalan setelah sekolah aktif diaktivasi dan fiscal year aktif tervalidasi.
-
-Boundary runtime yang sekarang diregresikan:
+Setiap action Generic Importer yang menyentuh connection `school` wajib melewati:
 
 ```text
-authenticated user
-→ administrator guard untuk konfigurasi importer
-→ active school
-→ active fiscal year / fund source
-→ query/write connection school
+authenticated
+-> administrator
+-> active-school
+-> active-year
+-> query/write connection school
 ```
 
-Urutan `active-school` sebelum `active-year` adalah wajib karena `FiscalYear` sendiri memakai connection `school`. Authorization administrator tidak menggantikan tenant activation. Keduanya adalah boundary yang berbeda.
+`active-school` harus berjalan sebelum `active-year` karena `FiscalYear` sendiri memakai connection tenant `school`.
 
 Regression `tests/Feature/ArkasImporterTenantBoundaryTest.php` membuktikan:
 
-- semua route Generic Importer membawa `administrator`, `active-school`, dan `active-year`;
-- `active-school` dieksekusi sebelum `active-year`;
-- GET pada sekolah A dan B mengaktifkan file tenant yang benar;
-- profile tenant lain tidak terlihat melalui query connection aktif;
-- forged `profileId` tenant lain pada preview/sync menghasilkan 404;
-- save mapping hanya menulis ke database tenant aktif;
-- fiscal-year ID yang hanya valid pada tenant lain ditolak setelah koneksi dipindahkan ke sekolah aktif.
-
-Job background juga harus mengaktifkan tenant berdasarkan `school_id` sebelum membaca profile/fiscal year atau menulis staging/domain. Jalur queue masih mempunyai regression checklist tersendiri di bagian bawah dokumen ini.
-
-## Cara menggunakan untuk pengujian operator terkontrol
-
-Buka:
-
-```text
-/pengaturan/arkas/importer
-```
-
-1. Pastikan sumber database ARKAS, sekolah aktif, dan tahun anggaran aktif sudah dipilih.
-2. Pilih tabel ARKAS.
-3. Periksa preset dan mapping awal yang dikenali dari nama kolom.
-4. Tentukan kolom kunci sumber yang stabil.
-5. Pilih mode sinkronisasi:
-   - **Incremental**: memproses baris yang berubah setelah import terakhir; wajib memilih kolom terakhir berubah.
-   - **Upsert**: membaca snapshot dan memperbarui/menambah baris tanpa menghapus staging lama.
-   - **Full refresh**: mengganti snapshot dan domain target untuk konteks tahun aktif.
-6. Klik **Simpan Mapping**.
-7. Klik **Preview Rekonsiliasi Penuh** untuk membaca seluruh dataset tanpa menulis.
-8. Periksa jumlah **Baru**, **Berubah**, **Tetap**, dan **Hilang**.
-9. Klik **Sinkronkan Sekarang** hanya pada dataset uji yang sudah dipahami sampai regression mode sinkronisasi lengkap ditutup.
-
-Preview contoh pada tabel bukan rekonsiliasi penuh. Rekonsiliasi penuh selalu membaca dataset Bridge lengkap.
+- route importer membawa administrator + active-school + active-year;
+- GET mengaktifkan database sekolah yang benar;
+- profile tenant lain tidak terlihat;
+- forged profile tenant lain pada preview/sync menghasilkan 404;
+- save mapping hanya menulis tenant aktif;
+- stale fiscal-year ID tenant lain ditolak setelah koneksi sekolah aktif dipilih.
 
 ## Source key
 
-Source key adalah identitas baris dan harus deterministic antara preview, staging, reconciliation, dan sync.
+Source key harus deterministic antara preview, staging, reconciliation, dan sync.
 
-Implementasi sekarang memakai `ArkasSourceKeyResolver` bersama. Configured source key diprioritaskan secara case-insensitive, lalu resolver mencoba identifier ARKAS canonical yang dikenal, dan hanya memakai hash payload sebagai fallback terakhir bila tidak ada stable identity.
+`ArkasSourceKeyResolver` memakai urutan:
 
-Preset dapat memakai identifier ARKAS seperti `ID_RAPBS`, `ID_KAS_UMUM`, `ID_KAS_NOTA`, `ID_REF_KODE`, atau identifier tabel lain yang benar-benar stabil.
+```text
+configured source key (case-insensitive)
+-> known canonical ARKAS identifiers
+-> payload hash fallback
+```
 
-Fallback hash seluruh payload hanya aman untuk kasus yang semantik sinkronisasinya sudah jelas. Jika sebuah raw profile tidak memiliki stable identifier, perubahan satu field dapat menghasilkan hash/key baru. Dalam mode Upsert/Incremental, versi lama berpotensi tetap ada. Karena itu masih diperlukan kebijakan eksplisit:
+Payload hash bukan pengganti primary key bisnis. Untuk raw profile tanpa stable identifier, perubahan payload dapat menghasilkan source key baru sementara versi lama tetap ada pada Upsert/Incremental. Policy raw stable-key masih harus ditutup sebelum release-ready.
 
-- wajib pilih stable source key; atau
-- raw profile tanpa stable key hanya boleh Full refresh.
-
-Jangan menganggap hash payload sebagai pengganti primary key bisnis tanpa menilai lifecycle record sumber.
-
-Regression source-key yang sudah masuk `SPJ Critical`:
+Regression source-key:
 
 ```text
 tests/Unit/ArkasSourceKeyResolverTest.php
 tests/Feature/ArkasGenericImportSourceKeyTest.php
 ```
 
+## Mode sinkronisasi
+
+Regression mode berada pada:
+
+```text
+tests/Feature/ArkasGenericImportSyncModeTest.php
+```
+
+### Upsert — PASS
+
+Kontrak yang sudah diregresikan:
+
+- stable key yang sama memperbarui row existing;
+- source key baru menambah row;
+- tidak membuat duplikasi key pada scope profile + fiscal year;
+- row lama yang **absen pada snapshot berikutnya tetap dipertahankan**;
+- karena itu Upsert tidak mempunyai semantics delete seperti Full Refresh.
+
+Contoh kontrak test:
+
+```text
+snapshot 1 : A, B
+snapshot 2 : A(updated), C(new)
+state akhir: A(updated), B(preserved), C(new)
+```
+
+### Incremental — PASS
+
+Implementasi sekarang membaca snapshot Bridge lalu memfilter di aplikasi. Record hanya diproses bila nilai `source_updated_column` lebih baru dari `last_synced_at` sebelumnya.
+
+Regression membuktikan:
+
+```text
+checkpoint      : 10:00
+A updated_at    : 09:55 -> tidak diterapkan
+B updated_at    : 10:05 -> diterapkan
+C updated_at    : 10:06 -> diterapkan
+next checkpoint : 10:10
+```
+
+Bridge-side `updated-since`/cursor tetap optimasi setelah correctness selesai, bukan requirement untuk deterministic semantics saat ini.
+
+### Full Refresh — PASS
+
+Kontrak yang sudah diregresikan:
+
+- staging untuk profile + fiscal year aktif diganti penuh;
+- row lama pada scope aktif yang hilang dari source dihapus;
+- domain target fiscal year aktif diganti sesuai adapter;
+- staging profile lain pada fiscal year yang sama tetap ada;
+- staging profile yang sama pada fiscal year lain tetap ada;
+- domain fiscal year lain tetap ada.
+
+Regression RKAS nyata menggunakan snapshot:
+
+```text
+active year snapshot 1 : R1, R2
+active year snapshot 2 : R2(updated), R3
+active year state akhir: R2(updated), R3
+other fiscal year      : tetap utuh
+other staging profile  : tetap utuh
+```
+
+Full Refresh tidak boleh dipakai untuk menghapus overlay manual SPJ di luar ownership importer.
+
 ## Preset domain
 
-Preset utama yang tersedia:
+Preset utama:
 
 | Tabel | Target | Keterangan |
 | --- | --- | --- |
-| `rapbs` | RKAS/RAPBS | Mengisi item RKAS |
-| `rapbs_periode` | Periode RKAS | Mengisi koordinat bulan/triwulan/semester |
-| `kas_umum` | BKU | Mengisi baris BKU |
-| `ref_kode` | Referensi kegiatan | Menjaga hierarki kode kegiatan |
-| `ref_periode` | Referensi periode | Menjaga label periode |
-| `kas_umum_nota` | Snapshot raw | Menyimpan metadata nota dengan parent `id_kas_umum` |
-| `kas_umum_nota_pajak` | Snapshot raw | Menyimpan rincian pajak dengan parent `id_kas_nota` |
-| `ref_rekening` | Snapshot raw | Menyimpan master rekening untuk pengayaan |
+| `rapbs` | RKAS/RAPBS | Item RKAS |
+| `rapbs_periode` | Periode RKAS | Koordinat periode |
+| `kas_umum` | BKU | Baris BKU |
+| `ref_kode` | Referensi kegiatan | Hierarki kegiatan |
+| `ref_periode` | Referensi periode | Label periode |
+| `kas_umum_nota` | Raw | Metadata nota |
+| `kas_umum_nota_pajak` | Raw | Rincian pajak |
+| `ref_rekening` | Raw | Master rekening |
 
-Tabel tanpa adapter domain tetap dapat disimpan sebagai snapshot raw selama aturan source key-nya valid.
+Tabel tanpa adapter domain dapat disimpan sebagai raw snapshot bila source-key contract-nya aman.
 
-## Rekonsiliasi dan histori
+## Preview rekonsiliasi
 
-Setiap profile menyimpan histori import pada `arkas_import_runs`. Staging menyimpan hash payload agar perubahan dapat dibedakan tanpa mengubah sumber ARKAS.
+Preview penuh membandingkan source terhadap staging dan menampilkan Baru/Berubah/Tetap/Hilang. Preview harus bersifat read-only terhadap target domain.
 
-Untuk relasi child-parent, staging menyimpan:
+**Regression read-only preview masih terbuka** dan menjadi pekerjaan P0-08 berikutnya.
 
-- `source_key` sebagai identitas baris sumber;
-- `parent_source_key` sebagai identitas induk;
-- `relation_type` sebagai jenis tabel sumber;
-- `payload` sebagai metadata asli ARKAS.
+## Schema drift
 
-Contoh relasi nota:
+Daftar kolom source disimpan saat mapping disimpan. Perubahan kolom harus dapat ditampilkan sebagai schema drift warning.
 
-```text
-kas_umum.id_kas_umum
-  -> kas_umum_nota.id_kas_umum
-     -> kas_umum_nota_pajak.id_kas_nota
-```
+Masih perlu regression untuk memastikan hilangnya source key atau mandatory mapping benar-benar memblokir sync sesuai kontrak, bukan hanya menampilkan warning.
 
-Semantics histori berikut masih perlu hardening sebelum importer dianggap release-ready:
+## Source kosong
 
-- bedakan record read/new/changed/unchanged/removed;
-- `created_at` existing row tidak di-reset pada setiap upsert bila field tersebut dimaksudkan sebagai first-created timestamp;
-- Full refresh hanya membersihkan scope tenant/fiscal year/domain yang benar.
+Behavior source kosong belum ditutup dengan regression release-critical. Test berikutnya harus membedakan dengan jelas:
 
-## Mode sinkronisasi
+- Upsert/Incremental: tidak menghapus staging lama hanya karena snapshot kosong;
+- Full Refresh: membersihkan hanya scope profile/year/domain aktif sesuai semantics refresh;
+- fiscal year/profile/tenant lain tetap utuh.
 
-### Incremental
+## Background queue
 
-Incremental saat ini **belum melakukan delta query langsung pada Bridge**. Jalur sekarang masih membaca snapshot Bridge kemudian menyaring berdasarkan kolom terakhir berubah di aplikasi.
+Jika `ARKAS_SYNC_ASYNC=true`, job harus:
 
-Ini diterima sebagai optimasi yang belum selesai, bukan blocker correctness utama, selama hasilnya deterministic dan test memverifikasi data tidak hilang/terduplikasi.
+1. mengambil `school_id` dari database utama;
+2. mengaktifkan tenant lewat `SchoolDatabaseManager`;
+3. baru membaca profile/fiscal year tenant;
+4. menjalankan importer pada connection sekolah yang benar.
 
-Bridge-side `updated-since`/cursor dapat ditambahkan setelah P0 correctness selesai.
+Regression queue/background tenant activation masih wajib sebelum release-ready.
 
-### Upsert
+## Lock dan histori
 
-Menambah record baru dan memperbarui record dengan key yang sama tanpa menyapu staging/domain lama di luar semantics adapter.
+Hardening yang masih terbuka:
 
-Mode ini membutuhkan stable source key agar perubahan payload tidak dianggap sebagai record baru.
-
-### Full refresh
-
-Mengganti snapshot/domain target dalam scope fiscal year/domain aktif. Full refresh tidak boleh menghapus data tenant lain, fiscal year lain, atau overlay manual SPJ di luar ownership importer.
-
-Ketiga mode di atas masih memerlukan regression khusus sebelum Generic Importer dianggap release-ready.
-
-## Lock/concurrency
-
-Staging memakai lock agar import profile yang sama tidak berjalan bersamaan. Lock harus memasukkan identitas tenant/sekolah, bukan hanya ID lokal fiscal year atau nama tabel, karena ID tenant dapat sama pada database sekolah berbeda.
-
-Target lock minimal secara konsep:
-
-```text
-school + profile/source table + fiscal year
-```
-
-## Mode background
-
-Jika deployment memakai queue, aktifkan:
-
-```env
-ARKAS_SYNC_ASYNC=true
-```
-
-Jalankan worker:
-
-```powershell
-php artisan queue:work --queue=operations
-```
-
-Import mempunyai status `QUEUED`, `RUNNING`, `COMPLETED`, atau `FAILED` melalui `BackgroundOperation`, sedangkan detail jumlah baris dicatat pada histori importer.
-
-Job queue harus:
-
-1. mengambil sekolah dari database utama;
-2. mengaktifkan `SchoolDatabaseManager` untuk sekolah tersebut;
-3. baru membaca profile/fiscal year tenant dan menjalankan import.
-
-Regression background import masih wajib sebelum release-ready.
-
-## Perubahan struktur ARKAS
-
-Saat mapping disimpan, daftar kolom sumber ikut disimpan. Jika ARKAS menambah atau menghilangkan kolom, importer menampilkan peringatan schema drift sebelum operator menjalankan sinkronisasi.
-
-Schema drift warning tidak menggantikan mapping validation. Kolom kunci yang hilang atau role mandatory yang tidak lagi tersedia harus memblokir sync sampai mapping diperbaiki.
-
-## Jalur sinkronisasi kanonik
-
-Sinkronisasi dashboard, pemilihan tahun, dan job sinkronisasi utama memakai `ArkasCanonicalSyncService`. Coordinator tersebut menggunakan staging dan adapter transaksi/SPJ yang mempertahankan overlay manual serta reconciliation source.
-
-`ArkasSynchronizationServiceV2` tetap menjadi adapter penting untuk transaksi/source pada alur canonical yang mempertahankan identitas transaksi dan manual overlay, sedangkan service legacy tidak boleh diperkenalkan kembali sebagai entry point runtime baru tanpa alasan arsitektur yang terdokumentasi.
-
-Generic Importer adalah extension path untuk tabel/domain tambahan dan tidak boleh melemahkan safety contract canonical transaction sync.
+- lock staging/import harus memasukkan identitas sekolah karena profile/fiscal-year ID lokal dapat sama antar tenant;
+- `created_at` existing staging row harus mempertahankan first-created semantics bila field itu digunakan untuk audit;
+- histori import harus membedakan read/new/changed/unchanged/removed;
+- `records_written` jangan dianggap actual changed-row metric sampai semantics tersebut diperbaiki.
 
 ## Regression checklist P0-08
-
-Status setelah checkpoint `b3aa081`:
 
 ```text
 [x] 1. GET importer mengaktifkan tenant sekolah yang benar
 [x] 2. save mapping menulis hanya pada tenant aktif
-[ ] 3. preview tidak menulis domain
+[ ] 3. preview penuh tidak menulis domain
 [x] 4. sync record non-kosong tidak memanggil method yang hilang
-[ ] 5. Upsert deterministic
-[ ] 6. Incremental deterministic
-[ ] 7. Full refresh hanya membersihkan scope aktif
+[x] 5. Upsert deterministic + preserves absent rows
+[x] 6. Incremental deterministic berdasarkan last_synced_at
+[x] 7. Full Refresh hanya membersihkan scope aktif
 [x] 8. cross-school isolation
-[x] 9. cross-year context ditolak sebelum controller menyentuh tenant yang salah
+[x] 9. cross-year context ditolak sebelum tenant access salah
 [ ] 10. source kosong aman
-[ ] 11. schema drift terdeteksi/memblokir sesuai kontrak
+[ ] 11. schema drift memblokir sesuai kontrak
 [ ] 12. background queue mengaktifkan tenant yang benar
-[ ] 13. raw profile memiliki stable-key policy yang eksplisit
+[ ] 13. raw profile mempunyai stable-key policy eksplisit
 ```
 
-CI `SPJ Critical Verification` pada `b3aa081c1a16e51ccdf80466877d2398b2b0de3e`:
+## Status release
+
+Source-key, tenant boundary, Upsert, Incremental, dan Full Refresh sekarang **FUNCTIONAL PASS**. Generic Importer **belum release-ready / belum READY FOR OPERATOR TEST** sampai preview read-only, raw stable-key, source kosong, schema drift, dan queue/background regression ditutup serta hardening concurrency/timestamp utama diselesaikan.
+
+Status canonical dibaca bersama:
 
 ```text
-frontend build         PASS
-Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 131 tests / 867 assertions
-repository Pint        WARN — 1 pre-existing single_quote issue
+docs/CURRENT_PROGRESS.md
+docs/DEVELOPMENT_ROADMAP.md
 ```
-
-Tenant boundary yang diminta sudah selesai. Pekerjaan berikutnya adalah menyelesaikan regression mode Upsert/Incremental/Full Refresh beserta raw/source-empty/schema-drift/queue behavior sebelum menaikkan Generic Importer menjadi release-ready.
