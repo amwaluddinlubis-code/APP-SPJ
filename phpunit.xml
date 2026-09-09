@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
 >
@@ -27,6 +27,8 @@
             <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
             <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
+            <file>tests/Feature/SchoolDatabaseMaintenanceHardeningTest.php</file>
+            <file>tests/Feature/SchoolDatabaseResetServiceTest.php</file>
             <file>tests/Feature/SecurityHardeningTest.php</file>
             <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
             <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
