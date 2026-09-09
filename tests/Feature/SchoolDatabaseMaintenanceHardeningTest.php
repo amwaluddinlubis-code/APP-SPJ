@@ -7,6 +7,7 @@ use App\Models\SchoolBackup;
 use App\Models\SchoolDatabase;
 use App\Services\SchoolBackupService;
 use App\Services\SchoolDatabaseManager;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -43,6 +44,7 @@ class SchoolDatabaseMaintenanceHardeningTest extends TestCase
 
     protected function tearDown(): void
     {
+        Carbon::setTestNow();
         DB::purge('school');
         DB::purge('sqlite');
         File::deleteDirectory($this->dataPath);
@@ -176,6 +178,22 @@ class SchoolDatabaseMaintenanceHardeningTest extends TestCase
                 SchoolBackup::query()->where('school_id', $school->id)->where('reason', 'SEBELUM_PEMULIHAN')->sole(),
             )),
         );
+    }
+
+    public function test_same_second_backups_use_distinct_artifact_paths(): void
+    {
+        config()->set('spj.backup_retention', 5);
+        Carbon::setTestNow('2026-09-10 08:00:00');
+        $school = $this->makeSchool('10000005', 'UNIQUE-BACKUP');
+        $backups = app(SchoolBackupService::class);
+
+        $first = $backups->create($school, 'MANUAL', null);
+        $second = $backups->create($school, 'MANUAL', null);
+
+        $this->assertNotSame($first->file_path, $second->file_path);
+        $this->assertTrue(File::exists($this->backupPath($first)));
+        $this->assertTrue(File::exists($this->backupPath($second)));
+        $this->assertSame(2, SchoolBackup::query()->where('school_id', $school->id)->count());
     }
 
     private function makeSchool(string $npsn, string $value): School
