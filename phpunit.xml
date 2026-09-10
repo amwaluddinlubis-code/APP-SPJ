@@ -40,6 +40,7 @@
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
             <file>tests/Feature/SpjCategoryLifecycleRegressionTest.php</file>
+            <file>tests/Feature/SpjConsumptionParticipantUiTest.php</file>
             <file>tests/Feature/SpjDateChronologyValidationTest.php</file>
             <file>tests/Feature/SpjDocumentGeneratorHardeningTest.php</file>
             <file>tests/Feature/SpjGeneratedDocumentValidatorTest.php</file>
