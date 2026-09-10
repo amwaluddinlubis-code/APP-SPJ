@@ -10,6 +10,7 @@ use App\Services\FiscalPeriodWorkflowService;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
 use App\Services\SpjNumberingOrderService;
+use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
@@ -20,23 +21,13 @@ use Throwable;
 
 class SpjQuarterNumberingUseCase
 {
-    /** @var array<int, string> */
-    private const AUTOMATIC_DOCUMENT_TYPES = [
-        'SPJ',
-        'PESANAN',
-        'BAP',
-        'BAST',
-        'SPK',
-        'RAB',
-        'SURAT_TUGAS_PERJALANAN_DINAS',
-    ];
-
     public function __construct(
         private readonly SpjPackageValidationService $validator,
         private readonly SpjDocumentNumberService $numbers,
         private readonly FiscalPeriodWorkflowService $periods,
         private readonly OperationalAuditService $audit,
         private readonly SpjNumberingOrderService $order,
+        private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly ActiveSpjContext $context,
     ) {}
 
@@ -74,6 +65,11 @@ class SpjQuarterNumberingUseCase
         if ($period->status === 'CLOSED') {
             return back()->with('error', 'Triwulan sudah ditutup. Administrator harus membuka kembali periode terlebih dahulu.');
         }
+
+        // Jadikan format default eksplisit sebelum nomor pertama diterbitkan.
+        // firstOrCreate menjaga setiap format yang sudah dikustomisasi sekolah.
+        $this->numberingPolicy->ensureAutomaticFormats($yearId);
+
         $run = QuarterNumberingRun::query()->create([
             'fiscal_period_closure_id' => $period->id,
             'fiscal_year_id' => $yearId,
@@ -133,7 +129,7 @@ class SpjQuarterNumberingUseCase
         $skipped = 0;
         try {
             $manualDocumentTypes = $documentTypes
-                ->reject(fn (string $documentType): bool => in_array($documentType, self::AUTOMATIC_DOCUMENT_TYPES, true));
+                ->reject(fn (string $documentType): bool => $this->numberingPolicy->isAutomaticDocumentType($documentType));
 
             foreach ($manualDocumentTypes as $documentType) {
                 $eligiblePackages = $packages->filter(function (SpjPackage $package) use ($documentType, $templates): bool {
@@ -153,16 +149,20 @@ class SpjQuarterNumberingUseCase
                 }
             }
 
-            foreach (self::AUTOMATIC_DOCUMENT_TYPES as $documentType) {
+            foreach ($this->numberingPolicy->automaticDocumentTypes() as $documentType) {
                 if ($documentType === 'SURAT_TUGAS_PERJALANAN_DINAS') {
-                    $travelResult = $this->assignQuarterTravelNumbers($packages, $school->school_code ?: $school->npsn, $school->npsn);
+                    $travelPackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
+                        ->isAutomaticDocumentEligible($package->transaction, $documentType));
+                    $travelResult = $this->assignQuarterTravelNumbers($travelPackages, $school->school_code ?: $school->npsn, $school->npsn);
                     $numbered += $travelResult['created'];
                     $skipped += $travelResult['skipped'];
 
                     continue;
                 }
 
-                $eligiblePackages = $packages->filter(fn (SpjPackage $package): bool => $this->order->documentEventDateValue($package, $documentType) !== null);
+                $eligiblePackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
+                    ->isAutomaticDocumentEligible($package->transaction, $documentType)
+                    && $this->order->documentEventDateValue($package, $documentType) !== null);
                 foreach ($this->order->orderedPackagesForDocumentType($eligiblePackages, $documentType) as $package) {
                     $automaticResult = $this->numbers->assignAutomaticNumbers($package, $school->school_code ?: $school->npsn, $school->npsn, [$documentType]);
                     $numbered += $automaticResult['created'];
