@@ -21,7 +21,7 @@
             'purpose' => ['label' => 'Maksud Perjalanan', 'type' => 'textarea'],
             'assignment_letter_date' => ['label' => 'Tgl Surat Tugas', 'type' => 'date'],
             'departure_date' => ['label' => 'Berangkat', 'type' => 'date'],
-            'return_date' => ['label' => 'Kembali', 'type' => 'date'],
+            'return_date' => ['label' => 'Kembali', 'type' => 'date', 'min_from' => 'departure_date'],
             'transport_mode' => ['label' => 'Transportasi'],
             'amount' => ['label' => 'Nilai', 'format' => 'accounting'],
             'notes' => ['label' => 'Catatan', 'type' => 'textarea'],
