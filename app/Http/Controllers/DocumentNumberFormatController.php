@@ -7,6 +7,7 @@ use App\Models\DocumentTemplate;
 use App\Models\FiscalYear;
 use App\Models\School;
 use App\Services\OperationalAuditService;
+use App\Services\SpjNumberingPolicyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,10 +19,15 @@ class DocumentNumberFormatController extends Controller
     /** @var list<string> */
     private const PLACEHOLDERS = ['SEQ', 'TYPE', 'SCHOOL', 'NPSN', 'YEAR', 'MONTH', 'ROMAN_MONTH', 'TW'];
 
-    public function index(): View
+    public function index(SpjNumberingPolicyService $numberingPolicy): View
     {
         $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
         $school = School::query()->findOrFail(session('active_school_id'));
+
+        // Nomor otomatis harus mempunyai format eksplisit sebelum penerbitan.
+        // Format custom yang sudah ada tidak pernah ditimpa oleh default policy.
+        $numberingPolicy->ensureAutomaticFormats($year->id);
+
         $formats = DocumentNumberFormat::query()
             ->where('fiscal_year_id', $year->id)
             ->get()
