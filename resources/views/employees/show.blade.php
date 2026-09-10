@@ -4,14 +4,14 @@
         <x-page-header
             :title="$employee->name"
             :subtitle="$employee->position ?: 'Jabatan belum tercatat'"
-            :kicker="$employee->source_type.' · '.($employee->is_active ? 'Aktif' : 'Tidak aktif')"
+            :kicker="$employee->source_label.' · '.($employee->is_active ? 'Aktif' : 'Tidak aktif')"
         >
             <x-slot:actions>
                 <x-ui.button :href="route('employees.edit', $employee)">Ubah</x-ui.button>
                 <a href="{{ route('employees.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/25">Kembali</a>
             </x-slot:actions>
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Sumber Data" :value="$employee->source_type" hint="Asal data pegawai" value-class="text-indigo-700" />
+                <x-stat-item label="Sumber Data" :value="$employee->source_label" hint="Satu row dapat berasal dari lebih dari satu sumber" value-class="text-indigo-700" />
                 <x-stat-item label="Status" :value="$employee->is_active ? 'Aktif' : 'Tidak aktif'" hint="Status kepegawaian di aplikasi" :value-class="$employee->is_active ? 'text-emerald-700' : 'text-rose-700'" />
                 <x-stat-item label="Honor Tahun Aktif" :value="'Rp '.number_format($honors->sum('net_amount'), 0, ',', '.')" :hint="number_format($honors->count(), 0, ',', '.').' rincian honor'" value-class="text-amber-700" />
             </div>
@@ -19,10 +19,20 @@
 
         <div class="grid gap-5 lg:grid-cols-3">
             <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm lg:col-span-2"><h2 class="font-bold text-slate-900">Identitas dan kepegawaian</h2><dl class="mt-4 grid gap-4 sm:grid-cols-2">@foreach ([['NIP',$employee->nip],['NUPTK',$employee->nuptk],['NIK',$mask($employee->nik)],['Jenis kelamin',$employee->gender],['Jenis PTK',$employee->staff_type],['Status pegawai',$employee->employment_status],['Jabatan',$employee->position],['NPWP',$mask($employee->npwp)]] as [$label,$value])<div><dt class="text-xs font-semibold uppercase text-slate-500">{{ $label }}</dt><dd class="mt-1 font-medium text-slate-800">{{ $value ?: '—' }}</dd></div>@endforeach</dl></section>
-            <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm"><h2 class="font-bold text-slate-900">Pembayaran</h2><dl class="mt-4 space-y-4"><div><dt class="text-xs font-semibold uppercase text-slate-500">Bank</dt><dd class="mt-1 font-medium">{{ $employee->bank_name ?: '—' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-slate-500">Rekening</dt><dd class="mt-1 font-medium">{{ $mask($employee->bank_account) }}</dd></div><div class="rounded-xl bg-[var(--ui-surface-soft)] p-3 text-xs text-slate-500">Sumber data: {{ $employee->source_type }}. Perubahan manual tetap dapat dipadankan pada sinkronisasi berikutnya.</div></dl></section>
+            <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm"><h2 class="font-bold text-slate-900">Pembayaran & provenance</h2><dl class="mt-4 space-y-4"><div><dt class="text-xs font-semibold uppercase text-slate-500">Bank</dt><dd class="mt-1 font-medium">{{ $employee->bank_name ?: '—' }}</dd></div><div><dt class="text-xs font-semibold uppercase text-slate-500">Rekening</dt><dd class="mt-1 font-medium">{{ $mask($employee->bank_account) }}</dd></div><div class="rounded-xl bg-[var(--ui-surface-soft)] p-3 text-xs text-slate-500">Sumber: <b>{{ $employee->source_label }}</b>. @if($employee->operator_locked)Data ini sudah dikoreksi operator; sinkronisasi berikutnya hanya mengisi field yang masih kosong.@elseData dapat diperbarui dari sumber sampai operator melakukan koreksi manual.@endif</div></dl></section>
         </div>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm"><div class="border-b border-[var(--ui-line)] p-5"><h2 class="font-bold text-slate-900">Riwayat honor tahun anggaran aktif</h2><p class="mt-1 text-sm text-slate-500">{{ $honors->count() }} rincian · bruto Rp {{ number_format($honors->sum('gross_amount'), 0, ',', '.') }} · pajak Rp {{ number_format($honors->sum('tax_amount'), 0, ',', '.') }} · diterima Rp {{ number_format($honors->sum('net_amount'), 0, ',', '.') }}</p></div><div class="overflow-x-auto"><table class="min-w-full text-sm"><thead class="bg-[var(--ui-surface-muted)] text-left text-xs uppercase text-slate-600"><tr><th class="px-4 py-3">Tanggal / Bukti</th><th class="px-4 py-3">Jabatan</th><th class="px-4 py-3 text-right">Bruto</th><th class="px-4 py-3 text-right">PPh 21</th><th class="px-4 py-3 text-right">Diterima</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">@forelse($honors as $honor) @php($trx=$honor->item?->transaction)<tr class="odd:bg-white even:bg-slate-50"><td class="px-4 py-3"><a class="theme-text font-semibold" href="{{ $trx ? route('transactions.show',$trx->id) : '#' }}">{{ $trx?->no_bukti ?: '—' }}</a><div class="text-xs text-slate-500">{{ $trx?->transaction_date?->translatedFormat('d F Y') ?: '—' }}</div></td><td class="px-4 py-3">{{ $honor->position ?: '—' }}</td><td class="px-4 py-3 text-right">Rp {{ number_format($honor->gross_amount,0,',','.') }}</td><td class="px-4 py-3 text-right">Rp {{ number_format($honor->tax_amount,0,',','.') }}</td><td class="px-4 py-3 text-right font-semibold">Rp {{ number_format($honor->net_amount,0,',','.') }}</td></tr>@empty<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Belum digunakan pada honorarium tahun aktif.</td></tr>@endforelse</tbody></table></div></section>
-        @if($employee->payload)<details class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-6 shadow-sm"><summary class="cursor-pointer font-bold">Semua field asli sumber ({{ count($employee->payload) }})</summary><dl class="mt-4 grid gap-3 md:grid-cols-2">@foreach($employee->payload as $key=>$value)<div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><dt class="text-xs font-bold uppercase text-slate-500">{{ str_replace('_',' ',$key) }}</dt><dd class="mt-1 break-words text-sm">{{ is_scalar($value)?($value?:'—'):json_encode($value,JSON_UNESCAPED_UNICODE) }}</dd></div>@endforeach</dl></details>@endif
+
+        @if($employee->payload)<details class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-6 shadow-sm"><summary class="cursor-pointer font-bold">Payload sumber sinkronisasi</summary><div class="mt-4 space-y-3">@foreach($employee->payload as $source=>$value)<div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><p class="text-xs font-bold uppercase text-slate-500">{{ $source }}</p><pre class="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words text-xs">{{ is_array($value) ? json_encode($value,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) : $value }}</pre></div>@endforeach</div></details>@endif
+
+        <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <h2 class="font-bold text-rose-900">Hapus pegawai</h2>
+            <p class="mt-1 text-sm text-rose-700">Penghapusan berlaku untuk record aplikasi ini. Jika pegawai masih tersedia di ARKAS atau Dapodik, record dapat dibuat kembali ketika sumber tersebut disinkronkan.</p>
+            <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="mt-3" data-confirm="Hapus pegawai {{ $employee->name }} dari master pegawai? Jika masih ada di ARKAS/Dapodik, data dapat muncul kembali setelah sinkronisasi.">
+                @csrf @method('DELETE')
+                <x-ui.button type="submit" variant="danger">Hapus pegawai</x-ui.button>
+            </form>
+        </section>
     </div>
 </x-layouts.tailwind-app>
