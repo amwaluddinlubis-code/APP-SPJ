@@ -18,7 +18,7 @@ class SpjConsumptionParticipantUiTest extends TestCase
         $this->assertStringContainsString(':key="row._key"', $view);
         $this->assertStringContainsString('const primaryRow = this.primaryIndex !== null ? this.rows[this.primaryIndex] : null;', $view);
         $this->assertStringContainsString('this.primaryIndex = this.rows.indexOf(primaryRow)', $view);
-        $this->assertStringContainsString("'sort_order' => $sortOrder", $service);
+        $this->assertStringContainsString("'sort_order' => \$sortOrder", $service);
     }
 
     public function test_consumption_participant_count_tracks_people_and_portions_remain_separate(): void
@@ -32,7 +32,7 @@ class SpjConsumptionParticipantUiTest extends TestCase
         $this->assertStringContainsString('Jumlah porsi boleh berbeda dari jumlah peserta.', $view);
         $this->assertStringContainsString('participantCount === listedParticipantCount', $view);
 
-        $this->assertStringContainsString("->filter(fn (array $row): bool => filled($row['name'] ?? null))", $useCase);
+        $this->assertStringContainsString("->filter(fn (array \$row): bool => filled(\$row['name'] ?? null))", $useCase);
         $this->assertStringContainsString('->count();', $useCase);
         $this->assertStringContainsString('Jumlah peserta harus sama dengan jumlah nama peserta terdaftar', $useCase);
         $this->assertStringNotContainsString('Jumlah peserta harus sama dengan total porsi', $useCase);
