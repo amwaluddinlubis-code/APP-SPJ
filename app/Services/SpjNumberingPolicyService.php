@@ -27,16 +27,6 @@ class SpjNumberingPolicyService
         'SURAT_TUGAS_PERJALANAN_DINAS',
     ];
 
-    /** @var list<string> */
-    private const CANONICAL_CATEGORIES = [
-        'BARANG',
-        'KONSUMSI',
-        'PEMELIHARAAN',
-        'JASA_LAINNYA',
-        'SPPD',
-        'HONOR_PEGAWAI',
-    ];
-
     public function __construct(private readonly SpjProcurementPolicyService $procurementPolicy) {}
 
     /** @return list<string> */
@@ -57,9 +47,9 @@ class SpjNumberingPolicyService
         $isSiplah = $this->procurementPolicy->isSiplah($transaction);
 
         return match ($documentType) {
-            // SPJ utama berlaku untuk seluruh kategori canonical. Validator
-            // paket tetap bertanggung jawab menolak kategori kosong/tidak sah.
-            'SPJ' => in_array($category, self::CANONICAL_CATEGORIES, true),
+            // Setiap paket SPJ mempunyai dokumen utama. Validasi paket tetap
+            // menolak kategori kosong/tidak canonical sebelum workflow riil.
+            'SPJ' => true,
 
             // Dokumen pengadaan internal hanya untuk barang/konsumsi Non-SiPLah.
             // SiPLah memakai dokumen marketplace sebagai bukti pengadaan utama.
