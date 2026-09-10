@@ -51,10 +51,27 @@ class OperatorAssistantTest extends TestCase
         parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY) ?? '', $query);
         $this->assertArrayHasKey('t', $query);
 
-        // Queue sync pada testing: job jalan inline sehingga jawaban langsung ada.
         $status = $this->getJson('/asisten/status/'.$query['t']);
         $status->assertOk()->assertJsonPath('status', 'done')->assertJsonPath('answer', 'Siap dinomori dulu.');
         $this->assertSame('Siap dinomori dulu.', Cache::get(AnswerOperatorQuestion::cacheKey($query['t']))['answer']);
+    }
+
+    public function test_assistant_does_not_require_database_queue_worker(): void
+    {
+        config()->set('queue.default', 'database');
+        Http::fake([
+            'localhost:11434/*' => Http::response(['message' => ['content' => 'Jawaban tanpa worker.']], 200),
+        ]);
+        $this->actingAs(User::factory()->create());
+
+        $ask = $this->postJson('/asisten/tanya', ['question' => 'Bisa jalan tanpa worker?']);
+        $ask->assertStatus(202)->assertJsonStructure(['token']);
+
+        $this->assertDatabaseCount('jobs', 0);
+        $this->getJson('/asisten/status/'.$ask->json('token'))
+            ->assertOk()
+            ->assertJsonPath('status', 'done')
+            ->assertJsonPath('answer', 'Jawaban tanpa worker.');
     }
 
     public function test_question_is_validated(): void
