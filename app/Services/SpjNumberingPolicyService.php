@@ -44,20 +44,16 @@ class SpjNumberingPolicyService
     {
         $documentType = $this->automaticTypeAlias($documentType);
         $category = $this->canonicalCategory((string) $transaction->spj_category);
-
-        // Dalam aplikasi ini SiPLah adalah channel khusus pembelian BARANG.
-        // KONSUMSI tetap memakai dokumen pengadaan internal walaupun metadata
-        // legacy pernah membawa payment_method/is_siplah yang tidak semestinya.
-        $isSiplahBarang = $category === 'BARANG' && $this->procurementPolicy->isSiplah($transaction);
+        $isSiplah = $this->procurementPolicy->isSiplah($transaction);
 
         return match ($documentType) {
             // Setiap paket SPJ mempunyai dokumen utama. Validasi paket tetap
             // menolak kategori kosong/tidak canonical sebelum workflow riil.
             'SPJ' => true,
 
-            // Pesanan/BAP/BAST internal berlaku untuk BARANG Non-SiPLah dan KONSUMSI.
-            'PESANAN', 'BAP', 'BAST' => in_array($category, ['BARANG', 'KONSUMSI'], true)
-                && ! $isSiplahBarang,
+            // Dokumen pengadaan internal hanya untuk BARANG/KONSUMSI Non-SiPLah.
+            'PESANAN', 'BAP', 'BAST' => ! $isSiplah
+                && in_array($category, ['BARANG', 'KONSUMSI'], true),
 
             // SPK/RAB adalah domain pekerjaan pemeliharaan.
             'SPK', 'RAB' => $category === 'PEMELIHARAAN',
