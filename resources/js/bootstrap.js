@@ -3,6 +3,7 @@ import './theme-profiles';
 import './table-server-markers';
 import './table-ui-standardization';
 import './transaction-action-modal';
+import './indonesian-date-input';
 import './spj-purchase-date-validation';
 import './spj-package-document-placement';
 import './spj-package-manual-category';
