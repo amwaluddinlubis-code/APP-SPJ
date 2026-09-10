@@ -218,6 +218,7 @@ class ArkasReferenceSynchronizationService
         $identity = app(EmployeeIdentityService::class);
         $active = $this->flag($record['STATUS_AKTIF'] ?? true);
         $ptk = $type === 'PTK';
+        $sourceKey = 'ARKAS:'.$type.':'.$key;
 
         // Identity matching is canonical. PEGAWAI and PTK are two ARKAS feeds,
         // not two employee tables/identities.
@@ -227,12 +228,15 @@ class ArkasReferenceSynchronizationService
             $record['NIK'] ?? null,
             (string) ($record['NAMA'] ?? '')
         );
-        $employee ??= Employee::query()->where('source_key', $key)->whereIn('source_type', [$type, 'ARKAS'])->first();
+        $employee ??= Employee::query()
+            ->whereIn('source_key', [$sourceKey, $key])
+            ->whereIn('source_type', [$type, 'ARKAS'])
+            ->first();
 
         if (! $employee instanceof Employee) {
             $employee = new Employee([
                 'source_type' => 'ARKAS',
-                'source_key' => 'ARKAS:'.$type.':'.$key,
+                'source_key' => $sourceKey,
             ]);
         }
 
