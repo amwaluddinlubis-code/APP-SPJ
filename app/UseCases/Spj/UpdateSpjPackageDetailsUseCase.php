@@ -177,7 +177,7 @@ class UpdateSpjPackageDetailsUseCase
             'travels.*.departure_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'travels.*.assignment_letter_number' => ['nullable', 'string', 'max:255'],
             'travels.*.assignment_letter_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
-            'travels.*.return_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'travels.*.return_date' => ['nullable', 'date', 'after_or_equal:travels.*.departure_date', 'before_or_equal:'.$maximumDocumentDate],
             'travels.*.transport_mode' => ['nullable', 'string', 'max:80'],
             'travels.*.amount' => ['nullable', 'numeric', 'min:0'],
             'travels.*.notes' => ['nullable', 'string', 'max:2000'],
@@ -227,7 +227,7 @@ class UpdateSpjPackageDetailsUseCase
             'service_recipients.*.rental_days' => ['nullable', 'integer', 'min:0'],
             'service_recipients.*.daily_rate' => ['nullable', 'numeric', 'min:0'],
             'service_recipients.*.usage_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
-            'service_recipients.*.usage_completed_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
+            'service_recipients.*.usage_completed_at' => ['nullable', 'date', 'after_or_equal:service_recipients.*.usage_started_at', 'before_or_equal:'.$maximumDocumentDate],
             'service_recipients.*.receipt_number' => ['nullable', 'string', 'max:100'],
             'service_recipients.*.payment_reference' => ['nullable', 'string', 'max:160'],
             'service_recipients.*.agreement_number' => ['nullable', 'string', 'max:100'],
@@ -298,6 +298,8 @@ class UpdateSpjPackageDetailsUseCase
             'order_date.before_or_equal' => 'Tanggal Pesanan harus lebih kecil atau sama dengan Tanggal Transaksi.',
             'bap_date.after_or_equal' => 'Tanggal BAP harus lebih besar atau sama dengan Tanggal Pesanan.',
             'bast_date.after_or_equal' => 'Tanggal BAST harus lebih besar atau sama dengan Tanggal BAP.',
+            'service_recipients.*.usage_completed_at.after_or_equal' => 'Tanggal selesai jasa tidak boleh sebelum tanggal mulai.',
+            'travels.*.return_date.after_or_equal' => 'Tanggal kembali tidak boleh sebelum tanggal berangkat.',
         ];
     }
 
