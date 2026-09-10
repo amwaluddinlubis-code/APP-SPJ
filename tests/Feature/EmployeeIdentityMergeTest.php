@@ -69,6 +69,21 @@ class EmployeeIdentityMergeTest extends TestCase
         $this->assertSame('rista dewi', $kept->normalized_name);
     }
 
+    public function test_upgrade_migration_fuses_existing_strong_identity_duplicates(): void
+    {
+        [$dapodik] = $this->seedDuplicatePair();
+
+        $migration = require database_path('migrations/school/2026_09_10_125500_fuse_unified_employee_rows.php');
+        $migration->up();
+
+        $this->assertSame(1, Employee::query()->count());
+        $kept = Employee::query()->firstOrFail();
+        $this->assertSame($dapodik->id, $kept->id);
+        $this->assertNotNull($kept->last_seen_arkas_at);
+        $this->assertNotNull($kept->last_seen_dapodik_at);
+        $this->assertSame('Bank Arkas', $kept->bank_name);
+    }
+
     public function test_fuse_does_not_guess_legacy_identity_from_name_only(): void
     {
         Employee::query()->create([
