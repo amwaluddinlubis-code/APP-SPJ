@@ -153,16 +153,20 @@ class UpdateSpjPackageDetailsUseCase
 
             'workers' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) use ($request, $package): void {
                 $category = strtoupper((string) ($request->input('spj_category') ?: $package->transaction->spj_category));
-                if (! in_array($category, ['HONOR_PEGAWAI'], true) || ! is_array($value)) {
+                if (! in_array($category, ['HONOR_PEGAWAI', 'PEMELIHARAAN'], true) || ! is_array($value)) {
                     return;
                 }
 
-                $detailTotal = collect($value)
+                $recipients = collect($value)
+                    ->filter(fn (array $recipient): bool => filled($recipient['name'] ?? null));
+                $detailTotal = $recipients
                     ->sum(fn (array $recipient): float => (float) ($recipient['work_days'] ?? 0) * (float) ($recipient['daily_rate'] ?? 0));
                 $transactionTotal = (float) $package->transaction->gross_amount;
                 if (abs($detailTotal - $transactionTotal) > 0.01) {
+                    $label = $category === 'PEMELIHARAAN' ? 'pemeliharaan' : 'honor';
                     $fail(sprintf(
-                        'Total rincian honor %s tidak sama dengan nilai bruto transaksi %s.',
+                        'Total rincian %s %s tidak sama dengan nilai bruto transaksi %s.',
+                        $label,
                         number_format($detailTotal, 0, ',', '.'),
                         number_format($transactionTotal, 0, ',', '.'),
                     ));
@@ -171,11 +175,28 @@ class UpdateSpjPackageDetailsUseCase
             'workers.*.name' => ['nullable', 'string', 'max:180'],
             'workers.*.job_description' => ['nullable', 'string', 'max:255'],
             'workers.*.work_days' => ['nullable', 'integer', 'min:0'],
-            'workers.*.daily_rate' => ['nullable', 'numeric', 'min:0'],
+            'workers.*.daily_rate' => ['nullable', 'integer', 'min:0'],
             'workers.*.is_receipt_recipient' => ['nullable', 'boolean'],
             'workers.*.notes' => ['nullable', 'string', 'max:2000'],
 
-            'travels' => ['nullable', 'array'],
+            'travels' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) use ($request, $package): void {
+                $category = strtoupper((string) ($request->input('spj_category') ?: $package->transaction->spj_category));
+                if ($category !== 'SPPD' || ! is_array($value)) {
+                    return;
+                }
+
+                $travels = collect($value)
+                    ->filter(fn (array $travel): bool => filled($travel['traveler_name'] ?? null));
+                $detailTotal = $travels->sum(fn (array $travel): float => (float) ($travel['amount'] ?? 0));
+                $transactionTotal = (float) $package->transaction->gross_amount;
+                if (abs($detailTotal - $transactionTotal) > 0.01) {
+                    $fail(sprintf(
+                        'Total nilai perjalanan %s tidak sama dengan nilai bruto transaksi %s.',
+                        number_format($detailTotal, 0, ',', '.'),
+                        number_format($transactionTotal, 0, ',', '.'),
+                    ));
+                }
+            }],
             'travels.*.traveler_name' => ['required_with:travels', 'string', 'max:180'],
             'travels.*.destination' => ['nullable', 'string', 'max:180'],
             'travels.*.purpose' => ['nullable', 'string', 'max:4000'],
@@ -184,7 +205,7 @@ class UpdateSpjPackageDetailsUseCase
             'travels.*.assignment_letter_date' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'travels.*.return_date' => ['nullable', 'date', 'after_or_equal:travels.*.departure_date', 'before_or_equal:'.$maximumDocumentDate],
             'travels.*.transport_mode' => ['nullable', 'string', 'max:80'],
-            'travels.*.amount' => ['nullable', 'numeric', 'min:0'],
+            'travels.*.amount' => ['nullable', 'integer', 'min:0'],
             'travels.*.notes' => ['nullable', 'string', 'max:2000'],
 
             'vendor_name' => ['nullable', 'string', 'max:180'],
@@ -227,10 +248,10 @@ class UpdateSpjPackageDetailsUseCase
             'service_recipients.*.npwp' => ['nullable', 'string', 'max:40'],
             'service_recipients.*.service_type' => ['nullable', 'string', 'max:180'],
             'service_recipients.*.service_description' => ['nullable', 'string', 'max:4000'],
-            'service_recipients.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.quantity' => ['nullable', 'integer', 'min:0'],
             'service_recipients.*.unit' => ['nullable', 'string', 'max:40'],
             'service_recipients.*.rental_days' => ['nullable', 'integer', 'min:0'],
-            'service_recipients.*.daily_rate' => ['nullable', 'numeric', 'min:0'],
+            'service_recipients.*.daily_rate' => ['nullable', 'integer', 'min:0'],
             'service_recipients.*.usage_started_at' => ['nullable', 'date', 'before_or_equal:'.$maximumDocumentDate],
             'service_recipients.*.usage_completed_at' => ['nullable', 'date', 'after_or_equal:service_recipients.*.usage_started_at', 'before_or_equal:'.$maximumDocumentDate],
             'service_recipients.*.receipt_number' => ['nullable', 'string', 'max:100'],

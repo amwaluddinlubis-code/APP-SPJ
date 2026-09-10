@@ -10,6 +10,7 @@ import './spj-package-manual-category';
 import './spj-package-maintenance-links';
 import './spj-package-workspace-ui';
 import './spj-package-transaction-boundary';
+import './spj-detail-input-validation';
 import './spj-numbering-confirmation-modal';
 import './legacy-action-icon-migrator';
 import './action-icon-deduplicator';
