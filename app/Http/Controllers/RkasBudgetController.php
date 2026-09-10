@@ -100,6 +100,13 @@ class RkasBudgetController extends Controller
             $scopeValue = 0;
         }
         $fiscalYearNumber = (int) (FiscalYear::query()->whereKey($yearId)->value('year') ?: now()->year);
+        $periodMonths = match ($scope) {
+            'month' => [$scopeValue],
+            'quarter' => range((($scopeValue - 1) * 3) + 1, $scopeValue * 3),
+            'semester' => range((($scopeValue - 1) * 6) + 1, $scopeValue * 6),
+            default => range(1, 12),
+        };
+
         $realization = $db->table('arkas_bku_rows as bku')
             ->selectRaw("json_extract(bku.payload, '$.ID_RAPBS') as source_rapbs_id, SUM(bku.amount) as realization, COUNT(*) as bku_count")
             ->where('bku.fiscal_year_id', $yearId)
@@ -109,8 +116,32 @@ class RkasBudgetController extends Controller
             ->where(function ($query): void {
                 $query->where('bku.no_bukti', 'like', 'BPU%')
                     ->orWhere('bku.no_bukti', 'like', 'BNU%');
-            })
-            ->groupByRaw("json_extract(bku.payload, '$.ID_RAPBS')");
+            });
+
+        if ($scope !== 'year') {
+            $periodIds = $db->table('arkas_rkas_periods')
+                ->select('source_rapbs_period_id')
+                ->where('fiscal_year_id', $yearId)
+                ->where('fund_source_id', $fundSourceId)
+                ->whereIn('month_number', $periodMonths)
+                ->whereNotNull('source_rapbs_period_id');
+
+            $realization->where(function ($scoped) use ($periodIds, $periodMonths, $fiscalYearNumber): void {
+                $scoped->whereIn('bku.source_rapbs_period_id', $periodIds)
+                    ->orWhere(function ($legacy) use ($periodMonths, $fiscalYearNumber): void {
+                        $legacy->whereNull('bku.source_rapbs_period_id')
+                            ->where(function ($dates) use ($periodMonths, $fiscalYearNumber): void {
+                                foreach ($periodMonths as $month) {
+                                    $start = Carbon::create($fiscalYearNumber, $month, 1)->startOfMonth()->toDateString();
+                                    $end = Carbon::create($fiscalYearNumber, $month, 1)->endOfMonth()->toDateString();
+                                    $dates->orWhereBetween('bku.transaction_date', [$start, $end]);
+                                }
+                            });
+                    });
+            });
+        }
+
+        $realization->groupByRaw("json_extract(bku.payload, '$.ID_RAPBS')");
         $applyBkuHierarchy = function ($builder) use ($db, $yearId, $fundSourceId, $programFilter, $subprogramFilter, $activityFilter, $search): void {
             if ($programFilter === '' && $subprogramFilter === '' && $activityFilter === '' && $search === '') {
                 return;
@@ -156,12 +187,6 @@ class RkasBudgetController extends Controller
             $periods->where('semester_number', $scopeValue);
         }
         $periods->groupBy('source_rapbs_id');
-        $periodMonths = match ($scope) {
-            'month' => [$scopeValue],
-            'quarter' => range((($scopeValue - 1) * 3) + 1, $scopeValue * 3),
-            'semester' => range((($scopeValue - 1) * 6) + 1, $scopeValue * 6),
-            default => range(1, 12),
-        };
         if (in_array($scope, ['quarter', 'semester'], true)) {
             $twNumbers = $scope === 'quarter'
                 ? [$scopeValue]
