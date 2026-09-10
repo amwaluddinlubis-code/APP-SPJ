@@ -29,6 +29,19 @@ class ActiveSpjContextTest extends TestCase
         $this->assertSame([2026, 7], $query->getBindings());
     }
 
+    public function test_session_backed_context_preserves_null_fund_source_scope_semantics(): void
+    {
+        session()->put('active_fiscal_year_id', 2026);
+        session()->forget('active_fund_source_id');
+
+        $context = app(ActiveSpjContext::class);
+        $query = Transaction::query()->forSpjContext($context);
+
+        $this->assertNull($context->fundSourceId());
+        $this->assertStringContainsString('fund_source_id" is null', strtolower($query->toSql()));
+        $this->assertSame([2026], $query->getBindings());
+    }
+
     public function test_core_spj_orchestration_does_not_read_session_or_auth_directly(): void
     {
         $paths = [

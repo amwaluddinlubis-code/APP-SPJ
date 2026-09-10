@@ -19,7 +19,7 @@ class SpjFiscalPeriodUseCase
     {
         $data = $request->validate(['quarter' => ['required', 'integer', 'between:1,4']]);
         $period = $this->periods->period($this->context->fiscalYearId(), (int) $data['quarter']);
-        $this->periods->close($period, $this->context->fundSourceId(), $this->context->actorId());
+        $this->periods->close($period, (int) $this->context->fundSourceId(), $this->context->actorId());
 
         return back()->with('success', 'Triwulan '.$data['quarter'].' berhasil ditutup.');
     }

@@ -25,9 +25,15 @@ final class ActiveSpjContext
         return $this->fiscalYearIdOverride ?? (int) session('active_fiscal_year_id');
     }
 
-    public function fundSourceId(): int
+    public function fundSourceId(): ?int
     {
-        return $this->fundSourceIdOverride ?? (int) session('active_fund_source_id');
+        if ($this->fundSourceIdOverride !== null) {
+            return $this->fundSourceIdOverride;
+        }
+
+        $fundSourceId = session('active_fund_source_id');
+
+        return $fundSourceId === null ? null : (int) $fundSourceId;
     }
 
     public function actorId(): int
@@ -47,7 +53,11 @@ final class ActiveSpjContext
 
     public function matchesTransaction(Transaction $transaction): bool
     {
+        $transactionFundSourceId = $transaction->fund_source_id === null
+            ? null
+            : (int) $transaction->fund_source_id;
+
         return (int) $transaction->fiscal_year_id === $this->fiscalYearId()
-            && (int) $transaction->fund_source_id === $this->fundSourceId();
+            && $transactionFundSourceId === $this->fundSourceId();
     }
 }
