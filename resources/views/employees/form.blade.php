@@ -2,12 +2,12 @@
     <div class="mx-auto max-w-6xl space-y-6">
         <x-page-header
             :title="$employee->exists ? 'Ubah Pegawai' : 'Tambah Pegawai Manual'"
-            subtitle="Isi data seperlunya. Identitas utama digunakan untuk membantu pemadanan saat sinkronisasi Dapodik."
-            kicker="Data Pegawai"
+            subtitle="Data ARKAS, Dapodik, maupun manual dikelola dari editor yang sama. Perubahan operator menjadi nilai canonical dan tidak ditimpa sinkronisasi berikutnya."
+            kicker="Master Pegawai Terpadu"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Mode Data" value="Manual" hint="Diisi oleh operator" value-class="text-indigo-700" />
-                <x-stat-item label="Pemadanan" value="NUPTK → Nama" hint="Saat sinkronisasi Dapodik" value-class="text-slate-800" />
+                <x-stat-item label="Sumber" :value="$employee->exists ? $employee->source_label : 'Manual'" hint="Provenance record pegawai" value-class="text-indigo-700" />
+                <x-stat-item label="Pemadanan" value="NUPTK → NIP → NIK → Nama" hint="ARKAS dan Dapodik" value-class="text-slate-800" />
                 <x-stat-item label="Status" :value="$employee->exists ? ($employee->is_active ? 'Aktif' : 'Tidak aktif') : 'Pegawai baru'" :hint="$employee->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$employee->exists && !$employee->is_active ? 'text-rose-700' : 'text-emerald-700'" />
             </div>
         </x-page-header>
@@ -23,12 +23,12 @@
                 </div>
             @endif
 
-            <x-ui.form-section title="Identitas utama" description="Utamakan nama lengkap dan NUPTK karena digunakan untuk membantu pemadanan data.">
+            <x-ui.form-section title="Identitas utama" description="Utamakan NUPTK, lalu NIP/NIK. Nama digunakan sebagai fallback terakhir untuk memadankan record antar sumber.">
                 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     <x-ui.field label="Nama lengkap" for="name" required :error="$errors->first('name')">
                         <x-ui.input id="name" name="name" :value="old('name',$employee->name)" autocomplete="name" required />
                     </x-ui.field>
-                    <x-ui.field label="NUPTK" for="nuptk" hint="Isi jika tersedia agar pemadanan lebih akurat." :error="$errors->first('nuptk')">
+                    <x-ui.field label="NUPTK" for="nuptk" hint="Identitas utama untuk pemadanan jika tersedia." :error="$errors->first('nuptk')">
                         <x-ui.input id="nuptk" name="nuptk" :value="old('nuptk',$employee->nuptk)" inputmode="numeric" />
                     </x-ui.field>
                     <x-ui.field label="NIP" for="nip" :error="$errors->first('nip')">
@@ -97,6 +97,12 @@
                     <span><span class="block text-sm font-semibold text-slate-800">Pegawai aktif</span><span class="mt-0.5 block text-xs leading-5 text-slate-500">Nonaktifkan jika pegawai tidak lagi digunakan pada transaksi baru. Riwayat lama tetap dipertahankan.</span></span>
                 </label>
             </x-ui.form-section>
+
+            @if($employee->exists && $employee->source_label !== 'Manual')
+                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <b>Data hasil sinkronisasi boleh diedit.</b> Setelah disimpan, koreksi operator dipertahankan dan sinkronisasi ARKAS/Dapodik hanya mengisi field yang masih kosong.
+                </div>
+            @endif
 
             <div class="sticky bottom-4 z-20 flex flex-col-reverse gap-2 rounded-2xl border border-[var(--ui-line)] bg-white/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-end">
                 <x-ui.button variant="secondary" :href="$employee->exists ? route('employees.show',$employee) : route('employees.index')">Batal</x-ui.button>
