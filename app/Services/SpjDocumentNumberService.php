@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class SpjDocumentNumberService
 {
+    public function __construct(private readonly SpjNumberingPolicyService $policy) {}
+
     /**
      * Terbitkan nomor domain paket berdasarkan tanggal peristiwanya.
      * Nomor yang sudah tersedia tidak pernah ditimpa.
@@ -33,7 +35,8 @@ class SpjDocumentNumberService
                 ->map(fn (string $type): string => strtoupper(trim($type)))
                 ->filter()
                 ->values();
-        $shouldAssign = fn (string $type): bool => $selectedTypes === null || $selectedTypes->contains($type);
+        $shouldAssign = fn (string $type): bool => ($selectedTypes === null || $selectedTypes->contains($type))
+            && $this->policy->isAutomaticDocumentEligible($transaction, $type);
 
         $assign = function (string $type, CarbonInterface $date, string $scopeKey = 'MAIN') use ($package, $schoolCode, $npsn, $documents, &$created, &$skipped): SpjDocument {
             $alreadyNumbered = $package->documents()
@@ -154,10 +157,7 @@ class SpjDocumentNumberService
             $document = $activeDocument ?? $cancelledIdentityDocument ?? new SpjDocument($identity);
 
             $yearId = $package->transaction->fiscal_year_id;
-            $format = DocumentNumberFormat::query()->firstOrCreate(
-                ['fiscal_year_id' => $yearId, 'document_type' => $documentType],
-                $this->defaultFormat($documentType)
-            );
+            $format = $this->policy->formatFor($yearId, $documentType);
             $periodKey = $this->periodKey($format->reset_period, $documentDate);
             $activeSequences = SpjDocument::query()
                 ->where('document_type', $documentType)
@@ -281,23 +281,6 @@ class SpjDocumentNumberService
         };
 
         return filled($value) ? Carbon::parse($value) : $fallback;
-    }
-
-    /** @return array<string, mixed> */
-    private function defaultFormat(string $documentType): array
-    {
-        $prefix = match ($documentType) {
-            'ORDER' => 'PESANAN',
-            'RECEIPT' => 'KWITANSI',
-            default => $documentType,
-        };
-
-        return [
-            'format_pattern' => '{SEQ}/'.$prefix.'/{SCHOOL}/{TW}/{YEAR}',
-            'reset_period' => 'YEAR',
-            'padding' => 4,
-            'is_active' => true,
-        ];
     }
 
     private function periodKey(string $resetPeriod, CarbonInterface $date): string
