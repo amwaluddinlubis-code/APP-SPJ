@@ -33,6 +33,8 @@ export const parseIndonesianDate = (value) => {
 };
 
 const visuallyHideNativeDateInput = (input) => {
+    input.tabIndex = -1;
+    input.setAttribute('aria-hidden', 'true');
     Object.assign(input.style, {
         position: 'absolute',
         width: '1px',
@@ -130,6 +132,12 @@ const initializeDateInput = (nativeInput) => {
         displayInput.setAttribute('aria-label', 'Tanggal (dd/mm/yyyy)');
     }
 
+    const describedBy = nativeInput.getAttribute('aria-describedby');
+    if (describedBy) displayInput.setAttribute('aria-describedby', describedBy);
+
+    const labelledBy = nativeInput.getAttribute('aria-labelledby');
+    if (labelledBy) displayInput.setAttribute('aria-labelledby', labelledBy);
+
     Object.assign(displayInput.style, {
         width: '100%',
         minWidth: '0',
@@ -171,7 +179,7 @@ const initializeDateInput = (nativeInput) => {
 
         if (!value) {
             setNativeValue('');
-            return true;
+            return !displayInput.required;
         }
 
         const isoValue = parseIndonesianDate(value);
@@ -196,6 +204,27 @@ const initializeDateInput = (nativeInput) => {
         return true;
     };
 
+    const mirrorNativeValidation = () => {
+        let message = nativeInput.validationMessage || '';
+
+        if (!message && nativeInput.validity.rangeUnderflow && nativeInput.min) {
+            message = `Tanggal tidak boleh sebelum ${formatIsoDateForDisplay(nativeInput.min)}.`;
+        } else if (!message && nativeInput.validity.rangeOverflow && nativeInput.max) {
+            message = `Tanggal tidak boleh setelah ${formatIsoDateForDisplay(nativeInput.max)}.`;
+        } else if (!message && nativeInput.validity.valueMissing) {
+            message = 'Tanggal wajib diisi.';
+        } else if (!message && !nativeInput.validity.valid) {
+            message = 'Tanggal tidak valid.';
+        }
+
+        if (!message) return false;
+
+        displayInput.setCustomValidity(message);
+        displayInput.focus({ preventScroll: true });
+        displayInput.reportValidity();
+        return true;
+    };
+
     displayInput.addEventListener('input', () => validateDisplay());
     displayInput.addEventListener('change', () => validateDisplay({ final: true }));
     displayInput.addEventListener('blur', () => validateDisplay({ final: true }));
@@ -204,6 +233,10 @@ const initializeDateInput = (nativeInput) => {
     nativeInput.addEventListener('change', () => requestAnimationFrame(syncDisplayFromNative));
     nativeInput.addEventListener('focus', () => {
         if (document.activeElement === nativeInput) displayInput.focus({ preventScroll: true });
+    });
+    nativeInput.addEventListener('invalid', (event) => {
+        event.preventDefault();
+        mirrorNativeValidation();
     });
 
     const nativeStateObserver = new MutationObserver(() => {
