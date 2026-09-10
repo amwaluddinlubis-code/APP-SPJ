@@ -59,6 +59,7 @@ class DocumentNumberFormatSettingsTest extends TestCase
             'fund_source_id' => 1,
             'no_bukti' => 'BPU-001',
             'transaction_date' => '2026-03-10',
+            'spj_category' => 'BARANG',
         ]);
         $package = $transaction->spjPackage()->create(['status' => 'READY']);
         DocumentNumberFormat::query()->create([
@@ -81,52 +82,82 @@ class DocumentNumberFormatSettingsTest extends TestCase
         $this->assertSame('SPJ-2026-03-001-SDN-01-10260756', $document->document_number);
     }
 
-    public function test_all_related_numbers_use_their_own_event_dates_and_do_not_overwrite_existing_numbers(): void
+    public function test_related_numbers_use_their_own_event_dates_with_realistic_category_scopes(): void
     {
         FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
         $year = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
-        $transaction = Transaction::query()->create([
+        $numbers = app(SpjDocumentNumberService::class);
+
+        $goodsTransaction = Transaction::query()->create([
             'fiscal_year_id' => $year->id,
             'fund_source_id' => 1,
             'no_bukti' => 'BPU-002',
-            'transaction_date' => '2026-01-10',
+            'transaction_date' => '2026-04-10',
+            'spj_category' => 'BARANG',
         ]);
-        $item = $transaction->items()->create(['description' => 'Barang', 'amount' => 1000]);
+        $item = $goodsTransaction->items()->create(['description' => 'Barang', 'amount' => 1000]);
         $goods = $item->goods()->create([
             'order_date' => '2026-02-05',
             'bap_date' => '2026-03-06',
             'bast_date' => '2026-04-07',
         ]);
+        $goodsPackage = $goodsTransaction->spjPackage()->create(['status' => 'READY']);
+
+        $goodsResult = $numbers->assignAutomaticNumbers($goodsPackage, '10260756');
+
+        $this->assertSame(4, $goodsResult['created']);
+        $this->assertStringContainsString('/TW.II/2026', $goodsPackage->fresh()->document_number);
+        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->order_number);
+        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->bap_number);
+        $this->assertStringContainsString('/TW.II/2026', $goods->fresh()->bast_number);
+
         $maintenance = SpjMaintenance::query()->create([
             'fiscal_year_id' => $year->id,
             'name' => 'Pemeliharaan ruang kelas',
         ]);
-        $workOrder = $transaction->workOrder()->create([
+        $maintenanceTransaction = Transaction::query()->create([
+            'fiscal_year_id' => $year->id,
+            'fund_source_id' => 1,
+            'no_bukti' => 'BPU-003',
+            'transaction_date' => '2026-06-10',
+            'spj_category' => 'PEMELIHARAAN',
+        ]);
+        $workOrder = $maintenanceTransaction->workOrder()->create([
             'maintenance_id' => $maintenance->id,
             'expense_type' => 'UPAH',
             'work_description' => 'Perbaikan ruang kelas',
             'spk_date' => '2026-05-08',
             'rab_date' => '2026-06-09',
         ]);
-        $travel = $transaction->travels()->create([
+        $maintenancePackage = $maintenanceTransaction->spjPackage()->create(['status' => 'READY']);
+
+        $maintenanceResult = $numbers->assignAutomaticNumbers($maintenancePackage, '10260756');
+
+        $this->assertSame(3, $maintenanceResult['created']);
+        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->spk_number);
+        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->rab_number);
+
+        $travelTransaction = Transaction::query()->create([
+            'fiscal_year_id' => $year->id,
+            'fund_source_id' => 1,
+            'no_bukti' => 'BPU-004',
+            'transaction_date' => '2026-07-20',
+            'spj_category' => 'SPPD',
+        ]);
+        $travel = $travelTransaction->travels()->create([
             'traveler_name' => 'Operator Sekolah',
             'assignment_letter_date' => '2026-07-10',
             'departure_date' => '2026-07-11',
         ]);
-        $package = $transaction->spjPackage()->create(['status' => 'READY']);
+        $travelPackage = $travelTransaction->spjPackage()->create(['status' => 'READY']);
 
-        $result = app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package, '10260756');
+        $travelResult = $numbers->assignAutomaticNumbers($travelPackage, '10260756');
 
-        $this->assertSame(7, $result['created']);
-        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->order_number);
-        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->bap_number);
-        $this->assertStringContainsString('/TW.II/2026', $goods->fresh()->bast_number);
-        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->spk_number);
-        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->rab_number);
+        $this->assertSame(2, $travelResult['created']);
         $this->assertStringContainsString('/TW.III/2026', $travel->fresh()->assignment_letter_number);
 
         $existingOrderNumber = $goods->fresh()->order_number;
-        app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package->fresh(), '10260756');
+        $numbers->assignAutomaticNumbers($goodsPackage->fresh(), '10260756');
         $this->assertSame($existingOrderNumber, $goods->fresh()->order_number);
     }
 }
