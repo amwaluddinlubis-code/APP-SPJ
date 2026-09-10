@@ -6,6 +6,7 @@ use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
 use App\Services\SpjNumberingOrderService;
+use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class SpjSingleNumberingUseCase
         private readonly SpjDocumentNumberService $numbers,
         private readonly SpjPackageValidationService $validator,
         private readonly SpjNumberingOrderService $order,
+        private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -90,6 +92,12 @@ class SpjSingleNumberingUseCase
             'scope_key' => ['nullable', 'string', 'max:80'],
         ]);
         $documentType = strtoupper(trim($documentType));
+        if ($this->numberingPolicy->isAutomaticDocumentType($documentType)
+            && ! $this->numberingPolicy->isAutomaticDocumentEligible($package->transaction, $documentType)) {
+            $category = $this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category) ?: '-';
+
+            return back()->with('error', 'Penomoran '.$documentType.' tidak berlaku untuk kategori '.$category.'.');
+        }
         if ($blocker = $this->order->singleNumberingBlocker($package, [$documentType])) {
             return back()->with('error', $blocker);
         }
