@@ -1,5 +1,7 @@
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DISPLAY_DATE_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+const VALIDATE_CALLBACK = Symbol('indonesianDateValidate');
+const SYNC_CALLBACK = Symbol('indonesianDateSync');
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -79,7 +81,7 @@ const buildCalendarButton = (nativeInput) => {
         cursor: 'pointer',
     });
 
-    const openPicker = () => {
+    button.addEventListener('click', () => {
         if (nativeInput.disabled || nativeInput.readOnly) return;
 
         nativeInput.focus({ preventScroll: true });
@@ -89,9 +91,8 @@ const buildCalendarButton = (nativeInput) => {
         }
 
         nativeInput.click();
-    };
+    });
 
-    button.addEventListener('click', openPicker);
     return button;
 };
 
@@ -225,15 +226,15 @@ const initializeDateInput = (nativeInput) => {
         return true;
     };
 
+    displayInput[VALIDATE_CALLBACK] = validateDisplay;
+    nativeInput[SYNC_CALLBACK] = syncDisplayFromNative;
+
     displayInput.addEventListener('input', () => validateDisplay());
     displayInput.addEventListener('change', () => validateDisplay({ final: true }));
     displayInput.addEventListener('blur', () => validateDisplay({ final: true }));
 
     nativeInput.addEventListener('input', () => requestAnimationFrame(syncDisplayFromNative));
     nativeInput.addEventListener('change', () => requestAnimationFrame(syncDisplayFromNative));
-    nativeInput.addEventListener('focus', () => {
-        if (document.activeElement === nativeInput) displayInput.focus({ preventScroll: true });
-    });
     nativeInput.addEventListener('invalid', (event) => {
         event.preventDefault();
         mirrorNativeValidation();
@@ -247,18 +248,6 @@ const initializeDateInput = (nativeInput) => {
         attributes: true,
         attributeFilter: ['min', 'max', 'disabled', 'readonly', 'required'],
     });
-
-    const form = nativeInput.closest('form');
-    if (form) {
-        form.addEventListener('submit', (event) => {
-            if (!validateDisplay({ final: true })) {
-                event.preventDefault();
-                displayInput.reportValidity();
-            }
-        }, true);
-
-        form.addEventListener('reset', () => requestAnimationFrame(syncDisplayFromNative));
-    }
 };
 
 export const initializeIndonesianDateInputs = (root = document) => {
@@ -278,6 +267,32 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('livewire:navigated', bootIndonesianDateInputs);
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    for (const displayInput of form.querySelectorAll('input[data-indonesian-date-display="true"]')) {
+        const validate = displayInput[VALIDATE_CALLBACK];
+        if (typeof validate === 'function' && !validate({ final: true })) {
+            event.preventDefault();
+            displayInput.focus({ preventScroll: true });
+            displayInput.reportValidity();
+            break;
+        }
+    }
+}, true);
+
+document.addEventListener('reset', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    requestAnimationFrame(() => {
+        form.querySelectorAll('input[type="date"][data-indonesian-date-initialized="true"]').forEach((nativeInput) => {
+            nativeInput[SYNC_CALLBACK]?.();
+        });
+    });
+}, true);
 
 new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
