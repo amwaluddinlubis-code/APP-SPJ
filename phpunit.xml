@@ -25,6 +25,7 @@
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
             <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
+            <file>tests/Feature/IndonesianDateInputUiTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
             <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
             <file>tests/Feature/SchoolDatabaseMaintenanceHardeningTest.php</file>
@@ -35,6 +36,7 @@
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
             <file>tests/Feature/SpjCategoryLifecycleRegressionTest.php</file>
+            <file>tests/Feature/SpjDateChronologyValidationTest.php</file>
             <file>tests/Feature/SpjDocumentGeneratorHardeningTest.php</file>
             <file>tests/Feature/SpjGeneratedDocumentValidatorTest.php</file>
             <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
@@ -51,6 +53,7 @@
             <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
             <file>tests/Feature/SpjSixCategoryE2eTest.php</file>
             <file>tests/Feature/SyncProgressUiTest.php</file>
+            <file>tests/Feature/TransactionPurchaseDateValidationTest.php</file>
             <file>tests/Feature/SpjVerifyCommandTest.php</file>
             <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
         </testsuite>
