@@ -79,14 +79,18 @@ class IndonesianDateInputUiTest extends TestCase
         $serviceEditor = file_get_contents(resource_path('views/spj/partials/package/categories/jasa-recipient-editor.blade.php'));
         $rowEditor = file_get_contents(resource_path('views/spj/partials/package/row-editor.blade.php'));
         $sppd = file_get_contents(resource_path('views/spj/partials/package/categories/sppd.blade.php'));
+        $maintenance = file_get_contents(resource_path('views/spj/partials/package/categories/pemeliharaan.blade.php'));
 
         $this->assertIsString($serviceEditor);
         $this->assertIsString($rowEditor);
         $this->assertIsString($sppd);
+        $this->assertIsString($maintenance);
         $this->assertStringContainsString(':max="row.usage_completed_at || null"', $serviceEditor);
         $this->assertStringContainsString(':min="row.usage_started_at || null"', $serviceEditor);
         $this->assertStringContainsString("'agreement_date' => ['Tgl Perjanjian', 'date']", $serviceEditor);
         $this->assertStringContainsString("isset(\$field['min_from'])", $rowEditor);
         $this->assertStringContainsString("'return_date' => ['label' => 'Kembali', 'type' => 'date', 'min_from' => 'departure_date']", $sppd);
+        $this->assertStringContainsString('x-model="workStartedAt"', $maintenance);
+        $this->assertStringContainsString('x-bind:min="workStartedAt || null"', $maintenance);
     }
 }
