@@ -65,9 +65,7 @@ class EmployeeIdentityService
         return ($arkas ?? true) && ($dapodik ?? true);
     }
 
-    /**
-     * Fill missing normalized_name values so cross-source matching can find rows.
-     */
+    /** Fill missing normalized_name values so cross-source matching can find rows. */
     public function backfillNormalizedNames(bool $dryRun = false): int
     {
         $affected = 0;
@@ -100,7 +98,11 @@ class EmployeeIdentityService
 
         foreach ($this->duplicateGroups() as $group) {
             $ordered = $group->sortBy('id')->values();
-            $canonical = $ordered->first(fn (Employee $row) => $row->last_seen_dapodik_at !== null) ?? $ordered->first();
+            // Operator-corrected data is canonical. Otherwise prefer the row
+            // enriched by Dapodik, then the oldest remaining row.
+            $canonical = $ordered->first(fn (Employee $row) => (bool) $row->operator_locked)
+                ?? $ordered->first(fn (Employee $row) => $row->last_seen_dapodik_at !== null)
+                ?? $ordered->first();
             $losers = $ordered->where('id', '!==', $canonical->id)->values();
 
             $pairs[] = [
@@ -210,9 +212,7 @@ class EmployeeIdentityService
             ->map(fn (array $group) => collect($group));
     }
 
-    /**
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     private function identityKeys(Employee $row): array
     {
         $keys = [];
@@ -231,14 +231,14 @@ class EmployeeIdentityService
         return $keys;
     }
 
-    /**
-     * @param  Collection<int, Employee>  $losers
-     */
+    /** @param Collection<int, Employee> $losers */
     private function mergeInto(Employee $canonical, Collection $losers): void
     {
         $donors = collect([$canonical])->concat($losers);
 
-        // Gather donor values while loser rows still exist in memory.
+        // Gather donor values while loser rows still exist in memory. Because
+        // operator-locked rows are selected as canonical, their non-empty values
+        // always win; other sources only fill blanks.
         $values = [];
         foreach (['name', 'nip', 'nik', 'nuptk', 'gender', 'employment_status', 'staff_type', 'position', 'npwp', 'bank_name', 'bank_account', 'birth_place', 'birth_date', 'religion', 'last_education', 'last_study_field', 'rank_group', 'is_primary_school', 'dapodik_id'] as $column) {
             if (! filled($canonical->getAttribute($column))) {
@@ -257,6 +257,7 @@ class EmployeeIdentityService
             'last_known_active_dapodik' => $donors->first(fn (Employee $row) => $row->last_known_active_dapodik !== null)?->last_known_active_dapodik,
             'last_synced_at' => $donors->map(fn (Employee $row) => $row->last_synced_at)->filter()->max(),
             'operator_locked' => $donors->contains(fn (Employee $row) => (bool) $row->operator_locked),
+            'payload' => $this->mergePayloads($donors),
         ];
 
         // Delete losers first so their UNIQUE slots (dapodik_id) are free
@@ -273,5 +274,36 @@ class EmployeeIdentityService
             $canonical->last_known_active_dapodik
         );
         $canonical->save();
+    }
+
+    /** @param Collection<int, Employee> $donors */
+    private function mergePayloads(Collection $donors): ?array
+    {
+        $merged = [];
+        foreach ($donors as $row) {
+            $payload = is_array($row->payload) ? $row->payload : [];
+            if ($payload === []) {
+                continue;
+            }
+
+            if (array_key_exists('arkas', $payload) || array_key_exists('dapodik', $payload) || array_key_exists('legacy', $payload)) {
+                foreach ($payload as $key => $value) {
+                    if (! array_key_exists($key, $merged) || in_array($key, ['arkas', 'dapodik'], true)) {
+                        $merged[$key] = $value;
+                    }
+                }
+
+                continue;
+            }
+
+            $source = match (strtoupper((string) $row->source_type)) {
+                'PEGAWAI', 'PTK', 'ARKAS' => 'arkas',
+                'DAPODIK' => 'dapodik',
+                default => 'legacy',
+            };
+            $merged[$source] = $payload;
+        }
+
+        return $merged !== [] ? $merged : null;
     }
 }
