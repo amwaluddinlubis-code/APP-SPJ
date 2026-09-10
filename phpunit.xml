@@ -51,6 +51,7 @@
             <file>tests/Feature/SpjPreNumberingRegressionTest.php</file>
             <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
             <file>tests/Feature/SpjNonGoodsInputValidationTest.php</file>
+            <file>tests/Feature/SpjMainTabsRenderingTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
             <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
