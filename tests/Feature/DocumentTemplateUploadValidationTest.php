@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\DocumentTemplateController;
 use App\Models\DocumentTemplate;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
@@ -93,17 +94,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
 
     public function test_valid_upload_is_saved_even_when_sheet_name_only_produces_warning(): void
     {
-        $path = $this->makeWorkbook('Rincian Belanja', [
-            '{{NOMOR_DOKUMEN}}',
-            '{{NOMOR_BUKTI}}',
-            '{{NILAI_BRUTO}}',
-            '{{ITEM_NO}}',
-            '{{ITEM_URAIAN}}',
-            '{{ITEM_VOLUME}}',
-            '{{ITEM_SATUAN}}',
-            '{{ITEM_HARGA_SATUAN}}',
-            '{{ITEM_JUMLAH}}',
-        ], repeatRow: 6);
+        $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
         $request = Request::create('/pengaturan/template-dokumen', 'POST', [
             'document_type' => 'RINCIAN_BELANJA',
             'name' => 'Template Valid',
@@ -120,6 +111,107 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $this->assertSame('RINCIAN_BELANJA', $template->document_type);
         $this->assertSame(['BARANG'], $template->applicable_categories);
         Storage::assertExists($template->file_path);
+    }
+
+    public function test_valid_replacement_switches_record_before_deleting_previous_file(): void
+    {
+        $yearId = (int) session('active_fiscal_year_id');
+        $oldPath = 'document-templates/'.$yearId.'/existing.xlsx';
+        Storage::put($oldPath, 'existing-template');
+        $existing = DocumentTemplate::query()->create([
+            'fiscal_year_id' => $yearId,
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template Lama',
+            'format' => 'xlsx',
+            'file_path' => $oldPath,
+            'applicable_categories' => [],
+            'is_active' => true,
+        ]);
+
+        $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
+        $request = Request::create('/pengaturan/template-dokumen', 'POST', [
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template Baru',
+            'applicable_categories' => ['BARANG'],
+        ], [], [
+            'template' => new UploadedFile($path, 'template.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ]);
+        $request->setLaravelSession(app('session')->driver());
+
+        app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
+
+        $existing->refresh();
+        $this->assertSame('Template Baru', $existing->name);
+        $this->assertNotSame($oldPath, $existing->file_path);
+        $this->assertSame(['BARANG'], $existing->applicable_categories);
+        Storage::assertExists($existing->file_path);
+        Storage::assertMissing($oldPath);
+        $this->assertSame(1, DocumentTemplate::query()->count());
+    }
+
+    public function test_database_failure_keeps_previous_template_and_removes_new_file(): void
+    {
+        $yearId = (int) session('active_fiscal_year_id');
+        $oldPath = 'document-templates/'.$yearId.'/existing.xlsx';
+        Storage::put($oldPath, 'existing-template');
+        $existing = DocumentTemplate::query()->create([
+            'fiscal_year_id' => $yearId,
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template Lama',
+            'format' => 'xlsx',
+            'file_path' => $oldPath,
+            'applicable_categories' => [],
+            'is_active' => true,
+        ]);
+
+        DB::connection('school')->unprepared(<<<'SQL'
+            CREATE TRIGGER fail_document_template_update
+            BEFORE UPDATE ON document_templates
+            BEGIN
+                SELECT RAISE(ABORT, 'forced template replacement failure');
+            END;
+            SQL);
+
+        $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
+        $request = Request::create('/pengaturan/template-dokumen', 'POST', [
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template Gagal',
+            'applicable_categories' => ['BARANG'],
+        ], [], [
+            'template' => new UploadedFile($path, 'template.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ]);
+        $request->setLaravelSession(app('session')->driver());
+
+        try {
+            app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
+            $this->fail('Kegagalan database seharusnya membatalkan replacement template.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('forced template replacement failure', $exception->getMessage());
+        }
+
+        $existing->refresh();
+        $this->assertSame('Template Lama', $existing->name);
+        $this->assertSame($oldPath, $existing->file_path);
+        $this->assertSame([], $existing->applicable_categories);
+        Storage::assertExists($oldPath);
+        $this->assertSame([$oldPath], Storage::allFiles('document-templates/'.$yearId));
+        $this->assertSame(1, DocumentTemplate::query()->count());
+    }
+
+    /** @return array<int, string> */
+    private function validMarkers(): array
+    {
+        return [
+            '{{NOMOR_DOKUMEN}}',
+            '{{NOMOR_BUKTI}}',
+            '{{NILAI_BRUTO}}',
+            '{{ITEM_NO}}',
+            '{{ITEM_URAIAN}}',
+            '{{ITEM_VOLUME}}',
+            '{{ITEM_SATUAN}}',
+            '{{ITEM_HARGA_SATUAN}}',
+            '{{ITEM_JUMLAH}}',
+        ];
     }
 
     /**

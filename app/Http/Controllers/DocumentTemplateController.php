@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentTemplate;
+use App\Services\DocumentTemplateReplacementService;
 use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjTemplatePackageImporter;
 use App\Services\SpjTemplateService;
@@ -61,7 +62,8 @@ class DocumentTemplateController extends Controller
     public function store(
         Request $request,
         SpjTemplateValidator $validator,
-        SpjTemplatePackageImporter $packageImporter
+        SpjTemplatePackageImporter $packageImporter,
+        DocumentTemplateReplacementService $replacementService,
     ): RedirectResponse {
         if ($request->hasFile('template_package')) {
             return $this->importPackage($request, $packageImporter);
@@ -105,21 +107,13 @@ class DocumentTemplateController extends Controller
             ]);
         }
 
-        $path = $uploaded->storeAs(
-            'document-templates/'.session('active_fiscal_year_id'),
-            uniqid('tpl_', true).'.'.$extension
-        );
-        $old = DocumentTemplate::query()->where([
-            'fiscal_year_id' => session('active_fiscal_year_id'),
-            'document_type' => $documentType,
-            'format' => $extension,
-        ])->first();
-        if ($old) {
-            Storage::delete($old->file_path);
-        }
-        DocumentTemplate::updateOrCreate(
-            ['fiscal_year_id' => session('active_fiscal_year_id'), 'document_type' => $documentType, 'format' => $extension],
-            ['name' => $data['name'], 'file_path' => $path, 'applicable_categories' => $data['applicable_categories'] ?? [], 'is_active' => true]
+        $replacementService->replace(
+            (int) session('active_fiscal_year_id'),
+            $documentType,
+            $data['name'],
+            $uploaded,
+            $extension,
+            $data['applicable_categories'] ?? [],
         );
 
         $response = back()->with('success', 'Template '.$data['name'].' berhasil disimpan.');
