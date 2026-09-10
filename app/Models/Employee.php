@@ -30,8 +30,48 @@ class Employee extends Model
         });
     }
 
+    public function scopeFromArkas(Builder $query): Builder
+    {
+        return $query->whereNotNull('last_seen_arkas_at');
+    }
+
+    public function scopeFromDapodik(Builder $query): Builder
+    {
+        return $query->whereNotNull('last_seen_dapodik_at');
+    }
+
+    public function scopeManualOnly(Builder $query): Builder
+    {
+        return $query->whereNull('last_seen_arkas_at')
+            ->whereNull('last_seen_dapodik_at');
+    }
+
+    public function getSourceLabelAttribute(): string
+    {
+        $sources = [];
+        if ($this->last_seen_arkas_at !== null) {
+            $sources[] = 'ARKAS';
+        }
+        if ($this->last_seen_dapodik_at !== null) {
+            $sources[] = 'Dapodik';
+        }
+
+        return $sources !== [] ? implode(' + ', $sources) : 'Manual';
+    }
+
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'payload' => 'array', 'birth_date' => 'date', 'is_primary_school' => 'boolean', 'last_synced_at' => 'datetime', 'last_seen_arkas_at' => 'datetime', 'last_seen_dapodik_at' => 'datetime', 'last_known_active_arkas' => 'boolean', 'last_known_active_dapodik' => 'boolean', 'operator_locked' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'payload' => 'array',
+            'birth_date' => 'date',
+            'is_primary_school' => 'boolean',
+            'last_synced_at' => 'datetime',
+            'last_seen_arkas_at' => 'datetime',
+            'last_seen_dapodik_at' => 'datetime',
+            'last_known_active_arkas' => 'boolean',
+            'last_known_active_dapodik' => 'boolean',
+            'operator_locked' => 'boolean',
+        ];
     }
 }
