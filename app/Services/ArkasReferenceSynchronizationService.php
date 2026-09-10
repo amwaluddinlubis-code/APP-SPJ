@@ -100,15 +100,19 @@ class ArkasReferenceSynchronizationService
                 'treasurer_phone' => $profile['TELP_BENDAHARA'] ?? null,
                 'payload' => json_encode($profile, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
             ]);
-            $seenEmployeeIds = [];
+
             foreach ($pegawai as $record) {
-                $seenEmployeeIds[] = $this->saveEmployee('PEGAWAI', $record['NIP'] ?: sha1(($record['NAMA'] ?? '').'|'.($record['JABATAN'] ?? '')), $record);
+                $this->saveEmployee('PEGAWAI', $record['NIP'] ?: sha1(($record['NAMA'] ?? '').'|'.($record['JABATAN'] ?? '')), $record, $now);
             }
             foreach ($ptk as $record) {
-                $seenEmployeeIds[] = $this->saveEmployee('PTK', $record['PTK_ID_ARKAS'], $record);
+                $this->saveEmployee('PTK', $record['PTK_ID_ARKAS'], $record, $now);
             }
-            $seenEmployeeIds = array_values(array_filter($seenEmployeeIds));
-            app(EmployeeIdentityService::class)->sweepAfterSync($seenEmployeeIds, 'arkas', $now);
+
+            $identity = app(EmployeeIdentityService::class);
+            $identity->fuseDuplicates(false);
+            $seenEmployeeIds = Employee::query()->where('last_seen_arkas_at', $now)->pluck('id')->all();
+            $identity->sweepAfterSync($seenEmployeeIds, 'arkas', $now);
+
             foreach ($rekening as $record) {
                 $flags = [];
                 foreach (['is_honor' => 'IS_HONOR', 'is_ppn' => 'IS_PPN', 'is_pph21' => 'IS_PPH21', 'is_pph22' => 'IS_PPH22', 'is_pph23' => 'IS_PPH23', 'is_pph4' => 'IS_PPH4', 'is_sspd' => 'IS_SSPD', 'is_buku' => 'IS_BUKU'] as $column => $field) {
@@ -125,7 +129,7 @@ class ArkasReferenceSynchronizationService
             $this->seedAccountHierarchy();
         });
 
-        return ['profile' => 1, 'fund_sources' => count($fundSources), 'employees' => count($pegawai) + count($ptk), 'accounts' => count($rekening), 'periods' => count($periods)];
+        return ['profile' => 1, 'fund_sources' => count($fundSources), 'employees' => Employee::count(), 'accounts' => count($rekening), 'periods' => count($periods)];
     }
 
     /** @return array<int, array{year:int, fund_source_id:int, code:string, name:string, payload:array<string,mixed>}> */
@@ -205,47 +209,70 @@ class ArkasReferenceSynchronizationService
         return ['activities' => $activities, 'partners' => $partners];
     }
 
-    private function saveEmployee(string $type, string $key, array $record): ?int
+    private function saveEmployee(string $type, string $key, array $record, $now): ?int
     {
         if (blank($key) || blank($record['NAMA'] ?? null)) {
             return null;
         }
 
         $identity = app(EmployeeIdentityService::class);
-        $now = now();
         $active = $this->flag($record['STATUS_AKTIF'] ?? true);
         $ptk = $type === 'PTK';
 
-        $employee = Employee::query()->where('source_type', $type)->where('source_key', $key)->first();
+        // Identity matching is canonical. PEGAWAI and PTK are two ARKAS feeds,
+        // not two employee tables/identities.
+        $employee = $identity->findMatch(
+            $record['NUPTK'] ?? null,
+            $record['NIP'] ?? null,
+            $record['NIK'] ?? null,
+            (string) ($record['NAMA'] ?? '')
+        );
+        $employee ??= Employee::query()->where('source_key', $key)->whereIn('source_type', [$type, 'ARKAS'])->first();
+
         if (! $employee instanceof Employee) {
-            $employee = new Employee(['source_type' => $type, 'source_key' => $key]);
+            $employee = new Employee([
+                'source_type' => 'ARKAS',
+                'source_key' => 'ARKAS:'.$type.':'.$key,
+            ]);
         }
 
         $locked = $employee->exists && (bool) $employee->operator_locked;
         $dapodikKnown = $employee->exists && $employee->last_seen_dapodik_at !== null;
-
         $employee->forceFill([
             'last_seen_arkas_at' => $now,
             'last_known_active_arkas' => $active,
-            'payload' => $record,
+            'last_synced_at' => $now,
+            'payload' => $this->mergeSourcePayload($employee->payload, 'arkas', $record),
         ]);
 
         if (! $locked && ! $dapodikKnown) {
             $employee->forceFill([
                 'name' => $record['NAMA'],
                 'normalized_name' => $identity->normalize((string) $record['NAMA']),
-                'nip' => $record['NIP'] ?? null, 'nik' => $record['NIK'] ?? null, 'nuptk' => $record['NUPTK'] ?? null,
-                'gender' => $record['JENIS_KELAMIN'] ?? null, 'employment_status' => $ptk ? null : ($record['STATUS_PEGAWAI'] ?? null),
-                'staff_type' => $record['JENIS_PTK'] ?? null, 'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
-                'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
+                'nip' => $record['NIP'] ?? null,
+                'nik' => $record['NIK'] ?? null,
+                'nuptk' => $record['NUPTK'] ?? null,
+                'gender' => $record['JENIS_KELAMIN'] ?? null,
+                'employment_status' => $ptk ? ($employee->employment_status ?? null) : ($record['STATUS_PEGAWAI'] ?? null),
+                'staff_type' => $record['JENIS_PTK'] ?? null,
+                'position' => $record['JABATAN'] ?? null,
+                'npwp' => $record['NPWP'] ?? null,
+                'bank_name' => $record['NAMA_BANK'] ?? null,
+                'bank_account' => $record['NO_REKENING'] ?? null,
             ]);
         } elseif (! $locked) {
-            // Dapodik wins canonical fields; ARKAS only fills blanks.
+            // Dapodik wins canonical fields; ARKAS fills blanks only.
             foreach ([
-                'nip' => $record['NIP'] ?? null, 'nik' => $record['NIK'] ?? null, 'nuptk' => $record['NUPTK'] ?? null,
-                'gender' => $record['JENIS_KELAMIN'] ?? null, 'staff_type' => $record['JENIS_PTK'] ?? null,
-                'position' => $record['JABATAN'] ?? null, 'npwp' => $record['NPWP'] ?? null,
-                'bank_name' => $record['NAMA_BANK'] ?? null, 'bank_account' => $record['NO_REKENING'] ?? null,
+                'nip' => $record['NIP'] ?? null,
+                'nik' => $record['NIK'] ?? null,
+                'nuptk' => $record['NUPTK'] ?? null,
+                'gender' => $record['JENIS_KELAMIN'] ?? null,
+                'employment_status' => $ptk ? null : ($record['STATUS_PEGAWAI'] ?? null),
+                'staff_type' => $record['JENIS_PTK'] ?? null,
+                'position' => $record['JABATAN'] ?? null,
+                'npwp' => $record['NPWP'] ?? null,
+                'bank_name' => $record['NAMA_BANK'] ?? null,
+                'bank_account' => $record['NO_REKENING'] ?? null,
             ] as $column => $value) {
                 if (! filled($employee->getAttribute($column)) && filled($value)) {
                     $employee->setAttribute($column, $value);
@@ -266,6 +293,19 @@ class ArkasReferenceSynchronizationService
         $employee->save();
 
         return $employee->id;
+    }
+
+    /** @param array<string, mixed>|null $current @param array<string, mixed> $record */
+    private function mergeSourcePayload(?array $current, string $source, array $record): array
+    {
+        $payload = is_array($current) ? $current : [];
+        $hasProvenance = array_key_exists('arkas', $payload) || array_key_exists('dapodik', $payload);
+        if (! $hasProvenance && $payload !== []) {
+            $payload = ['legacy' => $payload];
+        }
+        $payload[$source] = $record;
+
+        return $payload;
     }
 
     private function seedAccountHierarchy(): void
