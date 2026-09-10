@@ -15,6 +15,7 @@
             <file>tests/Unit/SpjScenarioFactoryTest.php</file>
             <file>tests/Unit/QuarterNumberingPlaceholderTest.php</file>
             <file>tests/Unit/ArkasSourceKeyResolverTest.php</file>
+            <file>tests/Feature/ActiveSpjContextTest.php</file>
             <file>tests/Feature/ArkasGenericImportSourceKeyTest.php</file>
             <file>tests/Feature/ArkasGenericImportSyncModeTest.php</file>
             <file>tests/Feature/ArkasGenericImportReleaseSafetyTest.php</file>

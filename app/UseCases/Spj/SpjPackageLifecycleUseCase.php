@@ -6,6 +6,7 @@ use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentLifecycleService;
 use App\Services\SpjPackageValidationService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,7 @@ class SpjPackageLifecycleUseCase
         private readonly SpjPackageValidationService $validator,
         private readonly SpjDocumentLifecycleService $lifecycle,
         private readonly OperationalAuditService $audit,
+        private readonly ActiveSpjContext $context,
     ) {}
 
     public function markReady(string $packageId): RedirectResponse
@@ -32,7 +34,7 @@ class SpjPackageLifecycleUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($package->status !== 'DRAFT') {
@@ -52,8 +54,8 @@ class SpjPackageLifecycleUseCase
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         $package = SpjPackage::query()->with('transaction')->findOrFail($packageId);
-        abort_unless($package->transaction->fiscal_year_id === (int) session('active_fiscal_year_id'), 404);
-        $this->lifecycle->unlock($package, (int) auth()->id(), $data['reason']);
+        abort_unless($this->context->matchesTransaction($package->transaction), 404);
+        $this->lifecycle->unlock($package, $this->context->actorId(), $data['reason']);
 
         return back()->with('success', 'Paket dibuka kembali. Alasan pembukaan telah dicatat.');
     }

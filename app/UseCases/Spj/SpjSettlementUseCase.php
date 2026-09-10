@@ -4,16 +4,20 @@ namespace App\UseCases\Spj;
 
 use App\Models\Transaction;
 use App\Services\TransactionSettlementService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SpjSettlementUseCase
 {
-    public function __construct(private readonly TransactionSettlementService $settlements) {}
+    public function __construct(
+        private readonly TransactionSettlementService $settlements,
+        private readonly ActiveSpjContext $context,
+    ) {}
 
     public function storePayment(Request $request, string $transactionId): RedirectResponse
     {
-        $transaction = Transaction::query()->activeContext()->with('spjPackage')->findOrFail($transactionId);
+        $transaction = Transaction::query()->forSpjContext($this->context)->with('spjPackage')->findOrFail($transactionId);
         if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
             return back()->with('error', 'Pembayaran tidak dapat diubah karena paket SPJ sudah dikunci. Batalkan nomor dan buka paket untuk koreksi terlebih dahulu.');
         }
@@ -29,7 +33,7 @@ class SpjSettlementUseCase
 
     public function storeGoodsReceipt(Request $request, string $transactionId): RedirectResponse
     {
-        $transaction = Transaction::query()->activeContext()->with('spjPackage')->findOrFail($transactionId);
+        $transaction = Transaction::query()->forSpjContext($this->context)->with('spjPackage')->findOrFail($transactionId);
         if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
             return back()->with('error', 'Penerimaan barang tidak dapat diubah karena paket SPJ sudah dikunci. Batalkan nomor dan buka paket untuk koreksi terlebih dahulu.');
         }

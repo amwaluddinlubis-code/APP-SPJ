@@ -2,12 +2,12 @@
 
 namespace App\UseCases\Spj;
 
-use App\Models\School;
 use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjPackageValidationService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -19,6 +19,7 @@ class SpjSingleNumberingUseCase
         private readonly SpjPackageValidationService $validator,
         private readonly SpjNumberingOrderService $order,
         private readonly OperationalAuditService $audit,
+        private readonly ActiveSpjContext $context,
     ) {}
 
     public function assignNumber(string $packageId): RedirectResponse
@@ -37,7 +38,7 @@ class SpjSingleNumberingUseCase
             'transaction.spjPackage',
             'documents',
         ])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($package->document_number && in_array($package->status, ['NUMBERED', 'FINAL'], true)) {
@@ -53,7 +54,7 @@ class SpjSingleNumberingUseCase
             $package->forceFill(['document_number' => null, 'numbered_at' => null])->save();
         }
 
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $result = $this->numbers->assignAutomaticNumbers($package, $school->school_code ?: $school->npsn, $school->npsn, ['SPJ']);
         $package->refresh();
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_PACKAGE', $package->id, 'TETAPKAN_NOMOR', 'Nomor SPJ '.$package->document_number.' ditetapkan.');
@@ -77,7 +78,7 @@ class SpjSingleNumberingUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($issues = $this->validator->validate($package)) {
@@ -93,7 +94,7 @@ class SpjSingleNumberingUseCase
             return back()->with('error', $blocker);
         }
 
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $document = $this->numbers->assign(
             $package,
             $documentType,

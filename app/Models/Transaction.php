@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ActiveSpjContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,11 +87,20 @@ class Transaction extends Model
 
     ];
 
-    public function scopeActiveContext(Builder $query): Builder
+    public function scopeForSpjContext(Builder $query, ActiveSpjContext $context): Builder
     {
         return $query
-            ->where('fiscal_year_id', session('active_fiscal_year_id'))
-            ->where('fund_source_id', session('active_fund_source_id'));
+            ->where('fiscal_year_id', $context->fiscalYearId())
+            ->where('fund_source_id', $context->fundSourceId());
+    }
+
+    /**
+     * Compatibility scope for callers outside the SPJ use-case layer.
+     * New SPJ code should pass ActiveSpjContext explicitly via forSpjContext().
+     */
+    public function scopeActiveContext(Builder $query): Builder
+    {
+        return $this->scopeForSpjContext($query, app(ActiveSpjContext::class));
     }
 
     public function fiscalYear(): BelongsTo

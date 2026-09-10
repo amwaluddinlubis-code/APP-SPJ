@@ -4,18 +4,22 @@ namespace App\UseCases\Spj;
 
 use App\Models\FiscalPeriodClosure;
 use App\Services\FiscalPeriodWorkflowService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SpjFiscalPeriodUseCase
 {
-    public function __construct(private readonly FiscalPeriodWorkflowService $periods) {}
+    public function __construct(
+        private readonly FiscalPeriodWorkflowService $periods,
+        private readonly ActiveSpjContext $context,
+    ) {}
 
     public function closeQuarter(Request $request): RedirectResponse
     {
         $data = $request->validate(['quarter' => ['required', 'integer', 'between:1,4']]);
-        $period = $this->periods->period((int) session('active_fiscal_year_id'), (int) $data['quarter']);
-        $this->periods->close($period, (int) session('active_fund_source_id'), (int) auth()->id());
+        $period = $this->periods->period($this->context->fiscalYearId(), (int) $data['quarter']);
+        $this->periods->close($period, $this->context->fundSourceId(), $this->context->actorId());
 
         return back()->with('success', 'Triwulan '.$data['quarter'].' berhasil ditutup.');
     }
@@ -23,8 +27,8 @@ class SpjFiscalPeriodUseCase
     public function reopenQuarter(Request $request, string $periodId): RedirectResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
-        $period = FiscalPeriodClosure::query()->where('fiscal_year_id', session('active_fiscal_year_id'))->findOrFail($periodId);
-        $this->periods->reopen($period, (int) auth()->id(), $data['reason']);
+        $period = FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->findOrFail($periodId);
+        $this->periods->reopen($period, $this->context->actorId(), $data['reason']);
 
         return back()->with('success', 'Triwulan dibuka kembali dan alasan telah dicatat.');
     }

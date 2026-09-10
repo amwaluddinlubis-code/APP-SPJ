@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Models\SpjDocument;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Support\ActiveSpjContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class SpjNumberingOrderService
 {
+    public function __construct(private readonly ActiveSpjContext $context) {}
+
     /**
      * @param  Collection<int, SpjPackage>  $packages
      * @return Collection<int, SpjPackage>
@@ -121,7 +124,7 @@ class SpjNumberingOrderService
                 'transaction.serviceRecipients',
                 'transaction.spjPackage',
             ])
-            ->whereHas('transaction', fn ($query) => $query->activeContext()
+            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)
                 ->whereMonth('transaction_date', '>=', $startMonth)
                 ->whereMonth('transaction_date', '<=', $endMonth))
             ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK', 'CANCELLED'])

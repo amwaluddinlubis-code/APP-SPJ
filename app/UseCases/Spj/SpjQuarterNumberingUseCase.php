@@ -4,7 +4,6 @@ namespace App\UseCases\Spj;
 
 use App\Models\DocumentTemplate;
 use App\Models\QuarterNumberingRun;
-use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\FiscalPeriodWorkflowService;
@@ -12,6 +11,7 @@ use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjPackageValidationService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -37,6 +37,7 @@ class SpjQuarterNumberingUseCase
         private readonly FiscalPeriodWorkflowService $periods,
         private readonly OperationalAuditService $audit,
         private readonly SpjNumberingOrderService $order,
+        private readonly ActiveSpjContext $context,
     ) {}
 
     public function assignQuarterNumbers(Request $request): RedirectResponse
@@ -46,12 +47,12 @@ class SpjQuarterNumberingUseCase
             'document_types' => ['nullable', 'array'],
             'document_types.*' => ['string', 'max:40'],
         ]);
-        $yearId = (int) session('active_fiscal_year_id');
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $yearId = $this->context->fiscalYearId();
+        $school = $this->context->school();
         $templates = DocumentTemplate::query()->where(['fiscal_year_id' => $yearId, 'is_active' => true])->get();
         $documentTypes = collect($data['document_types'] ?? $templates->pluck('document_type')->push('SPJ'))
             ->map(fn ($type) => strtoupper(trim((string) $type)))->filter()->unique()->values();
-        $quarterScope = fn ($query) => $query->activeContext()
+        $quarterScope = fn ($query) => $query->forSpjContext($this->context)
             ->whereMonth('transaction_date', '>=', ((int) $data['quarter'] - 1) * 3 + 1)
             ->whereMonth('transaction_date', '<=', (int) $data['quarter'] * 3);
         $notReady = Transaction::query()->where($quarterScope)->has('items')
@@ -79,7 +80,7 @@ class SpjQuarterNumberingUseCase
             'quarter' => $data['quarter'],
             'status' => 'RUNNING',
             'document_types' => $documentTypes->all(),
-            'started_by' => auth()->id(),
+            'started_by' => $this->context->actorId(),
             'started_at' => now(),
         ]);
 
@@ -170,7 +171,7 @@ class SpjQuarterNumberingUseCase
             }
 
             $run->update(['status' => 'COMPLETED', 'numbered_count' => $numbered, 'skipped_count' => $skipped, 'completed_at' => now()]);
-            $this->periods->markNumbered($period, (int) auth()->id());
+            $this->periods->markNumbered($period, $this->context->actorId());
         } catch (Throwable $exception) {
             $run->update(['status' => 'FAILED', 'numbered_count' => $numbered, 'skipped_count' => $skipped, 'failed_count' => 1, 'error_message' => $exception->getMessage(), 'completed_at' => now()]);
 
