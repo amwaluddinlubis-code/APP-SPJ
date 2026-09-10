@@ -52,13 +52,41 @@ class IndonesianDateInputUiTest extends TestCase
         $this->assertStringContainsString("attributeFilter: ['min', 'max', 'disabled', 'readonly', 'required']", $helper);
     }
 
-    public function test_other_forms_keep_existing_date_constraints_and_service_range_is_linked(): void
+    public function test_hidden_native_validation_is_forwarded_to_visible_indonesian_field(): void
     {
-        $editor = file_get_contents(resource_path('views/spj/partials/package/categories/jasa-recipient-editor.blade.php'));
+        $helper = file_get_contents(resource_path('js/indonesian-date-input.js'));
 
-        $this->assertIsString($editor);
-        $this->assertStringContainsString(':max="row.usage_completed_at || null"', $editor);
-        $this->assertStringContainsString(':min="row.usage_started_at || null"', $editor);
-        $this->assertStringContainsString("'agreement_date' => ['Tgl Perjanjian', 'date']", $editor);
+        $this->assertIsString($helper);
+        $this->assertStringContainsString("nativeInput.addEventListener('invalid'", $helper);
+        $this->assertStringContainsString('mirrorNativeValidation', $helper);
+        $this->assertStringContainsString("input.setAttribute('aria-hidden', 'true')", $helper);
+        $this->assertStringContainsString('input.tabIndex = -1;', $helper);
+    }
+
+    public function test_form_validation_is_delegated_instead_of_registering_submit_listener_per_date_field(): void
+    {
+        $helper = file_get_contents(resource_path('js/indonesian-date-input.js'));
+
+        $this->assertIsString($helper);
+        $this->assertStringContainsString("document.addEventListener('submit'", $helper);
+        $this->assertStringContainsString("document.addEventListener('reset'", $helper);
+        $this->assertStringNotContainsString("form.addEventListener('submit'", $helper);
+        $this->assertStringNotContainsString("form.addEventListener('reset'", $helper);
+    }
+
+    public function test_other_forms_keep_existing_date_constraints_and_linked_ranges(): void
+    {
+        $serviceEditor = file_get_contents(resource_path('views/spj/partials/package/categories/jasa-recipient-editor.blade.php'));
+        $rowEditor = file_get_contents(resource_path('views/spj/partials/package/row-editor.blade.php'));
+        $sppd = file_get_contents(resource_path('views/spj/partials/package/categories/sppd.blade.php'));
+
+        $this->assertIsString($serviceEditor);
+        $this->assertIsString($rowEditor);
+        $this->assertIsString($sppd);
+        $this->assertStringContainsString(':max="row.usage_completed_at || null"', $serviceEditor);
+        $this->assertStringContainsString(':min="row.usage_started_at || null"', $serviceEditor);
+        $this->assertStringContainsString("'agreement_date' => ['Tgl Perjanjian', 'date']", $serviceEditor);
+        $this->assertStringContainsString("isset($field['min_from'])", $rowEditor);
+        $this->assertStringContainsString("'return_date' => ['label' => 'Kembali', 'type' => 'date', 'min_from' => 'departure_date']", $sppd);
     }
 }
