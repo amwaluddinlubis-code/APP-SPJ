@@ -137,7 +137,7 @@
                                         type="{{ $type }}"
                                         :name="'{{ $prefix }}[' + index + '][{{ $key }}]'"
                                         x-model{{ $type === 'number' ? '.number' : '' }}="row.{{ $key }}"
-                                        @if(isset($field['min'])) min="{{ $field['min'] }}" @endif
+                                        @if(isset($field['min_from'])) :min="row.{{ $field['min_from'] }} || null" @elseif(isset($field['min'])) min="{{ $field['min'] }}" @endif
                                         @if(isset($field['step'])) step="{{ $field['step'] }}" @endif
                                         @if($type === 'date' && $transactionDateLimit) max="{{ $transactionDateLimit }}" @endif
                                         @if($field['required'] ?? false) required @endif
