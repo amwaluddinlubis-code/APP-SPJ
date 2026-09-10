@@ -29,7 +29,9 @@
             } else if (this.primaryIndex > index) {
                 this.primaryIndex -= 1;
             }
-        }
+        },
+        parseAccounting(value) { const digits = String(value ?? '').replace(/[^0-9]/g, ''); return digits === '' ? 0 : Number(digits); },
+        accounting(value) { return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Number(value) || 0); }
     }"
     class="mt-3"
 >
@@ -71,15 +73,16 @@
                     </label>
                     <label>
                         <span class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Volume</span>
-                        <input type="number" min="0" step="0.01" :name="'service_recipients[' + index + '][quantity]'" x-model.number="row.quantity" class="ui-input mt-1 !min-h-8 !py-1.5 text-right text-xs">
+                        <input type="number" min="0" step="1" inputmode="numeric" :name="'service_recipients[' + index + '][quantity]'" x-model.number="row.quantity" class="ui-input mt-1 !min-h-8 !py-1.5 text-right font-mono text-xs">
                     </label>
                     <label>
                         <span class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Hari / Kali</span>
-                        <input type="number" min="0" step="1" :name="'service_recipients[' + index + '][rental_days]'" x-model.number="row.rental_days" class="ui-input mt-1 !min-h-8 !py-1.5 text-right text-xs">
+                        <input type="number" min="0" step="1" inputmode="numeric" :name="'service_recipients[' + index + '][rental_days]'" x-model.number="row.rental_days" class="ui-input mt-1 !min-h-8 !py-1.5 text-right font-mono text-xs">
                     </label>
                     <label>
-                        <span class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Tarif</span>
-                        <input type="number" min="0" step="0.01" :name="'service_recipients[' + index + '][daily_rate]'" x-model.number="row.daily_rate" class="ui-input mt-1 !min-h-8 !py-1.5 text-right text-xs">
+                        <span class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Tarif (Rp)</span>
+                        <input type="hidden" :name="'service_recipients[' + index + '][daily_rate]'" :value="Number(row.daily_rate) || 0">
+                        <input type="text" inputmode="numeric" :value="accounting(row.daily_rate)" @input="row.daily_rate = parseAccounting($event.target.value); $event.target.value = accounting(row.daily_rate)" class="ui-input mt-1 !min-h-8 !py-1.5 text-right font-mono text-xs" aria-label="Tarif jasa dalam rupiah">
                     </label>
                 </div>
 
