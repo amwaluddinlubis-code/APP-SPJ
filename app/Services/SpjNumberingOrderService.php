@@ -11,7 +11,10 @@ use Illuminate\Support\Collection;
 
 class SpjNumberingOrderService
 {
-    public function __construct(private readonly ActiveSpjContext $context) {}
+    public function __construct(
+        private readonly ActiveSpjContext $context,
+        private readonly SpjNumberingPolicyService $numberingPolicy,
+    ) {}
 
     /**
      * @param  Collection<int, SpjPackage>  $packages
@@ -135,7 +138,17 @@ class SpjNumberingOrderService
                 continue;
             }
 
-            $eligible = $candidates->filter(fn (SpjPackage $candidate): bool => $this->documentEventDateValue($candidate, $documentType) !== null);
+            $eligible = $candidates->filter(function (SpjPackage $candidate) use ($documentType): bool {
+                if ($this->documentEventDateValue($candidate, $documentType) === null) {
+                    return false;
+                }
+
+                if (! $this->numberingPolicy->isAutomaticDocumentType($documentType)) {
+                    return true;
+                }
+
+                return $this->numberingPolicy->isAutomaticDocumentEligible($candidate->transaction, $documentType);
+            });
             foreach ($this->orderedPackagesForDocumentType($eligible, $documentType) as $candidate) {
                 if ($candidate->is($package)) {
                     break;
