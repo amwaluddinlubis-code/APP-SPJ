@@ -39,7 +39,9 @@ class AsistenController extends Controller
             'answer' => null,
         ], 600);
 
-        AnswerOperatorQuestion::dispatch($token, $data['question']);
+        // Jalankan setelah response terkirim agar instalasi lokal tidak bergantung
+        // pada queue worker terpisah meskipun QUEUE_CONNECTION=database.
+        AnswerOperatorQuestion::dispatchAfterResponse($token, $data['question']);
 
         if ($request->wantsJson()) {
             return response()->json(['token' => $token], 202);
