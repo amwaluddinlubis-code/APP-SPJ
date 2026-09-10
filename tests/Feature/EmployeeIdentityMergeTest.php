@@ -63,16 +63,14 @@ class EmployeeIdentityMergeTest extends TestCase
         $kept = Employee::query()->firstOrFail();
         $this->assertSame($dapodik->id, $kept->id);
         $this->assertSame('DAPODIK', $kept->source_type);
-        // Bank data survives from the dropped ARKAS row.
         $this->assertSame('Bank Arkas', $kept->bank_name);
         $this->assertNotNull($kept->last_seen_arkas_at);
         $this->assertNotNull($kept->last_seen_dapodik_at);
         $this->assertSame('rista dewi', $kept->normalized_name);
     }
 
-    public function test_fuse_adopts_unique_dapodik_id_after_deleting_loser(): void
+    public function test_fuse_does_not_guess_legacy_identity_from_name_only(): void
     {
-        // Real shape: PTK row without provenance + DAPODIK row holding dapodik_id.
         Employee::query()->create([
             'source_type' => 'PTK', 'source_key' => 'PTK:b', 'name' => 'RISTA DEWI',
             'normalized_name' => 'rista dewi',
@@ -84,13 +82,12 @@ class EmployeeIdentityMergeTest extends TestCase
 
         $report = app(EmployeeIdentityService::class)->fuseDuplicates(false);
 
-        $this->assertSame(1, $report['groups']);
-        $this->assertSame(1, $report['merged']);
-        $this->assertSame(1, Employee::query()->count());
-        $this->assertSame('uuid-sama', Employee::query()->firstOrFail()->dapodik_id);
+        $this->assertSame(0, $report['groups']);
+        $this->assertSame(0, $report['merged']);
+        $this->assertSame(2, Employee::query()->count());
     }
 
-    public function test_find_match_prefers_nuptk_then_name(): void
+    public function test_find_match_prefers_nuptk_then_unique_name(): void
     {
         $employee = Employee::query()->create([
             'source_type' => 'PTK', 'source_key' => 'PTK:9', 'name' => 'Satrizal',
@@ -103,6 +100,20 @@ class EmployeeIdentityMergeTest extends TestCase
         $this->assertSame($employee->id, $identity->findMatch(null, null, null, 'SATRIZAL')->id);
         $this->assertNull($identity->findMatch(null, null, null, 'Orang Asing'));
         $this->assertNull($identity->findMatch(null, null, null, '-'));
+    }
+
+    public function test_find_match_does_not_guess_when_normalized_name_is_ambiguous(): void
+    {
+        Employee::query()->create([
+            'source_type' => 'ARKAS', 'source_key' => 'ARKAS:PTK:1', 'name' => 'Andi Saputra',
+            'normalized_name' => 'andi saputra', 'nip' => '111',
+        ]);
+        Employee::query()->create([
+            'source_type' => 'DAPODIK', 'source_key' => 'DAPODIK:2', 'name' => 'ANDI SAPUTRA',
+            'normalized_name' => 'andi saputra', 'nip' => '222',
+        ]);
+
+        $this->assertNull(app(EmployeeIdentityService::class)->findMatch(null, null, null, 'Andi Saputra'));
     }
 
     public function test_sweep_deactivates_only_rows_unseen_by_all_sources(): void
@@ -160,7 +171,7 @@ class EmployeeIdentityMergeTest extends TestCase
         $this->assertTrue(Employee::query()->findOrFail($locked->id)->is_active);
     }
 
-    public function test_effective_active_treats_unseen_source_as_active(): void
+    public function test_effective_active_keeps_employee_active_when_any_known_source_is_active(): void
     {
         $identity = app(EmployeeIdentityService::class);
 
@@ -168,14 +179,14 @@ class EmployeeIdentityMergeTest extends TestCase
         $this->assertTrue($identity->effectiveActive(true, null));
         $this->assertTrue($identity->effectiveActive(null, true));
         $this->assertTrue($identity->effectiveActive(null, null));
-        $this->assertFalse($identity->effectiveActive(false, true));
-        $this->assertFalse($identity->effectiveActive(true, false));
+        $this->assertTrue($identity->effectiveActive(false, true));
+        $this->assertTrue($identity->effectiveActive(true, false));
         $this->assertFalse($identity->effectiveActive(false, false));
+        $this->assertFalse($identity->effectiveActive(false, null));
+        $this->assertFalse($identity->effectiveActive(null, false));
     }
 
-    /**
-     * @return array{0: Employee, 1: Employee}
-     */
+    /** @return array{0: Employee, 1: Employee} */
     private function seedDuplicatePair(): array
     {
         $dapodik = Employee::query()->create([
