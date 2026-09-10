@@ -98,7 +98,14 @@
                         ] as $key => [$label, $type])
                             <label>
                                 <span class="text-xs font-semibold" style="color: var(--ui-fg-muted)">{{ $label }}</span>
-                                <input type="{{ $type }}" :name="'service_recipients[' + index + '][{{ $key }}]'" x-model="row.{{ $key }}" class="ui-input mt-1 !min-h-8 !py-1.5 text-xs">
+                                <input
+                                    type="{{ $type }}"
+                                    :name="'service_recipients[' + index + '][{{ $key }}]'"
+                                    x-model="row.{{ $key }}"
+                                    @if ($key === 'usage_started_at') :max="row.usage_completed_at || null" @endif
+                                    @if ($key === 'usage_completed_at') :min="row.usage_started_at || null" @endif
+                                    class="ui-input mt-1 !min-h-8 !py-1.5 text-xs"
+                                >
                             </label>
                         @endforeach
                         <label class="sm:col-span-2 lg:col-span-4">
