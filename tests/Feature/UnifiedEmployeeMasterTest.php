@@ -25,14 +25,14 @@ class UnifiedEmployeeMasterTest extends TestCase
         $dapodik = file_get_contents(app_path('Services/DapodikSynchronizationService.php'));
 
         $this->assertStringContainsString('$identity->findMatch(', $arkas);
-        $this->assertStringContainsString("$identity->fuseDuplicates(false);", $arkas);
+        $this->assertStringContainsString('$identity->fuseDuplicates(false);', $arkas);
         $this->assertStringContainsString("'last_seen_arkas_at'", $arkas);
-        $this->assertStringContainsString("'payload' => $this->mergeSourcePayload($employee->payload, 'arkas', $record)", $arkas);
+        $this->assertStringContainsString("'payload' => \$this->mergeSourcePayload(\$employee->payload, 'arkas', \$record)", $arkas);
 
         $this->assertStringContainsString('$identity->findMatch(', $dapodik);
-        $this->assertStringContainsString("$identity->fuseDuplicates(false);", $dapodik);
+        $this->assertStringContainsString('$identity->fuseDuplicates(false);', $dapodik);
         $this->assertStringContainsString("'last_seen_dapodik_at'", $dapodik);
-        $this->assertStringContainsString("'payload' => $this->mergeSourcePayload($employee->payload, 'dapodik', $row)", $dapodik);
+        $this->assertStringContainsString("'payload' => \$this->mergeSourcePayload(\$employee->payload, 'dapodik', \$row)", $dapodik);
     }
 
     public function test_synced_employee_rows_are_crud_managed_by_the_employee_module(): void
