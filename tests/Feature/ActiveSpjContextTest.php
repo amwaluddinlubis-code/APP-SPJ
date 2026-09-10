@@ -42,21 +42,39 @@ class ActiveSpjContextTest extends TestCase
         $this->assertSame([2026], $query->getBindings());
     }
 
-    public function test_core_spj_orchestration_does_not_read_session_or_auth_directly(): void
+    public function test_context_keeps_fiscal_year_only_and_full_scope_guards_distinct(): void
     {
-        $paths = [
-            'Models/Transaction.php',
-            'Services/SpjNumberingOrderService.php',
-            'UseCases/Spj/SpjSingleNumberingUseCase.php',
-            'UseCases/Spj/SpjQuarterNumberingUseCase.php',
-            'UseCases/Spj/SpjPackageLifecycleUseCase.php',
-            'UseCases/Spj/SpjDocumentLifecycleUseCase.php',
-            'UseCases/Spj/SpjFiscalPeriodUseCase.php',
-            'UseCases/Spj/SpjSettlementUseCase.php',
-        ];
+        $context = new ActiveSpjContext(12, 2026, 7, 99, false);
+        $transaction = new Transaction([
+            'fiscal_year_id' => 2026,
+            'fund_source_id' => 8,
+        ]);
 
+        $this->assertTrue($context->matchesFiscalYear($transaction));
+        $this->assertFalse($context->matchesTransaction($transaction));
+    }
+
+    public function test_spj_use_cases_do_not_read_session_or_auth_directly(): void
+    {
+        $paths = glob(app_path('UseCases/Spj/*.php')) ?: [];
+
+        $this->assertNotEmpty($paths);
         foreach ($paths as $path) {
-            $source = file_get_contents(app_path($path));
+            $source = file_get_contents($path);
+
+            $this->assertIsString($source, $path);
+            $this->assertStringNotContainsString("session('", $source, $path);
+            $this->assertStringNotContainsString('auth()->', $source, $path);
+        }
+    }
+
+    public function test_context_aware_model_and_numbering_service_do_not_read_request_globals(): void
+    {
+        foreach ([
+            app_path('Models/Transaction.php'),
+            app_path('Services/SpjNumberingOrderService.php'),
+        ] as $path) {
+            $source = file_get_contents($path);
 
             $this->assertIsString($source, $path);
             $this->assertStringNotContainsString("session('", $source, $path);

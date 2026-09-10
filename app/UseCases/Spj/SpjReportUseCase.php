@@ -4,10 +4,10 @@ namespace App\UseCases\Spj;
 
 use App\Models\FiscalPeriodClosure;
 use App\Models\FiscalYear;
-use App\Models\School;
 use App\Models\SpjHonor;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,6 +16,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class SpjReportUseCase
 {
+    public function __construct(private readonly ActiveSpjContext $context) {}
+
     public function tabLaporan(Request $request): View
     {
         $perPageRaw = $request->input('perPage', 15);
@@ -51,7 +53,7 @@ class SpjReportUseCase
 
         return view('spj.index', [
             'tab' => 'monitoring',
-            'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', session('active_fiscal_year_id'))->orderBy('quarter')->get()->keyBy('quarter'),
+            'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
             'pendingPaginator' => $pendingPaginator,
             'summary' => $summary,
             'transactions' => null,
@@ -98,12 +100,12 @@ class SpjReportUseCase
     public function exportHonorPayments(Request $request, string $format)
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
-        $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
+        $school = $this->context->school();
         $honors = SpjHonor::query()
             ->with(['item.transaction.spjPackage'])
             ->whereHas('item.transaction', function ($query) use ($request): void {
-                $query->activeContext()->where('spj_category', 'HONOR_PEGAWAI');
+                $query->forSpjContext($this->context)->where('spj_category', 'HONOR_PEGAWAI');
                 if ($request->filled('month')) {
                     $query->whereMonth('transaction_date', $request->integer('month'));
                 }
@@ -165,8 +167,8 @@ class SpjReportUseCase
 
     private function report(Request $request, ?int $perPage = null, ?int $pendingPerPage = null): array
     {
-        $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
-        $transactionFilter = fn ($query) => $this->applyReportTransactionFilters($query->activeContext(), $request, $year);
+        $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
+        $transactionFilter = fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year);
         $packageQuery = SpjPackage::query()->with(['transaction', 'documents'])
             ->whereHas('transaction', $transactionFilter)
             ->where(function ($query): void {
@@ -203,7 +205,7 @@ class SpjReportUseCase
         }
 
         $pendingQuery = Transaction::query()->with('spjPackage.documents')
-            ->tap(fn ($query) => $this->applyReportTransactionFilters($query->activeContext(), $request, $year))
+            ->tap(fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year))
             ->has('items')
             ->where(function ($query): void {
                 $query->doesntHave('spjPackage')
@@ -215,15 +217,15 @@ class SpjReportUseCase
             ? $pendingQuery->paginate($pendingPerPage, ['*'], 'pending_page')->withQueryString()
             : $pendingQuery->get();
 
-        $activities = Transaction::query()->activeContext()
+        $activities = Transaction::query()->forSpjContext($this->context)
             ->selectRaw("COALESCE(activity_code, '-') as activity_code, COALESCE(activity_name, 'Kegiatan belum diisi') as activity_name, SUM(gross_amount) as realization")
             ->groupBy('activity_code', 'activity_name')->orderByDesc('realization')->get();
-        $accounts = Transaction::query()->activeContext()
+        $accounts = Transaction::query()->forSpjContext($this->context)
             ->selectRaw("COALESCE(account_code, '-') as account_code, COALESCE(account_name, 'Rekening belum diisi') as account_name, SUM(gross_amount) as realization")
             ->groupBy('account_code', 'account_name')->orderBy('account_code')->get();
 
         $successfulTransactions = Transaction::query()
-            ->tap(fn ($query) => $this->applyReportTransactionFilters($query->activeContext(), $request, $year))
+            ->tap(fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year))
             ->whereHas('spjPackage', fn ($package) => $package->whereNotNull('document_number'));
         $successfulSummary = (clone $successfulTransactions)->selectRaw('COUNT(*) as aggregate_count, COALESCE(SUM(gross_amount), 0) as gross, COALESCE(SUM(tax_total), 0) as tax, COALESCE(SUM(net_amount), 0) as net, COALESCE(SUM(ppn), 0) as ppn, COALESCE(SUM(pph21), 0) as pph21, COALESCE(SUM(pph22), 0) as pph22, COALESCE(SUM(pph23), 0) as pph23, COALESCE(SUM(pph4), 0) as pph4, COALESCE(SUM(sspd), 0) as sspd')->first();
         $cancelledCount = SpjPackage::query()

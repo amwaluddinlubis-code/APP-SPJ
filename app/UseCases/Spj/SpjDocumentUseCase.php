@@ -3,13 +3,13 @@
 namespace App\UseCases\Spj;
 
 use App\Models\DocumentTemplate;
-use App\Models\School;
 use App\Models\SpjPackage;
 use App\Services\SpjGeneratedDocumentValidator;
 use App\Services\SpjMaintenanceDocumentContextService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjTemplateRenderPreflight;
 use App\Services\SpjTemplateService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -19,13 +19,15 @@ use Throwable;
 
 class SpjDocumentUseCase
 {
+    public function __construct(private readonly ActiveSpjContext $context) {}
+
     public function download(string $packageId)
     {
         $validator = app(SpjPackageValidationService::class);
         $templates = app(SpjTemplateService::class);
         $preflight = app(SpjTemplateRenderPreflight::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
         $issues = $validator->validate($package);
@@ -34,7 +36,7 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $activeTemplates = $this->activeTemplatesForPackage($package);
         $preflight->assertAllRenderable($activeTemplates, $package, $school);
         $response = $templates->downloadPackagePdf($activeTemplates, $package, $school);
@@ -45,12 +47,12 @@ class SpjDocumentUseCase
     public function downloadPackageExcel(string $packageId)
     {
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 
         $this->applyDocumentContext($package);
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $activeTemplates = $this->activeTemplatesForPackage($package);
         app(SpjTemplateRenderPreflight::class)->assertAllRenderable($activeTemplates, $package, $school);
         $response = app(SpjTemplateService::class)->downloadPackageExcel($activeTemplates, $package, $school);
@@ -61,14 +63,14 @@ class SpjDocumentUseCase
     public function previewPackage(string $packageId): View|RedirectResponse
     {
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 
         $validationIssues = app(SpjPackageValidationService::class)->validate($package);
         $this->applyDocumentContext($package);
         $templates = $this->activeTemplatesForPackage($package);
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         app(SpjTemplateRenderPreflight::class)->assertAllRenderable($templates, $package, $school);
         $template = new DocumentTemplate(['name' => 'Paket SPJ', 'format' => 'xlsx']);
 
@@ -86,7 +88,7 @@ class SpjDocumentUseCase
         $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || $template->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($validator->validate($package)) {
@@ -94,7 +96,7 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $documentType = strtoupper($template->document_type);
         $document = $package->documents()
             ->where('document_type', $documentType)
@@ -123,7 +125,7 @@ class SpjDocumentUseCase
         $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || $template->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template aktif tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($validator->validate($package)) {
@@ -131,7 +133,7 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
         $response = $templates->downloadPdf($template, $package, $school);
 
@@ -144,10 +146,10 @@ class SpjDocumentUseCase
         $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || $template->fiscal_year_id !== (int) session('active_fiscal_year_id')) {
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada tahun anggaran aktif.');
         }
-        $school = School::query()->findOrFail(session('active_school_id'));
+        $school = $this->context->school();
         $validationIssues = $validator->validate($package);
         $this->applyDocumentContext($package);
         app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);

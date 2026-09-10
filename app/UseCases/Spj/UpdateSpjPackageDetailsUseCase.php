@@ -6,17 +6,22 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\OperationalAuditService;
 use App\Services\SpjTransactionDetailsService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class UpdateSpjPackageDetailsUseCase
 {
+    public function __construct(
+        private readonly SpjTransactionDetailsService $details,
+        private readonly OperationalAuditService $audit,
+        private readonly ActiveSpjContext $context,
+    ) {}
+
     public function handle(string $packageId, Request $request): RedirectResponse
     {
         $package = SpjPackage::query()->with('transaction')->find($packageId);
-        if (! $package
-            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()
                 ->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])
                 ->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, atau sumber dana aktif.');
@@ -50,7 +55,7 @@ class UpdateSpjPackageDetailsUseCase
         ])->all())->save();
 
         $package->transaction->load('items');
-        app(SpjTransactionDetailsService::class)->synchronize($package->transaction, $data);
+        $this->details->synchronize($package->transaction, $data);
         $this->clearIncompatibleGoodsDetails($package->transaction, (string) $data['spj_category']);
 
         $receiptRecipient = $primaryRecipient
@@ -61,7 +66,7 @@ class UpdateSpjPackageDetailsUseCase
             ])->save();
         }
 
-        app(OperationalAuditService::class)->record(
+        $this->audit->record(
             $package->transaction->fiscal_year_id,
             'SPJ_PACKAGE',
             $package->id,

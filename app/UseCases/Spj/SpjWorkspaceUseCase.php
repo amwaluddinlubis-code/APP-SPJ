@@ -9,13 +9,17 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjWorkflowFilterService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SpjWorkspaceUseCase
 {
-    public function __construct(private readonly SpjWorkflowFilterService $workflowFilters) {}
+    public function __construct(
+        private readonly SpjWorkflowFilterService $workflowFilters,
+        private readonly ActiveSpjContext $context,
+    ) {}
 
     public function handle(Request $request): View|RedirectResponse
     {
@@ -32,12 +36,12 @@ class SpjWorkspaceUseCase
 
     public function overviewMetrics(): array
     {
-        $packages = SpjPackage::query()->whereHas('transaction', fn ($query) => $query->activeContext());
+        $packages = SpjPackage::query()->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context));
 
         return [
             'totalPackages' => (clone $packages)->count(),
             'numberedPackages' => (clone $packages)->whereNotNull('document_number')->count(),
-            'readyTransactions' => Transaction::query()->activeContext()->has('items')->count(),
+            'readyTransactions' => Transaction::query()->forSpjContext($this->context)->has('items')->count(),
         ];
     }
 
@@ -69,7 +73,7 @@ class SpjWorkspaceUseCase
         $month = isset($filters['month']) ? (int) $filters['month'] : null;
         $quarter = isset($filters['quarter']) ? (int) $filters['quarter'] : null;
 
-        $query = Transaction::query()->activeContext()
+        $query = Transaction::query()->forSpjContext($this->context)
             ->when($month, fn ($q, $selectedMonth) => $q->whereMonth('transaction_date', $selectedMonth))
             ->when(! $month && $quarter, function ($q) use ($quarter): void {
                 $q->whereMonth('transaction_date', '>=', (($quarter - 1) * 3) + 1)
@@ -101,7 +105,7 @@ class SpjWorkspaceUseCase
             'tab' => 'persiapan',
             'transactions' => $transactions,
             ...$this->overviewMetrics(),
-            'spjTypes' => Transaction::query()->activeContext()->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
+            'spjTypes' => Transaction::query()->forSpjContext($this->context)->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
             'filters' => $filters,
             'workQueueCounts' => $workQueueCounts,
         ]);
@@ -115,7 +119,7 @@ class SpjWorkspaceUseCase
 
         $packageList = SpjPackage::query()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
-            ->whereHas('transaction', fn ($query) => $query->activeContext())
+            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')
@@ -133,7 +137,7 @@ class SpjWorkspaceUseCase
                 ...$this->overviewMetrics(),
                 'spjTypes' => [],
                 'filters' => [],
-                'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', session('active_fiscal_year_id'))->orderBy('quarter')->get()->keyBy('quarter'),
+                'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
                 'participantRoster' => collect(),
             ]);
         }
@@ -151,9 +155,7 @@ class SpjWorkspaceUseCase
             'transaction.payments',
             'transaction.goodsReceipts.items',
         ])->find($packageId);
-        if (! $package
-            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($package->transaction->items->isEmpty()
@@ -165,7 +167,7 @@ class SpjWorkspaceUseCase
         $category = strtoupper((string) $package->transaction->spj_category);
         $participantRoster = $this->participantRoster();
         $validationIssues = $validator->validate($package);
-        $templates = DocumentTemplate::query()->where(['fiscal_year_id' => session('active_fiscal_year_id'), 'is_active' => true])->orderBy('document_type')->get()
+        $templates = DocumentTemplate::query()->where(['fiscal_year_id' => $this->context->fiscalYearId(), 'is_active' => true])->orderBy('document_type')->get()
             ->filter(fn (DocumentTemplate $template) => empty($template->applicable_categories) || in_array('SEMUA', $template->applicable_categories, true) || in_array($category, $template->applicable_categories, true));
         $navigation = $this->packageNavigation($package);
 
@@ -180,7 +182,7 @@ class SpjWorkspaceUseCase
             ...$navigation,
             'spjTypes' => [],
             'filters' => [],
-            'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', session('active_fiscal_year_id'))->orderBy('quarter')->get()->keyBy('quarter'),
+            'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
             'participantRoster' => $participantRoster,
         ]);
     }
@@ -192,7 +194,7 @@ class SpjWorkspaceUseCase
         $transactionDate = $transaction->transaction_date;
 
         $previousTransaction = Transaction::query()
-            ->activeContext()
+            ->forSpjContext($this->context)
             ->whereHas('spjPackage')
             ->where(function ($query) use ($transactionDate, $transaction): void {
                 $query->whereDate('transaction_date', '<', $transactionDate)
@@ -207,7 +209,7 @@ class SpjWorkspaceUseCase
             ->first();
 
         $nextTransaction = Transaction::query()
-            ->activeContext()
+            ->forSpjContext($this->context)
             ->whereHas('spjPackage')
             ->where(function ($query) use ($transactionDate, $transaction): void {
                 $query->whereDate('transaction_date', '>', $transactionDate)
