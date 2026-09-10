@@ -29,6 +29,8 @@
             <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
             <file>tests/Feature/IndonesianDateInputUiTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
+            <file>tests/Feature/OperatorAssistantTest.php</file>
+            <file>tests/Feature/RkasScopedRealizationTest.php</file>
             <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
             <file>tests/Feature/SchoolDatabaseMaintenanceHardeningTest.php</file>
             <file>tests/Feature/SchoolDatabaseResetServiceTest.php</file>
