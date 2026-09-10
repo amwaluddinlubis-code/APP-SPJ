@@ -2,8 +2,8 @@
     <div class="space-y-6">
         <x-page-header
             title="Pegawai"
-            subtitle="Kelola identitas GTK serta keterkaitannya dengan honorarium tahun anggaran aktif."
-            kicker="Master Dapodik, ARKAS & Manual"
+            subtitle="Satu master pegawai untuk data ARKAS, Dapodik, dan input operator. Data hasil sinkronisasi tetap dapat diubah atau dihapus dari aplikasi."
+            kicker="Master Pegawai Terpadu"
         >
             <x-slot:actions>
                 @if(auth()->user()->isAdministrator())
@@ -14,11 +14,12 @@
                 @endif
             </x-slot:actions>
 
-            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                <x-stat-item label="Total Data" :value="number_format($summary['total'], 0, ',', '.')" hint="Seluruh data pegawai" />
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+                <x-stat-item label="Total Data" :value="number_format($summary['total'], 0, ',', '.')" hint="Satu row per pegawai" />
                 <x-stat-item label="Aktif" :value="number_format($summary['active'], 0, ',', '.')" hint="Pegawai berstatus aktif" value-class="text-emerald-700" />
-                <x-stat-item label="Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Berasal dari sinkronisasi" value-class="text-indigo-700" />
-                <x-stat-item label="Manual" :value="number_format($summary['manual'], 0, ',', '.')" hint="Diinput oleh operator" value-class="text-amber-700" />
+                <x-stat-item label="ARKAS" :value="number_format($summary['arkas'], 0, ',', '.')" hint="Pernah terlihat di ARKAS" value-class="text-sky-700" />
+                <x-stat-item label="Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Pernah terlihat di Dapodik" value-class="text-indigo-700" />
+                <x-stat-item label="Manual" :value="number_format($summary['manual'], 0, ',', '.')" hint="Belum berasal dari feed" value-class="text-amber-700" />
             </div>
         </x-page-header>
 
@@ -26,7 +27,7 @@
             <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3">
                 <div>
                     <h2 class="font-bold" style="color: var(--ui-fg)">Daftar pegawai</h2>
-                    <p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">Data sensitif disamarkan pada tampilan daftar.</p>
+                    <p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">ARKAS dan Dapodik dipadankan berdasarkan NUPTK, NIP, NIK, lalu nama ternormalisasi.</p>
                 </div>
                 <x-slot:actions>
                     <form method="GET" class="flex items-center gap-2">
@@ -46,7 +47,7 @@
                 <x-ui.field label="Sumber">
                     <x-ui.select name="source">
                         <option value="">Semua sumber</option>
-                        @foreach(['DAPODIK'=>'Dapodik','MANUAL'=>'Manual','PEGAWAI'=>'ARKAS Pegawai','PTK'=>'ARKAS PTK'] as $key => $label)
+                        @foreach(['ARKAS'=>'ARKAS','DAPODIK'=>'Dapodik','MANUAL'=>'Manual'] as $key => $label)
                             <option value="{{ $key }}" @selected(($filters['source'] ?? '') === $key)>{{ $label }}</option>
                         @endforeach
                     </x-ui.select>
@@ -70,19 +71,19 @@
                     <tbody class="divide-y divide-[var(--ui-line)]">
                     @forelse ($employees as $employee)
                         <tr class="odd:bg-white even:bg-slate-50 hover:bg-[var(--theme-accent-soft)]">
-                            <td class="px-4 py-3"><div class="font-semibold text-slate-900">{{ $employee->name }}</div><div class="mt-1"><span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ $employee->source_type }}</span><span class="ml-1 rounded-full px-2 py-0.5 text-xs font-semibold {{ $employee->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ $employee->is_active ? 'Aktif' : 'Tidak aktif' }}</span></div></td>
+                            <td class="px-4 py-3"><div class="font-semibold text-slate-900">{{ $employee->name }}</div><div class="mt-1"><span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ $employee->source_label }}</span>@if($employee->operator_locked)<span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Dikoreksi operator</span>@endif<span class="ml-1 rounded-full px-2 py-0.5 text-xs font-semibold {{ $employee->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ $employee->is_active ? 'Aktif' : 'Tidak aktif' }}</span></div></td>
                             <td class="px-4 py-3 text-slate-600"><div>NIP: {{ $employee->nip ?: '—' }}</div><div>NUPTK: {{ $employee->nuptk ?: '—' }}</div><div>NIK: {{ $employee->nik ? '••••'.substr($employee->nik, -4) : '—' }}</div></td>
                             <td class="px-4 py-3"><div class="font-medium text-slate-800">{{ $employee->position ?: 'Belum tercatat' }}</div><div class="text-xs text-slate-500">{{ collect([$employee->staff_type, $employee->employment_status])->filter()->join(' · ') ?: '—' }}</div></td>
                             <td class="px-4 py-3 text-right"><div class="font-semibold text-slate-900">Rp {{ number_format($employee->honor_net, 0, ',', '.') }}</div><div class="text-xs text-slate-500">{{ $employee->honor_count }} rincian · bruto Rp {{ number_format($employee->honor_gross, 0, ',', '.') }}</div></td>
-                            <td class="px-4 py-3 text-right"><x-ui.button variant="secondary" :href="route('employees.show', $employee->id)" class="text-xs">Lihat detail</x-ui.button></td>
+                            <td class="px-4 py-3 text-right"><div class="flex justify-end gap-2"><x-ui.button variant="secondary" :href="route('employees.show', $employee->id)" class="text-xs">Detail</x-ui.button><x-ui.button :href="route('employees.edit', $employee->id)" class="text-xs">Ubah</x-ui.button></div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-700">Data pegawai tidak ditemukan.</p><p class="mt-1 text-sm text-slate-500">Sinkronkan ARKAS atau ubah kriteria pencarian.</p></td></tr>
+                        <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-700">Data pegawai tidak ditemukan.</p><p class="mt-1 text-sm text-slate-500">Sinkronkan ARKAS/Dapodik atau ubah kriteria pencarian.</p></td></tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="divide-y divide-[var(--ui-line)] md:hidden">@forelse($employees as $employee)<article class="p-4"><div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">{{ $employee->name }}</h3><p class="mt-1 text-xs text-slate-500">NUPTK {{ $employee->nuptk?:'—' }} · {{ $employee->position?:'Jabatan belum tercatat' }}</p></div><span class="rounded-full px-2 py-1 text-xs font-bold {{ $employee->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $employee->is_active?'Aktif':'Nonaktif' }}</span></div><div class="mt-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-500">{{ $employee->source_type }}</span><a href="{{ route('employees.show',$employee) }}" class="rounded-lg theme-bg-soft px-3 py-2 text-xs font-bold theme-text">Lihat detail</a></div></article>@empty<div class="p-10 text-center text-sm text-slate-500">Data pegawai tidak ditemukan.</div>@endforelse</div>
+            <div class="divide-y divide-[var(--ui-line)] md:hidden">@forelse($employees as $employee)<article class="p-4"><div class="flex items-start justify-between gap-3"><div><h3 class="font-bold text-slate-900">{{ $employee->name }}</h3><p class="mt-1 text-xs text-slate-500">NUPTK {{ $employee->nuptk?:'—' }} · {{ $employee->position?:'Jabatan belum tercatat' }}</p></div><span class="rounded-full px-2 py-1 text-xs font-bold {{ $employee->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $employee->is_active?'Aktif':'Nonaktif' }}</span></div><div class="mt-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-500">{{ $employee->source_label }}</span><div class="flex gap-2"><a href="{{ route('employees.show',$employee) }}" class="rounded-lg border border-[var(--ui-line)] px-3 py-2 text-xs font-bold">Detail</a><a href="{{ route('employees.edit',$employee) }}" class="rounded-lg theme-bg-soft px-3 py-2 text-xs font-bold theme-text">Ubah</a></div></div></article>@empty<div class="p-10 text-center text-sm text-slate-500">Data pegawai tidak ditemukan.</div>@endforelse</div>
 
             <x-ui.server-pagination :paginator="$employees" noun="pegawai" />
         </section>
