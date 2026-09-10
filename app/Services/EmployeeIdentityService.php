@@ -12,9 +12,9 @@ use Illuminate\Support\Str;
  * Single identity resolution for employees across ARKAS and Dapodik feeds.
  *
  * One person must occupy exactly one row per school database, keyed by
- * national identifiers (NUPTK > NIP > NIK > normalized name). The feed a row
- * was first seen in is kept as origin (source_type); per-feed sightings are
- * tracked via last_seen_* timestamps so partial operators (ARKAS-only or
+ * national identifiers (NUPTK > NIP > NIK > unique normalized name). The feed
+ * a row was first seen in is kept as origin (source_type); per-feed sightings
+ * are tracked via last_seen_* timestamps so partial operators (ARKAS-only or
  * Dapodik-only) never lose people synced solely by the other feed.
  */
 class EmployeeIdentityService
@@ -57,12 +57,25 @@ class EmployeeIdentityService
             return null;
         }
 
-        return Employee::query()->where('normalized_name', $normalized)->first();
+        // Nama hanyalah fallback terakhir. Jangan menebak bila dua orang
+        // mempunyai nama ternormalisasi yang sama; identifier kuat atau
+        // source key harus menyelesaikan identitas tersebut.
+        $matches = Employee::query()
+            ->where('normalized_name', $normalized)
+            ->orderBy('id')
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
     public function effectiveActive(?bool $arkas, ?bool $dapodik): bool
     {
-        return ($arkas ?? true) && ($dapodik ?? true);
+        if ($arkas !== null && $dapodik !== null) {
+            return $arkas || $dapodik;
+        }
+
+        return $arkas ?? $dapodik ?? true;
     }
 
     /** Fill missing normalized_name values so cross-source matching can find rows. */
@@ -223,8 +236,9 @@ class EmployeeIdentityService
             }
         }
 
+        // Nama hanya aman sebagai kunci fusi bila tidak ambigu pada tabel.
         $normalized = filled($row->normalized_name) ? $row->normalized_name : $this->normalize((string) $row->name);
-        if ($normalized !== '') {
+        if ($normalized !== '' && Employee::query()->where('normalized_name', $normalized)->limit(2)->count() === 1) {
             $keys[] = 'name:'.$normalized;
         }
 
