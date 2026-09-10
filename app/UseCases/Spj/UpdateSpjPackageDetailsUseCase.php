@@ -138,10 +138,11 @@ class UpdateSpjPackageDetailsUseCase
                     return;
                 }
 
-                $portions = collect($request->input('participants', []))
-                    ->sum(fn (array $row): int => (int) ($row['portions'] ?? 0));
-                if ((int) $value !== $portions) {
-                    $fail("Jumlah peserta harus sama dengan total porsi ({$portions}).");
+                $participantCount = collect($request->input('participants', []))
+                    ->filter(fn (array $row): bool => filled($row['name'] ?? null))
+                    ->count();
+                if ((int) $value !== $participantCount) {
+                    $fail("Jumlah peserta harus sama dengan jumlah nama peserta terdaftar ({$participantCount}).");
                 }
             }],
             'participants' => ['nullable', 'array'],
