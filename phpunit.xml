@@ -25,6 +25,7 @@
             <file>tests/Feature/ArkasImportQueueTenantTest.php</file>
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
+            <file>tests/Feature/DocumentNumberFormatSettingsTest.php</file>
             <file>tests/Feature/DocumentTemplateControllerArchitectureTest.php</file>
             <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
             <file>tests/Feature/EmployeeIdentityMergeTest.php</file>
@@ -40,6 +41,7 @@
             <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
+            <file>tests/Feature/SpjAutomaticNumberingPolicyTest.php</file>
             <file>tests/Feature/SpjCategoryLifecycleRegressionTest.php</file>
             <file>tests/Feature/SpjConsumptionParticipantUiTest.php</file>
             <file>tests/Feature/SpjDateChronologyValidationTest.php</file>
