@@ -179,7 +179,7 @@ class SpjPackageValidationService
             $this->addCheck($checks, 'service_recipient_line_totals', 'Jasa lainnya', 'Bruto/pajak/netto per penerima', $lineTotalsValid, 'Setiap penerima memiliki bruto, pajak, dan netto yang konsisten.', 'Ada penerima jasa dengan bruto, pajak, dan netto yang belum konsisten. Simpan ulang rincian penerima untuk melakukan rekonsiliasi.', $packageUrl);
         }
 
-        $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'goods_receipt', 'honor'];
+        $alreadyCovered = ['a2', 'transaction_details', 'siplah_order', 'vendor', 'honor'];
         foreach ($this->documentRequirements->forTransaction($transaction) as $requirement) {
             if (! $requirement['applicable'] || ! $requirement['required'] || in_array($requirement['key'], $alreadyCovered, true)) {
                 continue;
