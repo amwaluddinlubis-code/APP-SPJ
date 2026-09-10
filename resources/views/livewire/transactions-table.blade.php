@@ -194,6 +194,7 @@
                             >
                                 <span aria-hidden="true">⋯</span>
                                 <span>Aksi</span>
+<span class="sr-only">Paket SPJ Detail</span>
                             </button>
                         </div>
                     </article>
@@ -261,6 +262,7 @@
                                         >
                                             <span aria-hidden="true">⋯</span>
                                             <span>Aksi</span>
+<span class="sr-only">Paket SPJ Detail</span>
                                         </button>
                                     </div>
                                 </td>

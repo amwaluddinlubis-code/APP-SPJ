@@ -85,6 +85,15 @@ class SpjPackageValidationService
 
         $category = strtoupper((string) $transaction->spj_category);
 
+        // JASA_LAINNYA dan KONSUMSI selalu non-Siplah; Siplah hanya BARANG.
+        // Identitas penyedia wajib untuk kategori pembelian non-Siplah.
+        // Mengikuti fallback UI Isian Manual (vendor_name ?: recipient_name).
+        $purchaseCategories = ['BARANG', 'BELANJA_MODAL', 'KONSUMSI', 'JASA', 'JASA_LAINNYA'];
+        if (in_array($category, $purchaseCategories, true) && $policy['channel'] !== 'SIPLAH') {
+            $providerName = $transaction->vendor_name ?: $transaction->recipient_name;
+            $this->addCheck($checks, 'vendor_identity', 'Data Umum Dokumen', 'Identitas penyedia', filled($providerName), 'Identitas penyedia sudah tersedia.', 'Nama penyedia wajib diisi sebelum penomoran.', $packageUrl);
+        }
+
         if ($category === 'BARANG') {
             $hasItems = $transaction->items->isNotEmpty();
             $this->addCheck($checks, 'goods_items', 'Belanja barang', 'Barang pesanan', $hasItems, 'Pesanan memiliki rincian barang.', 'Pesanan wajib memiliki minimal satu barang.', $transactionUrl.'#rincian-transaksi');

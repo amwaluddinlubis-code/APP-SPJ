@@ -26,45 +26,6 @@ const initializePackageNavigation = () => {
     });
 };
 
-const initializeTaxTab = () => {
-    const taxReference = document.querySelector('[data-spj-tax-reference]');
-    if (!(taxReference instanceof HTMLElement) || taxReference.dataset.taxTabMoved === 'true') return;
-
-    const packageSection = taxReference.closest('section[x-data*="packageTab"]');
-    if (!(packageSection instanceof HTMLElement)) return;
-
-    const tabs = packageSection.querySelector('nav');
-    const numberingButton = tabs?.querySelector('[data-package-tab="penomoran"]');
-    const numberingPanel = packageSection.querySelector('[data-panel="penomoran"]');
-    if (!(tabs instanceof HTMLElement) || !(numberingButton instanceof HTMLElement) || !(numberingPanel instanceof HTMLElement)) return;
-
-    const taxButton = document.createElement('button');
-    taxButton.type = 'button';
-    taxButton.dataset.packageTab = 'pajak';
-    taxButton.dataset.active = 'false';
-    taxButton.className = numberingButton.className;
-    taxButton.innerHTML = '<span aria-hidden="true">🧾</span> Rincian Pajak';
-    taxButton.title = 'Lihat rincian pajak readonly dari ARKAS/BKU';
-    numberingButton.insertAdjacentElement('beforebegin', taxButton);
-
-    const taxPanel = document.createElement('div');
-    taxPanel.dataset.panel = 'pajak';
-    taxPanel.className = 'tab-panel p-4';
-    taxPanel.hidden = true;
-    taxPanel.appendChild(taxReference);
-    numberingPanel.insertAdjacentElement('beforebegin', taxPanel);
-    taxReference.dataset.taxTabMoved = 'true';
-
-    tabs.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-package-tab]');
-        if (!(button instanceof HTMLElement)) return;
-
-        const selected = button.dataset.packageTab || '';
-        taxPanel.hidden = selected !== 'pajak';
-        taxButton.dataset.active = String(selected === 'pajak');
-    });
-};
-
 const humanNumberLabel = (key) => ({
     order: 'Pesanan',
     pesanan: 'Pesanan',
@@ -161,7 +122,6 @@ const initializeAutomaticNumberStrip = () => {
 
 const initializeSpjPackageWorkspaceUi = () => {
     initializePackageNavigation();
-    initializeTaxTab();
     window.requestAnimationFrame(initializeAutomaticNumberStrip);
 };
 

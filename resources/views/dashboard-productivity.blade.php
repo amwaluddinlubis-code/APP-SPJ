@@ -13,7 +13,7 @@
             </x-slot:actions>
 
             <div class="grid gap-px bg-[var(--ui-line)] sm:grid-cols-2 xl:grid-cols-4">
-                <a href="{{ route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']) }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
+                <a href="{{ route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']) }}" aria-label="Buka pekerjaan Belum Dikerjakan" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
                     <div class="flex items-center gap-2 text-[var(--ui-fg-muted)]">
                         <x-ui-icon name="inbox" class="h-5 w-5" />
                         <p class="text-xs font-bold uppercase tracking-wide">Belum Dikerjakan</p>
@@ -21,15 +21,15 @@
                     <p class="mt-2 text-3xl font-extrabold text-[var(--ui-fg-strong)]">{{ number_format($productivity['unworked'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Belum memiliki paket SPJ</p>
                 </a>
-                <a href="{{ route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']) }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
+                <a href="{{ route('spj.index', ['tab' => 'persiapan', 'state' => 'draft']) }}" aria-label="Buka pekerjaan Perlu Dilengkapi" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
                     <div class="flex items-center gap-2 text-amber-700">
                         <x-ui-icon name="work" class="h-5 w-5" />
-                        <p class="text-xs font-bold uppercase tracking-wide">Sedang Dikerjakan</p>
+                        <p class="text-xs font-bold uppercase tracking-wide">Perlu Dilengkapi</p>
                     </div>
                     <p class="mt-2 text-3xl font-extrabold text-amber-800">{{ number_format($productivity['in_progress'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Paket draft belum siap</p>
                 </a>
-                <a href="{{ route('spj.numbering-workflow') }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
+                <a href="{{ route('spj.numbering-workflow') }}" aria-label="Buka pekerjaan Siap Dinomori" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
                     <div class="flex items-center gap-2 text-[var(--theme-content-accent)]">
                         <x-ui-icon name="number" class="h-5 w-5" />
                         <p class="text-xs font-bold uppercase tracking-wide">Siap Dinomori</p>
@@ -37,10 +37,10 @@
                     <p class="mt-2 text-3xl font-extrabold text-[var(--theme-content-accent)]">{{ number_format($productivity['ready'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Siap masuk workflow penomoran</p>
                 </a>
-                <a href="{{ route('spj.numbering-workflow') }}" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
+                <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" aria-label="Buka semua pekerjaan yang belum selesai" class="bg-[var(--ui-surface-base)] px-5 py-4 transition hover:bg-[var(--ui-surface-soft)]">
                     <div class="flex items-center gap-2 text-[var(--ui-fg-muted)]">
                         <x-ui-icon name="clock" class="h-5 w-5" />
-                        <p class="text-xs font-bold uppercase tracking-wide">Belum Bernomor</p>
+                        <p class="text-xs font-bold uppercase tracking-wide">Belum Selesai</p>
                     </div>
                     <p class="mt-2 text-3xl font-extrabold text-[var(--ui-fg-strong)]">{{ number_format($productivity['not_numbered'], 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Belum selesai sampai tahap nomor</p>
@@ -83,7 +83,7 @@
                     </div>
                     <div class="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
                         <div class="rounded-xl bg-[var(--ui-surface-base)] p-3"><p class="font-extrabold text-[var(--ui-fg-strong)]">{{ $productivity['unworked'] }}</p><p class="mt-1 text-[var(--ui-fg-muted)]">Belum Dikerjakan</p></div>
-                        <div class="rounded-xl bg-[var(--ui-surface-base)] p-3"><p class="font-extrabold text-amber-800">{{ $productivity['in_progress'] }}</p><p class="mt-1 text-[var(--ui-fg-muted)]">Sedang Dikerjakan</p></div>
+                        <div class="rounded-xl bg-[var(--ui-surface-base)] p-3"><p class="font-extrabold text-amber-800">{{ $productivity['in_progress'] }}</p><p class="mt-1 text-[var(--ui-fg-muted)]">Perlu Dilengkapi</p></div>
                         <div class="rounded-xl bg-[var(--ui-surface-base)] p-3"><p class="font-extrabold text-[var(--theme-content-accent)]">{{ $productivity['ready'] }}</p><p class="mt-1 text-[var(--ui-fg-muted)]">Siap Dinomori</p></div>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
                             <a href="{{ route('spj.checklist', $nextDraftTransaction->spjPackage->id) }}" class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--theme-content-accent)]"><x-ui-icon name="work" class="h-4 w-4" /> Lanjutkan sampai siap dinomori →</a>
                         </div>
                     @else
-                        <x-ui.empty-state title="Tidak ada pekerjaan draft" description="Tidak ada transaksi yang sedang dikerjakan tetapi belum siap dinomori." />
+                        <x-ui.empty-state title="Tidak ada paket yang perlu dilengkapi" description="Tidak ada transaksi dengan paket draft yang belum siap dinomori." />
                     @endif
                 </div>
             </article>
@@ -149,7 +149,7 @@
                         <x-ui-icon name="queue" class="h-5 w-5 text-[var(--theme-content-accent)]" />
                         <h2 class="font-bold text-[var(--ui-fg-strong)]">Antrean kerja terdekat</h2>
                     </div>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Maksimal delapan transaksi yang sedang dikerjakan, belum dikerjakan, atau membutuhkan perhatian. Paket Siap Dinomori tidak ditampilkan di antrean ini.</p>
+                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Maksimal delapan transaksi yang perlu dilengkapi, belum dikerjakan, atau membutuhkan perhatian. Paket Siap Dinomori tidak ditampilkan di antrean ini.</p>
                 </div>
                 <div class="divide-y divide-[var(--ui-line)]">
                     @forelse($workQueue as $transaction)
@@ -174,29 +174,19 @@
                             <a href="{{ $transaction->next_step_url }}" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-[var(--ui-fg)] transition hover:bg-[var(--ui-surface-soft)]"><x-ui-icon name="work" class="h-4 w-4" /> Kerjakan →</a>
                         </div>
                     @empty
-                        <div class="px-5 py-10 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada transaksi yang sedang dikerjakan atau belum dikerjakan.</div>
+                        <div class="px-5 py-10 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada transaksi yang perlu dilengkapi atau belum dikerjakan.</div>
                     @endforelse
                 </div>
             </article>
 
             <aside class="space-y-4">
                 <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="flex items-center gap-2 text-[var(--ui-fg-muted)]">
-                                <x-ui-icon name="progress" class="h-5 w-5" />
-                                <p class="text-xs font-bold uppercase tracking-wide">Progres SPJ</p>
-                            </div>
-                            <p class="mt-2 text-3xl font-extrabold text-[var(--ui-fg-strong)]">{{ $productivity['completion_percent'] }}%</p>
-                        </div>
-                        <span class="rounded-full bg-[var(--theme-accent-soft)] px-2.5 py-1 text-xs font-bold text-[var(--theme-content-accent)]">{{ $productivity['completed'] }} selesai</span>
+                    <div class="flex items-center gap-2 text-[var(--ui-fg-muted)]">
+                        <x-ui-icon name="number" class="h-5 w-5" />
+                        <p class="text-xs font-bold uppercase tracking-wide">Prioritas Penomoran</p>
                     </div>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Transaksi sudah bernomor atau final.</p>
-                    <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-[var(--ui-surface-muted)]"><div class="h-full rounded-full bg-[var(--theme-accent)]" style="width: {{ $productivity['completion_percent'] }}%"></div></div>
-                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                        <div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><p class="text-[var(--ui-fg-muted)]">Belum selesai</p><strong class="mt-1 block text-base text-[var(--ui-fg-strong)]">{{ $productivity['not_numbered'] }}</strong></div>
-                        <div class="rounded-lg bg-[var(--ui-surface-soft)] p-3"><p class="text-[var(--ui-fg-muted)]">Siap dinomori</p><strong class="mt-1 block text-base text-[var(--theme-content-accent)]">{{ $productivity['ready'] }}</strong></div>
-                    </div>
+                    <p class="mt-3 text-3xl font-extrabold text-[var(--theme-content-accent)]">{{ $productivity['ready'] }}</p>
+                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Paket berstatus Siap Dinomori dan menunggu tindakan operator.</p>
                     <x-ui.button class="mt-4 w-full" :href="route('spj.numbering-workflow')" variant="secondary"><x-ui-icon name="number" class="h-4 w-4" /> Buka Penomoran SPJ</x-ui.button>
                 </section>
 

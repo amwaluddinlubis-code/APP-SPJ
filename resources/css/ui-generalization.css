@@ -421,6 +421,12 @@
     text-transform: uppercase;
 }
 
+@media(min-width:1024px) {
+    .rkas-filter-grid {
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    }
+}
+
 /* Generic badges */
 .ui-badge {
     display: inline-flex;

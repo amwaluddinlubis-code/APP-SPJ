@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ADMIN;
     }
 
+    public function isOperatorOrAdministrator(): bool
+    {
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_OPERATOR], true);
+    }
+
     /** @return array<string, string> */
     public static function roleOptions(): array
     {

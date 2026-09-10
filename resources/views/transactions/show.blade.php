@@ -18,8 +18,8 @@
 
     <div class="flex flex-col gap-6" x-data="{ itemDescriptionsDirty: false }">
         @include('transactions.partials.detail.overview-header')
+        @include('transactions.partials.detail.overview-status')
         @include('transactions.partials.detail.source-reconciliation')
         @include('transactions.partials.detail.items')
-        @include('transactions.partials.detail.overview-status')
     </div>
 </x-layouts.tailwind-app>

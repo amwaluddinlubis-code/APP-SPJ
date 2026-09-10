@@ -20,7 +20,7 @@ class ArkasDomainAdapter
     public static function mappingRoles(): array
     {
         return [
-            'source_key' => 'Kunci', 'source_rapbs' => 'ID RAPBS', 'period' => 'Periode',
+            'source_key' => 'Kunci', 'source_rapbs' => 'ID RAPBS', 'period' => 'Periode', 'rapbs_period' => 'ID RAPBS periode',
             'code' => 'Kode', 'name' => 'Nama', 'parent' => 'Induk', 'account_code' => 'Rekening',
             'description' => 'Uraian', 'amount' => 'Jumlah', 'volume' => 'Volume', 'category' => 'Kategori',
             'proof_number' => 'No bukti', 'transaction_date' => 'Tanggal transaksi', 'year' => 'Tahun',
@@ -32,7 +32,7 @@ class ArkasDomainAdapter
     public static function presetFor(string $sourceTable): array
     {
         return match (strtolower($sourceTable)) {
-            'kas_umum' => ['target_domain' => 'bku', 'bridge_command' => 'bku', 'target_table' => 'arkas_bku_rows', 'source_key_column' => 'id_kas_umum', 'mapping' => ['id_kas_umum' => 'source_key', 'parent_id_kas_umum' => 'parent', 'kategori_bku' => 'category', 'no_bukti' => 'proof_number', 'tanggal_transaksi' => 'transaction_date', 'jumlah' => 'amount', 'id_ref_sumber_dana' => 'fund_source'], 'description' => 'Sinkronisasi lama memakai Bridge bku, bukan rows kas_umum langsung.'],
+            'kas_umum' => ['target_domain' => 'bku', 'bridge_command' => 'bku', 'target_table' => 'arkas_bku_rows', 'source_key_column' => 'id_kas_umum', 'mapping' => ['id_kas_umum' => 'source_key', 'id_rapbs_periode' => 'rapbs_period', 'parent_id_kas_umum' => 'parent', 'kategori_bku' => 'category', 'no_bukti' => 'proof_number', 'tanggal_transaksi' => 'transaction_date', 'jumlah' => 'amount', 'id_ref_sumber_dana' => 'fund_source'], 'description' => 'Kas Umum ARKAS membawa ID RAPBS periode untuk pencocokan realisasi per bulan/triwulan.'],
             'rapbs' => ['target_domain' => 'rkas', 'bridge_command' => 'rkas', 'target_table' => 'arkas_rkas_items', 'source_key_column' => 'id_rapbs', 'mapping' => ['id_rapbs' => 'source_key', 'kode_rekening' => 'account_code', 'uraian' => 'description', 'jumlah' => 'amount', 'id_ref_sumber_dana' => 'fund_source'], 'description' => 'RKAS lama mengambil data rapbs melalui Bridge command rkas dan memperkaya kode kegiatan.'],
             'rapbs_periode' => ['target_domain' => 'rkas_periods', 'bridge_command' => 'rows', 'target_table' => 'arkas_rkas_periods', 'source_key_column' => 'id_rapbs', 'mapping' => ['id_rapbs' => 'source_rapbs', 'id_periode' => 'period', 'volume' => 'volume', 'jumlah' => 'amount'], 'description' => 'Detail periode dihubungkan ke RKAS berdasarkan ID_RAPBS dan ID_PERIODE.'],
             'ref_kode' => ['target_domain' => 'activity_reference', 'bridge_command' => 'rows', 'target_table' => 'activity_references', 'source_key_column' => 'id_kode', 'mapping' => ['id_kode' => 'code', 'uraian_kode' => 'name', 'parent_kode' => 'parent'], 'description' => 'Kode kegiatan dan nama hierarki dipakai sebagai referensi kegiatan.'],
@@ -50,7 +50,7 @@ class ArkasDomainAdapter
     {
         $mapping = $preset['mapping'] ?? [];
         $aliases = [
-            'source_key' => ['id', 'kode', 'key'], 'source_rapbs' => ['id_rapbs'], 'period' => ['periode', 'bulan'],
+            'source_key' => ['id', 'kode', 'key'], 'source_rapbs' => ['id_rapbs'], 'period' => ['periode', 'bulan'], 'rapbs_period' => ['id_rapbs_periode'],
             'code' => ['kode'], 'name' => ['nama', 'name'], 'parent' => ['parent', 'induk', 'id_kas_umum', 'id_kas_nota'],
             'account_code' => ['kode_rekening', 'rekening'], 'description' => ['uraian', 'deskripsi'],
             'amount' => ['jumlah', 'nilai', 'nominal', 'saldo'], 'volume' => ['volume', 'qty', 'kuantitas'],
@@ -142,9 +142,10 @@ class ArkasDomainAdapter
                 continue;
             }
             $name = $this->get($record, $profile, 'name', ['NAMA_PERIODE', 'PERIODE', 'nama_periode', 'periode']) ?: (string) ($names[$period] ?? '');
+            $rapbsPeriod = $this->get($record, $profile, 'rapbs_period', ['ID_RAPBS_PERIODE', 'id_rapbs_periode']);
             [$month, $quarter, $semester] = $this->coordinates($period, $name);
             $db->table('arkas_rkas_periods')->updateOrInsert(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_rapbs_id' => $rapbs, 'source_period_id' => $period], [
-                'period_name' => $name ?: null, 'month_number' => $month, 'quarter_number' => $quarter, 'semester_number' => $semester,
+                'source_rapbs_period_id' => $rapbsPeriod, 'period_name' => $name ?: null, 'month_number' => $month, 'quarter_number' => $quarter, 'semester_number' => $semester,
                 'volume' => $this->number($record, $profile, 'volume', ['VOLUME', 'volume']), 'amount' => $this->number($record, $profile, 'amount', ['JUMLAH', 'jumlah']),
                 'payload' => $this->json($record), 'updated_at' => now(), 'created_at' => now(),
             ]);
@@ -166,6 +167,7 @@ class ArkasDomainAdapter
                 continue;
             }
             $db->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $key], [
+                'source_rapbs_period_id' => $this->get($record, $profile, 'rapbs_period', ['ID_RAPBS_PERIODE', 'id_rapbs_periode']),
                 'fund_source_id' => (int) ($this->get($record, $profile, 'fund_source', ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?: $year->fund_source_id),
                 'parent_kas_id' => $this->get($record, $profile, 'parent', ['PARENT_ID_KAS_UMUM', 'parent_id_kas_umum']), 'category' => $this->get($record, $profile, 'category', ['KATEGORI_BKU', 'kategori_bku']),
                 'no_bukti' => $this->get($record, $profile, 'proof_number', ['NO_BUKTI', 'no_bukti']), 'transaction_date' => $this->date($record, $profile, 'transaction_date', ['TANGGAL_TRANSAKSI', 'tanggal_transaksi']),

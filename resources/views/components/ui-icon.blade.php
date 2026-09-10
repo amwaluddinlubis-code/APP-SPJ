@@ -28,5 +28,7 @@
     'queue' => 'M5 6h14M5 12h14M5 18h9',
     'system' => 'M12 3v3m0 12v3m9-9h-3M6 12H3m15.4-6.4-2.1 2.1M7.7 16.3l-2.1 2.1m12.8 0-2.1-2.1M7.7 7.7 5.6 5.6M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
     'balance' => 'M3 7h18v12H3V7Zm0 0 3-4h12l3 4M16 12h5v4h-5a2 2 0 1 1 0-4Z',
+    'chevron-left' => 'm15 18-6-6 6-6',
+    'chevron-right' => 'm9 18 6-6-6-6',
 ])
 <svg {{ $attributes->merge(['class' => 'h-5 w-5 shrink-0', 'fill' => 'none', 'viewBox' => '0 0 24 24', 'stroke' => 'currentColor', 'stroke-width' => '1.8']) }} aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $paths[$name] ?? $paths['document'] }}" /></svg>

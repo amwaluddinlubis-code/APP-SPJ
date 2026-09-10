@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArkasImporterController;
 use App\Http\Controllers\ArkasSourceController;
 use App\Http\Controllers\ArkasSyncController;
+use App\Http\Controllers\AsistenController;
 use App\Http\Controllers\AuditReportController;
 use App\Http\Controllers\DapodikIntegrationController;
 use App\Http\Controllers\DatabaseManagerController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\MaintenanceTransactionLinkController;
 use App\Http\Controllers\ProductivityDashboardController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\RkasBudgetController;
+use App\Http\Controllers\RkasPlanningSuggestionController;
 use App\Http\Controllers\SchoolBackupController;
 use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
@@ -43,6 +45,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/pengaturan/impersonate/selesai', [ImpersonationController::class, 'stop'])->name('impersonation.stop');
     Route::get('/pilih-sekolah', [SchoolSelectionController::class, 'create'])->name('schools.select');
     Route::post('/pilih-sekolah', [SchoolSelectionController::class, 'store'])->name('schools.activate');
+    Route::get('/asisten', [AsistenController::class, 'index'])->name('asisten.index');
+    Route::post('/asisten/tanya', [AsistenController::class, 'ask'])->middleware('throttle:5,1')->name('asisten.ask');
+    Route::get('/asisten/status/{token}', [AsistenController::class, 'status'])->name('asisten.status');
     Route::middleware('active-school')->group(function () {
         Route::get('/pilih-tahun', [YearSelectionController::class, 'create'])->name('years.select');
         Route::post('/pilih-tahun', [YearSelectionController::class, 'store'])->name('years.activate');
@@ -66,6 +71,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/arkas/importer/{profileId}/preview', [ArkasImporterController::class, 'preview'])->name('arkas.importer.preview');
         Route::post('/pengaturan/arkas/importer/{profileId}/sync', [ArkasImporterController::class, 'sync'])->name('arkas.importer.sync');
         Route::get('/pengaturan/database-aktif', [DatabaseManagerController::class, 'index'])->name('database-manager.index');
+        Route::get('/pengaturan/database-aktif/tabel/{table}', [DatabaseManagerController::class, 'tableSummary'])->name('database-manager.table-summary');
         Route::get('/pengaturan/database-reset', [DatabaseManagerController::class, 'resetForm'])->name('database-manager.reset-form');
         Route::post('/pengaturan/database-aktif/{schoolId}/activate', [DatabaseManagerController::class, 'activate'])->name('database-manager.activate');
         Route::post('/pengaturan/database-aktif/{schoolId}/migrate', [DatabaseManagerController::class, 'migrate'])->name('database-manager.migrate');
@@ -157,6 +163,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
+        Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
+        Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');
         Route::get('/data-sinkron/{type}', [SyncedDataController::class, 'index'])->name('synced-data.show');

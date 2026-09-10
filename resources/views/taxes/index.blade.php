@@ -50,7 +50,7 @@
                 <input type="hidden" name="semester" value="{{ $semester }}">
                 <input type="hidden" name="perPage" value="{{ request('perPage', 15) }}">
                 <label for="tax-month" class="text-xs font-semibold" style="color: var(--ui-fg-muted)">Bulan</label>
-                <x-ui.select id="tax-month" name="month" onchange="this.form.submit()" class="!w-auto">
+                <x-ui.select id="tax-month" name="month" data-auto-submit="true" class="!w-auto">
                     <option value="">Semua bulan</option>
                     @foreach([1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'] as $number => $name)
                         <option value="{{ $number }}" @selected($month === $number)>{{ $name }}</option>

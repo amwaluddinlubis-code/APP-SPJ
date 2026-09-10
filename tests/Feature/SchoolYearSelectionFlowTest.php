@@ -56,7 +56,7 @@ class SchoolYearSelectionFlowTest extends TestCase
         $user = User::factory()->create(['school_id' => $school->id, 'role' => 'ADMIN']);
 
         app()->instance(SchoolDatabaseManager::class, Mockery::mock(SchoolDatabaseManager::class, function ($mock) use ($school): void {
-            $mock->shouldReceive('activate')->once()->with(Mockery::on(fn ($argument) => $argument->is($school)));
+            $mock->shouldReceive('ensureMigrated')->once()->with(Mockery::on(fn ($argument) => $argument->is($school)));
             $mock->shouldReceive('migrate')->never();
         }));
 

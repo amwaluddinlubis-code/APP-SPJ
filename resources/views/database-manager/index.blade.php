@@ -82,13 +82,13 @@
                 <div id="database-school-empty" class="hidden db-empty-state">Tidak ada sekolah yang cocok dengan pencarian.</div>
             </div>
 
-            <div data-panel="tables" class="hidden p-0">
+            <div data-panel="tables" class="hidden db-panel space-y-4">
                 @if(!$active['school'])<div class="db-empty-state"><strong>Belum ada database aktif.</strong><span>Aktifkan sekolah sebelum membuka Explorer Tabel.</span></div>
                 @elseif(!empty($tableError))<div class="m-4"><x-ui.alert type="danger" title="Explorer tabel tidak dapat dibuka">{{ $tableError }}</x-ui.alert></div>
                 @else
-                    <div class="db-table-explorer lg:flex lg:min-h-[620px]">
-                        <aside class="db-table-sidebar lg:w-[330px] lg:shrink-0"><div class="db-table-sidebar-head"><div class="flex items-center justify-between gap-2"><div><p class="db-eyebrow">Explorer</p><h3 class="font-bold text-[var(--ui-fg-strong)]">Daftar tabel</h3></div><span class="db-tab-count">{{ count($tables) }}</span></div><input id="table-search" type="search" placeholder="Cari tabel..." class="ui-input mt-3 w-full"><p class="mt-2 truncate text-xs text-[var(--ui-fg-muted)]">{{ $active['school']->name }} · {{ basename($active['database']) }}</p></div><div class="db-table-sidebar-list"><table class="w-full text-sm"><thead><tr><th data-sort="name">Nama <span class="sort-icon">↕</span></th><th data-sort="rows" class="text-right">Rows <span class="sort-icon">↕</span></th><th></th></tr></thead><tbody id="table-list-body">@foreach($tables as $t)<tr data-name="{{ strtolower($t['name']) }}" data-rows="{{ $t['count'] ?? 0 }}" class="{{ $table === $t['name'] ? 'is-active' : '' }}"><td><p class="truncate font-mono font-semibold">{{ $t['name'] }}</p><p class="truncate text-[11px] text-[var(--ui-fg-muted)]">{{ str($t['sql'])->limit(28) }}</p></td><td class="text-right font-mono text-xs">{{ $t['count'] ?? '—' }}</td><td class="text-right"><a href="{{ route('database-manager.index', ['table'=>$t['name']]) }}#tables" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">Buka</a></td></tr>@endforeach</tbody></table></div><div class="db-table-pagination"><span id="table-pagination-info"></span><div class="flex gap-1"><button id="table-prev" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">‹</button><button id="table-next" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">›</button></div></div></aside>
-                        <div class="min-w-0 flex-1">@if(!$table)<div class="db-empty-state h-full min-h-[420px]"><span class="db-icon-tile">SQL</span><strong>Pilih tabel untuk diperiksa</strong><span>Schema dan data ditampilkan read-only tanpa mengubah database.</span></div>@else<div class="db-table-detail-head"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="font-mono text-lg font-bold">{{ $table }}</h3><span class="db-health-pill db-health-ok">{{ $tableData?->total() ?? (collect($tables)->firstWhere('name',$table)['count'] ?? '—') }} rows</span>@if($schema)<span class="db-health-pill">{{ count($schema) }} kolom</span>@endif</div><p class="mt-1 truncate font-mono text-xs text-[var(--ui-fg-muted)]">{{ collect($tables)->firstWhere('name',$table)['sql'] ?? '' }}</p></div><a href="{{ route('database-manager.index') }}#tables" class="ui-btn ui-btn-secondary !min-h-0 !py-1.5 !text-xs">Tutup</a></div><div class="db-inner-tabs"><button type="button" data-tm-tab="schema" class="tm-tab">Schema</button><button type="button" data-tm-tab="data" class="tm-tab">Data</button></div><div data-tm-panel="schema">@if($schema)<div class="overflow-x-auto"><table class="db-data-table min-w-[700px] w-full"><thead><tr><th>#</th><th>Nama kolom</th><th>Type</th><th>NN</th><th>PK</th><th>Default</th></tr></thead><tbody>@foreach($schema as $col)<tr><td class="font-mono text-xs">{{ $col->cid }}</td><td class="font-mono font-semibold">{{ $col->name }}</td><td><span class="db-code-chip">{{ $col->type }}</span></td><td>{{ $col->notnull ? 'Ya':'—' }}</td><td>{{ $col->pk ? 'Ya':'—' }}</td><td class="font-mono text-xs">{{ $col->dflt_value ?? '—' }}</td></tr>@endforeach</tbody></table></div>@endif</div><div data-tm-panel="data" class="hidden">@if($tableData && $tableData->count())<div class="max-h-[460px] overflow-auto"><table class="db-data-table min-w-[760px] w-full"><thead class="sticky top-0"><tr>@foreach(array_keys((array)$tableData->first()) as $heading)<th>{{ $heading }}</th>@endforeach</tr></thead><tbody>@foreach($tableData as $row)<tr>@foreach((array)$row as $value)<td class="max-w-[260px] truncate font-mono text-xs" title="{{ is_string($value)?$value:json_encode($value) }}">@if(is_null($value))<em>NULL</em>@elseif($value==='')—@else{{ str(is_string($value)?$value:json_encode($value))->limit(90) }}@endif</td>@endforeach</tr>@endforeach</tbody></table></div><div class="db-data-footer"><x-page-table-per-page :total="$tableData->total()" /><span>{{ $tableData->firstItem() }}–{{ $tableData->lastItem() }} dari {{ $tableData->total() }}</span><div>{{ $tableData->appends(['table'=>$table,'perPage'=>request('perPage',15)])->links('pagination::simple-tailwind') }}</div></div>@elseif($tableData)<div class="db-empty-state">Tabel ini belum memiliki data.</div>@endif</div>@endif</div>
+                    <div class="db-table-single" data-guide-open="{{ $table }}">
+                        <div class="mb-3 flex flex-wrap items-end justify-between gap-3"><div><p class="db-eyebrow">Explorer · {{ count($tables) }} tabel</p><h3 class="text-base font-bold text-[var(--ui-fg-strong)]">Daftar tabel database</h3><p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--ui-fg-muted)]">{{ $active['school']->name }} · Klik <strong>Buka</strong> pada baris untuk melihat struktur kolom dan contoh isi langsung di tempat. Semua baca-saja, tanpa mengubah data.</p></div><input id="guide-search" type="search" placeholder="Cari nama, keterangan, atau kelompok…" class="ui-input w-full sm:max-w-xs"></div><div class="overflow-hidden rounded-xl border border-[var(--ui-line)]"><div class="overflow-x-auto"><table class="db-data-table w-full min-w-[860px]"><thead><tr><th data-guide-sort="name">Tabel <span class="sort-icon">↕</span></th><th>Kelompok</th><th data-guide-sort="rows" class="text-right">Baris <span class="sort-icon">↕</span></th><th class="text-right">Kolom</th><th><span class="sr-only">Aksi</span></th></tr></thead><tbody id="guide-table-body">@foreach($tables as $t)<tr data-guide-name="{{ strtolower($t['name'].' '.($t['label'] ?? '').' '.($t['group'] ?? '')) }}" data-guide-rows="{{ $t['count'] ?? 0 }}" data-guide-table="{{ $t['name'] }}"><td><p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $t['label'] ?? $t['name'] }}</p><p class="truncate font-mono text-[11px] text-[var(--ui-fg-muted)]">{{ $t['name'] }}</p><p class="mt-0.5 line-clamp-2 max-w-md text-[11px] text-[var(--ui-fg-muted)]">{{ $t['blurb'] ?? '' }}</p></td><td><span class="db-health-pill">{{ $t['group'] ?? 'Sistem' }}</span></td><td class="text-right font-mono text-xs">{{ $t['count'] ?? '—' }}</td><td class="text-right font-mono text-xs">{{ $t['columns'] ?? '—' }}</td><td class="text-right"><button type="button" data-guide-toggle="{{ $t['name'] }}" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">Buka</button></td></tr><tr data-guide-detail="{{ $t['name'] }}" class="hidden"><td colspan="5"><div data-guide-detail-body="{{ $t['name'] }}" class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 text-sm text-[var(--ui-fg-muted)]">Memuat…</div></td></tr>@endforeach</tbody></table></div><div class="db-table-pagination"><span id="guide-pagination-info"></span><div class="flex gap-1"><button id="guide-prev" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">‹</button><button id="guide-next" type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">›</button></div></div></div><div id="guide-empty" class="hidden db-empty-state">Tidak ada tabel yang cocok dengan pencarian.</div>
+                        {{-- Panel detail dua-kolom dihapus: struktur + contoh isi kini expand langsung pada baris master di atas. --}}
                     </div>
                 @endif
             </div>
@@ -111,6 +111,174 @@
             const search=document.getElementById('table-search'); const tbody=document.getElementById('table-list-body'); const prev=document.getElementById('table-prev'); const next=document.getElementById('table-next'); const info=document.getElementById('table-pagination-info');
             if(tbody){ const all=[...tbody.querySelectorAll('tr')]; let filtered=[...all],page=1,sortKey='name',sortDir='asc'; const perPage=15; const sort=()=>filtered.sort((a,b)=>{let av=sortKey==='rows'?parseInt(a.dataset.rows||'0',10):(a.dataset.name||''),bv=sortKey==='rows'?parseInt(b.dataset.rows||'0',10):(b.dataset.name||''); if(sortKey==='name') return sortDir==='asc'?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av)); return sortDir==='asc'?av-bv:bv-av;}); const render=()=>{all.forEach(r=>r.style.display='none'); const total=filtered.length,pages=Math.max(1,Math.ceil(total/perPage)); page=Math.min(Math.max(page,1),pages); const start=(page-1)*perPage; filtered.slice(start,start+perPage).forEach(r=>r.style.display=''); if(info) info.textContent=total?`${start+1}–${Math.min(start+perPage,total)} dari ${total}`:'Tidak ada tabel'; if(prev) prev.disabled=page<=1; if(next) next.disabled=page>=pages;}; const apply=()=>{const q=(search?.value||'').toLowerCase().trim(); filtered=all.filter(r=>!q||(r.dataset.name||'').includes(q)); page=1; sort(); render();}; search?.addEventListener('input',apply); root.querySelectorAll('th[data-sort]').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.sort;if(sortKey===key)sortDir=sortDir==='asc'?'desc':'asc';else{sortKey=key;sortDir='asc';}root.querySelectorAll('th[data-sort] .sort-icon').forEach(i=>i.textContent='↕');th.querySelector('.sort-icon').textContent=sortDir==='asc'?'↑':'↓';sort();render();})); prev?.addEventListener('click',()=>{page--;render();}); next?.addEventListener('click',()=>{page++;render();}); apply(); }
             const tmButtons=root.querySelectorAll('.tm-tab'),tmPanels=root.querySelectorAll('[data-tm-panel]'); const setInner=name=>{tmButtons.forEach(b=>b.dataset.active=(b.dataset.tmTab===name).toString());tmPanels.forEach(p=>p.classList.toggle('hidden',p.dataset.tmPanel!==name));localStorage.setItem('tm-inner-tab',name);}; tmButtons.forEach(b=>b.addEventListener('click',()=>setInner(b.dataset.tmTab))); if(tmButtons.length){let saved=localStorage.getItem('tm-inner-tab')||'schema';if(!root.querySelector('[data-tm-panel="data"] table'))saved='schema';setInner(['schema','data'].includes(saved)?saved:'schema');}
+        })();
+    </script>
+    <script>
+        (() => {
+            const panel = document.querySelector('[data-panel="tables"]'); if (!panel) return;
+            const tbody = document.getElementById('guide-table-body'); if (!tbody) return;
+            const search = document.getElementById('guide-search');
+            const prev = document.getElementById('guide-prev');
+            const next = document.getElementById('guide-next');
+            const info = document.getElementById('guide-pagination-info');
+            const empty = document.getElementById('guide-empty');
+            const summaryUrl = @js(route('database-manager.table-summary', ['table' => '__TABLE__']));
+            const masters = [...tbody.querySelectorAll('tr[data-guide-table]')];
+            const cache = new Map();
+            let filtered = [...masters], page = 1, sortKey = 'name', sortDir = 'asc', openTable = null;
+            const perPage = 15;
+
+            const el = (tag, text, cls) => {
+                const node = document.createElement(tag);
+                if (cls) node.className = cls;
+                if (text !== undefined && text !== null) node.textContent = text;
+                return node;
+            };
+            const short = (value) => {
+                const text = value === null || value === undefined ? 'NULL' : String(value);
+                return text.length > 80 ? text.slice(0, 80) + '…' : text;
+            };
+
+            const detailRow = (name) => tbody.querySelector(`tr[data-guide-detail="${CSS.escape(name)}"]`);
+            const toggleBtn = (name) => tbody.querySelector(`[data-guide-toggle="${CSS.escape(name)}"]`);
+
+            const paintButtons = () => {
+                masters.forEach((row) => {
+                    const btn = row.querySelector('[data-guide-toggle]');
+                    if (btn) btn.textContent = openTable === row.dataset.guideTable ? 'Tutup' : 'Buka';
+                });
+            };
+
+            const renderDetail = (name, body, data) => {
+                body.innerHTML = '';
+                body.appendChild(el('p', data.meta.blurb || '', 'text-xs leading-5 mb-3'));
+                const sub = (title) => body.appendChild(el('p', title, 'text-[11px] font-bold uppercase tracking-wide mb-2'));
+                sub(`Struktur kolom (${data.columns.length})`);
+                const schemaTable = el('table', null, 'db-data-table w-full mb-4');
+                const thead = el('thead'); const headRow = el('tr');
+                ['Nama kolom', 'Type', 'Keterangan'].forEach((h) => headRow.appendChild(el('th', h)));
+                thead.appendChild(headRow); schemaTable.appendChild(thead);
+                const schemaBody = el('tbody');
+                data.columns.forEach((col) => {
+                    const tr = el('tr');
+                    tr.appendChild(el('td', col.name, 'font-mono font-semibold text-xs'));
+                    tr.appendChild(el('td', col.type, 'font-mono text-xs'));
+                    const flags = [col.pk ? 'Kunci utama' : null, col.required ? 'Wajib diisi' : null].filter(Boolean).join(' · ') || '—';
+                    tr.appendChild(el('td', flags, 'text-xs'));
+                    schemaBody.appendChild(tr);
+                });
+                schemaTable.appendChild(schemaBody);
+                const schemaWrap = el('div', null, 'overflow-x-auto mb-4'); schemaWrap.appendChild(schemaTable);
+                body.appendChild(schemaWrap);
+                sub(`Contoh isi (10 pertama dari ${data.total} baris)`);
+                if (!data.rows.length) {
+                    body.appendChild(el('p', 'Tabel ini belum memiliki data.', 'text-xs'));
+                    return;
+                }
+                const dataWrap = el('div', null, 'overflow-x-auto max-h-[320px] overflow-auto');
+                const dataTable = el('table', null, 'db-data-table w-full');
+                const dataHead = el('thead'); const dataHeadRow = el('tr');
+                Object.keys(data.rows[0]).forEach((key) => dataHeadRow.appendChild(el('th', key)));
+                dataHead.appendChild(dataHeadRow); dataTable.appendChild(dataHead);
+                const dataBody = el('tbody');
+                data.rows.forEach((row) => {
+                    const tr = el('tr');
+                    Object.values(row).forEach((value) => {
+                        const td = el('td', short(value), 'max-w-[220px] truncate font-mono text-xs');
+                        td.title = value === null || value === undefined ? '' : String(value);
+                        tr.appendChild(td);
+                    });
+                    dataBody.appendChild(tr);
+                });
+                dataTable.appendChild(dataBody); dataWrap.appendChild(dataTable);
+                body.appendChild(dataWrap);
+            };
+
+            const openDetail = (name) => {
+                const row = detailRow(name);
+                if (!row) return;
+                const body = row.querySelector('[data-guide-detail-body]');
+                openTable = name;
+                paintButtons();
+                row.classList.remove('hidden');
+                if (!body || cache.has(name)) return;
+                body.textContent = 'Memuat struktur dan contoh isi…';
+                fetch(summaryUrl.replace('__TABLE__', encodeURIComponent(name)), { headers: { Accept: 'application/json' } })
+                    .then((response) => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
+                    .then((data) => { cache.set(name, true); renderDetail(name, body, data); })
+                    .catch(() => { body.textContent = 'Gagal memuat detail tabel. Coba lagi.'; });
+            };
+
+            const closeDetail = () => {
+                openTable = null;
+                paintButtons();
+                tbody.querySelectorAll('tr[data-guide-detail]').forEach((row) => row.classList.add('hidden'));
+            };
+
+            const sort = () => filtered.sort((a, b) => {
+                const av = sortKey === 'rows' ? parseInt(a.dataset.guideRows || '0', 10) : (a.dataset.guideName || '');
+                const bv = sortKey === 'rows' ? parseInt(b.dataset.guideRows || '0', 10) : (b.dataset.guideName || '');
+                if (sortKey === 'name') return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+                return sortDir === 'asc' ? av - bv : bv - av;
+            });
+
+            const render = () => {
+                masters.forEach((row) => { row.style.display = 'none'; });
+                tbody.querySelectorAll('tr[data-guide-detail]').forEach((row) => row.classList.add('hidden'));
+                const total = filtered.length, pages = Math.max(1, Math.ceil(total / perPage));
+                page = Math.min(Math.max(page, 1), pages);
+                const start = (page - 1) * perPage;
+                filtered.slice(start, start + perPage).forEach((row) => { row.style.display = ''; });
+                const openRow = openTable && filtered.slice(start, start + perPage).find((row) => row.dataset.guideTable === openTable);
+                if (openRow) {
+                    const detail = detailRow(openTable);
+                    if (detail) {
+                        detail.style.display = '';
+                        detail.classList.remove('hidden');
+                        openRow.after(detail);
+                    }
+                } else if (openTable) {
+                    closeDetail();
+                }
+                if (info) info.textContent = total ? `${start + 1}–${Math.min(start + perPage, total)} dari ${total}` : 'Tidak ada tabel';
+                if (prev) prev.disabled = page <= 1;
+                if (next) next.disabled = page >= pages;
+                if (empty) empty.classList.toggle('hidden', total > 0);
+                paintButtons();
+            };
+
+            const apply = () => {
+                const q = (search?.value || '').toLowerCase().trim();
+                filtered = masters.filter((row) => !q || (row.dataset.guideName || '').includes(q));
+                page = 1;
+                sort();
+                render();
+            };
+
+            tbody.addEventListener('click', (event) => {
+                const btn = event.target.closest('[data-guide-toggle]');
+                if (!btn) return;
+                const name = btn.dataset.guideToggle;
+                if (openTable === name) closeDetail();
+                else openDetail(name);
+            });
+            search?.addEventListener('input', apply);
+            panel.querySelectorAll('th[data-guide-sort]').forEach((th) => th.addEventListener('click', () => {
+                const key = th.dataset.guideSort;
+                if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                else { sortKey = key; sortDir = 'asc'; }
+                panel.querySelectorAll('th[data-guide-sort] .sort-icon').forEach((icon) => { icon.textContent = '↕'; });
+                const icon = th.querySelector('.sort-icon');
+                if (icon) icon.textContent = sortDir === 'asc' ? '↑' : '↓';
+                sort();
+                render();
+            }));
+            prev?.addEventListener('click', () => { page--; render(); });
+            next?.addEventListener('click', () => { page++; render(); });
+
+            apply();
+            const deepLink = new URLSearchParams(location.search).get('table');
+            if (deepLink && masters.some((row) => row.dataset.guideTable === deepLink)) openDetail(deepLink);
         })();
     </script>
 </x-layouts.tailwind-app>

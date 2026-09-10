@@ -23,7 +23,7 @@
                     @csrf
 
                     <x-ui.field label="Sekolah" for="arkas-school" hint="Pilih sekolah yang sumber ARKAS-nya ingin dikonfigurasi." required>
-                        <x-ui.select id="arkas-school" name="school_id" onchange="if(this.value) window.location='{{ route('arkas.settings') }}?school_id='+this.value" required>
+                        <x-ui.select id="arkas-school" name="school_id" data-navigate-base="{{ route('arkas.settings') }}" data-navigate-param="school_id" required>
                             <option value="">Pilih sekolah</option>
                             @foreach($schools as $school)
                                 <option value="{{ $school->id }}" @selected((int) $selectedSchoolId === $school->id)>{{ $school->name }} — NPSN {{ $school->npsn }}</option>

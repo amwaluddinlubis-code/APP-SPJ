@@ -23,7 +23,7 @@
         open: false,
         collapsed: true,
         groups: {
-            finance: {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
+            finance: {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.importer*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
@@ -43,20 +43,23 @@
             if (this.collapsed && !this.open) this.setSidebarCollapsed(false);
             this.groups[group] = !this.groups[group];
         }
-    }" :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17rem_1fr]'" class="min-h-screen lg:grid">
+    }" @keydown.escape.window="if (open) open = false" :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17rem_1fr]'" class="min-h-screen lg:grid">
     <div x-show="open" @click="open=false" x-transition.opacity class="app-sidebar-overlay fixed inset-0 z-30 backdrop-blur-sm lg:hidden"></div>
-    <aside :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed' : '']" class="app-sidebar fixed lg:static inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:w-auto lg:translate-x-0">
+    <aside id="app-sidebar" :aria-hidden="(!open).toString()" :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed' : '']" class="app-sidebar fixed lg:static inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:w-auto lg:translate-x-0">
         <div class="mb-8 flex items-center justify-between gap-2">
             <a href="{{ route('dashboard') }}" class="app-sidebar-brand flex min-w-0 items-center gap-3 text-lg font-bold"><span class="app-sidebar-brand-mark grid h-10 w-10 shrink-0 place-items-center">SPJ</span><span x-show="!collapsed || open" x-transition.opacity class="truncate">SPJ BOSP Web</span></a>
+            <button type="button" @click="open=false" class="app-sidebar-close inline-flex p-2 lg:hidden" aria-label="Tutup navigasi">×</button>
             <button type="button" @click="toggleSidebar()" :aria-expanded="(!collapsed).toString()" class="app-sidebar-toggle hidden p-2 lg:inline-flex" :aria-label="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'" :title="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"><span x-text="collapsed ? '»' : '«'" class="text-xl leading-none"></span></button>
         </div>
         <nav class="space-y-1 text-base" aria-label="Navigasi utama">
             <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
+            <a class="app-nav {{ request()->routeIs('asisten.*') ? 'app-nav-active' : '' }}" href="{{ route('asisten.index') }}" title="Asisten Operator"><x-ui-icon name="info" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Asisten</span></a>
 
             <div class="pt-3">
-                <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}" title="Keuangan"><x-ui-icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.finance ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}" title="Keuangan"><x-ui-icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.finance ? 'rotate-180' : ''">⌄</span></button>
                 <div id="nav-finance" x-show="(!collapsed || open) && groups.finance" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
                     <a class="app-nav {{ request()->routeIs('rkas-budget.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-budget.index') }}"><x-ui-icon name="budget" /><span class="nav-label">Penganggaran RKAS</span></a>
+                    <a class="app-nav {{ request()->routeIs('rkas-planning.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-planning.index') }}"><x-ui-icon name="report" /><span class="nav-label">Saran Perencanaan</span></a>
                     <a class="app-nav {{ request()->routeIs('transactions.*') ? 'app-nav-active' : '' }}" href="{{ route('transactions.index') }}"><x-ui-icon name="transaction" /><span class="nav-label">Transaksi</span></a>
                     <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}" href="{{ route('employees.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Pegawai</span></a>
                     <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}" href="{{ route('students.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Siswa</span></a>
@@ -73,7 +76,7 @@
                     <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui-icon name="report" /><span class="nav-label">Laporan SPJ</span></a>
                     <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}" href="{{ route('audit-reports.index') }}"><x-ui-icon name="audit" /><span class="nav-label">Laporan Audit</span></a>
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('document-templates.*') ? 'app-nav-active' : '' }}" href="{{ route('document-templates.index') }}"><x-ui-icon name="document" /><span class="nav-label">Template Dokumen</span></a>@endif
-                    @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))<a class="app-nav {{ request()->routeIs('document-number-formats.*') ? 'app-nav-active' : '' }}" href="{{ route('document-number-formats.index') }}"><span class="app-nav-icon">№</span><span class="nav-label">Format Penomoran</span></a>@endif
+                    @if(auth()->user()->isOperatorOrAdministrator())<a class="app-nav {{ request()->routeIs('document-number-formats.*') ? 'app-nav-active' : '' }}" href="{{ route('document-number-formats.index') }}"><span class="app-nav-icon">№</span><span class="nav-label">Format Penomoran</span></a>@endif
                 </div>
             </div>
 
@@ -82,7 +85,7 @@
                 <div id="nav-data" x-show="(!collapsed || open) && groups.data" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
                     <a class="app-nav {{ request()->routeIs('synced-data.*') ? 'app-nav-active' : '' }}" href="{{ route('synced-data.index') }}"><x-ui-icon name="database" /><span class="nav-label">Data Hasil Sinkron</span></a>
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}" href="{{ route('dapodik.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Integrasi Dapodik</span></a>@endif
-                    <form method="post" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="app-nav w-full text-left"><x-ui-icon name="sync" /><span class="nav-label">Sinkron Semua ARKAS</span></button></form>
+                    @if(auth()->user()->isOperatorOrAdministrator())<form method="post" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="app-nav w-full text-left"><x-ui-icon name="sync" /><span class="nav-label">Sinkron Semua ARKAS</span></button></form>@endif
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Integrasi ARKAS</span></a>@endif
                     @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.importer') }}"><x-ui-icon name="database" /><span class="nav-label">Importer ARKAS</span></a>@endif
                 </div>
@@ -92,6 +95,7 @@
                 <button type="button" @click="toggleGroup('administration')" :aria-expanded="groups.administration.toString()" aria-controls="nav-administration" class="app-nav w-full text-left {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'app-nav-section-active' : '' }}" title="Administrasi"><x-ui-icon name="settings" /><span x-show="!collapsed || open" class="nav-label flex-1">Administrasi</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.administration ? 'rotate-180' : ''">⌄</span></button>
                 <div id="nav-administration" x-show="(!collapsed || open) && groups.administration" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
                     <a class="app-nav {{ request()->routeIs('years.*') ? 'app-nav-active' : '' }}" href="{{ route('years.select') }}"><x-ui-icon name="calendar" /><span class="nav-label">Tahun Anggaran</span></a>
+                    <a class="app-nav {{ request()->routeIs('schools.select') ? 'app-nav-active' : '' }}" href="{{ route('schools.select') }}"><x-ui-icon name="home" /><span class="nav-label">Ganti Sekolah</span></a>
                     @if(auth()->user()->isAdministrator())
                         <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*') ? 'app-nav-active' : '' }}" href="{{ route('schools.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Profil Sekolah</span></a>
                         <a class="app-nav {{ request()->routeIs('users.*') ? 'app-nav-active' : '' }}" href="{{ route('users.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Manajemen User</span></a>
@@ -107,14 +111,14 @@
     </aside>
     <main>
         <header class="app-topbar sticky top-0 z-30 flex min-h-18 flex-wrap items-center justify-between gap-3 px-5 py-4">
-            <button @click="open=!open" class="app-topbar-menu p-2.5 lg:hidden" aria-label="Toggle menu">☰</button>
+            <button @click="open=!open" :aria-expanded="open.toString()" aria-controls="app-sidebar" class="app-topbar-menu p-2.5 lg:hidden" aria-label="Buka navigasi">☰</button>
             <div class="flex min-w-0 flex-wrap items-center gap-3">
                 <div class="app-topbar-school min-w-0">
                     <div class="app-topbar-title truncate text-lg font-extrabold leading-tight sm:text-xl">{{ session('active_school_id') ? \App\Models\School::find(session('active_school_id'))?->name : 'Belum memilih sekolah' }}</div>
                 </div>
                 <div class="app-topbar-meta flex items-center gap-2 text-sm">
                     @if($headerYears->isNotEmpty())
-                        <form method="POST" action="{{ route('years.activate') }}" class="inline-flex items-center gap-2">@csrf<label class="sr-only" for="header-fiscal-year">Tahun anggaran aktif</label><select id="header-fiscal-year" name="fiscal_year_id" onchange="this.form.submit()" class="app-topbar-select app-fiscal-year-select px-3 py-2 text-xs font-bold">@foreach($headerYears as $year)<option value="{{ $year->id }}" @selected($activeFiscalYearId === $year->id)>{{ $year->year }} · {{ $year->fundSource?->name ?? $year->fund_source }}</option>@endforeach</select></form>
+                        <form method="POST" action="{{ route('years.activate') }}" class="inline-flex items-center gap-2">@csrf<label class="sr-only" for="header-fiscal-year">Tahun anggaran aktif</label><select id="header-fiscal-year" name="fiscal_year_id" data-auto-submit="true" class="app-topbar-select app-fiscal-year-select px-3 py-2 text-xs font-bold">@foreach($headerYears as $year)<option value="{{ $year->id }}" @selected($activeFiscalYearId === $year->id)>{{ $year->year }} · {{ $year->fundSource?->name ?? $year->fund_source }}</option>@endforeach</select></form>
                     @else
                         <span>Pilih tahun anggaran</span>
                     @endif
@@ -231,5 +235,6 @@
         });
     })();
 </script>
+<x-assistant-widget />
 </body>
 </html>

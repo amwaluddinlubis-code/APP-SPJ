@@ -1,5 +1,6 @@
 const ACTION_CELL_SELECTOR = '.transaction-action-cell';
 const MODAL_ID = 'transaction-action-modal';
+let modalTrigger = null;
 
 const transactionLinks = (cell) => ({
     packageLink: Array.from(cell.querySelectorAll('a[href]')).find((link) => link.getAttribute('title') === 'Buka Paket SPJ') || null,
@@ -36,10 +37,10 @@ const ensureModal = () => {
                     </span>
                     <span aria-hidden="true">→</span>
                 </a>
-                <a data-transaction-action-package href="#" class="flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800 transition hover:bg-indigo-100">
+                <a data-transaction-action-package href="#" class="flex items-center justify-between gap-3 rounded-lg border border-[color-mix(in_srgb,var(--theme-content-accent)_35%,var(--ui-line))] bg-[color-mix(in_srgb,var(--theme-accent-soft)_55%,var(--ui-surface-base))] px-4 py-3 text-sm font-bold text-[var(--theme-content-accent)] transition hover:bg-[color-mix(in_srgb,var(--theme-accent-soft)_75%,var(--ui-surface-base))]">
                     <span>
                         <span class="block">Paket SPJ</span>
-                        <span class="mt-0.5 block text-xs font-normal text-indigo-700">Siapkan atau buka workspace dokumen SPJ transaksi ini.</span>
+                        <span class="mt-0.5 block text-xs font-normal text-[var(--theme-content-accent)]">Siapkan atau buka workspace dokumen SPJ transaksi ini.</span>
                     </span>
                     <span aria-hidden="true">→</span>
                 </a>
@@ -56,6 +57,8 @@ const ensureModal = () => {
     const close = () => {
         modal.hidden = true;
         document.body.classList.remove('overflow-hidden');
+        modalTrigger?.focus();
+        modalTrigger = null;
     };
 
     modal.querySelectorAll('[data-transaction-action-close]').forEach((button) => {
@@ -68,7 +71,29 @@ const ensureModal = () => {
         link.addEventListener('click', close);
     });
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !modal.hidden) close();
+        if (modal.hidden) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+            return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const focusableElements = Array.from(modal.querySelectorAll('a[href]:not([hidden]), button:not([hidden])'));
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
     });
 
     return modal;
@@ -90,6 +115,7 @@ const openModalForCell = (cell) => {
         modalPackage.hidden = !packageUrl;
     }
 
+    modalTrigger = cell.querySelector('[data-transaction-action-trigger]');
     modal.hidden = false;
     document.body.classList.add('overflow-hidden');
     window.requestAnimationFrame(() => modal.querySelector('[data-transaction-action-close]')?.focus());

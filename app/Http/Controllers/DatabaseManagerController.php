@@ -6,6 +6,8 @@ use App\Models\School;
 use App\Services\OperationalAuditService;
 use App\Services\SchoolDatabaseManager;
 use App\Services\SchoolDatabaseResetService;
+use App\Services\SchoolDatabaseTableGuide;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +29,19 @@ class DatabaseManagerController extends Controller
         if ($active['school']) {
             $activeStatus = $manager->status($active['school']);
             try {
-                $tables = $manager->listTables($active['school']);
+                $guide = app(SchoolDatabaseTableGuide::class);
+                $tables = collect($manager->listTables($active['school']))
+                    ->map(function (array $row) use ($manager, $active, $guide): array {
+                        try {
+                            $row['columns'] = count($manager->tableSchema($active['school'], (string) $row['name']));
+                        } catch (\Throwable) {
+                            $row['columns'] = null;
+                        }
+
+                        return $row + $guide->describe((string) ($row['name'] ?? ''));
+                    })
+                    ->sortBy([fn ($row) => array_search($row['group'], $guide->groups()), fn ($row) => $row['label']])
+                    ->values()->all();
             } catch (\Throwable $e) {
                 Log::error('Database table listing failed.', ['exception' => $e]);
                 $tableError = 'Tabel database tidak dapat dibaca.';
@@ -47,6 +61,34 @@ class DatabaseManagerController extends Controller
         }
 
         return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'schema', 'tableData', 'tableError'));
+    }
+
+    public function tableSummary(SchoolDatabaseManager $manager, string $table): JsonResponse
+    {
+        $active = $manager->activeInfo();
+        if (! $active['school']) {
+            abort(404);
+        }
+
+        try {
+            $guide = app(SchoolDatabaseTableGuide::class);
+            $schema = $manager->tableSchema($active['school'], $table);
+            $data = $manager->tableData($active['school'], $table, 10);
+        } catch (\Throwable $e) {
+            Log::warning('Database table summary failed.', ['table' => $table, 'exception' => $e]);
+            abort(404);
+        }
+
+        return response()->json([
+            'name' => $table,
+            'meta' => $guide->describe($table),
+            'total' => $data->total(),
+            'columns' => collect($schema)->map(fn ($column) => [
+                'name' => $column->name, 'type' => $column->type,
+                'required' => (bool) $column->notnull, 'pk' => (bool) $column->pk,
+            ])->values()->all(),
+            'rows' => $data->getCollection()->map(fn ($row) => (array) $row)->values()->all(),
+        ]);
     }
 
     public function resetForm(SchoolDatabaseManager $manager): View

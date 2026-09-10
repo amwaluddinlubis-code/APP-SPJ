@@ -7,11 +7,11 @@
             kicker="Perubahan sumber ARKAS"
             subtitle="Tinjau transaksi yang berubah atau tidak lagi muncul pada sinkronisasi sebelum melanjutkan dokumen SPJ."
         >
-            <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-px bg-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4">
                 <x-stat-item label="Perlu perhatian" :value="number_format($summary['total'], 0, ',', '.')" hint="Semua transaksi yang perlu ditinjau" />
                 <x-stat-item label="Data berubah" :value="number_format($summary['changed'], 0, ',', '.')" hint="Sumber ARKAS berubah setelah data SPJ tersedia" value-class="text-orange-700" />
                 <x-stat-item label="Tidak muncul" :value="number_format($summary['missing'], 0, ',', '.')" hint="Tidak ditemukan pada sinkronisasi terakhir" value-class="text-rose-700" />
-                <x-stat-item label="Sudah punya paket" :value="number_format($summary['with_package'], 0, ',', '.')" hint="Perlu kehati-hatian sebelum finalisasi" value-class="text-indigo-700" />
+                <x-stat-item label="Sudah punya paket" :value="number_format($summary['with_package'], 0, ',', '.')" hint="Perlu kehati-hatian sebelum finalisasi" value-class="text-[var(--theme-content-accent)]" />
             </div>
         </x-page-header>
 
@@ -61,8 +61,8 @@
                     <article class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="font-mono text-sm font-bold text-indigo-700">{{ $transaction->no_bukti }}</p>
-                                <p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p>
+                                <p class="font-mono text-sm font-bold text-[var(--theme-content-accent)]">{{ $transaction->no_bukti }}</p>
+                                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p>
                             </div>
                             <div class="flex flex-wrap justify-end gap-1.5">
                                 @if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif
@@ -70,10 +70,10 @@
                             </div>
                         </div>
                         <div class="mt-3 grid gap-3 rounded-lg bg-[var(--ui-surface-soft)] p-3">
-                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Data ARKAS / BKU</p><p class="mt-1 text-sm font-semibold text-slate-800">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-slate-500">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p></div>
-                            <div class="border-t border-[var(--ui-line)] pt-3"><p class="text-[11px] font-bold uppercase tracking-wide text-indigo-500">Data SPJ Operator</p><p class="mt-1 text-sm font-semibold text-indigo-900">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-indigo-600">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
+                            <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p></div>
+                            <div class="border-t border-[var(--ui-line)] pt-3"><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data SPJ Operator</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
                         </div>
-                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-[var(--ui-line)] pt-3"><div><p class="text-xs text-slate-400">Nilai bruto</p><p class="font-bold text-slate-900">{{ $rupiah($transaction->gross_amount) }}</p></div><a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">Tinjau detail →</a></div>
+                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-[var(--ui-line)] pt-3"><div><p class="text-xs text-[var(--ui-fg-muted)]">Nilai bruto</p><p class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->gross_amount) }}</p></div><a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-lg bg-[var(--theme-action-bg)] px-3 py-2 text-xs font-bold text-white hover:bg-[var(--theme-action-hover-bg)]">Tinjau detail →</a></div>
                     </article>
                 @empty
                     <div class="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 p-8 text-center"><p class="font-bold text-emerald-800">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-emerald-700">Semua transaksi pada konteks aktif saat ini tidak memiliki tanda perubahan sumber.</p></div>
@@ -82,19 +82,19 @@
 
             <div class="hidden overflow-x-auto lg:block">
                 <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti / Tanggal</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Perhatian</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Data ARKAS / BKU</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Data SPJ Operator</th><th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Nilai</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Tindakan</th></tr></thead>
+                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Perhatian</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data SPJ Operator</th><th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Tindakan</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($transactions as $transaction)
                             <tr class="align-top transition hover:bg-amber-50/40">
-                                <td class="px-5 py-4"><p class="font-mono font-bold text-indigo-700">{{ $transaction->no_bukti }}</p><p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p><p class="mt-1 text-xs text-slate-400">{{ $transaction->items_count }} rincian</p></td>
-                                <td class="px-4 py-4"><div class="flex max-w-48 flex-wrap gap-1.5">@if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif @if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" />@endif @if($transaction->spjPackage)<x-ui.status-badge :status="$transaction->spjPackage->status" />@endif</div>@if($transaction->source_missing_since)<p class="mt-2 text-xs text-slate-500">Sejak {{ $transaction->source_missing_since->translatedFormat('d M Y H:i') }}</p>@endif</td>
-                                <td class="max-w-sm px-4 py-4"><p class="font-semibold text-slate-800">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-slate-500">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p><p class="mt-1 text-xs text-slate-500">{{ $transaction->activity_code ?: 'Tanpa kode kegiatan' }} · {{ $transaction->account_code ?: 'Tanpa kode rekening' }}</p></td>
-                                <td class="max-w-sm px-4 py-4"><p class="font-semibold text-indigo-900">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-indigo-600">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p><p class="mt-1 text-xs text-slate-500">Kategori: {{ $transaction->spj_category ? str_replace('_', ' ', $transaction->spj_category) : 'Belum dipilih' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right font-bold text-slate-900">{{ $rupiah($transaction->gross_amount) }}</td>
-                                <td class="px-5 py-4 text-right"><a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">Tinjau detail →</a></td>
+                                <td class="px-5 py-4"><p class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $transaction->no_bukti }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian</p></td>
+                                <td class="px-4 py-4"><div class="flex max-w-48 flex-wrap gap-1.5">@if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif @if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" />@endif @if($transaction->spjPackage)<x-ui.status-badge :status="$transaction->spjPackage->status" />@endif</div>@if($transaction->source_missing_since)<p class="mt-2 text-xs text-[var(--ui-fg-muted)]">Sejak {{ $transaction->source_missing_since->translatedFormat('d M Y H:i') }}</p>@endif</td>
+                                <td class="max-w-sm px-4 py-4"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->activity_code ?: 'Tanpa kode kegiatan' }} · {{ $transaction->account_code ?: 'Tanpa kode rekening' }}</p></td>
+                                <td class="max-w-sm px-4 py-4"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kategori: {{ $transaction->spj_category ? str_replace('_', ' ', $transaction->spj_category) : 'Belum dipilih' }}</p></td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->gross_amount) }}</td>
+                                <td class="px-5 py-4 text-right"><a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-3 py-2 text-xs font-bold text-[var(--theme-content-accent)] hover:bg-[var(--theme-accent-soft)]">Tinjau detail →</a></td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-14 text-center"><p class="font-bold text-emerald-700">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-slate-500">Antrean akan muncul otomatis bila sinkronisasi mendeteksi perubahan sumber.</p></td></tr>
+                            <tr><td colspan="6" class="px-5 py-14 text-center"><p class="font-bold text-emerald-700">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Antrean akan muncul otomatis bila sinkronisasi mendeteksi perubahan sumber.</p></td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -21,7 +21,8 @@ class SpjDocumentNumberService
      */
     public function assignAutomaticNumbers(SpjPackage $package, string $schoolCode, ?string $npsn = null, ?array $onlyDocumentTypes = null): array
     {
-        $package->loadMissing(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
+        $package->load('transaction');
+        $package->transaction?->load(['goods', 'workOrder', 'travels']);
         $transaction = $package->transaction;
         $documents = collect();
         $created = 0;
@@ -263,7 +264,8 @@ class SpjDocumentNumberService
 
     private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback): CarbonInterface
     {
-        $package->loadMissing(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
+        $package->load('transaction');
+        $package->transaction?->load(['goods', 'workOrder', 'travels']);
         $transaction = $package->transaction;
         $value = match ($documentType) {
             'SPJ' => $transaction->transaction_date,

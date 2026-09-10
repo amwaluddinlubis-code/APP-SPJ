@@ -2,6 +2,34 @@
     <a href="{{ route('transactions.index') }}" class="ui-btn ui-btn-secondary !text-sm">← Kembali ke transaksi</a>
 
     <div class="flex flex-wrap items-center gap-2">
+        <nav class="flex items-center gap-1" aria-label="Navigasi transaksi">
+            @if ($previousTransaction)
+                <a href="{{ route('transactions.show', $previousTransaction->id) }}"
+                    title="Transaksi sebelumnya: {{ $previousTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
+                    aria-label="Transaksi sebelumnya: {{ $previousTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]">
+                    <x-ui-icon name="chevron-left" class="h-4 w-4" />
+                </a>
+            @else
+                <span title="Tidak ada transaksi sebelumnya" aria-label="Tidak ada transaksi sebelumnya" class="inline-flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] text-[var(--ui-fg-muted)] opacity-50">
+                    <x-ui-icon name="chevron-left" class="h-4 w-4" />
+                </span>
+            @endif
+
+            @if ($nextTransaction)
+                <a href="{{ route('transactions.show', $nextTransaction->id) }}"
+                    title="Transaksi selanjutnya: {{ $nextTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
+                    aria-label="Transaksi selanjutnya: {{ $nextTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]">
+                    <x-ui-icon name="chevron-right" class="h-4 w-4" />
+                </a>
+            @else
+                <span title="Tidak ada transaksi selanjutnya" aria-label="Tidak ada transaksi selanjutnya" class="inline-flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] text-[var(--ui-fg-muted)] opacity-50">
+                    <x-ui-icon name="chevron-right" class="h-4 w-4" />
+                </span>
+            @endif
+        </nav>
+
         <x-ui.status-badge :status="$transaction->status" />
 
         @if ($sourceStatus === 'SOURCE_MISSING')

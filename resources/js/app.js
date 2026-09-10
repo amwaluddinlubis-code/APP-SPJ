@@ -2,7 +2,6 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import persist from '@alpinejs/persist';
 import collapse from '@alpinejs/collapse';
-import Chart from 'chart.js/auto';
 
 if (!window.Alpine) {
     if (!Object.prototype.hasOwnProperty.call(Alpine, '$persist')) {
@@ -16,52 +15,58 @@ if (!window.Alpine) {
 
 const chartDataElement = document.getElementById('dashboard-chart-data');
 
+// Chart.js dimuat malas agar halaman tanpa grafik tidak menanggung ±200 KB.
+// Blok catch: grafik bersifat pelengkap, halaman tetap berfungsi tanpanya.
 if (chartDataElement) {
-    const data = JSON.parse(chartDataElement.textContent);
-    const money = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+    import('chart.js/auto').then(({ default: Chart }) => {
+        const data = JSON.parse(chartDataElement.textContent);
+        const money = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 
-    const chart = new Chart(chartDataElement, {
-        type: 'bar',
-        data: {
-            labels: data.labels,
-            datasets: data.datasets,
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: (value) => money(value),
+        const chart = new Chart(chartDataElement, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: data.datasets,
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => money(value),
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${money(context.raw)}`,
+                        },
                     },
                 },
             },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (context) => `${context.dataset.label}: ${money(context.raw)}`,
-                    },
-                },
-            },
-        },
+        });
+
+        const syncChartTheme = () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#cbd5e1' : '#475569';
+            const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.18)';
+
+            chart.options.scales.x.ticks.color = textColor;
+            chart.options.scales.y.ticks.color = textColor;
+            chart.options.scales.x.grid.color = gridColor;
+            chart.options.scales.y.grid.color = gridColor;
+            chart.options.plugins.legend.labels.color = textColor;
+            chart.update('none');
+        };
+
+        syncChartTheme();
+        new MutationObserver(syncChartTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    }).catch(() => {
+        // Grafik dilewati; konten halaman tidak bergantung padanya.
     });
-
-    const syncChartTheme = () => {
-        const isDark = document.documentElement.classList.contains('dark');
-        const textColor = isDark ? '#cbd5e1' : '#475569';
-        const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.18)';
-
-        chart.options.scales.x.ticks.color = textColor;
-        chart.options.scales.y.ticks.color = textColor;
-        chart.options.scales.x.grid.color = gridColor;
-        chart.options.scales.y.grid.color = gridColor;
-        chart.options.plugins.legend.labels.color = textColor;
-        chart.update('none');
-    };
-
-    syncChartTheme();
-    new MutationObserver(syncChartTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
 }
 
 const statusLabelMap = new Map([
@@ -404,6 +409,28 @@ const initializeSiplahPurchaseUi = (root = document) => {
 
 initializeSiplahPurchaseUi();
 document.addEventListener('livewire:navigated', () => initializeSiplahPurchaseUi());
+
+// Delegasi global untuk kontrol select tanpa inline handler:
+// - data-auto-submit="true" → submit form induk.
+// - data-navigate-base + data-navigate-param → pindah URL dengan query aman.
+// Sekali pasang di document sehingga berlaku juga untuk DOM hasil Livewire.
+document.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+
+    if (target.dataset.autoSubmit === 'true') {
+        target.closest('form')?.requestSubmit();
+        return;
+    }
+
+    const base = target.dataset.navigateBase;
+    const param = target.dataset.navigateParam;
+    if (base && param && target.value) {
+        const url = new window.URL(base, window.location.origin);
+        url.searchParams.set(param, target.value);
+        window.location.assign(url.toString());
+    }
+});
 
 const initializeScrollToTop = () => {
     if (document.getElementById('app-scroll-to-top')) return;

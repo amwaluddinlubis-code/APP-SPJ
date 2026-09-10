@@ -21,7 +21,7 @@
             <x-ui.form-section title="Pilih Tabel" description="Daftar dibaca langsung dari database ARKAS aktif.">
                 <form method="GET" action="{{ route('arkas.importer') }}" class="space-y-4">
                     <x-ui.field label="Tabel ARKAS" for="arkas-table">
-                        <x-ui.select id="arkas-table" name="table" onchange="this.form.submit()">
+                        <x-ui.select id="arkas-table" name="table" data-auto-submit="true">
                             <option value="">Pilih tabel</option>
                             @foreach($tables as $table)
                                 <option value="{{ $table }}" @selected($selectedTable === $table)>{{ $table }}</option>

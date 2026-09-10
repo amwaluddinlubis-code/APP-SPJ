@@ -95,8 +95,78 @@ class ArkasStagingService
         if (in_array($command, ['bku', 'rkas'], true)) {
             $records = array_values(array_filter($records, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? $record['id_ref_sumber_dana'] ?? 0) === (int) $year->fund_source_id));
         }
+        if ($profile->source_table === 'rapbs_periode') {
+            $records = $this->filterToActiveBudget($records, $source, $year);
+        }
 
         return $this->deduplicate($records, $profile, $preset);
+    }
+
+    /**
+     * rapbs_periode does not carry the budget version. Resolve the latest
+     * approved and active anggaran first, then keep only its rapbs details.
+     * Without this, every approved revision is imported into the same year.
+     *
+     * @param array<int, array<string, mixed>> $records
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterToActiveBudget(array $records, ArkasSource $source, FiscalYear $year): array
+    {
+        $anggaran = ArkasPipePayload::decode(
+            $this->bridge->execute($source, 'rows', null, 'anggaran', null, 100000),
+            'rows:anggaran',
+        );
+        $eligible = array_values(array_filter($anggaran, function (array $row) use ($year): bool {
+            return (int) ($this->value($row, 'tahun_anggaran') ?? 0) === (int) $year->year
+                && (int) ($this->value($row, 'id_ref_sumber_dana') ?? 0) === (int) $year->fund_source_id
+                && (int) ($this->value($row, 'is_approve') ?? 0) === 1
+                && (int) ($this->value($row, 'is_aktif') ?? 0) === 1
+                && (int) ($this->value($row, 'soft_delete') ?? 0) === 0;
+        }));
+        usort($eligible, function (array $left, array $right): int {
+            $revision = (int) ($this->value($right, 'is_revisi') ?? 0) <=> (int) ($this->value($left, 'is_revisi') ?? 0);
+            if ($revision !== 0) {
+                return $revision;
+            }
+
+            return strcmp((string) ($this->value($right, 'tanggal_pengesahan') ?? ''), (string) ($this->value($left, 'tanggal_pengesahan') ?? ''));
+        });
+        $activeBudget = $eligible[0] ?? null;
+        if ($activeBudget === null) {
+            return $records;
+        }
+
+        $activeBudgetId = (string) $this->value($activeBudget, 'id_anggaran');
+        $rapbs = ArkasPipePayload::decode(
+            $this->bridge->execute($source, 'rows', null, 'rapbs', null, 100000),
+            'rows:rapbs',
+        );
+        $activeRapbs = [];
+        foreach ($rapbs as $row) {
+            if ((string) $this->value($row, 'id_anggaran') === $activeBudgetId) {
+                $key = $this->value($row, 'id_rapbs');
+                if ($key !== null) {
+                    $activeRapbs[(string) $key] = true;
+                }
+            }
+        }
+        if ($activeRapbs === []) {
+            return [];
+        }
+
+        return array_values(array_filter($records, fn (array $row): bool => isset($activeRapbs[(string) ($this->value($row, 'id_rapbs') ?? '')])));
+    }
+
+    /** @param array<string, mixed> $row */
+    private function value(array $row, string $column): mixed
+    {
+        foreach ($row as $key => $value) {
+            if (strcasecmp((string) $key, $column) === 0) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     /** @param array<int, array<string, mixed>> $records @param array<string, mixed> $preset @return array<int, array<string, mixed>> */

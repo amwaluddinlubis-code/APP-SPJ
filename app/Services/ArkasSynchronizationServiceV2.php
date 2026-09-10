@@ -162,6 +162,7 @@ class ArkasSynchronizationServiceV2
                     'source_period_id' => $periodId,
                 ],
                 [
+                    'source_rapbs_period_id' => $record['payload']['id_rapbs_periode'] ?? $record['payload']['ID_RAPBS_PERIODE'] ?? null,
                     'period_name' => $periodName !== '' ? $periodName : null,
                     'month_number' => $month,
                     'quarter_number' => $quarter,
@@ -219,7 +220,8 @@ class ArkasSynchronizationServiceV2
         foreach ($records as $record) {
             DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(
                 ['fiscal_year_id' => $year->id, 'source_kas_id' => $record['ID_KAS_UMUM']],
-                ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
+                ['source_rapbs_period_id' => $record['ID_RAPBS_PERIODE'] ?? null,
+                    'fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'parent_kas_id' => $record['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $record['KATEGORI_BKU'] ?? null,
                     'no_bukti' => $record['NO_BUKTI'] ?? null, 'transaction_date' => $record['TANGGAL_TRANSAKSI'] ?: null,
                     'amount' => $this->amount($record['JUMLAH'] ?? 0), 'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),

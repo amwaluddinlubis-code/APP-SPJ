@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -67,10 +68,71 @@ class TransactionController extends Controller
         ]);
         $headerVisual = $this->headerVisual($transaction);
         $paymentMethod = $this->normalizePaymentMethod($transaction->payment_method, $transaction);
+        [$previousTransaction, $nextTransaction] = $this->adjacentTransactions($transaction);
 
         // Catatan: daftar pegawai sengaja tidak dimuat di sini. Data pegawai
         // hanya dibutuhkan di modul SPJ, bukan di detail transaksi.
-        return view('transactions.show', compact('transaction', 'headerVisual', 'paymentMethod'));
+        return view('transactions.show', compact(
+            'transaction',
+            'headerVisual',
+            'paymentMethod',
+            'previousTransaction',
+            'nextTransaction'
+        ));
+    }
+
+    /** @return array{0: ?Transaction, 1: ?Transaction} */
+    private function adjacentTransactions(Transaction $transaction): array
+    {
+        $baseQuery = fn () => Transaction::query()->activeContext();
+        $transactionDate = $transaction->transaction_date;
+
+        if ($transactionDate === null) {
+            $previous = ($baseQuery())
+                ->whereNull('transaction_date')
+                ->where('id', '<', $transaction->id)
+                ->orderByDesc('id')
+                ->first();
+
+            $next = ($baseQuery())
+                ->where(function (Builder $query) use ($transaction): void {
+                    $query->where(function (Builder $query) use ($transaction): void {
+                        $query->whereNull('transaction_date')->where('id', '>', $transaction->id);
+                    })->orWhereNotNull('transaction_date');
+                })
+                ->orderByRaw('transaction_date IS NULL DESC')
+                ->orderBy('transaction_date')
+                ->orderBy('id')
+                ->first();
+
+            return [$previous, $next];
+        }
+
+        $previous = ($baseQuery())
+            ->where(function (Builder $query) use ($transaction, $transactionDate): void {
+                $query->whereNull('transaction_date')
+                    ->orWhere('transaction_date', '<', $transactionDate)
+                    ->orWhere(function (Builder $query) use ($transaction, $transactionDate): void {
+                        $query->where('transaction_date', $transactionDate)->where('id', '<', $transaction->id);
+                    });
+            })
+            ->orderByRaw('transaction_date IS NULL DESC')
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->first();
+
+        $next = ($baseQuery())
+            ->where(function (Builder $query) use ($transaction, $transactionDate): void {
+                $query->where('transaction_date', '>', $transactionDate)
+                    ->orWhere(function (Builder $query) use ($transaction, $transactionDate): void {
+                        $query->where('transaction_date', $transactionDate)->where('id', '>', $transaction->id);
+                    });
+            })
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->first();
+
+        return [$previous, $next];
     }
 
     /** Selects a local header visual from the SPJ category, account, and description. */

@@ -53,7 +53,7 @@ class ArkasSynchronizationService
         $tax = [];
         $rkas = DB::connection('school')->table('arkas_rkas_items')->where('fiscal_year_id', $year->id)->get()->keyBy('source_rapbs_id');
         foreach ($records as $r) {
-            DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $r['ID_KAS_UMUM']], ['fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'parent_kas_id' => $r['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $r['KATEGORI_BKU'] ?? null, 'no_bukti' => $r['NO_BUKTI'] ?? null, 'transaction_date' => $r['TANGGAL_TRANSAKSI'] ?: null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now()]);
+            DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $r['ID_KAS_UMUM']], ['source_rapbs_period_id' => $r['ID_RAPBS_PERIODE'] ?? null, 'fund_source_id' => $r['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id, 'parent_kas_id' => $r['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $r['KATEGORI_BKU'] ?? null, 'no_bukti' => $r['NO_BUKTI'] ?? null, 'transaction_date' => $r['TANGGAL_TRANSAKSI'] ?: null, 'amount' => $this->amount($r['JUMLAH'] ?? 0), 'payload' => json_encode($r, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => now(), 'created_at' => now()]);
             if (($r['KATEGORI_BKU'] ?? '') === 'BELANJA' && ! empty($r['NO_BUKTI'])) {
                 $belanja[$r['NO_BUKTI']][] = $r;
             } if (($r['KATEGORI_BKU'] ?? '') === 'PAJAK' && ! empty($r['PARENT_ID_KAS_UMUM']) && ! $this->isTaxDeposit($r)) {

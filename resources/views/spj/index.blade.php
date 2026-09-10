@@ -97,23 +97,24 @@
 
                     @include('spj.partials.package.validation')
                     @include('spj.partials.package.documents')
-                    <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow" x-data="{ packageTab: 'rincian' }">
-                        <div class="border-b border-[var(--ui-line)] bg-slate-50/70">
-                            <nav class="flex gap-1 overflow-x-auto px-2 py-1 text-base" @click="const button = $event.target.closest('[data-package-tab]'); if (button) packageTab = button.dataset.packageTab">
-                                <button type="button" data-package-tab="rincian" :data-active="packageTab === 'rincian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-slate-600 hover:text-slate-800 data-[active=true]:border-slate-200 data-[active=true]:bg-white data-[active=true]:text-indigo-700 data-[active=true]:shadow">📦 Rincian <span class="ml-1 rounded-full bg-[var(--ui-surface-muted)] px-1.5 py-0.5 text-[11px]">{{ $transaction->items->count() }}</span></button>
-                                <button type="button" data-package-tab="isian" :data-active="packageTab === 'isian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-slate-600 hover:text-slate-800 data-[active=true]:border-slate-200 data-[active=true]:bg-white data-[active=true]:text-indigo-700 data-[active=true]:shadow">✏️ Isian Manual</button>
-                                <button type="button" data-package-tab="penomoran" :data-active="packageTab === 'penomoran'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-slate-600 hover:text-slate-800 data-[active=true]:border-slate-200 data-[active=true]:bg-white data-[active=true]:text-indigo-700 data-[active=true]:shadow">🔢 Penomoran @if($hasActiveSpjNumber)<span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-700">OK</span>@elseif($package->status === 'CANCELLED')<span class="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] text-rose-700">Dibatalkan</span>@else<span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">Belum</span>@endif</button>
+                    <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow" x-data="{ packageTab: new URLSearchParams(window.location.search).get('package_tab') || 'rincian', selectPackageTab(name) { this.packageTab = name; const url = new URL(window.location.href); url.searchParams.set('package_tab', name); window.history.replaceState({}, '', url); } }">
+                        <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)]">
+                            <nav class="flex gap-1 overflow-x-auto px-2 py-1 text-base" role="tablist" aria-label="Bagian Paket SPJ" @click="const button = $event.target.closest('[data-package-tab]'); if (button) selectPackageTab(button.dataset.packageTab)" @keydown="if ($event.key === 'ArrowRight' || $event.key === 'ArrowLeft') { const buttons = [...$el.querySelectorAll('[data-package-tab]')]; const current = buttons.indexOf($event.target); const next = $event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length; buttons[next].focus(); selectPackageTab(buttons[next].dataset.packageTab); }">
+                                <button type="button" role="tab" id="package-tab-rincian" aria-controls="package-panel-rincian" data-package-tab="rincian" :aria-selected="(packageTab === 'rincian').toString()" :data-active="packageTab === 'rincian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow">📦 Rincian <span class="ml-1 rounded-full bg-[var(--ui-surface-muted)] px-1.5 py-0.5 text-[11px]">{{ $transaction->items->count() }}</span></button>
+                                <button type="button" role="tab" id="package-tab-isian" aria-controls="package-panel-isian" data-package-tab="isian" :aria-selected="(packageTab === 'isian').toString()" :data-active="packageTab === 'isian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow">✏️ Isian Manual</button>
+                                <button type="button" role="tab" id="package-tab-pajak" aria-controls="package-panel-pajak" data-package-tab="pajak" :aria-selected="(packageTab === 'pajak').toString()" :data-active="packageTab === 'pajak'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow">🧾 Rincian Pajak</button>
+                                <button type="button" role="tab" id="package-tab-penomoran" aria-controls="package-panel-penomoran" data-package-tab="penomoran" :aria-selected="(packageTab === 'penomoran').toString()" :data-active="packageTab === 'penomoran'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow">🔢 Penomoran @if($hasActiveSpjNumber)<span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-700">OK</span>@elseif($package->status === 'CANCELLED')<span class="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] text-rose-700">Dibatalkan</span>@else<span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">Belum</span>@endif</button>
                             </nav>
                         </div>
 
-                        <div x-show="packageTab === 'rincian'" data-panel="rincian" class="tab-panel">
+                        <div x-show="packageTab === 'rincian'" id="package-panel-rincian" role="tabpanel" aria-labelledby="package-tab-rincian" data-panel="rincian" class="tab-panel">
                             @include('spj.partials.package.items-readonly')
                         </div>
 
-                        <div x-show="packageTab === 'isian'" data-panel="isian" class="tab-panel" x-data="{saving:false}">
+                        <div x-show="packageTab === 'isian'" id="package-panel-isian" role="tabpanel" aria-labelledby="package-tab-isian" data-panel="isian" class="tab-panel" x-data="{saving:false}">
                             <div class="border-b border-[var(--ui-line)] px-4 py-3">
-                                <h2 class="text-base font-bold text-slate-800">Isian Manual Paket SPJ</h2>
-                                <p class="mt-0.5 text-xs text-slate-500">Hanya isian kuning yang wajib. Bagian biru tampil sesuai kategori.</p>
+                                <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Isian Manual Paket SPJ</h2>
+                                <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Hanya isian kuning yang wajib. Bagian biru tampil sesuai kategori.</p>
                             </div>
                             @php
                                 $workDetails = $transaction->workOrder;
@@ -129,7 +130,7 @@
                                 $selectedSpjType = strtoupper((string) old('spj_category', $transaction->spj_category ?: $transaction->spj_category));
                             @endphp
                             <form id="spj-manual-form" method="POST" action="{{ route('spj.update', $package->id) }}" data-source-siplah="{{ $transaction->is_siplah ? '1' : '0' }}" class="space-y-4 p-4" @submit="if (!$event.defaultPrevented) saving=true">@csrf @method('PUT')
-                    @unless($package->isEditable())<div class="flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-3 py-2 text-sm text-slate-700"><span aria-hidden="true">🔒</span><p><strong>Isian terkunci.</strong> Batalkan nomor dan buka paket untuk koreksi agar field dapat diedit kembali.</p></div>@endunless
+                    @unless($package->isEditable())<div class="flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-3 py-2 text-sm text-[var(--ui-fg)]"><span aria-hidden="true">🔒</span><p><strong>Isian terkunci.</strong> Batalkan nomor dan buka paket untuk koreksi agar field dapat diedit kembali.</p></div>@endunless
                     <fieldset @disabled(!$package->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
                     <div x-show="saving" class="flex items-center justify-center py-4"><x-loading-spinner /></div>
                     <div x-show="!saving">
@@ -137,31 +138,34 @@
                                     <div class="grid gap-3">
                                         <div>
                                             <label class="text-xs font-bold text-amber-900">Kategori SPJ <span class="text-rose-600">*</span></label>
-                                            <select id="spj-type" name="spj_category" class="mt-1 w-full rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-2 text-base focus:border-amber-400 focus:ring-1 focus:ring-amber-200">
+                                            <x-ui.select id="spj-type" name="spj_category" class="mt-1">
                                                 <option value="">Pilih kategori</option>
                                                 @foreach(['BARANG','KONSUMSI','PEMELIHARAAN','JASA_LAINNYA','SPPD','HONOR_PEGAWAI'] as $value)
                                                     <option value="{{ $value }}" @selected(in_array($selectedSpjType, ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) && in_array(strtoupper((string) $value), ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) || old('spj_category', $transaction->spj_category ?: $transaction->spj_category) === $value)>{{ $spjTypeLabel($value) }}</option>
                                                 @endforeach
-                                            </select>
+                                            </x-ui.select>
                                         </div>
                                         <p class="text-xs text-amber-800">Kategori menentukan field manual, dokumen pendukung, dan nomor yang diterbitkan. Subkategori terpisah tidak diperlukan.</p>
                                     </div>
                                 </div>
                                 @include('spj.partials.package.common')
-                                @include('spj.partials.package.tax-reference')
                                 @include('spj.partials.package.categories.honor-pegawai')
                                 @include('spj.partials.package.categories.sppd')
                                 @include('spj.partials.package.categories.barang')
 @include('spj.partials.package.categories.konsumsi')
 @include('spj.partials.package.categories.pemeliharaan')
                                 @include('spj.partials.package.categories.jasa-lainnya')
-                                <div class="flex justify-end pt-1"><button :disabled="saving" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-1.5 text-base font-bold text-white shadow hover:bg-indigo-700 disabled:opacity-60"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></button></div>
+                                <div class="flex justify-end pt-1"><x-ui.button type="submit" x-bind:disabled="saving" class="px-4 py-1.5 text-base"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></x-ui.button></div>
                     </div>
                     </fieldset>
                             </form>
                         </div>
 
-                        <div x-show="packageTab === 'penomoran'" data-panel="penomoran" class="tab-panel p-4">
+                        <div x-show="packageTab === 'pajak'" id="package-panel-pajak" role="tabpanel" aria-labelledby="package-tab-pajak" data-panel="pajak" class="tab-panel p-4">
+                            @include('spj.partials.package.tax-reference')
+                        </div>
+
+                        <div x-show="packageTab === 'penomoran'" id="package-panel-penomoran" role="tabpanel" aria-labelledby="package-tab-penomoran" data-panel="penomoran" class="tab-panel p-4">
                             @include('spj.partials.package.numbering')
                         </div>
                     </section>
@@ -207,13 +211,13 @@
                 <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                     <form method="GET" class="spj-report-toolbar flex flex-wrap items-end gap-3">
                         <input type="hidden" name="tab" value="laporan">
-                        <div><label class="text-xs font-bold text-slate-500">BULAN</label><select name="month" class="mt-1 block rounded-lg border-[var(--ui-line-strong)] text-base"><option value="">Semua bulan</option>@foreach(range(1,12) as $month)<option value="{{ $month }}" @selected(request('month') == $month)>{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach</select></div>
-                        <div><label class="text-xs font-bold text-slate-500">TRIWULAN</label><select name="quarter" class="mt-1 block rounded-lg border-[var(--ui-line-strong)] text-base"><option value="">Semua triwulan</option>@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}" @selected(request('quarter') == $quarter)>Triwulan {{ $quarter }}</option>@endforeach</select></div>
-                        <div><label class="text-xs font-bold text-slate-500">SEMESTER</label><select name="semester" class="mt-1 block rounded-lg border-[var(--ui-line-strong)] text-base"><option value="">Semua semester</option><option value="1" @selected(request('semester') == 1)>Semester 1</option><option value="2" @selected(request('semester') == 2)>Semester 2</option></select></div>
-                        <button class="rounded-lg bg-violet-600 px-4 py-2.5 text-base font-bold">Terapkan</button>
+                        <x-ui.field label="Bulan"><x-ui.select name="month"><option value="">Semua bulan</option>@foreach(range(1,12) as $month)<option value="{{ $month }}" @selected(request('month') == $month)>{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach</x-ui.select></x-ui.field>
+                        <x-ui.field label="Triwulan"><x-ui.select name="quarter"><option value="">Semua triwulan</option>@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}" @selected(request('quarter') == $quarter)>Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field>
+                        <x-ui.field label="Semester"><x-ui.select name="semester"><option value="">Semua semester</option><option value="1" @selected(request('semester') == 1)>Semester 1</option><option value="2" @selected(request('semester') == 2)>Semester 2</option></x-ui.select></x-ui.field>
+                        <x-ui.button type="submit">Terapkan</x-ui.button>
                         <a href="{{ route('spj.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" target="_blank" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-base font-bold text-rose-700">Pratinjau PDF</a>
                         <a href="{{ route('spj.export', array_merge(request()->query(), ['format' => 'xlsx'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-bold text-emerald-700">Unduh Excel</a>
-                        <a href="{{ route('spj.honor-payments.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" target="_blank" class="rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-base font-bold text-violet-700">Daftar Honor PDF</a>
+                        <x-ui.button variant="secondary" :href="route('spj.honor-payments.export', array_merge(request()->query(), ['format' => 'pdf']))" target="_blank">Daftar Honor PDF</x-ui.button>
                         <a href="{{ route('spj.honor-payments.export', array_merge(request()->query(), ['format' => 'xlsx'])) }}" class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 text-base font-bold text-sky-700">Daftar Honor Excel</a>
                     </form>
                 </div>
@@ -233,10 +237,10 @@
                     @if(auth()->user()?->isAdministrator())
                         <form method="POST" action="{{ route('spj.quarter-numbering') }}" class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-indigo-200 bg-[var(--ui-surface-base)] p-3" data-confirm="Rekonsiliasi nomor triwulan ini? Transaksi yang sudah memiliki nomor aktif akan dilewati dan slot nomor yang dibatalkan dapat dipakai dokumen berikutnya dalam domain serta periode yang sama.">
                             @csrf
-                            <div><label class="block text-xs font-bold text-slate-600">TRIWULAN SIAP DINOMORI</label><select name="quarter" class="mt-1 rounded-md border-[var(--ui-line-strong)] text-base">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</select></div>
-                            <button class="rounded-md bg-indigo-600 px-4 py-2 text-base font-bold text-white hover:bg-indigo-700">Tetapkan nomor triwulan</button>
-                            <p class="basis-full text-xs text-slate-500">Nomor aktif dipertahankan. Slot nomor batal dipakai kembali menurut urutan terkecil oleh dokumen berikutnya dalam jenis dan periode penomoran yang sama.</p>
-                            <p class="basis-full text-xs text-slate-500">Setiap jenis dokumen diurutkan menurut tanggal peristiwanya. Nomor yang sudah terbit akan dilewati.</p>
+                            <x-ui.field label="Triwulan siap dinomori"><x-ui.select name="quarter">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field>
+                            <x-ui.button type="submit">Tetapkan nomor triwulan</x-ui.button>
+                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Nomor aktif dipertahankan. Slot nomor batal dipakai kembali menurut urutan terkecil oleh dokumen berikutnya dalam jenis dan periode penomoran yang sama.</p>
+                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Setiap jenis dokumen diurutkan menurut tanggal peristiwanya. Nomor yang sudah terbit akan dilewati.</p>
                         </form>
                         <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                             @foreach(range(1,4) as $quarter)
@@ -244,8 +248,8 @@
                                     $period = ($periodClosures ?? collect())->get($quarter);
                                 @endphp
                                 <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3"><div class="flex items-center justify-between"><b>Triwulan {{ $quarter }}</b><span class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-1 text-xs font-bold">{{ $period?->status ?? 'OPEN' }}</span></div>
-                                    @if($period?->status === 'NUMBERED')<form method="POST" action="{{ route('spj.quarter-close') }}" class="mt-2">@csrf<input type="hidden" name="quarter" value="{{ $quarter }}"><button class="w-full rounded-md bg-slate-800 px-3 py-1.5 text-xs font-bold text-white">Tutup triwulan</button></form>@endif
-                                    @if($period?->status === 'CLOSED')<form method="POST" action="{{ route('spj.quarter-reopen', $period->id) }}" class="mt-2 space-y-2">@csrf<input name="reason" required placeholder="Alasan pembukaan" class="w-full rounded-md border-[var(--ui-line-strong)] text-xs"><button class="w-full rounded-md bg-amber-600 px-3 py-1.5 text-xs font-bold text-white">Buka kembali</button></form>@endif
+                                    @if($period?->status === 'NUMBERED')<form method="POST" action="{{ route('spj.quarter-close') }}" class="mt-2">@csrf<input type="hidden" name="quarter" value="{{ $quarter }}"><x-ui.button type="submit" variant="secondary" class="w-full px-3 py-1.5 text-xs">Tutup triwulan</x-ui.button></form>@endif
+                                    @if($period?->status === 'CLOSED')<form method="POST" action="{{ route('spj.quarter-reopen', $period->id) }}" class="mt-2 space-y-2">@csrf<x-ui.input name="reason" required placeholder="Alasan pembukaan" class="text-xs" /><x-ui.button type="submit" variant="warning" class="w-full px-3 py-1.5 text-xs">Buka kembali</x-ui.button></form>@endif
                                 </div>
                             @endforeach
                         </div>

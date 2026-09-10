@@ -31,7 +31,14 @@ class ArkasImporterController implements HasMiddleware
     public function __invoke(Request $request, ArkasDatabaseExplorer $explorer, ArkasSourceKeyResolver $sourceKeys): View
     {
         $source = ArkasSource::query()->where('school_id', session('active_school_id'))->first();
-        $profiles = ArkasImportProfile::query()->where('source_table', 'not like', '__%')->latest('source_table')->get();
+        // `_` is a SQL wildcard; filtering with `not like '__%'` accidentally
+        // excluded every normal source table. Exclude only internal profiles
+        // whose names literally start with two underscores.
+        $profiles = ArkasImportProfile::query()
+            ->latest('source_table')
+            ->get()
+            ->reject(static fn (ArkasImportProfile $profile): bool => str_starts_with($profile->source_table, '__'))
+            ->values();
         $tables = [];
         $columns = [];
         $rows = [];

@@ -118,12 +118,12 @@ class DocumentNumberFormatSettingsTest extends TestCase
         $result = app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package, '10260756');
 
         $this->assertSame(7, $result['created']);
-        $this->assertStringContainsString('/II/2026', $goods->fresh()->order_number);
-        $this->assertStringContainsString('/III/2026', $goods->fresh()->bap_number);
-        $this->assertStringContainsString('/IV/2026', $goods->fresh()->bast_number);
-        $this->assertStringContainsString('/V/2026', $workOrder->fresh()->spk_number);
-        $this->assertStringContainsString('/VI/2026', $workOrder->fresh()->rab_number);
-        $this->assertStringContainsString('/VII/2026', $travel->fresh()->assignment_letter_number);
+        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->order_number);
+        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->bap_number);
+        $this->assertStringContainsString('/TW.II/2026', $goods->fresh()->bast_number);
+        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->spk_number);
+        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->rab_number);
+        $this->assertStringContainsString('/TW.III/2026', $travel->fresh()->assignment_letter_number);
 
         $existingOrderNumber = $goods->fresh()->order_number;
         app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package->fresh(), '10260756');
