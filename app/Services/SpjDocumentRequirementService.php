@@ -177,14 +177,19 @@ class SpjDocumentRequirementService
                 : 'Nomor Surat Pesanan belum diterbitkan. Nomor ini tidak memblokir tahap persiapan dan akan diwajibkan setelah paket bernomor.'
         );
 
+        /*
+         * Bukti penerimaan mempunyai dua tahap yang sama seperti Surat Pesanan:
+         * data/peristiwa penerimaan harus sudah tersedia sebelum penomoran, tetapi
+         * nomor BAP/BAST diterbitkan oleh proses penomoran dan tidak boleh menjadi
+         * prasyarat bagi proses yang menerbitkannya.
+         */
         $receiptReady = $transaction->goodsReceipts->isNotEmpty()
-            || (filled($firstGoods?->bap_number) && filled($firstGoods?->bap_date))
-            || (filled($firstGoods?->bast_number) && filled($firstGoods?->bast_date));
+            || $transaction->goods->contains(fn ($goods): bool => filled($goods->bap_date) || filled($goods->bast_date));
         $add(
             'goods_receipt', 'Penerimaan', 'Bukti penerimaan barang', $isSiplah ? 'SIPLah / dokumen penerimaan' : 'Aplikasi / dokumen sumber',
             ! $isSiplah && $goodsCategory, ! $isSiplah && $goodsCategory, $receiptReady,
-            'Bukti penerimaan barang tersedia.',
-            'Belum ada bukti penerimaan barang, BAP, atau BAST.'
+            'Data penerimaan barang tersedia dan siap masuk proses penomoran.',
+            'Belum ada data penerimaan barang atau tanggal BAP/BAST.'
         );
         $add(
             'bap', 'Penerimaan', 'Berita Acara Pemeriksaan/Penerimaan (BAP)', 'Dibuat aplikasi',
