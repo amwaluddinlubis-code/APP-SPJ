@@ -49,6 +49,7 @@
             <file>tests/Feature/SpjPackageNavigationContextTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjPreNumberingRegressionTest.php</file>
+            <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
             <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
