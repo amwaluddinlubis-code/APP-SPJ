@@ -17,7 +17,7 @@
         keySequence: 0,
         rows: @js(array_values($participantRows)).map((row, index) => ({...row, _key: `saved-${index}`})),
         roster: @js(collect($participantRoster ?? [])->map(fn ($employee) => ['name' => $employee->name, 'position' => $employee->position ?: $employee->staff_type, 'nip' => $employee->nip, 'nuptk' => $employee->nuptk, 'portions' => 1])->values()->all()),
-        participantCount: {{ (int) old('participant_count', $transaction->participant_count ?: count($participantRows)) }},
+        participantCount: {{ (int) old('participant_count', count($participantRows) > 0 ? count($participantRows) : $transaction->participant_count) }},
         primaryIndex: @js($participantPrimaryIndex),
         draggedKey: null,
         query: '', page: 1, perPage: 10,
