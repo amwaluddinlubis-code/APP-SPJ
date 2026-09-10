@@ -8,13 +8,3 @@
         ['id' => 'monitoring', 'label' => '⚠️ Monitoring'],
     ]" :activeTab="$activeSpjTab" />
 </div>
-
-@switch($activeSpjTab)
-    @case('laporan')
-        @include('spj.partials.laporan')
-        @break
-
-    @case('monitoring')
-        @include('spj.partials.monitoring')
-        @break
-@endswitch
