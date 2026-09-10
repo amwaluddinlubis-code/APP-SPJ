@@ -59,15 +59,20 @@ const buildCalendarButton = (nativeInput) => {
         </svg>
     `;
     Object.assign(button.style, {
+        position: 'absolute',
+        right: '0.35rem',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: '1',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        flex: '0 0 2.5rem',
-        minWidth: '2.5rem',
-        minHeight: '2.5rem',
-        border: '1px solid var(--ui-border, #cbd5e1)',
-        borderRadius: '0.5rem',
-        background: 'var(--ui-surface, transparent)',
+        width: '2rem',
+        height: '2rem',
+        padding: '0',
+        border: '0',
+        borderRadius: '0.375rem',
+        background: 'transparent',
         color: 'inherit',
         cursor: 'pointer',
     });
@@ -90,6 +95,7 @@ const buildCalendarButton = (nativeInput) => {
 
 const initializeDateInput = (nativeInput) => {
     if (!(nativeInput instanceof HTMLInputElement)) return;
+    if (!nativeInput.matches('input[type="date"]')) return;
     if (nativeInput.dataset.indonesianDateInitialized === 'true') return;
     if (nativeInput.dataset.dateFormat === 'native') return;
 
@@ -100,10 +106,9 @@ const initializeDateInput = (nativeInput) => {
     wrapper.dataset.indonesianDateWrapper = 'true';
     Object.assign(wrapper.style, {
         position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
+        display: 'block',
         width: '100%',
+        minWidth: '0',
     });
 
     const displayInput = document.createElement('input');
@@ -126,8 +131,9 @@ const initializeDateInput = (nativeInput) => {
     }
 
     Object.assign(displayInput.style, {
-        flex: '1 1 auto',
+        width: '100%',
         minWidth: '0',
+        paddingRight: '2.75rem',
     });
 
     const calendarButton = buildCalendarButton(nativeInput);
@@ -144,6 +150,7 @@ const initializeDateInput = (nativeInput) => {
         displayInput.value = formatIsoDateForDisplay(nativeInput.value);
         displayInput.disabled = nativeInput.disabled;
         displayInput.readOnly = nativeInput.readOnly;
+        displayInput.required = nativeInput.required;
         calendarButton.disabled = nativeInput.disabled || nativeInput.readOnly;
         displayInput.setCustomValidity('');
     };
@@ -199,6 +206,15 @@ const initializeDateInput = (nativeInput) => {
         if (document.activeElement === nativeInput) displayInput.focus({ preventScroll: true });
     });
 
+    const nativeStateObserver = new MutationObserver(() => {
+        syncDisplayFromNative();
+        validateDisplay();
+    });
+    nativeStateObserver.observe(nativeInput, {
+        attributes: true,
+        attributeFilter: ['min', 'max', 'disabled', 'readonly', 'required'],
+    });
+
     const form = nativeInput.closest('form');
     if (form) {
         form.addEventListener('submit', (event) => {
@@ -232,11 +248,21 @@ document.addEventListener('livewire:navigated', bootIndonesianDateInputs);
 
 new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes') {
+            initializeIndonesianDateInputs(mutation.target);
+            return;
+        }
+
         mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) initializeIndonesianDateInputs(node);
         });
     });
-}).observe(document.documentElement, { childList: true, subtree: true });
+}).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['type'],
+});
 
 window.AppDateInput = Object.freeze({
     formatIsoDateForDisplay,
