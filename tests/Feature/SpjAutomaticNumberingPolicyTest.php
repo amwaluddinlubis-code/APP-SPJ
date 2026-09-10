@@ -35,13 +35,14 @@ class SpjAutomaticNumberingPolicyTest extends TestCase
 
         $barang = new Transaction(['spj_category' => 'BARANG', 'is_siplah' => false]);
         $konsumsi = new Transaction(['spj_category' => 'KONSUMSI', 'is_siplah' => false]);
+        $konsumsiLegacySiplah = new Transaction(['spj_category' => 'KONSUMSI', 'is_siplah' => true, 'payment_method' => 'siplah']);
         $maintenance = new Transaction(['spj_category' => 'PEMELIHARAAN', 'is_siplah' => false]);
         $jasa = new Transaction(['spj_category' => 'JASA_LAINNYA', 'is_siplah' => false]);
         $sppd = new Transaction(['spj_category' => 'SPPD', 'is_siplah' => false]);
         $honor = new Transaction(['spj_category' => 'HONOR_PEGAWAI', 'is_siplah' => false]);
         $siplah = new Transaction(['spj_category' => 'BARANG', 'is_siplah' => true]);
 
-        foreach ([$barang, $konsumsi] as $transaction) {
+        foreach ([$barang, $konsumsi, $konsumsiLegacySiplah] as $transaction) {
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'SPJ'));
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'PESANAN'));
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'BAP'));
@@ -187,6 +188,32 @@ class SpjAutomaticNumberingPolicyTest extends TestCase
             $this->assertSame(4, $format->padding);
             $this->assertTrue($format->is_active);
         }
+    }
+
+    public function test_upgrade_migration_seeds_existing_year_and_preserves_custom_format(): void
+    {
+        $year = $this->year();
+        DocumentNumberFormat::query()->create([
+            'fiscal_year_id' => $year->id,
+            'document_type' => 'SPJ',
+            'format_pattern' => 'CUSTOM/{SEQ}/{YEAR}',
+            'reset_period' => 'YEAR',
+            'padding' => 3,
+            'is_active' => true,
+        ]);
+
+        $migration = require database_path('migrations/school/2026_09_10_134500_seed_canonical_document_number_formats.php');
+        $migration->up();
+
+        $this->assertSame(7, DocumentNumberFormat::query()->where('fiscal_year_id', $year->id)->count());
+        $this->assertSame(
+            'CUSTOM/{SEQ}/{YEAR}',
+            DocumentNumberFormat::query()->where('fiscal_year_id', $year->id)->where('document_type', 'SPJ')->value('format_pattern'),
+        );
+        $this->assertSame(
+            '{SEQ}/PESANAN/{SCHOOL}/{TW}/{YEAR}',
+            DocumentNumberFormat::query()->where('fiscal_year_id', $year->id)->where('document_type', 'PESANAN')->value('format_pattern'),
+        );
     }
 
     private function year(): FiscalYear
