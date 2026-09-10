@@ -47,12 +47,12 @@ class SpjNumberingPolicyService
 
     public function isAutomaticDocumentType(string $documentType): bool
     {
-        return in_array($this->normalizeDocumentType($documentType), self::AUTOMATIC_DOCUMENT_TYPES, true);
+        return in_array($this->automaticTypeAlias($documentType), self::AUTOMATIC_DOCUMENT_TYPES, true);
     }
 
     public function isAutomaticDocumentEligible(Transaction $transaction, string $documentType): bool
     {
-        $documentType = $this->normalizeDocumentType($documentType);
+        $documentType = $this->automaticTypeAlias($documentType);
         $category = $this->canonicalCategory((string) $transaction->spj_category);
         $isSiplah = $this->procurementPolicy->isSiplah($transaction);
 
@@ -90,7 +90,7 @@ class SpjNumberingPolicyService
 
     public function formatFor(int $fiscalYearId, string $documentType): DocumentNumberFormat
     {
-        $documentType = $this->normalizeDocumentType($documentType);
+        $documentType = strtoupper(trim($documentType));
 
         return DocumentNumberFormat::query()->firstOrCreate(
             [
@@ -104,7 +104,7 @@ class SpjNumberingPolicyService
     /** @return array{format_pattern:string,reset_period:string,padding:int,is_active:bool} */
     public function defaultFormat(string $documentType): array
     {
-        $documentType = $this->normalizeDocumentType($documentType);
+        $documentType = strtoupper(trim($documentType));
         $prefix = match ($documentType) {
             'ORDER' => 'PESANAN',
             'RECEIPT' => 'KWITANSI',
@@ -133,7 +133,7 @@ class SpjNumberingPolicyService
         };
     }
 
-    private function normalizeDocumentType(string $documentType): string
+    private function automaticTypeAlias(string $documentType): string
     {
         $documentType = strtoupper(trim($documentType));
 
