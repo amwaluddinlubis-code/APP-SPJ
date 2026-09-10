@@ -86,7 +86,7 @@ class IndonesianDateInputUiTest extends TestCase
         $this->assertStringContainsString(':max="row.usage_completed_at || null"', $serviceEditor);
         $this->assertStringContainsString(':min="row.usage_started_at || null"', $serviceEditor);
         $this->assertStringContainsString("'agreement_date' => ['Tgl Perjanjian', 'date']", $serviceEditor);
-        $this->assertStringContainsString("isset($field['min_from'])", $rowEditor);
+        $this->assertStringContainsString("isset(\$field['min_from'])", $rowEditor);
         $this->assertStringContainsString("'return_date' => ['label' => 'Kembali', 'type' => 'date', 'min_from' => 'departure_date']", $sppd);
     }
 }
