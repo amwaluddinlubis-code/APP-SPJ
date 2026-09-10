@@ -34,7 +34,7 @@ class SpjPackageLifecycleUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($package->status !== 'DRAFT') {
@@ -54,7 +54,7 @@ class SpjPackageLifecycleUseCase
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         $package = SpjPackage::query()->with('transaction')->findOrFail($packageId);
-        abort_unless($this->context->matchesTransaction($package->transaction), 404);
+        abort_unless($this->context->matchesFiscalYear($package->transaction), 404);
         $this->lifecycle->unlock($package, $this->context->actorId(), $data['reason']);
 
         return back()->with('success', 'Paket dibuka kembali. Alasan pembukaan telah dicatat.');

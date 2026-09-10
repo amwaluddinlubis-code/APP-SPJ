@@ -4,6 +4,7 @@ namespace App\UseCases\Spj;
 
 use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,11 @@ use Illuminate\Support\Facades\DB;
 
 class SpjPackageCategoryUseCase
 {
+    public function __construct(
+        private readonly OperationalAuditService $audit,
+        private readonly ActiveSpjContext $context,
+    ) {}
+
     public function switchCategory(string $packageId, Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
@@ -18,9 +24,7 @@ class SpjPackageCategoryUseCase
         ]);
 
         $package = SpjPackage::query()->with('transaction')->find($packageId);
-        if (! $package
-            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             $message = 'Paket dokumen tidak ditemukan pada konteks sekolah/tahun/sumber dana aktif.';
 
             if ($request->expectsJson()) {
@@ -57,7 +61,7 @@ class SpjPackageCategoryUseCase
                     $description .= ' Paket dikembalikan ke DRAFT untuk validasi ulang.';
                 }
 
-                app(OperationalAuditService::class)->record(
+                $this->audit->record(
                     $package->transaction->fiscal_year_id,
                     'SPJ_PACKAGE',
                     $package->id,

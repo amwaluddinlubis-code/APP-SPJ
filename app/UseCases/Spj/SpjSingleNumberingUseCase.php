@@ -38,7 +38,7 @@ class SpjSingleNumberingUseCase
             'transaction.spjPackage',
             'documents',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($package->document_number && in_array($package->status, ['NUMBERED', 'FINAL'], true)) {
@@ -78,7 +78,7 @@ class SpjSingleNumberingUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
         }
         if ($issues = $this->validator->validate($package)) {

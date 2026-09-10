@@ -51,13 +51,19 @@ final class ActiveSpjContext
         return School::query()->findOrFail($this->schoolId());
     }
 
+    public function matchesFiscalYear(Transaction $transaction): bool
+    {
+        return (int) $transaction->fiscal_year_id === $this->fiscalYearId();
+    }
+
+    /**
+     * Mirrors the legacy manual context guard, which compared fund-source IDs
+     * after integer casting. Query scopes use fundSourceId() directly so a
+     * nullable legacy context still keeps SQL WHERE NULL semantics.
+     */
     public function matchesTransaction(Transaction $transaction): bool
     {
-        $transactionFundSourceId = $transaction->fund_source_id === null
-            ? null
-            : (int) $transaction->fund_source_id;
-
-        return (int) $transaction->fiscal_year_id === $this->fiscalYearId()
-            && $transactionFundSourceId === $this->fundSourceId();
+        return $this->matchesFiscalYear($transaction)
+            && (int) $transaction->fund_source_id === (int) $this->fundSourceId();
     }
 }

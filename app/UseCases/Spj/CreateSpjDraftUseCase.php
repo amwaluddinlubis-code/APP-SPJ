@@ -6,10 +6,17 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\FiscalPeriodWorkflowService;
 use App\Services\OperationalAuditService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 
 class CreateSpjDraftUseCase
 {
+    public function __construct(
+        private readonly FiscalPeriodWorkflowService $periods,
+        private readonly OperationalAuditService $audit,
+        private readonly ActiveSpjContext $context,
+    ) {}
+
     public function handle(string $transactionId): RedirectResponse
     {
         $transaction = Transaction::query()
@@ -20,9 +27,7 @@ class CreateSpjDraftUseCase
             ->withCount('items')
             ->find($transactionId);
 
-        if (! $transaction
-            || $transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $transaction || ! $this->context->matchesTransaction($transaction)) {
             return redirect()
                 ->route('transactions.index')
                 ->with('error', 'Transaksi tidak ditemukan pada sekolah, tahun anggaran, atau sumber dana yang sedang aktif.');
@@ -65,11 +70,11 @@ class CreateSpjDraftUseCase
 
         if ($package->wasRecentlyCreated) {
             $quarter = (int) ceil((int) $transaction->transaction_date->format('n') / 3);
-            if (app(FiscalPeriodWorkflowService::class)->isLateEntry($transaction->fiscal_year_id, $quarter)) {
+            if ($this->periods->isLateEntry($transaction->fiscal_year_id, $quarter)) {
                 $package->forceFill(['is_late_entry' => true])->save();
             }
 
-            app(OperationalAuditService::class)->record(
+            $this->audit->record(
                 $transaction->fiscal_year_id,
                 'SPJ_PACKAGE',
                 $package->id,
