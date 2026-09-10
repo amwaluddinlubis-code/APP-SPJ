@@ -62,6 +62,7 @@
             <file>tests/Feature/SpjSixCategoryE2eTest.php</file>
             <file>tests/Feature/SyncProgressUiTest.php</file>
             <file>tests/Feature/TransactionPurchaseDateValidationTest.php</file>
+            <file>tests/Feature/UnifiedEmployeeMasterTest.php</file>
             <file>tests/Feature/SpjVerifyCommandTest.php</file>
             <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
         </testsuite>
