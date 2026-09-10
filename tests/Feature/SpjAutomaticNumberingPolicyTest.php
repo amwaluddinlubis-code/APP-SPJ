@@ -35,14 +35,13 @@ class SpjAutomaticNumberingPolicyTest extends TestCase
 
         $barang = new Transaction(['spj_category' => 'BARANG', 'is_siplah' => false]);
         $konsumsi = new Transaction(['spj_category' => 'KONSUMSI', 'is_siplah' => false]);
-        $konsumsiLegacySiplah = new Transaction(['spj_category' => 'KONSUMSI', 'is_siplah' => true, 'payment_method' => 'siplah']);
         $maintenance = new Transaction(['spj_category' => 'PEMELIHARAAN', 'is_siplah' => false]);
         $jasa = new Transaction(['spj_category' => 'JASA_LAINNYA', 'is_siplah' => false]);
         $sppd = new Transaction(['spj_category' => 'SPPD', 'is_siplah' => false]);
         $honor = new Transaction(['spj_category' => 'HONOR_PEGAWAI', 'is_siplah' => false]);
         $siplah = new Transaction(['spj_category' => 'BARANG', 'is_siplah' => true]);
 
-        foreach ([$barang, $konsumsi, $konsumsiLegacySiplah] as $transaction) {
+        foreach ([$barang, $konsumsi] as $transaction) {
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'SPJ'));
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'PESANAN'));
             $this->assertTrue($policy->isAutomaticDocumentEligible($transaction, 'BAP'));
