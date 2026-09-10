@@ -22,45 +22,62 @@ class DapodikSynchronizationService
     {
         $gtk = $this->fetch($connection, 'getGtk');
         $students = $this->fetch($connection, 'getPesertaDidik');
+        $now = now();
 
-        return DB::connection('school')->transaction(function () use ($connection, $gtk, $students): array {
+        return DB::connection('school')->transaction(function () use ($connection, $gtk, $students, $now): array {
             $identity = app(EmployeeIdentityService::class);
-            $employeeIds = [];
             foreach ($gtk as $row) {
-                $employee = $identity->findMatch($row['nuptk'] ?? null, $row['nip'] ?? null, $row['nik'] ?? null, (string) ($row['nama'] ?? ''));
+                $employee = $identity->findMatch(
+                    $row['nuptk'] ?? null,
+                    $row['nip'] ?? null,
+                    $row['nik'] ?? null,
+                    (string) ($row['nama'] ?? '')
+                );
+                $employee ??= filled($row['ptk_id'] ?? null)
+                    ? Employee::query()->where('dapodik_id', $row['ptk_id'])->first()
+                    : null;
                 $isNew = ! $employee instanceof Employee;
                 if ($isNew) {
                     $employee = new Employee;
-                }
-                $locked = ! $isNew && (bool) $employee->operator_locked;
-
-                if ($isNew) {
-                    // Origin is preserved forever; later feeds only add provenance.
                     $employee->forceFill([
-                        'source_type' => 'DAPODIK', 'source_key' => 'DAPODIK:'.($row['ptk_id'] ?? Str::uuid()), 'dapodik_id' => $row['ptk_id'] ?? null,
+                        'source_type' => 'DAPODIK',
+                        'source_key' => 'DAPODIK:'.($row['ptk_id'] ?? Str::uuid()),
+                        'dapodik_id' => $row['ptk_id'] ?? null,
                     ]);
                 }
 
+                $locked = ! $isNew && (bool) $employee->operator_locked;
                 $employee->forceFill([
-                    'last_seen_dapodik_at' => now(), 'last_known_active_dapodik' => true,
-                    'payload' => $row, 'last_synced_at' => now(),
+                    'last_seen_dapodik_at' => $now,
+                    'last_known_active_dapodik' => true,
+                    'payload' => $this->mergeSourcePayload($employee->payload, 'dapodik', $row),
+                    'last_synced_at' => $now,
                 ]);
 
                 $canonical = [
-                    'name' => $row['nama'] ?? '-', 'normalized_name' => $identity->normalize((string) ($row['nama'] ?? '')),
-                    'nip' => $row['nip'] ?? null, 'nik' => $row['nik'] ?? null,
-                    'nuptk' => $row['nuptk'] ?? null, 'gender' => $row['jenis_kelamin'] ?? null, 'employment_status' => $row['status_kepegawaian_id_str'] ?? null,
-                    'staff_type' => $row['jenis_ptk_id_str'] ?? null, 'position' => $row['jabatan_ptk_id_str'] ?? null, 'birth_place' => $row['tempat_lahir'] ?? null,
-                    'birth_date' => $row['tanggal_lahir'] ?? null, 'religion' => $row['agama_id_str'] ?? null, 'last_education' => $row['pendidikan_terakhir'] ?? null,
-                    'last_study_field' => $row['bidang_studi_terakhir'] ?? null, 'rank_group' => $row['pangkat_golongan_terakhir'] ?? null,
+                    'name' => $row['nama'] ?? '-',
+                    'normalized_name' => $identity->normalize((string) ($row['nama'] ?? '')),
+                    'nip' => $row['nip'] ?? null,
+                    'nik' => $row['nik'] ?? null,
+                    'nuptk' => $row['nuptk'] ?? null,
+                    'gender' => $row['jenis_kelamin'] ?? null,
+                    'employment_status' => $row['status_kepegawaian_id_str'] ?? null,
+                    'staff_type' => $row['jenis_ptk_id_str'] ?? null,
+                    'position' => $row['jabatan_ptk_id_str'] ?? null,
+                    'birth_place' => $row['tempat_lahir'] ?? null,
+                    'birth_date' => $row['tanggal_lahir'] ?? null,
+                    'religion' => $row['agama_id_str'] ?? null,
+                    'last_education' => $row['pendidikan_terakhir'] ?? null,
+                    'last_study_field' => $row['bidang_studi_terakhir'] ?? null,
+                    'rank_group' => $row['pangkat_golongan_terakhir'] ?? null,
                     'is_primary_school' => (bool) ($row['ptk_induk'] ?? false),
                 ];
 
                 if (! $locked) {
-                    $employee->fill($canonical + ['dapodik_id' => $row['ptk_id'] ?? null, 'is_active' => true]);
+                    $employee->fill($canonical + ['dapodik_id' => $row['ptk_id'] ?? null]);
                     $employee->is_active = $identity->effectiveActive($employee->last_known_active_arkas, true);
                 } else {
-                    // Operator corrections win; Dapodik only fills blanks.
+                    // Koreksi operator adalah canonical. Dapodik hanya mengisi field kosong.
                     foreach ($canonical as $column => $value) {
                         if (! filled($employee->getAttribute($column)) && filled($value)) {
                             $employee->setAttribute($column, $value);
@@ -72,9 +89,12 @@ class DapodikSynchronizationService
                 }
 
                 $employee->save();
-                $employeeIds[] = $employee->id;
             }
-            $identity->sweepAfterSync($employeeIds, 'dapodik', now());
+
+            // Bersihkan duplikasi lama PEGAWAI/PTK/DAPODIK menjadi satu row per orang.
+            $identity->fuseDuplicates(false);
+            $seenEmployeeIds = Employee::query()->where('last_seen_dapodik_at', $now)->pluck('id')->all();
+            $identity->sweepAfterSync($seenEmployeeIds, 'dapodik', $now);
 
             $studentIds = [];
             foreach ($students as $row) {
@@ -93,15 +113,32 @@ class DapodikSynchronizationService
                     'semester_id' => $row['semester_id'] ?? null, 'registration_type' => $row['jenis_pendaftaran_id_str'] ?? null,
                     'previous_school' => $row['sekolah_asal'] ?? null, 'school_entry_date' => $row['tanggal_masuk_sekolah'] ?? null,
                     'special_needs' => ! empty($row['kebutuhan_khusus']), 'child_order' => $row['anak_keberapa'] ?? null,
-                    'height' => $row['tinggi_badan'] ?: null, 'weight' => $row['berat_badan'] ?: null, 'is_active' => true, 'payload' => $row, 'last_synced_at' => now(),
+                    'height' => $row['tinggi_badan'] ?: null, 'weight' => $row['berat_badan'] ?: null, 'is_active' => true, 'payload' => $row, 'last_synced_at' => $now,
                 ])->save();
                 $studentIds[] = $student->id;
             }
             Student::where('source_type', 'DAPODIK')->whereNotIn('id', $studentIds)->update(['is_active' => false]);
-            $connection->update(['last_synced_at' => now(), 'last_status' => 'SUCCESS', 'last_message' => count($gtk).' GTK dan '.count($students).' siswa disinkronkan.']);
+            $connection->update([
+                'last_synced_at' => $now,
+                'last_status' => 'SUCCESS',
+                'last_message' => count($gtk).' GTK dan '.count($students).' siswa disinkronkan.',
+            ]);
 
-            return ['employees' => count($gtk), 'students' => count($students)];
+            return ['employees' => Employee::count(), 'students' => count($students)];
         });
+    }
+
+    /** @param array<string, mixed>|null $current @param array<string, mixed> $record */
+    private function mergeSourcePayload(?array $current, string $source, array $record): array
+    {
+        $payload = is_array($current) ? $current : [];
+        $hasProvenance = array_key_exists('arkas', $payload) || array_key_exists('dapodik', $payload);
+        if (! $hasProvenance && $payload !== []) {
+            $payload = ['legacy' => $payload];
+        }
+        $payload[$source] = $record;
+
+        return $payload;
     }
 
     private function fetch(DapodikConnection $connection, string $endpoint): array
