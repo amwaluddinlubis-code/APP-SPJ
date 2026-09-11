@@ -9,7 +9,8 @@ Dokumen ini tidak menyatakan status implementasi. Gunakan:
 - `docs/CURRENT_PROGRESS.md` untuk status/evidence release terbaru;
 - `docs/DEVELOPMENT_ROADMAP.md` untuk prioritas pekerjaan;
 - `docs/ARCHITECTURE_COMPLETE.md` untuk struktur teknis aplikasi;
-- `docs/GUI_STANDARDIZATION.md` untuk kontrak visual dan layout UI.
+- `docs/GUI_STANDARDIZATION.md` untuk kontrak visual dan layout UI;
+- `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` untuk detail koreksi dan rollback numbering.
 
 Jika implementasi atau UI bertentangan dengan keputusan domain di dokumen ini, implementasi/UI yang harus diperbaiki kecuali keputusan domain memang diubah secara eksplisit.
 
@@ -22,8 +23,8 @@ Jika implementasi atau UI bertentangan dengan keputusan domain di dokumen ini, i
 3. **Boundary tenant canonical adalah `School + Fiscal Year + Fund Source`.** Semua query/mutation domain harus berada pada context tersebut.
 4. **Ownership data harus tunggal.** Field yang sama tidak boleh diedit dari Detail Transaksi dan Paket SPJ sekaligus.
 5. **Preview/download tidak menerbitkan nomor.** Rendering dokumen tidak boleh mempunyai side effect numbering.
-6. **NUMBERED/FINAL terkunci dari mutation normal.** Koreksi harus melalui lifecycle resmi yang audited.
-7. **Nomor mengikuti domain dokumen dan chronology/peristiwa**, bukan urutan operator melakukan input.
+6. **NUMBERED/FINAL terkunci dari mutation normal**, kecuali koreksi `item_description` pada NUMBERED sebagaimana diatur pada bagian ownership dan numbering correction.
+7. **Nomor mengikuti domain dokumen dan chronology/source order authoritative**, bukan urutan operator melakukan input.
 8. **UI tidak boleh melemahkan backend rule.** Validasi bisnis authoritative tetap berada di backend/domain.
 9. **Data nyata tidak boleh difabrikasi untuk coverage.** Vendor, penerima, SPPD, template, source transaction, atau identifier tidak boleh dibuat-buat hanya agar satu skenario terlihat lulus.
 10. **Evidence harus dibedakan dari asumsi.** Functional regression, real-data verification, visual/runtime verification, dan deferred work adalah status berbeda.
@@ -56,16 +57,7 @@ Dummy/unselected tenant:
 {SPJ_DATA_PATH}/school-databases/_unselected.sqlite
 ```
 
-### Reset tenant
-
-Reset database sekolah hanya boleh merebuild tenant target, termasuk WAL/SHM dan sequence tenant.
-
-Reset tenant **tidak boleh**:
-
-- menghapus database utama;
-- menghapus tenant sekolah lain;
-- menghapus data di luar scope sekolah target;
-- menganggap restore/reset berhasil sebelum integrity verification selesai.
+Reset database sekolah hanya boleh merebuild tenant target, termasuk WAL/SHM dan sequence tenant. Reset tenant tidak boleh menghapus database utama, tenant lain, atau data di luar scope sekolah target.
 
 ---
 
@@ -97,7 +89,7 @@ Overlay operator mencakup data yang memang menjadi tanggung jawab penyusunan SPJ
 - `receipt_recipient_name`;
 - `spj_category`;
 - vendor/procurement manual;
-- metadata invoice/SiPLah yang memang operator-owned;
+- metadata invoice/SiPLah operator-owned;
 - detail kategori;
 - package/document lifecycle;
 - numbering domain.
@@ -115,12 +107,7 @@ source kembali -> aktifkan kembali identity yang sama
 source berubah -> lakukan reconciliation bila perlu
 ```
 
-Safe sync tidak boleh:
-
-- menghapus Paket/overlay hanya karena source sementara hilang;
-- membuat identity baru untuk source yang kembali;
-- menimpa NUMBERED/FINAL secara diam-diam;
-- menghapus operator data untuk menyamakan source secara paksa.
+Safe sync tidak boleh menghapus Paket/overlay hanya karena source sementara hilang, membuat identity baru untuk source yang kembali, menimpa NUMBERED/FINAL secara diam-diam, atau menghapus operator data untuk menyamakan source secara paksa.
 
 ---
 
@@ -149,17 +136,24 @@ amount            readonly source
 
 `item_description` harus benar-benar tersimpan sebelum Paket dapat dibuat/dibuka melalui gateway canonical.
 
-Detail Transaksi tidak boleh menjadi workspace kedua untuk:
+Detail Transaksi tidak boleh menjadi workspace kedua untuk kategori SPJ, metode/referensi pembayaran, vendor, pajak, data kategori, numbering, atau lifecycle dokumen.
 
-- kategori SPJ;
-- metode/referensi pembayaran;
-- vendor/penyedia;
-- pajak;
-- data kategori;
-- numbering;
-- lifecycle dokumen.
+### 4.2 Koreksi Detail Transaksi setelah NUMBERED
 
-### 4.2 Paket SPJ
+Perubahan `item_description` tetap diperbolehkan ketika Paket berstatus `NUMBERED`.
+
+Koreksi ini:
+
+- tidak membatalkan nomor;
+- tidak menurunkan status Paket;
+- tidak mengubah sequence;
+- tidak menulis ulang source ARKAS/BKU.
+
+Jika dokumen belum `FINAL`, preview/generate berikutnya boleh menggunakan `item_description` terbaru dengan nomor yang sama.
+
+Untuk `FINAL`, koreksi yang memengaruhi artifact final harus melalui lifecycle koreksi resmi.
+
+### 4.3 Paket SPJ
 
 Paket SPJ adalah workspace mutation dokumen pertanggungjawaban.
 
@@ -185,28 +179,33 @@ preview / generate / download
 finalization / lifecycle
 ```
 
-Paket boleh membaca source transaction/item/tax untuk keperluan validasi dan rendering, tetapi tidak boleh menulis ulang source tersebut.
+Paket boleh membaca source transaction/item/tax untuk validasi dan rendering, tetapi tidak boleh menulis ulang source tersebut.
+
+### 4.4 Perubahan Paket setelah NUMBERED
+
+Data Paket yang memengaruhi substansi dokumen **tidak boleh diubah langsung saat masih `NUMBERED`**.
+
+Termasuk kategori, detail pembayaran, penerima, vendor, procurement, invoice/operator-owned SiPLah metadata, data peserta/pekerja/pelaksana/penerima, serta Isian Manual kategori.
+
+Untuk mengubahnya:
+
+```text
+NUMBERED
+-> rollback/cancel numbering yang sesuai
+-> DRAFT
+-> ubah data
+-> validasi ulang
+-> READY
+-> numbering ulang
+```
 
 ---
 
 ## 5. Pajak adalah source transaction
 
-Field pajak canonical berasal dari source transaksi:
+Field pajak canonical berasal dari source transaksi: PPN, PPh 21/22/23/4(2), SSPD/Pajak Daerah, `tax_total`, dan `net_amount`.
 
-```text
-PPN
-PPh 21
-PPh 22
-PPh 23
-PPh 4(2)
-SSPD / Pajak Daerah
-tax_total
-net_amount
-```
-
-Paket SPJ tidak boleh menghitung ulang lalu menulis ulang nilai source tersebut.
-
-Jika detail kategori membutuhkan distribusi pajak per penerima, distribusi tersebut adalah **derived/operator detail** dan tidak mengubah nilai source transaction.
+Paket SPJ tidak boleh menghitung ulang lalu menulis ulang nilai source tersebut. Distribusi pajak per penerima boleh menjadi derived/operator detail selama tidak mengubah nilai source transaction.
 
 ---
 
@@ -233,13 +232,9 @@ UPAH               -> PEMELIHARAAN
 LAINNYA            -> JASA_LAINNYA
 ```
 
-Tidak boleh menambahkan kategori baru hanya untuk merepresentasikan channel pembayaran/procurement.
-
-### Perubahan kategori
-
 Jika Paket berstatus READY dan kategori benar-benar berubah, Paket harus kembali ke DRAFT untuk revalidation.
 
-Jika nilai kategori tidak berubah, lifecycle tidak boleh di-reset tanpa alasan domain.
+Jika Paket sudah NUMBERED, kategori tidak boleh diubah sampai numbering yang relevan di-rollback/dibatalkan sesuai kontrak numbering correction.
 
 ---
 
@@ -262,8 +257,6 @@ Kontrak permanen:
 - requirement dokumen SiPLah hanya boleh meminta dokumen yang memang applicable;
 - BARANG SiPLah tidak boleh dipaksa memenuhi Surat Pesanan internal yang secara policy tidak berlaku.
 
-Source SiPLah dan operator-owned SiPLah fields harus tetap mengikuti aturan safe sync/overlay yang sama seperti domain lain.
-
 ---
 
 ## 8. Pengadaan barang dan chronology
@@ -280,8 +273,6 @@ order_date <= bap_date
 bap_date <= bast_date
 ```
 
-Jangan menambahkan rule chronology baru hanya berdasarkan asumsi visual atau kebiasaan operator tanpa keputusan domain eksplisit.
-
 ---
 
 ## 9. Konsumsi dan participant roster
@@ -293,11 +284,7 @@ Auto-fill peserta = Employee source DAPODIK
 Participant manual = allowed
 ```
 
-Unified Employee Master atau identity fusion lintas source **tidak otomatis memperluas** sumber auto-fill KONSUMSI.
-
-Jika implementasi identity menyatukan provenance ARKAS + Dapodik, eligibility auto-fill tetap harus didasarkan pada evidence/provenance Dapodik yang sah.
-
-Jumlah peserta/porsi harus tetap konsisten dengan aturan kategori yang berlaku.
+Unified Employee Master atau identity fusion lintas source tidak otomatis memperluas sumber auto-fill KONSUMSI.
 
 ---
 
@@ -305,22 +292,16 @@ Jumlah peserta/porsi harus tetap konsisten dengan aturan kategori yang berlaku.
 
 Employee dapat mempunyai provenance dari lebih dari satu source, termasuk ARKAS/PTK dan Dapodik, serta row manual operator.
 
-Identity resolution harus bersifat konservatif.
-
-Prioritas match kuat menggunakan identifier yang memang dapat dipercaya, misalnya NUPTK/NIP/identifier source canonical.
-
-Normalized name hanya boleh menjadi fallback bila kandidat **unik dan tidak ambigu**.
+Identity resolution harus konservatif. Prioritas match menggunakan identifier kuat; normalized name hanya fallback bila kandidat unik dan tidak ambigu.
 
 Aturan permanen:
 
-- nama yang sama tidak cukup untuk silent merge bila ada lebih dari satu kandidat;
-- dua orang dengan nama sama tetapi identifier berbeda tidak boleh digabung;
-- ambiguity harus menghasilkan no-match/manual resolution, bukan tebakan;
-- provenance source harus dipertahankan setelah fusion;
-- operator-locked/manual row tidak boleh disapu hanya karena satu source tidak lagi melihat pegawai tersebut;
-- deactivation karena sync harus mempertimbangkan seluruh source provenance yang relevan.
-
-Keamanan identity lebih penting daripada mengurangi jumlah duplicate secara agresif.
+- nama sama tidak cukup untuk silent merge bila ada lebih dari satu kandidat;
+- identifier berbeda tidak boleh digabung hanya karena nama sama;
+- ambiguity menghasilkan no-match/manual resolution;
+- provenance source dipertahankan;
+- operator-locked/manual row tidak disapu hanya karena satu source tidak melihatnya;
+- deactivation mempertimbangkan seluruh provenance source yang relevan.
 
 ---
 
@@ -334,42 +315,23 @@ Domain utama:
     └── banyak workers
 ```
 
-Jika BKU memisahkan bahan/barang dan upah, transaksi dapat saling ditautkan melalui relationship context seperti:
+Jika BKU memisahkan bahan/barang dan upah, transaksi dapat saling ditautkan melalui relationship context seperti `maintenance_material_transaction_id` dan `maintenance_labor_transaction_id`.
 
-```text
-maintenance_material_transaction_id
-maintenance_labor_transaction_id
-```
-
-Kontrak linkage:
-
-- transaksi tidak boleh menautkan dirinya sendiri;
-- kandidat harus berada dalam tenant context yang sama;
-- relationship state tetap transaction/context-owned;
-- rendering dokumen boleh menggabungkan context bahan dan upah;
-- penggabungan document context tidak boleh menulis ulang source BKU.
+Linkage harus berada dalam tenant yang sama dan tidak boleh menulis ulang source BKU.
 
 ---
 
 ## 12. SPPD
 
-Satu transaksi dapat memiliki banyak travel/pelaksana.
-
-SPPD tetap kategori canonical tersendiri.
+Satu transaksi dapat memiliki banyak travel/pelaksana. SPPD tetap kategori canonical tersendiri.
 
 Jika fiscal year tertentu tidak mempunyai transaksi SPPD nyata, aplikasi/dokumentasi/test real-data tidak boleh membuat SPPD fiktif hanya untuk memperoleh six-category coverage.
-
-Deterministic fixture test boleh memakai fixture sintetis yang jelas berstatus test fixture; aturan ini melarang fabrikasi **real-data evidence**.
 
 ---
 
 ## 13. Honor Pegawai
 
-Satu transaksi dapat mempunyai banyak penerima honor.
-
-Rincian honor merupakan data Paket SPJ dan tidak boleh dipindahkan kembali menjadi mutation Detail Transaksi.
-
-Employee identity yang dipakai untuk membantu pemilihan penerima tidak boleh melemahkan kontrak identity resolution pada bagian 10.
+Satu transaksi dapat mempunyai banyak penerima honor. Rincian honor merupakan data Paket SPJ dan tidak boleh dipindahkan kembali menjadi mutation Detail Transaksi.
 
 ---
 
@@ -385,11 +347,7 @@ Kontrak agregat:
 Σ net penerima   = transaction.net_amount
 ```
 
-Jika source hanya menyediakan tax/net agregat, aplikasi boleh membuat distribusi derived secara proporsional dengan koreksi rounding deterministik.
-
-Distribusi tersebut tidak boleh mengubah source transaction tax/net.
-
-Output dokumen per penerima harus mempertahankan identity, gross, tax, dan net penerima yang benar.
+Distribusi derived tidak boleh mengubah source transaction tax/net.
 
 ---
 
@@ -397,9 +355,7 @@ Output dokumen per penerima harus mempertahankan identity, gross, tax, dan net p
 
 `receipt_recipient_name` adalah overlay operator untuk pihak utama/penanda tangan kuitansi.
 
-`recipient_name` tetap source dan tidak boleh digunakan sebagai pengganti writable overlay hanya demi menyederhanakan implementasi.
-
-Jika detail kategori mempunyai banyak penerima, aplikasi harus dapat menentukan maksimal satu Penerima Utama yang authoritative untuk Paket tersebut.
+`recipient_name` tetap source. Jika detail kategori mempunyai banyak penerima, maksimal satu Penerima Utama menjadi authoritative untuk Paket tersebut.
 
 ---
 
@@ -418,35 +374,118 @@ CANCELLED
 Prinsip:
 
 - DRAFT dapat dilengkapi operator;
-- READY berarti validation yang berlaku telah dipenuhi dan Paket siap masuk numbering;
-- NUMBERED berarti identitas/nomor domain sudah diterbitkan dan mutation normal terkunci;
-- FINAL berarti finalization/snapshot yang diwajibkan telah selesai dan Paket terkunci;
+- READY berarti validation telah dipenuhi dan Paket siap masuk numbering;
+- NUMBERED berarti nomor domain sudah diterbitkan;
+- FINAL berarti finalization/snapshot selesai dan Paket terkunci;
 - CANCELLED adalah lifecycle eksplisit, bukan delete tersembunyi.
 
-Cancellation, reissue, reopen, dan finalization harus mempunyai jalur domain eksplisit dan audit trail.
+Cancellation, reissue, reopen, rollback, dan finalization harus mempunyai jalur domain eksplisit dan audit trail.
 
 Preview/download tidak boleh mengubah lifecycle.
 
 ---
 
-## 17. Penomoran dokumen
+## 17. Penomoran dokumen dan koreksi numbering
+
+### 17.1 Aturan dasar
 
 1. Setiap jenis dokumen mempunyai domain nomor sendiri bila memang diperlukan.
-2. Nomor mengikuti chronology/peristiwa dokumen yang authoritative.
+2. Nomor mengikuti chronology/source order authoritative.
 3. Urutan operator menginput data bukan sumber urutan nomor.
 4. Nomor aktif tidak boleh ditimpa diam-diam.
-5. Nomor cancelled tetap menjadi history.
-6. Reissue tidak boleh menciptakan dua identity aktif untuk domain yang sama.
-7. Numbering harus idempotent terhadap request yang sama.
-8. Preview/download tidak boleh mengalokasikan sequence.
-9. Nomor otomatis bukan field manual operator.
-10. Real-data numbering hanya dilakukan setelah blocker legitimate sebelumnya diselesaikan; numbering tidak boleh dipakai untuk melompati data yang belum valid.
+5. Reissue tidak boleh menciptakan dua identity aktif untuk domain yang sama.
+6. Numbering harus idempotent terhadap request yang sama.
+7. Preview/download tidak boleh mengalokasikan sequence.
+8. Nomor otomatis bukan field manual operator.
+9. Boundary numbering dan rollback adalah `School + Fiscal Year + Fund Source`.
+10. Target urutan SPJ adalah konsisten dengan urutan pembukuan ARKAS pada context yang sama.
+
+### 17.2 Cancel individual
+
+Jika satu dokumen/transaksi dibatalkan secara bisnis:
+
+```text
+nomor -> CANCELLED
+```
+
+Nomor tetap menjadi history, tidak digunakan kembali, dan sequence tidak mundur.
+
+**Inilah scope aturan “nomor cancelled tetap menjadi history”.**
+
+### 17.3 Rollback numbering dari nomor tertentu
+
+Jika numbering salah urut terhadap ARKAS, rollback harus dimulai dari nomor salah sampai nomor aktif terakhir.
+
+Contoh:
+
+```text
+01 ... 07 08 09 10
+```
+
+Jika masalah dimulai pada `08`:
+
+```text
+10 -> lepas
+09 -> lepas
+08 -> lepas
+sequence -> 7
+```
+
+Nomor yang dilepas boleh digunakan kembali saat numbering ulang. Operational audit rollback tetap dipertahankan.
+
+Rollback tidak boleh membuat lubang aktif di tengah sequence.
+
+### 17.4 Cancel Penomoran Triwulan
+
+Pembuatan numbering berjalan maju:
+
+```text
+TW1 -> TW2 -> TW3 -> TW4
+```
+
+Pembatalan numbering berjalan mundur:
+
+```text
+TW4 -> TW3 -> TW2 -> TW1
+```
+
+Dependency hanya diperiksa pada tenant+tahun+sumber dana yang sama.
+
+Rule:
+
+- TW3 tidak boleh dibatalkan bila TW4 masih mempunyai numbering aktif;
+- TW2 tidak boleh dibatalkan bila TW3/TW4 masih aktif;
+- TW1 tidak boleh dibatalkan bila TW2/TW3/TW4 masih aktif.
+
+Cancel triwulan mengembalikan sequence ke akhir triwulan sebelumnya:
+
+```text
+Cancel TW3 -> sequence akhir TW2
+Cancel TW2 -> sequence akhir TW1
+Cancel TW1 -> sequence 0
+```
+
+Nomor hasil batch yang di-rollback boleh digunakan kembali.
+
+### 17.5 Sequence setelah rollback
+
+Sequence sesudah rollback harus merefleksikan nomor aktif valid terakhir pada domain numbering yang sama, bukan sekadar mempercayai counter lama.
+
+Jika tidak ada nomor aktif valid yang tersisa, sequence menjadi `0`.
+
+### 17.6 History numbering vs operational audit
+
+Rollback numbering dapat menghapus/reset history numbering domain yang membuat nomor dianggap terpakai, tetapi operational audit tindakan rollback tetap dipertahankan.
+
+Audit minimal menyimpan actor, tenant context, quarter bila relevant, nomor awal/akhir rollback, sequence sebelum/sesudah, alasan, dan timestamp.
+
+Detail lengkap ada pada `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
 ---
 
 ## 18. Read-only audit dan real-data verification
 
-Audit database sekolah yang bertujuan menentukan kondisi awal harus **read-only**.
+Audit database sekolah yang bertujuan menentukan kondisi awal harus read-only.
 
 Kontrak audit real-data:
 
@@ -457,9 +496,7 @@ Kontrak audit real-data:
 - tidak menerbitkan nomor;
 - tidak mengisi vendor/penerima/SPPD/template secara otomatis untuk memperoleh PASS.
 
-Mutation real-data untuk pengujian workflow harus dilakukan pada **isolated copy**, bukan original upload/baseline immutable.
-
-Audit read-only dan mutation workflow adalah dua tahap yang berbeda dan tidak boleh dicampur.
+Mutation real-data untuk pengujian workflow harus dilakukan pada isolated copy, bukan original upload/baseline immutable.
 
 ---
 
@@ -470,18 +507,18 @@ Template/operator artifact adalah bagian dari Paket SPJ, bukan source ARKAS/BKU.
 Kontrak template:
 
 - upload invalid tidak boleh mengganti template aktif;
-- replacement harus menjaga template lama sampai replacement baru benar-benar berhasil;
-- generator dan template library harus membaca lifecycle storage yang sama;
-- unresolved placeholder harus dianggap error, bukan dibiarkan diam-diam ke output final;
-- output yang dinyatakan generated harus lolos validation format yang sesuai.
+- replacement menjaga template lama sampai replacement baru berhasil;
+- generator dan template library membaca lifecycle storage yang sama;
+- unresolved placeholder dianggap error;
+- output generated harus lolos validation format yang sesuai.
 
-Functional artifact generation tidak sama dengan official-template visual verification. Print area, page break, header/footer, ukuran halaman, dan hasil cetak nyata tetap memerlukan verification tersendiri.
+Functional artifact generation tidak sama dengan official-template visual verification.
 
 ---
 
 ## 20. Authorization dan audit trail
 
-Role authorization dan tenant/context isolation adalah dua boundary terpisah. Memiliki role yang benar tidak memberi hak mengakses tenant/context lain.
+Role authorization dan tenant/context isolation adalah dua boundary terpisah.
 
 Aktivitas sensitif yang harus dapat diaudit mencakup sekurang-kurangnya:
 
@@ -492,7 +529,10 @@ Aktivitas sensitif yang harus dapat diaudit mencakup sekurang-kurangnya:
 - update Paket;
 - READY;
 - numbering;
-- cancel/reissue/reopen;
+- cancel individual;
+- rollback numbering;
+- cancel numbering triwulan;
+- reissue/reopen;
 - finalization;
 - reset/restore tenant;
 - perubahan konfigurasi sensitif.
@@ -503,9 +543,7 @@ Audit trail harus menyimpan context yang cukup untuk memahami siapa melakukan ap
 
 ## 21. Aturan perubahan keputusan desain
 
-Keputusan di dokumen ini tidak boleh diubah hanya untuk menyesuaikan implementasi yang kebetulan sudah terlanjur ada.
-
-Jika business rule memang berubah:
+Jika business rule berubah:
 
 1. jelaskan alasan domain/peraturan/operasionalnya;
 2. perbarui keputusan di dokumen ini;
@@ -535,6 +573,18 @@ Arsitektur:
 
 ```text
 docs/ARCHITECTURE_COMPLETE.md
+```
+
+Sinkronisasi:
+
+```text
+docs/SYNCHRONIZATION.md
+```
+
+Koreksi dan rollback numbering:
+
+```text
+docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
 ```
 
 Kontrak GUI:
