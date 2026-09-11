@@ -28,6 +28,7 @@
             <file>tests/Feature/DocumentNumberFormatSettingsTest.php</file>
             <file>tests/Feature/DocumentTemplateControllerArchitectureTest.php</file>
             <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
+            <file>tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php</file>
             <file>tests/Feature/EmployeeIdentityMergeTest.php</file>
             <file>tests/Feature/IndonesianDateInputUiTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
