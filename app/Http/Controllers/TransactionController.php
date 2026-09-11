@@ -16,8 +16,8 @@ class TransactionController extends Controller
         if (! $transaction || $transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || (int) $transaction->fund_source_id !== (int) session('active_fund_source_id')) {
             return redirect()->route('transactions.index')->with('error', 'Transaksi tidak ditemukan pada tahun aktif.');
         }
-        if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
-            return back()->with('error', 'Uraian item dikunci karena paket SPJ sudah bernomor atau final.');
+        if ($transaction->spjPackage?->status === 'FINAL') {
+            return back()->with('error', 'Uraian item tidak dapat diubah karena paket SPJ sudah FINAL. Lakukan koreksi melalui lifecycle resmi terlebih dahulu.');
         }
 
         $data = $request->validate([
@@ -39,7 +39,7 @@ class TransactionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Uraian barang/jasa untuk SPJ berhasil disimpan.');
+        return back()->with('success', 'Uraian barang/jasa untuk SPJ berhasil disimpan tanpa mengubah penomoran.');
     }
 
     public function index(Request $request): View
@@ -70,8 +70,6 @@ class TransactionController extends Controller
         $paymentMethod = $this->normalizePaymentMethod($transaction->payment_method, $transaction);
         [$previousTransaction, $nextTransaction] = $this->adjacentTransactions($transaction);
 
-        // Catatan: daftar pegawai sengaja tidak dimuat di sini. Data pegawai
-        // hanya dibutuhkan di modul SPJ, bukan di detail transaksi.
         return view('transactions.show', compact(
             'transaction',
             'headerVisual',
@@ -88,22 +86,14 @@ class TransactionController extends Controller
         $transactionDate = $transaction->transaction_date;
 
         if ($transactionDate === null) {
-            $previous = ($baseQuery())
-                ->whereNull('transaction_date')
-                ->where('id', '<', $transaction->id)
-                ->orderByDesc('id')
-                ->first();
-
+            $previous = ($baseQuery())->whereNull('transaction_date')->where('id', '<', $transaction->id)->orderByDesc('id')->first();
             $next = ($baseQuery())
                 ->where(function (Builder $query) use ($transaction): void {
                     $query->where(function (Builder $query) use ($transaction): void {
                         $query->whereNull('transaction_date')->where('id', '>', $transaction->id);
                     })->orWhereNotNull('transaction_date');
                 })
-                ->orderByRaw('transaction_date IS NULL DESC')
-                ->orderBy('transaction_date')
-                ->orderBy('id')
-                ->first();
+                ->orderByRaw('transaction_date IS NULL DESC')->orderBy('transaction_date')->orderBy('id')->first();
 
             return [$previous, $next];
         }
@@ -116,10 +106,7 @@ class TransactionController extends Controller
                         $query->where('transaction_date', $transactionDate)->where('id', '<', $transaction->id);
                     });
             })
-            ->orderByRaw('transaction_date IS NULL DESC')
-            ->orderByDesc('transaction_date')
-            ->orderByDesc('id')
-            ->first();
+            ->orderByRaw('transaction_date IS NULL DESC')->orderByDesc('transaction_date')->orderByDesc('id')->first();
 
         $next = ($baseQuery())
             ->where(function (Builder $query) use ($transaction, $transactionDate): void {
@@ -128,14 +115,11 @@ class TransactionController extends Controller
                         $query->where('transaction_date', $transactionDate)->where('id', '>', $transaction->id);
                     });
             })
-            ->orderBy('transaction_date')
-            ->orderBy('id')
-            ->first();
+            ->orderBy('transaction_date')->orderBy('id')->first();
 
         return [$previous, $next];
     }
 
-    /** Selects a local header visual from the SPJ category, account, and description. */
     private function headerVisual(Transaction $transaction): array
     {
         $haystack = mb_strtolower(implode(' ', [
@@ -172,7 +156,6 @@ class TransactionController extends Controller
         if (in_array($value, ['transfer_bank', 'siplah', 'tunai'], true)) {
             return $value;
         }
-
         if ($transaction->is_siplah) {
             return 'siplah';
         }
@@ -181,7 +164,6 @@ class TransactionController extends Controller
         if (str_contains($proofNumber, 'non_tunai') || str_contains($proofNumber, 'non tunai') || str_starts_with($proofNumber, 'bnu')) {
             return 'transfer_bank';
         }
-
         if (str_contains($value, 'transfer') || str_contains($value, 'cms') || str_contains($value, 'non tunai')) {
             return 'transfer_bank';
         }
