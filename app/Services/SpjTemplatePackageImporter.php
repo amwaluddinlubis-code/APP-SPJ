@@ -6,6 +6,7 @@ use App\Models\DocumentTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Throwable;
@@ -16,6 +17,8 @@ final class SpjTemplatePackageImporter
 
     /**
      * Memeriksa workbook master terhadap seluruh kontrak document type canonical.
+     * Workbook hanya dimuat sekali agar validasi paket besar tidak menghabiskan
+     * memori dengan memuat file yang sama berulang kali.
      *
      * @return array{
      *     valid:bool,
@@ -31,45 +34,51 @@ final class SpjTemplatePackageImporter
         }
 
         $workbook = IOFactory::load($path);
-        try {
-            $sheetNames = $workbook->getSheetNames();
-        } finally {
-            $workbook->disconnectWorksheets();
-        }
-
         $results = [];
         $errors = [];
         $warnings = [];
 
-        foreach (SpjDocumentTypeRegistry::all() as $documentType => $definition) {
-            $expectedSheet = (string) $definition['sheet'];
-            if (! in_array($expectedSheet, $sheetNames, true)) {
-                $errors[] = [
-                    'document_type' => $documentType,
-                    'code' => 'PACKAGE_SHEET_MISSING',
-                    'message' => $documentType.' memerlukan sheet '.$expectedSheet.'.',
-                ];
+        try {
+            foreach (SpjDocumentTypeRegistry::all() as $documentType => $definition) {
+                $expectedSheet = (string) $definition['sheet'];
+                $sheet = $workbook->getSheetByName($expectedSheet);
 
-                continue;
-            }
+                if (! $sheet) {
+                    $errors[] = [
+                        'document_type' => $documentType,
+                        'code' => 'PACKAGE_SHEET_MISSING',
+                        'message' => $documentType.' memerlukan sheet '.$expectedSheet.'.',
+                    ];
 
-            $result = $this->validator->validateFile($documentType, $path, 'xlsx');
-            $results[$documentType] = $result;
+                    continue;
+                }
 
-            foreach ($result['errors'] as $issue) {
-                $errors[] = [
-                    'document_type' => $documentType,
-                    'code' => (string) $issue['code'],
-                    'message' => (string) $issue['message'],
-                ];
+                [$markers, $markerRows] = $this->extractExcelMarkers($sheet);
+                $result = $this->validator->validateMarkers(
+                    $documentType,
+                    $markers,
+                    $markerRows,
+                    $expectedSheet,
+                );
+                $results[$documentType] = $result;
+
+                foreach ($result['errors'] as $issue) {
+                    $errors[] = [
+                        'document_type' => $documentType,
+                        'code' => (string) $issue['code'],
+                        'message' => (string) $issue['message'],
+                    ];
+                }
+                foreach ($result['warnings'] as $issue) {
+                    $warnings[] = [
+                        'document_type' => $documentType,
+                        'code' => (string) $issue['code'],
+                        'message' => (string) $issue['message'],
+                    ];
+                }
             }
-            foreach ($result['warnings'] as $issue) {
-                $warnings[] = [
-                    'document_type' => $documentType,
-                    'code' => (string) $issue['code'],
-                    'message' => (string) $issue['message'],
-                ];
-            }
+        } finally {
+            $workbook->disconnectWorksheets();
         }
 
         return [
@@ -174,7 +183,9 @@ final class SpjTemplatePackageImporter
 
     private function extractCanonicalSheet(string $sourcePath, string $sheetName, string $destinationPath): void
     {
-        $workbook = IOFactory::load($sourcePath);
+        $reader = IOFactory::createReaderForFile($sourcePath);
+        $reader->setLoadSheetsOnly([$sheetName]);
+        $workbook = $reader->load($sourcePath);
 
         try {
             $target = $workbook->getSheetByName($sheetName);
@@ -182,12 +193,9 @@ final class SpjTemplatePackageImporter
                 throw new RuntimeException('Sheet '.$sheetName.' tidak ditemukan saat pemisahan paket template.');
             }
 
-            // Keep the canonical worksheet active before removing any sibling
-            // worksheets. PhpSpreadsheet maintains its active-sheet pointer while
-            // indices shift, but it can fail when the active worksheet itself is
-            // removed. This preserves styles, drawings and print settings without
-            // relying on addExternalSheet(), which rejects a cloned sheet that is
-            // still associated with the source workbook.
+            // setLoadSheetsOnly() keeps extraction lightweight and avoids repeatedly
+            // loading every worksheet from the master package. Keep this fallback
+            // pruning so the persisted artifact is always a one-sheet workbook.
             $workbook->setActiveSheetIndex($workbook->getIndex($target));
 
             for ($index = $workbook->getSheetCount() - 1; $index >= 0; $index--) {
@@ -201,5 +209,33 @@ final class SpjTemplatePackageImporter
         } finally {
             $workbook->disconnectWorksheets();
         }
+    }
+
+    /** @return array{0:array<int,string>,1:array<string,array<int,int>>} */
+    private function extractExcelMarkers(Worksheet $sheet): array
+    {
+        $markers = [];
+        $markerRows = [];
+
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            $value = $sheet->getCell($coordinate)->getValue();
+            if (! is_string($value)) {
+                continue;
+            }
+
+            preg_match_all('/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/u', $value, $matches);
+            foreach ($matches[1] ?? [] as $marker) {
+                $marker = strtoupper(trim((string) $marker));
+                if ($marker === '') {
+                    continue;
+                }
+
+                $row = $sheet->getCell($coordinate)->getRow();
+                $markers[$marker] = true;
+                $markerRows[$marker][(int) $row] = (int) $row;
+            }
+        }
+
+        return [array_keys($markers), array_map('array_values', $markerRows)];
     }
 }
