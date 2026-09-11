@@ -72,3 +72,9 @@ jobs:
 
       - name: SPJ critical tests
         run: php artisan test --testsuite="SPJ Critical" --compact
+
+      - name: Full unit test suite
+        run: php artisan test --testsuite="Unit" --compact
+
+      - name: Full feature test suite
+        run: php artisan test --testsuite="Feature" --compact
