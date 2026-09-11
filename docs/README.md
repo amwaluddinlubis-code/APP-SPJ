@@ -20,18 +20,18 @@ Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.m
 ## Functional gate aktif
 
 ```text
-commit : a2509aad9104706da2709fcd07cce0b973282cb1
-subject: test(spj): isolate numbered description flash state
-CI run : 34595391755
-CI job : 103249843120
-result : PASS — 248 tests / 1880 assertions
+commit : 8180d566621dcf7b1a84b9183a666f2f7a64b398
+subject: test(gui): include final audit source guard in critical suite
+CI run : 34613781674 (#326)
+CI job : 103310602936
+result : PASS — 261 tests / 1996 assertions
 ```
 
-Gate ini mencakup frontend build PASS, Blade compile PASS, dan `SPJ Critical` PASS. Pint tetap advisory/non-blocking; gate tersebut melaporkan 3 style issues repository.
+Gate ini mencakup frontend build PASS, Blade compile PASS, dan `SPJ Critical` PASS. Pint tetap advisory/non-blocking dan melaporkan 3 style issues repository yang sudah dikenal.
 
-Commit dokumentasi setelah gate tidak mengubah source aplikasi/test, sehingga `a2509aad...` tetap menjadi code gate functional terbaru sampai ada source commit berikutnya.
+Commit dokumentasi setelah gate tidak mengubah source aplikasi/test, sehingga `8180d566...` tetap menjadi deterministic code gate terbaru sampai ada source/test commit berikutnya yang lolos CI.
 
-Status keseluruhan tetap **belum final release-ready** karena real-data verification dan official-template/browser/runtime RVR masih aktif.
+Status keseluruhan tetap **belum final release-ready** karena real-data verification, official-template output, dan browser/runtime RVR masih aktif.
 
 ## Dokumen aktif utama
 
@@ -41,11 +41,12 @@ Status keseluruhan tetap **belum final release-ready** karena real-data verifica
 | `DEVELOPMENT_ROADMAP.md` | **ACTIVE** — prioritas dan urutan pekerjaan. |
 | `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, matriks impact, evidence rules, dan aturan wajib untuk semua AI/coding agent. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
-| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur yang sudah diselaraskan dengan functional gate terbaru. |
+| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur aktif. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
-| `GUI_STANDARDIZATION.md` | **ACTIVE** — kontrak GUI/layout. |
+| `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — kontrak GUI/layout, theme, primitive, icon canonical, dan aturan evidence visual. |
+| `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — checklist browser desktop/laptop dan mobile/tablet untuk GUI-AUDIT-12/13. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
 
@@ -64,12 +65,15 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARK
 
 Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md` sebelum mengubah use case numbering atau lifecycle.
 
+Untuk penutupan standardisasi GUI, baca `GUI_STANDARDIZATION.md` lalu jalankan `GUI_RUNTIME_QA.md`. Source/CI PASS tidak boleh diubah menjadi browser/mobile PASS tanpa runtime evidence.
+
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |
 |---|---|
 | `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPLah sudah FUNCTIONAL PASS; generated-document E2E + official-template output masih RVR. |
-| `MOBILE_VISUAL_QA_TODO.md` | **TODO / RVR / NON-BLOCKER** untuk target release desktop/laptop saat ini. |
+| `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — GUI-AUDIT-12 desktop/laptop dan GUI-AUDIT-13 mobile/tablet. |
+| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO** — tetap dapat dipakai sebagai detail tambahan; checklist canonical penutupan GUI sekarang `GUI_RUNTIME_QA.md`. |
 
 `SIPLAH_MVP_PLAN.md` sengaja belum di-rename agar link lama tidak rusak. Jangan membaca nama file sebagai tanda bahwa core SiPLah masih berada pada fase MVP awal.
 
@@ -102,6 +106,8 @@ Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URG
 - Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
 - Operator-locked Employee tidak boleh ditimpa source sync.
 - Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill KONSUMSI/SPPD memakai roster menyatu, participant manual diperbolehkan.
+- Icon canonical dimiliki `<x-ui.icon>`; `<x-ui-icon>` hanya compatibility adapter dan tidak boleh memiliki registry SVG sendiri.
+- Source-level responsive regression bukan bukti browser visual PASS.
 - Audit database real-data dilakukan read-only sebelum mutation.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memaksa coverage.
 
