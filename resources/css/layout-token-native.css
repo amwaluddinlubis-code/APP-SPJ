@@ -151,6 +151,25 @@
     color: var(--text-comfort-primary, #334155);
 }
 
+#app-scroll-to-top {
+    border-color: var(--ui-component-border-strong, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--ui-component-surface, var(--ui-surface-base)) 94%, transparent) !important;
+    color: var(--ui-component-text, var(--ui-fg)) !important;
+    box-shadow: var(--profile-floating-shadow) !important;
+}
+
+#app-scroll-to-top:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--ui-component-border-strong, var(--ui-line-strong))) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 24%, var(--ui-component-surface, var(--ui-surface-base))) !important;
+    color: var(--ui-component-text-strong, var(--ui-fg-strong)) !important;
+}
+
+#app-scroll-to-top:focus-visible {
+    outline: none;
+    border-color: color-mix(in srgb, var(--theme-accent) 58%, var(--ui-component-border-strong, var(--ui-line-strong))) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 16%, transparent), var(--profile-floating-shadow) !important;
+}
+
 /* Global confirmation dialog also belongs to application chrome. */
 .app-dialog-backdrop {
     background: color-mix(in srgb, var(--theme-sidebar-deep) 58%, transparent) !important;
