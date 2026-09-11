@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Throwable;
 
@@ -91,8 +90,14 @@ final class SpjTemplatePackageImporter
 
     /**
      * Import atomik: semua kontrak harus valid sebelum file maupun record diganti.
-     * Setiap document type disimpan sebagai workbook XLSX independen berisi satu
-     * sheet canonical agar template dapat diunduh dan direvisi secara terpisah.
+     *
+     * Workbook master yang sudah lolos validasi disalin byte-for-byte untuk setiap
+     * document type. Importer sengaja TIDAK lagi mengekstrak, menghapus, memindah,
+     * atau menulis ulang worksheet dengan PhpSpreadsheet. Beberapa workbook Excel
+     * valid memiliki relasi internal antarbagian OOXML yang dapat membuat writer
+     * melempar "Sheet does not exist." ketika workbook dipecah menjadi satu sheet.
+     * Pemilihan sheet canonical menjadi tanggung jawab renderer berdasarkan
+     * document_type; tahap import hanya menyimpan sumber yang tervalidasi.
      *
      * @return array<string,mixed>
      */
@@ -127,15 +132,15 @@ final class SpjTemplatePackageImporter
 
         try {
             foreach ($definitions as $documentType => $definition) {
-                $sheetName = (string) $definition['sheet'];
                 $fileName = strtolower($documentType).'-'.bin2hex(random_bytes(8)).'.xlsx';
                 $relativePath = $directory.'/'.$fileName;
+                $destinationPath = $disk->path($relativePath);
 
                 try {
-                    $this->extractCanonicalSheet($path, $sheetName, $disk->path($relativePath));
+                    $this->copyValidatedMasterWorkbook($path, $destinationPath);
                 } catch (Throwable $exception) {
                     throw new RuntimeException(
-                        'Gagal memisahkan template '.$documentType.' dari sheet '.$sheetName.': '.$exception->getMessage(),
+                        'Gagal menyimpan sumber template '.$documentType.': '.$exception->getMessage(),
                         0,
                         $exception,
                     );
@@ -192,34 +197,24 @@ final class SpjTemplatePackageImporter
         ];
     }
 
-    private function extractCanonicalSheet(string $sourcePath, string $sheetName, string $destinationPath): void
+    private function copyValidatedMasterWorkbook(string $sourcePath, string $destinationPath): void
     {
-        $reader = IOFactory::createReaderForFile($sourcePath);
-        $reader->setLoadSheetsOnly([$sheetName]);
-        $workbook = $reader->load($sourcePath);
+        if (! is_file($sourcePath)) {
+            throw new RuntimeException('Workbook master sumber tidak ditemukan.');
+        }
 
-        try {
-            if ($workbook->getSheetCount() !== 1) {
-                throw new RuntimeException(
-                    'Workbook hasil ekstraksi harus berisi tepat satu sheet, ditemukan '.$workbook->getSheetCount().'.'
-                );
-            }
+        $directory = dirname($destinationPath);
+        if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
+            throw new RuntimeException('Direktori penyimpanan template tidak dapat dibuat.');
+        }
 
-            $target = $workbook->getSheet(0);
-            if ($target->getTitle() !== $sheetName) {
-                throw new RuntimeException(
-                    'Sheet hasil ekstraksi tidak sesuai. Diharapkan '.$sheetName.', ditemukan '.$target->getTitle().'.'
-                );
-            }
+        if (! copy($sourcePath, $destinationPath)) {
+            throw new RuntimeException('Workbook master gagal disalin ke penyimpanan template.');
+        }
 
-            // setLoadSheetsOnly() sudah menghasilkan workbook satu-sheet. Jangan
-            // mencari kembali index worksheet melalui Spreadsheet::getIndex(),
-            // karena workbook hasil generator tertentu dapat memiliki hash worksheet
-            // yang berubah setelah partial-load meskipun sheet tersebut valid.
-            $workbook->setActiveSheetIndex(0);
-            (new Xlsx($workbook))->save($destinationPath);
-        } finally {
-            $workbook->disconnectWorksheets();
+        if (! is_file($destinationPath) || filesize($destinationPath) !== filesize($sourcePath)) {
+            @unlink($destinationPath);
+            throw new RuntimeException('Salinan workbook master tidak lengkap.');
         }
     }
 
