@@ -2,11 +2,18 @@
 
 Terakhir diperbarui: **2026-09-11**
 
-Status: **ACTIVE DOMAIN GUIDE / IMPLEMENTATION PENDING**
+Status: **IMPLEMENTED / FUNCTIONAL GATE PASS**
 
-Dokumen ini menetapkan kontrak bisnis untuk koreksi data setelah penomoran, pembatalan satu nomor/dokumen, rollback penomoran dari nomor tertentu, dan pembatalan penomoran triwulan.
+Dokumen ini menetapkan kontrak bisnis dan implementation guide untuk koreksi data setelah penomoran, pembatalan satu nomor/dokumen, rollback penomoran dari nomor tertentu, dan pembatalan penomoran triwulan.
 
-Dokumen ini belum menyatakan fitur sudah diterapkan. Implementasi aplikasi dan regression test harus mengikuti kontrak ini pada pekerjaan berikutnya.
+Implementasi canonical sudah tersedia pada branch `gui-standardization` dan dibuktikan oleh regression deterministic pada functional gate berikut:
+
+```text
+code gate : a2509aad9104706da2709fcd07cce0b973282cb1
+CI run    : 34595391755
+CI job    : 103249843120
+result    : PASS — 248 tests / 1880 assertions
+```
 
 Gunakan bersama:
 
@@ -21,39 +28,27 @@ Gunakan bersama:
 
 Urutan nomor SPJ harus konsisten dengan urutan pembukuan/transaksi ARKAS pada context tenant yang sama.
 
-Boundary numbering dan dependency adalah:
+Boundary numbering, sequence, rollback, dan dependency adalah:
 
 ```text
 School + Fiscal Year + Fund Source
 ```
 
-Penomoran atau rollback pada satu sumber dana tidak boleh memblokir atau mengubah sumber dana lain, tahun lain, atau sekolah lain.
+Penomoran atau rollback pada satu sumber dana tidak boleh memblokir, mengubah counter, atau menghapus numbering sumber dana lain, tahun lain, atau sekolah lain.
 
-Contoh:
-
-```text
-Sekolah A / 2026 / BOS Reguler
-```
-
-harus terisolasi dari:
-
-```text
-Sekolah A / 2026 / BOS Kinerja
-Sekolah A / 2025 / BOS Reguler
-Sekolah B / 2026 / BOS Reguler
-```
+Implementasi sequence sekarang memasukkan `fund_source_id` ke key `document_number_sequences`, sehingga counter satu sumber dana terisolasi dari sumber dana lain.
 
 ---
 
 ## 2. Tiga mekanisme yang berbeda
 
-Aplikasi harus membedakan secara eksplisit:
+Aplikasi membedakan secara eksplisit:
 
 1. **Cancel Dokumen / Cancel Nomor Individual**
 2. **Rollback Penomoran dari Nomor Tertentu**
 3. **Cancel Penomoran Triwulan**
 
-Ketiganya mempunyai dampak sequence yang berbeda dan tidak boleh menggunakan semantic yang sama.
+Ketiganya mempunyai dampak sequence yang berbeda dan tidak boleh diperlakukan sebagai semantic yang sama.
 
 ---
 
@@ -76,401 +71,337 @@ Maka:
 
 Kontrak:
 
-- nomor tetap menjadi history;
+- nomor tetap menjadi history permanen;
 - nomor tidak digunakan kembali;
-- sequence tidak mundur;
-- dokumen cancelled tetap dapat diaudit;
-- pembatalan harus mempunyai alasan, actor, dan timestamp.
+- `sequence_number` tetap tersimpan;
+- sequence global/domain tidak mundur;
+- penerbitan dokumen berikutnya mengambil nomor setelah counter terakhir;
+- reissue setelah cancel individual menghasilkan nomor baru, bukan menghidupkan kembali nomor cancelled;
+- alasan, actor, dan timestamp pembatalan tetap diaudit.
 
-Jadi aturan lama **“nomor cancelled tetap menjadi history” hanya berlaku untuk pembatalan individual/dokumen secara bisnis**.
+Contoh:
+
+```text
+001 ACTIVE
+002 CANCELLED
+003 ACTIVE
+
+nomor berikutnya -> 004
+```
+
+Cancel individual **bukan rollback numbering**.
 
 ---
 
 ## 4. Rollback Penomoran dari Nomor Tertentu
 
-Dipakai jika ditemukan kesalahan urutan penomoran dibanding urutan pembukuan ARKAS.
+Dipakai untuk memperbaiki urutan numbering ketika urutan aplikasi tidak lagi sama dengan urutan pembukuan ARKAS.
 
 Contoh:
 
 ```text
-Nomor aktif: 01 02 03 04 05 06 07 08 09 10
+APP saat ini
+01 02 03 04 05 06 07 08 09 10
+
+setelah dibandingkan ARKAS:
+transaksi yang sekarang mendapat 10 seharusnya berada pada urutan 8
 ```
 
-Setelah dibandingkan dengan ARKAS, transaksi yang sekarang bernomor `10` seharusnya berada pada urutan ke-8.
+Yang benar bukan mengubah `10 -> 8` secara langsung.
 
-Tidak boleh hanya mengganti `10 -> 08`.
-
-Yang benar:
+Rollback harus berjalan dari titik kesalahan sampai tail sequence:
 
 ```text
-rollback: 10 -> 09 -> 08
+10 dilepas
+09 dilepas
+08 dilepas
 sequence kembali ke 7
-urutkan kembali berdasarkan source order ARKAS
-terbitkan ulang mulai 08
 ```
 
-Kontrak utama:
+Lalu numbering ulang mengikuti canonical source order ARKAS:
 
-- rollback hanya boleh dimulai dari nomor tertentu sampai **ekor sequence**;
-- tidak boleh membuat lubang numbering aktif;
-- seluruh numbering >= nomor awal rollback dilepas;
-- sequence kembali ke nomor sebelum titik rollback;
-- nomor yang dilepas boleh dipakai kembali;
-- history numbering domain dari hasil rollback tidak dianggap nomor cancelled permanen;
-- operational audit rollback tetap dipertahankan.
+```text
+transaksi canonical urutan 8  -> 08
+transaksi canonical urutan 9  -> 09
+transaksi canonical urutan 10 -> 10
+```
+
+### Tail-only rule
+
+Rollback hanya boleh dimulai dari nomor aktif yang benar-benar pernah diterbitkan dan harus melepas seluruh nomor aktif setelah titik tersebut.
+
+Tidak diperbolehkan membuat hole dengan melepas satu nomor di tengah tanpa melepas tail setelahnya.
+
+### Guard nomor cancelled permanen
+
+Rollback **tidak boleh melintasi nomor SPJ yang telah dibatalkan secara individual**.
 
 Contoh:
 
 ```text
-rollback mulai 08
-
-08, 09, 10 -> dilepas
-sequence -> 7
-
-numbering ulang:
-08, 09, 10 -> diterbitkan kembali sesuai source order ARKAS
+001 ACTIVE
+002 CANCELLED permanen
+003 ACTIVE
+004 ACTIVE
 ```
+
+Rollback dari `001` atau `002` ditolak, karena `002` tidak boleh tersedia kembali untuk dipakai ulang.
+
+Rollback dari `003` masih dapat dilakukan karena tidak melewati history cancelled permanen.
+
+Guard ini menjaga dua kontrak sekaligus:
+
+- cancel individual tetap immutable sebagai history;
+- rollback hanya menggunakan kembali nomor yang memang dilepas oleh proses rollback.
 
 ---
 
 ## 5. Cancel Penomoran Triwulan
 
-Cancel Penomoran Triwulan adalah rollback seluruh hasil numbering pada satu triwulan dalam context tenant yang sama.
+Cancel penomoran triwulan adalah rollback batch untuk seluruh numbering aktif pada triwulan target dalam context yang sama.
 
-Urutan pembuatan numbering berjalan maju:
+Urutan penerbitan:
 
 ```text
 TW1 -> TW2 -> TW3 -> TW4
 ```
 
-Urutan pembatalan wajib berjalan mundur:
+Urutan pembatalan:
 
 ```text
 TW4 -> TW3 -> TW2 -> TW1
 ```
 
-### Dependency rule
+Rule:
 
-- TW4 dapat dibatalkan jika memenuhi guard lain.
-- TW3 hanya boleh dibatalkan jika TW4 tidak mempunyai numbering aktif.
-- TW2 hanya boleh dibatalkan jika TW3 dan TW4 tidak mempunyai numbering aktif.
-- TW1 hanya boleh dibatalkan jika TW2, TW3, dan TW4 tidak mempunyai numbering aktif.
+- TW4 dapat dibatalkan jika memenuhi guard lifecycle lainnya;
+- TW3 tidak dapat dibatalkan bila TW4 masih mempunyai numbering aktif;
+- TW2 tidak dapat dibatalkan bila TW3 atau TW4 masih mempunyai numbering aktif;
+- TW1 tidak dapat dibatalkan bila TW2, TW3, atau TW4 masih mempunyai numbering aktif.
 
-Pengecekan dependency hanya pada:
+Dependency hanya dihitung untuk:
 
 ```text
-School + Fiscal Year + Fund Source yang sama
+School + Fiscal Year + Fund Source
 ```
 
-Numbering TW2 BOS Reguler tidak boleh memblokir TW1 BOS Kinerja.
+Numbering TW2 BOS Reguler tidak boleh memblokir rollback TW1 pada sumber dana lain.
+
+### Checkpoint sequence
+
+Konsep canonical:
+
+```text
+Akhir TW1 = 120
+Akhir TW2 = 245
+Akhir TW3 = 380
+```
+
+Cancel TW3:
+
+```text
+numbering aktif TW3 dilepas
+sequence dibangun ulang dari numbering yang masih sah
+checkpoint efektif kembali ke 245
+```
+
+Cancel TW2 setelah TW3 sudah dilepas:
+
+```text
+checkpoint efektif kembali ke 120
+```
+
+Cancel TW1 jika tidak ada history nomor permanen sebelumnya:
+
+```text
+sequence menjadi kosong / efektif 0
+numbering berikutnya dimulai dari 1
+```
+
+### Guard cancel individual di dalam triwulan
+
+Full quarter reset ditolak bila triwulan target memiliki SPJ `CANCELLED` hasil pembatalan individual permanen.
+
+Alasannya: full quarter reset tidak boleh membuat nomor cancelled permanen tersedia kembali.
+
+Jika kondisi tersebut terjadi, administrator harus menyelesaikan koreksi melalui lifecycle yang tidak melanggar history nomor permanen.
 
 ---
 
-## 6. Reset sequence setelah cancel triwulan
+## 6. Apa yang terjadi saat rollback
 
-Cancel triwulan mengembalikan sequence ke checkpoint terakhir triwulan sebelumnya.
+Rollback dijalankan dalam transaction database sekolah.
 
-Contoh:
+Untuk Paket terdampak:
 
-```text
-akhir TW1 = 120
-akhir TW2 = 245
-akhir TW3 = 380
-```
+- numbering aktif pada Paket dilepas;
+- `spj_documents` non-CANCELLED hasil numbering rollback dihapus dari numbering-domain history;
+- `spj_documents` yang sudah `CANCELLED` secara individual dipertahankan;
+- nomor turunan yang berasal dari dokumen yang dilepas dibersihkan, termasuk bila applicable:
+  - `order_number`;
+  - `bap_number`;
+  - `bast_number`;
+  - `spk_number`;
+  - `rab_number`;
+  - nomor surat tugas perjalanan dinas;
+- Paket dikembalikan ke `DRAFT`;
+- current `document_number`, `numbered_at`, finalization/snapshot state yang terkait numbering aktif dibersihkan;
+- sequence dibangun ulang dari nomor yang masih valid pada context aktif;
+- operational audit rollback tetap disimpan.
 
-Maka:
-
-```text
-Cancel TW3 -> sequence = 245
-Cancel TW2 -> sequence = 120
-Cancel TW1 -> sequence = 0
-```
-
-Jika TW1 dibatalkan, numbering berikutnya dimulai kembali dari `1`.
-
-Nomor dari triwulan yang di-rollback boleh digunakan kembali karena yang dibatalkan adalah **hasil proses numbering batch**, bukan pembatalan individual dokumen secara bisnis.
-
----
-
-## 7. Source of truth sequence setelah rollback
-
-Reset sequence sebaiknya tidak hanya mempercayai counter lama.
-
-Setelah rollback, aplikasi harus menentukan sequence dari nomor aktif valid terakhir pada context domain numbering yang sama.
-
-Secara konseptual:
-
-```text
-next sequence base = MAX(sequence nomor aktif yang masih sah)
-```
-
-Jika tidak ada nomor aktif yang masih sah:
-
-```text
-sequence = 0
-```
-
-Tujuannya mencegah counter table yang stale menghasilkan nomor loncat setelah rollback.
+Rollback bukan edit langsung terhadap source ARKAS/BKU.
 
 ---
 
-## 8. Source order ARKAS adalah dasar numbering SPJ
+## 7. Riwayat numbering vs operational audit
 
-Numbering ulang harus deterministic dan mengikuti urutan pembukuan ARKAS.
+Dua jenis riwayat harus dibedakan.
 
-Urutan tidak boleh ditentukan oleh:
+### Numbering-domain history
 
-- database auto-increment ID;
-- waktu package dibuat;
-- waktu operator membuka Paket;
-- waktu Paket menjadi READY;
-- urutan klik operator.
+Untuk numbering yang benar-benar di-rollback:
 
-Urutan harus menggunakan source ordering canonical yang berasal dari ARKAS/BKU dan chronology/peristiwa dokumen yang applicable.
+- identity numbering aktif dilepas;
+- nomor dapat tersedia kembali sesuai checkpoint;
+- run penomoran triwulan target dapat dihapus/reset agar tidak dianggap run aktif/berlaku.
 
-Target bisnis:
+### Operational audit
+
+Operational audit **tidak dihapus**.
+
+Audit harus tetap dapat menjelaskan minimal:
 
 ```text
-urutan nomor SPJ = urutan pembukuan ARKAS
+siapa
+kapan
+context fiscal year + fund source
+rollback dari nomor berapa / triwulan berapa
+alasan
 ```
 
-Jika source order ARKAS berubah setelah sinkronisasi/reconciliation, aplikasi harus dapat menunjukkan bahwa numbering lama perlu dikoreksi, bukan diam-diam memindahkan nomor aktif.
+Dengan demikian operator dapat memperbaiki sequence tanpa menghilangkan accountability tindakan administrator.
 
 ---
 
-## 9. Perubahan Detail Transaksi setelah NUMBERED
+## 8. Koreksi data setelah NUMBERED
 
-`item_description` adalah satu-satunya mutation canonical pada Detail Transaksi.
+### 8.1 `item_description`
 
-Perubahan **nama/uraian item (`item_description`)** tetap diperbolehkan ketika Paket berstatus `NUMBERED`.
+Satu-satunya koreksi Detail Transaksi yang tetap diperbolehkan ketika Paket berstatus `NUMBERED` adalah:
+
+```text
+item_description
+```
 
 Perubahan ini:
 
 - tidak membatalkan nomor;
-- tidak menurunkan status package;
+- tidak menurunkan Paket menjadi DRAFT;
 - tidak mengubah sequence;
-- tidak mengubah source ARKAS/BKU;
-- harus tercatat sebagai perubahan overlay operator jika audit overlay berlaku.
+- tidak mengubah source description ARKAS/BKU;
+- dapat tercermin pada rendering dokumen berikutnya selama lifecycle dokumen mengizinkan.
 
-Jika dokumen belum `FINAL`, preview/generate berikutnya boleh menggunakan `item_description` terbaru dengan nomor yang sama.
+Jika Paket sudah `FINAL`, `item_description` terkunci dan harus melalui lifecycle koreksi resmi terlebih dahulu.
 
-Untuk `FINAL`, koreksi yang memengaruhi artifact final harus melalui lifecycle koreksi resmi.
+### 8.2 Data Paket/manual/payment
 
----
-
-## 10. Perubahan data Paket setelah NUMBERED
-
-Data Paket SPJ yang memengaruhi substansi dokumen tidak boleh diubah langsung saat masih `NUMBERED`.
-
-Contoh:
+Perubahan berikut pada `NUMBERED`/`FINAL` tidak boleh dilakukan langsung:
 
 - `spj_category`;
-- `payment_description`;
-- `payment_method`;
-- `payment_reference`;
-- `receipt_recipient_name`;
-- vendor/rekanan;
-- invoice/operator-owned SiPLah metadata;
-- data pengadaan;
-- data konsumsi/peserta;
-- data pemeliharaan/pekerja;
-- data SPPD/pelaksana;
-- data honor/penerima;
-- data JASA_LAINNYA/penerima jasa;
-- field Isian Manual lain yang memengaruhi output/validation.
+- payment description/method/reference;
+- penerima utama;
+- vendor/penyedia;
+- invoice / metadata procurement operator-owned;
+- data barang/pengadaan;
+- peserta konsumsi;
+- pekerja pemeliharaan;
+- penerima honor;
+- pelaksana SPPD;
+- penerima JASA_LAINNYA;
+- Isian Manual Paket lainnya yang memengaruhi substansi dokumen.
 
-Untuk mengubah data tersebut:
+Untuk memperbaikinya:
 
 ```text
 NUMBERED
--> rollback/cancel numbering yang sesuai
--> DRAFT
--> ubah data
--> validasi ulang
--> READY
--> numbering ulang
+  -> rollback numbering yang sesuai
+  -> DRAFT
+  -> perbaiki kategori/isian
+  -> validasi ulang
+  -> READY
+  -> numbering ulang berdasarkan canonical ARKAS order
 ```
 
-Perubahan kategori setelah rollback harus memuat Isian Manual sesuai kategori baru dan Paket wajib divalidasi ulang.
+`FINAL` tetap lebih ketat dan tidak boleh dimutasi melalui jalur edit normal.
 
 ---
 
-## 11. Dampak rollback pada package dan nomor turunan
+## 9. Source order authoritative
 
-Rollback numbering harus membersihkan state numbering operasional yang berasal dari numbering yang di-rollback, termasuk bila applicable:
+Nomor SPJ tidak boleh mengikuti:
 
-- `spj_packages.document_number`;
-- `numbered_at`;
-- nomor Surat Pesanan;
-- nomor BAP;
-- nomor BAST;
-- nomor SPK;
-- nomor RAB;
-- nomor Surat Tugas Perjalanan Dinas;
-- nomor otomatis lain yang diterbitkan oleh run yang sama.
+- local package id;
+- waktu operator membuka Paket;
+- waktu Paket menjadi READY;
+- urutan klik operator.
 
-Pembersihan tidak boleh menghapus source ARKAS/BKU atau overlay substansi operator.
+Numbering ulang tetap menggunakan `SpjNumberingOrderService`/canonical source order yang sudah dipakai aplikasi, termasuk source event/order ARKAS yang relevan.
 
-Package yang membutuhkan koreksi dikembalikan ke `DRAFT` dan wajib melalui validation sebelum numbering ulang.
+Tujuannya:
+
+```text
+urutan SPJ = urutan pembukuan ARKAS
+```
+
+selama source canonical tidak berubah.
 
 ---
 
-## 12. History domain vs operational audit
+## 10. UI dan authorization
 
-Untuk rollback numbering:
+Fitur correction/rollback tersedia melalui jalur administrator.
 
-- history numbering domain yang membuat nomor dianggap pernah final/terpakai harus dilepas/reset sesuai scope rollback;
-- nomor boleh digunakan kembali;
-- sequence kembali ke checkpoint valid;
-- **operational audit tidak dihapus**.
+UI menyediakan:
 
-Audit minimal harus menyimpan:
+- rollback dari nomor sequence tertentu + alasan;
+- cancel numbering triwulan + alasan;
+- daftar nomor SPJ pada context aktif untuk membantu menentukan titik rollback.
 
-```text
-actor
-school
-fiscal year
-fund source
-quarter (jika batch)
-nomor awal rollback
-nomor akhir rollback
-sequence sebelum
-sequence sesudah
-alasan
-timestamp
-```
-
-Operational audit berfungsi sebagai jejak tindakan administrator/operator dan **tidak ikut menahan nomor agar tidak dapat digunakan kembali**.
+Mutation backend tetap authoritative. Menyembunyikan tombol saja tidak cukup sebagai authorization.
 
 ---
 
-## 13. Atomicity dan failure safety
+## 11. Regression yang menjaga kontrak
 
-Rollback harus dilakukan secara transaction-safe pada database tenant.
-
-Jika salah satu tahap gagal:
-
-- sequence tidak boleh sudah mundur sementara dokumen masih NUMBERED;
-- package tidak boleh DRAFT sementara numbering aktif masih tersisa secara tidak konsisten;
-- nomor turunan tidak boleh sebagian terhapus;
-- fiscal-period/quarter state tidak boleh berbeda dari state dokumen.
-
-Operasi harus all-or-nothing sejauh boundary database memungkinkan.
-
----
-
-## 14. Guard sebelum rollback
-
-Sebelum rollback aplikasi harus memvalidasi sekurang-kurangnya:
-
-1. context `School + Fiscal Year + Fund Source` aktif dan cocok;
-2. target nomor/triwulan memang memiliki numbering aktif;
-3. dependency triwulan setelahnya tidak dilanggar;
-4. rollback parsial dimulai dari titik tertentu sampai nomor aktif terakhir;
-5. tidak ada cross-tenant mutation;
-6. alasan rollback wajib diisi;
-7. actor mempunyai authorization yang sesuai;
-8. state `FINAL` mengikuti policy koreksi/finalization yang ditetapkan sebelum implementasi mutasi destructive.
-
----
-
-## 15. Contoh kasus canonical
-
-### A. Cancel satu dokumen
+Regression utama berada pada:
 
 ```text
-001 002 003 004 005 006
-                ^
-                transaksi 005 dibatalkan secara bisnis
-
-hasil:
-005 = CANCELLED
-sequence tetap 6
-005 tidak digunakan kembali
+tests/Feature/SpjNumberingRollbackTest.php
+tests/Feature/DocumentNumberingWorkflowTest.php
+tests/Feature/SpjOwnershipMigrationTest.php
+tests/Feature/SpjWorkspaceMigrationTest.php
 ```
 
-### B. Salah urutan ARKAS mulai nomor 8
+Gate membuktikan antara lain:
+
+- individual cancel tidak reuse nomor;
+- reissue setelah cancel individual mendapat sequence baru;
+- tail rollback menghapus numbering aktif dan mengembalikan sequence;
+- later quarter pada context yang sama memblokir rollback quarter lebih lama;
+- later quarter pada fund source lain tidak memblokir;
+- sequence sumber dana lain tidak berubah;
+- `item_description` editable pada NUMBERED;
+- `item_description` terkunci pada FINAL;
+- manual Package mutation tetap terkunci pada NUMBERED/FINAL;
+- migration sequence per fund source dapat dijalankan oleh suite tenant migration.
+
+Functional evidence terbaru:
 
 ```text
-001 ... 007 008 009 010
+commit : a2509aad9104706da2709fcd07cce0b973282cb1
+CI run : 34595391755
+CI job : 103249843120
+PASS   : 248 tests / 1880 assertions
 ```
 
-Rollback:
-
-```text
-010 -> lepas
-009 -> lepas
-008 -> lepas
-sequence = 7
-```
-
-Numbering ulang:
-
-```text
-008 -> transaksi yang menurut ARKAS urutan ke-8
-009 -> transaksi urutan ke-9
-010 -> transaksi urutan ke-10
-```
-
-### C. Cancel TW3
-
-```text
-TW1 akhir 120
-TW2 akhir 245
-TW3 akhir 380
-TW4 belum bernomor
-```
-
-Hasil:
-
-```text
-numbering TW3 dilepas
-sequence = 245
-package terdampak -> DRAFT
-```
-
-### D. Cancel TW1 saat TW2 masih aktif
-
-```text
-TW1 NUMBERED
-TW2 NUMBERED
-```
-
-Hasil:
-
-```text
-DITOLAK
-```
-
-Operator harus cancel TW2 terlebih dahulu, baru TW1.
-
----
-
-## 16. Minimum regression yang wajib dibuat saat implementasi
-
-Implementasi tidak dianggap selesai tanpa regression test untuk sedikitnya:
-
-1. cancel individual mempertahankan nomor cancelled dan sequence tidak mundur;
-2. rollback dari nomor N melepas N..last dan sequence menjadi N-1/checkpoint valid;
-3. nomor rollback dapat digunakan kembali;
-4. rollback tidak membuat gap aktif;
-5. rollback mengikuti tenant + fiscal year + fund source;
-6. TW1 ditolak jika TW2 masih numbered pada context yang sama;
-7. TW2 tidak diblokir oleh numbering source dana lain;
-8. cancel TW3 mengembalikan sequence ke akhir TW2;
-9. cancel TW1 mengembalikan sequence ke 0;
-10. operational audit tetap ada setelah numbering history di-reset;
-11. `item_description` dapat diperbaiki pada NUMBERED tanpa mengubah nomor/sequence;
-12. perubahan kategori/payment/manual data ditolak sebelum rollback;
-13. setelah rollback, perubahan kategori mengembalikan flow ke DRAFT -> validation -> READY -> numbering;
-14. rollback gagal secara atomik tanpa meninggalkan partial state.
-
----
-
-## 17. Status implementasi
-
-Pada tanggal dokumen ini dibuat, aturan di atas adalah **keputusan domain yang disetujui untuk implementasi berikutnya**.
-
-Jangan menganggap seluruh behavior rollback sudah tersedia hanya karena kontrak ini sudah ditulis.
-
-Status source/test aktual tetap mengikuti `CURRENT_PROGRESS.md` dan evidence CI/test terbaru.
+Catatan: Pint masih advisory/non-blocking dan pada gate ini melaporkan 3 style issues repository. Functional regression, frontend build, dan Blade compile tetap PASS.
