@@ -12,7 +12,7 @@ use ReflectionMethod;
 
 class SpjTemplatePackageImporterExtractionTest extends TestCase
 {
-    public function test_extracts_target_sheet_when_source_active_sheet_is_different(): void
+    public function test_copies_validated_master_workbook_without_rewriting_worksheets(): void
     {
         $source = new Spreadsheet;
         $source->getActiveSheet()->setTitle('FIRST_SHEET')->setCellValue('A1', 'first');
@@ -25,15 +25,26 @@ class SpjTemplatePackageImporterExtractionTest extends TestCase
         (new Xlsx($source))->save($sourcePath);
         $source->disconnectWorksheets();
 
+        $sourceHash = hash_file('sha256', $sourcePath);
+
         $importer = new SpjTemplatePackageImporter(new SpjTemplateValidator);
-        $method = new ReflectionMethod($importer, 'extractCanonicalSheet');
+        $method = new ReflectionMethod($importer, 'copyValidatedMasterWorkbook');
         $method->setAccessible(true);
-        $method->invoke($importer, $sourcePath, 'TPL_SURAT_PESANAN', $destinationPath);
+        $method->invoke($importer, $sourcePath, $destinationPath);
+
+        $this->assertSame($sourceHash, hash_file('sha256', $destinationPath));
 
         $result = IOFactory::load($destinationPath);
         try {
-            $this->assertSame(['TPL_SURAT_PESANAN'], $result->getSheetNames());
-            $this->assertSame('{{NOMOR_PESANAN}}', $result->getActiveSheet()->getCell('A1')->getValue());
+            $this->assertSame(
+                ['FIRST_SHEET', 'TPL_SURAT_PESANAN', 'LAST_SHEET'],
+                $result->getSheetNames(),
+            );
+            $this->assertSame('last', $result->getActiveSheet()->getCell('A1')->getValue());
+            $this->assertSame(
+                '{{NOMOR_PESANAN}}',
+                $result->getSheetByName('TPL_SURAT_PESANAN')?->getCell('A1')->getValue(),
+            );
         } finally {
             $result->disconnectWorksheets();
             @unlink($sourcePath);
