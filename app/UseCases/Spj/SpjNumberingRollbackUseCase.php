@@ -186,19 +186,21 @@ class SpjNumberingRollbackUseCase
                 $activeDocuments = $package->documents->where('status', '!=', 'CANCELLED');
                 $numbers = $activeDocuments->pluck('document_number')->filter()->values();
                 foreach ($package->transaction->items as $item) {
-                    foreach ($item->goods as $goods) {
-                        if ($numbers->contains($goods->order_number)) {
-                            $goods->order_number = null;
-                        }
-                        if ($numbers->contains($goods->bap_number)) {
-                            $goods->bap_number = null;
-                        }
-                        if ($numbers->contains($goods->bast_number)) {
-                            $goods->bast_number = null;
-                        }
-                        if ($goods->isDirty()) {
-                            $goods->save();
-                        }
+                    $goods = $item->goods;
+                    if (! $goods) {
+                        continue;
+                    }
+                    if ($numbers->contains($goods->order_number)) {
+                        $goods->order_number = null;
+                    }
+                    if ($numbers->contains($goods->bap_number)) {
+                        $goods->bap_number = null;
+                    }
+                    if ($numbers->contains($goods->bast_number)) {
+                        $goods->bast_number = null;
+                    }
+                    if ($goods->isDirty()) {
+                        $goods->save();
                     }
                 }
 
