@@ -23,6 +23,8 @@ class SpjDocumentTypeRegistryTest extends TestCase
             'INVOICE',
             'RAB_PEMELIHARAAN',
             'SPK_PEMELIHARAAN',
+            'DAFTAR_HADIR_KONSUMSI',
+            'DAFTAR_PENERIMA_KONSUMSI',
         ], SpjDocumentTypeRegistry::codes());
 
         $this->assertNotContains('PLACEHOLDER_MAP', SpjDocumentTypeRegistry::codes());
