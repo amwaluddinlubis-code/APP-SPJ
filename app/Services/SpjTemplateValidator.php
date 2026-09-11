@@ -295,9 +295,20 @@ final class SpjTemplateValidator
     /** @return array<string,true> */
     private function knownPlaceholders(): array
     {
-        $markers = collect(SpjTemplateService::placeholderGroups())->flatten()->all();
+        $markers = collect(SpjTemplateService::placeholderGroups())->flatten();
 
-        return array_fill_keys(array_map(fn ($marker) => strtoupper((string) $marker), $markers), true);
+        foreach (SpjDocumentTypeRegistry::codes() as $documentType) {
+            $markers = $markers->merge(SpjDocumentTypeRegistry::placeholdersFor($documentType));
+        }
+
+        return array_fill_keys(
+            $markers
+                ->map(fn ($marker) => strtoupper((string) $marker))
+                ->unique()
+                ->values()
+                ->all(),
+            true,
+        );
     }
 
     /**
