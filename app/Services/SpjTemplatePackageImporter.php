@@ -6,6 +6,7 @@ use App\Models\DocumentTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Throwable;
@@ -174,23 +175,35 @@ final class SpjTemplatePackageImporter
 
     private function extractCanonicalSheet(string $sourcePath, string $sheetName, string $destinationPath): void
     {
-        $workbook = IOFactory::load($sourcePath);
+        $source = IOFactory::load($sourcePath);
+        $single = null;
+
         try {
-            $target = $workbook->getSheetByName($sheetName);
+            $target = $source->getSheetByName($sheetName);
             if (! $target) {
                 throw new RuntimeException('Sheet '.$sheetName.' tidak ditemukan saat pemisahan paket template.');
             }
 
-            for ($index = $workbook->getSheetCount() - 1; $index >= 0; $index--) {
-                if ($workbook->getSheet($index)->getTitle() !== $sheetName) {
-                    $workbook->removeSheetByIndex($index);
-                }
+            // Do not mutate the source workbook by deleting its other sheets. On
+            // complex workbooks PhpSpreadsheet can leave the active-sheet pointer
+            // referencing a removed worksheet and fail later with "Sheet does not exist.".
+            // Instead, copy only the canonical worksheet into a fresh workbook.
+            $single = new Spreadsheet;
+            $single->addExternalSheet(clone $target, 0);
+
+            // The new Spreadsheet starts with one blank worksheet. After inserting
+            // the canonical sheet at index 0, remove only that known blank sheet.
+            if ($single->getSheetCount() > 1) {
+                $single->removeSheetByIndex(1);
             }
 
-            $workbook->setActiveSheetIndex(0);
-            (new Xlsx($workbook))->save($destinationPath);
+            $single->setActiveSheetIndex(0);
+            (new Xlsx($single))->save($destinationPath);
         } finally {
-            $workbook->disconnectWorksheets();
+            if ($single instanceof Spreadsheet) {
+                $single->disconnectWorksheets();
+            }
+            $source->disconnectWorksheets();
         }
     }
 }
