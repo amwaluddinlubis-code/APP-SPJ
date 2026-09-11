@@ -21,6 +21,7 @@ class DocumentTemplateController extends Controller
         private readonly UploadDocumentTemplateUseCase $uploadTemplate,
         private readonly ImportDocumentTemplatePackageUseCase $importTemplatePackage,
         private readonly DocumentTemplateSampleGenerator $samples,
+        private readonly SpjTemplateService $templateService,
     ) {}
 
     public function index(Request $request): View
@@ -36,7 +37,7 @@ class DocumentTemplateController extends Controller
             'templates' => $catalog['templates'],
             'categories' => $categories,
             'filters' => $filters,
-            'placeholderGroups' => SpjTemplateService::placeholderGroups(),
+            'placeholderGroups' => $this->templateService::placeholderGroups(),
             'documentTypes' => SpjDocumentTypeRegistry::options(),
             'validationResults' => $catalog['validationResults'],
             'uploadLimits' => $this->uploadLimits(),
