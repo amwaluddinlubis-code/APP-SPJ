@@ -28,6 +28,10 @@ final class SpjDocumentTypeRegistry
 
     public const SPK_PEMELIHARAAN = 'SPK_PEMELIHARAAN';
 
+    public const DAFTAR_HADIR_KONSUMSI = 'DAFTAR_HADIR_KONSUMSI';
+
+    public const DAFTAR_PENERIMA_KONSUMSI = 'DAFTAR_PENERIMA_KONSUMSI';
+
     public const SCOPE_PACKAGE = 'PACKAGE';
 
     public const SCOPE_TRANSACTION = 'TRANSACTION';
@@ -65,7 +69,25 @@ final class SpjDocumentTypeRegistry
     /** @return array<int,string> */
     public static function technicalSheets(): array
     {
-        return ['PLACEHOLDER_MAP'];
+        return [
+            'PLACEHOLDER_MAP',
+            'TEMPLATE_REGISTER',
+            'REGULASI_REFERENSI',
+            'BACKEND_TEMPLATE_RULES',
+            'TPL_BUKTI_KAS_PENGELUARAN_A2',
+            'TPL_SURAT_HASIL_PEMERIKSAAN',
+            'TPL_SURAT_BALASAN_PENYEDIA',
+            'TPL_DOKUMEN_PERENCANAAN',
+            'TPL_DAFTAR_PENERIMAAN_HONOR',
+            'TPL_DAFTAR_PENERIMA_JASA',
+            'TPL_SURAT_TUGAS_SPPD',
+            'TPL_SPPD',
+            'TPL_RINCIAN_BIAYA_PERJALANAN',
+            'TPL_LAPORAN_PERJALANAN_DINAS',
+            'TPL_BA_PEMERIKSAAN_PEKERJAAN',
+            'TPL_BA_SERAH_TERIMA_PEKERJAAN',
+            'TPL_DAFTAR_PENGELUARAN_RIIL',
+        ];
     }
 
     /**
@@ -201,7 +223,7 @@ final class SpjDocumentTypeRegistry
 
             self::BAP => [
                 'label' => 'Berita Acara Pemeriksaan/Penerimaan',
-                'sheet' => 'TPL_BA_PEMERIKSAAN',
+                'sheet' => 'TPL_BA_PEMERIKSAAN_PENERIMAAN',
                 'scope' => self::SCOPE_TRANSACTION,
                 'source' => self::SOURCE_GENERATED,
                 'usage' => null,
@@ -298,6 +320,46 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'NOMOR_RAB', 'TANGGAL_RAB', 'CARA_BAYAR', 'REFERENSI_BAYAR',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                ],
+                'repeat_required' => [],
+                'repeat_optional' => [],
+                'image' => ['KOP_SURAT'],
+            ],
+
+            self::DAFTAR_HADIR_KONSUMSI => [
+                'label' => 'Daftar Hadir Konsumsi',
+                'sheet' => 'TPL_DAFTAR_HADIR_KONSUMSI',
+                'scope' => self::SCOPE_TRANSACTION,
+                'source' => self::SOURCE_GENERATED,
+                'usage' => null,
+                'applicable_categories' => ['KONSUMSI'],
+                'required' => [
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'TANGGAL_KEGIATAN', 'TEMPAT_KEGIATAN',
+                    'KONSUMSI_NO', 'KONSUMSI_NAMA',
+                ],
+                'optional' => [
+                    'KONSUMSI_IDENTITAS', 'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                ],
+                'repeat_required' => [],
+                'repeat_optional' => [],
+                'image' => ['KOP_SURAT'],
+            ],
+
+            self::DAFTAR_PENERIMA_KONSUMSI => [
+                'label' => 'Daftar Penerima Konsumsi',
+                'sheet' => 'TPL_DAFTAR_PENERIMA_KONSUMSI',
+                'scope' => self::SCOPE_TRANSACTION,
+                'source' => self::SOURCE_GENERATED,
+                'usage' => null,
+                'applicable_categories' => ['KONSUMSI'],
+                'required' => [
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'TANGGAL_KEGIATAN', 'TEMPAT_KEGIATAN',
+                    'KONSUMSI_NO', 'KONSUMSI_NAMA', 'KONSUMSI_PORSI', 'KONSUMSI_HARGA_PORSI',
+                    'KONSUMSI_JUMLAH', 'TOTAL_KONSUMSI',
+                ],
+                'optional' => [
+                    'KONSUMSI_IDENTITAS', 'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
