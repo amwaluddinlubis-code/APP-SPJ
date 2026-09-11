@@ -22,9 +22,13 @@ class MeasureRequestPerformance
 
         if ($durationMs >= config('performance.slow_request_ms')) {
             Log::channel('performance')->warning('Slow request', [
-                'method' => $request->method(), 'route' => $request->route()?->getName(),
-                'path' => $request->path(), 'duration_ms' => $durationMs,
-                'user_id' => $request->user()?->id, 'school_id' => session('active_school_id'),
+                'method' => $request->method(),
+                'route' => $request->route()?->getName(),
+                'path' => $request->path(),
+                'status' => $response->getStatusCode(),
+                'duration_ms' => $durationMs,
+                'user_id' => $request->user()?->id,
+                'school_id' => session('active_school_id'),
                 'fiscal_year_id' => session('active_fiscal_year_id'),
             ]);
         }
