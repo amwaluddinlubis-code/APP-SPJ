@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DocumentTemplate;
 use App\Support\ActiveSpjContext;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -40,7 +41,7 @@ final class DocumentTemplateLibraryService
         $templates = $query->orderBy('document_type')->orderBy('name')->paginate(15)->withQueryString();
         $validationResults = [];
         foreach ($templates->getCollection() as $template) {
-            $validationResults[$template->id] = $this->validateStoredTemplate($template);
+            $validationResults[$template->id] = $this->cachedStoredTemplateValidation($template);
         }
 
         return compact('templates', 'validationResults');
@@ -115,6 +116,38 @@ final class DocumentTemplateLibraryService
         }
 
         return $base;
+    }
+
+    /** @return array<string,mixed> */
+    private function cachedStoredTemplateValidation(DocumentTemplate $template): array
+    {
+        $disk = Storage::disk('local');
+        $fingerprint = 'missing';
+
+        try {
+            if ($disk->exists($template->file_path)) {
+                $path = $disk->path($template->file_path);
+                $fingerprint = implode(':', [
+                    (string) (@filesize($path) ?: 0),
+                    (string) (@filemtime($path) ?: 0),
+                ]);
+            }
+        } catch (Throwable) {
+            // validateStoredTemplate() below will return the user-facing validation error.
+        }
+
+        $contract = SpjDocumentTypeRegistry::definition((string) $template->document_type);
+        $contractHash = substr(hash('sha256', json_encode($contract, JSON_UNESCAPED_UNICODE) ?: ''), 0, 16);
+        $updatedAt = $template->updated_at?->format('U.u') ?? '0';
+        $key = implode(':', [
+            'spj-template-validation',
+            (string) $template->id,
+            $updatedAt,
+            $fingerprint,
+            $contractHash,
+        ]);
+
+        return Cache::remember($key, now()->addHours(6), fn (): array => $this->validateStoredTemplate($template));
     }
 
     /** @return array<string,mixed> */
