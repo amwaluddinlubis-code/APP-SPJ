@@ -18,11 +18,11 @@ Definisi status:
 ### Release gate branch aktif
 
 ```text
-code gate : a2509aad9104706da2709fcd07cce0b973282cb1
-subject   : test(spj): isolate numbered description flash state
-CI run    : 34595391755
-CI job    : 103249843120
-result    : PASS — 248 tests / 1880 assertions
+code gate : a7e927df96e9615c777e3b22e2a89f47f95322dc
+subject   : test(gui): include student index guard in critical suite
+CI run    : 34609547724 (#308)
+CI job    : 103296309499
+result    : PASS — 250 tests / 1893 assertions
 ```
 
 Evidence gate:
@@ -30,28 +30,19 @@ Evidence gate:
 ```text
 Frontend build   : PASS
 Blade compile    : PASS
-SPJ Critical     : PASS — 248 tests / 1880 assertions
-Repository Pint : ADVISORY — 3 style issues, non-blocking
+SPJ Critical     : PASS — 250 tests / 1893 assertions
+Repository Pint  : ADVISORY — 3 style issues, non-blocking
 ```
 
-Pint advisory pada gate ini:
+Pint advisory pada gate ini tetap berada pada file yang sudah dikenal:
 
 - `app/Services/ArkasStagingService.php`;
 - `app/Services/SpjDocumentNumberService.php`;
 - `tests/Feature/SyncProgressUiTest.php`.
 
-Dua file pertama/terakhir tidak boleh dibaca sebagai functional regression hanya karena style advisory. `SpjDocumentNumberService.php` memiliki satu style issue baru yang dapat dibersihkan pada maintenance pass berikutnya tanpa mengubah aturan bisnis.
+Advisory tersebut tidak dibaca sebagai functional regression karena workflow sengaja menjalankan Pint sebagai advisory dan seluruh build/Blade/SPJ Critical selesai hijau.
 
-Commit code (`feat`/`fix` SPJ dan Blade) yang masuk setelah `a2509aad...` membuat gate CI tersebut bukan lagi checkpoint functional canonical. Verifikasi ulang lokal pada HEAD saat ini (2026-09-11):
-
-```text
-npm run build            PASS
-php artisan view:cache   PASS
-SPJ Critical (lokal)     PASS — 248 tests / 1880 assertions
-vendor/bin/pint --test   ADVISORY — 3 file pre-existing, non-blocking
-```
-
-Gate CI penuh berikutnya harus dijalankan ulang sebelum klaim release apa pun; angka di atas adalah evidence lokal, bukan pengganti CI.
+Gate `a7e927df...` menggantikan checkpoint lama `a2509aad...` sebagai deterministic code gate terbaru. Commit dokumentasi yang masuk setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
 
 ---
 
@@ -68,6 +59,36 @@ FINAL RELEASE   : NOT YET
 ```
 
 Aplikasi belum boleh disebut final release-ready hanya karena deterministic CI hijau. Official-template output, browser/operator QA, dan real-data verification tetap merupakan gate terpisah.
+
+---
+
+## GUI standardization audit
+
+Status:
+
+```text
+GUI STANDARDIZATION CORE : ESTABLISHED
+SOURCE-LEVEL CLEANUP      : ACTIVE
+BROWSER QA                : RVR ACTIVE
+MOBILE/TABLET QA          : RVR / NON-BLOCKER
+```
+
+Perbaikan audit yang sudah masuk antara lain:
+
+- Detail Transaksi: `item_description` tetap editable pada Paket `NUMBERED` tanpa membuka field manual lain; `FINAL` tetap terkunci.
+- Laporan Audit: page-local `<style>`/custom audit table diganti ke theme token dan shared `x-ui.table`.
+- RKAS planning: cleanup standardisasi GUI dan action export sudah masuk pada rangkaian commit sebelum gate ini.
+- Master Siswa index: filter/surface/divider/typography desktop+mobile memakai semantic theme token; tabel desktop memakai `x-ui.table`; hard-coded non-semantic `slate/indigo/white` pada index dihilangkan.
+
+Regression guard Master Siswa:
+
+```text
+tests/Feature/StudentIndexThemePrimitiveUiTest.php
+```
+
+Test tersebut sekarang menjadi bagian eksplisit dari suite `SPJ Critical` dan PASS pada gate `a7e927df...`.
+
+Batas klaim: **hanya halaman index/listing Master Siswa** yang ditutup pada pass ini. `students/form.blade.php` dan `students/show.blade.php` tetap harus diperlakukan sebagai cleanup terpisah bila source audit berikutnya menemukan legacy styling. Browser visual QA tetap diperlukan sebelum menyatakan seluruh family Master Siswa selesai secara visual.
 
 ---
 
@@ -173,8 +194,6 @@ POST-NUMBERING EDIT RULE    : PASS
 REAL-DATA OPERATOR QA       : ACTIVE
 ```
 
-Kontrak terbaru:
-
 ### Individual cancel
 
 ```text
@@ -229,7 +248,7 @@ fiscal_year_id
 + period_key
 ```
 
-Migration tenant baru:
+Migration tenant:
 
 ```text
 database/migrations/school/2026_09_11_180000_scope_document_number_sequences_by_fund_source.php
@@ -256,21 +275,13 @@ tests/Feature/SpjOwnershipMigrationTest.php
 tests/Feature/SpjWorkspaceMigrationTest.php
 ```
 
-Panduan domain lengkap:
-
-```text
-docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
-```
+Panduan domain lengkap: `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
 ---
 
 ## P0-04 — Authorization
 
-Status:
-
-```text
-FUNCTIONAL PASS
-```
+Status: **FUNCTIONAL PASS**.
 
 Contract:
 
@@ -308,11 +319,7 @@ Detail canonical berada di `SYNCHRONIZATION.md`.
 
 ## P0-06 — Tenant isolation
 
-Status:
-
-```text
-FUNCTIONAL PASS
-```
+Status: **FUNCTIONAL PASS**.
 
 Boundary canonical:
 
@@ -320,7 +327,7 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Boundary ini sekarang juga diterapkan pada sequence numbering/rollback sehingga sumber dana lain tidak ikut ter-reset.
+Boundary ini juga diterapkan pada sequence numbering/rollback sehingga sumber dana lain tidak ikut ter-reset.
 
 ---
 
@@ -383,9 +390,9 @@ Quarter audit harus tetap read-only ketika digunakan untuk menentukan baseline.
 Status:
 
 ```text
-FUNCTIONAL CORE                 : PASS
-GENERATED-DOCUMENT E2E          : RVR
-OFFICIAL-TEMPLATE OUTPUT        : RVR
+FUNCTIONAL CORE          : PASS
+GENERATED-DOCUMENT E2E   : RVR
+OFFICIAL-TEMPLATE OUTPUT : RVR
 ```
 
 SiPLah tetap channel/payment context, bukan `spj_category`.
@@ -394,17 +401,18 @@ SiPLah tetap channel/payment context, bukan `spj_category`.
 
 ## P1 aktif
 
-Prioritas setelah numbering rollback functional PASS:
+Prioritas aktif:
 
 1. jalankan read-only audit pada baseline real-data 66 Paket READY;
 2. perbaiki hanya blocker legitimate yang ditemukan audit;
 3. lakukan operator/real-data QA untuk rollback numbering dengan isolated copy, terutama alignment nomor SPJ terhadap source order ARKAS;
-4. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
-5. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
-6. verifikasi SiPLah generated-document + official template;
-7. browser QA desktop/laptop;
-8. operational audit E2E;
-9. employee identity real-school + participant roster.
+4. lanjutkan source-level GUI compliance cleanup pada halaman legacy-heavy yang belum ditutup;
+5. selesaikan browser QA desktop/laptop setelah cleanup source yang relevan;
+6. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
+7. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
+8. verifikasi SiPLah generated-document + official template;
+9. operational audit E2E;
+10. employee identity real-school + participant roster.
 
 Mobile tetap non-blocker untuk target release desktop/laptop saat ini.
 
@@ -414,8 +422,8 @@ Mobile tetap non-blocker untuk target release desktop/laptop saat ini.
 
 - field validation UX;
 - Pint advisory repository, termasuk style di `SpjDocumentNumberService.php`;
-- GUI/compatibility cleanup;
-- icon/action consistency;
+- GUI compatibility-layer cleanup setelah consumer legacy benar-benar selesai;
+- canonical icon/action consistency;
 - performance;
 - Bridge `bin/obj` hygiene;
 - report foundation;
@@ -433,7 +441,7 @@ Belum boleh diberi status final sampai evidence tersedia untuk:
 - real-data category-specific document QA yang belum selesai;
 - installed-runtime checks yang masih DEFERRED.
 
-Tidak ada blocker functional deterministic baru dari implementasi numbering rollback; functional gate terbaru hijau.
+Tidak ada blocker functional deterministic baru pada code gate `a7e927df...`; gate tersebut hijau.
 
 ---
 
@@ -443,5 +451,6 @@ Tidak ada blocker functional deterministic baru dari implementasi numbering roll
 2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Setiap source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `a2509aad...`.
+5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `a7e927df...`.
 6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, test, dan dokumen ini.
+7. GUI source cleanup hanya boleh diberi status source-level PASS; browser visual QA tetap RVR sampai diverifikasi di runtime.
