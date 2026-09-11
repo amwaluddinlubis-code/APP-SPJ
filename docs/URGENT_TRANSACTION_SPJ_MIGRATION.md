@@ -131,7 +131,7 @@ HONOR_PEGAWAI
 
 Semua partial memiliki `data-spj-section` dan dapat di-switch tanpa full page reload. Persist kategori dilakukan via AJAX; backend tetap authoritative.
 
-SiPLah bukan kategori. Untuk BARANG, UI memakai radio mutually-exclusive `SiPLah / Non SiPLah` yang disinkronkan dengan `payment_method`.
+SiPLah bukan kategori. Untuk BARANG, UI memakai radio mutually-exclusive `SiPLah / Non SiPLah` yang bersifat UI-only (show/hide section pengadaan, tidak menulis `payment_method`).
 
 ## 5. Pajak readonly
 

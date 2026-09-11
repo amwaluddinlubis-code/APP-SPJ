@@ -390,18 +390,16 @@ Student tidak memakai fusion logic Employee karena domain identity dan identifie
 
 ---
 
-## 16. KONSUMSI dan Dapodik
+## 16. KONSUMSI, SPPD, dan roster menyatu
 
-Unified Employee master tidak mengubah rule auto-fill peserta KONSUMSI.
+Roster peserta KONSUMSI dan SPPD memakai master Pegawai menyatu (keputusan aktif; Dapodik-only dicabut).
 
 Kontrak tetap:
 
 ```text
-Auto-fill KONSUMSI = Employee yang memenuhi source DAPODIK sesuai policy aktif
+Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual = diperbolehkan
 ```
-
-Jangan memperluas auto-fill ke semua Employee hanya karena identity master sudah unified.
 
 ---
 

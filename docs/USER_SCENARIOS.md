@@ -341,11 +341,11 @@ Operator mengisi data acara dan participant roster sesuai kebutuhan dokumen.
 Kontrak auto-fill:
 
 ```text
-Auto-fill KONSUMSI = Employee yang berasal dari DAPODIK
+Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual = allowed
 ```
 
-Walaupun employee master dapat menggabungkan provenance ARKAS + Dapodik, auto-fill KONSUMSI tidak otomatis diperluas ke semua employee.
+Roster menyatu adalah kontrak aktif; koreksi operator canonical via `operator_locked`.
 
 Identitas pegawai tidak boleh silent-merge hanya berdasarkan nama yang ambigu.
 

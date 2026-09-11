@@ -103,7 +103,7 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 - Operational audit rollback tetap dipertahankan walaupun history numbering domain yang di-rollback dilepas.
 - Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
 - Operator-locked Employee tidak boleh ditimpa source sync.
-- Auto-fill KONSUMSI tetap Dapodik-only; participant manual diperbolehkan.
+- Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill KONSUMSI/SPPD memakai roster menyatu, participant manual diperbolehkan.
 - Audit database real-data dilakukan read-only sebelum mutation.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memaksa coverage.
 

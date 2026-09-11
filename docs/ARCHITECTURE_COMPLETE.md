@@ -244,11 +244,11 @@ Regression membuktikan:
 Kontrak UI tetap:
 
 ```text
-Auto-fill KONSUMSI = Employee.source_type DAPODIK
-Participant manual  = allowed
+Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
+Participant manual      = allowed
 ```
 
-Unified identity core tidak otomatis mengubah aturan auto-fill menjadi all-source.
+Roster menyatu adalah kontrak aktif; koreksi operator canonical via `operator_locked`.
 
 ## 10. Workflow SPJ aktif
 

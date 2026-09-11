@@ -277,14 +277,14 @@ bap_date <= bast_date
 
 ## 9. Konsumsi dan participant roster
 
-Auto-fill peserta KONSUMSI memiliki kontrak permanen:
+Auto-fill peserta KONSUMSI/SPPD memakai master Pegawai menyatu:
 
 ```text
-Auto-fill peserta = Employee source DAPODIK
+Auto-fill peserta = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual = allowed
 ```
 
-Unified Employee Master atau identity fusion lintas source tidak otomatis memperluas sumber auto-fill KONSUMSI.
+Roster menyatu adalah kontrak aktif; koreksi operator canonical via `operator_locked`.
 
 ---
 

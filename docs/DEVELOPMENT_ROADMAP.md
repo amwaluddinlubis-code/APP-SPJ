@@ -268,8 +268,8 @@ Pastikan draft/update/ready/numbering/cancel/reissue/final/reopen/reconcile/rese
 Kontrak tetap:
 
 ```text
-Auto-fill KONSUMSI = Employee.source_type DAPODIK
-Participant manual  = allowed
+Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
+Participant manual      = allowed
 ```
 
 Sudah dibuktikan regression:
@@ -284,7 +284,7 @@ Sudah dibuktikan regression:
 Tersisa:
 
 - [ ] audit duplicate/ambiguous identity pada data sekolah nyata;
-- [ ] pastikan UI auto-fill KONSUMSI tetap Dapodik-only;
+- [ ] pastikan UI auto-fill KONSUMSI/SPPD memakai roster menyatu;
 - [ ] participant roster/operator UX;
 - [ ] same-name/different-identifier real-data review.
 
