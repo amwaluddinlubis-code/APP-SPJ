@@ -2,88 +2,47 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diperbarui terhadap branch aktif: **2026-09-10**.
+Terakhir diperbarui: **2026-09-11**.
 
-Baseline implementasi yang direview untuk status saat ini:
+## Status branch saat ini
 
-```text
-ceb8df6f2a73c4e69cf13de8048ada2fff245fce
-feat: canonicalize ARKAS importer and sync pipeline
-```
-
-Sumber status utama:
-
-- `docs/CURRENT_PROGRESS.md` — gap aktif dan status release terkini;
-- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen;
-- `docs/DEVELOPMENT_ROADMAP.md` — urutan pekerjaan berikutnya;
-- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aktif dan boundary tenant;
-- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — arsip migrasi ownership Detail Transaksi ↔ Paket SPJ yang sudah selesai.
-
-## Status migrasi ownership SPJ
-
-**PASS — ownership boundary selesai.**
-
-Kontrak final:
+Checkpoint kode terbaru yang sudah melewati release gate:
 
 ```text
-Detail Transaksi = source ARKAS/BKU + item_description
-Paket SPJ        = seluruh isian dokumen pertanggungjawaban
+commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
+subject: test: gate template upload routing regression
+CI run : 34578276166
+CI job : 103195683045
+result : PASS — 243 tests / 1848 assertions
 ```
 
-Aturan utama:
-
-- `item_description` hanya diedit di Detail Transaksi dan wajib tersimpan sebelum Paket SPJ dapat dibuat/dibuka;
-- `description`, quantity, unit, unit price, amount adalah readonly source;
-- PPN, PPh 21/22/23/4(2), SSPD, `tax_total`, dan `net_amount` tetap milik transaksi/source;
-- Paket SPJ hanya membaca pajak sebagai referensi readonly;
-- `spj_category`, payment fields, penerima utama, vendor/invoice, data kategori, numbering, preview/download/finalisasi hanya dikelola di Paket SPJ;
-- category switch Paket SPJ berjalan tanpa full page reload;
-- route/use-case/write-path legacy yang menulis SPJ dari halaman transaksi sudah dipensiunkan.
-
-## Status release saat ini
-
-Core SPJ telah melewati functional regression yang kuat, tetapi branch belum release-ready.
-
-Checkpoint penting:
+Gate pada checkpoint tersebut:
 
 ```text
-SPJ Critical PHPUnit   PASS — 124 tests / 810 assertions
-frontend build         PASS
-Blade compile/cache    PASS
-repository Pint        WARN — 1 advisory style issue
+Frontend build       PASS
+Blade compile/cache  PASS
+SPJ Critical         PASS — 243 tests / 1848 assertions
+Repository Pint      ADVISORY — 2 style issues
 ```
 
-Generic ARKAS Importer sudah diimplementasikan, tetapi **belum READY FOR OPERATOR TEST** sampai P0-08 ditutup. Review head `ceb8df6` menemukan dua blocker utama:
+Dua style issue Pint yang masih advisory berada di `app/Services/ArkasStagingService.php` dan `tests/Feature/SyncProgressUiTest.php`. Keduanya bukan blocker functional gate saat ini.
 
-1. `ArkasGenericImportService` memanggil `sourceKey()` yang belum mempunyai implementasi pada service tersebut;
-2. route importer belum seluruhnya menjamin `active-school` + `active-year` sebelum membaca/menulis model tenant pada connection `school`.
+Status release keseluruhan tetap **belum final release**. Core SPJ sudah mempunyai deterministic regression yang kuat, real-data verification sudah dimulai, sedangkan installed-runtime verification saat ini tidak menjadi fokus pekerjaan berikutnya.
 
-Status lengkap dan exit criteria ada di `docs/CURRENT_PROGRESS.md` serta `docs/DEVELOPMENT_ROADMAP.md`.
+## Dokumentasi utama
 
-## Stack
+- `docs/CURRENT_PROGRESS.md` — status release, checkpoint, gap aktif, dan evidence terbaru.
+- `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
+- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen.
+- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aplikasi dan boundary tenant.
+- `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer.
+- `docs/GUI_STANDARDIZATION.md` — kontrak GUI.
+- `docs/CSS_USAGE_GUIDE.md` — kontrak CSS/theme.
+- `docs/SIPLAH_MVP_PLAN.md` — batas MVP SiPLah.
 
-- PHP 8.2+
-- Laravel 12
-- Livewire 3
-- Alpine.js 3
-- Tailwind CSS 4
-- Vite 6
-- SQLite multi-koneksi
-- DomPDF / PhpSpreadsheet / PHPWord
-- PHPUnit 11
+## Kontrak arsitektur inti
 
-Vite canonical hanya memakai entry utama:
-
-```text
-resources/css/app.css
-resources/js/app.js
-```
-
-Feature JS aktif diimpor melalui bundle aplikasi, bukan melalui `@vite` standalone di view.
-
-## Arsitektur inti
-
-Aplikasi memakai database utama dan database tenant/sekolah. ARKAS/BKU adalah source readonly; data operator SPJ adalah overlay yang dipertahankan saat sinkronisasi ulang.
+ARKAS/BKU adalah source readonly. Data operator SPJ adalah overlay yang dipertahankan ketika source disinkronkan ulang.
 
 Boundary tenant canonical:
 
@@ -91,129 +50,124 @@ Boundary tenant canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Model connection `school` tidak boleh dipakai sebelum tenant aktif diaktivasi. Authorization role dan tenant activation diperlakukan sebagai dua boundary yang berbeda.
-
-Sinkronisasi ARKAS memakai pipeline kanonik:
+Ownership final:
 
 ```text
-Bridge -> staging -> mapping/reconciliation -> domain adapter
+Detail Transaksi = source ARKAS/BKU + item_description
+Paket SPJ        = kategori, payment/procurement channel, vendor/penerima,
+                    detail kategori, numbering, template, preview/download,
+                    lifecycle, dan finalisasi
 ```
 
-Canonical transaction/source sync mempertahankan overlay manual, identitas transaksi/package, serta reconciliation. Generic Importer menyediakan mapping tabel tambahan, preview rekonsiliasi, histori import, dan mode Incremental/Upsert/Full refresh, tetapi status operator-test-nya mengikuti P0-08.
+Aturan yang tidak boleh diregresikan:
 
-Panduan lengkap tersedia di [docs/ARKAS_IMPORTER.md](docs/ARKAS_IMPORTER.md).
-
-Use case SPJ utama:
-
-```text
-app/UseCases/Spj/
-├── SpjWorkspaceUseCase.php
-├── CreateSpjDraftUseCase.php
-├── UpdateSpjPackageDetailsUseCase.php
-├── SpjPackageCategoryUseCase.php
-├── SpjNumberingUseCase.php
-├── SpjDocumentUseCase.php
-└── SpjReportUseCase.php
-```
-
-Kategori canonical:
-
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
-
-SiPLah bukan kategori SPJ; ia adalah mode pembelian/pembayaran (`payment_method = siplah`).
+- Detail Transaksi hanya menulis `item_description`;
+- nilai source, kuantitas, unit, harga, pajak, dan metadata ARKAS/BKU tidak dimutasi dari Paket SPJ;
+- kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`;
+- SiPLah adalah procurement/payment channel, bukan kategori;
+- Paket `READY` yang benar-benar berganti kategori wajib kembali ke `DRAFT` untuk revalidation;
+- preview/download tidak boleh menerbitkan nomor baru;
+- `NUMBERED`/`FINAL` terkunci dari edit normal.
 
 ## Workflow operator
 
 ```text
 Login
-→ Pilih sekolah/tahun/sumber dana
+→ Pilih sekolah / tahun / sumber dana
 → Sinkronisasi ARKAS/BKU
 → Daftar Transaksi
 → Detail Transaksi
-   → periksa Informasi Referensi ARKAS/BKU
-   → koreksi & simpan item_description
-→ Siapkan / Lihat Paket SPJ
-→ Isian Manual Paket SPJ
+   → periksa source
+   → koreksi item_description
+→ Siapkan / buka Paket SPJ
+→ Lengkapi Isian Manual
 → READY
 → Penomoran
 → Preview / Unduh
 → FINAL / Arsip
 ```
 
-Detail Transaksi tidak lagi menjadi workspace pengisian kategori/payment/vendor SPJ.
+## Template Dokumen — upload sudah di-hardening
 
-## Workspace Paket SPJ saat ini
-
-Navigasi Paket:
+Halaman **Pengaturan Template Dokumen** mendukung dua jalur berbeda:
 
 ```text
-Semua Paket | Paket Sebelumnya | Paket Setelahnya
+Import Paket Template  = 1 workbook XLSX master → 11 template canonical
+Upload Satu Template   = 1 file DOCX/XLSX → 1 document type
 ```
 
-Prev/next dibatasi pada konteks **sekolah + tahun anggaran + sumber dana aktif** dan mengikuti urutan transaksi (`transaction_date`, lalu `id`).
+Perbaikan upload terbaru:
 
-Ringkasan Paket:
+- form memakai mode eksplisit `?upload=package` dan `?upload=single`;
+- mode tetap dapat dikenali walaupun PHP membuang body POST karena `post_max_size` terlampaui;
+- error paket dan error upload individual memakai error bag terpisah;
+- validasi file memakai extension contract (`docx`, `xlsx`) dan tidak lagi bergantung pada MIME Windows yang bisa berbeda;
+- UI menampilkan `upload_max_filesize`, `post_max_size`, dan batas efektif server;
+- request yang melampaui `post_max_size` menghasilkan pesan yang menjelaskan batas PHP;
+- file template selalu disimpan, divalidasi, diunduh, dan dihapus melalui disk `local` yang sama dengan generator;
+- replacement tetap atomic: file lama dipertahankan sampai perubahan database berhasil;
+- upload invalid tidak mengganti template aktif.
+
+Regression yang mengunci jalur ini:
 
 ```text
-Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
+tests/Feature/DocumentTemplateUploadValidationTest.php
+tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php
 ```
 
-Format nilai uang UI menggunakan accounting Indonesia tanpa simbol `Rp` dan tanpa desimal, contoh `1.000`, `1.250.000`.
+Keduanya berada di suite `SPJ Critical`.
 
-Sub-tab Paket:
+## Generator dokumen
+
+Functional generator sudah mencakup:
+
+- DOCX/XLSX nyata yang dapat dibuka parser Office;
+- PDF nyata dengan signature dan EOF marker;
+- render preflight sebelum output;
+- unresolved placeholder guard;
+- final artifact validation;
+- package XLSX multi-sheet dan PDF;
+- preview/download tanpa numbering side effect;
+- placeholder umum untuk enam kategori canonical.
+
+Yang masih perlu real-template/operator verification adalah visual fidelity template resmi: print area, page break, header/footer, tabel dinamis, ukuran halaman, serta hasil akhir di Microsoft Word/Excel/PDF viewer target.
+
+## Real-data checkpoint
+
+Database sekolah nyata terbaru yang dianalisis mempunyai transaksi dan detail transaksi nyata serta Paket SPJ yang sudah disiapkan. Checkpoint real-data utama saat ini:
 
 ```text
-1. Rincian
-2. Isian Manual
-3. Rincian Pajak
-4. Penomoran
+transactions       170
+transaction_items  407
+spj_packages        66
+package status      66 READY
+spj_documents        0
+number sequences     0
+number formats       0
 ```
 
-Pada Isian Manual:
+Kategori tahun 2026 tersedia untuk `BARANG`, `HONOR_PEGAWAI`, `JASA_LAINNYA`, `KONSUMSI`, dan `PEMELIHARAAN`. Data `SPPD` nyata tersedia pada tahun 2025, sehingga tidak boleh dibuat data SPPD 2026 hanya untuk memaksakan six-category real-data coverage.
 
-- Kategori SPJ berada di baris atas;
-- `BARANG` menampilkan radio mutually-exclusive `SiPLah / Non SiPLah`;
-- `PEMELIHARAAN` menampilkan selector transaksi pasangan di baris kategori;
-- nomor otomatis tidak menjadi input operator dan ditampilkan sebagai strip informasi;
-- Data Umum Dokumen: textarea uraian 5 baris di kiri, seluruh field umum lain terkumpul di kanan;
-- tabel kategori non-BARANG dibuat compact, memiliki satu pagination lokal, radio `Penerima Utama`, integer untuk hari/porsi/kali, dan accounting untuk tarif/nilai.
+Real-data berikutnya harus tetap mengikuti aturan: audit read-only lebih dulu, numbering canonical order, berhenti pada blocker legitimate, dan tidak mengarang penerima/vendor/template/data source yang tidak tersedia.
 
-Pajak detail tidak berada di Isian Manual. Ia tampil readonly di tab **Rincian Pajak**.
+## Generic ARKAS Importer
 
-## Detail Transaksi saat ini
+Generic ARKAS Importer sudah melewati functional correctness gate untuk:
 
-Urutan utama disederhanakan menjadi:
+- stable source key;
+- tenant boundary;
+- Upsert / Incremental / Full Refresh;
+- preview reconciliation read-only;
+- schema drift blocking;
+- source-empty semantics;
+- queue tenant activation;
+- shared tenant/resource lock;
+- created-at preservation;
+- semantic import metrics.
 
-```text
-Header transaksi
-→ Informasi Referensi ARKAS/BKU + Total Pajak
-→ Rincian Barang/Jasa
-→ Status Paket SPJ
-```
+Pekerjaan lanjutan importer terutama scale/performance: Bridge-side delta fetch dan evaluasi/paginasi di atas limit fetch besar.
 
-Rincian PPN/PPh/SSPD tidak mendominasi halaman transaksi; detail pajak tersedia di Paket SPJ pada tab Rincian Pajak.
-
-Daftar transaksi memakai satu tombol **Aksi** per row yang membuka pilihan navigasi Detail/Paket SPJ melalui modal. Write-path editor SPJ lama di Livewire tabel transaksi sudah dihapus.
-
-## Employee / peserta konsumsi
-
-Identity layer dapat menyimpan provenance ARKAS/PTK, Dapodik, dan manual. Namun keputusan bisnis canonical belum berubah:
-
-```text
-Auto-fill peserta KONSUMSI = Employee.source_type DAPODIK
-Participant manual          = diperbolehkan
-```
-
-Jika implementasi roster lintas sumber memperluas auto-fill tanpa keputusan desain baru, itu diperlakukan sebagai gap yang harus dikoreksi, bukan sebagai perubahan kontrak otomatis.
-
-## APP DATA
+## APP DATA / database tenant
 
 Root data tenant dapat dipindahkan dari source project:
 
@@ -221,7 +175,7 @@ Root data tenant dapat dipindahkan dari source project:
 SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
 ```
 
-Fallback bila env kosong: `storage/app`.
+Fallback ketika env kosong: `storage/app`.
 
 Struktur target:
 
@@ -234,42 +188,28 @@ Struktur target:
 └── exports/
 ```
 
-Reset tenant hanya boleh merebuild database sekolah aktif, termasuk WAL/SHM dan sequence; database utama tidak ikut dihapus.
+Reset tenant hanya boleh merebuild database sekolah target. Database utama aplikasi tidak boleh ikut dihapus.
 
-## Aturan penting
+## Stack
 
-Kronologi pengadaan canonical:
+- PHP 8.2+
+- Laravel 12
+- Livewire 3
+- Alpine.js 3
+- Tailwind CSS 4
+- Vite 6
+- SQLite multi-koneksi
+- DomPDF
+- PhpSpreadsheet
+- PHPWord
+- PHPUnit 11
+
+Vite canonical:
 
 ```text
-order_date <= transaction_date
-order_date <= bap_date
-bap_date <= bast_date
+resources/css/app.css
+resources/js/app.js
 ```
-
-Jangan menambahkan rule `bap_date <= transaction_date` atau `bast_date <= transaction_date` tanpa keputusan domain baru.
-
-Untuk `PEMELIHARAAN`, transaksi bahan/barang dan transaksi upah dapat ditautkan melalui endpoint khusus. Relationship state tetap milik transaksi/context, walaupun selector ditampilkan di workspace Paket SPJ.
-
-Preview/download tidak boleh menerbitkan nomor secara diam-diam. `NUMBERED`/`FINAL` terkunci dari edit normal.
-
-## Status aktif
-
-Ownership migration sudah selesai. Gap release dipusatkan di `docs/CURRENT_PROGRESS.md` dengan urutan utama:
-
-- P0-08 Generic ARKAS Importer correctness + tenant boundary;
-- P0-01 E2E enam kategori pada database nyata;
-- P0-02 generator dokumen release-hardening pada output nyata;
-- P0-07 APP DATA backup/reset/restore nyata;
-- JASA_LAINNYA multi-penerima sampai output dokumen;
-- PEMELIHARAAN bahan + upah full-document QA;
-- SiPLah end-to-end;
-- browser QA Paket desktop/laptop;
-- Employee/participant roster alignment;
-- audit trail operasional;
-- GUI/style/performance/repository cleanup;
-- Pusat Laporan dan laporan BOS resmi.
-
-Mobile/responsive penuh bukan release blocker target operator laptop/desktop saat ini.
 
 ## Menjalankan project
 
@@ -306,17 +246,4 @@ Release gate canonical:
 php artisan spj:verify
 ```
 
-Gunakan `--strict-style` bila repository-wide Pint harus menjadi blocking gate.
-
-## Dokumentasi utama
-
-- `docs/CURRENT_PROGRESS.md` — gap aktif dan checkpoint status.
-- `docs/DEVELOPMENT_ROADMAP.md` — urutan pekerjaan berikutnya.
-- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis permanen.
-- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aktif.
-- `docs/ARKAS_IMPORTER.md` — pipeline/importer ARKAS.
-- `docs/GUI_STANDARDIZATION.md` — contract GUI.
-- `docs/CSS_USAGE_GUIDE.md` — contract CSS/theme.
-- `docs/URGENT_TRANSACTION_SPJ_MIGRATION.md` — arsip migrasi ownership yang sudah PASS.
-- `docs/SIPLAH_MVP_PLAN.md` — batas MVP SiPLah.
-- `docs/MOBILE_VISUAL_QA_TODO.md` — backlog mobile/future development.
+Gunakan `--strict-style` bila repository-wide Pint ingin dijadikan blocking gate.
