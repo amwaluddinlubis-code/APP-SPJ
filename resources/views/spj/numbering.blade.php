@@ -13,6 +13,9 @@
                 @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))
                     <x-ui.button variant="secondary" :href="route('document-number-formats.index')">Atur Format Nomor</x-ui.button>
                 @endif
+                @if(auth()->user()->isAdministrator())
+                    <x-ui.button variant="danger" :href="route('spj.numbering-correction', ['quarter' => $selectedQuarter])">Koreksi Penomoran</x-ui.button>
+                @endif
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
