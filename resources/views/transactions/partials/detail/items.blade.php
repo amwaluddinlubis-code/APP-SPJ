@@ -23,11 +23,21 @@
                 ? $metadataItem['siplah_item_name']
                 : null;
         };
+        $itemDescriptionsEditable = ! $transaction->spjPackage
+            || $transaction->spjPackage->isEditable()
+            || $transaction->spjPackage->status === 'NUMBERED';
     @endphp
+    @if($transaction->spjPackage?->status === 'NUMBERED')
+        <div class="px-5 pt-4">
+            <x-ui.alert type="info" title="Koreksi uraian tetap diperbolehkan">
+                Hanya nama atau uraian barang/jasa yang dapat diperbaiki pada tahap ini. Nomor SPJ, status paket, dan urutan penomoran tidak berubah.
+            </x-ui.alert>
+        </div>
+    @endif
     <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}"
         @submit="itemDescriptionsDirty = false">@csrf
         @method('PUT')
-        <fieldset @disabled($transaction->spjPackage && !$transaction->spjPackage->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
+        <fieldset @disabled(! $itemDescriptionsEditable) class="disabled:cursor-not-allowed disabled:opacity-60">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-[var(--ui-line)] text-base">
                     <thead class="bg-[var(--ui-surface-soft)]">
