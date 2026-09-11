@@ -222,6 +222,28 @@ main:has(#spj-main-tabs) .spj-semantic-workspace {
     --profile-header-padding-x: 1.25rem;
     --profile-header-padding-y: 1.25rem;
     --profile-table-row-y: .625rem;
+    font-size: .875rem;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace.space-y-6> :not([hidden])~ :not([hidden]) {
+    margin-top: 1rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace>section,
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-shell {
+    border-radius: .75rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-main {
+    padding: 1rem 1.25rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace [class~="px-5"][class~="py-4"] {
+    padding: .75rem 1rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace table :is(th, td) {
+    padding-block: .625rem !important;
 }
 
 main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-main {

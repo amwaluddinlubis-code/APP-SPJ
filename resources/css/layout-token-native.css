@@ -37,17 +37,6 @@
     box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-accent) 20%, transparent);
 }
 
-.app-sidebar-toggle {
-    border-radius: var(--profile-control-radius) !important;
-    color: var(--app-sidebar-text) !important;
-    transition: background-color .15s ease, color .15s ease;
-}
-
-.app-sidebar-toggle:hover {
-    background: var(--app-sidebar-hover) !important;
-    color: var(--app-sidebar-text-strong) !important;
-}
-
 .app-sidebar .app-nav {
     color: var(--app-sidebar-text) !important;
     border-radius: var(--profile-sidebar-item-radius, var(--profile-control-radius)) !important;
@@ -260,8 +249,8 @@ html[data-ui-appearance='dark'] .app-dialog-message {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .app-topbar,
-    .app-sidebar-toggle,
     .app-topbar-menu,
     .app-topbar-select {
         transition: none !important;

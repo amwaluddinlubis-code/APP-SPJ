@@ -31,6 +31,8 @@ Sticky action / utility
 
 Pada halaman panjang tersedia kontrol sticky **Ke atas**.
 
+Pada desktop saat sidebar diciutkan, hanya icon navigasi yang ditampilkan pada rail sempit. Label menu disembunyikan agar tidak terpotong; link dan tombol utama tetap menyediakan `title`/`aria-label` untuk identifikasi dan aksesibilitas. Kontrol expand/collapse hanya berada di header aplikasi; sidebar tidak memiliki toggle kedua. Pada mobile, kontrol header yang sama membuka dan menutup drawer navigasi.
+
 Header kanan authenticated memakai menu **Profil User**, bukan badge teknis runtime. Dropdown dapat menampilkan identitas user, role, akses manajemen user untuk admin, dan logout.
 
 ## 3. Sistem tema

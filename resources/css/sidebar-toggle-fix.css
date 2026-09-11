@@ -1,32 +1,14 @@
-/* Keep the desktop sidebar collapse toggle inside the sidebar bounds.
-   In collapsed mode the available inner width is too small for brand + toggle
-   side-by-side, so stack them vertically. Expanded/mobile layouts stay unchanged. */
+/* Keep the collapsed desktop sidebar compact when its toggle lives in the
+   application header. Expanded/mobile layouts stay unchanged. */
 
 @media (min-width: 1024px) {
-    .app-sidebar.app-sidebar-collapsed > div:first-child {
-        flex-direction: column;
-        justify-content: flex-start;
-        gap: .5rem;
-    }
-
-    .app-sidebar.app-sidebar-collapsed .app-sidebar-brand {
+    .app-sidebar.app-sidebar-collapsed .app-nav {
         justify-content: center;
-        width: 100%;
+        gap: 0;
+        padding-inline: .5rem;
     }
 
-    .app-sidebar.app-sidebar-collapsed .app-sidebar-toggle {
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        width: 2.25rem;
-        height: 2.25rem;
-        padding: 0 !important;
-        margin-inline: auto;
-        flex: 0 0 auto;
-    }
-
-    .app-sidebar:not(.app-sidebar-collapsed) > div:first-child {
-        flex-direction: row;
-        justify-content: space-between;
+    .app-sidebar.app-sidebar-collapsed .nav-label {
+        display: none !important;
     }
 }
