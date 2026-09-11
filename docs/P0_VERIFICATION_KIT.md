@@ -1,89 +1,34 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-08**
+Terakhir diperbarui: **2026-09-11**
 
-Dokumen ini mendefinisikan alat verifikasi yang dipakai berulang selama P0 agar setiap perubahan tidak mengulang pemilihan fixture, test, build command, dan audit database dari awal.
+Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release tidak ditentukan oleh dokumen ini; gunakan `CURRENT_PROGRESS.md` sebagai sumber utama.
 
-## 1. Tujuan
+## 1. Functional gate aktif
 
-Workflow canonical setelah perubahan source:
-
-```text
-ubah source
-→ php artisan spj:verify
-→ lihat checkpoint blocking pertama yang gagal
-→ perbaiki
-→ ulangi
-```
-
-Ketika database sekolah nyata tersedia:
+Checkpoint deterministic terbaru untuk source aplikasi/test aktif:
 
 ```text
-ubah source
-→ php artisan spj:verify --npsn=10208183 --quarter=1
-→ source/build/test verification
-→ audit tenant query-only
-→ review kandidat/anomaly
+commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
+CI run : 34578276166
+CI job : 103195683045
+PASS   : 243 tests / 1848 assertions
 ```
 
-Verification kit tidak menggantikan browser QA atau inspeksi output Word/Excel/PDF nyata.
-
----
-
-## 2. Six-category scenario factory
-
-File:
+Gate:
 
 ```text
-tests/Support/SpjScenarioFactory.php
+Repository Pint --test   -> ADVISORY
+SPJ Critical PHPUnit     -> BLOCKING
+npm run build            -> BLOCKING
+php artisan view:cache   -> BLOCKING
 ```
 
-Factory menyediakan payload operator reusable untuk enam kategori canonical:
+HEAD branch saat dokumentasi ini diperbarui hanya mempunyai commit dokumentasi setelah gate tersebut, sehingga gate ini tetap relevan untuk source aplikasi/test aktif.
 
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
+## 2. Command canonical
 
-Contoh:
-
-```php
-$payload = SpjScenarioFactory::payload('JASA_LAINNYA', 1_250_000);
-```
-
-Factory hanya membangun **request payload**, tidak memasukkan row database. Test feature tetap bebas membuat transaction/package sesuai kebutuhan masing-masing tanpa menyalin struktur form kategori berulang-ulang.
-
-Kontrak factory dijaga oleh `tests/Unit/SpjScenarioFactoryTest.php`.
-
----
-
-## 3. SPJ Critical test suite
-
-`phpunit.xml` mempunyai suite canonical:
-
-```text
-SPJ Critical
-```
-
-Jalankan langsung:
-
-```powershell
-php artisan test --testsuite="SPJ Critical" --compact
-```
-
-Suite ini memusatkan regression release-safety: workflow dokumen kritis, numbering, safe sync ARKAS, security, JASA_LAINNYA reconciliation, SiPLah policy, maintenance linkage, ownership, package/source boundary, auditor read-only, audit diff, workspace migration, verification command, dan six-category scenario contract.
-
-Regression P0 baru harus dimasukkan ke suite ini bila menyangkut release-safety. Test visual/browser-only tidak dipaksakan masuk PHPUnit.
-
----
-
-## 4. Single command `spj:verify`
-
-Command:
+Jalankan:
 
 ```powershell
 php artisan spj:verify
@@ -92,16 +37,14 @@ php artisan spj:verify
 Urutan default:
 
 ```text
-Repository Pint --test   → advisory WARN bila style debt ditemukan
-SPJ Critical PHPUnit     → blocking
-npm run build            → blocking
-php artisan view:cache   → blocking
-real tenant audit        → RVR bila NPSN tidak diberikan / blocking bila diminta
+Repository Pint --test
+→ SPJ Critical PHPUnit
+→ npm run build
+→ php artisan view:cache
+→ optional real-tenant audit
 ```
 
-Repository saat verification kit pertama dibuat masih memiliki style debt Pint tersebar di source lama maupun file yang baru disentuh. Karena formatting bukan release-safety blocker, Pint default dicatat sebagai **WARN** dan tidak menutup build/test. Debt tersebut tetap terlihat dan tidak dianggap PASS.
-
-Jika ingin style menjadi gate penuh:
+Pint tetap advisory pada konfigurasi release sekarang. Bila style perlu dijadikan blocking gate:
 
 ```powershell
 php artisan spj:verify --strict-style
@@ -115,120 +58,161 @@ php artisan spj:verify --skip-build
 php artisan spj:verify --skip-tests
 ```
 
-`--skip-*` bukan konfigurasi release checkpoint normal.
+`--skip-*` tidak boleh dipakai sebagai evidence release final.
 
-### Dengan database nyata
+## 3. SPJ Critical suite
 
 ```powershell
-php artisan spj:verify --npsn=10208183 --quarter=1
+php artisan test --testsuite="SPJ Critical" --compact
+```
+
+Suite ini mencakup release-safety lintas fitur, termasuk:
+
+- six-category lifecycle E2E;
+- numbering dan pre-numbering policy;
+- preview/download side-effect guards;
+- safe sync/reconciliation;
+- authorization/tenant boundary;
+- APP DATA maintenance hardening;
+- Generic ARKAS Importer release safety;
+- template upload validation/routing;
+- SiPLah procurement policy;
+- employee identity/unified master;
+- quarter audit read-only;
+- ownership/workspace migration;
+- maintenance linkage;
+- JASA_LAINNYA reconciliation.
+
+Nama test dapat bertambah; daftar status authoritative tetap berada di `CURRENT_PROGRESS.md`.
+
+## 4. Six-category scenario factory
+
+File:
+
+```text
+tests/Support/SpjScenarioFactory.php
+```
+
+Factory menyediakan reusable request payload untuk:
+
+```text
+BARANG
+KONSUMSI
+PEMELIHARAAN
+JASA_LAINNYA
+SPPD
+HONOR_PEGAWAI
+```
+
+Factory membantu deterministic tests dan tidak boleh dipakai untuk memalsukan real-data evidence.
+
+## 5. Real-tenant audit
+
+Dengan database sekolah nyata:
+
+```powershell
+php artisan spj:verify --npsn=<NPSN> --quarter=<Q>
 ```
 
 Opsional:
 
 ```powershell
-php artisan spj:verify --npsn=10208183 --quarter=1 --year=2026
-php artisan spj:verify --npsn=10208183 --quarter=1 --year=2026 --fund-source=BOSP
+php artisan spj:verify --npsn=<NPSN> --quarter=<Q> --year=<TAHUN>
+php artisan spj:verify --npsn=<NPSN> --quarter=<Q> --year=<TAHUN> --fund-source=<SUMBER_DANA>
 ```
 
-Step terakhir memanggil auditor tenant read-only; tidak membuat, memigrasi, atau memperbaiki database.
+Step audit tenant harus read-only. `spj:audit-quarter`:
 
----
+- tidak membuat database tenant;
+- tidak memigrasi database;
+- memakai `PRAGMA query_only=ON`;
+- tidak memperbaiki data otomatis;
+- tidak boleh mengubah hash file atau metadata `SchoolDatabase`.
 
-## 5. Audit snapshot dan diff
+Regression utama:
+
+```text
+tests/Feature/SpjQuarterAuditCommandTest.php
+tests/Feature/SpjQuarterAuditPolicyTest.php
+```
+
+## 6. Audit snapshot dan diff
 
 Simpan baseline:
 
 ```powershell
-php artisan spj:audit-quarter 10208183 --quarter=1 `
-  --output=storage/app/audits/10208183-tw1-before.json
+php artisan spj:audit-quarter <NPSN> --quarter=<Q> \
+  --output=storage/app/audits/before.json
 ```
 
-Setelah patch:
+Setelah patch pada isolated copy:
 
 ```powershell
-php artisan spj:audit-quarter 10208183 --quarter=1 `
-  --output=storage/app/audits/10208183-tw1-after.json
+php artisan spj:audit-quarter <NPSN> --quarter=<Q> \
+  --output=storage/app/audits/after.json
 ```
 
 Bandingkan:
 
 ```powershell
-php artisan spj:audit-diff `
-  storage/app/audits/10208183-tw1-before.json `
-  storage/app/audits/10208183-tw1-after.json `
+php artisan spj:audit-diff \
+  storage/app/audits/before.json \
+  storage/app/audits/after.json \
   --fail-on-regression
 ```
 
-Diff membandingkan summary, anomaly code, coverage/lifecycle kategori, dan kandidat E2E. Snapshot dari school/year/quarter/fund-source berbeda ditolak agar tidak menghasilkan delta palsu.
+Snapshot dengan school/year/quarter/fund-source berbeda tidak boleh dibandingkan sebagai delta yang sama.
 
-`--output` menulis laporan JSON, **bukan database tenant**. Query tenant tetap memakai `PRAGMA query_only=ON`.
+## 7. Browser dan document QA
 
----
+CI/PHPUnit tidak membuktikan:
 
-## 6. GitHub CI
+- browser interaction aktual;
+- layout desktop/laptop aktual;
+- mobile verification;
+- Word/Excel/PDF visual fidelity;
+- print area/page break/header/footer;
+- hasil cetak fisik;
+- installed Windows runtime.
 
-Workflow:
+Area tersebut tetap RVR/DEFERRED sesuai `CURRENT_PROGRESS.md`.
 
-```text
-.github/workflows/spj-critical.yml
-```
+## 8. Verification workflow per perubahan
 
-Dijalankan pada push/PR `gui-standardization` dan `workflow_dispatch`.
-
-Pipeline:
-
-```text
-checkout
-→ PHP 8.3 + SQLite
-→ Node 22
-→ composer install
-→ npm ci
-→ Repository Pint --test (advisory)
-→ npm build (blocking)
-→ Blade view cache (blocking)
-→ SPJ Critical tests (blocking)
-```
-
-Pint repository-wide sengaja `continue-on-error` untuk sementara agar style debt tidak mencegah kita melihat hasil build/test. CI hanya disebut **functional PASS** jika semua blocking gate hijau; bila Pint merah, status dicatat **PASS with style WARN**, bukan “all checks clean”.
-
-CI tidak memakai database SDN 10208183 dan tidak menggantikan real-tenant P0-01.
-
----
-
-## 7. Aturan penggunaan ke depan
-
-Setiap patch P0:
+Untuk perubahan source yang mempengaruhi release-safety:
 
 ```text
 1. Tambah/perbarui regression test
-2. Gunakan SpjScenarioFactory bila membutuhkan payload kategori
-3. Masukkan regression release-safety ke SPJ Critical
+2. Masukkan test kritis ke SPJ Critical bila applicable
+3. Jalankan focused test
 4. Jalankan spj:verify
-5. Simpan audit before/after bila mapping data berubah
-6. Jalankan spj:audit-diff --fail-on-regression
-7. Browser/document QA bila menyentuh UI/generator
-8. Baru update status roadmap
+5. Jika menyentuh mapping/source, audit tenant before/after
+6. Jika menyentuh UI/generator, lakukan browser/document QA
+7. Update CURRENT_PROGRESS hanya dengan evidence yang benar-benar tersedia
+8. Update DEVELOPMENT_ROADMAP bila prioritas berubah
 ```
 
-Jangan membuat command verifikasi baru per milestone bila langkahnya dapat ditampung verification kit ini.
+Jangan membuat checkpoint CI baru hanya karena dokumentasi berubah.
 
----
+## 9. Real-data rules
 
-## 8. Checkpoint yang tetap membutuhkan laptop/data nyata
+- original database upload immutable;
+- audit original read-only;
+- mutation hanya pada isolated copy;
+- jangan membuat penerima/vendor/SPPD/template fiktif;
+- jangan mengubah source transaction/item untuk memaksa PASS;
+- numbering harus mengikuti canonical order dan berhenti pada blocker legitimate;
+- absence of real category/data adalah coverage limitation, bukan alasan fabrikasi.
 
-Tetap RVR sampai SDN 10208183 tersedia:
+## 10. Current real-data focus
 
-- P0-01 audit triwulan nyata;
-- pemilihan enam kandidat nyata;
-- E2E sampai FINAL;
-- validasi isi Word/Excel/PDF dengan data nyata;
-- backup/reset/restore database nyata;
-- browser QA operator.
+Baseline aktif mempunyai 66 Paket SPJ tahun 2026 berstatus READY. Fokus penggunaan verification kit sekarang adalah:
 
-Saat laptop tersedia gunakan entry point canonical:
-
-```powershell
-php artisan spj:verify --npsn=10208183 --quarter=1
-```
-
-kemudian simpan baseline audit untuk diff bila ada perbaikan berikutnya.
+- audit read-only seluruh package;
+- klasifikasi blocker legitimate;
+- JASA_LAINNYA multi-recipient output;
+- PEMELIHARAAN bahan+upah output;
+- SiPLah generated-document E2E;
+- employee identity/participant real-data review;
+- browser QA desktop/laptop;
+- official-template RVR.
