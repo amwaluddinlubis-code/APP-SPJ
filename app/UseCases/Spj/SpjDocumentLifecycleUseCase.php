@@ -33,19 +33,19 @@ class SpjDocumentLifecycleUseCase
         abort_unless($this->context->isAdministrator(), 403);
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         $document = SpjDocument::query()->with('package.transaction')->findOrFail($documentId);
-        abort_unless($this->context->matchesFiscalYear($document->package->transaction), 404);
+        abort_unless($this->context->matchesTransaction($document->package->transaction), 404);
         $oldNumber = $document->document_number;
         $this->lifecycle->cancel($document, $this->context->actorId(), $data['reason']);
         $this->audit->record($document->package->transaction->fiscal_year_id, 'SPJ_DOCUMENT', $document->id, 'BATALKAN_NOMOR', 'Nomor '.$oldNumber.' dibatalkan. Alasan: '.$data['reason']);
 
-        return back()->with('warning', 'Nomor '.$oldNumber.' dibatalkan dan slotnya tersedia untuk dialokasikan kembali. Buka paket untuk memperbaiki input.');
+        return back()->with('warning', 'Nomor '.$oldNumber.' dibatalkan dan tetap disimpan sebagai histori. Nomor tersebut tidak akan digunakan kembali.');
     }
 
     public function replaceDocument(Request $request, string $documentId): RedirectResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         $old = SpjDocument::query()->with('package.transaction')->findOrFail($documentId);
-        abort_unless($this->context->matchesFiscalYear($old->package->transaction), 404);
+        abort_unless($this->context->matchesTransaction($old->package->transaction), 404);
         $this->lifecycle->cancel($old, $this->context->actorId(), $data['reason']);
         $school = $this->context->school();
         $replacement = $this->numbers->assign($old->package, $old->document_type, now(), $school->school_code ?: $school->npsn, 'REPLACEMENT:'.$old->id.':'.now()->format('YmdHis'), $old->document_template_id, $school->npsn);
