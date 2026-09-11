@@ -34,8 +34,14 @@ Before relying on a package's API, confirm its installed version:
 
 ## Documentation Files
 
-- You must only create documentation files if explicitly requested by the user.
-- When behavior changes materially, update existing project documentation so `README.md`, `docs/CURRENT_PROGRESS.md`, design decisions, user scenarios, GUI/CSS guidance, and roadmap do not contradict the active code.
+- You must only create documentation files if explicitly requested by the user or required by the repository documentation-maintenance policy.
+- Before changing source, read `docs/README.md`, `docs/DOCUMENTATION_MAINTENANCE.md`, `docs/CURRENT_PROGRESS.md`, `docs/DEVELOPMENT_ROADMAP.md`, and relevant domain/feature documentation.
+- Do not hard-code the current project priority in agent instructions. Derive current status and priority from `docs/CURRENT_PROGRESS.md` and `docs/DEVELOPMENT_ROADMAP.md`.
+- Before declaring work complete, perform the **Documentation Impact Review** required by `docs/DOCUMENTATION_MAINTENANCE.md`.
+- When behavior changes materially, update impacted project documentation in the same work so `README.md`, `docs/CURRENT_PROGRESS.md`, design decisions, architecture, user scenarios, GUI/CSS guidance, feature guides, and roadmap do not contradict the active code.
+- If no documentation files need changes, still verify that existing documentation remains accurate and note that the impact review was performed.
+- Never claim tests, CI, browser/runtime, or real-data verification without actual evidence.
+- Treat stale or contradictory documentation as a defect, not a cosmetic issue.
 
 ## Replies
 
@@ -48,6 +54,7 @@ Before relying on a package's API, confirm its installed version:
 ## Project Rules
 
 - This project contains committed, area-grouped rules in `.ai/rules` when that directory exists (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
+- Documentation governance is canonical in `docs/DOCUMENTATION_MAINTENANCE.md`. All AI/coding agents must follow it before declaring work complete.
 
 ## Artisan
 
