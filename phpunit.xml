@@ -31,6 +31,7 @@
             <file>tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php</file>
             <file>tests/Feature/EmployeeIdentityMergeTest.php</file>
             <file>tests/Feature/EmployeeIndexThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/GuiAudit09To13SourceReadinessTest.php</file>
             <file>tests/Feature/IndonesianDateInputUiTest.php</file>
             <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
             <file>tests/Feature/OperatorAssistantTest.php</file>
