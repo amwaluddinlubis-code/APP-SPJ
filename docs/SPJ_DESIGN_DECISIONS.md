@@ -593,8 +593,4 @@ Kontrak GUI:
 docs/GUI_STANDARDIZATION.md
 ```
 
-Dokumen ownership migration historis:
-
-```text
-docs/URGENT_TRANSACTION_SPJ_MIGRATION.md
-```
+Arsip migration yang sudah selesai dihapus dari `docs/`; jejaknya ada di git history.

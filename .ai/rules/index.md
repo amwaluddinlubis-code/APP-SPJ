@@ -248,7 +248,7 @@ Baca:
 ```text
 AGENTS.md
 .ai/rules/index.md
-docs/DEVELOPMENT_HANDOFF_2026-09-05.md
+docs/README.md
 docs/SIPLAH_MVP_PLAN.md
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md

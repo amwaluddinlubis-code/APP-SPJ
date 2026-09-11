@@ -74,10 +74,7 @@ Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_A
 
 | Dokumen | Status |
 |---|---|
-| `DEVELOPMENT_HANDOFF_2026-09-05.md` | **HISTORICAL / SUPERSEDED**. |
-| `URGENT_TRANSACTION_SPJ_MIGRATION.md` | **PASS / ARCHIVED** — ownership migration selesai. |
-
-Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan roadmap aktif.
+Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URGENT_TRANSACTION_SPJ_MIGRATION.md`) telah dihapus dari `docs/` agar tidak menyesatkan. Jejaknya tetap tersedia di git history bila diperlukan audit.
 
 ## Kontrak aktif lintas dokumentasi
 
@@ -92,7 +89,7 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
 - Perubahan kategori, data pembayaran, atau Isian Manual pada NUMBERED wajib didahului rollback numbering yang sesuai.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
-- SiPLah adalah channel, bukan kategori.
+- SiPLah adalah channel, bukan kategori; hanya berlaku untuk BARANG. Radio SiPLah/Non SiPLah UI-only (tidak menulis `payment_method`).
 - READY + category benar-benar berubah => DRAFT untuk revalidation.
 - Preview/download tidak menerbitkan nomor baru.
 - Cancel individual mempertahankan nomor `CANCELLED` sebagai history permanen dan sequence tidak mundur.
