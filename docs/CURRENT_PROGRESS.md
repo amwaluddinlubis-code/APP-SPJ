@@ -11,90 +11,66 @@ Definisi status:
 - **RVR**: masih memerlukan real-value/runtime/operator verification untuk aspek yang tidak bisa dibuktikan hanya dari CI;
 - **DEFERRED**: sengaja tidak dikerjakan pada fokus pengembangan saat ini, bukan berarti PASS.
 
+---
+
 ## Checkpoint terbaru
 
 ### Release gate branch aktif
 
 ```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-subject: test: gate template upload routing regression
-CI run : 34578276166
-CI job : 103195683045
-result : PASS — 243 tests / 1848 assertions
+code gate : a2509aad9104706da2709fcd07cce0b973282cb1
+subject   : test(spj): isolate numbered description flash state
+CI run    : 34595391755
+CI job    : 103249843120
+result    : PASS — 248 tests / 1880 assertions
 ```
 
-Gate:
+Evidence gate:
 
 ```text
-Frontend build       PASS
-Blade compile/cache  PASS
-SPJ Critical         PASS — 243 tests / 1848 assertions
-Repository Pint      ADVISORY — 2 style issues
+Frontend build   : PASS
+Blade compile    : PASS
+SPJ Critical     : PASS — 248 tests / 1880 assertions
+Repository Pint : ADVISORY — 3 style issues, non-blocking
 ```
 
-Pint advisory saat ini berada di:
+Pint advisory pada gate ini:
 
 - `app/Services/ArkasStagingService.php`;
+- `app/Services/SpjDocumentNumberService.php`;
 - `tests/Feature/SyncProgressUiTest.php`.
 
-Style debt tersebut tidak memblokir functional release gate, tetapi tetap masuk backlog cleanup.
+Dua file pertama/terakhir tidak boleh dibaca sebagai functional regression hanya karena style advisory. `SpjDocumentNumberService.php` memiliki satu style issue baru yang dapat dibersihkan pada maintenance pass berikutnya tanpa mengubah aturan bisnis.
 
-### Validasi source terhadap HEAD saat ini
-
-Branch `gui-standardization` saat audit dokumentasi ini berada **6 commit di depan** gate `0df9b2f`, tetapi seluruh perubahan sesudah gate hanya berada pada dokumentasi:
-
-```text
-README.md
-docs/CURRENT_PROGRESS.md
-docs/DEVELOPMENT_ROADMAP.md
-docs/MOBILE_VISUAL_QA_TODO.md
-docs/README.md
-```
-
-Tidak ada perubahan `app/`, `routes/`, `database/`, `resources/` aplikasi, atau `tests/` setelah gate tersebut. Dengan demikian:
-
-- `0df9b2f` tetap menjadi **functional code gate** yang relevan untuk source HEAD saat ini;
-- commit dokumentasi sesudah gate tidak boleh ditulis seolah-olah merupakan CI baru;
-- jumlah `243 tests / 1848 assertions` tetap merupakan bukti deterministic terakhir untuk kode yang sedang aktif.
-
-Source/test audit juga menegaskan beberapa capability yang sebelumnya belum tercatat cukup jelas di dokumen progress:
-
-- employee identity fusion/unified employee master sudah mempunyai regression deterministic;
-- audit kuartal read-only sudah mempunyai command + policy regression;
-- core policy/data SiPLah sudah lebih matang daripada sekadar MVP awal dan sudah ikut gate yang sama.
-
-### Checkpoint canonical sebelumnya
-
-```text
-P0-08 Generic ARKAS Importer
-111de8c2781af6c8413661bcc512b651b09acc72
-PASS — 145 tests / 993 assertions
-
-P0-02 Generator Dokumen baseline
-1a633f766179e709abdba015c6b8433330c74aad
-PASS — 157 tests / 1091 assertions
-
-P0-07 APP DATA / backup / reset / restore
-9721fb7f84e4a655389e90f315612380bda6b1be
-CI 34404104837 / job 102642898023
-PASS — 163 tests / 1127 assertions
-
-P0-01 Six-category deterministic E2E
-b9611e3814380e3776bf8327c4df01ecb85e6eb9
-CI 34405652728 / job 102647980543
-PASS — 169 tests / 1407 assertions
-
-P0-01 Category lifecycle hardening
-45c7acb58950cc5cba219142d94868e99dc0b9d3
-CI 34414132079 / job 102675070244
-PASS — 171 tests / 1418 assertions
-```
+Commit setelah code gate yang hanya mengubah dokumentasi tidak menciptakan functional gate baru. Sampai ada source/test commit berikutnya, `a2509aad...` adalah checkpoint functional canonical.
 
 ---
 
-## P0-01 — E2E enam kategori
+## Status release saat ini
 
-**Status: FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-DATA VERIFICATION STARTED / INSTALLED-RUNTIME DEFERRED.**
+Status keseluruhan:
+
+```text
+FUNCTIONAL CORE : PASS
+REAL-DATA       : VERIFICATION ACTIVE
+OFFICIAL OUTPUT : RVR ACTIVE
+BROWSER/RUNTIME : RVR ACTIVE
+FINAL RELEASE   : NOT YET
+```
+
+Aplikasi belum boleh disebut final release-ready hanya karena deterministic CI hijau. Official-template output, browser/operator QA, dan real-data verification tetap merupakan gate terpisah.
+
+---
+
+## P0-01 — Six-category SPJ end-to-end
+
+Status:
+
+```text
+FUNCTIONAL SIX-CATEGORY E2E : PASS
+REAL-DATA VERIFICATION      : ACTIVE
+INSTALLED-RUNTIME           : DEFERRED / RVR
+```
 
 Kategori canonical:
 
@@ -107,201 +83,227 @@ SPPD
 HONOR_PEGAWAI
 ```
 
-Deterministic E2E yang sudah PASS membuktikan:
-
-- source transaction mempunyai item SPJ sebelum Paket disiapkan;
-- Paket dibuat melalui gateway DRAFT aplikasi;
-- kategori disimpan melalui runtime use case canonical;
-- BARANG/KONSUMSI menjalankan requirement penerimaan barang yang sesuai;
-- semua kategori melewati READY validation;
-- auxiliary number dibuat melalui numbering service canonical;
-- Paket mencapai NUMBERED;
-- preview nyata berhasil dirender;
-- XLSX nyata dapat dibuka ulang oleh PhpSpreadsheet;
-- PDF nyata berhasil dibuat;
-- preview/download tidak menambah document identity atau number sequence;
-- Paket dapat difinalkan menjadi FINAL dengan snapshot;
-- FINAL terkunci dari edit normal;
-- lifecycle audit dasar tercatat;
-- enam kategori berjalan di suite `SPJ Critical`.
-
-### Real-data baseline utama
-
-Database sekolah nyata terbaru yang dianalisis berbeda dari baseline lama dan sekarang menjadi baseline real-data utama.
-
-Health:
+Deterministic workflow sudah menjaga:
 
 ```text
-SQLite integrity_check  ok
-foreign_key_check       0 violation
-jumlah tabel            43
+DRAFT
+-> READY
+-> NUMBERED
+-> preview XLSX/PDF
+-> FINAL
 ```
 
-Counts:
+beserta validation, tenant context, lifecycle lock, dan audit yang relevan.
+
+### Real-data baseline terakhir
+
+Baseline audit yang sudah dicatat sebelumnya:
 
 ```text
-transactions                  170
-transaction_items             407
-spj_packages                   66
-spj_documents                   0
-document_number_sequences       0
-document_number_formats         0
-operational_audit_logs        309
-fiscal_years                    6
-fund_sources                    2
+tables                    : 43
+transactions              : 170
+transaction_items         : 407
+spj_packages              : 66
+spj_documents             : 0
+document_number_sequences : 0
+document_number_formats   : 0
+operational_audit_logs    : 309
+fiscal_years              : 6
+fund_sources              : 2
 ```
 
-Semua **66 Paket SPJ tahun 2026 berstatus READY** dan belum mempunyai numbering maupun generated document.
-
-Kategori transaksi 2026:
+Untuk 2026 pada baseline tersebut:
 
 ```text
-BARANG             41
-HONOR_PEGAWAI      12
-JASA_LAINNYA        9
-KONSUMSI             2
-PEMELIHARAAN         2
-SPPD                  0
+BARANG          : 41
+HONOR_PEGAWAI   : 12
+JASA_LAINNYA    : 9
+KONSUMSI        : 2
+PEMELIHARAAN    : 2
+SPPD            : 0
 ```
 
-Data SPPD nyata tersedia pada tahun 2025 sebanyak 14 transaksi. Tidak ada satu fiscal year nyata yang mempunyai seluruh enam kategori, sehingga aplikasi **tidak boleh membuat/fabrikasi SPPD 2026** hanya untuk memenuhi six-category real-data coverage.
+SPPD nyata tersedia pada data 2025, bukan 2026. Jangan fabrikasi SPPD 2026 untuk memaksa coverage.
 
-Real-data rule untuk tahap berikutnya:
-
-- original upload tetap immutable;
-- audit 66 READY package secara read-only sebelum mutation;
-- numbering hanya pada isolated copy;
-- numbering harus mengikuti canonical order dan tidak boleh melompati blocker lebih awal;
-- penerima/vendor/SPPD/template yang tidak tersedia tidak boleh ditebak;
-- source transaction dan `transaction_items` tidak boleh dimutasi untuk memaksa PASS.
-
-Installed-runtime verification saat ini **DEFERRED sesuai fokus pengembangan**, sehingga tidak boleh ditulis sebagai PASS.
+Original baseline harus tetap immutable; mutation real-data hanya dilakukan pada isolated copy.
 
 ---
 
-## P0-02 — Generator Dokumen + Upload Template
+## P0-02 — Document generator / template
 
-**Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / OFFICIAL-TEMPLATE VISUAL RVR.**
-
-Functional generator yang sudah PASS:
-
-- DOCX/XLSX nyata dapat dibuat dan dibuka ulang oleh parser Office;
-- PDF individual/package mempunyai signature valid dan EOF marker;
-- preview/package/download memakai render preflight;
-- unresolved placeholder memblokir output;
-- final Office artifact divalidasi;
-- Paket multi-template menghasilkan workbook multi-sheet dan PDF aktual;
-- preview/download tidak menambah `spj_documents` atau `document_number_sequences`;
-- common placeholder enam kategori sudah diregresikan;
-- upload invalid tidak mengganti template aktif;
-- replacement file/database bersifat atomic.
-
-### Perbaikan halaman Upload Template — PASS
-
-Masalah operator bahwa halaman tidak dapat upload template sudah ditutup pada source + CI.
-
-Perbaikan yang sekarang aktif:
-
-- halaman mempunyai dua mode eksplisit:
-  - `?upload=package` untuk workbook master XLSX;
-  - `?upload=single` untuk satu template DOCX/XLSX;
-- routing form tidak lagi hanya bergantung pada `hasFile()`;
-- jika PHP membuang POST body karena `post_max_size`, mode upload tetap diketahui dari query string;
-- error paket dan single-template memakai error bag terpisah:
-  - `templatePackageUpload`;
-  - `templateUpload`;
-- validasi extension tidak bergantung pada MIME Office dari Windows;
-- single template menerima `.docx` / `.xlsx` maksimum 10 MB pada Laravel layer;
-- package master menerima `.xlsx` maksimum 20 MB pada Laravel layer;
-- UI menampilkan `upload_max_filesize`, `post_max_size`, dan batas efektif PHP;
-- oversized request menghasilkan pesan yang menyebut batas PHP;
-- storage lifecycle template dikunci ke disk `local` untuk save, validation, download, dan delete;
-- generator dan template library sekarang membaca disk yang sama;
-- file lama baru dihapus setelah database replacement berhasil.
-
-Regression:
+Status:
 
 ```text
-tests/Feature/DocumentTemplateUploadValidationTest.php
-tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php
+FUNCTIONAL GENERATOR        : PASS
+TEMPLATE UPLOAD HARDENING   : PASS
+OFFICIAL-TEMPLATE VISUAL QA : RVR
 ```
 
-Kasus yang dibuktikan PASS:
+Kontrak yang sudah dijaga:
 
-- upload invalid tidak mengganti existing template;
-- valid XLSX dengan warning tetap dapat disimpan;
-- package upload failure tetap kembali ke validation path paket;
-- valid XLSX tidak tergantung MIME detection Windows;
-- uploaded template selalu berada di local disk;
-- valid replacement mengganti record sebelum menghapus file lama;
-- database failure mempertahankan template lama dan membersihkan file baru;
-- explicit package mode tetap package walaupun body POST kosong;
-- explicit single mode tetap single walaupun body POST kosong;
-- Blade memakai explicit upload modes + separate error bags + server upload limit display.
+- preview/download tidak menerbitkan nomor;
+- template invalid tidak mengganti template aktif;
+- unresolved placeholder tidak boleh diam-diam lolos ke final output;
+- functional artifact generation tidak sama dengan visual verification dokumen resmi.
 
-Canonical gate untuk upload hardening:
-
-```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-CI run : 34578276166
-CI job : 103195683045
-PASS   : 243 tests / 1848 assertions
-```
-
-Masih RVR untuk P0-02:
-
-- template resmi/aktual sekolah untuk semua document type yang diperlukan;
-- visual fidelity Word/Excel/PDF: print area, page break, header/footer, tabel dinamis, ukuran halaman;
-- hasil cetak nyata;
-- Paket nyata dengan seluruh template applicable;
-- pembukaan output di Microsoft Word/Excel/PDF viewer target.
+Detail placeholder canonical berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.
 
 ---
 
-## P0-03 — Numbering + lifecycle
+## P0-03 — Numbering, lifecycle, correction & rollback
 
-**Status: FUNCTIONAL PASS.**
+Status:
 
-Sudah diregresikan:
+```text
+FUNCTIONAL NUMBERING        : PASS
+INDIVIDUAL CANCEL           : PASS
+TAIL ROLLBACK               : PASS
+QUARTER ROLLBACK            : PASS
+FUND-SOURCE SEQUENCE SCOPE  : PASS
+POST-NUMBERING EDIT RULE    : PASS
+REAL-DATA OPERATOR QA       : ACTIVE
+```
 
-- numbering idempotent;
-- nomor aktif tidak ganda;
-- urutan berdasarkan transaction/source event canonical;
-- NUMBERED/FINAL terkunci;
-- cancel/reissue/reopen menyimpan histori;
-- preview/download tidak mengalokasikan nomor;
-- perubahan kategori Paket READY mengembalikan Paket ke DRAFT hanya ketika kategori benar-benar berubah.
+Kontrak terbaru:
+
+### Individual cancel
+
+```text
+nomor -> CANCELLED permanen
+sequence tidak mundur
+nomor tidak dipakai ulang
+```
+
+Reissue setelah individual cancel mendapat nomor/sequence baru.
+
+### Tail rollback
+
+Rollback dari sequence `N`:
+
+```text
+N ... tail aktif dilepas
+Paket terdampak -> DRAFT
+sequence dibangun ulang dari numbering yang masih sah
+released number boleh dipakai kembali
+```
+
+Rollback tidak boleh melintasi nomor SPJ yang telah `CANCELLED` secara individual, karena nomor tersebut adalah history permanen.
+
+### Cancel numbering triwulan
+
+Dependency canonical:
+
+```text
+TW4 -> TW3 -> TW2 -> TW1
+```
+
+Triwulan lebih lama tidak dapat di-reset selama triwulan setelahnya masih mempunyai numbering aktif dalam context yang sama.
+
+Boundary dependency dan sequence:
+
+```text
+School + Fiscal Year + Fund Source
+```
+
+Numbering sumber dana lain tidak boleh memblokir rollback atau mengubah sequence context aktif.
+
+Full quarter reset ditolak bila target quarter memiliki nomor SPJ cancelled individual permanen.
+
+### Sequence per fund source
+
+`document_number_sequences` sekarang di-scope oleh:
+
+```text
+fiscal_year_id
++ fund_source_id
++ format_name
++ period_key
+```
+
+Migration tenant baru:
+
+```text
+database/migrations/school/2026_09_11_180000_scope_document_number_sequences_by_fund_source.php
+```
+
+### Edit setelah numbering
+
+`item_description`:
+
+```text
+NUMBERED -> boleh dikoreksi
+nomor/sequence -> tetap
+FINAL -> terkunci
+```
+
+Data manual Paket seperti category/payment/vendor/penerima/procurement/detail kategori tetap terkunci pada NUMBERED/FINAL dan harus melalui rollback/lifecycle resmi terlebih dahulu.
+
+Regression canonical:
+
+```text
+tests/Feature/SpjNumberingRollbackTest.php
+tests/Feature/DocumentNumberingWorkflowTest.php
+tests/Feature/SpjOwnershipMigrationTest.php
+tests/Feature/SpjWorkspaceMigrationTest.php
+```
+
+Panduan domain lengkap:
+
+```text
+docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
+```
 
 ---
 
-## P0-04 — Authorization backend
+## P0-04 — Authorization
 
-**Status: FUNCTIONAL PASS untuk jalur yang diregresikan.**
+Status:
+
+```text
+FUNCTIONAL PASS
+```
+
+Contract:
 
 - VIEWER read-only;
-- OPERATOR mutation operasional;
-- ADMINISTRATOR mutation sensitif, maintenance, dan administrative lifecycle;
-- template/configuration sensitif mempunyai authorization guard;
-- tenant/context guard terpisah dari role authorization.
+- OPERATOR workflow operasional sesuai permission;
+- ADMIN lifecycle/maintenance/sensitive action;
+- role authorization tidak menggantikan tenant/context isolation.
+
+Rollback numbering dan cancel numbering triwulan adalah jalur administrator.
 
 ---
 
-## P0-05 — Safe sync + reconciliation
+## P0-05 — Safe synchronization / reconciliation
 
-**Status: FUNCTIONAL PASS.**
+Status:
 
-- source sync tidak menghapus overlay manual;
-- source changes menghasilkan reconciliation diff;
-- source missing/returning mempertahankan transaction/package identity;
-- NUMBERED/FINAL tidak dimutasi diam-diam;
-- field-level before/after diff tersedia;
-- reconciliation resolution mempunyai guard untuk stale source event.
+```text
+FUNCTIONAL PASS
+REAL-DATA RECONCILIATION VERIFICATION : ACTIVE
+```
+
+Kontrak utama:
+
+```text
+ARKAS/BKU = readonly source
+overlay operator = dipertahankan
+source missing = jangan hapus pekerjaan operator
+source returning = reuse identity yang sama
+NUMBERED/FINAL = tidak dimutasi diam-diam
+```
+
+Detail canonical berada di `SYNCHRONIZATION.md`.
 
 ---
 
-## P0-06 — Tenant/context isolation
+## P0-06 — Tenant isolation
 
-**Status: FUNCTIONAL PASS.**
+Status:
+
+```text
+FUNCTIONAL PASS
+```
 
 Boundary canonical:
 
@@ -309,184 +311,128 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Cross-school, cross-year, cross-fund-source, previous/next Paket, resource mutation, serta Generic ARKAS Importer sudah mempunyai regression boundary.
+Boundary ini sekarang juga diterapkan pada sequence numbering/rollback sehingga sumber dana lain tidak ikut ter-reset.
 
 ---
 
-## P0-07 — APP DATA / backup / reset / restore
+## P0-07 — School database maintenance
 
-**Status: FUNCTIONAL MAINTENANCE PASS / INSTALLED-RUNTIME DEFERRED.**
+Status:
 
-Sudah FUNCTIONAL PASS:
+```text
+FUNCTIONAL MAINTENANCE : PASS
+INSTALLED-RUNTIME      : DEFERRED / RVR
+```
 
-- primary database deletion guard;
-- tenant-only reset;
-- WAL/SHM cleanup;
-- tenant reprovision;
-- `sqlite_sequence` reset;
-- WAL checkpoint sebelum backup;
-- source + backup integrity check;
-- corrupt backup ditolak sebelum active database diganti;
-- verified temp restore copy;
-- `SEBELUM_PEMULIHAN` rollback snapshot;
-- rollback otomatis bila post-restore integrity gagal;
-- restore source backup dipertahankan dari retention;
-- same-second backup mempunyai path unik;
-- switch tenant setelah restore tetap aman.
-
-Windows installed-runtime verification sengaja **DEFERRED** pada fokus pengembangan saat ini.
+Reset/provision/backup/restore tetap harus menjaga primary database dan tenant lain.
 
 ---
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST.**
+Status:
 
-Sudah PASS:
+```text
+FUNCTIONAL HARDENING : PASS
+OPERATOR DATA TEST   : ACTIVE / NEXT VERIFICATION
+```
 
-- shared `ArkasSourceKeyResolver`;
-- stable key enforcement;
-- tenant boundary;
-- Upsert / Incremental / Full Refresh deterministic;
-- reconciliation preview read-only;
-- source-empty semantics;
-- schema drift blocking;
-- background tenant activation;
-- shared resource lock berdasarkan school + source table + fiscal year;
-- first-created timestamp preservation;
-- semantic metrics `read/write/new/changed/unchanged/removed`.
-
-Scale/performance lanjutan:
-
-- Bridge-side incremental delta fetch;
-- evaluasi/paginasi di atas Bridge row limit `100000`.
+Importer/sync tidak boleh menulis data fiktif untuk memaksa downstream SPJ PASS.
 
 ---
 
-## Capability lintas fitur yang sudah ikut functional gate
+## Unified Employee Identity
 
-### Unified Employee Identity
-
-**Status: FUNCTIONAL IDENTITY CORE PASS / REAL-DATA OPERATOR VERIFICATION ACTIVE.**
-
-Regression aktif membuktikan:
-
-- normalized name backfill;
-- dry-run duplicate fusion tidak menulis database;
-- strong identity ARKAS/PTK + Dapodik dapat digabung tanpa menggandakan pegawai;
-- NUPTK menjadi match kuat dan unique normalized name hanya fallback ketika tidak ambigu;
-- identity tidak ditebak hanya karena nama sama ketika kandidat ambigu;
-- source provenance ARKAS + Dapodik dipertahankan;
-- stale employee hanya dinonaktifkan bila tidak terlihat oleh seluruh source yang relevan;
-- row yang dikunci operator tidak disapu oleh sync;
-- ARKAS dan Dapodik memakai identity resolution + duplicate fusion yang sama;
-- master pegawai menampilkan provenance gabungan dan row hasil sync dikelola melalui modul employee yang sama.
-
-Bukti regression utama:
+Status:
 
 ```text
-tests/Feature/EmployeeIdentityMergeTest.php
-tests/Feature/UnifiedEmployeeMasterTest.php
+FUNCTIONAL IDENTITY CORE : PASS
+REAL-SCHOOL VERIFICATION : ACTIVE
 ```
 
-Yang masih perlu dilakukan bukan membangun ulang identity core, tetapi verifikasi data sekolah nyata, penanganan edge case identitas yang ambigu, dan participant roster/operator UX.
+Identity matching harus konservatif. Normalized name ambigu tidak boleh menyebabkan silent merge.
 
-### Read-only Quarter Audit
+Auto-fill KONSUMSI tetap menggunakan provenance Dapodik yang sah; participant manual tetap diperbolehkan.
 
-**Status: FUNCTIONAL PASS / READY FOR REAL-DATA AUDIT.**
+---
 
-Command audit kuartal sekarang dapat dipakai untuk pemeriksaan real-data tanpa mutation. Regression membuktikan:
+## Quarter Audit
 
-- tenant existing dibuka dalam mode read-only/query-only;
-- byte/hash database tetap sama setelah audit;
-- metadata `SchoolDatabase` tidak disentuh;
-- database tenant yang hilang tidak dibuat otomatis;
-- policy audit memahami bahwa BARANG SiPLah tidak memerlukan row internal goods/order yang tidak applicable;
-- reconciliation warning JASA_LAINNYA menggugurkan clean candidate sampai sumber masalah diselesaikan.
-
-Bukti regression utama:
+Status:
 
 ```text
-tests/Feature/SpjQuarterAuditCommandTest.php
-tests/Feature/SpjQuarterAuditPolicyTest.php
+FUNCTIONAL PASS
+READY FOR REAL-DATA AUDIT
 ```
 
-Tool ini menjadi jalur utama untuk langkah P1 audit 66 Paket READY sebelum mutation/numbering apa pun dilakukan pada isolated copy.
+Quarter audit harus tetap read-only ketika digunakan untuk menentukan baseline.
 
-### SiPLah procurement core
+---
 
-**Status: FUNCTIONAL CORE PASS / GENERATED-DOCUMENT E2E + OFFICIAL-TEMPLATE OUTPUT RVR.**
+## SiPLah
 
-Regression yang sudah ada membuktikan:
-
-- SiPLah tetap `payment/procurement channel`, bukan kategori SPJ;
-- metadata marketplace/order/invoice/payment reference dapat disimpan tanpa mengubah kategori canonical;
-- Paket SiPLah tetap memakai lifecycle Paket SPJ normal;
-- nomor pesanan marketplace dan nomor Surat Pesanan internal tidak dicampur;
-- placeholder SiPLah mempunyai mapping tersendiri;
-- BARANG SiPLah tidak dipaksa memenuhi internal purchase-order requirement yang tidak applicable;
-- incomplete metadata SiPLah tidak menambahkan blocker READY yang tidak mempunyai dasar aturan;
-- policy dokumen marketplace mempunyai regression khusus.
-
-Bukti regression utama:
+Status:
 
 ```text
-tests/Feature/SiplahPurchaseMvpTest.php
-tests/Feature/SiplahMarketplaceDocumentPolicyTest.php
+FUNCTIONAL CORE                 : PASS
+GENERATED-DOCUMENT E2E          : RVR
+OFFICIAL-TEMPLATE OUTPUT        : RVR
 ```
 
-Pekerjaan aktif SiPLah sekarang adalah generated-document E2E menggunakan template applicable/aktual dan verifikasi output, bukan lagi membangun model kategori SiPLah.
+SiPLah tetap channel/payment context, bukan `spj_category`.
 
 ---
 
 ## P1 aktif
 
-Prioritas setelah audit source terbaru:
+Prioritas setelah numbering rollback functional PASS:
 
-1. jalankan audit read-only seluruh 66 READY package pada real-data baseline terbaru melalui jalur `spj:audit-quarter`, lalu kelompokkan anomaly/blocker tanpa mutation source;
-2. perbaiki blocker Paket yang benar-benar berasal dari source/rule aplikasi tanpa fabrikasi data;
-3. lanjutkan JASA_LAINNYA multi-penerima sampai output dokumen dan pastikan reconciliation recipient bersih;
-4. PEMELIHARAAN bahan + upah full-document QA;
-5. SiPLah generated-document E2E + official-template/output verification;
-6. browser QA Paket SPJ desktop/laptop;
-7. audit trail operasional E2E;
-8. verifikasi unified employee identity pada data sekolah nyata + participant roster hardening; kontrak master Pegawai menyatu (ARKAS + Dapodik + Manual) untuk KONSUMSI dan SPPD.
+1. jalankan read-only audit pada baseline real-data 66 Paket READY;
+2. perbaiki hanya blocker legitimate yang ditemukan audit;
+3. lakukan operator/real-data QA untuk rollback numbering dengan isolated copy, terutama alignment nomor SPJ terhadap source order ARKAS;
+4. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
+5. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
+6. verifikasi SiPLah generated-document + official template;
+7. browser QA desktop/laptop;
+8. operational audit E2E;
+9. employee identity real-school + participant roster.
 
-Mobile/responsive penuh bukan release blocker target operator laptop/desktop saat ini.
+Mobile tetap non-blocker untuk target release desktop/laptop saat ini.
 
 ---
 
-## P2 aktif
+## P2 / maintenance debt
 
-- field-level validation UX;
-- repository Pint/style cleanup;
+- field validation UX;
+- Pint advisory repository, termasuk style di `SpjDocumentNumberService.php`;
 - GUI/compatibility cleanup;
 - icon/action consistency;
-- performance profiling;
-- Bridge generated `bin/obj` hygiene;
-- report foundation.
+- performance;
+- Bridge `bin/obj` hygiene;
+- report foundation;
+- mobile polish setelah target desktop/laptop stabil.
 
 ---
 
-## Kontrak aktif yang tidak boleh diregresikan
+## Open verification / release blockers
 
-- ARKAS/BKU = source readonly; operator SPJ = overlay.
-- Source sync tidak menghapus overlay manual.
-- Source missing/returning tidak membuat identity baru.
-- NUMBERED/FINAL tidak dimutasi diam-diam oleh sync.
-- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
-- SiPLah bukan kategori; gunakan procurement/payment channel.
-- Detail Transaksi hanya menulis `item_description`.
-- Paket SPJ adalah workspace mutation dokumen.
-- Pajak source immutable dari Paket.
-- READY + category changed => DRAFT untuk revalidation.
-- Preview/download tidak menerbitkan nomor.
-- Upload template harus menggunakan explicit form mode dan disk `local` yang sama dengan generator.
-- Employee identity tidak boleh digabung hanya berdasarkan nama ambigu; prioritaskan strong identity dan pertahankan provenance source.
-- Audit real-data sebelum mutation harus memakai jalur read-only; original upload/database baseline tidak boleh dimodifikasi.
-- Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memenuhi coverage.
-- Master Pegawai menyatu (ARKAS + Dapodik + Manual, satu row per identitas NUPTK > NIP > NIK > nama); KONSUMSI dan SPPD memakai roster menyatu, koreksi operator canonical via `operator_locked`.
+Belum boleh diberi status final sampai evidence tersedia untuk:
 
-## Catatan release
+- official template visual/output RVR;
+- browser/operator runtime QA;
+- real-data numbering/rollback operator verification pada isolated copy;
+- real-data category-specific document QA yang belum selesai;
+- installed-runtime checks yang masih DEFERRED.
 
-Functional CI branch saat ini kuat dan latest code gate PASS. Karena seluruh commit setelah `0df9b2f` hanya dokumentasi, tidak ada source-code drift antara gate tersebut dan HEAD saat audit ini. Namun **functional PASS tidak sama dengan final production verification**. Official-template visual QA, generated-document verification pada data nyata, dan beberapa real-data/operator checks tetap perlu dilakukan sebelum aplikasi disebut final release-ready.
+Tidak ada blocker functional deterministic baru dari implementasi numbering rollback; functional gate terbaru hijau.
+
+---
+
+## Aturan evidence
+
+1. Jangan mengubah source data hanya agar test/audit real-data PASS.
+2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
+3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
+4. Jangan menyatakan CI baru untuk commit docs-only.
+5. Setiap source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `a2509aad...`.
+6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, test, dan dokumen ini.
