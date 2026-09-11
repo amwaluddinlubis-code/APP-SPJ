@@ -198,16 +198,20 @@ class SpjOwnershipMigrationTest extends TestCase
         }
     }
 
-    public function test_numbered_package_blocks_description_update(): void
+    public function test_numbered_package_allows_description_update_without_unlocking_numbering(): void
     {
         $transaction = $this->createTransaction();
         $package = $this->openDraft($transaction);
-        $package->update(['status' => 'NUMBERED']);
+        $package->update(['status' => 'NUMBERED', 'document_number' => '0001/SPJ/2026']);
         $item = $transaction->items()->firstOrFail();
 
         $this->put(route('transactions.spj-descriptions.update', $transaction->id), [
-            'items' => [['id' => $item->id, 'item_description' => 'Should fail']],
-        ])->assertSessionHas('error');
+            'items' => [['id' => $item->id, 'item_description' => 'Nama barang diperbaiki']],
+        ])->assertSessionHasNoErrors()->assertSessionMissing('error');
+
+        $this->assertSame('Nama barang diperbaiki', $item->fresh()->item_description);
+        $this->assertSame('NUMBERED', $package->fresh()->status);
+        $this->assertSame('0001/SPJ/2026', $package->fresh()->document_number);
     }
 
     public function test_wrong_fund_context_rejects_all_operations(): void
