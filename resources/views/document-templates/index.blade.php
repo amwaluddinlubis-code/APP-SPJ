@@ -40,17 +40,17 @@
             </div>
         </x-page-header>
 
-        <section class="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm">
+        <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 shadow-sm">
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <p class="text-sm font-bold text-sky-900">Status batas upload server</p>
-                    <p class="mt-1 text-xs leading-5 text-sky-800">
+                    <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Status batas upload server</p>
+                    <p class="mt-1 text-xs leading-5 text-[var(--ui-fg-muted)]">
                         PHP upload_max_filesize = <span class="font-mono font-bold">{{ $uploadLimits['upload_max_filesize'] ?? '-' }}</span>
                         · post_max_size = <span class="font-mono font-bold">{{ $uploadLimits['post_max_size'] ?? '-' }}</span>
                         · batas efektif ≈ <span class="font-bold">{{ $uploadLimits['effective_max_upload'] ?? '-' }}</span>.
                     </p>
                 </div>
-                <p class="max-w-xl text-xs leading-5 text-sky-700">
+                <p class="max-w-xl text-xs leading-5 text-[var(--ui-fg-muted)]">
                     Jika upload ditolak sebelum Laravel menerima file, halaman sekarang tetap mengetahui form mana yang digunakan
                     dan menampilkan pesan batas PHP pada form yang benar.
                 </p>
@@ -266,7 +266,7 @@
                         </div>
                     </details>
                 @empty
-                    <div class="px-5 py-10 text-center text-sm text-slate-500">Belum ada template pada filter ini untuk divalidasi.</div>
+                    <div class="px-5 py-10"><x-ui.empty-state title="Belum ada template pada filter ini untuk divalidasi." icon="document" /></div>
                 @endforelse
             </div>
         </section>

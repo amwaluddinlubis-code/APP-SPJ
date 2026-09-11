@@ -102,7 +102,7 @@
                         </div>
                     </article>
                 @empty
-                    <div class="px-5 py-12 text-center text-sm text-slate-500">Belum ada pengguna.</div>
+                    <div class="px-5 py-12"><x-ui.empty-state title="Belum ada pengguna." icon="users" /></div>
                 @endforelse
             </div>
         </section>

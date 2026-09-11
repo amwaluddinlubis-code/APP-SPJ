@@ -17,13 +17,15 @@
         </x-page-header>
 
         <x-page-filter :month="$month" :quarter="$quarter" :semester="$semester" :search="$search">
-            <div class="border-b border-indigo-100 px-5 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700">Subtotal Periode Terpilih</div>
-            <div class="grid divide-y divide-indigo-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                <x-stat-item label="Transaksi" :value="number_format($filteredSummary->count, 0, ',', '.')" value-class="text-indigo-900" />
-                <x-stat-item label="PPN" :value="$rupiah($filteredSummary->ppn)" value-class="text-indigo-900" />
-                <x-stat-item label="PPh" :value="$rupiah($filteredSummary->pph21 + $filteredSummary->pph22 + $filteredSummary->pph23 + $filteredSummary->pph4)" value-class="text-indigo-900" />
-                <x-stat-item label="Total Pajak" :value="$rupiah($filteredSummary->total)" value-class="text-indigo-900" />
+            @if($search !== '' || $month || $quarter || $semester)
+            <div class="border-b border-[var(--ui-line)] px-5 py-3 text-xs font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Subtotal Periode Terpilih</div>
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                <x-stat-item label="Transaksi" :value="number_format($filteredSummary->count, 0, ',', '.')" />
+                <x-stat-item label="PPN" :value="$rupiah($filteredSummary->ppn)" />
+                <x-stat-item label="PPh" :value="$rupiah($filteredSummary->pph21 + $filteredSummary->pph22 + $filteredSummary->pph23 + $filteredSummary->pph4)" />
+                <x-stat-item label="Total Pajak" :value="$rupiah($filteredSummary->total)" />
             </div>
+            @endif
         </x-page-filter>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
@@ -86,7 +88,7 @@
                                 <td class="whitespace-nowrap px-5 py-4 text-right font-bold text-amber-700">{{ $rupiah($transaction->tax_total) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-5 py-14 text-center"><p class="font-semibold text-slate-700">Belum ada pajak tersinkron.</p><p class="mt-1 text-sm text-slate-500">Data akan muncul setelah sinkronisasi BKU yang memiliki pajak.</p></td></tr>
+                            <tr><td colspan="8" class="px-5 py-14"><x-ui.empty-state title="Belum ada pajak tersinkron." description="Data akan muncul setelah sinkronisasi BKU yang memiliki pajak." icon="inbox" /></td></tr>
                         @endforelse
                     </tbody>
                 </table>
