@@ -1,10 +1,14 @@
 # TODO — Mobile Visual Regression QA
 
-Status: **TODO / RVR**
+Status: **TODO / RVR — NON-BLOCKER untuk target release desktop/laptop saat ini**
 
-Terakhir diperbarui: **2026-09-06**
+Terakhir diperbarui: **2026-09-11**
 
 Dokumen ini mencatat bahwa visual regression mobile belum ditutup. Aplikasi **belum boleh disebut mobile-verified/mobile-complete** sebelum checklist berikut dijalankan pada viewport target.
+
+Target operator release aktif saat ini adalah **desktop/laptop**. Karena itu, mobile/responsive penuh tidak menjadi blocker release saat ini, tetapi setiap klaim kompatibilitas mobile tetap harus menunggu evidence checklist ini.
+
+Status release keseluruhan dan prioritas aktif tetap mengikuti `CURRENT_PROGRESS.md` dan `DEVELOPMENT_ROADMAP.md`.
 
 ---
 
@@ -114,7 +118,7 @@ Jika halaman/theme belum benar-benar diuji pada viewport target, gunakan:
 RVR
 ```
 
-Jangan mengubah ke PASS berdasarkan desktop/tablet observation saja.
+Jangan mengubah ke PASS berdasarkan desktop/tablet observation saja. Sebaliknya, status mobile `RVR` tidak boleh digunakan untuk menurunkan functional PASS desktop/laptop yang sudah mempunyai evidence terpisah.
 
 ---
 
