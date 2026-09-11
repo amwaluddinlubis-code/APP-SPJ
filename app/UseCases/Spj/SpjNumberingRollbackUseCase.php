@@ -36,6 +36,7 @@ class SpjNumberingRollbackUseCase
             ->with('package.transaction')
             ->where('document_type', 'SPJ')
             ->where('scope_key', 'MAIN')
+            ->where('status', '!=', 'CANCELLED')
             ->whereNotNull('sequence_number')
             ->where('sequence_number', '>=', $sequence)
             ->whereHas('package.transaction', fn ($query) => $query
@@ -50,7 +51,7 @@ class SpjNumberingRollbackUseCase
 
         $minimum = (int) $documents->min('sequence_number');
         if ($minimum !== $sequence) {
-            return back()->with('error', "Nomor urut {$sequence} tidak ditemukan pada konteks aktif. Rollback harus dimulai dari nomor yang benar-benar pernah diterbitkan.");
+            return back()->with('error', "Nomor urut {$sequence} tidak ditemukan sebagai nomor aktif. Rollback harus dimulai dari nomor aktif yang benar-benar diterbitkan.");
         }
 
         $packageIds = $documents->pluck('spj_package_id')->unique()->values();
@@ -81,6 +82,7 @@ class SpjNumberingRollbackUseCase
             return SpjDocument::query()
                 ->where('document_type', 'SPJ')
                 ->where('scope_key', 'MAIN')
+                ->where('status', '!=', 'CANCELLED')
                 ->whereNotNull('document_number')
                 ->whereHas('package.transaction', fn ($query) => $this->applyQuarterContext($query, $candidate))
                 ->exists();
@@ -99,10 +101,12 @@ class SpjNumberingRollbackUseCase
 
         $packageIds = SpjPackage::query()
             ->whereHas('transaction', fn ($query) => $this->applyQuarterContext($query, $quarter))
-            ->whereHas('documents', fn ($query) => $query->whereNotNull('document_number'))
+            ->whereHas('documents', fn ($query) => $query
+                ->where('status', '!=', 'CANCELLED')
+                ->whereNotNull('document_number'))
             ->pluck('id');
         if ($packageIds->isEmpty()) {
-            return back()->with('error', "Triwulan {$quarter} tidak memiliki penomoran yang dapat di-rollback.");
+            return back()->with('error', "Triwulan {$quarter} tidak memiliki penomoran aktif yang dapat di-rollback.");
         }
 
         $count = $packageIds->count();
@@ -151,7 +155,8 @@ class SpjNumberingRollbackUseCase
                     throw new RuntimeException('Rollback keluar dari konteks tenant aktif diblokir.');
                 }
 
-                $numbers = $package->documents->pluck('document_number')->filter()->values();
+                $activeDocuments = $package->documents->where('status', '!=', 'CANCELLED');
+                $numbers = $activeDocuments->pluck('document_number')->filter()->values();
                 foreach ($package->transaction->items as $item) {
                     foreach ($item->goods as $goods) {
                         if ($numbers->contains($goods->order_number)) {
@@ -189,7 +194,7 @@ class SpjNumberingRollbackUseCase
                     }
                 }
 
-                $package->documents()->delete();
+                $package->documents()->where('status', '!=', 'CANCELLED')->delete();
                 $package->forceFill([
                     'status' => 'DRAFT',
                     'document_number' => null,
@@ -214,15 +219,19 @@ class SpjNumberingRollbackUseCase
     private function rebuildSequences(): void
     {
         $yearId = $this->context->fiscalYearId();
+        $fundSourceId = $this->context->fundSourceId();
         $formats = DocumentNumberFormat::query()->where('fiscal_year_id', $yearId)->get()->keyBy('document_type');
         $documents = SpjDocument::query()
             ->whereNotNull('sequence_number')
             ->whereHas('package.transaction', fn ($query) => $query
                 ->where('fiscal_year_id', $yearId)
-                ->where('fund_source_id', $this->context->fundSourceId()))
+                ->where('fund_source_id', $fundSourceId))
             ->get(['document_type', 'sequence_number', 'document_date']);
 
-        DB::connection('school')->table('document_number_sequences')->where('fiscal_year_id', $yearId)->delete();
+        DB::connection('school')->table('document_number_sequences')
+            ->where('fiscal_year_id', $yearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->delete();
 
         $groups = $documents->groupBy(function (SpjDocument $document) use ($formats): string {
             $format = $formats->get($document->document_type);
@@ -236,6 +245,7 @@ class SpjNumberingRollbackUseCase
             [$documentType, $periodKey] = explode('|', $key, 2);
             DB::connection('school')->table('document_number_sequences')->insert([
                 'fiscal_year_id' => $yearId,
+                'fund_source_id' => $fundSourceId,
                 'format_name' => $documentType,
                 'period_key' => $periodKey,
                 'last_number' => (int) $group->max('sequence_number'),
