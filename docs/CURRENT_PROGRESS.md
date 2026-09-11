@@ -18,11 +18,11 @@ Definisi status:
 ### Release gate branch aktif
 
 ```text
-code gate : 67efd8d95bd8107e93d7530aaf03bb8df7a919a9
-subject   : test(gui): include employee index guard in critical suite
-CI run    : 34612248381 (#318)
-CI job    : 103305561291
-result    : PASS — 256 tests / 1951 assertions
+code gate : 8180d566621dcf7b1a84b9183a666f2f7a64b398
+subject   : test(gui): include final audit source guard in critical suite
+CI run    : 34613781674 (#326)
+CI job    : 103310602936
+result    : PASS — 261 tests / 1996 assertions
 ```
 
 Evidence gate:
@@ -30,7 +30,7 @@ Evidence gate:
 ```text
 Frontend build   : PASS
 Blade compile    : PASS
-SPJ Critical     : PASS — 256 tests / 1951 assertions
+SPJ Critical     : PASS — 261 tests / 1996 assertions
 Repository Pint  : ADVISORY — 3 style issues, non-blocking
 ```
 
@@ -42,7 +42,7 @@ Pint advisory pada gate ini tetap berada pada file yang sudah dikenal:
 
 Advisory tersebut tidak dibaca sebagai functional regression karena workflow sengaja menjalankan Pint sebagai advisory dan seluruh build/Blade/SPJ Critical selesai hijau.
 
-Gate `67efd8d9...` menggantikan checkpoint `a1122307...` sebagai deterministic code gate terbaru. Commit dokumentasi yang masuk setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
+Gate `8180d566...` menggantikan checkpoint `67efd8d9...` sebagai deterministic code gate terbaru. Commit dokumentasi setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
 
 ---
 
@@ -68,21 +68,28 @@ Status:
 
 ```text
 GUI STANDARDIZATION CORE : ESTABLISHED
-SOURCE-LEVEL CLEANUP      : ACTIVE
-BROWSER QA                : RVR ACTIVE
-MOBILE/TABLET QA          : RVR / NON-BLOCKER
+SOURCE-LEVEL CLEANUP      : PASS untuk GUI-AUDIT-01 s.d. 11 yang telah digate
+DESKTOP SOURCE READINESS  : PASS
+BROWSER DESKTOP/LAPTOP    : RVR ACTIVE
+MOBILE SOURCE READINESS   : PASS
+MOBILE/TABLET RUNTIME     : RVR / NON-BLOCKER
 ```
 
 Perbaikan audit yang sudah masuk antara lain:
 
 - Detail Transaksi: `item_description` tetap editable pada Paket `NUMBERED` tanpa membuka field manual lain; `FINAL` tetap terkunci.
 - Laporan Audit: page-local `<style>`/custom audit table diganti ke theme token dan shared `x-ui.table`.
-- RKAS planning: cleanup standardisasi GUI dan action export sudah masuk pada rangkaian commit sebelum gate ini.
+- RKAS planning: cleanup standardisasi GUI dan action export sudah masuk pada rangkaian commit sebelumnya.
 - Master Siswa index: filter/surface/divider/typography desktop+mobile memakai semantic theme token; tabel desktop memakai `x-ui.table`; hard-coded non-semantic `slate/indigo/white` pada index dihilangkan.
 - Master Siswa form: checkbox cards dan sticky action area memakai semantic theme token; action footer memakai `x-ui.sticky-actions`; field, route, validation, dan lifecycle CRUD tetap sama.
 - Master Siswa detail: data identitas dan payload Dapodik memakai `x-ui.detail-list` / `x-ui.detail-item`; breadcrumb, surface, line, dan typography memakai semantic theme token; masking NIK/telepon tetap dipertahankan.
 - Data Hasil Sinkron: overview/navigation/card/table menggunakan semantic theme token; hard-coded group palette `indigo/sky/violet/slate` dihapus; detail table memakai shared `x-ui.table`; filter/per-page/server pagination dan data binding tetap dipertahankan.
-- Master Pegawai index: desktop table memakai shared `x-ui.table`; status/source memakai `x-ui.badge`; action desktop/mobile memakai `x-ui.button`; surface/line/typography memakai semantic `--ui-*`; hard-coded `slate/white/indigo/sky/amber` dihapus tanpa mengubah filter, summary, pagination, role access, atau masking NIK.
+- Master Pegawai index: desktop table memakai shared `x-ui.table`; status/source memakai `x-ui.badge`; action desktop/mobile memakai `x-ui.button`; surface/line/typography memakai semantic `--ui-*`; hard-coded palette legacy dihapus tanpa mengubah filter, summary, pagination, role access, atau masking NIK.
+- **GUI-AUDIT-09**: SPJ main navigation tabs memakai metadata icon canonical `archive/document/report/warning`; emoji navigation tidak lagi dipakai sebagai icon utama.
+- **GUI-AUDIT-10**: halaman Reset Database Sekolah memakai theme token, `x-ui.button`, dan `x-ui.icon`; semantic danger/warning tetap dipertahankan tanpa hard-coded non-semantic slate/indigo action chrome.
+- **GUI-AUDIT-11**: registry/rendering icon disatukan di `resources/views/components/ui/icon.blade.php`; `<x-ui-icon>` sekarang hanya compatibility adapter ke `<x-ui.icon>` dan tidak lagi memiliki registry SVG terpisah.
+- **GUI-AUDIT-12**: source readiness desktop/laptop PASS melalui static regression untuk responsive fallback/table contract, tetapi browser visual/runtime QA **masih RVR**.
+- **GUI-AUDIT-13**: source readiness mobile/tablet PASS melalui responsive source guard, tetapi runtime mobile/tablet usability **masih RVR** dan non-blocker untuk target desktop/laptop saat ini.
 
 Regression guard GUI yang aktif pada area ini:
 
@@ -91,11 +98,17 @@ tests/Feature/StudentIndexThemePrimitiveUiTest.php
 tests/Feature/StudentFormDetailThemePrimitiveUiTest.php
 tests/Feature/SyncedDataThemePrimitiveUiTest.php
 tests/Feature/EmployeeIndexThemePrimitiveUiTest.php
+tests/Feature/GuiAudit09To13SourceReadinessTest.php
 ```
 
-Keempat guard sekarang menjadi bagian eksplisit dari suite `SPJ Critical` dan PASS pada gate `67efd8d9...`.
+Kelima guard menjadi bagian eksplisit suite `SPJ Critical` dan PASS pada gate `8180d566...`.
 
-Batas klaim: family source `resources/views/students/index.blade.php`, `form.blade.php`, `show.blade.php`, `resources/views/synced-data/index.blade.php`, serta `resources/views/employees/index.blade.php` sudah ditutup pada level source/primitives untuk GUI-AUDIT-05/06/07/08. Browser visual QA tetap diperlukan sebelum menyatakan area tersebut selesai secara visual/runtime.
+Batas klaim:
+
+- source/primitives/theme/icon contracts yang diregresikan boleh disebut PASS;
+- browser visual QA desktop/laptop **belum** boleh disebut PASS sebelum checklist `docs/GUI_RUNTIME_QA.md` dijalankan;
+- mobile/tablet minimum usability juga tetap RVR sampai runtime evidence tersedia;
+- compatibility wrapper `<x-ui-icon>` masih ada untuk consumer legacy, tetapi bukan lagi registry kedua. Penghapusan wrapper menunggu migrasi consumer lama selesai.
 
 ---
 
@@ -413,24 +426,22 @@ Prioritas aktif:
 1. jalankan read-only audit pada baseline real-data 66 Paket READY;
 2. perbaiki hanya blocker legitimate yang ditemukan audit;
 3. lakukan operator/real-data QA untuk rollback numbering dengan isolated copy, terutama alignment nomor SPJ terhadap source order ARKAS;
-4. lanjutkan source-level GUI compliance cleanup pada halaman legacy-heavy lain di luar family Master Siswa, Data Hasil Sinkron, dan Master Pegawai index;
-5. selesaikan browser QA desktop/laptop setelah cleanup source yang relevan;
-6. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
-7. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
-8. verifikasi SiPLah generated-document + official template;
-9. operational audit E2E;
-10. employee identity real-school + participant roster.
-
-Mobile tetap non-blocker untuk target release desktop/laptop saat ini.
+4. jalankan **GUI-AUDIT-12 browser QA desktop/laptop** berdasarkan `docs/GUI_RUNTIME_QA.md`;
+5. jalankan **GUI-AUDIT-13 mobile/tablet minimum usability**; non-blocker untuk target desktop/laptop tetapi tetap RVR sampai ada runtime evidence;
+6. lanjutkan migrasi consumer legacy `<x-ui-icon>` secara bertahap dan compatibility cleanup hanya setelah consumer lama hilang;
+7. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
+8. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
+9. verifikasi SiPLah generated-document + official template;
+10. operational audit E2E dan employee identity real-school + participant roster.
 
 ---
 
 ## P2 / maintenance debt
 
 - field validation UX;
-- Pint advisory repository, termasuk style di `SpjDocumentNumberService.php`;
+- Pint advisory repository pada 3 file yang sudah dikenal;
+- migrasi consumer legacy `<x-ui-icon>` menuju `<x-ui.icon>`;
 - GUI compatibility-layer cleanup setelah consumer legacy benar-benar selesai;
-- canonical icon/action consistency;
 - performance;
 - Bridge `bin/obj` hygiene;
 - report foundation;
@@ -443,12 +454,13 @@ Mobile tetap non-blocker untuk target release desktop/laptop saat ini.
 Belum boleh diberi status final sampai evidence tersedia untuk:
 
 - official template visual/output RVR;
-- browser/operator runtime QA;
+- GUI-AUDIT-12 browser/operator runtime QA;
+- GUI-AUDIT-13 mobile/tablet runtime QA bila ingin menutup minimum usability;
 - real-data numbering/rollback operator verification pada isolated copy;
 - real-data category-specific document QA yang belum selesai;
 - installed-runtime checks yang masih DEFERRED.
 
-Tidak ada blocker functional deterministic baru pada code gate `67efd8d9...`; gate tersebut hijau.
+Tidak ada blocker functional deterministic baru pada code gate `8180d566...`; gate tersebut hijau.
 
 ---
 
@@ -458,6 +470,7 @@ Tidak ada blocker functional deterministic baru pada code gate `67efd8d9...`; ga
 2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `67efd8d9...`.
+5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `8180d566...`.
 6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, test, dan dokumen ini.
 7. GUI source cleanup hanya boleh diberi status source-level PASS; browser visual QA tetap RVR sampai diverifikasi di runtime.
+8. Source responsive fallback tidak boleh dipromosikan menjadi desktop/mobile visual PASS tanpa menjalankan `docs/GUI_RUNTIME_QA.md`.
