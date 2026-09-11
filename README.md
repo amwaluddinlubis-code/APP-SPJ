@@ -31,6 +31,7 @@ Status release keseluruhan tetap **belum final release**. Core SPJ sudah mempuny
 
 ## Dokumentasi utama
 
+- `docs/README.md` — indeks dokumentasi, urutan source-of-truth, dan pemisahan dokumen aktif vs historis.
 - `docs/CURRENT_PROGRESS.md` — status release, checkpoint, gap aktif, dan evidence terbaru.
 - `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen.
@@ -39,6 +40,8 @@ Status release keseluruhan tetap **belum final release**. Core SPJ sudah mempuny
 - `docs/GUI_STANDARDIZATION.md` — kontrak GUI.
 - `docs/CSS_USAGE_GUIDE.md` — kontrak CSS/theme.
 - `docs/SIPLAH_MVP_PLAN.md` — batas MVP SiPLah.
+
+Untuk menentukan kondisi project saat ini, utamakan `docs/CURRENT_PROGRESS.md` dan `docs/DEVELOPMENT_ROADMAP.md`. Dokumen yang berstatus `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya dipertahankan sebagai jejak keputusan dan tidak boleh mengalahkan status aktif.
 
 ## Kontrak arsitektur inti
 
