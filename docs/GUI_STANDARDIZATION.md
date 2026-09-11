@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-11**
+Terakhir diverifikasi: **2026-09-12**
 
 Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 
@@ -311,16 +311,23 @@ Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA runtime re
 Workspace `/spj` menggunakan pilot density scoped pada `.spj-semantic-workspace`:
 
 ```text
-control height       : 40px
-section gap          : 16px
-content padding      : 20px
-panel radius         : 12px
-table row vertical   : 10px
-page title           : 24px
-package tab text     : 14px
+control height desktop : 40px
+control/touch <=1023px : 44px
+section gap            : 16px
+content padding        : 20px
+panel radius           : 12px
+table row vertical     : 10px
+page title             : 24px
+field label            : 13px
+helper minimum         : 12px
+package tab text       : 14px
 ```
 
-Nilai ini bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Pilot hanya mengubah presentation/density; lifecycle, validation, numbering, source ownership, dan workflow tetap sama. Kenyamanan visual dan tidak adanya clipping/overlap harus diverifikasi melalui checklist runtime di `GUI_RUNTIME_QA.md` sebelum dipromosikan menjadi standar global.
+Nilai ini bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Primary table text tetap 14px, sedangkan header/secondary table text tetap minimal 13px sesuai `minimum-font-size.css`.
+
+Pilot juga menormalkan variasi profile agar theme tidak membatalkan density yang sedang diuji: profile header `bold` tidak boleh memaksa `min-height` besar di `/spj`, padding tambahan summary dari personality/profile dinetralkan di scope pilot, dan summary workspace memakai marker `.spj-work-summary` agar padding compact benar-benar diterapkan. Pada viewport di bawah desktop, control dan package tab mempertahankan minimum 44px untuk touch target.
+
+Pilot hanya mengubah presentation/density; lifecycle, validation, numbering, source ownership, authorization, route, persistence, dan workflow tetap sama. Kenyamanan visual dan tidak adanya clipping/overlap harus diverifikasi melalui checklist runtime di `GUI_RUNTIME_QA.md` sebelum dipromosikan menjadi standar global atau diterapkan ke Daftar Transaksi/Detail Transaksi.
 
 ## 21. Pola form dinamis show/hide
 
