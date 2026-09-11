@@ -2,9 +2,9 @@
 
 Terakhir diperbarui: **2026-09-11**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status rinci dan evidence ada di `docs/CURRENT_PROGRESS.md`. Aturan bisnis permanen tetap berada di `docs/SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status rinci dan evidence ada di `CURRENT_PROGRESS.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
-## Release gate terbaru
+## Release gate functional
 
 ```text
 commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
@@ -21,7 +21,7 @@ SPJ Critical         PASS
 Repository Pint      ADVISORY — 2 style issues
 ```
 
-`FUNCTIONAL PASS` berarti source + deterministic regression sudah membuktikan behavior. `RVR` tetap membutuhkan real-template/real-data/operator evidence. Installed-runtime verification saat ini **DEFERRED** dari fokus kerja aktif, bukan dianggap PASS.
+Source aplikasi/test pada HEAD masih sama dengan gate tersebut; commit setelahnya hanya dokumentasi. `FUNCTIONAL PASS` tidak sama dengan final production verification. `RVR` tetap membutuhkan real-data, browser, template resmi, atau runtime evidence sesuai konteks.
 
 ---
 
@@ -29,9 +29,9 @@ Repository Pint      ADVISORY — 2 style issues
 
 ## P0-01 — Six-category E2E
 
-**Status: FUNCTIONAL PASS / REAL-DATA VERIFICATION STARTED / INSTALLED-RUNTIME DEFERRED.**
+**Status: FUNCTIONAL PASS / REAL-DATA VERIFICATION ACTIVE / INSTALLED-RUNTIME DEFERRED.**
 
-Selesai:
+Sudah selesai secara deterministic:
 
 - [x] BARANG sampai FINAL + preview/download;
 - [x] KONSUMSI sampai FINAL + preview/download;
@@ -42,7 +42,7 @@ Selesai:
 - [x] numbering/finalization/preview/download melalui runtime path aplikasi;
 - [x] real XLSX/PDF regression;
 - [x] preview/download tidak mengalokasikan nomor;
-- [x] category READY → DRAFT revalidation regression;
+- [x] READY category change kembali DRAFT bila kategori benar-benar berubah;
 - [x] lifecycle audit dasar;
 - [x] six-category test masuk `SPJ Critical`.
 
@@ -58,24 +58,21 @@ Real-data baseline terbaru:
 0 document_number_formats
 ```
 
-Next real-data work:
+Pekerjaan aktif:
 
-- [ ] audit read-only seluruh 66 READY package terhadap current validation rules;
-- [ ] identifikasi blocker legitimate per canonical numbering order;
-- [ ] koreksi hanya operator overlay/data yang memang mempunyai evidence;
-- [ ] jangan fabrikasi penerima/vendor/SPPD/template;
-- [ ] setelah data clean, lanjutkan numbering pada isolated copy dalam urutan canonical;
+- [ ] audit read-only seluruh 66 READY package dengan `spj:audit-quarter`;
+- [ ] kelompokkan blocker legitimate per kategori dan canonical numbering order;
+- [ ] koreksi hanya operator overlay yang mempunyai evidence;
+- [ ] setelah clean, uji numbering pada isolated copy;
 - [ ] pertahankan source transaction/item immutable.
 
-Catatan: SPPD nyata tersedia pada fiscal year 2025, bukan 2026. Tidak boleh dibuat SPPD 2026 hanya untuk memenuhi six-category real-data coverage.
+SPPD nyata tersedia pada fiscal year 2025, bukan 2026. Jangan membuat SPPD 2026 fiktif untuk mengejar coverage.
 
 ---
 
 ## P0-02 — Generator dokumen + template upload
 
 **Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / OFFICIAL-TEMPLATE VISUAL RVR.**
-
-Generator selesai secara functional:
 
 - [x] DOCX/XLSX real artifact;
 - [x] PDF real artifact;
@@ -86,29 +83,22 @@ Generator selesai secara functional:
 - [x] preview/download tanpa numbering side effect;
 - [x] common placeholder enam kategori;
 - [x] invalid upload tidak mengganti template aktif;
-- [x] atomic replacement.
-
-Upload halaman template sekarang selesai secara functional:
-
-- [x] explicit `?upload=package` mode;
-- [x] explicit `?upload=single` mode;
-- [x] mode tetap benar jika oversized POST body dibuang PHP;
-- [x] separate error bag untuk package dan single upload;
-- [x] extension-based DOCX/XLSX validation tanpa ketergantungan MIME Windows;
-- [x] UI menampilkan `upload_max_filesize`, `post_max_size`, dan effective limit;
-- [x] oversized request menghasilkan pesan batas PHP;
-- [x] save/validate/download/delete memakai disk `local` yang sama dengan generator;
-- [x] regression `DocumentTemplateUploadValidationTest`;
-- [x] regression `DocumentTemplateUploadRoutingRegressionTest`;
-- [x] kedua regression masuk `SPJ Critical`.
+- [x] atomic replacement;
+- [x] explicit package/single upload mode;
+- [x] oversized POST routing tetap teridentifikasi;
+- [x] separate error bag;
+- [x] extension-based DOCX/XLSX validation;
+- [x] PHP upload-limit display;
+- [x] storage lifecycle template dan generator sama-sama disk `local`;
+- [x] upload regression masuk `SPJ Critical`.
 
 Remaining RVR:
 
-- [ ] template resmi/aktual untuk document type yang dipakai sekolah;
+- [ ] template resmi/aktual sekolah;
 - [ ] visual fidelity Word/Excel/PDF;
 - [ ] print area/page break/header-footer/tabel dinamis;
 - [ ] hasil cetak aktual;
-- [ ] output dibuka di Microsoft Word/Excel/PDF viewer target.
+- [ ] pembukaan output pada Microsoft Word/Excel/PDF viewer target.
 
 ---
 
@@ -155,7 +145,7 @@ Remaining RVR:
 
 **Status: FUNCTIONAL PASS.**
 
-Boundary:
+Boundary canonical:
 
 ```text
 School + Fiscal Year + Fund Source
@@ -164,7 +154,7 @@ School + Fiscal Year + Fund Source
 - [x] cross-school guard;
 - [x] cross-year guard;
 - [x] cross-fund-source guard;
-- [x] prev/next Paket context boundary;
+- [x] previous/next Paket context boundary;
 - [x] forged resource ID guard;
 - [x] Generic ARKAS Importer tenant boundary.
 
@@ -186,7 +176,7 @@ School + Fiscal Year + Fund Source
 - [x] same-second backup uniqueness;
 - [x] switch tenant after restore.
 
-Installed Windows runtime verification tetap DEFERRED untuk fokus sekarang.
+Installed Windows runtime verification tetap DEFERRED pada fokus kerja sekarang.
 
 ---
 
@@ -194,49 +184,49 @@ Installed Windows runtime verification tetap DEFERRED untuk fokus sekarang.
 
 **Status: FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST.**
 
-- [x] stable shared source key;
+- [x] shared deterministic source key;
+- [x] tenant boundary;
 - [x] Upsert / Incremental / Full Refresh;
 - [x] reconciliation preview read-only;
-- [x] stable-key guard;
 - [x] source-empty semantics;
-- [x] schema drift block;
+- [x] schema drift blocking;
 - [x] background tenant activation;
 - [x] shared resource lock;
 - [x] created-at preservation;
 - [x] semantic metrics.
 
-Scale/performance:
+Scale/performance lanjutan:
 
 - [ ] Bridge-side incremental delta fetch;
-- [ ] pagination/evaluation above row limit `100000`.
+- [ ] pagination/evaluation di atas row limit `100000`.
 
 ---
 
-# P1 — Feature Completeness & Operational Quality
-
-Urutan prioritas aktif setelah template upload ditutup:
+# P1 — Real Data, Output, dan Operational Quality
 
 ## P1-01 — Audit 66 READY package real-data
 
-- [ ] validate BARANG requirements;
-- [ ] validate JASA recipient/vendor requirements;
-- [ ] validate HONOR recipient/detail consistency;
-- [ ] validate KONSUMSI participant semantics;
-- [ ] validate PEMELIHARAAN materials+wages/link requirements;
-- [ ] validate SiPLah reference requirements;
-- [ ] validate source/reconciliation flags;
-- [ ] validate blank item descriptions bila masih relevan;
-- [ ] validate duplicate/orphan/no_bukti state;
-- [ ] produce canonical numbering blocker report.
+Gunakan jalur read-only `spj:audit-quarter` sebelum mutation apa pun.
 
-## P1-02 — JASA_LAINNYA multi-penerima E2E
+- [ ] BARANG requirements dan procurement policy;
+- [ ] JASA recipient/reconciliation;
+- [ ] HONOR recipient/detail consistency;
+- [ ] KONSUMSI participant semantics;
+- [ ] PEMELIHARAAN materials+wages/link requirements;
+- [ ] SiPLah policy/reference yang memang applicable;
+- [ ] source/reconciliation flags;
+- [ ] blank item description bila masih ada;
+- [ ] duplicate/orphan/no_bukti state;
+- [ ] canonical numbering blocker report.
+
+## P1-02 — JASA_LAINNYA multi-penerima generated-document E2E
 
 - [ ] gross/tax/net tiap penerima;
 - [ ] dokumen per penerima bila applicable;
 - [ ] preview/download/final multi-penerima;
-- [ ] aggregate reconciliation.
+- [ ] aggregate reconciliation pada output nyata.
 
-## P1-03 — PEMELIHARAAN bahan + upah
+## P1-03 — PEMELIHARAAN bahan + upah full-document QA
 
 - [ ] material dari transaksi bahan;
 - [ ] pekerja/upah dari transaksi upah;
@@ -244,13 +234,18 @@ Urutan prioritas aktif setelah template upload ditutup:
 - [ ] RAB/SPK/kuitansi/A2 konsisten;
 - [ ] source BKU tetap immutable.
 
-## P1-04 — SiPLah E2E
+## P1-04 — SiPLah generated-document E2E
 
-- [ ] source SiPLah authoritative;
-- [ ] procurement channel UI benar;
-- [ ] marketplace order/invoice/payment reference;
-- [ ] internal purchase order tidak diwajibkan untuk SiPLah;
-- [ ] output SiPLah benar.
+**Core procurement policy sudah FUNCTIONAL PASS.** Fokus tersisa adalah output dan browser flow, bukan membangun ulang model SiPLah.
+
+- [x] SiPLah adalah channel, bukan kategori;
+- [x] marketplace/order/invoice/reference persistence;
+- [x] nomor marketplace dan Surat Pesanan internal dipisahkan;
+- [x] BARANG SiPLah tidak dipaksa memakai internal purchase-order requirement yang tidak applicable;
+- [x] placeholder/policy core mempunyai regression;
+- [ ] generated-document E2E memakai data SiPLah;
+- [ ] official-template output QA;
+- [ ] browser reload/category switching/payment-method consistency.
 
 ## P1-05 — Browser QA desktop/laptop
 
@@ -259,13 +254,16 @@ Urutan prioritas aktif setelah template upload ditutup:
 - [ ] Rincian Pajak tab;
 - [ ] automatic number readonly;
 - [ ] compact table/pagination;
-- [ ] prev/next Paket context.
+- [ ] previous/next Paket context;
+- [ ] template upload package/single UX.
 
-## P1-06 — Audit trail operasional
+## P1-06 — Audit trail operasional E2E
 
-Pastikan aksi draft/update/ready/numbering/cancel/reissue/final/reopen/reconcile/reset/restore mempunyai actor, time, tenant context, entity, action, dan description.
+Pastikan draft/update/ready/numbering/cancel/reissue/final/reopen/reconcile/reset/restore mempunyai actor, time, tenant context, entity, action, dan description.
 
-## P1-07 — Employee identity / participant roster
+## P1-07 — Employee identity + participant roster real-data verification
+
+**Unified identity core sudah FUNCTIONAL PASS.** Fokus tersisa adalah edge case nyata dan UX participant.
 
 Kontrak tetap:
 
@@ -274,10 +272,21 @@ Auto-fill KONSUMSI = Employee.source_type DAPODIK
 Participant manual  = allowed
 ```
 
-- [ ] UI tidak memperluas auto-fill ke semua Employee;
-- [ ] normalized-name-only tidak silent merge orang berbeda;
-- [ ] NIP/NUPTK dipertahankan;
-- [ ] regression same-name/different-identifier.
+Sudah dibuktikan regression:
+
+- [x] ARKAS/PTK + Dapodik identity fusion dengan strong identifier;
+- [x] ambiguous normalized-name tidak silent merge;
+- [x] NUPTK/unique normalized-name matching policy;
+- [x] source provenance dipertahankan;
+- [x] operator-locked row tidak disapu sync;
+- [x] unified employee master.
+
+Tersisa:
+
+- [ ] audit duplicate/ambiguous identity pada data sekolah nyata;
+- [ ] pastikan UI auto-fill KONSUMSI tetap Dapodik-only;
+- [ ] participant roster/operator UX;
+- [ ] same-name/different-identifier real-data review.
 
 ---
 
@@ -299,7 +308,8 @@ Mobile/responsive penuh bukan blocker release target operator laptop/desktop saa
 
 - jangan mengubah ARKAS/BKU source hanya untuk membuat test/audit lulus;
 - jangan membuat data SPPD/vendor/penerima/template fiktif;
-- numbering real-data harus mengikuti canonical order dan berhenti pada blocker legitimate;
-- mutasi real-data selalu di isolated copy;
-- perubahan domain/business rule baru harus dicatat di `docs/SPJ_DESIGN_DECISIONS.md`;
-- docs status harus membedakan FUNCTIONAL PASS, REAL-DATA evidence, RVR, dan DEFERRED.
+- audit real-data dilakukan read-only sebelum mutation;
+- numbering real-data mengikuti canonical order dan berhenti pada blocker legitimate;
+- mutation real-data hanya pada isolated copy;
+- perubahan domain/business rule baru dicatat di `SPJ_DESIGN_DECISIONS.md`;
+- docs status selalu membedakan FUNCTIONAL PASS, REAL-DATA VERIFIED, RVR, dan DEFERRED.
