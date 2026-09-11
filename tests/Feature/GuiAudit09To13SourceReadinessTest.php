@@ -53,6 +53,18 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         }
     }
 
+    public function test_global_layout_uses_canonical_icons_without_legacy_navigation_symbols(): void
+    {
+        $layout = file_get_contents(resource_path('views/components/layouts/tailwind-app.blade.php'));
+
+        $this->assertIsString($layout);
+        $this->assertStringContainsString('<x-ui.icon', $layout);
+        $this->assertStringNotContainsString('<x-ui-icon', $layout);
+        $this->assertStringNotContainsString('№', $layout);
+        $this->assertStringNotContainsString('↺', $layout);
+        $this->assertStringNotContainsString('◎', $layout);
+    }
+
     public function test_core_operator_lists_keep_desktop_and_mobile_source_fallbacks(): void
     {
         $employees = file_get_contents(resource_path('views/employees/index.blade.php'));
