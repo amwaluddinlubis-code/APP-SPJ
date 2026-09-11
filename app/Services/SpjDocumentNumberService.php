@@ -145,21 +145,25 @@ class SpjDocumentNumberService
             // berikutnya; hanya rollback numbering yang boleh menghapus record
             // numbering dan menurunkan sequence.
             $document = $activeDocument ?? new SpjDocument($identity);
-            $yearId = $package->transaction->fiscal_year_id;
+            $yearId = (int) $package->transaction->fiscal_year_id;
+            $fundSourceId = $package->transaction->fund_source_id === null ? null : (int) $package->transaction->fund_source_id;
             $format = $this->policy->formatFor($yearId, $documentType);
             $periodKey = $this->periodKey($format->reset_period, $documentDate);
+            $sequenceKey = [
+                'fiscal_year_id' => $yearId,
+                'fund_source_id' => $fundSourceId,
+                'format_name' => $documentType,
+                'period_key' => $periodKey,
+            ];
             $sequence = DB::connection('school')->table('document_number_sequences')
-                ->where(['fiscal_year_id' => $yearId, 'format_name' => $documentType, 'period_key' => $periodKey])
+                ->where($sequenceKey)
                 ->lockForUpdate()->first();
             $next = ((int) ($sequence->last_number ?? 0)) + 1;
             if ($sequence) {
                 DB::connection('school')->table('document_number_sequences')->where('id', $sequence->id)
                     ->update(['last_number' => $next, 'updated_at' => now()]);
             } else {
-                DB::connection('school')->table('document_number_sequences')->insert([
-                    'fiscal_year_id' => $yearId,
-                    'format_name' => $documentType,
-                    'period_key' => $periodKey,
+                DB::connection('school')->table('document_number_sequences')->insert($sequenceKey + [
                     'last_number' => $next,
                     'created_at' => now(),
                     'updated_at' => now(),
