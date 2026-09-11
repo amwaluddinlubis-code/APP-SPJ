@@ -142,7 +142,7 @@ class DocumentTemplateController extends Controller
             return back()->with('error', 'Berkas template tidak ditemukan pada penyimpanan. Unggah ulang template ini.');
         }
 
-        return Storage::download($download['path'], $download['name']);
+        return Storage::disk('local')->download($download['path'], $download['name']);
     }
 
     public function destroy(string $templateId): RedirectResponse
