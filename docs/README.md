@@ -20,12 +20,18 @@ Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.m
 ## Functional gate aktif
 
 ```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-subject: test: gate template upload routing regression
-result : PASS — 243 tests / 1848 assertions
+commit : a2509aad9104706da2709fcd07cce0b973282cb1
+subject: test(spj): isolate numbered description flash state
+CI run : 34595391755
+CI job : 103249843120
+result : PASS — 248 tests / 1880 assertions
 ```
 
-Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate tersebut; commit setelah gate hanya dokumentasi. Status keseluruhan tetap **belum final release-ready** karena real-data verification dan official-template/browser/runtime RVR masih aktif.
+Gate ini mencakup frontend build PASS, Blade compile PASS, dan `SPJ Critical` PASS. Pint tetap advisory/non-blocking; gate tersebut melaporkan 3 style issues repository.
+
+Commit dokumentasi setelah gate tidak mengubah source aplikasi/test, sehingga `a2509aad...` tetap menjadi code gate functional terbaru sampai ada source commit berikutnya.
+
+Status keseluruhan tetap **belum final release-ready** karena real-data verification dan official-template/browser/runtime RVR masih aktif.
 
 ## Dokumen aktif utama
 
@@ -36,7 +42,7 @@ Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate t
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur yang sudah diselaraskan dengan functional gate terbaru. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
-| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE DOMAIN GUIDE / IMPLEMENTATION PENDING** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
+| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE** — kontrak GUI/layout. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
@@ -80,19 +86,21 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 - Source missing/returning mempertahankan identity dan pekerjaan operator.
 - Perubahan source setelah pekerjaan operator dapat memerlukan reconciliation; NUMBERED/FINAL tidak dimutasi diam-diam.
 - Boundary tenant = `School + Fiscal Year + Fund Source`.
+- Sequence numbering terisolasi per sumber dana.
 - Detail Transaksi hanya menulis `item_description`.
-- Koreksi `item_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence.
+- Koreksi `item_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence; FINAL tetap terkunci.
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
-- Perubahan kategori, data pembayaran, atau Isian Manual pada NUMBERED wajib didahului rollback/cancel numbering yang sesuai.
+- Perubahan kategori, data pembayaran, atau Isian Manual pada NUMBERED wajib didahului rollback numbering yang sesuai.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah adalah channel, bukan kategori.
 - READY + category benar-benar berubah => DRAFT untuk revalidation.
 - Preview/download tidak menerbitkan nomor baru.
-- Cancel individual mempertahankan nomor cancelled dan sequence tidak mundur.
-- Rollback numbering melepas nomor dari titik rollback sampai ekor sequence; nomor boleh dipakai kembali.
+- Cancel individual mempertahankan nomor `CANCELLED` sebagai history permanen dan sequence tidak mundur.
+- Rollback numbering melepas nomor aktif dari titik rollback sampai ekor sequence; nomor yang dilepas boleh dipakai kembali.
+- Rollback tidak boleh melintasi nomor `CANCELLED` individual permanen.
 - Cancel Penomoran Triwulan berjalan mundur `TW4 -> TW3 -> TW2 -> TW1` pada context tenant+tahun+sumber dana yang sama.
-- Cancel TW3 mengembalikan sequence ke akhir TW2; cancel TW2 ke akhir TW1; cancel TW1 ke `0`.
-- Operational audit rollback tetap dipertahankan walaupun history numbering domain di-reset.
+- Full quarter reset ditolak bila target memiliki nomor SPJ cancelled individual permanen.
+- Operational audit rollback tetap dipertahankan walaupun history numbering domain yang di-rollback dilepas.
 - Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
 - Operator-locked Employee tidak boleh ditimpa source sync.
 - Auto-fill KONSUMSI tetap Dapodik-only; participant manual diperbolehkan.
