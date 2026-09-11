@@ -236,6 +236,8 @@ Jika Paket berstatus READY dan kategori benar-benar berubah, Paket harus kembali
 
 Jika Paket sudah NUMBERED, kategori tidak boleh diubah sampai numbering yang relevan di-rollback/dibatalkan sesuai kontrak numbering correction.
 
+Setiap penyimpanan Isian Manual membersihkan relasi detail yang tidak applicable pada kategori aktif (goods, work order + workers, travels, participants, honors, service recipients) agar pindah kategori tidak meninggalkan baris yatim. `spj_documents` tidak ikut dihapus (tunduk pada lifecycle penguncian). Participants/honors ditulis pada jangkar item pertama tetapi dihapus mencakup semua item.
+
 ---
 
 ## 7. SiPLah adalah channel, bukan kategori

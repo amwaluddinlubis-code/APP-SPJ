@@ -318,6 +318,8 @@ Participant manual = allowed
 
 Roster menyatu adalah kontrak aktif; koreksi operator canonical via `operator_locked`.
 
+Susunan peserta dibantu tool cepat: tombol ↑/↓ per baris (sentuh-ramah), sortir A–Z, kembalikan ikut roster, simpan/pakai urutan tersimpan per sekolah+tahun, dan salin urutan dari 5 paket KONSUMSI terakhir. Penerima Utama selalu mengikuti orangnya, bukan posisinya.
+
 Identitas pegawai tidak boleh silent-merge hanya berdasarkan nama yang ambigu.
 
 ---

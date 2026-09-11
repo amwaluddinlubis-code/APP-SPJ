@@ -206,12 +206,12 @@ Preserve the decisions documented there.
 - Visually separate `Data ARKAS/BKU` from `Data SPJ Operator`.
 - ARKAS/BKU source fields are readonly reference data and should never look editable.
 - SPJ operator fields are editable and should be grouped as Data Umum SPJ, Detail Kategori, Kelengkapan, then Buat Paket.
-- For `KONSUMSI`, the current `fillTeachers()` auto-fill is Dapodik-only; do not silently broaden it to ARKAS records.
+- For `KONSUMSI`/`SPPD`, participant auto-fill uses the unified employee master (ARKAS + Dapodik + Manual); the Dapodik-only constraint is revoked — see `docs/CURRENT_PROGRESS.md` contracts.
 - Do not let frontend cleanup silently change sync, locking, numbering, validation, or document lifecycle business rules.
 
 ## SPJ Package Workspace
 
-- Internal package tabs are `Rincian`, `Isian Manual`, and `Penomoran`.
+- Internal package tabs are `Rincian`, `Isian Manual`, `Rincian Pajak`, and `Penomoran`.
 - `Rincian` contains two distinct sibling panels: `Rincian Transaksi` and `Dokumen & Template`.
 - Keep `Dokumen & Template` compact and inside the `Rincian` tab so it does not lengthen Isian Manual/Penomoran.
 - Panel headers, hover states, backgrounds, and text must follow the selected theme via `--ui-*`, `--theme-*`, or `--spj-*` tokens.

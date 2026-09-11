@@ -42,7 +42,16 @@ Pint advisory pada gate ini:
 
 Dua file pertama/terakhir tidak boleh dibaca sebagai functional regression hanya karena style advisory. `SpjDocumentNumberService.php` memiliki satu style issue baru yang dapat dibersihkan pada maintenance pass berikutnya tanpa mengubah aturan bisnis.
 
-Commit setelah code gate yang hanya mengubah dokumentasi tidak menciptakan functional gate baru. Sampai ada source/test commit berikutnya, `a2509aad...` adalah checkpoint functional canonical.
+Commit code (`feat`/`fix` SPJ dan Blade) yang masuk setelah `a2509aad...` membuat gate CI tersebut bukan lagi checkpoint functional canonical. Verifikasi ulang lokal pada HEAD saat ini (2026-09-11):
+
+```text
+npm run build            PASS
+php artisan view:cache   PASS
+SPJ Critical (lokal)     PASS — 248 tests / 1880 assertions
+vendor/bin/pint --test   ADVISORY — 3 file pre-existing, non-blocking
+```
+
+Gate CI penuh berikutnya harus dijalankan ulang sebelum klaim release apa pun; angka di atas adalah evidence lokal, bukan pengganti CI.
 
 ---
 

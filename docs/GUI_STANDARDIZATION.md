@@ -326,3 +326,9 @@ Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA mobile res
 - dark/theme tidak rusak;
 - mobile minimum usable;
 - perubahan UI tidak melemahkan backend validation/lifecycle.
+
+## 23. Halaman checklist paket
+
+- Stat memakai 4 `x-stat-item` (jalur, dokumen wajib, penghalang, status).
+- Item penghalang bernomor urut, masing-masing ber-badge lokasi (`Paket`/`Transaksi`) dan tombol Perbaiki ke URL yang tepat.
+- Item lolos dan opsional/tidak-berlaku disembunyikan dalam `details` collapsed agar tidak mendorong konten blocking ke bawah layar.
