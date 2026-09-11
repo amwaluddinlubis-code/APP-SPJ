@@ -76,6 +76,22 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('var(--theme-accent)', $css);
     }
 
+    public function test_spj_density_pilot_stays_compact_without_reducing_touch_targets(): void
+    {
+        $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));
+        $summary = file_get_contents(resource_path('views/spj/partials/summary.blade.php'));
+
+        $this->assertIsString($css);
+        $this->assertIsString($summary);
+        $this->assertStringContainsString('spj-work-summary', $summary);
+        $this->assertStringContainsString('--profile-control-height: 2.5rem;', $css);
+        $this->assertStringContainsString('min-height: 0 !important;', $css);
+        $this->assertStringContainsString('.page-header-summary', $css);
+        $this->assertStringContainsString('@media (max-width: 1023px)', $css);
+        $this->assertStringContainsString('--profile-control-height: 2.75rem;', $css);
+        $this->assertStringContainsString('min-height: 2.75rem;', $css);
+    }
+
     public function test_core_operator_lists_keep_desktop_and_mobile_source_fallbacks(): void
     {
         $employees = file_get_contents(resource_path('views/employees/index.blade.php'));
