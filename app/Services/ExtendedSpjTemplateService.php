@@ -256,6 +256,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
                 $sheetName = $single->getSheet(0)->getTitle();
                 $copy = $single->duplicateWorksheetByTitle($sheetName);
                 $packageSpreadsheet->addExternalSheet($copy);
+                $copy->setTitle($sheetName);
             } finally {
                 $single->disconnectWorksheets();
             }
