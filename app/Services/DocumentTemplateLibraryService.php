@@ -70,7 +70,7 @@ final class DocumentTemplateLibraryService
             return ['status' => 'missing'];
         }
 
-        if (! Storage::exists($template->file_path)) {
+        if (! Storage::disk('local')->exists($template->file_path)) {
             return ['status' => 'file_missing'];
         }
 
@@ -88,7 +88,7 @@ final class DocumentTemplateLibraryService
             return false;
         }
 
-        Storage::delete($template->file_path);
+        Storage::disk('local')->delete($template->file_path);
         $template->delete();
 
         return true;
@@ -120,8 +120,10 @@ final class DocumentTemplateLibraryService
     /** @return array<string,mixed> */
     private function validateStoredTemplate(DocumentTemplate $template): array
     {
+        $disk = Storage::disk('local');
+
         try {
-            if (! Storage::exists($template->file_path)) {
+            if (! $disk->exists($template->file_path)) {
                 return [
                     'valid' => false,
                     'document_type' => SpjDocumentTypeRegistry::canonical((string) $template->document_type),
@@ -138,7 +140,7 @@ final class DocumentTemplateLibraryService
 
             return $this->validator->validateFile(
                 (string) $template->document_type,
-                Storage::path($template->file_path),
+                $disk->path($template->file_path),
                 (string) $template->format,
             );
         } catch (Throwable $exception) {
