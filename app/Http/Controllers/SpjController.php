@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use App\UseCases\Spj\SpjFiscalPeriodUseCase;
+use App\UseCases\Spj\SpjNumberingRollbackUseCase;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
 use App\UseCases\Spj\SpjPackageLifecycleUseCase;
 use App\UseCases\Spj\SpjQuarterNumberingUseCase;
@@ -38,6 +39,16 @@ class SpjController extends Controller
     public function assignQuarterNumbers(Request $request, SpjQuarterNumberingUseCase $useCase): RedirectResponse
     {
         return $useCase->assignQuarterNumbers($request);
+    }
+
+    public function rollbackNumbering(Request $request, SpjNumberingRollbackUseCase $useCase): RedirectResponse
+    {
+        return $useCase->rollbackFromSequence($request);
+    }
+
+    public function cancelQuarterNumbering(Request $request, SpjNumberingRollbackUseCase $useCase): RedirectResponse
+    {
+        return $useCase->cancelQuarter($request);
     }
 
     public function assignDocumentNumber(Request $request, string $packageId, string $documentType, SpjSingleNumberingUseCase $useCase): RedirectResponse
