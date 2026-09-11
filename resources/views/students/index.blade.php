@@ -7,17 +7,17 @@
         >
             <x-slot:actions>
                 @if(auth()->user()->isAdministrator())
-                    <a href="{{ route('dapodik.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/25">Sinkron Dapodik</a>
+                    <a href="{{ route('dapodik.index') }}" class="ui-btn ui-btn-secondary px-4 py-2 text-sm">Sinkron Dapodik</a>
                 @endif
                 @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))
                     <x-ui.button :href="route('students.create')"><span class="text-lg leading-none">+</span> Tambah siswa</x-ui.button>
                 @endif
             </x-slot:actions>
 
-            <div class="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 <x-stat-item label="Total Data" :value="number_format($summary['total'], 0, ',', '.')" hint="Seluruh data siswa" />
                 <x-stat-item label="Siswa Aktif" :value="number_format($summary['active'], 0, ',', '.')" hint="Berstatus aktif" value-class="text-emerald-700" />
-                <x-stat-item label="Dari Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Berasal dari sinkronisasi" value-class="text-indigo-700" />
+                <x-stat-item label="Dari Dapodik" :value="number_format($summary['dapodik'], 0, ',', '.')" hint="Berasal dari sinkronisasi" value-class="text-[var(--theme-content-accent)]" />
                 <x-stat-item label="Data Manual" :value="number_format($summary['manual'], 0, ',', '.')" hint="Diinput oleh operator" value-class="text-amber-700" />
             </div>
         </x-page-header>
@@ -27,7 +27,7 @@
             description="Gunakan pencarian dan filter seperlunya. Data Dapodik tetap dapat dibedakan dari data manual."
             class="overflow-hidden"
         >
-            <form method="GET" class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:grid-cols-12">
+            <form method="GET" class="grid gap-4 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 lg:grid-cols-12">
                 <x-ui.field label="Pencarian" for="student-search" hint="Nama, NISN, NIPD, atau kelas." class="lg:col-span-5">
                     <x-ui.input id="student-search" name="q" :value="$filters['q'] ?? ''" placeholder="Contoh: Ahmad atau 1234567890" />
                 </x-ui.field>
@@ -63,48 +63,48 @@
                 </div>
             </form>
 
-            <div class="mt-5 hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
-                        <tr><th class="px-5 py-3">Siswa</th><th class="px-5 py-3">Identitas</th><th class="px-5 py-3">Rombel</th><th class="px-5 py-3">Orang tua/Wali</th><th class="px-5 py-3 text-right">Aksi</th></tr>
+            <div class="mt-5 hidden md:block">
+                <x-ui.table min-width="920px" pagination="external">
+                    <thead>
+                        <tr><th>Siswa</th><th>Identitas</th><th>Rombel</th><th>Orang tua/Wali</th><th class="text-right">Aksi</th></tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200">
+                    <tbody>
                         @forelse($students as $student)
-                            <tr class="bg-white transition hover:bg-slate-50">
-                                <td class="px-5 py-4">
-                                    <div class="font-semibold text-slate-900">{{ $student->name }}</div>
+                            <tr>
+                                <td>
+                                    <div class="font-semibold text-[var(--ui-fg-strong)]">{{ $student->name }}</div>
                                     <div class="mt-1.5 flex flex-wrap gap-1.5">
                                         <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->source_type==='DAPODIK'?'bg-blue-100 text-blue-700':'bg-amber-100 text-amber-700' }}">{{ $student->source_type }}</span>
                                         <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Tidak aktif' }}</span>
                                     </div>
                                 </td>
-                                <td class="px-5 py-4 text-slate-600"><div>NISN: <span class="font-medium text-slate-800">{{ $student->nisn?:'—' }}</span></div><div class="mt-1 text-xs">NIPD: {{ $student->nipd?:'—' }}</div></td>
-                                <td class="px-5 py-4"><div class="font-medium text-slate-800">{{ $student->class_name?:'Belum ditempatkan' }}</div><div class="mt-1 text-xs text-slate-500">Tingkat {{ $student->grade_level?:'—' }}</div></td>
-                                <td class="px-5 py-4 text-slate-700">{{ $student->father_name?:$student->mother_name?:$student->guardian_name?:'—' }}</td>
-                                <td class="px-5 py-4 text-right"><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></td>
+                                <td class="text-[var(--ui-fg)]"><div>NISN: <span class="font-medium text-[var(--ui-fg-strong)]">{{ $student->nisn?:'—' }}</span></div><div class="mt-1 text-xs text-[var(--ui-fg-muted)]">NIPD: {{ $student->nipd?:'—' }}</div></td>
+                                <td><div class="font-medium text-[var(--ui-fg-strong)]">{{ $student->class_name?:'Belum ditempatkan' }}</div><div class="mt-1 text-xs text-[var(--ui-fg-muted)]">Tingkat {{ $student->grade_level?:'—' }}</div></td>
+                                <td class="text-[var(--ui-fg)]">{{ $student->father_name?:$student->mother_name?:$student->guardian_name?:'—' }}</td>
+                                <td class="text-right"><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-6 py-14 text-center"><p class="font-semibold text-slate-700">Data siswa tidak ditemukan.</p><p class="mt-1 text-sm text-slate-500">Sinkronkan Dapodik atau ubah kriteria pencarian.</p></td></tr>
+                            <tr><td colspan="5" class="empty-cell"><p class="font-semibold text-[var(--ui-fg-strong)]">Data siswa tidak ditemukan.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Sinkronkan Dapodik atau ubah kriteria pencarian.</p></td></tr>
                         @endforelse
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
 
-            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white md:hidden">
+            <div class="mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] md:hidden">
                 @forelse($students as $student)
-                    <article class="border-b border-slate-100 p-4 last:border-b-0">
+                    <article class="border-b border-[var(--ui-line)] p-4 last:border-b-0">
                         <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0"><h3 class="truncate font-bold text-slate-900">{{ $student->name }}</h3><p class="mt-1 text-xs text-slate-500">NISN {{ $student->nisn?:'—' }} · {{ $student->class_name?:'Tanpa rombel' }}</p></div>
+                            <div class="min-w-0"><h3 class="truncate font-bold text-[var(--ui-fg-strong)]">{{ $student->name }}</h3><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">NISN {{ $student->nisn?:'—' }} · {{ $student->class_name?:'Tanpa rombel' }}</p></div>
                             <span class="rounded-full px-2 py-1 text-xs font-bold {{ $student->is_active?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700' }}">{{ $student->is_active?'Aktif':'Nonaktif' }}</span>
                         </div>
-                        <div class="mt-4 flex items-center justify-between gap-3"><span class="text-xs font-semibold text-slate-500">{{ $student->source_type }}</span><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></div>
+                        <div class="mt-4 flex items-center justify-between gap-3"><span class="text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $student->source_type }}</span><x-ui.button variant="secondary" :href="route('students.show',$student)" class="text-xs">Lihat detail</x-ui.button></div>
                     </article>
                 @empty
-                    <div class="p-10 text-center text-sm text-slate-500">Data siswa tidak ditemukan.</div>
+                    <div class="p-10 text-center text-sm text-[var(--ui-fg-muted)]">Data siswa tidak ditemukan.</div>
                 @endforelse
             </div>
 
-            @if($students->hasPages())<div class="mt-5 border-t border-slate-200 pt-4" data-pagination="server">{{ $students->links() }}</div>@endif
+            @if($students->hasPages())<div class="mt-5 border-t border-[var(--ui-line)] pt-4" data-pagination="server">{{ $students->links() }}</div>@endif
         </x-ui.form-section>
     </div>
 </x-layouts.tailwind-app>
