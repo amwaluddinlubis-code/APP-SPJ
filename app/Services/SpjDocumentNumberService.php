@@ -31,10 +31,7 @@ class SpjDocumentNumberService
         $skipped = 0;
         $selectedTypes = $onlyDocumentTypes === null
             ? null
-            : collect($onlyDocumentTypes)
-                ->map(fn (string $type): string => strtoupper(trim($type)))
-                ->filter()
-                ->values();
+            : collect($onlyDocumentTypes)->map(fn (string $type): string => strtoupper(trim($type)))->filter()->values();
         $shouldAssign = fn (string $type): bool => ($selectedTypes === null || $selectedTypes->contains($type))
             && $this->policy->isAutomaticDocumentEligible($transaction, $type);
 
@@ -71,7 +68,6 @@ class SpjDocumentNumberService
             if ($existing) {
                 $transaction->goods()->whereNull($mapping['number'])->update([$mapping['number'] => $existing]);
                 $skipped++;
-
                 continue;
             }
             $document = $assign($type, Carbon::parse($date));
@@ -83,15 +79,11 @@ class SpjDocumentNumberService
             'SPK' => ['date' => 'spk_date', 'number' => 'spk_number'],
             'RAB' => ['date' => 'rab_date', 'number' => 'rab_number'],
         ] as $type => $mapping) {
-            if (! $shouldAssign($type)) {
-                continue;
-            }
-            if (! $workOrder?->{$mapping['date']}) {
+            if (! $shouldAssign($type) || ! $workOrder?->{$mapping['date']}) {
                 continue;
             }
             if (filled($workOrder->{$mapping['number']})) {
                 $skipped++;
-
                 continue;
             }
             $document = $assign($type, Carbon::parse($workOrder->{$mapping['date']}));
@@ -101,7 +93,6 @@ class SpjDocumentNumberService
         if ($shouldAssign('SURAT_TUGAS_PERJALANAN_DINAS')) {
             $travels = $transaction->travels
                 ->sortBy(fn ($travel): string => Carbon::parse($travel->assignment_letter_date ?: $travel->departure_date ?: '9999-12-31')->format('Y-m-d').'-'.str_pad((string) ($travel->sort_order ?? 0), 8, '0', STR_PAD_LEFT).'-'.str_pad((string) $travel->id, 12, '0', STR_PAD_LEFT));
-
             foreach ($travels as $travel) {
                 $eventDate = $travel->assignment_letter_date ?: $travel->departure_date;
                 if (! $eventDate) {
@@ -109,7 +100,6 @@ class SpjDocumentNumberService
                 }
                 if (filled($travel->assignment_letter_number)) {
                     $skipped++;
-
                     continue;
                 }
                 $document = $assign('SURAT_TUGAS_PERJALANAN_DINAS', Carbon::parse($eventDate), 'TRAVEL-'.$travel->id);
@@ -149,70 +139,15 @@ class SpjDocumentNumberService
             if ($activeDocument?->document_number) {
                 return $activeDocument;
             }
-            $cancelledIdentityDocument = SpjDocument::query()
-                ->where($identity)
-                ->where('status', 'CANCELLED')
-                ->latest('id')
-                ->first();
-            $document = $activeDocument ?? $cancelledIdentityDocument ?? new SpjDocument($identity);
 
+            // CANCELLED adalah pembatalan bisnis individual dan nomornya tetap
+            // menjadi histori permanen. Identity baru harus mendapat sequence
+            // berikutnya; hanya rollback numbering yang boleh menghapus record
+            // numbering dan menurunkan sequence.
+            $document = $activeDocument ?? new SpjDocument($identity);
             $yearId = $package->transaction->fiscal_year_id;
             $format = $this->policy->formatFor($yearId, $documentType);
             $periodKey = $this->periodKey($format->reset_period, $documentDate);
-            $activeSequences = SpjDocument::query()
-                ->where('document_type', $documentType)
-                ->where('status', '!=', 'CANCELLED')
-                ->whereNotNull('sequence_number')
-                ->whereHas('package.transaction', fn ($query) => $query->where('fiscal_year_id', $yearId))
-                ->get(['sequence_number', 'document_date'])
-                ->filter(fn (SpjDocument $item): bool => $item->document_date
-                    && $this->periodKey($format->reset_period, $item->document_date) === $periodKey)
-                ->pluck('sequence_number')
-                ->map(fn ($number): int => (int) $number)
-                ->all();
-            $cancelledDocument = SpjDocument::query()
-                ->where('document_type', $documentType)
-                ->where('status', 'CANCELLED')
-                ->whereNotNull('document_number')
-                ->whereNotNull('sequence_number')
-                ->whereHas('package.transaction', fn ($query) => $query->where('fiscal_year_id', $yearId))
-                ->orderBy('sequence_number')
-                ->get()
-                ->first(fn (SpjDocument $item): bool => $item->document_date
-                    && $this->periodKey($format->reset_period, $item->document_date) === $periodKey
-                    && ! in_array((int) $item->sequence_number, $activeSequences, true));
-            if ($cancelledDocument) {
-                $reusedSequence = (int) $cancelledDocument->sequence_number;
-                $reusedNumber = $this->renderNumber($format, $documentType, $reusedSequence, $documentDate, $schoolCode, $npsn);
-                $document->fill([
-                    'document_template_id' => $templateId,
-                    'document_number' => $reusedNumber,
-                    'sequence_number' => $reusedSequence,
-                    'document_date' => $documentDate,
-                    'event_date' => $documentDate,
-                    'status' => 'NUMBERED',
-                    'is_late_entry' => (bool) $package->is_late_entry,
-                    'numbered_at' => now(),
-                    'replaces_document_id' => $document->exists && $document->is($cancelledDocument) ? null : $cancelledDocument->id,
-                    'cancelled_at' => null,
-                    'cancelled_by' => null,
-                    'cancellation_reason' => null,
-                ])->save();
-
-                if ($documentType === 'SPJ' && $scopeKey === 'MAIN') {
-                    $package->forceFill([
-                        'document_number' => $document->document_number,
-                        'status' => 'NUMBERED',
-                        'numbered_at' => now(),
-                        'cancelled_at' => null,
-                        'cancelled_by' => null,
-                        'cancellation_reason' => null,
-                    ])->save();
-                }
-
-                return $document;
-            }
-
             $sequence = DB::connection('school')->table('document_number_sequences')
                 ->where(['fiscal_year_id' => $yearId, 'format_name' => $documentType, 'period_key' => $periodKey])
                 ->lockForUpdate()->first();
@@ -222,8 +157,12 @@ class SpjDocumentNumberService
                     ->update(['last_number' => $next, 'updated_at' => now()]);
             } else {
                 DB::connection('school')->table('document_number_sequences')->insert([
-                    'fiscal_year_id' => $yearId, 'format_name' => $documentType, 'period_key' => $periodKey,
-                    'last_number' => $next, 'created_at' => now(), 'updated_at' => now(),
+                    'fiscal_year_id' => $yearId,
+                    'format_name' => $documentType,
+                    'period_key' => $periodKey,
+                    'last_number' => $next,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
 
@@ -244,7 +183,14 @@ class SpjDocumentNumberService
             ])->save();
 
             if ($documentType === 'SPJ' && $scopeKey === 'MAIN') {
-                $package->forceFill(['document_number' => $number, 'status' => 'NUMBERED', 'numbered_at' => now()])->save();
+                $package->forceFill([
+                    'document_number' => $number,
+                    'status' => 'NUMBERED',
+                    'numbered_at' => now(),
+                    'cancelled_at' => null,
+                    'cancelled_by' => null,
+                    'cancellation_reason' => null,
+                ])->save();
             }
 
             return $document;
