@@ -1,88 +1,46 @@
 # App SPJ BOS — AI Development Rules
 
-Dokumen ini adalah aturan kerja untuk AI/coding agent pada repository App SPJ BOS.
+Dokumen ini adalah aturan kerja untuk semua AI/coding agent pada repository APP-SPJ.
 
 Baca bersama `AGENTS.md` dan dokumentasi project sebelum mengubah source.
 
-## 1. Current development priority
+## 1. Sumber status dan prioritas
 
-Prioritas aktif saat ini adalah:
+Jangan hard-code prioritas aktif di file ini.
 
-> Audit dan implementasi SiPLah MVP secara hemat perubahan dan hemat testing cycle.
-
-Phase 4 GUI standardization sedang **dipause sementara** pada checkpoint aman:
+Setiap agent wajib menentukan kondisi project dari:
 
 ```text
-7d02661 — refactor(gui): canonicalize spj package overview
+docs/CURRENT_PROGRESS.md
+docs/DEVELOPMENT_ROADMAP.md
 ```
 
-Phase 4.3E belum dimulai dan tidak boleh diteruskan otomatis kecuali user meminta kembali ke GUI standardization.
+`CURRENT_PROGRESS.md` adalah sumber status/evidence utama. `DEVELOPMENT_ROADMAP.md` adalah sumber prioritas/milestone utama.
 
-## 2. SiPLah domain rule
+Jika chat lama, prompt lama, handoff lama, atau file historis bertentangan dengan dua dokumen tersebut dan source/test terbaru, gunakan source aktif + evidence terbaru dan sinkronkan dokumentasi sesuai `docs/DOCUMENTATION_MAINTENANCE.md`.
 
-SiPLah **bukan kategori SPJ**.
+## 2. Dokumentasi adalah bagian Definition of Done
 
-Jangan menambah:
+Sebelum membuat perubahan, baca:
 
 ```text
-spj_category = SIPLAH
+AGENTS.md
+.ai/rules/index.md
+docs/README.md
+docs/DOCUMENTATION_MAINTENANCE.md
+docs/CURRENT_PROGRESS.md
+docs/DEVELOPMENT_ROADMAP.md
 ```
 
-Kategori SPJ tetap:
+Lalu baca domain/feature guide yang relevan.
 
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-SPPD
-HONOR_PEGAWAI
-JASA_LAINNYA
-```
+Sebelum menyatakan pekerjaan selesai, wajib melakukan **Documentation Impact Review** sesuai `docs/DOCUMENTATION_MAINTENANCE.md`.
 
-SiPLah adalah karakteristik/metode/sumber proses pembelian atau pembayaran.
+Behavior change tanpa audit dokumentasi dianggap belum selesai.
 
-Prefer existing canonical concept:
+Jangan mengklaim test, CI, browser/runtime, atau real-data verification tanpa evidence aktual.
 
-```text
-payment_method = siplah
-```
-
-Kategori dokumen tetap mengikuti sifat belanja.
-
-## 3. Audit before migration
-
-Sebelum membuat field/migration baru untuk SiPLah:
-
-1. cari dukungan existing;
-2. cek model dan migration;
-3. cek ownership source vs operator;
-4. cek transaction detail form;
-5. cek package SPJ;
-6. cek template/document generator;
-7. cek tests existing.
-
-Jangan menambah field yang menduplikasi makna field existing.
-
-Contoh field yang wajib dicek terlebih dahulu:
-
-```text
-payment_method
-payment_reference
-vendor_name
-vendor_owner
-vendor_npwp
-order_number
-order_date
-bap_number
-bap_date
-bast_number
-bast_date
-receipt_recipient_name
-recipient_name
-no_bukti
-```
-
-## 4. Source data ownership
+## 3. Source data ownership
 
 ARKAS/BKU adalah sumber data readonly.
 
@@ -96,38 +54,71 @@ AI tidak boleh membuat perubahan yang menyebabkan sinkronisasi:
 
 `manual_description` tidak digunakan dan tidak boleh dihidupkan kembali.
 
+Boundary tenant canonical:
+
+```text
+School + Fiscal Year + Fund Source
+```
+
+## 4. Kategori dan SiPlah
+
+Kategori SPJ canonical:
+
+```text
+BARANG
+KONSUMSI
+PEMELIHARAAN
+SPPD
+HONOR_PEGAWAI
+JASA_LAINNYA
+```
+
+SiPlah bukan kategori SPJ. Jangan menambah `spj_category = SIPLAH`.
+
+Perlakukan SiPlah sebagai karakteristik/channel proses pembelian sesuai kontrak aktif di dokumentasi project.
+
+Sebelum menambah field/migration baru, audit model, migration, ownership source/operator, transaction detail, package SPJ, generator/template, dan tests existing. Jangan membuat field yang menduplikasi makna field canonical.
+
 ## 5. SPJ lifecycle invariants
 
-Jangan mengubah invariants berikut tanpa instruksi eksplisit user:
+Jangan mengubah kontrak lifecycle tanpa instruksi user dan update domain docs.
+
+Kontrak penting saat ini:
 
 - preview/download tidak boleh membuat nomor secara diam-diam;
 - numbering dilakukan setelah data siap;
-- nomor ditentukan oleh domain jenis dokumen dan urutan tanggal/peristiwa;
-- nomor tidak mengikuti urutan input transaksi;
-- dokumen NUMBERED/FINAL terkunci;
-- koreksi setelah numbering harus melalui cancel/revision/unlock lifecycle yang sah;
-- quarter numbering untuk READY adalah workflow utama;
-- sumber dana terkunci pada fiscal year aktif.
+- urutan numbering SPJ harus mengikuti source order canonical ARKAS/BKU, bukan urutan insert lokal;
+- `NUMBERED` terkunci untuk perubahan manual/package, kecuali koreksi `item_description` yang memang diizinkan oleh kontrak aktif;
+- `FINAL` tetap terkunci;
+- cancel individual mempertahankan nomor `CANCELLED` sebagai history permanen dan sequence tidak mundur;
+- rollback numbering adalah operasi berbeda: melepas active tail number untuk dipakai ulang;
+- cancel/rollback triwulan mengikuti dependency mundur pada scope tenant+tahun+sumber dana yang sama;
+- perubahan kategori, pembayaran, vendor/penerima, procurement, dan Isian Manual setelah numbering harus melalui rollback yang sah;
+- quarter numbering untuk READY adalah workflow utama.
 
-## 6. Existing SPJ architecture
-
-Pertahankan boundary use case:
+Sebelum mengubah numbering/cancel/rollback, baca:
 
 ```text
-SpjWorkspaceUseCase
-SpjPackageUseCase
-SpjNumberingUseCase
-SpjDocumentUseCase
-SpjReportUseCase
+docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
+docs/SPJ_DESIGN_DECISIONS.md
 ```
 
-Jangan mengembalikan domain logic besar ke `SpjController`.
+## 6. Architecture discipline
+
+Pertahankan domain logic di use case/service layer. Jangan mengembalikan orchestration besar ke controller.
+
+Sebelum refactor architecture, cek `docs/ARCHITECTURE_COMPLETE.md` dan sibling use cases/services.
 
 Untuk perubahan frontend, jangan mengubah backend lifecycle hanya demi mempermudah UI.
 
 ## 7. GUI rules
 
-Ikuti `docs/GUI_STANDARDIZATION.md`.
+Sebelum mengubah Blade, layout, theme, component, atau frontend interaction, baca:
+
+```text
+docs/GUI_STANDARDIZATION.md
+docs/CSS_USAGE_GUIDE.md
+```
 
 Gunakan primitive existing bila sesuai:
 
@@ -144,19 +135,15 @@ x-ui.toolbar
 x-page-header
 ```
 
-Jangan membangun design system baru.
+Jangan membangun design system baru bila primitive canonical sudah tersedia.
 
-Gunakan semantic tokens `--ui-*` dan theme tokens existing.
-
-Success/warning/danger harus tetap memiliki makna semantik.
-
-Phase 4 compatibility CSS boleh dipertahankan jika area legacy masih memerlukannya. Jangan menghapus selector hanya untuk mengurangi line count.
+Gunakan semantic tokens `--ui-*`, `--theme-*`, atau token canonical lain yang sudah ada.
 
 ## 8. Testing strategy
 
 Gunakan focused verification untuk perubahan terarah.
 
-Default minimum frontend/backend checkpoint:
+Minimum checkpoint yang relevan dapat meliputi:
 
 ```text
 npm run theme:qa
@@ -170,9 +157,7 @@ Jangan menjalankan full suite pada setiap perubahan kecil kecuali perubahan mema
 
 Jangan mengklaim full suite hijau tanpa menjalankannya.
 
-Known caveat:
-
-`CriticalDocumentWorkflowTest` pernah gagal karena mismatch pesan `Duplikasi invoice` vs `Keunikan invoice`. Perlakukan sebagai unrelated known issue sampai diperbaiki/dites ulang.
+Jika perubahan PHP dilakukan, ikuti aturan Pint di `AGENTS.md`.
 
 ## 9. Browser/runtime claims
 
@@ -180,15 +165,7 @@ Jangan mengklaim browser/runtime PASS tanpa bukti aktual.
 
 Jika kondisi tidak tersedia pada dataset, laporkan `RVR`, bukan PASS.
 
-Computed contrast yang tidak bisa diukur tetap `RVR`.
-
-Mobile visual QA masih TODO sesuai:
-
-```text
-docs/MOBILE_VISUAL_QA_TODO.md
-```
-
-Jangan menyebut aplikasi mobile-verified/mobile-complete sampai TODO tersebut ditutup.
+Mobile visual QA tetap mengikuti status di dokumentasi aktif; jangan menyebut mobile-complete kecuali evidence dan TODO terkait sudah benar-benar ditutup.
 
 ## 10. Protected local working files
 
@@ -207,56 +184,40 @@ spj-bosp-web.code-workspace
 
 ## 11. Change scope discipline
 
-Untuk file Blade besar seperti:
+Untuk file besar seperti `resources/views/spj/index.blade.php`, hindari full-file rewrite bila patch lokal lebih aman.
 
-```text
-resources/views/spj/index.blade.php
-```
-
-hindari full-file rewrite jika patch lokal yang sempit lebih aman.
-
-Jangan melakukan formatting seluruh file bila scope hanya satu panel/control.
+Jangan formatting seluruh file bila scope hanya satu panel/control.
 
 Selalu audit diff sebelum commit.
 
-## 12. SiPLah MVP scope
+## 12. Required documentation by area
 
-Target awal:
+Gunakan matriks di `docs/DOCUMENTATION_MAINTENANCE.md`.
 
-- kenali transaksi SiPLah;
-- gunakan field existing sebanyak mungkin;
-- tampilkan data SiPLah relevan pada transaction/SPJ workspace;
-- pertahankan kategori SPJ normal;
-- bawa data yang diperlukan ke dokumen;
-- safe sync tetap aman;
-- focused tests lulus.
+Contoh:
 
-Out of scope awal:
+- business rule → `docs/SPJ_DESIGN_DECISIONS.md`;
+- architecture/ownership/boundary → `docs/ARCHITECTURE_COMPLETE.md`;
+- user/operator flow → `docs/USER_SCENARIOS.md`;
+- sync/reconciliation → `docs/SYNCHRONIZATION.md`;
+- numbering/cancel/rollback → `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`;
+- GUI/theme/icon → GUI/CSS/icon docs;
+- status/evidence → `docs/CURRENT_PROGRESS.md`;
+- priority/milestone → `docs/DEVELOPMENT_ROADMAP.md`;
+- docs baru/status docs berubah → `docs/README.md`.
 
-- API SiPLah eksternal;
-- scraping marketplace;
-- SSO SiPLah;
-- kategori SPJ baru;
-- redesign numbering;
-- redesign document lifecycle;
-- refactor UI besar bersamaan dengan implementasi SiPLah.
+## 13. Finalization gate untuk agent
 
-## 13. Required docs before SiPLah work
-
-Baca:
+Sebelum agent mengatakan "selesai", "ready", "fixed", atau setara:
 
 ```text
-AGENTS.md
-.ai/rules/index.md
-docs/README.md
-docs/SIPLAH_MVP_PLAN.md
-docs/CURRENT_PROGRESS.md
-docs/SPJ_DESIGN_DECISIONS.md
-docs/GUI_STANDARDIZATION.md
+[ ] diff diperiksa
+[ ] test/verification sesuai scope dijalankan atau limitation dicatat
+[ ] documentation impact diperiksa
+[ ] docs terdampak sudah diupdate
+[ ] docs usang/kontradiktif sudah ditangani
+[ ] tidak ada klaim PASS tanpa evidence
+[ ] status/prioritas tidak di-hard-code di agent instruction
 ```
 
-## 14. Next action
-
-Jika user meminta lanjut fitur SiPLah:
-
-> Audit dulu dukungan SiPLah existing pada branch aktif. Jangan langsung membuat migration atau field baru. Buat peta existing support + gap minimum, lalu implementasikan hanya setelah scope jelas.
+Jika salah satu belum terpenuhi, pekerjaan belum final.
