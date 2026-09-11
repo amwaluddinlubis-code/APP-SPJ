@@ -12,6 +12,6 @@ class RkasBudgetUiTest extends TestCase
 
         $this->assertStringNotContainsString('<style>', $view);
         $this->assertStringNotContainsString('rkas-filter-grid', $view);
-        $this->assertStringContainsString('class="ui-filter-grid lg:!grid-cols-7"', $view);
+        $this->assertStringContainsString('class="ui-filter-grid lg:!grid-cols-4"', $view);
     }
 }

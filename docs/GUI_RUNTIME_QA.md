@@ -111,6 +111,7 @@ Detail Transaksi
 /spj?tab=paket
 /spj/penomoran
 /spj/penomoran/koreksi
+/penganggaran-rkas (scope tahun + triwulan/semester, filter lanjutan, tabel rincian)
 ```
 
 Khusus Paket SPJ:

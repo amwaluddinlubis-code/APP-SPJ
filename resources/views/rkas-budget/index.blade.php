@@ -5,10 +5,6 @@
         <x-page-header title="Penganggaran RKAS"
             subtitle="Pantau pagu RKAS dan realisasi BKU pada konteks tahun serta sumber dana aktif."
             kicker="Anggaran & Realisasi">
-            <x-slot:breadcrumb>
-                <x-breadcrumb :items="[['label' => 'Penganggaran RKAS']]" />
-            </x-slot:breadcrumb>
-
             <x-slot:actions>
                 <form method="POST" action="{{ route('arkas.sync') }}"
                     data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Lanjutkan?">
@@ -24,43 +20,21 @@
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                 <x-stat-item label="Total Anggaran" :value="$rupiah($budget)" hint="RKAS tersinkron"
-                    value-class="text-indigo-700" icon="budget" icon-class="text-indigo-600" />
+                    value-class="text-[var(--theme-content-accent)]" icon="budget" icon-class="text-[var(--theme-content-accent)]" />
                 <x-stat-item label="Realisasi BKU" :value="$rupiah($spent)" hint="Belanja tercatat"
                     value-class="text-emerald-700" icon="transaction" icon-class="text-emerald-600" />
-                <x-stat-item label="Sisa Anggaran" :value="$rupiah($remaining)" hint="Sisa item yang belum dibukukan"
-                    value-class="text-slate-800" icon="balance" icon-class="text-amber-600" />
+                <x-stat-item label="Sisa Anggaran" :value="$rupiah($remaining)" :hint="'Belum dibukukan '.$rupiah($underBudget).' · Kelebihan '.$rupiah($overBudget)"
+                    icon="balance" icon-class="text-amber-600" />
                 <x-stat-item label="Kegiatan RKAS" :value="number_format($activityCount, 0, ',', '.')" hint="Kegiatan tersinkron"
-                    value-class="text-slate-800" icon="work" icon-class="text-sky-600" />
+                    icon="work" icon-class="text-[var(--theme-content-accent)]" />
             </div>
         </x-page-header>
 
-        <section
-            class="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
-            <span class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white">
-                <x-ui-icon name="budget" class="h-4 w-4" />
-                <span>SISA TERSEDIA</span>
-            </span>
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">Belum dibukukan</p>
-                <p class="text-xl font-bold text-sky-900">{{ $rupiah($underBudget) }}</p>
-            </div>
-            <div class="flex gap-6 text-sm sm:ml-auto">
-                <div>
-                    <p class="text-slate-500">Sisa belum dibukukan</p>
-                    <strong class="text-emerald-700">{{ $rupiah($underBudget) }}</strong>
-                </div>
-                <div>
-                    <p class="text-slate-500">Kelebihan realisasi</p>
-                    <strong class="text-rose-600">{{ $rupiah($overBudget) }}</strong>
-                </div>
-            </div>
-        </section>
-
         <section class="ui-filter-panel" x-data="{ scope: @js($scope) }">
-            <form method="GET" class="ui-filter-grid lg:!grid-cols-7">
+            <form method="GET" class="ui-filter-grid lg:!grid-cols-4">
                 <div>
                     <label class="ui-filter-label" for="rkas-scope">Tampilan periode</label>
-                    <x-ui.select id="rkas-scope" name="scope" x-model="scope">
+                    <x-ui.select id="rkas-scope" name="scope" x-model="scope" x-on:change="$el.form.submit()">
                         <option value="year">Tahun anggaran</option>
                         <option value="month">Bulan</option>
                         <option value="quarter">Triwulan</option>
@@ -69,7 +43,7 @@
                 </div>
                 <div x-show="scope !== 'year'" x-cloak>
                     <label class="ui-filter-label" for="rkas-scope-value">Periode</label>
-                    <x-ui.select id="rkas-scope-value" name="scope_value">
+                    <x-ui.select id="rkas-scope-value" name="scope_value" x-on:change="$el.form.submit()">
                         <option value="">Pilih periode</option>
                         <optgroup label="Bulan" x-show="scope === 'month'">
                             @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $month)
@@ -96,6 +70,9 @@
                     <x-ui.input id="rkas-search-filter" name="q" :value="$search"
                         placeholder="Kode rekening atau uraian" />
                 </div>
+                <details class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 lg:col-span-4">
+                    <summary class="cursor-pointer text-sm font-bold text-[var(--ui-fg-strong)]">Filter lanjutan (Program / Subprogram / Kegiatan)</summary>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-3">
                 <div>
                     <label class="ui-filter-label" for="rkas-program-filter">Program</label>
                     <x-ui.select id="rkas-program-filter" name="program" x-on:change="$el.form.submit()">
@@ -120,7 +97,7 @@
                 </div>
                 <div>
                     <label class="ui-filter-label" for="rkas-activity-filter">Kegiatan</label>
-                    <x-ui.select id="rkas-activity-filter" name="activity">
+                    <x-ui.select id="rkas-activity-filter" name="activity" x-on:change="$el.form.submit()">
                         <option value="">Semua kegiatan</option>
                         @foreach ($activityOptions as $option)
                             <option value="{{ $option['activity'] }}" @selected($activityFilter === $option['activity'])>
@@ -128,6 +105,8 @@
                         @endforeach
                     </x-ui.select>
                 </div>
+                    </div>
+                </details>
                 <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <div class="flex items-end">
                     <x-ui.button type="submit" icon="filter">Tampilkan</x-ui.button>
@@ -140,9 +119,9 @@
             <x-section-card title="Rincian pembagian pagu seperti PDF RKAS" :description="'Perbandingan rincian ' . $periodLabel . ' berdasarkan periode RKAS yang tersaring.'" :padding="false">
                 @php($periodColumns = $scope === 'quarter' ? $periodMonths : [1, 2])
                 <div
-                    class="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 sm:mx-6">
+                    class="mx-4 mt-4 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 text-sm text-[var(--ui-fg-strong)] sm:mx-6">
                     <p class="font-semibold">Format mengikuti PDF RKAS</p>
-                    <p class="mt-1 text-xs leading-5 text-sky-800">Setiap baris menunjukkan satu item anggaran. Nilai
+                    <p class="mt-1 text-xs leading-5 text-[var(--ui-fg-muted)]">Setiap baris menunjukkan satu item anggaran. Nilai
                         periode berasal dari pembagian pagu ARKAS pada field TW, sehingga jumlah seluruh periode harus
                         sama dengan pagu tahunan.</p>
                 </div>
@@ -207,7 +186,7 @@
                                 @endforeach
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($periodMonths) + 2 }}"
+                                    <td colspan="{{ count($periodColumns) + 3 }}"
                                         class="px-5 py-10 text-center text-sm" style="color: var(--ui-fg-muted)">Belum
                                         ada rincian bulanan yang terpetakan untuk filter ini. Total triwulan tetap
                                         dihitung dari pembagian pagu ARKAS (TW).</td>
@@ -233,6 +212,7 @@
                     </a>
                 </x-slot:actions>
 
+                @if($scope !== 'year' || filled($search) || filled($programFilter) || filled($subprogramFilter) || filled($activityFilter))
                 <div class="mx-4 mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border px-3 py-2 text-xs"
                     style="border-color: var(--ui-line); background: var(--ui-surface-soft); color: var(--ui-fg-muted)">
                     <span class="font-bold uppercase tracking-wide" style="color: var(--ui-fg-strong)">Subtotal
@@ -244,6 +224,7 @@
                     <span>Selisih <strong
                             style="color: var(--ui-fg-strong)">{{ $rupiah($remaining) }}</strong></span>
                 </div>
+                @endif
 
                 <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)">
                     <table class="min-w-full divide-y text-sm" style="border-color: var(--ui-line)">
@@ -372,95 +353,6 @@
                     </table>
                 </div>
 
-                @if (false)
-                    <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                        <thead class="bg-[var(--ui-surface-soft)]">
-                            <tr>
-                                <th
-                                    class="px-5 py-3 text-center text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    No</th>
-                                <th
-                                    class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Tanggal RKAS</th>
-                                <th
-                                    class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Kode Rekening</th>
-                                <th
-                                    class="min-w-[260px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Uraian / Barang</th>
-                                <th
-                                    class="min-w-[220px] px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Kegiatan</th>
-                                <th
-                                    class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Volume</th>
-                                <th
-                                    class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Satuan</th>
-                                <th
-                                    class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Harga Satuan</th>
-                                <th
-                                    class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Anggaran Periode</th>
-                                <th
-                                    class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Realisasi</th>
-                                <th
-                                    class="px-5 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
-                                    Selisih</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)] text-sm">
-                            @forelse($items as $index => $item)
-                                <tr class="transition hover:bg-indigo-50/50">
-                                    <td class="px-5 py-4 text-center text-[13px] font-semibold text-slate-400">
-                                        {{ $items->firstItem() + $index }}</td>
-                                    <td class="whitespace-nowrap px-4 py-4 text-[13px] font-semibold text-slate-700">
-                                        {{ $item->source_created_at ? \Illuminate\Support\Carbon::parse($item->source_created_at)->translatedFormat('d M Y') : '—' }}
-                                    </td>
-                                    <td class="px-4 py-4"><span
-                                            class="font-mono text-[13px] font-bold text-indigo-700">{{ $item->account_code ?: '—' }}</span>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <p class="line-clamp-2 text-sm font-semibold text-slate-800">
-                                            {{ $item->description ?: 'Tanpa uraian' }}</p>
-                                        <p class="mt-1 font-mono text-[13px] text-slate-400">
-                                            {{ $item->source_rapbs_id }}</p>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <p class="font-mono text-[13px] font-semibold text-sky-700">
-                                            {{ $item->activity_code ?: '—' }}</p>
-                                        <p class="mt-1 line-clamp-2 text-[13px] text-slate-500">
-                                            {{ $item->activity_name ?: 'Kegiatan belum diisi' }}</p>
-                                    </td>
-                                    <td class="whitespace-nowrap px-4 py-4 text-right text-sm">
-                                        {{ rtrim(rtrim(number_format($item->volume, 2, ',', '.'), '0'), ',') }}</td>
-                                    <td class="px-4 py-4 text-sm text-slate-500">{{ $item->unit }}</td>
-                                    <td class="whitespace-nowrap px-4 py-4 text-right text-sm">
-                                        {{ $rupiah($item->unit_price) }}</td>
-                                    <td
-                                        class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold text-indigo-700">
-                                        {{ $rupiah($item->display_amount) }}</td>
-                                    <td
-                                        class="whitespace-nowrap px-4 py-4 text-right text-sm font-medium text-emerald-700">
-                                        {{ $rupiah($item->realization) }}</td>
-                                    <td
-                                        class="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold {{ $item->variance < 0 ? 'text-rose-600' : 'text-slate-700' }}">
-                                        {{ $item->variance < 0 ? '- ' : '' }}{{ $rupiah(abs($item->variance)) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="11" class="px-5 py-14 text-center">
-                                        <p class="text-sm font-semibold text-slate-700">Belum ada RKAS.</p>
-                                        <p class="mt-1 text-base text-slate-500">Jalankan sinkronisasi atau ubah kata
-                                            kunci pencarian.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                @endif
 
                 <x-ui.server-pagination :paginator="$items" noun="data" compact />
             </x-section-card>
