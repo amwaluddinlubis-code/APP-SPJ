@@ -48,70 +48,70 @@
     <aside id="app-sidebar" :aria-hidden="(!open).toString()" :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed' : '']" class="app-sidebar fixed lg:static inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:w-auto lg:translate-x-0">
         <div class="mb-8 flex items-center justify-between gap-2">
             <a href="{{ route('dashboard') }}" class="app-sidebar-brand flex min-w-0 items-center gap-3 text-lg font-bold"><span class="app-sidebar-brand-mark grid h-10 w-10 shrink-0 place-items-center">SPJ</span><span x-show="!collapsed || open" x-transition.opacity class="truncate">SPJ BOSP Web</span></a>
-            <button type="button" @click="open=false" class="app-sidebar-close inline-flex p-2 lg:hidden" aria-label="Tutup navigasi">×</button>
+            <button type="button" @click="open=false" class="app-sidebar-close inline-flex p-2 lg:hidden" aria-label="Tutup navigasi"><x-ui.icon name="x" size="sm" /></button>
             <button type="button" @click="toggleSidebar()" :aria-expanded="(!collapsed).toString()" class="app-sidebar-toggle hidden p-2 lg:inline-flex" :aria-label="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'" :title="collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"><span x-text="collapsed ? '»' : '«'" class="text-xl leading-none"></span></button>
         </div>
         <nav class="space-y-1 text-base" aria-label="Navigasi utama">
-            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui-icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
-            <a class="app-nav {{ request()->routeIs('asisten.*') ? 'app-nav-active' : '' }}" href="{{ route('asisten.index') }}" title="Asisten Operator"><x-ui-icon name="info" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Asisten</span></a>
+            <a class="app-nav {{ request()->routeIs('dashboard') ? 'app-nav-active' : '' }}" href="{{ route('dashboard') }}" title="Dashboard"><x-ui.icon name="dashboard" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Dashboard</span></a>
+            <a class="app-nav {{ request()->routeIs('asisten.*') ? 'app-nav-active' : '' }}" href="{{ route('asisten.index') }}" title="Asisten Operator"><x-ui.icon name="info" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Asisten</span></a>
 
             <div class="pt-3">
-                <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}" title="Keuangan"><x-ui-icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.finance ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()" aria-controls="nav-finance" class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}" title="Keuangan"><x-ui.icon name="transaction" /><span x-show="!collapsed || open" class="nav-label flex-1">Keuangan</span><x-ui.icon x-show="!collapsed || open" name="chevron-down" size="xs" class="transition-transform" ::class="groups.finance ? 'rotate-180' : ''" /></button>
                 <div id="nav-finance" x-show="(!collapsed || open) && groups.finance" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                    <a class="app-nav {{ request()->routeIs('rkas-budget.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-budget.index') }}"><x-ui-icon name="budget" /><span class="nav-label">Penganggaran RKAS</span></a>
-                    <a class="app-nav {{ request()->routeIs('rkas-planning.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-planning.index') }}"><x-ui-icon name="report" /><span class="nav-label">Saran Perencanaan</span></a>
-                    <a class="app-nav {{ request()->routeIs('transactions.*') ? 'app-nav-active' : '' }}" href="{{ route('transactions.index') }}"><x-ui-icon name="transaction" /><span class="nav-label">Transaksi</span></a>
-                    <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}" href="{{ route('employees.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Pegawai</span></a>
-                    <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}" href="{{ route('students.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Siswa</span></a>
-                    <a class="app-nav {{ request()->routeIs('taxes.*') ? 'app-nav-active' : '' }}" href="{{ route('taxes.index') }}"><x-ui-icon name="tax" /><span class="nav-label">Pajak Sinkronisasi</span></a>
+                    <a class="app-nav {{ request()->routeIs('rkas-budget.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-budget.index') }}"><x-ui.icon name="budget" /><span class="nav-label">Penganggaran RKAS</span></a>
+                    <a class="app-nav {{ request()->routeIs('rkas-planning.*') ? 'app-nav-active' : '' }}" href="{{ route('rkas-planning.index') }}"><x-ui.icon name="report" /><span class="nav-label">Saran Perencanaan</span></a>
+                    <a class="app-nav {{ request()->routeIs('transactions.*') ? 'app-nav-active' : '' }}" href="{{ route('transactions.index') }}"><x-ui.icon name="transaction" /><span class="nav-label">Transaksi</span></a>
+                    <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}" href="{{ route('employees.index') }}"><x-ui.icon name="employee" /><span class="nav-label">Pegawai</span></a>
+                    <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}" href="{{ route('students.index') }}"><x-ui.icon name="employee" /><span class="nav-label">Siswa</span></a>
+                    <a class="app-nav {{ request()->routeIs('taxes.*') ? 'app-nav-active' : '' }}" href="{{ route('taxes.index') }}"><x-ui.icon name="tax" /><span class="nav-label">Pajak Sinkronisasi</span></a>
                 </div>
             </div>
 
             <div>
-                <button type="button" @click="toggleGroup('documents')" :aria-expanded="groups.documents.toString()" aria-controls="nav-documents" class="app-nav w-full text-left {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'app-nav-section-active' : '' }}" title="Dokumen & Laporan"><x-ui-icon name="document" /><span x-show="!collapsed || open" class="nav-label flex-1">Dokumen & Laporan</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.documents ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('documents')" :aria-expanded="groups.documents.toString()" aria-controls="nav-documents" class="app-nav w-full text-left {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'app-nav-section-active' : '' }}" title="Dokumen & Laporan"><x-ui.icon name="document" /><span x-show="!collapsed || open" class="nav-label flex-1">Dokumen & Laporan</span><x-ui.icon x-show="!collapsed || open" name="chevron-down" size="xs" class="transition-transform" ::class="groups.documents ? 'rotate-180' : ''" /></button>
                 <div id="nav-documents" x-show="(!collapsed || open) && groups.documents" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                    <a class="app-nav {{ request()->routeIs('spj.*') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index') }}"><x-ui-icon name="document" /><span class="nav-label">Ruang Kerja SPJ</span></a>
-                    <a class="app-nav {{ request()->routeIs('reconciliation.*') ? 'app-nav-active' : '' }}" href="{{ route('reconciliation.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Rekonsiliasi</span></a>
-                    <a class="app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}" href="{{ route('spj.numbering-workflow') }}"><span class="app-nav-icon">№</span><span class="nav-label">Penomoran SPJ</span></a>
-                    <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui-icon name="report" /><span class="nav-label">Laporan SPJ</span></a>
-                    <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}" href="{{ route('audit-reports.index') }}"><x-ui-icon name="audit" /><span class="nav-label">Laporan Audit</span></a>
-                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('document-templates.*') ? 'app-nav-active' : '' }}" href="{{ route('document-templates.index') }}"><x-ui-icon name="document" /><span class="nav-label">Template Dokumen</span></a>@endif
-                    @if(auth()->user()->isOperatorOrAdministrator())<a class="app-nav {{ request()->routeIs('document-number-formats.*') ? 'app-nav-active' : '' }}" href="{{ route('document-number-formats.index') }}"><span class="app-nav-icon">№</span><span class="nav-label">Format Penomoran</span></a>@endif
+                    <a class="app-nav {{ request()->routeIs('spj.*') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index') }}"><x-ui.icon name="document" /><span class="nav-label">Ruang Kerja SPJ</span></a>
+                    <a class="app-nav {{ request()->routeIs('reconciliation.*') ? 'app-nav-active' : '' }}" href="{{ route('reconciliation.index') }}"><x-ui.icon name="sync" /><span class="nav-label">Rekonsiliasi</span></a>
+                    <a class="app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}" href="{{ route('spj.numbering-workflow') }}"><x-ui.icon name="number" /><span class="nav-label">Penomoran SPJ</span></a>
+                    <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}" href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui.icon name="report" /><span class="nav-label">Laporan SPJ</span></a>
+                    <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}" href="{{ route('audit-reports.index') }}"><x-ui.icon name="audit" /><span class="nav-label">Laporan Audit</span></a>
+                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('document-templates.*') ? 'app-nav-active' : '' }}" href="{{ route('document-templates.index') }}"><x-ui.icon name="document" /><span class="nav-label">Template Dokumen</span></a>@endif
+                    @if(auth()->user()->isOperatorOrAdministrator())<a class="app-nav {{ request()->routeIs('document-number-formats.*') ? 'app-nav-active' : '' }}" href="{{ route('document-number-formats.index') }}"><x-ui.icon name="number" /><span class="nav-label">Format Penomoran</span></a>@endif
                 </div>
             </div>
 
             <div>
-                <button type="button" @click="toggleGroup('data')" :aria-expanded="groups.data.toString()" aria-controls="nav-data" class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}" title="Data & Sinkronisasi"><x-ui-icon name="database" /><span x-show="!collapsed || open" class="nav-label flex-1">Data & Sinkronisasi</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.data ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('data')" :aria-expanded="groups.data.toString()" aria-controls="nav-data" class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}" title="Data & Sinkronisasi"><x-ui.icon name="database" /><span x-show="!collapsed || open" class="nav-label flex-1">Data & Sinkronisasi</span><x-ui.icon x-show="!collapsed || open" name="chevron-down" size="xs" class="transition-transform" ::class="groups.data ? 'rotate-180' : ''" /></button>
                 <div id="nav-data" x-show="(!collapsed || open) && groups.data" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                    <a class="app-nav {{ request()->routeIs('synced-data.*') ? 'app-nav-active' : '' }}" href="{{ route('synced-data.index') }}"><x-ui-icon name="database" /><span class="nav-label">Data Hasil Sinkron</span></a>
-                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}" href="{{ route('dapodik.index') }}"><x-ui-icon name="sync" /><span class="nav-label">Integrasi Dapodik</span></a>@endif
-                    @if(auth()->user()->isOperatorOrAdministrator())<form method="post" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="app-nav w-full text-left"><x-ui-icon name="sync" /><span class="nav-label">Sinkron Semua ARKAS</span></button></form>@endif
-                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Integrasi ARKAS</span></a>@endif
-                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.importer') }}"><x-ui-icon name="database" /><span class="nav-label">Importer ARKAS</span></a>@endif
+                    <a class="app-nav {{ request()->routeIs('synced-data.*') ? 'app-nav-active' : '' }}" href="{{ route('synced-data.index') }}"><x-ui.icon name="database" /><span class="nav-label">Data Hasil Sinkron</span></a>
+                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}" href="{{ route('dapodik.index') }}"><x-ui.icon name="sync" /><span class="nav-label">Integrasi Dapodik</span></a>@endif
+                    @if(auth()->user()->isOperatorOrAdministrator())<form method="post" action="{{ route('arkas.sync') }}" data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">@csrf<input type="hidden" name="confirm_sync" value="1"><button class="app-nav w-full text-left"><x-ui.icon name="sync" /><span class="nav-label">Sinkron Semua ARKAS</span></button></form>@endif
+                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.settings') }}"><x-ui.icon name="settings" /><span class="nav-label">Integrasi ARKAS</span></a>@endif
+                    @if(auth()->user()->isAdministrator())<a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}" href="{{ route('arkas.importer') }}"><x-ui.icon name="database" /><span class="nav-label">Importer ARKAS</span></a>@endif
                 </div>
             </div>
 
             <div>
-                <button type="button" @click="toggleGroup('administration')" :aria-expanded="groups.administration.toString()" aria-controls="nav-administration" class="app-nav w-full text-left {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'app-nav-section-active' : '' }}" title="Administrasi"><x-ui-icon name="settings" /><span x-show="!collapsed || open" class="nav-label flex-1">Administrasi</span><span x-show="!collapsed || open" class="text-xs transition-transform" :class="groups.administration ? 'rotate-180' : ''">⌄</span></button>
+                <button type="button" @click="toggleGroup('administration')" :aria-expanded="groups.administration.toString()" aria-controls="nav-administration" class="app-nav w-full text-left {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'app-nav-section-active' : '' }}" title="Administrasi"><x-ui.icon name="settings" /><span x-show="!collapsed || open" class="nav-label flex-1">Administrasi</span><x-ui.icon x-show="!collapsed || open" name="chevron-down" size="xs" class="transition-transform" ::class="groups.administration ? 'rotate-180' : ''" /></button>
                 <div id="nav-administration" x-show="(!collapsed || open) && groups.administration" x-collapse class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                    <a class="app-nav {{ request()->routeIs('years.*') ? 'app-nav-active' : '' }}" href="{{ route('years.select') }}"><x-ui-icon name="calendar" /><span class="nav-label">Tahun Anggaran</span></a>
-                    <a class="app-nav {{ request()->routeIs('schools.select') ? 'app-nav-active' : '' }}" href="{{ route('schools.select') }}"><x-ui-icon name="home" /><span class="nav-label">Ganti Sekolah</span></a>
+                    <a class="app-nav {{ request()->routeIs('years.*') ? 'app-nav-active' : '' }}" href="{{ route('years.select') }}"><x-ui.icon name="calendar" /><span class="nav-label">Tahun Anggaran</span></a>
+                    <a class="app-nav {{ request()->routeIs('schools.select') ? 'app-nav-active' : '' }}" href="{{ route('schools.select') }}"><x-ui.icon name="home" /><span class="nav-label">Ganti Sekolah</span></a>
                     @if(auth()->user()->isAdministrator())
-                        <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*') ? 'app-nav-active' : '' }}" href="{{ route('schools.settings') }}"><x-ui-icon name="settings" /><span class="nav-label">Profil Sekolah</span></a>
-                        <a class="app-nav {{ request()->routeIs('users.*') ? 'app-nav-active' : '' }}" href="{{ route('users.index') }}"><x-ui-icon name="employee" /><span class="nav-label">Manajemen User</span></a>
-                        <a class="app-nav {{ request()->routeIs('school-backups.*') ? 'app-nav-active' : '' }}" href="{{ route('school-backups.index') }}"><x-ui-icon name="archive" /><span class="nav-label">Backup & Pemulihan</span></a>
-                        <a class="app-nav {{ request()->routeIs('database-manager.index') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.index') }}"><x-ui-icon name="server" /><span class="nav-label">Database Aktif</span></a>
-                        <a class="app-nav app-nav-danger {{ request()->routeIs('database-manager.reset-form') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.reset-form') }}"><span class="app-nav-icon">↺</span><span class="nav-label">Reset Database</span></a>
-                        <a class="app-nav {{ request()->routeIs('impersonation.*') ? 'app-nav-active' : '' }}" href="{{ route('impersonation.index') }}"><span class="app-nav-icon">◎</span><span class="nav-label">Uji Sebagai User</span></a>
+                        <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*') ? 'app-nav-active' : '' }}" href="{{ route('schools.settings') }}"><x-ui.icon name="settings" /><span class="nav-label">Profil Sekolah</span></a>
+                        <a class="app-nav {{ request()->routeIs('users.*') ? 'app-nav-active' : '' }}" href="{{ route('users.index') }}"><x-ui.icon name="employee" /><span class="nav-label">Manajemen User</span></a>
+                        <a class="app-nav {{ request()->routeIs('school-backups.*') ? 'app-nav-active' : '' }}" href="{{ route('school-backups.index') }}"><x-ui.icon name="archive" /><span class="nav-label">Backup & Pemulihan</span></a>
+                        <a class="app-nav {{ request()->routeIs('database-manager.index') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.index') }}"><x-ui.icon name="server" /><span class="nav-label">Database Aktif</span></a>
+                        <a class="app-nav app-nav-danger {{ request()->routeIs('database-manager.reset-form') ? 'app-nav-active' : '' }}" href="{{ route('database-manager.reset-form') }}"><x-ui.icon name="refresh" /><span class="nav-label">Reset Database</span></a>
+                        <a class="app-nav {{ request()->routeIs('impersonation.*') ? 'app-nav-active' : '' }}" href="{{ route('impersonation.index') }}"><x-ui.icon name="user" /><span class="nav-label">Uji Sebagai User</span></a>
                     @endif
                 </div>
             </div>
-            <form method="post" action="{{ route('logout') }}">@csrf<button class="app-nav app-nav-danger mt-6 w-full text-left" title="Keluar"><x-ui-icon name="logout" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Keluar</span></button></form>
+            <form method="post" action="{{ route('logout') }}">@csrf<button class="app-nav app-nav-danger mt-6 w-full text-left" title="Keluar"><x-ui.icon name="logout" /><span x-show="!collapsed || open" x-transition.opacity class="nav-label">Keluar</span></button></form>
         </nav>
     </aside>
     <main>
         <header class="app-topbar sticky top-0 z-30 flex min-h-18 flex-wrap items-center justify-between gap-3 px-5 py-4">
-            <button @click="open=!open" :aria-expanded="open.toString()" aria-controls="app-sidebar" class="app-topbar-menu p-2.5 lg:hidden" aria-label="Buka navigasi">☰</button>
+            <button @click="open=!open" :aria-expanded="open.toString()" aria-controls="app-sidebar" class="app-topbar-menu p-2.5 lg:hidden" aria-label="Buka navigasi"><x-ui.icon name="menu" size="sm" /></button>
             <div class="flex min-w-0 flex-wrap items-center gap-3">
                 <div class="app-topbar-school min-w-0">
                     <div class="app-topbar-title truncate text-lg font-extrabold leading-tight sm:text-xl">{{ session('active_school_id') ? \App\Models\School::find(session('active_school_id'))?->name : 'Belum memilih sekolah' }}</div>
@@ -131,10 +131,10 @@
                     <button type="button" @click="profileMenuOpen = !profileMenuOpen"
                         :aria-expanded="profileMenuOpen.toString()" aria-haspopup="menu" title="Profil User"
                         class="app-runtime-badge inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold">
-                        <x-ui-icon name="employee" class="h-4 w-4" />
+                        <x-ui.icon name="employee" size="sm" />
                         <span class="hidden sm:inline">Profil User</span>
                         <span class="hidden max-w-[10rem] truncate lg:inline">{{ auth()->user()->name }}</span>
-                        <span aria-hidden="true" class="text-[10px]">⌄</span>
+                        <x-ui.icon name="chevron-down" size="xs" />
                     </button>
                     <div x-show="profileMenuOpen" x-cloak x-transition.origin.top.right role="menu"
                         class="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-xl">
@@ -149,7 +149,7 @@
                             @if(auth()->user()->isAdministrator())
                                 <a href="{{ route('users.index') }}" role="menuitem"
                                     class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]">
-                                    <x-ui-icon name="employee" class="h-4 w-4" />
+                                    <x-ui.icon name="employee" size="sm" />
                                     <span>Manajemen User</span>
                                 </a>
                             @endif
@@ -157,7 +157,7 @@
                                 @csrf
                                 <button type="submit" role="menuitem"
                                     class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50">
-                                    <x-ui-icon name="logout" class="h-4 w-4" />
+                                    <x-ui.icon name="logout" size="sm" />
                                     <span>Keluar</span>
                                 </button>
                             </form>
