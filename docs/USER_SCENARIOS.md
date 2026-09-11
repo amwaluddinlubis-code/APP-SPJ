@@ -1,43 +1,59 @@
 # SPJ BOSP Web — Skenario Pengguna & Alur Kerja
 
-Terakhir diperbarui: **2026-09-08**
+Terakhir diperbarui: **2026-09-11**
 
-Dokumen ini menjelaskan alur dari perspektif operator sekolah. Baca bersama `SPJ_DESIGN_DECISIONS.md`, `CURRENT_PROGRESS.md`, dan `GUI_STANDARDIZATION.md`.
+Dokumen ini menjelaskan alur aplikasi dari perspektif pengguna, terutama operator sekolah. Dokumen ini bukan sumber status release. Gunakan:
+
+- `SPJ_DESIGN_DECISIONS.md` untuk kontrak bisnis/domain permanen;
+- `CURRENT_PROGRESS.md` untuk status/evidence terbaru;
+- `DEVELOPMENT_ROADMAP.md` untuk prioritas pekerjaan;
+- `GUI_STANDARDIZATION.md` untuk detail visual/layout.
+
+Jika contoh UX di dokumen ini bertentangan dengan kontrak domain permanen, kontrak domain yang berlaku.
+
+---
 
 ## 1. Prinsip pengalaman pengguna
 
 Operator harus selalu tahu:
 
-1. sekolah/tahun/sumber dana aktif;
-2. transaksi mana yang perlu dilengkapi;
-3. mana data ARKAS/BKU dan mana data operator;
-4. apa yang masih blocking;
-5. dokumen apa yang tersedia;
-6. apakah Paket masih editable;
-7. langkah berikutnya.
+1. sekolah, tahun anggaran, dan sumber dana aktif;
+2. transaksi mana yang perlu perhatian atau dilengkapi;
+3. mana data readonly dari ARKAS/BKU dan mana data overlay operator;
+4. workspace mana yang menjadi pemilik setiap field;
+5. apa yang masih blocking;
+6. dokumen apa yang tersedia;
+7. apakah Paket masih editable atau sudah terkunci;
+8. langkah berikutnya tanpa side effect tersembunyi.
 
 Prinsip UX canonical:
 
 ```text
-Detail Transaksi = fakta transaksi + koreksi item_description
-Paket SPJ        = pekerjaan dokumen pertanggungjawaban
+Detail Transaksi = fakta transaksi/source + koreksi item_description
+Paket SPJ        = workspace pekerjaan dokumen pertanggungjawaban
 ```
 
-Operator tidak boleh menemukan field SPJ yang sama editable di dua halaman.
+Field SPJ yang sama tidak boleh editable di dua workspace.
 
-## 2. Peran
+---
+
+## 2. Peran pengguna
 
 ### ADMIN
 
 Mengelola sekolah, database tenant, backup/restore/reset, user/role, konfigurasi, template, impersonation, dan aksi sensitif sesuai authorization.
 
+ADMIN juga dapat menjalankan pemeriksaan teknis/real-data yang memang disediakan sebagai read-only audit. Hak administrator tidak menghapus kewajiban tenant boundary dan lifecycle guard.
+
 ### OPERATOR
 
-Memeriksa transaksi, menyimpan `item_description`, membuat/membuka Paket, melengkapi data dokumen, dan menjalankan workflow yang diizinkan.
+Memeriksa transaksi, menyimpan `item_description`, membuat/membuka Paket, melengkapi overlay dokumen, menjalankan validation/numbering/finalization yang diizinkan, dan menindaklanjuti reconciliation.
 
 ### VIEWER
 
-Target read-only. Backend harus menolak mutation.
+Read-only. Backend harus menolak mutation walaupun UI atau request dimanipulasi.
+
+---
 
 ## 3. Alur utama operator
 
@@ -60,15 +76,62 @@ Login
 → FINAL / Arsip
 ```
 
-Preview/download tidak boleh menghasilkan nomor secara otomatis.
+Kontrak penting:
 
-## 4. Daftar Transaksi
+- preview/download tidak menerbitkan nomor;
+- source ARKAS/BKU tidak dimutasi agar Paket dapat lolos;
+- NUMBERED/FINAL tidak diedit melalui mutation normal;
+- jika source berubah/hilang, gunakan reconciliation dan lifecycle yang sah.
 
-Setiap row pada layout aktif memiliki satu tombol **Aksi**. Modal Aksi menyediakan pilihan navigasi yang relevan seperti Detail Transaksi dan Paket SPJ.
+---
+
+## 4. Jalur audit real-data sebelum mutation
+
+Untuk pemeriksaan data sekolah nyata, jalur canonical adalah audit read-only terlebih dahulu.
+
+Contoh:
+
+```text
+Pilih tenant target
+→ jalankan spj:audit-quarter
+→ review anomaly + candidate
+→ identifikasi blocker legitimate
+→ jangan ubah database asli
+→ bila perbaikan/mutation memang diperlukan, gunakan isolated copy
+```
+
+Audit read-only tidak boleh:
+
+- membuat tenant database yang hilang;
+- auto-migrate database target;
+- mengubah source transaction/item;
+- mengubah Paket/status;
+- menerbitkan numbering;
+- membuat vendor/penerima/SPPD/template fiktif untuk coverage.
+
+Audit adalah alat diagnosis, bukan jalur mutation otomatis.
+
+---
+
+## 5. Daftar Transaksi
+
+Setiap row pada layout aktif memiliki satu tombol **Aksi**. Modal Aksi menyediakan navigasi yang relevan seperti Detail Transaksi dan Paket SPJ.
 
 Tidak ada editor kategori/payment/vendor SPJ di tabel transaksi.
 
-## 5. Detail Transaksi
+Status workflow yang ditampilkan harus merefleksikan pekerjaan operator, bukan sekadar keberadaan item source:
+
+```text
+Perlu Perhatian   -> SOURCE_MISSING / requires_reconciliation
+Belum Dikerjakan  -> belum memiliki Paket SPJ
+Perlu Dilengkapi  -> Paket DRAFT
+Siap Dinomori     -> Paket READY
+Sudah Bernomor    -> Paket NUMBERED / FINAL
+```
+
+---
+
+## 6. Detail Transaksi
 
 Struktur canonical:
 
@@ -77,11 +140,11 @@ Header Transaksi
 → Informasi Referensi ARKAS/BKU + Total Pajak
 → Rincian Barang/Jasa
    → item_description editable
-   → quantity/unit/harga/nilai readonly
+   → description/quantity/unit/harga/nilai readonly
 → Status Paket SPJ
 ```
 
-Detail Transaksi tidak lagi menjadi tempat mengisi:
+Detail Transaksi tidak menjadi tempat mengisi:
 
 ```text
 Kategori SPJ
@@ -98,38 +161,48 @@ Penerima jasa lainnya
 
 ### Validasi sebelum Paket
 
-Semua `item_description` harus tersimpan. Perubahan yang baru diketik tetapi belum disimpan harus memblokir navigasi Paket.
+Semua `item_description` harus sudah tersimpan. Perubahan yang baru diketik tetapi belum disimpan tidak dianggap valid.
 
-Jika data database masih kosong, gateway backend mengarahkan kembali ke `#rincian-transaksi`.
+Jika item belum lengkap, gateway Paket harus mengarahkan operator kembali ke pemilik field tersebut, yaitu Detail Transaksi.
 
-## 6. Pajak
+---
 
-Detail Transaksi cukup menampilkan **Total Pajak** sebagai bagian dari Informasi Referensi ARKAS/BKU.
+## 7. Pajak
+
+Pajak adalah source transaksi.
+
+Detail Transaksi cukup menampilkan **Total Pajak** sebagai ringkasan referensi ARKAS/BKU.
 
 Pada Paket SPJ:
 
-- summary menampilkan **Pajak**;
+- summary menampilkan Pajak;
 - tab **Rincian Pajak** menampilkan PPN/PPh/SSPD lengkap secara readonly;
-- operator tidak dapat mengubah source tax dari Paket.
+- operator tidak dapat mengubah source tax dari Paket;
+- request forged yang mencoba menulis ulang pajak harus diabaikan/ditolak oleh backend.
 
-## 7. Membuka Paket SPJ
+---
+
+## 8. Membuka Paket SPJ
 
 ```text
 Belum ada package  → Siapkan Paket SPJ
 Sudah ada package  → Lihat Paket SPJ
 ```
 
-Keduanya melewati gateway:
+Gateway canonical:
 
 ```text
-validasi item_description tersimpan
-→ firstOrCreate DRAFT
-→ /spj?tab=paket&package_id=...
+validasi active context
+→ validasi item_description tersimpan
+→ firstOrCreate DRAFT bila belum ada
+→ buka workspace Paket
 ```
 
-Operator tidak diminta mengisi form SPJ pada saat menekan gateway.
+Operator tidak diminta mengisi data kategori/vendor pada saat menekan gateway.
 
-## 8. Navigasi Paket
+---
+
+## 9. Navigasi Paket
 
 Toolbar:
 
@@ -137,7 +210,11 @@ Toolbar:
 [ Semua Paket ] [ Paket Sebelumnya ] [ Paket Setelahnya ]        [ Lihat Transaksi ]
 ```
 
-Previous/next hanya bergerak pada sekolah, tahun anggaran, dan sumber dana aktif yang sama. Bila tidak ada Paket tujuan, user mendapat warning yang jelas.
+Previous/next hanya bergerak pada tenant context yang sama:
+
+```text
+School + Fiscal Year + Fund Source
+```
 
 Summary:
 
@@ -145,9 +222,9 @@ Summary:
 Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
 ```
 
-Nilai uang ditampilkan sebagai accounting, misalnya `1.250.000`, tanpa `Rp`/desimal.
+---
 
-## 9. Sub-tab Paket
+## 10. Sub-tab Paket
 
 ```text
 1. Rincian
@@ -158,11 +235,11 @@ Nilai uang ditampilkan sebagai accounting, misalnya `1.250.000`, tanpa `Rp`/desi
 
 ### Rincian
 
-Rincian transaksi readonly + Dokumen & Template.
+Menampilkan transaksi readonly dan Dokumen & Template.
 
 ### Isian Manual
 
-Satu-satunya workspace pengisian data dokumen selama Paket editable.
+Satu-satunya workspace mutation data dokumen selama Paket masih editable.
 
 ### Rincian Pajak
 
@@ -170,62 +247,82 @@ Readonly source tax.
 
 ### Penomoran
 
-Penerbitan nomor melalui flow sah. NUMBERED/FINAL tidak diedit normal.
+Penerbitan nomor melalui flow sah. Preview/download bukan shortcut numbering.
 
-## 10. Isian Manual — kategori dan nomor
+---
 
-Baris pertama desktop:
+## 11. Isian Manual — kategori dan konteks
+
+Kategori canonical:
 
 ```text
-Kategori SPJ 1/4 | Kontrol konteks 3/4
+BARANG
+KONSUMSI
+PEMELIHARAAN
+JASA_LAINNYA
+SPPD
+HONOR_PEGAWAI
 ```
+
+Perubahan kategori disimpan melalui backend authoritative. Jika Paket sudah READY dan kategori benar-benar berubah, Paket kembali ke DRAFT untuk revalidation.
 
 ### BARANG
 
+SiPLah dan Non-SiPLah adalah konteks procurement/payment, bukan kategori baru.
+
 ```text
-Kategori BARANG | ○ SiPLah  ○ Non SiPLah
+spj_category   = BARANG
+payment_method = siplah | non-siplah/tunai sesuai domain
 ```
 
-Radio hanya dapat memilih satu. Jika source memang SiPLah, Non SiPLah dapat dikunci.
+Jika source menandai SiPLah secara authoritative, UI tidak boleh membaliknya sembarangan.
 
 ### PEMELIHARAAN
 
-Selector transaksi pasangan bahan/upah berada sejajar dengan combo kategori.
+Selector pasangan transaksi bahan/upah boleh ditampilkan di Paket, tetapi relationship state tetap transaction/context-owned dan disimpan melalui jalur linkage khusus.
 
-Setelah baris kategori, nomor otomatis ditampilkan sebagai **informasi horizontal**, bukan input operator.
+Nomor otomatis ditampilkan sebagai informasi, bukan input operator.
 
-## 11. Data Umum Dokumen
+---
 
-Desktop:
+## 12. Data Umum Dokumen
 
-```text
-kiri  : Uraian pembayaran, textarea 5 baris
-kanan : Metode, Referensi, Penerima Utama, Penyedia, Pemilik, NPWP
-```
-
-Semua input umum selain textarea berada di kolom kanan.
-
-## 12. Tabel kategori non-BARANG
-
-Tabel dibuat compact. Filter, pilihan jumlah baris, dan pagination berada di bawah tabel dan hanya ada **satu pagination**.
-
-Semua tabel memakai istilah **Penerima Utama** untuk pihak utama/penanda tangan kuitansi. UI menggunakan radio karena hanya satu yang utama.
-
-Pattern field:
+Field umum operator dapat mencakup:
 
 ```text
-Tarif/Harga/Nilai → accounting 1.000
-Hari/Porsi/Kali   → integer
-Tanggal           → date
+payment_description
+payment_method
+payment_reference
+receipt_recipient_name
+vendor/rekanan
+vendor owner / NPWP
+invoice / metadata procurement yang memang operator-owned
 ```
 
-## 13. Kategori BARANG
+Source field tidak boleh diduplikasi menjadi input manual hanya demi kemudahan UI.
 
-Data BARANG hanya diedit di Paket SPJ. Operator melengkapi data vendor, invoice, tanggal/dokumen pengadaan yang memang manual.
+---
+
+## 13. Penerima Utama
+
+Untuk kategori yang memiliki banyak row penerima/pelaksana, istilah canonical adalah **Penerima Utama**.
+
+Aturan UX/domain:
+
+- hanya satu Penerima Utama;
+- UI memakai radio, bukan checkbox;
+- pilihan disinkronkan ke `receipt_recipient_name`;
+- identitas row tetap dipertahankan, bukan digabung hanya karena nama serupa.
+
+---
+
+## 14. Kategori BARANG
+
+Operator melengkapi data vendor, invoice, dan data pengadaan yang memang menjadi overlay.
 
 Rincian item dibaca readonly dari transaksi menggunakan `item_description` yang sudah tersimpan.
 
-Rule tanggal:
+Rule tanggal canonical:
 
 ```text
 Tanggal Pesanan <= Tanggal Transaksi
@@ -235,15 +332,41 @@ Tanggal BAP <= Tanggal BAST
 
 Nomor internal otomatis diterbitkan oleh numbering, bukan diketik pada Isian Manual.
 
-## 14. Kategori KONSUMSI
+---
 
-Operator mengisi acara, tempat/tanggal, jumlah peserta, dan daftar peserta/porsi.
+## 15. Kategori KONSUMSI
 
-Auto-fill peserta hanya mengambil Employee aktif dari Dapodik. Participant manual tetap diperbolehkan.
+Operator mengisi data acara dan participant roster sesuai kebutuhan dokumen.
 
-`participant_count` harus sama dengan total porsi. Porsi ditampilkan sebagai integer.
+Kontrak auto-fill:
 
-## 15. Kategori PEMELIHARAAN
+```text
+Auto-fill KONSUMSI = Employee yang berasal dari DAPODIK
+Participant manual = allowed
+```
+
+Walaupun employee master dapat menggabungkan provenance ARKAS + Dapodik, auto-fill KONSUMSI tidak otomatis diperluas ke semua employee.
+
+Identitas pegawai tidak boleh silent-merge hanya berdasarkan nama yang ambigu.
+
+---
+
+## 16. Unified employee identity dari perspektif pengguna
+
+Master pegawai dapat merepresentasikan satu orang yang ditemukan dari lebih dari satu source, misalnya ARKAS/PTK dan Dapodik.
+
+Prinsip yang harus terlihat pada behavior aplikasi:
+
+- identifier kuat seperti NUPTK/NIP digunakan sebelum fallback nama;
+- nama ter-normalisasi hanya boleh menjadi fallback bila kandidat unik;
+- jika nama ambigu, aplikasi tidak boleh menebak;
+- provenance source tetap dipertahankan;
+- row yang dikunci operator tidak boleh hilang karena sweep sync;
+- participant roster tidak boleh menyatukan dua orang berbeda hanya karena ejaan nama sama.
+
+---
+
+## 17. Kategori PEMELIHARAAN
 
 ```text
 1 transaksi
@@ -251,67 +374,163 @@ Auto-fill peserta hanya mengambil Employee aktif dari Dapodik. Participant manua
     └── banyak workers
 ```
 
-Operator mengisi data pekerjaan dan tabel pekerja di Paket. Hari integer, tarif accounting, dan satu Penerima Utama.
+Operator mengisi data pekerjaan dan pekerja di Paket.
 
-Jika bahan dan upah berasal dari transaksi berbeda, linkage disimpan melalui endpoint maintenance-link khusus dan tidak menimpa source BKU.
+Jika bahan dan upah berasal dari transaksi berbeda, linkage hanya menghubungkan context dokumen dan tidak menulis ulang source BKU.
 
-## 16. Kategori SPPD
+---
 
-Satu transaksi dapat memiliki banyak pelaksana perjalanan. Data pelaksana diisi di Paket SPJ dan tabel memakai satu Penerima Utama.
+## 18. Kategori SPPD
 
-## 17. Kategori HONOR_PEGAWAI
+Satu transaksi dapat memiliki banyak pelaksana perjalanan.
 
-Satu transaksi dapat memiliki banyak penerima honor. Bulan/kali integer dan tarif accounting. Total rincian harus mengikuti validasi gross aktif.
+Jika dataset nyata pada fiscal year tertentu tidak mempunyai SPPD, operator/developer tidak boleh membuat transaksi SPPD fiktif hanya untuk memenuhi coverage pengujian real-data.
 
-## 18. Kategori JASA_LAINNYA
+---
 
-Satu transaksi dapat memiliki banyak penerima jasa. Gross/tax/net tetap harus direkonsiliasi dengan source transaction.
+## 19. Kategori HONOR_PEGAWAI
 
-Output multi-penerima sampai dokumen/final masih termasuk release-hardening aktif.
+Satu transaksi dapat memiliki banyak penerima honor. Detail honor adalah overlay Paket SPJ dan harus tetap direkonsiliasi terhadap nilai source yang authoritative.
 
-## 19. SiPLah
+---
 
-SiPLah bukan kategori SPJ.
+## 20. Kategori JASA_LAINNYA
 
-UI eksplisit radio SiPLah/Non SiPLah saat ini berada pada kategori BARANG. Pemilihan tersebut menyinkronkan `payment_method` dan tidak membuat lifecycle/numbering baru.
+Satu transaksi dapat memiliki banyak penerima jasa tanpa memecah transaksi/Paket.
 
-Nomor order marketplace SiPLah berbeda dengan nomor Surat Pesanan internal aplikasi.
+Kontrak agregat:
 
-## 20. Penomoran dan lifecycle
+```text
+Σ gross penerima = transaction.gross_amount
+Σ tax penerima   = transaction.tax_total
+Σ net penerima   = transaction.net_amount
+```
 
-1. Data wajib Paket lengkap.
-2. Paket menjadi kandidat READY.
-3. User menjalankan numbering.
-4. Sistem menentukan nomor per jenis dokumen.
-5. Nomor aktif tidak ditimpa.
-6. NUMBERED/FINAL terkunci.
-7. Preview/download tidak mengalokasikan nomor.
+Jika source hanya memberi pajak/net agregat, alokasi per penerima boleh dilakukan sesuai policy aplikasi dengan rounding yang deterministic.
 
-## 21. Source berubah/hilang
+Core reconciliation multi-penerima sudah menjadi bagian dari behavior aplikasi; QA output dokumen multi-penerima tetap harus menjaga identitas dan nilai tiap penerima.
 
-Safe sync mempertahankan overlay operator. Source hilang ditandai, bukan menghapus manual/package/number. Source berubah pada pekerjaan yang sudah lanjut memakai reconciliation.
+---
 
-## 22. Validasi manusiawi
+## 21. SiPLah
 
-Pesan harus mengarahkan user ke workspace pemiliknya, misalnya:
+SiPLah adalah procurement/payment channel, bukan kategori SPJ dan bukan lifecycle terpisah.
+
+Contoh canonical:
+
+```text
+spj_category        = BARANG
+payment_method      = siplah
+siplah_order_number = nomor marketplace
+```
+
+Nomor marketplace SiPLah berbeda dari nomor Surat Pesanan internal aplikasi.
+
+Untuk BARANG SiPLah, requirement internal purchase order yang tidak applicable tidak boleh dipaksakan hanya karena workflow Non-SiPLah memilikinya.
+
+Metadata SiPLah yang belum tersedia tidak boleh menghasilkan blocker READY tanpa dasar aturan bisnis yang eksplisit.
+
+---
+
+## 22. Penomoran dan lifecycle
+
+Flow umum:
+
+```text
+DRAFT
+→ lengkapi + validasi
+→ READY
+→ numbering
+→ NUMBERED
+→ finalisasi
+→ FINAL
+```
+
+Aturan:
+
+1. numbering idempotent;
+2. nomor aktif tidak boleh ganda;
+3. nomor mengikuti chronology/domain dokumen;
+4. preview/download tidak mengalokasikan nomor;
+5. NUMBERED/FINAL terkunci dari mutation normal;
+6. cancel/reissue/reopen harus eksplisit dan audited;
+7. perubahan kategori READY yang benar-benar berubah mengembalikan Paket ke DRAFT.
+
+---
+
+## 23. Source berubah/hilang
+
+Safe sync mempertahankan overlay operator.
+
+```text
+source hilang  -> SOURCE_MISSING / perlu perhatian
+source berubah -> reconciliation bila diperlukan
+source kembali -> gunakan identity transaction/package yang sama
+```
+
+Source change tidak boleh diam-diam menulis ulang Paket NUMBERED/FINAL.
+
+---
+
+## 24. Template dan dokumen
+
+Operator/admin dapat memakai template DOCX/XLSX sesuai document type.
+
+Kontrak UX/operasional:
+
+- upload invalid tidak mengganti template aktif;
+- replacement baru dianggap aktif setelah storage/database replacement berhasil;
+- preview/generate/download membaca template dari storage canonical yang sama;
+- output yang lolos regression parser belum otomatis berarti visual/print fidelity sudah verified.
+
+Official-template visual QA dan hasil cetak tetap dibedakan dari functional generator PASS.
+
+---
+
+## 25. Validasi manusiawi
+
+Pesan validasi harus mengarahkan user ke workspace pemilik masalah, misalnya:
 
 - `Simpan seluruh Uraian Barang/Jasa terlebih dahulu.` → Detail Transaksi.
 - `Penerima Utama belum dipilih.` → Paket SPJ.
 - `Tanggal Pesanan tidak boleh setelah Tanggal Transaksi.` → Paket SPJ.
-- `Tanggal BAP tidak boleh sebelum Tanggal Pesanan.` → Paket SPJ.
-- `Tanggal BAST tidak boleh sebelum Tanggal BAP.` → Paket SPJ.
 - `Jumlah peserta harus sama dengan total porsi.` → Paket SPJ.
+- reconciliation source → arahkan ke review/reconciliation, bukan menyuruh operator mengubah source.
 
-## 23. Checklist sebelum fitur baru
+Pesan tidak boleh menyarankan operator mengarang data yang tidak tersedia.
 
-1. Source atau operator data?
-2. Pemilik field Detail Transaksi atau Paket?
+---
+
+## 26. Checklist sebelum menambah fitur atau field
+
+1. Apakah ini source atau operator overlay?
+2. Siapa pemilik field: Detail Transaksi atau Paket?
 3. Apakah field sudah editable di tempat lain?
-4. Role mana?
-5. Apakah NUMBERED/FINAL terdampak?
-6. Perlu audit?
-7. Sudah scoped school/year/fund source?
-8. Berpengaruh ke numbering?
-9. Dapat merusak safe sync?
-10. Theme/mobile tetap aman?
-11. Validation backend authoritative?
+4. Apakah perubahan scoped ke `School + Fiscal Year + Fund Source`?
+5. Role mana yang boleh membaca/mengubah?
+6. Apakah NUMBERED/FINAL terdampak?
+7. Apakah mutation harus audited?
+8. Apakah perubahan memengaruhi numbering?
+9. Apakah perubahan berisiko menimpa safe-sync overlay?
+10. Apakah identity pegawai dapat menjadi ambigu?
+11. Apakah SiPLah sedang diperlakukan salah sebagai kategori?
+12. Apakah real-data perlu diaudit read-only dulu?
+13. Apakah mutation real-data dilakukan pada isolated copy?
+14. Apakah perubahan membutuhkan browser/document visual QA?
+15. Apakah backend validation tetap authoritative?
+
+---
+
+## 27. Batas interpretasi dokumen ini
+
+`USER_SCENARIOS.md` menjelaskan bagaimana pengguna seharusnya menjalankan workflow yang sudah dikontrak domain.
+
+Dokumen ini tidak boleh dipakai untuk menyimpulkan:
+
+- bahwa sebuah fitur sudah production-verified;
+- bahwa browser/mobile QA sudah PASS;
+- bahwa official-template output sudah visually verified;
+- bahwa real-data mutation aman tanpa audit;
+- bahwa pekerjaan roadmap sudah selesai.
+
+Untuk status tersebut gunakan `CURRENT_PROGRESS.md` dan `DEVELOPMENT_ROADMAP.md`.
