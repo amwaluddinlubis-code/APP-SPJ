@@ -19,17 +19,7 @@ Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.m
 
 ## Functional gate aktif
 
-```text
-commit : 8180d566621dcf7b1a84b9183a666f2f7a64b398
-subject: test(gui): include final audit source guard in critical suite
-CI run : 34613781674 (#326)
-CI job : 103310602936
-result : PASS — 261 tests / 1996 assertions
-```
-
-Gate ini mencakup frontend build PASS, Blade compile PASS, dan `SPJ Critical` PASS. Pint tetap advisory/non-blocking dan melaporkan 3 style issues repository yang sudah dikenal.
-
-Commit dokumentasi setelah gate tidak mengubah source aplikasi/test, sehingga `8180d566...` tetap menjadi deterministic code gate terbaru sampai ada source/test commit berikutnya yang lolos CI.
+Angka gate hidup di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
 
 Status keseluruhan tetap **belum final release-ready** karena real-data verification, official-template output, dan browser/runtime RVR masih aktif.
 

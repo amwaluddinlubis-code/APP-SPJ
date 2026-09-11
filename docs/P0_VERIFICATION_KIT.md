@@ -6,14 +6,27 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 ## 1. Functional gate aktif
 
-Checkpoint deterministic terbaru untuk source aplikasi/test aktif:
+Angka gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan menyalin angka.
+
+CI gate terakhir (belum mencakup commit code setelahnya):
 
 ```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-CI run : 34578276166
-CI job : 103195683045
-PASS   : 243 tests / 1848 assertions
+commit : 8180d566621dcf7b1a84b9183a666f2f7a64b398
+CI run : 34613781674 (#326)
+CI job : 103310602936
+PASS   : 261 tests / 1996 assertions
 ```
+
+Verifikasi lokal pada HEAD `5d8b0b1` (2026-09-11, mencakup 2 commit code setelah gate CI di atas):
+
+```text
+npm run build            PASS
+php artisan view:cache   PASS
+SPJ Critical (lokal)     PASS — 265 tests / 2007 assertions
+vendor/bin/pint --test   ADVISORY — 3 file pre-existing, non-blocking
+```
+
+CI penuh wajib dijalankan ulang sebelum klaim release apa pun; angka lokal bukan pengganti CI.
 
 Gate:
 
@@ -24,7 +37,7 @@ npm run build            -> BLOCKING
 php artisan view:cache   -> BLOCKING
 ```
 
-HEAD branch saat dokumentasi ini diperbarui hanya mempunyai commit dokumentasi setelah gate tersebut, sehingga gate ini tetap relevan untuk source aplikasi/test aktif.
+Bila ada commit code setelah gate CI, gate CI tidak lagi canonical untuk HEAD; blok verifikasi lokal di atas menjadi evidence sementara sampai CI hijau berikutnya.
 
 ## 2. Command canonical
 

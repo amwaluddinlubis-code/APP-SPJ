@@ -405,15 +405,7 @@ Authorization role dan tenant activation adalah boundary berbeda; lulus role che
 
 ## 21. Functional gate dan area RVR
 
-Functional gate aktif:
-
-```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-Frontend build       PASS
-Blade compile/cache  PASS
-SPJ Critical         PASS — 243 tests / 1848 assertions
-Repository Pint      ADVISORY — 2 style issues
-```
+Functional gate aktif: lihat angka gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
 
 Area yang belum final:
 

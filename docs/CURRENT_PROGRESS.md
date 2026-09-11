@@ -17,32 +17,7 @@ Definisi status:
 
 ### Release gate branch aktif
 
-```text
-code gate : 8180d566621dcf7b1a84b9183a666f2f7a64b398
-subject   : test(gui): include final audit source guard in critical suite
-CI run    : 34613781674 (#326)
-CI job    : 103310602936
-result    : PASS — 261 tests / 1996 assertions
-```
-
-Evidence gate:
-
-```text
-Frontend build   : PASS
-Blade compile    : PASS
-SPJ Critical     : PASS — 261 tests / 1996 assertions
-Repository Pint  : ADVISORY — 3 style issues, non-blocking
-```
-
-Pint advisory pada gate ini tetap berada pada file yang sudah dikenal:
-
-- `app/Services/ArkasStagingService.php`;
-- `app/Services/SpjDocumentNumberService.php`;
-- `tests/Feature/SyncProgressUiTest.php`.
-
-Advisory tersebut tidak dibaca sebagai functional regression karena workflow sengaja menjalankan Pint sebagai advisory dan seluruh build/Blade/SPJ Critical selesai hijau.
-
-Gate `8180d566...` menggantikan checkpoint `67efd8d9...` sebagai deterministic code gate terbaru. Commit dokumentasi setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
+Angka gate hidup di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen). Pint advisory tetap pada 3 file yang sudah dikenal (`ArkasStagingService`, `SpjDocumentNumberService`, `SyncProgressUiTest`) dan bukan functional regression.
 
 ---
 

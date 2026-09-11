@@ -42,6 +42,7 @@
             <file>tests/Feature/SecurityHardeningTest.php</file>
             <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
             <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
+            <file>tests/Feature/SpjActiveContractsGuardTest.php</file>
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
             <file>tests/Feature/SpjAutomaticNumberingPolicyTest.php</file>

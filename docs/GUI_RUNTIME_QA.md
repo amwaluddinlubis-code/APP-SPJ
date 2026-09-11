@@ -13,14 +13,7 @@ GUI-AUDIT-13 source readiness : PASS
 GUI-AUDIT-13 mobile/tablet     : RVR
 ```
 
-Evidence source-readiness terakhir:
-
-```text
-code gate : 8180d566621dcf7b1a84b9183a666f2f7a64b398
-CI run    : 34613781674 (#326)
-CI job    : 103310602936
-result    : PASS — 261 tests / 1996 assertions
-```
+Evidence source-readiness terakhir: lihat angka gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
 
 Guard terkait:
 
