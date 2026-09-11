@@ -1,6 +1,8 @@
 # Modul Importer dan Sinkronisasi ARKAS
 
-Terakhir diperbarui: **2026-09-10**
+Terakhir diperbarui: **2026-09-11**
+
+Angka checkpoint/CI di bawah ini penanda waktu penulisan; gate mutakhir selalu dibaca dari `P0_VERIFICATION_KIT.md` dan `CURRENT_PROGRESS.md`.
 
 Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, menyimpan snapshot staging, memvalidasi mapping, melakukan preview rekonsiliasi, dan mengisi domain aplikasi melalui adapter.
 

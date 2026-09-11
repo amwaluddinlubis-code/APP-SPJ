@@ -129,6 +129,8 @@ Kategori SPJ | ○ SiPLah  ○ Non SiPLah
 
 Kontrol tersebut bukan domain field baru. Kedua radio adalah satu group dan mutually-exclusive, hanya ditampilkan pada kategori BARANG, dan bersifat UI-only: hanya show/hide section pengadaan (SiPLah vs internal), nilainya tidak disimpan dan tidak pernah menulis `payment_method`. Status awal radio diturunkan dari `payment_method`/`is_siplah`. Bila source authoritative mengunci transaksi sebagai SiPLah, UI biasa tidak boleh membaliknya tanpa rule yang sah; Non SiPLah dapat disabled.
 
+SiPLah dilarang di luar BARANG: KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, dan HONOR_PEGAWAI tidak mengenal channel SiPLah; `payment_method = siplah` pada kategori tersebut adalah data tidak valid.
+
 ## 7. Pekerjaan yang masih RVR / aktif
 
 Pekerjaan tersisa bukan membangun ulang core SiPLah, tetapi membuktikan output dan runtime nyata:

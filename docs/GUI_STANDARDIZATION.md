@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-08**
+Terakhir diverifikasi: **2026-09-11**
 
 Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 
@@ -219,6 +219,12 @@ Kategori | ○ SiPLah  ○ Non SiPLah
 
 Kedua radio harus berada pada radio group yang sama dan hanya satu dapat aktif. Bila source memaksa SiPLah, Non SiPLah dapat disabled.
 
+Radio bersifat UI-only: hanya show/hide section pengadaan, tidak menulis `payment_method` (field canonical backend). SiPLah hanya berlaku untuk BARANG.
+
+Mode SiPLah menampilkan 4 field sejajar: Nomor Invoice | Tanggal Invoice | No Pesanan (autofill segmen terakhir invoice metadata) | Status Invoice (select Lunas/Proforma).
+
+Mode Non SiPLah menampilkan Tanggal Pesanan | Tanggal BAP | Tanggal BAST | Status Invoice.
+
 PEMELIHARAAN:
 
 ```text
@@ -300,7 +306,14 @@ resources/js/app.js
 
 Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA mobile resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
 
-## 21. Checklist UI sebelum selesai
+## 21. Pola form dinamis show/hide
+
+- Kontrol show/hide (seperti radio SiPLah) tidak boleh menulis field domain sebagai efek samping; visibilitas dan nilai backend adalah dua keputusan terpisah.
+- Bila dua mode memakai field dengan `name` yang sama, hanya satu salinan boleh aktif/enabled dalam satu waktu (fieldset mode tersembunyi di-disabled agar tidak ikut tersubmit).
+- Semua sumber kebenaran visibilitas (JS lama + JS baru) harus melalui satu fungsi updater; dua sistem yang mengatur elemen yang sama akan saling menimpa.
+- Status awal kontrol UI diturunkan dari backend; setelah interaksi operator, kontrol hanya mengatur tampilan sampai ada perubahan backend eksplisit.
+
+## 22. Checklist UI sebelum selesai
 
 - ownership source vs editable jelas;
 - tidak ada input ganda Detail Transaksi/Paket;

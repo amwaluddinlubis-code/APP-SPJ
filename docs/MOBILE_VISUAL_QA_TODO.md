@@ -83,7 +83,19 @@ Bila memungkinkan tambahkan Slate Minimal dan Indigo Executive.
 
 ## 6. Checklist khusus SPJ Paket
 
-Perubahan 2026-09-06 wajib masuk regression:
+Perubahan 2026-09-06 dan redesign 2026-09-11 wajib masuk regression:
+
+### Checklist Paket (`/spj/paket/{id}/checklist`)
+
+- daftar blocking bernomor terbaca tanpa scroll horizontal;
+- badge Paket/Transaksi tidak overflow;
+- `details` Sudah lengkap/Opsional dapat dibuka via touch;
+- 4 kolom stat tidak bertumpuk pada 390px.
+
+### Strip ringkasan `/spj` dan tabel persiapan
+
+- 4 stat `x-stat-item` terbaca pada 390px;
+- tabel persiapan dapat di-scroll horizontal tanpa memotong kolom Aksi.
 
 ### Tab Rincian
 
