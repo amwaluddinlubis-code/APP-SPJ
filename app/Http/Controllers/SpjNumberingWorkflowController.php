@@ -50,13 +50,19 @@ class SpjNumberingWorkflowController extends Controller
             ]];
         });
 
-        $previewPackages = SpjPackage::query()
-            ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id', 'documents:id,spj_package_id,document_type,document_number,status'])
+        $packageQuery = SpjPackage::query()
             ->whereHas('transaction', fn (Builder $query): Builder => $this->applyQuarterScope($query->activeContext(), $selectedQuarter))
             ->whereIn('status', ['READY', 'NUMBERED', 'FINAL'])
             ->orderByRaw("CASE status WHEN 'READY' THEN 0 WHEN 'NUMBERED' THEN 1 ELSE 2 END")
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        $packageWith = ['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id,payment_method,vendor_name,invoice_number,invoice_date,event_name,event_location,event_date,participant_count,receipt_recipient_name,payment_reference,siplah_order_number', 'documents:id,spj_package_id,document_type,document_number,status', 'transaction.goods', 'transaction.workOrder.workers', 'transaction.participants', 'transaction.travels', 'transaction.honors', 'transaction.serviceRecipients'];
+
+        $previewPackages = (clone $packageQuery)->with($packageWith)->get();
+        $pagedPackages = (clone $packageQuery)
+            ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id', 'documents:id,spj_package_id,document_type,document_number,status'])
+            ->paginate(15)
+            ->withQueryString();
 
         $documentTypes = DocumentTemplate::query()
             ->where(['fiscal_year_id' => $yearId, 'is_active' => true])
@@ -78,6 +84,7 @@ class SpjNumberingWorkflowController extends Controller
             'selectedQuarter' => $selectedQuarter,
             'quarterSummaries' => $quarterSummaries,
             'previewPackages' => $previewPackages,
+            'pagedPackages' => $pagedPackages,
             'documentTypes' => $documentTypes,
             'recentRuns' => $recentRuns,
             'selectedSummary' => $quarterSummaries->get($selectedQuarter),
