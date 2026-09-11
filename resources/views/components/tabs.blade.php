@@ -11,7 +11,10 @@
                 data-tab="{{ $tab['id'] }}"
                 class="ui-tab {{ $activeTab === $tab['id'] ? 'ui-tab-active' : '' }}"
             >
-                {{ $tab['label'] }}
+                @if(isset($tab['icon']))
+                    <x-ui.icon :name="$tab['icon']" size="sm" />
+                @endif
+                <span>{{ $tab['label'] }}</span>
                 @if(isset($tab['badge']))
                     <x-ui.badge variant="{{ $activeTab === $tab['id'] ? 'theme' : 'neutral' }}">{{ $tab['badge'] }}</x-ui.badge>
                 @endif
