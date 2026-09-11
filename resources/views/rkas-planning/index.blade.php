@@ -8,14 +8,8 @@
             kicker="Anggaran & Realisasi"
         >
             <x-slot:actions>
-                <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('rkas-planning.export', 'pagu-awal') }}">
-                    <x-ui-icon name="download" class="h-4 w-4" />
-                    <span>Unduh Saran Pagu</span>
-                </a>
-                <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95" style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)" href="{{ route('rkas-planning.export', 'sisa-pagu') }}">
-                    <x-ui-icon name="download" class="h-4 w-4" />
-                    <span>Unduh Saran Sisa</span>
-                </a>
+                <x-ui.button variant="secondary" :href="route('rkas-planning.export', 'pagu-awal')" icon="download">Unduh Saran Pagu</x-ui.button>
+                <x-ui.button variant="secondary" :href="route('rkas-planning.export', 'sisa-pagu')" icon="download">Unduh Saran Sisa</x-ui.button>
             </x-slot:actions>
         </x-page-header>
 
