@@ -39,6 +39,7 @@ Status keseluruhan tetap **belum final release-ready** karena real-data verifica
 |---|---|
 | `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS** — sumber status release utama. |
 | `DEVELOPMENT_ROADMAP.md` | **ACTIVE** — prioritas dan urutan pekerjaan. |
+| `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, matriks impact, evidence rules, dan aturan wajib untuk semua AI/coding agent. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur yang sudah diselaraskan dengan functional gate terbaru. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
@@ -47,6 +48,8 @@ Status keseluruhan tetap **belum final release-ready** karena real-data verifica
 | `GUI_STANDARDIZATION.md` | **ACTIVE** — kontrak GUI/layout. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
+
+Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.md` dan melakukan **Documentation Impact Review** sebelum menyatakan pekerjaan selesai.
 
 ## Importer, generator, dan verification
 
@@ -72,8 +75,6 @@ Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_A
 
 ## Dokumen historis / arsip
 
-| Dokumen | Status |
-|---|---|
 Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URGENT_TRANSACTION_SPJ_MIGRATION.md`) telah dihapus dari `docs/` agar tidak menyesatkan. Jejaknya tetap tersedia di git history bila diperlukan audit.
 
 ## Kontrak aktif lintas dokumentasi
@@ -118,13 +119,20 @@ Jangan memakai kata “selesai” bila yang tersedia hanya source path tanpa reg
 
 ## Aturan pemeliharaan dokumentasi
 
-1. Update `CURRENT_PROGRESS.md` bila evidence/status/release risk berubah.
-2. Update `DEVELOPMENT_ROADMAP.md` bila prioritas berubah.
-3. Update `SPJ_DESIGN_DECISIONS.md` hanya untuk keputusan permanen.
-4. Update `ARCHITECTURE_COMPLETE.md` bila boundary/layer/ownership berubah.
-5. Update `SYNCHRONIZATION.md` bila pipeline sync, safe-sync semantics, reconciliation, employee identity, source ownership, tenant/concurrency guard, atau source feed berubah.
-6. Update `NUMBERING_CORRECTION_AND_ROLLBACK.md` bila semantic cancel/rollback, sequence reset, dependency triwulan, atau aturan mutation setelah NUMBERED berubah.
-7. Feature guide tidak boleh menaikkan status melampaui evidence di `CURRENT_PROGRESS.md`.
-8. Dokumen historis tetap diberi banner sejarah; jangan digunakan kembali sebagai status aktif.
-9. Checkpoint CI/test harus menunjuk evidence yang benar-benar dijalankan.
-10. Perubahan docs-only tidak boleh ditulis seolah menghasilkan CI baru.
+Aturan lengkap dan checklist canonical berada di:
+
+```text
+docs/DOCUMENTATION_MAINTENANCE.md
+```
+
+Ringkasannya:
+
+1. dokumentasi adalah bagian Definition of Done;
+2. setiap perubahan wajib menjalani Documentation Impact Review;
+3. status/evidence diperbarui di `CURRENT_PROGRESS.md`;
+4. prioritas/milestone diperbarui di `DEVELOPMENT_ROADMAP.md`;
+5. business rule, architecture, user flow, sync, numbering, GUI, dan feature guide diperbarui sesuai matriks dampak;
+6. dokumen baru/status dokumen berubah wajib direfleksikan di indeks ini;
+7. dokumentasi tidak boleh mengklaim PASS/verified melebihi evidence aktual;
+8. instruksi AI agent tidak boleh hard-code prioritas feature yang cepat berubah;
+9. dokumentasi usang atau kontradiktif dianggap defect dan harus diperbarui/diarsipkan/dihapus dengan aman.
