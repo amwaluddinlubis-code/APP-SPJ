@@ -23,6 +23,7 @@ use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
 use App\Http\Controllers\SourceReconciliationController;
 use App\Http\Controllers\SpjController;
+use App\Http\Controllers\SpjNumberingCorrectionController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
 use App\Http\Controllers\SpjPackageChecklistController;
 use App\Http\Controllers\SpjPreparationController;
@@ -151,6 +152,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/pengaturan/dapodik/tes', [DapodikIntegrationController::class, 'test'])->name('dapodik.test');
             Route::post('/pengaturan/dapodik/sinkron', [DapodikIntegrationController::class, 'sync'])->name('dapodik.sync');
             Route::post('/spj/penomoran-triwulan', [SpjController::class, 'assignQuarterNumbers'])->name('spj.quarter-numbering');
+            Route::get('/spj/penomoran/koreksi', SpjNumberingCorrectionController::class)->name('spj.numbering-correction');
             Route::post('/spj/penomoran/rollback', [SpjController::class, 'rollbackNumbering'])->name('spj.numbering.rollback');
             Route::post('/spj/penomoran-triwulan/batal', [SpjController::class, 'cancelQuarterNumbering'])->name('spj.quarter-numbering.cancel');
             Route::post('/spj/tutup-triwulan', [SpjController::class, 'closeQuarter'])->name('spj.quarter-close');
