@@ -11,8 +11,8 @@ class SyncProgressUiTest extends TestCase
         $javascript = file_get_contents(resource_path('js/sync-progress.js'));
         $bootstrap = file_get_contents(resource_path('js/bootstrap.js'));
 
-        $this->assertStringContainsString("/sinkronisasi/arkas", $javascript);
-        $this->assertStringContainsString("/pengaturan/dapodik/sinkron", $javascript);
+        $this->assertStringContainsString('/sinkronisasi/arkas', $javascript);
+        $this->assertStringContainsString('/pengaturan/dapodik/sinkron', $javascript);
         $this->assertStringContainsString('Sinkronisasi ARKAS', $javascript);
         $this->assertStringContainsString('Sinkronisasi Dapodik', $javascript);
         $this->assertStringContainsString('Membaca RKAS dan BKU', $javascript);

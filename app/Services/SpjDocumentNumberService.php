@@ -68,6 +68,7 @@ class SpjDocumentNumberService
             if ($existing) {
                 $transaction->goods()->whereNull($mapping['number'])->update([$mapping['number'] => $existing]);
                 $skipped++;
+
                 continue;
             }
             $document = $assign($type, Carbon::parse($date));
@@ -84,6 +85,7 @@ class SpjDocumentNumberService
             }
             if (filled($workOrder->{$mapping['number']})) {
                 $skipped++;
+
                 continue;
             }
             $document = $assign($type, Carbon::parse($workOrder->{$mapping['date']}));
@@ -100,6 +102,7 @@ class SpjDocumentNumberService
                 }
                 if (filled($travel->assignment_letter_number)) {
                     $skipped++;
+
                     continue;
                 }
                 $document = $assign('SURAT_TUGAS_PERJALANAN_DINAS', Carbon::parse($eventDate), 'TRAVEL-'.$travel->id);

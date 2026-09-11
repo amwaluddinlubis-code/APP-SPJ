@@ -249,6 +249,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             $single = $this->canonicalSpreadsheet($template, $package, $school);
             if (! $packageSpreadsheet instanceof Spreadsheet) {
                 $packageSpreadsheet = $single;
+
                 continue;
             }
 

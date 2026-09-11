@@ -107,7 +107,7 @@ class ArkasStagingService
      * approved and active anggaran first, then keep only its rapbs details.
      * Without this, every approved revision is imported into the same year.
      *
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array<int, array<string, mixed>>
      */
     private function filterToActiveBudget(array $records, ArkasSource $source, FiscalYear $year): array

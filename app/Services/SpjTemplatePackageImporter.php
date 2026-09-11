@@ -43,7 +43,7 @@ final class SpjTemplatePackageImporter
                 $sheet = $workbook->getSheetByName($expectedSheet);
 
                 if (! $sheet) {
-        
+
                     $errors[] = [
                         'document_type' => $documentType,
                         'code' => 'PACKAGE_SHEET_MISSING',
