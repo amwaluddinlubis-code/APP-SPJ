@@ -1,14 +1,6 @@
 <x-layouts.tailwind-app>
     @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
 
-    <style>
-        @media (min-width: 1024px) {
-            .rkas-filter-grid {
-                grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-            }
-        }
-    </style>
-
     <div class="space-y-6">
         <x-page-header title="Penganggaran RKAS"
             subtitle="Pantau pagu RKAS dan realisasi BKU pada konteks tahun serta sumber dana aktif."
@@ -65,7 +57,7 @@
         </section>
 
         <section class="ui-filter-panel" x-data="{ scope: @js($scope) }">
-            <form method="GET" class="ui-filter-grid rkas-filter-grid">
+            <form method="GET" class="ui-filter-grid lg:!grid-cols-7">
                 <div>
                     <label class="ui-filter-label" for="rkas-scope">Tampilan periode</label>
                     <x-ui.select id="rkas-scope" name="scope" x-model="scope">
