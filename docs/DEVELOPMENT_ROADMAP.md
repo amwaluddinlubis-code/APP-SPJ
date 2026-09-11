@@ -22,8 +22,6 @@ Lihat docs/README.md → Functional gate aktif.
 
 **Status: FUNCTIONAL PASS / REAL-DATA VERIFICATION ACTIVE / INSTALLED-RUNTIME DEFERRED.**
 
-Evidence selesai ada di `CURRENT_PROGRESS.md` (tidak disalin ke sini agar tidak divergen).
-
 Pekerjaan aktif:
 
 - [ ] audit read-only seluruh 66 READY package dengan `spj:audit-quarter`;
@@ -32,15 +30,13 @@ Pekerjaan aktif:
 - [ ] setelah clean, uji numbering pada isolated copy;
 - [ ] pertahankan source transaction/item immutable.
 
-Evidence selesai ada di `CURRENT_PROGRESS.md`. Jangan membuat data fiktif (aturan pengerjaan di bawah).
+Evidence selesai ada di `CURRENT_PROGRESS.md`. Jangan membuat data fiktif.
 
 ---
 
 ## P0-02 — Generator dokumen + template upload
 
 **Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / OFFICIAL-TEMPLATE VISUAL RVR.**
-
-Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 Remaining RVR:
 
@@ -54,19 +50,19 @@ Remaining RVR:
 
 ## P0-03 — Numbering + lifecycle
 
-**Status: FUNCTIONAL PASS.** Panduan kanonis: `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Evidence selesai ada di `CURRENT_PROGRESS.md`.
+**Status: FUNCTIONAL PASS.** Panduan kanonis: `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
 ---
 
 ## P0-04 — Authorization
 
-**Status: FUNCTIONAL PASS pada jalur yang diregresikan.** Evidence selesai ada di `CURRENT_PROGRESS.md`.
+**Status: FUNCTIONAL PASS pada jalur yang diregresikan.**
 
 ---
 
 ## P0-05 — Safe sync + reconciliation
 
-**Status: FUNCTIONAL PASS.** Panduan kanonis: `SYNCHRONIZATION.md`. Evidence selesai ada di `CURRENT_PROGRESS.md`.
+**Status: FUNCTIONAL PASS.** Panduan kanonis: `SYNCHRONIZATION.md`.
 
 ---
 
@@ -80,15 +76,11 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Evidence selesai ada di `CURRENT_PROGRESS.md`.
-
 ---
 
 ## P0-07 — APP DATA / backup / reset / restore
 
 **Status: FUNCTIONAL PASS / INSTALLED-RUNTIME DEFERRED.**
-
-Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 Installed Windows runtime verification tetap DEFERRED pada fokus kerja sekarang.
 
@@ -97,8 +89,6 @@ Installed Windows runtime verification tetap DEFERRED pada fokus kerja sekarang.
 ## P0-08 — Generic ARKAS Importer
 
 **Status: FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST.**
-
-Evidence selesai ada di `CURRENT_PROGRESS.md`. Panduan kanonis: `SYNCHRONIZATION.md`.
 
 Scale/performance lanjutan:
 
@@ -152,15 +142,24 @@ Gunakan jalur read-only `spj:audit-quarter` sebelum mutation apa pun.
 - [ ] official-template output QA;
 - [ ] browser reload/category switching/payment-method consistency, termasuk radio SiPLah/Non SiPLah yang tetap UI-only.
 
-## P1-05 — Browser QA desktop/laptop
+## P1-05 — Browser QA desktop/laptop — GUI-AUDIT-12
 
+**Status: SOURCE READINESS PASS / RUNTIME RVR.** Checklist canonical: `GUI_RUNTIME_QA.md`.
+
+Source guards sudah memastikan responsive fallback/table contract tertentu tersedia, tetapi checklist berikut tetap harus dijalankan pada browser nyata:
+
+- [ ] viewport 1366×768;
+- [ ] viewport 1440×900;
+- [ ] viewport 1920×1080;
 - [ ] category/payment controls;
 - [ ] Data Umum layout;
 - [ ] Rincian Pajak tab;
 - [ ] automatic number readonly;
 - [ ] compact table/pagination;
 - [ ] previous/next Paket context;
-- [ ] template upload package/single UX.
+- [ ] template upload package/single UX;
+- [ ] header/breadcrumb/modal/dropdown tidak overlap atau clipping;
+- [ ] tidak ada horizontal viewport overflow yang tidak disengaja.
 
 ## P1-06 — Audit trail operasional E2E
 
@@ -193,19 +192,37 @@ Tersisa:
 - [ ] participant roster/operator UX;
 - [ ] same-name/different-identifier real-data review.
 
+## P1-08 — Mobile/tablet minimum usability — GUI-AUDIT-13
+
+**Status: SOURCE READINESS PASS / RUNTIME RVR / NON-BLOCKER untuk target desktop-laptop.** Checklist canonical: `GUI_RUNTIME_QA.md`.
+
+- [ ] viewport 375×812;
+- [ ] viewport 768×1024;
+- [ ] viewport 1024×768;
+- [ ] mobile card/table fallback benar;
+- [ ] action penting tidak bergantung hover;
+- [ ] modal/form/tab usable dengan sentuhan;
+- [ ] tidak ada clipping/overflow fatal.
+
 ---
 
 # P2 — Polish & Maintainability
 
-- [ ] selesaikan 2 advisory Pint issues;
+Source-level GUI cleanup milestone 09–11:
+
+- [x] GUI-AUDIT-09 — SPJ navigation tabs memakai icon canonical, bukan emoji label;
+- [x] GUI-AUDIT-10 — Database Reset actions/theme memakai shared primitive/token;
+- [x] GUI-AUDIT-11 — `<x-ui.icon>` menjadi single registry; `<x-ui-icon>` hanya compatibility adapter;
+- [x] source-readiness guard GUI-AUDIT-12/13 masuk `SPJ Critical`;
+- [ ] migrasikan consumer `<x-ui-icon>` lama secara bertahap sampai compatibility wrapper dapat dihapus;
+- [ ] cleanup compatibility CSS/JS setelah seluruh consumer lama hilang;
 - [ ] field-level validation UX;
-- [ ] GUI/compatibility cleanup;
-- [ ] icon/action consistency;
+- [ ] selesaikan 3 advisory Pint yang masih dikenal;
 - [ ] performance profiling;
 - [ ] Bridge generated `bin/obj` cleanup;
 - [ ] report foundation.
 
-Mobile/responsive penuh bukan blocker release target operator laptop/desktop saat ini.
+Mobile/responsive penuh bukan blocker release target operator laptop/desktop saat ini, tetapi minimum usability tetap harus diverifikasi sesuai `GUI_RUNTIME_QA.md`.
 
 ---
 
@@ -217,4 +234,5 @@ Mobile/responsive penuh bukan blocker release target operator laptop/desktop saa
 - numbering real-data mengikuti canonical order dan berhenti pada blocker legitimate;
 - mutation real-data hanya pada isolated copy;
 - perubahan domain/business rule baru dicatat di `SPJ_DESIGN_DECISIONS.md`;
-- docs status selalu membedakan FUNCTIONAL PASS, REAL-DATA VERIFIED, RVR, dan DEFERRED.
+- docs status selalu membedakan FUNCTIONAL PASS, REAL-DATA VERIFIED, RVR, dan DEFERRED;
+- source-responsive PASS tidak boleh dipromosikan menjadi browser/mobile PASS tanpa runtime evidence.
