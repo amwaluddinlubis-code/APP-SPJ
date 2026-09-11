@@ -36,6 +36,7 @@ Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate t
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur yang sudah diselaraskan dengan functional gate terbaru. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
+| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE DOMAIN GUIDE / IMPLEMENTATION PENDING** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE** — kontrak GUI/layout. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
@@ -51,6 +52,8 @@ Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate t
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARKAS_IMPORTER.md` bila perubahan khusus menyentuh Generic ARKAS Importer/profile-driven import.
+
+Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md` sebelum mengubah use case numbering atau lifecycle.
 
 ## Feature verification / RVR aktif
 
@@ -78,12 +81,18 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 - Perubahan source setelah pekerjaan operator dapat memerlukan reconciliation; NUMBERED/FINAL tidak dimutasi diam-diam.
 - Boundary tenant = `School + Fiscal Year + Fund Source`.
 - Detail Transaksi hanya menulis `item_description`.
+- Koreksi `item_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence.
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
+- Perubahan kategori, data pembayaran, atau Isian Manual pada NUMBERED wajib didahului rollback/cancel numbering yang sesuai.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah adalah channel, bukan kategori.
 - READY + category benar-benar berubah => DRAFT untuk revalidation.
 - Preview/download tidak menerbitkan nomor baru.
-- NUMBERED/FINAL tidak diedit melalui mutation normal.
+- Cancel individual mempertahankan nomor cancelled dan sequence tidak mundur.
+- Rollback numbering melepas nomor dari titik rollback sampai ekor sequence; nomor boleh dipakai kembali.
+- Cancel Penomoran Triwulan berjalan mundur `TW4 -> TW3 -> TW2 -> TW1` pada context tenant+tahun+sumber dana yang sama.
+- Cancel TW3 mengembalikan sequence ke akhir TW2; cancel TW2 ke akhir TW1; cancel TW1 ke `0`.
+- Operational audit rollback tetap dipertahankan walaupun history numbering domain di-reset.
 - Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
 - Operator-locked Employee tidak boleh ditimpa source sync.
 - Auto-fill KONSUMSI tetap Dapodik-only; participant manual diperbolehkan.
@@ -109,7 +118,8 @@ Jangan memakai kata “selesai” bila yang tersedia hanya source path tanpa reg
 3. Update `SPJ_DESIGN_DECISIONS.md` hanya untuk keputusan permanen.
 4. Update `ARCHITECTURE_COMPLETE.md` bila boundary/layer/ownership berubah.
 5. Update `SYNCHRONIZATION.md` bila pipeline sync, safe-sync semantics, reconciliation, employee identity, source ownership, tenant/concurrency guard, atau source feed berubah.
-6. Feature guide tidak boleh menaikkan status melampaui evidence di `CURRENT_PROGRESS.md`.
-7. Dokumen historis tetap diberi banner sejarah; jangan digunakan kembali sebagai status aktif.
-8. Checkpoint CI/test harus menunjuk evidence yang benar-benar dijalankan.
-9. Perubahan docs-only tidak boleh ditulis seolah menghasilkan CI baru.
+6. Update `NUMBERING_CORRECTION_AND_ROLLBACK.md` bila semantic cancel/rollback, sequence reset, dependency triwulan, atau aturan mutation setelah NUMBERED berubah.
+7. Feature guide tidak boleh menaikkan status melampaui evidence di `CURRENT_PROGRESS.md`.
+8. Dokumen historis tetap diberi banner sejarah; jangan digunakan kembali sebagai status aktif.
+9. Checkpoint CI/test harus menunjuk evidence yang benar-benar dijalankan.
+10. Perubahan docs-only tidak boleh ditulis seolah menghasilkan CI baru.
