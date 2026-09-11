@@ -155,7 +155,7 @@
             <x-ui.input id="event_date" type="date" name="event_date" :value="old('event_date', $transaction->event_date?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" required class="!py-1.5 !text-sm" />
         </x-ui.field>
         <x-ui.field label="Jumlah Peserta" for="participant_count" required :error="$errors->first('participant_count')">
-            <x-ui.input id="participant_count" type="number" min="1" step="1" inputmode="numeric" name="participant_count" x-model.number="participantCount" required class="!py-1.5 text-right font-mono !text-sm" :class="participantCount === listedParticipantCount ? 'border-[var(--ui-line-strong)]' : 'border-rose-400 bg-rose-50'" />
+            <x-ui.input id="participant_count" type="number" min="1" step="1" inputmode="numeric" name="participant_count" x-model.number="participantCount" required class="!py-1.5 text-right font-mono !text-sm" ::class="participantCount === listedParticipantCount ? 'border-[var(--ui-line-strong)]' : 'border-rose-400 bg-rose-50'" />
         </x-ui.field>
     </div>
 
