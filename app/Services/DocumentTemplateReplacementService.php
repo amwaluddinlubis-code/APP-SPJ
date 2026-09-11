@@ -32,6 +32,7 @@ class DocumentTemplateReplacementService
         $newPath = $uploaded->storeAs(
             'document-templates/'.$fiscalYearId,
             'tpl_'.Str::uuid()->toString().'.'.$extension,
+            'local',
         );
 
         if (! is_string($newPath) || $newPath === '') {
@@ -95,7 +96,7 @@ class DocumentTemplateReplacementService
     private function deleteQuietly(string $path): void
     {
         try {
-            Storage::delete($path);
+            Storage::disk('local')->delete($path);
         } catch (Throwable $exception) {
             report($exception);
         }
