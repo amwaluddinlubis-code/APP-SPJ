@@ -6,22 +6,13 @@ Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Sta
 
 ## Release gate functional
 
-```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-subject: test: gate template upload routing regression
-CI run : 34578276166
-CI job : 103195683045
-PASS   : 243 tests / 1848 assertions
-```
+Gate tunggal ada di `docs/README.md` (disalin dari `CURRENT_PROGRESS.md`). Jangan menyalin angka gate ke sini; angka di bawah ini hanya penanda waktu penulisan dan wajib dibaca ulang dari sana:
 
 ```text
-Frontend build       PASS
-Blade compile/cache  PASS
-SPJ Critical         PASS
-Repository Pint      ADVISORY — 2 style issues
+Lihat docs/README.md → Functional gate aktif.
 ```
 
-Source aplikasi/test pada HEAD masih sama dengan gate tersebut; commit setelahnya hanya dokumentasi. `FUNCTIONAL PASS` tidak sama dengan final production verification. `RVR` tetap membutuhkan real-data, browser, template resmi, atau runtime evidence sesuai konteks.
+`FUNCTIONAL PASS` tidak sama dengan final production verification. `RVR` tetap membutuhkan real-data, browser, template resmi, atau runtime evidence sesuai konteks.
 
 ---
 
@@ -31,32 +22,7 @@ Source aplikasi/test pada HEAD masih sama dengan gate tersebut; commit setelahny
 
 **Status: FUNCTIONAL PASS / REAL-DATA VERIFICATION ACTIVE / INSTALLED-RUNTIME DEFERRED.**
 
-Sudah selesai secara deterministic:
-
-- [x] BARANG sampai FINAL + preview/download;
-- [x] KONSUMSI sampai FINAL + preview/download;
-- [x] PEMELIHARAAN sampai FINAL + preview/download;
-- [x] JASA_LAINNYA sampai FINAL + preview/download;
-- [x] SPPD sampai FINAL + preview/download;
-- [x] HONOR_PEGAWAI sampai FINAL + preview/download;
-- [x] numbering/finalization/preview/download melalui runtime path aplikasi;
-- [x] real XLSX/PDF regression;
-- [x] preview/download tidak mengalokasikan nomor;
-- [x] READY category change kembali DRAFT bila kategori benar-benar berubah;
-- [x] lifecycle audit dasar;
-- [x] six-category test masuk `SPJ Critical`.
-
-Real-data baseline terbaru:
-
-```text
-170 transactions
-407 transaction_items
-66 spj_packages
-66 READY
-0 spj_documents
-0 document_number_sequences
-0 document_number_formats
-```
+Evidence selesai ada di `CURRENT_PROGRESS.md` (tidak disalin ke sini agar tidak divergen).
 
 Pekerjaan aktif:
 
@@ -66,7 +32,7 @@ Pekerjaan aktif:
 - [ ] setelah clean, uji numbering pada isolated copy;
 - [ ] pertahankan source transaction/item immutable.
 
-SPPD nyata tersedia pada fiscal year 2025, bukan 2026. Jangan membuat SPPD 2026 fiktif untuk mengejar coverage.
+Evidence selesai ada di `CURRENT_PROGRESS.md`. Jangan membuat data fiktif (aturan pengerjaan di bawah).
 
 ---
 
@@ -74,23 +40,7 @@ SPPD nyata tersedia pada fiscal year 2025, bukan 2026. Jangan membuat SPPD 2026 
 
 **Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / OFFICIAL-TEMPLATE VISUAL RVR.**
 
-- [x] DOCX/XLSX real artifact;
-- [x] PDF real artifact;
-- [x] render preflight;
-- [x] unresolved placeholder guard;
-- [x] generated artifact validation;
-- [x] multi-template XLSX/PDF;
-- [x] preview/download tanpa numbering side effect;
-- [x] common placeholder enam kategori;
-- [x] invalid upload tidak mengganti template aktif;
-- [x] atomic replacement;
-- [x] explicit package/single upload mode;
-- [x] oversized POST routing tetap teridentifikasi;
-- [x] separate error bag;
-- [x] extension-based DOCX/XLSX validation;
-- [x] PHP upload-limit display;
-- [x] storage lifecycle template dan generator sama-sama disk `local`;
-- [x] upload regression masuk `SPJ Critical`.
+Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 Remaining RVR:
 
@@ -104,40 +54,19 @@ Remaining RVR:
 
 ## P0-03 — Numbering + lifecycle
 
-**Status: FUNCTIONAL PASS.**
-
-- [x] idempotent numbering;
-- [x] duplicate active number guard;
-- [x] source/order canonical;
-- [x] NUMBERED/FINAL lock;
-- [x] cancel/reissue/reopen history;
-- [x] preview/download no numbering side effect;
-- [x] READY category change revalidation.
+**Status: FUNCTIONAL PASS.** Panduan kanonis: `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 ---
 
 ## P0-04 — Authorization
 
-**Status: FUNCTIONAL PASS pada jalur yang diregresikan.**
-
-- [x] VIEWER read-only;
-- [x] OPERATOR mutation operasional;
-- [x] ADMINISTRATOR mutation sensitif;
-- [x] tenant/context guard terpisah dari role guard;
-- [x] template/configuration sensitive routes guarded.
+**Status: FUNCTIONAL PASS pada jalur yang diregresikan.** Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 ---
 
 ## P0-05 — Safe sync + reconciliation
 
-**Status: FUNCTIONAL PASS.**
-
-- [x] source sync mempertahankan overlay manual;
-- [x] source diff menghasilkan reconciliation;
-- [x] source missing/returning mempertahankan identity;
-- [x] NUMBERED/FINAL tidak dimutasi diam-diam;
-- [x] field-level before/after diff;
-- [x] stale reconciliation resolution guard.
+**Status: FUNCTIONAL PASS.** Panduan kanonis: `SYNCHRONIZATION.md`. Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 ---
 
@@ -151,12 +80,7 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-- [x] cross-school guard;
-- [x] cross-year guard;
-- [x] cross-fund-source guard;
-- [x] previous/next Paket context boundary;
-- [x] forged resource ID guard;
-- [x] Generic ARKAS Importer tenant boundary.
+Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 ---
 
@@ -164,17 +88,7 @@ School + Fiscal Year + Fund Source
 
 **Status: FUNCTIONAL PASS / INSTALLED-RUNTIME DEFERRED.**
 
-- [x] primary database deletion guard;
-- [x] tenant-only reset;
-- [x] WAL/SHM cleanup;
-- [x] sqlite_sequence reset;
-- [x] backup integrity check;
-- [x] restore verified copy;
-- [x] rollback snapshot;
-- [x] corrupt backup rejection;
-- [x] rollback on post-restore failure;
-- [x] same-second backup uniqueness;
-- [x] switch tenant after restore.
+Evidence selesai ada di `CURRENT_PROGRESS.md`.
 
 Installed Windows runtime verification tetap DEFERRED pada fokus kerja sekarang.
 
@@ -184,16 +98,7 @@ Installed Windows runtime verification tetap DEFERRED pada fokus kerja sekarang.
 
 **Status: FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST.**
 
-- [x] shared deterministic source key;
-- [x] tenant boundary;
-- [x] Upsert / Incremental / Full Refresh;
-- [x] reconciliation preview read-only;
-- [x] source-empty semantics;
-- [x] schema drift blocking;
-- [x] background tenant activation;
-- [x] shared resource lock;
-- [x] created-at preservation;
-- [x] semantic metrics.
+Evidence selesai ada di `CURRENT_PROGRESS.md`. Panduan kanonis: `SYNCHRONIZATION.md`.
 
 Scale/performance lanjutan:
 
@@ -213,7 +118,7 @@ Gunakan jalur read-only `spj:audit-quarter` sebelum mutation apa pun.
 - [ ] HONOR recipient/detail consistency;
 - [ ] KONSUMSI participant semantics;
 - [ ] PEMELIHARAAN materials+wages/link requirements;
-- [ ] SiPLah policy/reference yang memang applicable;
+- [ ] SiPLah policy/reference yang memang applicable (hanya BARANG);
 - [ ] source/reconciliation flags;
 - [ ] blank item description bila masih ada;
 - [ ] duplicate/orphan/no_bukti state;
@@ -245,7 +150,7 @@ Gunakan jalur read-only `spj:audit-quarter` sebelum mutation apa pun.
 - [x] placeholder/policy core mempunyai regression;
 - [ ] generated-document E2E memakai data SiPLah;
 - [ ] official-template output QA;
-- [ ] browser reload/category switching/payment-method consistency.
+- [ ] browser reload/category switching/payment-method consistency, termasuk radio SiPLah/Non SiPLah yang tetap UI-only.
 
 ## P1-05 — Browser QA desktop/laptop
 

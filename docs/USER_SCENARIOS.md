@@ -204,11 +204,7 @@ Operator tidak diminta mengisi data kategori/vendor pada saat menekan gateway.
 
 ## 9. Navigasi Paket
 
-Toolbar:
-
-```text
-[ Semua Paket ] [ Paket Sebelumnya ] [ Paket Setelahnya ]        [ Lihat Transaksi ]
-```
+Toolbar dan summary mengikuti `GUI_STANDARDIZATION.md` §10 (tidak disalin di sini agar tidak divergen).
 
 Previous/next hanya bergerak pada tenant context yang sama:
 
@@ -216,38 +212,13 @@ Previous/next hanya bergerak pada tenant context yang sama:
 School + Fiscal Year + Fund Source
 ```
 
-Summary:
-
-```text
-Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
-```
-
 ---
 
 ## 10. Sub-tab Paket
 
-```text
-1. Rincian
-2. Isian Manual
-3. Rincian Pajak
-4. Penomoran
-```
+Urutan dan isi sub-tab mengikuti `GUI_STANDARDIZATION.md` §11 (tidak disalin di sini agar tidak divergen).
 
-### Rincian
-
-Menampilkan transaksi readonly dan Dokumen & Template.
-
-### Isian Manual
-
-Satu-satunya workspace mutation data dokumen selama Paket masih editable.
-
-### Rincian Pajak
-
-Readonly source tax.
-
-### Penomoran
-
-Penerbitan nomor melalui flow sah. Preview/download bukan shortcut numbering.
+Dari sisi operator: Rincian untuk memeriksa, Isian Manual satu-satunya tempat mengubah selama Paket editable, Rincian Pajak readonly, Penomoran hanya lewat flow sah — preview/download bukan shortcut numbering.
 
 ---
 
