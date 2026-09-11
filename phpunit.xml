@@ -50,20 +50,21 @@
             <file>tests/Feature/SpjGeneratedDocumentValidatorTest.php</file>
             <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
             <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
+            <file>tests/Feature/SpjMainTabsRenderingTest.php</file>
+            <file>tests/Feature/SpjNonGoodsInputValidationTest.php</file>
+            <file>tests/Feature/SpjNumberingRollbackTest.php</file>
             <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
             <file>tests/Feature/SpjPackageNavigationContextTest.php</file>
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjPreNumberingRegressionTest.php</file>
-            <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
-            <file>tests/Feature/SpjNonGoodsInputValidationTest.php</file>
-            <file>tests/Feature/SpjMainTabsRenderingTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
             <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
+            <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
             <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
             <file>tests/Feature/SpjSafeSyncReconciliationHardeningTest.php</file>
             <file>tests/Feature/SpjSchoolIsolationTest.php</file>
-            <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
             <file>tests/Feature/SpjSixCategoryE2eTest.php</file>
+            <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
             <file>tests/Feature/SyncProgressUiTest.php</file>
             <file>tests/Feature/TransactionPurchaseDateValidationTest.php</file>
             <file>tests/Feature/UnifiedEmployeeMasterTest.php</file>
