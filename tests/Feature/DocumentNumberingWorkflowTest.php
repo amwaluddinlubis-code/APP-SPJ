@@ -221,7 +221,7 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertFalse($package->isEditable());
     }
 
-    public function test_cancelled_number_is_reused_by_the_next_document_in_the_same_domain_and_period(): void
+    public function test_cancelled_number_is_reserved_and_next_documents_continue_the_sequence(): void
     {
         $year = $this->year();
         $originalPackage = $this->package($year, 'A-001', '2026-01-05', '101');
@@ -229,33 +229,37 @@ class DocumentNumberingWorkflowTest extends TestCase
         $numbers = app(SpjDocumentNumberService::class);
         $original = $numbers->assign($originalPackage, 'SPJ', Carbon::parse('2026-01-05'), '10200001');
 
-        app(SpjDocumentLifecycleService::class)->cancel($original, 1, 'Koreksi nomor transaksi');
+        app(SpjDocumentLifecycleService::class)->cancel($original, 1, 'Transaksi dibatalkan');
         $replacement = $numbers->assign($otherPackage, 'SPJ', Carbon::parse('2026-01-10'), '10200001');
         $nextPackage = $this->package($year, 'C-001', '2026-01-15', '103');
         $next = $numbers->assign($nextPackage, 'SPJ', Carbon::parse('2026-01-15'), '10200001');
 
-        $this->assertSame(1, $replacement->sequence_number);
-        $this->assertSame($original->document_number, $replacement->document_number);
-        $this->assertSame($original->id, $replacement->replaces_document_id);
-        $this->assertSame(2, $next->sequence_number);
+        $this->assertSame(1, $original->fresh()->sequence_number);
+        $this->assertSame('CANCELLED', $original->fresh()->status);
+        $this->assertSame(2, $replacement->sequence_number);
+        $this->assertNotSame($original->document_number, $replacement->document_number);
+        $this->assertNull($replacement->replaces_document_id);
+        $this->assertSame(3, $next->sequence_number);
         $this->assertSame('NUMBERED', $otherPackage->refresh()->status);
     }
 
-    public function test_cancelled_document_can_be_reissued_on_the_same_package_without_inserting_a_duplicate_identity(): void
+    public function test_reissuing_after_individual_cancel_creates_a_new_number_and_preserves_cancelled_history(): void
     {
         $year = $this->year();
         $package = $this->package($year, 'A-001', '2026-01-05', '101');
         $numbers = app(SpjDocumentNumberService::class);
         $original = $numbers->assign($package, 'SPJ', Carbon::parse('2026-01-05'), '10200001');
 
-        app(SpjDocumentLifecycleService::class)->cancel($original, 1, 'Koreksi nomor transaksi');
+        app(SpjDocumentLifecycleService::class)->cancel($original, 1, 'Transaksi dibatalkan');
         $reissued = $numbers->assign($package->refresh(), 'SPJ', Carbon::parse('2026-01-05'), '10200001');
 
-        $this->assertSame($original->id, $reissued->id);
-        $this->assertSame(1, $reissued->sequence_number);
+        $this->assertNotSame($original->id, $reissued->id);
+        $this->assertSame(1, $original->fresh()->sequence_number);
+        $this->assertSame('CANCELLED', $original->fresh()->status);
+        $this->assertNotNull($original->fresh()->cancelled_at);
+        $this->assertSame(2, $reissued->sequence_number);
         $this->assertSame('NUMBERED', $reissued->status);
-        $this->assertNull($reissued->cancelled_at);
-        $this->assertSame(1, $package->documents()->where('document_type', 'SPJ')->where('scope_key', 'MAIN')->count());
+        $this->assertSame(2, $package->documents()->where('document_type', 'SPJ')->where('scope_key', 'MAIN')->count());
     }
 
     private function year(): FiscalYear
