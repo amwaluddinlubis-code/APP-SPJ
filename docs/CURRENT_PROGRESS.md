@@ -18,11 +18,11 @@ Definisi status:
 ### Release gate branch aktif
 
 ```text
-code gate : 94cbfb1fa8541c182ac7338d152d109d184113d6
-subject   : test(gui): include student form detail guard in critical suite
-CI run    : 34610228013 (#312)
-CI job    : 103298677951
-result    : PASS — 252 tests / 1914 assertions
+code gate : a11223079b0ebc26af8732233057e1f0e6f1aa94
+subject   : test(gui): include synced data guard in critical suite
+CI run    : 34611471879 (#315)
+CI job    : 103303126616
+result    : PASS — 254 tests / 1934 assertions
 ```
 
 Evidence gate:
@@ -30,7 +30,7 @@ Evidence gate:
 ```text
 Frontend build   : PASS
 Blade compile    : PASS
-SPJ Critical     : PASS — 252 tests / 1914 assertions
+SPJ Critical     : PASS — 254 tests / 1934 assertions
 Repository Pint  : ADVISORY — 3 style issues, non-blocking
 ```
 
@@ -42,7 +42,7 @@ Pint advisory pada gate ini tetap berada pada file yang sudah dikenal:
 
 Advisory tersebut tidak dibaca sebagai functional regression karena workflow sengaja menjalankan Pint sebagai advisory dan seluruh build/Blade/SPJ Critical selesai hijau.
 
-Gate `94cbfb1f...` menggantikan checkpoint `a7e927df...` sebagai deterministic code gate terbaru. Commit dokumentasi yang masuk setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
+Gate `a1122307...` menggantikan checkpoint `94cbfb1f...` sebagai deterministic code gate terbaru. Commit dokumentasi yang masuk setelah code gate tidak boleh dianggap sebagai code gate baru tanpa perubahan source/test.
 
 ---
 
@@ -81,17 +81,19 @@ Perbaikan audit yang sudah masuk antara lain:
 - Master Siswa index: filter/surface/divider/typography desktop+mobile memakai semantic theme token; tabel desktop memakai `x-ui.table`; hard-coded non-semantic `slate/indigo/white` pada index dihilangkan.
 - Master Siswa form: checkbox cards dan sticky action area memakai semantic theme token; action footer memakai `x-ui.sticky-actions`; field, route, validation, dan lifecycle CRUD tetap sama.
 - Master Siswa detail: data identitas dan payload Dapodik memakai `x-ui.detail-list` / `x-ui.detail-item`; breadcrumb, surface, line, dan typography memakai semantic theme token; masking NIK/telepon tetap dipertahankan.
+- Data Hasil Sinkron: overview/navigation/card/table menggunakan semantic theme token; hard-coded group palette `indigo/sky/violet/slate` dihapus; detail table memakai shared `x-ui.table`; filter/per-page/server pagination dan data binding tetap dipertahankan.
 
-Regression guard Master Siswa:
+Regression guard GUI yang aktif pada area ini:
 
 ```text
 tests/Feature/StudentIndexThemePrimitiveUiTest.php
 tests/Feature/StudentFormDetailThemePrimitiveUiTest.php
+tests/Feature/SyncedDataThemePrimitiveUiTest.php
 ```
 
-Kedua guard sekarang menjadi bagian eksplisit dari suite `SPJ Critical` dan PASS pada gate `94cbfb1f...`.
+Ketiga guard sekarang menjadi bagian eksplisit dari suite `SPJ Critical` dan PASS pada gate `a1122307...`.
 
-Batas klaim: family source `resources/views/students/index.blade.php`, `form.blade.php`, dan `show.blade.php` sudah ditutup pada level source/primitives untuk GUI-AUDIT-05/06. Browser visual QA tetap diperlukan sebelum menyatakan family Master Siswa selesai secara visual/runtime.
+Batas klaim: family source `resources/views/students/index.blade.php`, `form.blade.php`, `show.blade.php`, serta `resources/views/synced-data/index.blade.php` sudah ditutup pada level source/primitives untuk GUI-AUDIT-05/06/07. Browser visual QA tetap diperlukan sebelum menyatakan area tersebut selesai secara visual/runtime.
 
 ---
 
@@ -409,7 +411,7 @@ Prioritas aktif:
 1. jalankan read-only audit pada baseline real-data 66 Paket READY;
 2. perbaiki hanya blocker legitimate yang ditemukan audit;
 3. lakukan operator/real-data QA untuk rollback numbering dengan isolated copy, terutama alignment nomor SPJ terhadap source order ARKAS;
-4. lanjutkan source-level GUI compliance cleanup pada halaman legacy-heavy lain di luar family Master Siswa;
+4. lanjutkan source-level GUI compliance cleanup pada halaman legacy-heavy lain di luar family Master Siswa dan Data Hasil Sinkron;
 5. selesaikan browser QA desktop/laptop setelah cleanup source yang relevan;
 6. verifikasi JASA_LAINNYA multi-recipient pada generated document nyata;
 7. verifikasi PEMELIHARAAN bahan + upah end-to-end dokumen;
@@ -444,7 +446,7 @@ Belum boleh diberi status final sampai evidence tersedia untuk:
 - real-data category-specific document QA yang belum selesai;
 - installed-runtime checks yang masih DEFERRED.
 
-Tidak ada blocker functional deterministic baru pada code gate `94cbfb1f...`; gate tersebut hijau.
+Tidak ada blocker functional deterministic baru pada code gate `a1122307...`; gate tersebut hijau.
 
 ---
 
@@ -454,6 +456,6 @@ Tidak ada blocker functional deterministic baru pada code gate `94cbfb1f...`; ga
 2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `94cbfb1f...`.
+5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `a1122307...`.
 6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, test, dan dokumen ini.
 7. GUI source cleanup hanya boleh diberi status source-level PASS; browser visual QA tetap RVR sampai diverifikasi di runtime.
