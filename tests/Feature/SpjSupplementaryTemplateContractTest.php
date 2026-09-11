@@ -25,6 +25,16 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertContains('TOTAL_KONSUMSI', $recipients['required']);
     }
 
+    public function test_consumption_placeholders_are_exposed_in_runtime_catalog(): void
+    {
+        $groups = app(SpjTemplateService::class)::placeholderGroups();
+
+        $this->assertArrayHasKey('Konsumsi & kegiatan', $groups);
+        $this->assertContains('TANGGAL_KEGIATAN', $groups['Konsumsi & kegiatan']);
+        $this->assertContains('KONSUMSI_NAMA', $groups['Konsumsi & kegiatan']);
+        $this->assertContains('TOTAL_KONSUMSI', $groups['Konsumsi & kegiatan']);
+    }
+
     public function test_revised_master_workbook_metadata_and_unimplemented_design_sheets_are_technical(): void
     {
         $technical = SpjDocumentTypeRegistry::technicalSheets();
