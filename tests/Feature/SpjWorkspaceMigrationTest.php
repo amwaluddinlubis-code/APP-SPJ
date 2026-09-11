@@ -123,20 +123,31 @@ class SpjWorkspaceMigrationTest extends TestCase
         $this->assertSame('BARANG', $transaction->fresh()->spj_category);
     }
 
-    public function test_numbered_and_final_packages_keep_all_normal_edit_paths_locked(): void
+    public function test_numbered_keeps_manual_paths_locked_but_allows_item_description_and_final_locks_everything(): void
     {
         $transaction = $this->transaction();
         $package = $this->openDraft($transaction);
-        foreach (['NUMBERED', 'FINAL'] as $status) {
-            $package->update(['status' => $status]);
-            $this->put(route('spj.update', $package->id), ['vendor_name' => 'Ditolak'])->assertSessionHas('error');
-            $this->putJson(route('spj.update', $package->id), ['category_switch' => 1, 'spj_category' => 'SPPD'])->assertUnprocessable();
-            $this->put(route('transactions.spj-descriptions.update', $transaction->id), [
-                'items' => [['id' => $transaction->items()->first()->id, 'item_description' => 'Ditolak']],
-            ])->assertSessionHas('error');
-        }
+        $item = $transaction->items()->firstOrFail();
+
+        $package->update(['status' => 'NUMBERED', 'document_number' => '0001/SPJ/2026']);
+        $this->put(route('spj.update', $package->id), ['vendor_name' => 'Ditolak'])->assertSessionHas('error');
+        $this->putJson(route('spj.update', $package->id), ['category_switch' => 1, 'spj_category' => 'SPPD'])->assertUnprocessable();
+        $this->put(route('transactions.spj-descriptions.update', $transaction->id), [
+            'items' => [['id' => $item->id, 'item_description' => 'Nama barang dikoreksi']],
+        ])->assertSessionHasNoErrors()->assertSessionMissing('error');
+        $this->assertSame('Nama barang dikoreksi', $item->fresh()->item_description);
+        $this->assertSame('NUMBERED', $package->fresh()->status);
+        $this->assertSame('0001/SPJ/2026', $package->fresh()->document_number);
+
+        $package->update(['status' => 'FINAL']);
+        $this->put(route('spj.update', $package->id), ['vendor_name' => 'Tetap ditolak'])->assertSessionHas('error');
+        $this->putJson(route('spj.update', $package->id), ['category_switch' => 1, 'spj_category' => 'SPPD'])->assertUnprocessable();
+        $this->put(route('transactions.spj-descriptions.update', $transaction->id), [
+            'items' => [['id' => $item->id, 'item_description' => 'Tidak boleh berubah saat final']],
+        ])->assertSessionHas('error');
+
         $this->assertNull($transaction->fresh()->vendor_name);
-        $this->assertSame('Kertas untuk SPJ', $transaction->items()->first()->item_description);
+        $this->assertSame('Nama barang dikoreksi', $item->fresh()->item_description);
     }
 
     public function test_legacy_routes_and_use_case_are_retired(): void
