@@ -31,7 +31,7 @@
                     'history' => ['Riwayat', 'sync'],
                 ] as $key => [$label, $icon])
                     <button type="button" @click="tab = '{{ $key }}'" :class="tab === '{{ $key }}' ? 'ui-btn-primary' : 'text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]'" class="ui-btn flex items-center justify-center gap-2 px-3 py-3 text-sm">
-                        <x-ui-icon name="{{ $icon }}" /> <span>{{ $label }}</span>
+                        <x-ui.icon :name="$icon" size="sm" /> <span>{{ $label }}</span>
                     </button>
                 @endforeach
             </nav>
