@@ -127,7 +127,7 @@ Pada BARANG, kontrol konteks dapat menampilkan:
 Kategori SPJ | ○ SiPLah  ○ Non SiPLah
 ```
 
-Kontrol tersebut menyinkronkan `payment_method`, bukan membuat domain field baru. Bila source authoritative mengunci transaksi sebagai SiPLah, UI biasa tidak boleh membaliknya tanpa rule yang sah.
+Kontrol tersebut bukan domain field baru. Kedua radio adalah satu group dan mutually-exclusive, hanya ditampilkan pada kategori BARANG, dan bersifat UI-only: hanya show/hide section pengadaan (SiPLah vs internal), nilainya tidak disimpan dan tidak pernah menulis `payment_method`. Status awal radio diturunkan dari `payment_method`/`is_siplah`. Bila source authoritative mengunci transaksi sebagai SiPLah, UI biasa tidak boleh membaliknya tanpa rule yang sah; Non SiPLah dapat disabled.
 
 ## 7. Pekerjaan yang masih RVR / aktif
 
@@ -137,7 +137,7 @@ Pekerjaan tersisa bukan membangun ulang core SiPLah, tetapi membuktikan output d
 - [ ] official-template Word/Excel/PDF mengambil field SiPLah yang benar;
 - [ ] print area/page break/header/footer/tabel dinamis pada template resmi;
 - [ ] browser flow source → transaksi → Paket → output tanpa side effect numbering;
-- [ ] reload/category switching/payment-method consistency;
+- [ ] reload/category switching/payment-method consistency, termasuk radio SiPLah/Non SiPLah yang tetap UI-only dan tidak menulis `payment_method`;
 - [ ] verifikasi ownership field source vs operator pada data sekolah nyata;
 - [ ] safe sync mempertahankan overlay SiPLah manual sesuai kontrak.
 

@@ -450,7 +450,7 @@ Prioritas setelah audit source terbaru:
 5. SiPLah generated-document E2E + official-template/output verification;
 6. browser QA Paket SPJ desktop/laptop;
 7. audit trail operasional E2E;
-8. verifikasi unified employee identity pada data sekolah nyata + participant roster hardening; kontrak auto-fill KONSUMSI tetap DAPODIK-only.
+8. verifikasi unified employee identity pada data sekolah nyata + participant roster hardening; kontrak master Pegawai menyatu (ARKAS + Dapodik + Manual) untuk KONSUMSI dan SPPD.
 
 Mobile/responsive penuh bukan release blocker target operator laptop/desktop saat ini.
 
@@ -485,6 +485,7 @@ Mobile/responsive penuh bukan release blocker target operator laptop/desktop saa
 - Employee identity tidak boleh digabung hanya berdasarkan nama ambigu; prioritaskan strong identity dan pertahankan provenance source.
 - Audit real-data sebelum mutation harus memakai jalur read-only; original upload/database baseline tidak boleh dimodifikasi.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memenuhi coverage.
+- Master Pegawai menyatu (ARKAS + Dapodik + Manual, satu row per identitas NUPTK > NIP > NIK > nama); KONSUMSI dan SPPD memakai roster menyatu, koreksi operator canonical via `operator_locked`.
 
 ## Catatan release
 

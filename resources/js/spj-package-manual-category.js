@@ -10,6 +10,31 @@ const setCategoryStatus = (_form, message = '', state = 'idle') => {
     if (state === 'success') notify('success', message);
 };
 
+// Radio SiPLah/Non SiPLah adalah kontrol UI-only khusus BARANG: hanya show/hide
+// section pengadaan, tidak pernah menulis payment_method (field canonical backend).
+const updateProcurementVisibility = (form) => {
+    const categorySelect = form.querySelector('#spj-type');
+    const category = String(categorySelect?.value || '').toUpperCase();
+    const context = form.querySelector('[data-spj-category-context]');
+    const siplahRadio = context?.querySelector('[data-spj-siplah-mode="siplah"]');
+    const uiSiplah = siplahRadio instanceof HTMLInputElement ? siplahRadio.checked : false;
+    const paymentMethod = form.querySelector('[name="payment_method"]');
+    const backendIsSiplah = (paymentMethod instanceof HTMLSelectElement && paymentMethod.value === 'siplah') || form.dataset.sourceSiplah === '1';
+
+    form.querySelectorAll('[data-spj-procurement]').forEach((section) => {
+        if (!(section instanceof HTMLElement)) return;
+        let active;
+        if (category === 'BARANG') {
+            active = section.dataset.spjProcurement === 'siplah' ? uiSiplah : !uiSiplah;
+        } else {
+            active = section.dataset.spjProcurement === 'siplah' ? false : !backendIsSiplah;
+        }
+        section.hidden = !active;
+        section.classList.toggle('hidden', !active);
+        if ('disabled' in section) section.disabled = !active;
+    });
+};
+
 const ensureCategoryContext = (form, categorySelect) => {
     let context = form.querySelector('[data-spj-category-context]');
     if (context instanceof HTMLElement) return context;
@@ -54,27 +79,8 @@ const ensureCategoryContext = (form, categorySelect) => {
     context.querySelectorAll('[data-spj-siplah-mode]').forEach((radio) => {
         radio.addEventListener('change', () => {
             if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
-            if (!(paymentMethod instanceof HTMLSelectElement)) return;
-
-            context.querySelectorAll('[data-spj-siplah-mode]').forEach((otherRadio) => {
-                if (otherRadio instanceof HTMLInputElement && otherRadio !== radio) {
-                    otherRadio.checked = false;
-                }
-            });
-
-            if (radio.value === 'siplah') {
-                paymentMethod.value = 'siplah';
-            } else {
-                if (form.dataset.sourceSiplah === '1') {
-                    radio.checked = false;
-                    const siplahRadio = context.querySelector('[data-spj-siplah-mode="siplah"]');
-                    if (siplahRadio instanceof HTMLInputElement) siplahRadio.checked = true;
-                    return;
-                }
-                paymentMethod.value = form.dataset.lastNonSiplahPayment || 'tunai';
-            }
-
-            paymentMethod.dispatchEvent(new Event('change', { bubbles: true }));
+            // UI-only: hanya show/hide form pengadaan BARANG, tidak menyentuh payment_method.
+            updateProcurementVisibility(form);
         });
     });
 
@@ -136,13 +142,8 @@ const applyPackageManualCategory = () => {
 
     const paymentMethod = form.querySelector('[name="payment_method"]')?.value;
     const isSiplah = paymentMethod === 'siplah' || form.dataset.sourceSiplah === '1';
-    form.querySelectorAll('[data-spj-procurement]').forEach((section) => {
-        const active = section.dataset.spjProcurement === 'siplah'
-            ? category === 'BARANG' && isSiplah
-            : !isSiplah;
-        section.hidden = !active;
-        section.disabled = !active;
-    });
+    syncCategoryContext(form, categorySelect);
+    updateProcurementVisibility(form);
     ['payment_reference', 'invoice_number', 'invoice_date'].forEach((name) => {
         const control = form.querySelector('[name="' + name + '"]');
         if (control) control.required = isSiplah;
@@ -152,7 +153,6 @@ const applyPackageManualCategory = () => {
         if (control) control.required = category === 'KONSUMSI' && !isSiplah;
     });
 
-    syncCategoryContext(form, categorySelect);
     document.dispatchEvent(new CustomEvent('spj:category-ui-updated', { detail: { category } }));
 };
 
