@@ -1,8 +1,8 @@
 # Migrasi Icon Canonical
 
-Terakhir diverifikasi: **2026-09-11** terhadap implementasi icon aktif pada branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-12** terhadap implementasi icon aktif pada branch `gui-standardization`.
 
-Status: **PARTIAL MIGRATION / DUAL ICON SYSTEM ACTIVE / COMPATIBILITY BRIDGE MASIH DIPAKAI.**
+Status: **PARTIAL MIGRATION / CANONICAL GLOBAL LAYOUT / COMPATIBILITY BRIDGE MASIH DIPAKAI.**
 
 Dokumen ini menjelaskan arah migrasi icon UI. Ia bukan sumber status release umum; gunakan `CURRENT_PROGRESS.md` untuk status project dan `GUI_STANDARDIZATION.md` untuk kontrak visual utama.
 
@@ -36,9 +36,9 @@ Aturan baru:
 
 ---
 
-## 2. Temuan audit: dua sistem icon masih aktif
+## 2. Temuan audit: compatibility component masih aktif
 
-Project saat ini belum memakai satu component icon saja.
+Project sudah memakai `<x-ui.icon>` sebagai registry/rendering canonical, tetapi compatibility component lama belum dapat dihapus karena consumer feature lama masih harus dimigrasikan bertahap.
 
 ### 2.1 Canonical action icon
 
@@ -46,48 +46,22 @@ Project saat ini belum memakai satu component icon saja.
 <x-ui.icon>
 ```
 
-Digunakan oleh primitive UI baru, `<x-ui.button>`, dan compatibility template action.
+Digunakan oleh primitive UI baru, `<x-ui.button>`, global authenticated layout/sidebar, dan compatibility template action.
 
-### 2.2 Legacy/global navigation icon
+### 2.2 Legacy compatibility icon
 
-Komponen lain masih aktif:
+Komponen berikut masih dipertahankan sebagai adapter compatibility:
 
 ```text
 <x-ui-icon>
 resources/views/components/ui-icon.blade.php
 ```
 
-Komponen ini masih dipakai luas pada layout/sidebar dan mempunyai katalog nama sendiri, misalnya:
+Registry SVG terpisah sudah tidak ada; adapter tersebut meneruskan rendering ke `<x-ui.icon>`. Global authenticated layout/sidebar sudah dimigrasikan ke `<x-ui.icon>`, termasuk icon Penomoran, Reset Database, Uji Sebagai User, menu mobile, profil, dan navigasi utama.
 
-```text
-dashboard
-budget
-transaction
-tax
-report
-audit
-sync
-archive
-server
-logout
-employee
-preview
-excel
-pdf
-work
-number
-priority
-progress
-queue
-system
-balance
-```
+Consumer feature legacy yang masih ada harus tetap dimigrasikan bertahap. Karena itu `<x-ui-icon>` **tidak boleh dihapus secara prematur** sebelum seluruh pemakaian tersisa diverifikasi dan hasil visual/runtime diperiksa.
 
-Sebagian nama tersebut belum mempunyai padanan langsung pada `<x-ui.icon>`.
-
-Karena itu `<x-ui-icon>` **tidak boleh dihapus atau diganti massal** sebelum katalog canonical diperluas/di-alias-kan dan hasil visual diverifikasi.
-
-Target akhirnya tetap satu sistem canonical, tetapi migrasi harus dilakukan bertahap.
+Target akhirnya tetap satu component canonical, tetapi migrasi harus dilakukan bertahap.
 
 ---
 
@@ -237,14 +211,20 @@ Keberadaan deduplicator menunjukkan compatibility debt masih aktif. File ini tid
 
 ## 8. Known migration debt
 
-Audit menemukan debt berikut yang masih nyata:
+Audit terbaru menunjukkan debt berikut masih nyata:
 
-1. `<x-ui.icon>` dan `<x-ui-icon>` hidup bersamaan;
-2. katalog kedua component belum identik;
-3. layout/sidebar masih memakai `<x-ui-icon>` secara luas;
-4. beberapa navigasi masih memakai simbol teks seperti `№`, `↺`, atau `◎`;
-5. legacy action migrator masih dibutuhkan oleh sebagian markup;
-6. page-specific icon normalizer masih membutuhkan deduplicator.
+1. `<x-ui.icon>` dan adapter `<x-ui-icon>` masih hidup bersamaan untuk consumer feature legacy;
+2. compatibility action migrator masih dibutuhkan oleh sebagian markup;
+3. page-specific icon normalizer masih membutuhkan deduplicator;
+4. consumer feature lama masih harus dimigrasikan secara bertahap sebelum adapter `<x-ui-icon>` dapat dihapus;
+5. browser QA tetap diperlukan untuk memastikan icon tidak hilang/ganda setelah Livewire navigation dan DOM update.
+
+Milestone yang sudah dicapai:
+
+- global authenticated layout/sidebar memakai `<x-ui.icon>`;
+- simbol navigasi global `№`, `↺`, dan `◎` sudah diganti dengan icon canonical `number`, `refresh`, dan `user`;
+- menu mobile, profile actions, logout, dan chevron group global memakai registry canonical;
+- tab Laporan Audit dan action Tambah Pegawai yang disentuh juga memakai icon canonical.
 
 Debt tersebut adalah **P2 visual/maintainability**, bukan alasan mengubah lifecycle atau domain SPJ.
 
@@ -260,8 +240,8 @@ Urutan canonical:
 1. Inventaris nama icon yang dipakai <x-ui-icon>
 2. Tambahkan padanan/alias yang diperlukan ke <x-ui.icon>
 3. Verifikasi ukuran, stroke, alignment, dan accessibility
-4. Migrasikan layout/sidebar ke <x-ui.icon>
-5. Ganti simbol teks action/navigation yang relevan dengan icon canonical
+4. Migrasikan layout/sidebar ke <x-ui.icon>                         [DONE source-level]
+5. Ganti simbol teks action/navigation global yang relevan          [DONE source-level]
 6. Saat view feature disentuh, migrasikan action legacy ke <x-ui.button icon="..."> / <x-ui.icon>
 7. Kurangi rule legacy-action-icon-migrator yang sudah tidak mempunyai consumer
 8. Hapus page-specific duplicate icon normalizer bila tidak lagi diperlukan
@@ -271,6 +251,8 @@ Urutan canonical:
 ```
 
 Setiap tahap harus kecil dan dapat direview. Jangan melakukan penggantian massal hanya berdasarkan kesamaan nama icon.
+
+`DONE source-level` pada tahap 4–5 tidak berarti browser visual PASS; runtime tetap mengikuti `GUI_RUNTIME_QA.md`.
 
 ---
 
@@ -300,7 +282,9 @@ Compatibility code boleh tetap hidup untuk view lain yang belum disentuh.
 - simbol teks legacy yang berfungsi sebagai icon sudah dimigrasikan atau sengaja dipertahankan dengan keputusan UI eksplisit;
 - browser QA memastikan icon tidak hilang/ganda setelah Livewire navigation dan DOM update.
 
-Setelah itu component/file compatibility dapat dihapus melalui patch terpisah dengan regression/build verification.
+Global layout/sidebar sekarang memenuhi bagian source-level dari kriterianya, tetapi compatibility layer belum boleh dihapus selama consumer feature dan runtime evidence tersisa.
+
+Setelah seluruh exit criteria terpenuhi, component/file compatibility dapat dihapus melalui patch terpisah dengan regression/build verification.
 
 ---
 
