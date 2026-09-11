@@ -22,6 +22,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
         parent::setUp();
         config()->set('database.connections.school.database', ':memory:');
         config()->set('database.connections.school.journal_mode', null);
+        config()->set('filesystems.default', 'local');
         DB::purge('school');
         Storage::fake('local');
 
@@ -111,6 +112,65 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $this->assertSame('RINCIAN_BELANJA', $template->document_type);
         $this->assertSame(['BARANG'], $template->applicable_categories);
         Storage::assertExists($template->file_path);
+    }
+
+    public function test_package_form_upload_failure_stays_on_package_validation_path(): void
+    {
+        $request = Request::create('/pengaturan/template-dokumen', 'POST', [
+            'replace_existing' => '0',
+        ]);
+        $request->setLaravelSession(app('session')->driver());
+
+        try {
+            app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
+            $this->fail('Paket template tanpa file seharusnya ditolak sebagai error template_package.');
+        } catch (ValidationException $exception) {
+            $errors = $exception->errors();
+            $this->assertArrayHasKey('template_package', $errors);
+            $this->assertArrayNotHasKey('document_type', $errors);
+            $this->assertArrayNotHasKey('template', $errors);
+        }
+    }
+
+    public function test_valid_xlsx_upload_does_not_depend_on_windows_mime_detection(): void
+    {
+        $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
+        $request = Request::create('/pengaturan/template-dokumen', 'POST', [
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template MIME Netral',
+            'applicable_categories' => ['BARANG'],
+        ], [], [
+            'template' => new UploadedFile($path, 'template.xlsx', 'application/zip', null, true),
+        ]);
+        $request->setLaravelSession(app('session')->driver());
+
+        app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
+
+        $template = DocumentTemplate::query()->sole();
+        $this->assertSame('xlsx', $template->format);
+        Storage::disk('local')->assertExists($template->file_path);
+    }
+
+    public function test_uploaded_template_is_always_persisted_on_local_disk(): void
+    {
+        Storage::fake('public');
+        config()->set('filesystems.default', 'public');
+
+        $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
+        $request = Request::create('/pengaturan/template-dokumen', 'POST', [
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Template Local Disk',
+            'applicable_categories' => ['BARANG'],
+        ], [], [
+            'template' => new UploadedFile($path, 'template.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ]);
+        $request->setLaravelSession(app('session')->driver());
+
+        app()->call([app(DocumentTemplateController::class), 'store'], ['request' => $request]);
+
+        $template = DocumentTemplate::query()->sole();
+        Storage::disk('local')->assertExists($template->file_path);
+        Storage::disk('public')->assertMissing($template->file_path);
     }
 
     public function test_valid_replacement_switches_record_before_deleting_previous_file(): void
