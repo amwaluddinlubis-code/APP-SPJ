@@ -306,6 +306,22 @@ resources/js/app.js
 
 Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA runtime resmi mengikuti `GUI_RUNTIME_QA.md`. Source-level responsive guard hanya membuktikan kontrak markup/breakpoint tertentu dan **tidak** menggantikan browser visual QA.
 
+## 20.1 Pilot density workspace SPJ
+
+Workspace `/spj` menggunakan pilot density scoped pada `.spj-semantic-workspace`:
+
+```text
+control height       : 40px
+section gap          : 16px
+content padding      : 20px
+panel radius         : 12px
+table row vertical   : 10px
+page title           : 24px
+package tab text     : 14px
+```
+
+Nilai ini bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Pilot hanya mengubah presentation/density; lifecycle, validation, numbering, source ownership, dan workflow tetap sama. Kenyamanan visual dan tidak adanya clipping/overlap harus diverifikasi melalui checklist runtime di `GUI_RUNTIME_QA.md` sebelum dipromosikan menjadi standar global.
+
 ## 21. Pola form dinamis show/hide
 
 - Kontrol show/hide (seperti radio SiPLah) tidak boleh menulis field domain sebagai efek samping; visibilitas dan nilai backend adalah dua keputusan terpisah.

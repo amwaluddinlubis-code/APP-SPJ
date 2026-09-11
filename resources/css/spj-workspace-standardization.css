@@ -60,28 +60,28 @@ main:has(#spj-main-tabs) table button[class*="bg-violet-50"] {
 }
 
 /* Legacy cards/panels inside package, report and monitoring tabs. */
-main:has(#spj-main-tabs) :is(section,article,aside,div)[class*="bg-white"][class*="border-"][class*="rounded-"] {
+main:has(#spj-main-tabs) :is(section, article, aside, div)[class*="bg-white"][class*="border-"][class*="rounded-"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface) !important;
     color: var(--spj-text) !important;
 }
 
-main:has(#spj-main-tabs) :is(section,article,aside,div)[class*="bg-slate-50"][class*="rounded-"] {
+main:has(#spj-main-tabs) :is(section, article, aside, div)[class*="bg-slate-50"][class*="rounded-"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface-soft) !important;
     color: var(--spj-text) !important;
 }
 
 /* Keep semantic success/warning/danger surfaces recognizable; only accent-purple/indigo is theme-replaced. */
-main:has(#spj-main-tabs) :is(.text-indigo-600,.text-indigo-700,.text-indigo-800,.text-violet-600,.text-violet-700,.text-violet-800):not([class*="bg-"]) {
+main:has(#spj-main-tabs) :is(.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-violet-600, .text-violet-700, .text-violet-800):not([class*="bg-"]) {
     color: var(--theme-content-accent) !important;
 }
 
-main:has(#spj-main-tabs) :is(.border-indigo-100,.border-indigo-200,.border-violet-100,.border-violet-200) {
+main:has(#spj-main-tabs) :is(.border-indigo-100, .border-indigo-200, .border-violet-100, .border-violet-200) {
     border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--spj-border)) !important;
 }
 
-main:has(#spj-main-tabs) :is(.bg-indigo-50,.bg-violet-50) {
+main:has(#spj-main-tabs) :is(.bg-indigo-50, .bg-violet-50) {
     background-color: color-mix(in srgb, var(--theme-accent-soft) 46%, var(--spj-surface)) !important;
 }
 
@@ -107,22 +107,22 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     color: var(--spj-text);
 }
 
-.spj-semantic-workspace :is(section,article,aside,details,form,div)[class*="bg-white"][class*="rounded-"],
-.spj-semantic-workspace > section[class*="bg-white"] {
+.spj-semantic-workspace :is(section, article, aside, details, form, div)[class*="bg-white"][class*="rounded-"],
+.spj-semantic-workspace>section[class*="bg-white"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface) !important;
     color: var(--spj-text) !important;
 }
 
-.spj-semantic-workspace :is(.bg-white,.bg-slate-50\/70,.bg-slate-50\/30) {
+.spj-semantic-workspace :is(.bg-white, .bg-slate-50\/70, .bg-slate-50\/30) {
     background-color: var(--spj-surface) !important;
 }
 
-.spj-semantic-workspace :is(.bg-slate-50,.bg-slate-100) {
+.spj-semantic-workspace :is(.bg-slate-50, .bg-slate-100) {
     background-color: var(--spj-surface-soft) !important;
 }
 
-.spj-semantic-workspace :is(.border-slate-100,.border-slate-200) {
+.spj-semantic-workspace :is(.border-slate-100, .border-slate-200) {
     border-color: var(--spj-border) !important;
 }
 
@@ -130,11 +130,11 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     border-color: var(--spj-border-strong) !important;
 }
 
-.spj-semantic-workspace :is(.divide-slate-100,.divide-slate-200) > :not([hidden]) ~ :not([hidden]) {
+.spj-semantic-workspace :is(.divide-slate-100, .divide-slate-200)> :not([hidden])~ :not([hidden]) {
     border-color: var(--spj-border) !important;
 }
 
-.spj-semantic-workspace :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+.spj-semantic-workspace :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
     color: var(--spj-text-strong) !important;
 }
 
@@ -142,19 +142,19 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     color: var(--spj-text) !important;
 }
 
-.spj-semantic-workspace :is(.text-slate-500,.text-slate-400,.text-slate-300) {
+.spj-semantic-workspace :is(.text-slate-500, .text-slate-400, .text-slate-300) {
     color: var(--spj-text-muted) !important;
 }
 
-.spj-semantic-workspace :is(.text-indigo-950,.text-indigo-900,.text-indigo-800,.text-indigo-700,.text-indigo-600,.text-violet-800,.text-violet-700,.text-violet-600,.text-sky-900,.text-sky-800,.text-sky-700) {
+.spj-semantic-workspace :is(.text-indigo-950, .text-indigo-900, .text-indigo-800, .text-indigo-700, .text-indigo-600, .text-violet-800, .text-violet-700, .text-violet-600, .text-sky-900, .text-sky-800, .text-sky-700) {
     color: var(--theme-content-accent) !important;
 }
 
-.spj-semantic-workspace :is(.border-indigo-100,.border-indigo-200,.border-indigo-300,.border-violet-100,.border-violet-200,.border-sky-100,.border-sky-200) {
+.spj-semantic-workspace :is(.border-indigo-100, .border-indigo-200, .border-indigo-300, .border-violet-100, .border-violet-200, .border-sky-100, .border-sky-200) {
     border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--spj-border)) !important;
 }
 
-.spj-semantic-workspace :is(.bg-indigo-50,.bg-violet-50,.bg-sky-50) {
+.spj-semantic-workspace :is(.bg-indigo-50, .bg-violet-50, .bg-sky-50) {
     background-color: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--spj-surface)) !important;
 }
 
@@ -176,39 +176,69 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
     background: var(--ui-table-row-hover) !important;
 }
 
-.spj-semantic-workspace :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) {
+.spj-semantic-workspace :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
     border-color: var(--spj-border-strong) !important;
     background: var(--spj-surface) !important;
     color: var(--spj-text-strong) !important;
 }
 
-.spj-semantic-workspace :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):focus-visible {
+.spj-semantic-workspace :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):focus-visible {
     border-color: var(--theme-accent) !important;
     outline: 3px solid color-mix(in srgb, var(--theme-accent) 28%, transparent) !important;
     outline-offset: 1px;
 }
 
-.spj-semantic-workspace :is(input,select,textarea):disabled,
-.spj-semantic-workspace fieldset:disabled :is(input,select,textarea,button) {
+.spj-semantic-workspace :is(input, select, textarea):disabled,
+.spj-semantic-workspace fieldset:disabled :is(input, select, textarea, button) {
     cursor: not-allowed;
     opacity: .64;
 }
 
-.spj-semantic-workspace :is(a,button)[class*="bg-indigo-600"],
-.spj-semantic-workspace :is(a,button)[class*="bg-violet-600"] {
+.spj-semantic-workspace :is(a, button)[class*="bg-indigo-600"],
+.spj-semantic-workspace :is(a, button)[class*="bg-violet-600"] {
     border-color: color-mix(in srgb, var(--theme-action-bg) 76%, var(--spj-border)) !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
-.spj-semantic-workspace :is(a,button)[class*="bg-indigo-600"]:hover,
-.spj-semantic-workspace :is(a,button)[class*="bg-violet-600"]:hover {
+.spj-semantic-workspace :is(a, button)[class*="bg-indigo-600"]:hover,
+.spj-semantic-workspace :is(a, button)[class*="bg-violet-600"]:hover {
     background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--spj-text-strong)) !important;
     color: var(--theme-action-fg) !important;
 }
 
-.spj-semantic-workspace :is(a,button) svg {
+.spj-semantic-workspace :is(a, button) svg {
     color: currentColor;
+}
+
+/* Pilot density profile for the primary /spj operator workspace. Keep the
+   change scoped here until browser QA confirms the reading rhythm. */
+main:has(#spj-main-tabs) .spj-semantic-workspace {
+    --profile-card-radius: .75rem;
+    --profile-control-radius: .5rem;
+    --profile-section-gap: 1rem;
+    --profile-control-height: 2.5rem;
+    --profile-content-padding: 1.25rem;
+    --profile-header-padding-x: 1.25rem;
+    --profile-header-padding-y: 1.25rem;
+    --profile-table-row-y: .625rem;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-title {
+    font-size: 1.5rem !important;
+    line-height: 1.9rem !important;
+    letter-spacing: 0 !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-description {
+    font-size: .875rem !important;
+    line-height: 1.35rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
+    padding-block: .5rem !important;
+    font-size: .875rem !important;
+    line-height: 1.25rem !important;
 }
 
 /* Keep the operator workspace compact on desktop so the queue starts within
@@ -227,18 +257,18 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
         line-height: 1.35rem !important;
     }
 
-    .spj-semantic-workspace .page-header-summary > .spj-work-summary > * {
+    .spj-semantic-workspace .page-header-summary>.spj-work-summary>* {
         padding-block: .75rem !important;
     }
 }
 
 /* Summary cards distinguish queued work from packages that are already in the
    document lifecycle. The percentage is explicitly scoped to created packages. */
-.spj-semantic-workspace .spj-work-summary > button {
+.spj-semantic-workspace .spj-work-summary>button {
     position: relative;
 }
 
-.spj-semantic-workspace .spj-work-summary > button:hover {
+.spj-semantic-workspace .spj-work-summary>button:hover {
     background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--spj-surface)) !important;
 }
 
@@ -288,11 +318,11 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 }
 
 @media (min-width: 1024px) {
-    .spj-semantic-workspace .spj-filter-bar > div:first-of-type {
+    .spj-semantic-workspace .spj-filter-bar>div:first-of-type {
         align-items: end;
     }
 
-    .spj-semantic-workspace .spj-filter-bar > div:last-child {
+    .spj-semantic-workspace .spj-filter-bar>div:last-child {
         margin-top: .625rem !important;
     }
 }
@@ -300,7 +330,7 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 /* The workflow action remains visible when the preparation/package tables
    overflow horizontally in a normal desktop window. */
 .spj-semantic-workspace div[x-show="tab === 'persiapan'"] table :is(th, td):last-child,
-.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table :is(th, td):last-child {
+.spj-semantic-workspace div[x-show="tab === 'paket'"]>div:not(:has(section)) table :is(th, td):last-child {
     position: sticky;
     right: 0;
     z-index: 1;
@@ -308,13 +338,13 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 }
 
 .spj-semantic-workspace div[x-show="tab === 'persiapan'"] table th:last-child,
-.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table th:last-child {
+.spj-semantic-workspace div[x-show="tab === 'paket'"]>div:not(:has(section)) table th:last-child {
     z-index: 2;
     background: var(--spj-surface-soft) !important;
 }
 
 .spj-semantic-workspace div[x-show="tab === 'persiapan'"] table td:last-child,
-.spj-semantic-workspace div[x-show="tab === 'paket'"] > div:not(:has(section)) table td:last-child {
+.spj-semantic-workspace div[x-show="tab === 'paket'"]>div:not(:has(section)) table td:last-child {
     background: var(--spj-surface) !important;
 }
 
@@ -324,26 +354,26 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 
 /* Exports form a secondary group after the reporting filters, so applying a
    period is visually distinct from downloading an output. */
-.spj-semantic-workspace .spj-report-toolbar > :is(a, button) {
+.spj-semantic-workspace .spj-report-toolbar> :is(a, button) {
     flex: 0 0 auto;
 }
 
 @media (min-width: 1024px) {
-    .spj-semantic-workspace .spj-report-toolbar > a:nth-of-type(1) {
+    .spj-semantic-workspace .spj-report-toolbar>a:nth-of-type(1) {
         margin-left: auto;
     }
 }
 
 /* Monitoring should prioritize the unresolved work list over period controls. */
-.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child {
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"]>div:first-child {
     padding-block: 1rem !important;
 }
 
-.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child > .grid {
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"]>div:first-child>.grid {
     gap: .5rem !important;
 }
 
-.spj-semantic-workspace div[x-show="tab === 'monitoring'"] > div:first-child > .grid > div {
+.spj-semantic-workspace div[x-show="tab === 'monitoring'"]>div:first-child>.grid>div {
     padding: .75rem !important;
 }
 

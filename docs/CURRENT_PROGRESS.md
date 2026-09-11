@@ -66,6 +66,7 @@ Perbaikan audit yang sudah masuk antara lain:
 - **GUI-AUDIT-12**: source readiness desktop/laptop PASS melalui static regression untuk responsive fallback/table contract, tetapi browser visual/runtime QA **masih RVR**.
 - **GUI-AUDIT-13**: source readiness mobile/tablet PASS melalui responsive source guard, tetapi runtime mobile/tablet usability **masih RVR** dan non-blocker untuk target desktop/laptop saat ini.
 - Toolbar ekspor Laporan SPJ digabung ke dropdown `Ekspor` (`x-ui.action-menu`); strip ganda taxes/transaksi/RKAS disatukan kondisional; empty-state users/templates/taxes memakai `x-ui.empty-state`; baris DRAFT di Monitoring mengarah ke checklist paket.
+- **Density pilot `/spj`**: scoped token pass menurunkan control/header/panel spacing agar workspace operator lebih nyaman pada zoom browser 100%; frontend build, theme contrast QA, dan GUI source-readiness regression lulus. Browser visual/runtime verification tetap **RVR** dan belum menjadi standar global.
 
 Regression guard GUI yang aktif pada area ini:
 

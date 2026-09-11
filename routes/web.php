@@ -158,6 +158,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/spj/tutup-triwulan', [SpjController::class, 'closeQuarter'])->name('spj.quarter-close');
             Route::post('/spj/triwulan/{periodId}/buka', [SpjController::class, 'reopenQuarter'])->name('spj.quarter-reopen');
             Route::post('/spj/paket/{packageId}/buka-kunci', [SpjController::class, 'unlockPackage'])->name('spj.unlock');
+        });
+
+        Route::middleware(['active-school', 'active-year', 'administrator'])->group(function () {
             Route::get('/pengaturan/template-dokumen', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
             Route::get('/pengaturan/template-dokumen/contoh/{format}', [DocumentTemplateController::class, 'sample'])->name('document-templates.sample');
             Route::get('/pengaturan/template-dokumen/{templateId}/unduh', [DocumentTemplateController::class, 'downloadStored'])->name('document-templates.download');
