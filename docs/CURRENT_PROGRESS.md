@@ -65,6 +65,9 @@ Perbaikan audit yang sudah masuk antara lain:
 - **GUI-AUDIT-11**: registry/rendering icon disatukan di `resources/views/components/ui/icon.blade.php`; `<x-ui-icon>` sekarang hanya compatibility adapter ke `<x-ui.icon>` dan tidak lagi memiliki registry SVG terpisah.
 - **GUI-AUDIT-12**: source readiness desktop/laptop PASS melalui static regression untuk responsive fallback/table contract, tetapi browser visual/runtime QA **masih RVR**.
 - **GUI-AUDIT-13**: source readiness mobile/tablet PASS melalui responsive source guard, tetapi runtime mobile/tablet usability **masih RVR** dan non-blocker untuk target desktop/laptop saat ini.
+- Toolbar ekspor Laporan SPJ digabung ke dropdown `Ekspor` (`x-ui.action-menu`); strip ganda taxes/transaksi/RKAS disatukan kondisional; empty-state users/templates/taxes memakai `x-ui.empty-state`; baris DRAFT di Monitoring mengarah ke checklist paket.
+
+Regression guard GUI yang aktif pada area ini:
 
 Regression guard GUI yang aktif pada area ini:
 
@@ -74,9 +77,10 @@ tests/Feature/StudentFormDetailThemePrimitiveUiTest.php
 tests/Feature/SyncedDataThemePrimitiveUiTest.php
 tests/Feature/EmployeeIndexThemePrimitiveUiTest.php
 tests/Feature/GuiAudit09To13SourceReadinessTest.php
+tests/Feature/SpjActiveContractsGuardTest.php
 ```
 
-Kelima guard menjadi bagian eksplisit suite `SPJ Critical` dan PASS pada gate `8180d566...`.
+Guard di atas bagian eksplisit suite `SPJ Critical`; `SpjActiveContractsGuardTest` lolos pada run lokal penuh 265/2007 (gate CI berikutnya masih harus hijau ulang).
 
 Batas klaim:
 
