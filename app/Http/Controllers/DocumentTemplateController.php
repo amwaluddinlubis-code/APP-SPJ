@@ -43,7 +43,10 @@ class DocumentTemplateController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        if ($request->hasFile('template_package')) {
+        // The package form always submits replace_existing (including value 0).
+        // Use that stable form discriminator as well as hasFile() so a rejected or
+        // oversized package upload cannot fall through to the single-template form.
+        if ($request->has('replace_existing') || $request->hasFile('template_package')) {
             return $this->importPackage($request);
         }
 
@@ -51,9 +54,14 @@ class DocumentTemplateController extends Controller
         $data = $request->validate([
             'document_type' => ['required', 'string', 'in:'.implode(',', SpjDocumentTypeRegistry::codes())],
             'name' => ['required', 'string', 'max:120'],
-            'template' => ['required', 'file', 'mimes:docx,xlsx', 'max:10240'],
+            'template' => ['required', 'file', 'extensions:docx,xlsx', 'max:10240'],
             'applicable_categories' => ['nullable', 'array'],
             'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
+        ], [
+            'template.required' => 'Pilih file template DOCX atau XLSX yang akan diunggah.',
+            'template.uploaded' => 'Upload file template gagal. Periksa ukuran file dan batas upload PHP pada komputer ini.',
+            'template.extensions' => 'File template harus berekstensi .docx atau .xlsx.',
+            'template.max' => 'Ukuran file template maksimal 10 MB.',
         ]);
 
         $result = $this->uploadTemplate->handle(
@@ -75,8 +83,13 @@ class DocumentTemplateController extends Controller
     public function importPackage(Request $request): RedirectResponse
     {
         $request->validate([
-            'template_package' => ['required', 'file', 'mimes:xlsx', 'max:20480'],
+            'template_package' => ['required', 'file', 'extensions:xlsx', 'max:20480'],
             'replace_existing' => ['nullable', 'boolean'],
+        ], [
+            'template_package.required' => 'Pilih workbook master XLSX yang akan diimpor.',
+            'template_package.uploaded' => 'Upload workbook master gagal. Periksa ukuran file dan batas upload PHP pada komputer ini.',
+            'template_package.extensions' => 'Workbook master harus berekstensi .xlsx.',
+            'template_package.max' => 'Ukuran workbook master maksimal 20 MB.',
         ]);
 
         $result = $this->importTemplatePackage->handle(
