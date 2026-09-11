@@ -10,7 +10,7 @@
                     <x-ui.button variant="secondary" :href="route('dapodik.index')">Sinkron Dapodik</x-ui.button>
                 @endif
                 @if(in_array(auth()->user()->role, [\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_OPERATOR], true))
-                    <x-ui.button :href="route('employees.create')"><span class="text-lg leading-none">+</span> Tambah pegawai</x-ui.button>
+                    <x-ui.button :href="route('employees.create')"><x-ui.icon name="plus" size="sm" /> Tambah pegawai</x-ui.button>
                 @endif
             </x-slot:actions>
 
