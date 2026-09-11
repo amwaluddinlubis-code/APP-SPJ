@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\SpjDocument;
 use App\Models\SpjPackage;
-use App\Models\Transaction;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -13,9 +12,10 @@ class SpjNumberingCorrectionController extends Controller
 {
     public function __invoke(Request $request, ActiveSpjContext $context): View
     {
-        $quarter = (int) $request->validate([
+        $data = $request->validate([
             'quarter' => ['nullable', 'integer', 'between:1,4'],
-        ])['quarter'] ?? 1;
+        ]);
+        $quarter = (int) ($data['quarter'] ?? 1);
 
         $documents = SpjDocument::query()
             ->with('package.transaction')
@@ -37,7 +37,9 @@ class SpjNumberingCorrectionController extends Controller
                     ->where('fund_source_id', $context->fundSourceId())
                     ->whereMonth('transaction_date', '>=', $start)
                     ->whereMonth('transaction_date', '<=', $end))
-                ->whereHas('documents', fn ($query) => $query->whereNotNull('document_number'))
+                ->whereHas('documents', fn ($query) => $query
+                    ->where('status', '!=', 'CANCELLED')
+                    ->whereNotNull('document_number'))
                 ->count();
 
             return [$candidate => $count];
