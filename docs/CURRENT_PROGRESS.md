@@ -39,6 +39,30 @@ Pint advisory saat ini berada di:
 
 Style debt tersebut tidak memblokir functional release gate, tetapi tetap masuk backlog cleanup.
 
+### Validasi source terhadap HEAD saat ini
+
+Branch `gui-standardization` saat audit dokumentasi ini berada **6 commit di depan** gate `0df9b2f`, tetapi seluruh perubahan sesudah gate hanya berada pada dokumentasi:
+
+```text
+README.md
+docs/CURRENT_PROGRESS.md
+docs/DEVELOPMENT_ROADMAP.md
+docs/MOBILE_VISUAL_QA_TODO.md
+docs/README.md
+```
+
+Tidak ada perubahan `app/`, `routes/`, `database/`, `resources/` aplikasi, atau `tests/` setelah gate tersebut. Dengan demikian:
+
+- `0df9b2f` tetap menjadi **functional code gate** yang relevan untuk source HEAD saat ini;
+- commit dokumentasi sesudah gate tidak boleh ditulis seolah-olah merupakan CI baru;
+- jumlah `243 tests / 1848 assertions` tetap merupakan bukti deterministic terakhir untuk kode yang sedang aktif.
+
+Source/test audit juga menegaskan beberapa capability yang sebelumnya belum tercatat cukup jelas di dokumen progress:
+
+- employee identity fusion/unified employee master sudah mempunyai regression deterministic;
+- audit kuartal read-only sudah mempunyai command + policy regression;
+- core policy/data SiPLah sudah lebih matang daripada sekadar MVP awal dan sudah ikut gate yang sama.
+
 ### Checkpoint canonical sebelumnya
 
 ```text
@@ -339,18 +363,94 @@ Scale/performance lanjutan:
 
 ---
 
+## Capability lintas fitur yang sudah ikut functional gate
+
+### Unified Employee Identity
+
+**Status: FUNCTIONAL IDENTITY CORE PASS / REAL-DATA OPERATOR VERIFICATION ACTIVE.**
+
+Regression aktif membuktikan:
+
+- normalized name backfill;
+- dry-run duplicate fusion tidak menulis database;
+- strong identity ARKAS/PTK + Dapodik dapat digabung tanpa menggandakan pegawai;
+- NUPTK menjadi match kuat dan unique normalized name hanya fallback ketika tidak ambigu;
+- identity tidak ditebak hanya karena nama sama ketika kandidat ambigu;
+- source provenance ARKAS + Dapodik dipertahankan;
+- stale employee hanya dinonaktifkan bila tidak terlihat oleh seluruh source yang relevan;
+- row yang dikunci operator tidak disapu oleh sync;
+- ARKAS dan Dapodik memakai identity resolution + duplicate fusion yang sama;
+- master pegawai menampilkan provenance gabungan dan row hasil sync dikelola melalui modul employee yang sama.
+
+Bukti regression utama:
+
+```text
+tests/Feature/EmployeeIdentityMergeTest.php
+tests/Feature/UnifiedEmployeeMasterTest.php
+```
+
+Yang masih perlu dilakukan bukan membangun ulang identity core, tetapi verifikasi data sekolah nyata, penanganan edge case identitas yang ambigu, dan participant roster/operator UX.
+
+### Read-only Quarter Audit
+
+**Status: FUNCTIONAL PASS / READY FOR REAL-DATA AUDIT.**
+
+Command audit kuartal sekarang dapat dipakai untuk pemeriksaan real-data tanpa mutation. Regression membuktikan:
+
+- tenant existing dibuka dalam mode read-only/query-only;
+- byte/hash database tetap sama setelah audit;
+- metadata `SchoolDatabase` tidak disentuh;
+- database tenant yang hilang tidak dibuat otomatis;
+- policy audit memahami bahwa BARANG SiPLah tidak memerlukan row internal goods/order yang tidak applicable;
+- reconciliation warning JASA_LAINNYA menggugurkan clean candidate sampai sumber masalah diselesaikan.
+
+Bukti regression utama:
+
+```text
+tests/Feature/SpjQuarterAuditCommandTest.php
+tests/Feature/SpjQuarterAuditPolicyTest.php
+```
+
+Tool ini menjadi jalur utama untuk langkah P1 audit 66 Paket READY sebelum mutation/numbering apa pun dilakukan pada isolated copy.
+
+### SiPLah procurement core
+
+**Status: FUNCTIONAL CORE PASS / GENERATED-DOCUMENT E2E + OFFICIAL-TEMPLATE OUTPUT RVR.**
+
+Regression yang sudah ada membuktikan:
+
+- SiPLah tetap `payment/procurement channel`, bukan kategori SPJ;
+- metadata marketplace/order/invoice/payment reference dapat disimpan tanpa mengubah kategori canonical;
+- Paket SiPLah tetap memakai lifecycle Paket SPJ normal;
+- nomor pesanan marketplace dan nomor Surat Pesanan internal tidak dicampur;
+- placeholder SiPLah mempunyai mapping tersendiri;
+- BARANG SiPLah tidak dipaksa memenuhi internal purchase-order requirement yang tidak applicable;
+- incomplete metadata SiPLah tidak menambahkan blocker READY yang tidak mempunyai dasar aturan;
+- policy dokumen marketplace mempunyai regression khusus.
+
+Bukti regression utama:
+
+```text
+tests/Feature/SiplahPurchaseMvpTest.php
+tests/Feature/SiplahMarketplaceDocumentPolicyTest.php
+```
+
+Pekerjaan aktif SiPLah sekarang adalah generated-document E2E menggunakan template applicable/aktual dan verifikasi output, bukan lagi membangun model kategori SiPLah.
+
+---
+
 ## P1 aktif
 
-Prioritas setelah upload template ditutup:
+Prioritas setelah audit source terbaru:
 
-1. audit read-only seluruh 66 READY package pada real-data baseline terbaru;
+1. jalankan audit read-only seluruh 66 READY package pada real-data baseline terbaru melalui jalur `spj:audit-quarter`, lalu kelompokkan anomaly/blocker tanpa mutation source;
 2. perbaiki blocker Paket yang benar-benar berasal dari source/rule aplikasi tanpa fabrikasi data;
-3. lanjutkan JASA_LAINNYA multi-penerima sampai output dokumen;
+3. lanjutkan JASA_LAINNYA multi-penerima sampai output dokumen dan pastikan reconciliation recipient bersih;
 4. PEMELIHARAAN bahan + upah full-document QA;
-5. SiPLah end-to-end output;
+5. SiPLah generated-document E2E + official-template/output verification;
 6. browser QA Paket SPJ desktop/laptop;
 7. audit trail operasional E2E;
-8. Employee identity / participant roster hardening dengan kontrak auto-fill KONSUMSI tetap DAPODIK-only.
+8. verifikasi unified employee identity pada data sekolah nyata + participant roster hardening; kontrak auto-fill KONSUMSI tetap DAPODIK-only.
 
 Mobile/responsive penuh bukan release blocker target operator laptop/desktop saat ini.
 
@@ -382,8 +482,10 @@ Mobile/responsive penuh bukan release blocker target operator laptop/desktop saa
 - READY + category changed => DRAFT untuk revalidation.
 - Preview/download tidak menerbitkan nomor.
 - Upload template harus menggunakan explicit form mode dan disk `local` yang sama dengan generator.
+- Employee identity tidak boleh digabung hanya berdasarkan nama ambigu; prioritaskan strong identity dan pertahankan provenance source.
+- Audit real-data sebelum mutation harus memakai jalur read-only; original upload/database baseline tidak boleh dimodifikasi.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memenuhi coverage.
 
 ## Catatan release
 
-Functional CI branch saat ini kuat dan latest gate PASS. Namun **functional PASS tidak sama dengan final production verification**. Official-template visual QA dan beberapa real-data checks tetap perlu dilakukan sebelum aplikasi disebut final release-ready.
+Functional CI branch saat ini kuat dan latest code gate PASS. Karena seluruh commit setelah `0df9b2f` hanya dokumentasi, tidak ada source-code drift antara gate tersebut dan HEAD saat audit ini. Namun **functional PASS tidak sama dengan final production verification**. Official-template visual QA, generated-document verification pada data nyata, dan beberapa real-data/operator checks tetap perlu dilakukan sebelum aplikasi disebut final release-ready.
