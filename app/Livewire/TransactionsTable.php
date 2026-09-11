@@ -65,13 +65,6 @@ class TransactionsTable extends Component
         $this->resetPage();
     }
 
-    public function getStatsProperty(): object
-    {
-        return (clone $this->baseQuery())
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(gross_amount), 0) as gross, COALESCE(SUM(tax_total), 0) as tax, COALESCE(SUM(net_amount), 0) as net')
-            ->first();
-    }
-
     public function getFilteredStatsProperty(): object
     {
         return (clone $this->filteredQuery())
@@ -113,8 +106,6 @@ class TransactionsTable extends Component
     public function render(): View
     {
         return view('livewire.transactions-table', [
-            'activeYear' => $this->activeYear(),
-            'stats' => $this->stats,
             'filteredStats' => $this->filteredStats,
             'statuses' => $this->statuses,
             'transactions' => $this->transactions,

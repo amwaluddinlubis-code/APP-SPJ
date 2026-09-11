@@ -19,39 +19,35 @@
             </x-ui.button>
         </x-slot:actions>
 
-        <div class="flex items-center gap-2 border-b border-[var(--ui-line)] px-5 py-3 text-sm font-bold uppercase tracking-wide text-slate-500">
-            <x-ui-icon name="calendar" class="h-4 w-4" />
-            <span>Total Tahunan {{ $activeYear->year }}</span>
-        </div>
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
             <x-stat-item
                 label="Transaksi"
-                :value="number_format($stats->count, 0, ',', '.')"
-                hint="Total transaksi tahun aktif"
+                :value="number_format($filteredStats->count, 0, ',', '.')"
+                hint="Hasil filter aktif"
                 value-class="text-slate-800"
                 icon="transaction"
                 icon-class="text-slate-600"
             />
             <x-stat-item
                 label="Nilai Bruto"
-                :value="$rupiah($stats->gross)"
-                hint="Total nilai transaksi"
+                :value="$rupiah($filteredStats->gross)"
+                hint="Total nilai hasil filter"
                 value-class="text-indigo-700"
                 icon="budget"
                 icon-class="text-indigo-600"
             />
             <x-stat-item
                 label="Pajak"
-                :value="$rupiah($stats->tax)"
-                hint="Total pajak tercatat"
+                :value="$rupiah($filteredStats->tax)"
+                hint="Total pajak hasil filter"
                 value-class="text-amber-600"
                 icon="tax"
                 icon-class="text-amber-600"
             />
             <x-stat-item
                 label="Dibayarkan"
-                :value="$rupiah($stats->net)"
-                hint="Nilai bersih setelah pajak"
+                :value="$rupiah($filteredStats->net)"
+                hint="Nilai bersih hasil filter"
                 value-class="text-emerald-700"
                 icon="balance"
                 icon-class="text-emerald-600"
@@ -90,44 +86,6 @@
             </x-ui.button>
         </div>
 
-        <div class="flex items-center gap-2 border-y border-[var(--ui-line)] px-5 py-3 text-sm font-bold uppercase tracking-wide" style="color: var(--theme-content-accent)">
-            <x-ui-icon name="report" class="h-4 w-4" />
-            <span>Subtotal Periode Terpilih</span>
-        </div>
-        <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
-            <x-stat-item
-                label="Transaksi"
-                :value="number_format($filteredStats->count, 0, ',', '.')"
-                hint="Hasil filter aktif"
-                value-class="text-slate-800"
-                icon="transaction"
-                icon-class="text-slate-600"
-            />
-            <x-stat-item
-                label="Nilai Bruto"
-                :value="$rupiah($filteredStats->gross)"
-                hint="Total nilai hasil filter"
-                value-class="text-indigo-700"
-                icon="budget"
-                icon-class="text-indigo-600"
-            />
-            <x-stat-item
-                label="Pajak"
-                :value="$rupiah($filteredStats->tax)"
-                hint="Total pajak hasil filter"
-                value-class="text-amber-600"
-                icon="tax"
-                icon-class="text-amber-600"
-            />
-            <x-stat-item
-                label="Dibayarkan"
-                :value="$rupiah($filteredStats->net)"
-                hint="Nilai bersih hasil filter"
-                value-class="text-emerald-700"
-                icon="balance"
-                icon-class="text-emerald-600"
-            />
-        </div>
     </section>
 
     <section class="overflow-hidden border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
