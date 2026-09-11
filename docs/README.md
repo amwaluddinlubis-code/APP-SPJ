@@ -35,6 +35,7 @@ Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate t
 | `DEVELOPMENT_ROADMAP.md` | **ACTIVE** — prioritas dan urutan pekerjaan. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur yang sudah diselaraskan dengan functional gate terbaru. |
+| `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE** — kontrak GUI/layout. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
@@ -48,6 +49,8 @@ Source aplikasi/test pada HEAD saat cleanup dokumentasi masih sama dengan gate t
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder template. |
 | `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED** — command/gate release-safety dan real-tenant audit. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
+
+Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARKAS_IMPORTER.md` bila perubahan khusus menyentuh Generic ARKAS Importer/profile-driven import.
 
 ## Feature verification / RVR aktif
 
@@ -71,6 +74,8 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 
 - ARKAS/BKU = source readonly; operator SPJ = overlay.
 - Source sync tidak menghapus overlay manual.
+- Source missing/returning mempertahankan identity dan pekerjaan operator.
+- Perubahan source setelah pekerjaan operator dapat memerlukan reconciliation; NUMBERED/FINAL tidak dimutasi diam-diam.
 - Boundary tenant = `School + Fiscal Year + Fund Source`.
 - Detail Transaksi hanya menulis `item_description`.
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
@@ -80,6 +85,7 @@ Dokumen historis tidak boleh menjadi sumber next action bila bertentangan dengan
 - Preview/download tidak menerbitkan nomor baru.
 - NUMBERED/FINAL tidak diedit melalui mutation normal.
 - Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
+- Operator-locked Employee tidak boleh ditimpa source sync.
 - Auto-fill KONSUMSI tetap Dapodik-only; participant manual diperbolehkan.
 - Audit database real-data dilakukan read-only sebelum mutation.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memaksa coverage.
@@ -102,7 +108,8 @@ Jangan memakai kata “selesai” bila yang tersedia hanya source path tanpa reg
 2. Update `DEVELOPMENT_ROADMAP.md` bila prioritas berubah.
 3. Update `SPJ_DESIGN_DECISIONS.md` hanya untuk keputusan permanen.
 4. Update `ARCHITECTURE_COMPLETE.md` bila boundary/layer/ownership berubah.
-5. Feature guide tidak boleh menaikkan status melampaui evidence di `CURRENT_PROGRESS.md`.
-6. Dokumen historis tetap diberi banner sejarah; jangan digunakan kembali sebagai status aktif.
-7. Checkpoint CI/test harus menunjuk evidence yang benar-benar dijalankan.
-8. Perubahan docs-only tidak boleh ditulis seolah menghasilkan CI baru.
+5. Update `SYNCHRONIZATION.md` bila pipeline sync, safe-sync semantics, reconciliation, employee identity, source ownership, tenant/concurrency guard, atau source feed berubah.
+6. Feature guide tidak boleh menaikkan status melampaui evidence di `CURRENT_PROGRESS.md`.
+7. Dokumen historis tetap diberi banner sejarah; jangan digunakan kembali sebagai status aktif.
+8. Checkpoint CI/test harus menunjuk evidence yang benar-benar dijalankan.
+9. Perubahan docs-only tidak boleh ditulis seolah menghasilkan CI baru.
