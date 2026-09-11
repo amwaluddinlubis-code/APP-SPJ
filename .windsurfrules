@@ -1,0 +1,9 @@
+# APP-SPJ Windsurf Rules
+
+Read and follow `AGENTS.md`, `.ai/rules/index.md`, `docs/README.md`, `docs/DOCUMENTATION_MAINTENANCE.md`, `docs/CURRENT_PROGRESS.md`, and `docs/DEVELOPMENT_ROADMAP.md` before changing the repository.
+
+Before declaring any task complete, perform the Documentation Impact Review defined in `docs/DOCUMENTATION_MAINTENANCE.md`.
+
+Do not hard-code current project priorities in this file. Derive active status and priority from `CURRENT_PROGRESS.md` and `DEVELOPMENT_ROADMAP.md`.
+
+When behavior, architecture, workflow, verification evidence, or release status changes, update impacted documentation in the same work. Stale documentation is a defect. Do not claim tests/CI/runtime PASS without actual evidence.
