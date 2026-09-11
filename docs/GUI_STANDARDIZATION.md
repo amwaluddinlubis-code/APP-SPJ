@@ -304,7 +304,7 @@ resources/js/app.js
 
 ## 20. Responsive dan mobile
 
-Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA mobile resmi tetap mengikuti `MOBILE_VISUAL_QA_TODO.md`.
+Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA runtime resmi mengikuti `GUI_RUNTIME_QA.md`. Source-level responsive guard hanya membuktikan kontrak markup/breakpoint tertentu dan **tidak** menggantikan browser visual QA.
 
 ## 21. Pola form dinamis show/hide
 
@@ -332,3 +332,49 @@ Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA mobile res
 - Stat memakai 4 `x-stat-item` (jalur, dokumen wajib, penghalang, status).
 - Item penghalang bernomor urut, masing-masing ber-badge lokasi (`Paket`/`Transaksi`) dan tombol Perbaiki ke URL yang tepat.
 - Item lolos dan opsional/tidak-berlaku disembunyikan dalam `details` collapsed agar tidak mendorong konten blocking ke bawah layar.
+
+## 24. Canonical icon registry
+
+Satu-satunya registry/rendering icon canonical adalah:
+
+```text
+resources/views/components/ui/icon.blade.php
+<x-ui.icon ...>
+```
+
+Aturan:
+
+- markup baru atau markup yang sedang disentuh harus memakai `<x-ui.icon>`;
+- `resources/views/components/ui-icon.blade.php` / `<x-ui-icon>` hanya compatibility adapter untuk consumer lama dan tidak boleh memiliki registry SVG sendiri;
+- nama icon legacy yang masih dibutuhkan dipetakan sebagai alias di registry canonical;
+- navigation/tab tidak memakai emoji sebagai icon utama;
+- shared `x-tabs` menerima metadata `icon` dan merender icon melalui `<x-ui.icon>`;
+- compatibility wrapper boleh dihapus hanya setelah semua consumer lama sudah dimigrasikan dan regression guard diperbarui.
+
+## 25. Source readiness vs runtime QA
+
+Status source GUI dan status visual/runtime adalah dua evidence berbeda.
+
+```text
+source regression PASS != browser visual PASS
+```
+
+GUI-AUDIT-12 (desktop/laptop) dan GUI-AUDIT-13 (mobile/tablet) hanya boleh ditutup sebagai runtime PASS setelah checklist `docs/GUI_RUNTIME_QA.md` benar-benar dijalankan pada browser dan viewport yang ditentukan.
+
+CI boleh membuktikan:
+
+- Blade compile;
+- frontend build;
+- keberadaan responsive fallback;
+- penggunaan table/icon/theme primitive;
+- tidak kembalinya pola source tertentu.
+
+CI tidak membuktikan:
+
+- tidak adanya clipping/overlap nyata;
+- kualitas alignment pada viewport tertentu;
+- usability touch/keyboard;
+- modal/dropdown terlihat utuh;
+- visual contrast yang memadai pada browser lokal.
+
+Karena itu agent tidak boleh mengubah status RVR menjadi PASS hanya berdasarkan source inspection atau deterministic CI.
