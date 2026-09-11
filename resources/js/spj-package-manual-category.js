@@ -33,6 +33,17 @@ const updateProcurementVisibility = (form) => {
         section.classList.toggle('hidden', !active);
         if ('disabled' in section) section.disabled = !active;
     });
+
+    // app.js menyembunyikan wrapper tiap field pesanan/BAP/BAST berdasarkan
+    // payment_method backend. Karena radio kini UI-only, radio ikut mengendalikan
+    // wrapper tersebut agar tidak menimpa show/hide di atas. Di luar BARANG,
+    // wrapper tetap mengikuti aturan backend (app.js).
+    if (category === 'BARANG') {
+        ['order_number', 'order_date', 'bap_number', 'bap_date', 'bast_number', 'bast_date'].forEach((name) => {
+            const wrapper = form.querySelector(`[name="${name}"]`)?.closest('div');
+            if (wrapper instanceof HTMLElement) wrapper.hidden = uiSiplah;
+        });
+    }
 };
 
 const ensureCategoryContext = (form, categorySelect) => {
@@ -56,11 +67,11 @@ const ensureCategoryContext = (form, categorySelect) => {
         <div data-spj-category-context-panel="BARANG" hidden>
             <div class="flex min-h-10 flex-wrap items-center gap-x-7 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm">
                 <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode="siplah" value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>SiPLah</span>
                 </label>
                 <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
+                    <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode="non_siplah" value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500">
                     <span>Non SiPLah</span>
                 </label>
             </div>

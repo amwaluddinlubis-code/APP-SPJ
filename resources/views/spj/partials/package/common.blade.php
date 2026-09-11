@@ -26,10 +26,15 @@
         <div class="grid min-w-0 gap-2 sm:grid-cols-2">
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran <span class="text-rose-600">*</span></label>
+                @php($effectiveCategory = strtoupper((string) old('spj_category', $transaction->spj_category ?: ($selectedSpjType ?? ''))))
+                @php($currentMethod = old('payment_method', $transaction->payment_method ?: ($transaction->is_siplah ? 'siplah' : 'tunai')))
                 <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm" required>
-                    @foreach(['tunai' => 'Tunai', 'transfer_bank' => 'Transfer Bank', 'siplah' => 'SiPLah'] as $value => $label)
-                        <option value="{{ $value }}" @selected(old('payment_method', $transaction->payment_method ?: ($transaction->is_siplah ? 'siplah' : 'tunai')) === $value)>{{ $label }}</option>
+                    @foreach(['tunai' => 'Tunai', 'transfer_bank' => 'Transfer Bank'] as $value => $label)
+                        <option value="{{ $value }}" @selected($currentMethod === $value)>{{ $label }}</option>
                     @endforeach
+                    @if($effectiveCategory === 'BARANG' || $currentMethod === 'siplah')
+                        <option value="siplah" @selected($currentMethod === 'siplah')>SiPLah</option>
+                    @endif
                 </x-ui.select>
             </div>
             <div>

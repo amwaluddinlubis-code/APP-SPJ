@@ -79,12 +79,39 @@ class UpdateSpjPackageDetailsUseCase
 
     private function clearIncompatibleGoodsDetails(Transaction $transaction, string $category): void
     {
-        if (in_array(strtoupper($category), ['BARANG', 'KONSUMSI'], true)) {
-            return;
+        $category = strtoupper($category);
+
+        if (! in_array($category, ['BARANG', 'KONSUMSI'], true)) {
+            foreach ($transaction->items as $item) {
+                $item->goods()->delete();
+            }
         }
 
-        foreach ($transaction->items as $item) {
-            $item->goods()->delete();
+        if ($category !== 'PEMELIHARAAN') {
+            if ($workOrder = $transaction->workOrder) {
+                $workOrder->workers()->delete();
+                $workOrder->delete();
+            }
+        }
+
+        if ($category !== 'SPPD') {
+            $transaction->travels()->delete();
+        }
+
+        if ($category !== 'KONSUMSI') {
+            foreach ($transaction->items as $item) {
+                $item->participants()->delete();
+            }
+        }
+
+        if ($category !== 'HONOR_PEGAWAI') {
+            foreach ($transaction->items as $item) {
+                $item->honors()->delete();
+            }
+        }
+
+        if ($category !== 'JASA_LAINNYA') {
+            $transaction->serviceRecipients()->delete();
         }
     }
 
@@ -178,7 +205,6 @@ class UpdateSpjPackageDetailsUseCase
             'workers.*.work_days' => ['nullable', 'integer', 'min:0'],
             'workers.*.daily_rate' => ['nullable', 'integer', 'min:0'],
             'workers.*.is_receipt_recipient' => ['nullable', 'boolean'],
-            'workers.*.notes' => ['nullable', 'string', 'max:2000'],
 
             'travels' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) use ($request, $package): void {
                 $category = strtoupper((string) ($request->input('spj_category') ?: $package->transaction->spj_category));

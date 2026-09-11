@@ -119,7 +119,6 @@ class SpjTransactionDetailsService
                 'daily_rate' => $rate,
                 'amount' => $days * $rate,
                 'is_receipt_recipient' => $primaryIndex === (int) $sortOrder || (bool) ($worker['is_receipt_recipient'] ?? false),
-                'notes' => blank($worker['notes'] ?? null) ? null : trim($worker['notes']),
                 'sort_order' => $sortOrder,
             ]);
         }
@@ -179,17 +178,23 @@ class SpjTransactionDetailsService
             'participant_count' => (int) ($details['participant_count'] ?? 0),
         ])->save();
 
-        $item = $transaction->items->first();
-        if (! $item) {
+        // Baris dibaca agregat per transaksi, tetapi ditulis pada satu jangkar
+        // deterministik (item pertama). Hapus di SEMUA item agar baris dari
+        // jangkar lama tidak menumpuk menjadi duplikat.
+        foreach ($transaction->items as $item) {
+            $item->participants()->delete();
+        }
+
+        $anchor = $transaction->items->first();
+        if (! $anchor) {
             return;
         }
 
-        $item->participants()->delete();
         foreach ($details['participants'] ?? [] as $sortOrder => $participant) {
             if (blank($participant['name'] ?? null)) {
                 continue;
             }
-            $item->participants()->create([
+            $anchor->participants()->create([
                 'name' => trim($participant['name']),
                 'position' => blank($participant['position'] ?? null) ? null : trim($participant['position']),
                 'nip' => blank($participant['nip'] ?? null) ? null : trim($participant['nip']),
@@ -203,12 +208,17 @@ class SpjTransactionDetailsService
     /** @param array<string, mixed> $details */
     private function synchronizeHonors(Transaction $transaction, array $details): void
     {
-        $item = $transaction->items->first();
-        if (! $item) {
+        // Sama seperti participants: baca agregat, tulis pada jangkar item
+        // pertama, hapus di semua item agar tidak menumpuk duplikat.
+        foreach ($transaction->items as $item) {
+            $item->honors()->delete();
+        }
+
+        $anchor = $transaction->items->first();
+        if (! $anchor) {
             return;
         }
 
-        $item->honors()->delete();
         foreach ($details['workers'] ?? [] as $sortOrder => $recipient) {
             if (blank($recipient['name'] ?? null)) {
                 continue;
@@ -219,7 +229,7 @@ class SpjTransactionDetailsService
             $gross = $units * $rate;
             $taxRate = (float) ($transaction->pph21_rate ?? 0);
             $tax = round($gross * $taxRate / 100, 2);
-            $item->honors()->create([
+            $anchor->honors()->create([
                 'name' => trim($recipient['name']),
                 'position' => blank($recipient['job_description'] ?? null) ? null : trim($recipient['job_description']),
                 'honor_months' => $units,

@@ -311,25 +311,24 @@ const initializeSiplahPurchaseUi = (root = document) => {
     const vendorNameField = form.querySelector('[name="vendor_name"]');
     const vendorNpwpField = form.querySelector('[name="vendor_npwp"]');
     const receiptRecipientField = form.querySelector('[name="receipt_recipient_name"]');
-    let invoiceStatusField = form.querySelector('[name="invoice_status"]');
+    form.querySelectorAll('[name="invoice_status"]').forEach((invoiceStatusField) => {
+        if (invoiceStatusField instanceof HTMLInputElement) {
+            const select = document.createElement('select');
+            select.name = 'invoice_status';
+            select.className = invoiceStatusField.className;
+            select.required = invoiceStatusField.required;
+            select.disabled = invoiceStatusField.disabled;
+            select.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
 
-    if (invoiceStatusField instanceof HTMLInputElement) {
-        const select = document.createElement('select');
-        select.name = 'invoice_status';
-        select.className = invoiceStatusField.className;
-        select.required = invoiceStatusField.required;
-        select.disabled = invoiceStatusField.disabled;
-        select.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
-
-        const currentStatus = invoiceStatusField.value.trim().toLowerCase();
-        select.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
-        invoiceStatusField.replaceWith(select);
-        invoiceStatusField = select;
-    } else if (invoiceStatusField instanceof HTMLSelectElement) {
-        const currentStatus = invoiceStatusField.value.trim().toLowerCase();
-        invoiceStatusField.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
-        invoiceStatusField.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
-    }
+            const currentStatus = invoiceStatusField.value.trim().toLowerCase();
+            select.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
+            invoiceStatusField.replaceWith(select);
+        } else if (invoiceStatusField instanceof HTMLSelectElement) {
+            const currentStatus = invoiceStatusField.value.trim().toLowerCase();
+            invoiceStatusField.innerHTML = '<option value="Lunas">Lunas</option><option value="Proforma">Proforma</option>';
+            invoiceStatusField.value = currentStatus === 'proforma' ? 'Proforma' : 'Lunas';
+        }
+    });
 
     if (purchaseHeading instanceof HTMLElement && !purchaseHeading.dataset.defaultText) {
         purchaseHeading.dataset.defaultText = purchaseHeading.textContent?.trim() || 'Data pembelian barang/konsumsi';
