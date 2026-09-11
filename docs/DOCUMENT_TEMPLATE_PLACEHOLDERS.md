@@ -1,122 +1,440 @@
 # Penanda Template Dokumen SPJ
 
-Terakhir diverifikasi: **2026-09-06**
+Terakhir diverifikasi: **2026-09-11** terhadap `SpjTemplateService` pada branch `gui-standardization`.
 
-Dokumen ini adalah referensi placeholder yang dipakai `SpjTemplateService` untuk template Word (`.docx`) dan Excel (`.xlsx`). Gunakan format kurung kurawal ganda, misalnya `{{NOMOR_SPJ}}`.
+Dokumen ini adalah referensi placeholder canonical untuk template dokumen SPJ Word (`.docx`) dan Excel (`.xlsx`). Format placeholder memakai kurung kurawal ganda, misalnya:
 
-Daftar pada **Pengaturan → Template Dokumen** harus tetap memakai katalog yang sama agar UI dan generator tidak berbeda.
+```text
+{{NOMOR_SPJ}}
+```
 
----
+Daftar pada **Pengaturan → Template Dokumen** harus memakai katalog yang sama dengan `SpjTemplateService::placeholderGroups()` agar UI, template master, dan generator tidak berbeda.
 
-## 1. Dokumen dan periode
-
-`NOMOR_SPJ`, `NOMOR_DOKUMEN`, `NO_BUKTI`, `NOMOR_BUKTI`, `TANGGAL_TRANSAKSI`, `TANGGAL_DOKUMEN`, `TAHUN_ANGGARAN`, `SUMBER_DANA`, `SUMBER_DANA_PERIODE`, `TRIWULAN`, `SEMESTER`, `JENIS_SPJ`.
-
----
-
-## 2. Sekolah dan pejabat
-
-`NAMA_SEKOLAH`, `NAMA_SATUAN_PENDIDIKAN`, `NPSN`, `ALAMAT_SEKOLAH`, `KECAMATAN`, `KOP_SURAT`, `NAMA_KEPALA_SEKOLAH`, `NIP_KEPALA_SEKOLAH`, `NAMA_KEPALA_SATUAN_PENDIDIKAN`, `NIP_KEPALA_SATUAN_PENDIDIKAN`, `NAMA_BENDAHARA`, `NIP_BENDAHARA`, `NAMA_BENDAHARA_BOSP`, `NIP_BENDAHARA_BOSP`.
+Dokumen ini menjelaskan contract placeholder, bukan status release generator. Status functional/RVR generator tetap mengikuti `CURRENT_PROGRESS.md`.
 
 ---
 
-## 3. Penerima dan penyedia
+## 1. Aturan umum placeholder
 
-`NAMA_PENERIMA`, `NAMA_PENERIMA_BKU`, `NAMA_PENERIMA_KUITANSI`, `PENERIMA_PENYEDIA`, `NAMA_PENYEDIA`, `ALAMAT_PENYEDIA`, `NPWP_PENYEDIA`, `TELEPON_PENYEDIA`, `NAMA_PENANDATANGAN`, `JABATAN_PENANDATANGAN`, `SUDAH_TERIMA_DARI`.
-
-Aturan ownership:
-
-- `NAMA_PENERIMA_BKU` berasal dari source BKU/ARKAS;
-- `NAMA_PENERIMA_KUITANSI` mengutamakan field operator `receipt_recipient_name`/effective receipt recipient;
-- jangan menukar keduanya hanya untuk menyesuaikan template.
-
----
-
-## 4. Transaksi dan pembayaran
-
-`KODE_KEGIATAN`, `NAMA_KEGIATAN`, `KODE_REKENING`, `NAMA_REKENING`, `URAIAN_TRANSAKSI`, `UNTUK_PEMBAYARAN`, `CARA_BAYAR`, `REFERENSI_BAYAR`, `CARA_BAYAR_REFERENSI`.
-
-`UNTUK_PEMBAYARAN` harus memakai uraian operator/canonical yang disediakan service, bukan menghidupkan kembali `manual_description`.
+- Placeholder scalar canonical diganti oleh `SpjTemplateService`.
+- Scalar kosong dirender menggunakan nilai kosong terstandar aplikasi (`-`), bukan dibiarkan sebagai marker mentah.
+- `KOP_SURAT` adalah kasus khusus: pada Excel ia diproses sebagai gambar oleh generator, bukan sebagai teks biasa.
+- Placeholder repeating row `ITEM_*` dan `UPAH_*` diproses melalui jalur dinamis tersendiri.
+- Preview/download tidak boleh menerbitkan nomor hanya karena placeholder nomor belum mempunyai nilai.
+- Unresolved placeholder guard harus menolak artifact akhir yang masih menyisakan marker placeholder yang seharusnya sudah di-resolve.
+- Source ARKAS/BKU tidak boleh dimutasi hanya agar placeholder mempunyai isi.
 
 ---
 
-## 5. Pesanan dan pekerjaan
+## 2. Dokumen dan periode
 
-`NOMOR_PESANAN`, `TANGGAL_PESANAN`, `NOMOR_INVOICE`, `TANGGAL_INVOICE`, `STATUS_INVOICE`, `NOMOR_SPK`, `TANGGAL_SPK`, `TANGGAL_RAB`, `URAIAN_PEKERJAAN`, `LOKASI_PEKERJAAN`, `TANGGAL_MULAI`, `TANGGAL_SELESAI`, `TANGGAL_TANDA_TANGAN`, `TANGGAL_PENYERAHAN`, `TEMPAT_PENYERAHAN`.
+Placeholder canonical:
+
+```text
+NOMOR_SPJ
+NOMOR_DOKUMEN
+NO_BUKTI
+NOMOR_BUKTI
+TANGGAL_TRANSAKSI
+TANGGAL_DOKUMEN
+TAHUN_ANGGARAN
+SUMBER_DANA
+SUMBER_DANA_PERIODE
+TRIWULAN
+SEMESTER
+JENIS_SPJ
+```
+
+Catatan:
+
+- `NOMOR_DOKUMEN` saat ini alias ke `NOMOR_SPJ`.
+- `NOMOR_BUKTI` alias ke `NO_BUKTI`.
+- `TANGGAL_DOKUMEN` menggunakan tanggal transaksi pada mapping scalar saat ini.
+- `SUMBER_DANA_PERIODE` dirangkai dari sumber dana, tahun anggaran, dan triwulan.
+
+---
+
+## 3. Sekolah dan pejabat
+
+Placeholder canonical:
+
+```text
+NAMA_SEKOLAH
+NAMA_SATUAN_PENDIDIKAN
+NPSN
+ALAMAT_SEKOLAH
+DESA
+KECAMATAN
+KABUPATEN_KOTA
+PROVINSI
+KOP_SURAT
+NAMA_KEPALA_SEKOLAH
+NIP_KEPALA_SEKOLAH
+NAMA_BENDAHARA_BOSP
+NIP_BENDAHARA_BOSP
+```
+
+`NAMA_SATUAN_PENDIDIKAN` adalah alias dari `NAMA_SEKOLAH`.
+
+`KOP_SURAT` tidak diisi sebagai teks biasa pada Excel; generator dapat memasukkan gambar letterhead melalui jalur khusus.
+
+Alias lama seperti `NAMA_BENDAHARA` / `NIP_BENDAHARA` tidak boleh diasumsikan tersedia untuk template baru kecuali service memang menambahkannya kembali secara eksplisit. Template baru harus memakai nama canonical di atas.
+
+---
+
+## 4. Penerima dan penyedia
+
+Placeholder canonical:
+
+```text
+NAMA_PENERIMA
+NAMA_PENERIMA_BKU
+NAMA_PENERIMA_KUITANSI
+PENERIMA_PENYEDIA
+NAMA_PENYEDIA
+ALAMAT_PENYEDIA
+NPWP_PENYEDIA
+TELEPON_PENYEDIA
+NAMA_PENANDATANGAN
+JABATAN_PENANDATANGAN
+SUDAH_TERIMA_DARI
+```
+
+Ownership penting:
+
+- `NAMA_PENERIMA_BKU` berasal dari source BKU/ARKAS.
+- `NAMA_PENERIMA_KUITANSI` memakai effective receipt recipient / `receipt_recipient_name` operator.
+- `NAMA_PENERIMA` saat ini mengikuti effective receipt recipient.
+- `PENERIMA_PENYEDIA` dan `NAMA_PENYEDIA` mengikuti vendor/effective recipient sesuai mapping service.
+- `ALAMAT_PENYEDIA` saat ini terutama dapat berasal dari metadata merchant SiPLah bila tersedia.
+- `TELEPON_PENYEDIA` belum mempunyai source schema aktif dan dapat dirender `-`.
+
+Jangan menukar source recipient dan receipt recipient hanya demi menyesuaikan template.
+
+---
+
+## 5. Transaksi dan pembayaran
+
+Placeholder canonical:
+
+```text
+KODE_KEGIATAN
+NAMA_KEGIATAN
+KODE_REKENING
+NAMA_REKENING
+URAIAN_TRANSAKSI
+UNTUK_PEMBAYARAN
+CARA_BAYAR
+REFERENSI_BAYAR
+CARA_BAYAR_REFERENSI
+```
+
+Contract:
+
+- `URAIAN_TRANSAKSI` berasal dari uraian source transaksi.
+- `UNTUK_PEMBAYARAN` memakai `payment_description` operator jika tersedia, lalu fallback ke uraian transaksi.
+- `manual_description` bukan field canonical dan tidak boleh dihidupkan kembali.
+- `CARA_BAYAR_REFERENSI` adalah kombinasi label metode pembayaran dan referensi pembayaran.
+
+---
+
+## 6. Pesanan dan pekerjaan
+
+Placeholder canonical:
+
+```text
+NOMOR_PESANAN
+TANGGAL_PESANAN
+NOMOR_INVOICE
+TANGGAL_INVOICE
+STATUS_INVOICE
+NOMOR_SPK
+TANGGAL_SPK
+NOMOR_RAB
+TANGGAL_RAB
+URAIAN_PEKERJAAN
+LOKASI_PEKERJAAN
+TANGGAL_MULAI
+TANGGAL_SELESAI
+TANGGAL_TANDA_TANGAN
+TANGGAL_PENYERAHAN
+TEMPAT_PENYERAHAN
+```
 
 ### `NOMOR_PESANAN`
 
-`NOMOR_PESANAN` adalah **Nomor Surat Pesanan SPJ internal** yang diterbitkan aplikasi melalui proses numbering `PESANAN`.
+`NOMOR_PESANAN` adalah **Nomor Surat Pesanan SPJ internal**.
 
 Nomor ini:
 
-- boleh kosong pada tahap `DRAFT`/`READY`;
-- tidak boleh menjadi blocker sebelum numbering;
-- menjadi wajib setelah package `NUMBERED`/`FINAL` bila internal order applicable.
+- dapat kosong pada `DRAFT` / `READY`;
+- bukan blocker sebelum numbering;
+- menjadi wajib setelah `NUMBERED` / `FINAL` bila internal purchase order applicable;
+- tidak sama dengan nomor order marketplace SiPLah.
 
-`TANGGAL_PESANAN` adalah bagian substansi yang harus tersedia lebih awal sesuai requirement pengadaan.
+### `NOMOR_RAB`
+
+`NOMOR_RAB` adalah nomor RAB pada konteks pekerjaan/pemeliharaan bila tersedia. `TANGGAL_RAB` adalah tanggal RAB dan saat ini mempunyai fallback ke tanggal transaksi bila tanggal RAB belum tersedia.
+
+### Chronology pengadaan
+
+Rule domain canonical tetap:
+
+```text
+TANGGAL_PESANAN <= TANGGAL_TRANSAKSI
+TANGGAL_PESANAN <= tanggal BAP
+BAP <= BAST
+```
+
+Template tidak boleh mengubah chronology rule backend.
 
 ---
 
-## 6. Pembelian SiPLah
+## 7. Pembelian SiPLah
 
-Placeholder:
+SiPLah adalah procurement/payment channel, bukan kategori SPJ.
 
-`SIPLAH_NOMOR_PESANAN`, `SIPLAH_PENYEDIA`, `SIPLAH_NOMOR_INVOICE`, `SIPLAH_TANGGAL_INVOICE`, `SIPLAH_REFERENSI_BAYAR`.
+Placeholder canonical SiPLah saat ini:
 
-Perbedaan penting:
+```text
+SIPLAH_MARKETPLACE
+SIPLAH_TRANSACTION_ID
+SIPLAH_NOMOR_PESANAN
+SIPLAH_PENYEDIA
+SIPLAH_ALAMAT_PENYEDIA
+SIPLAH_NPWP_PENYEDIA
+SIPLAH_NOMOR_INVOICE
+SIPLAH_TANGGAL_INVOICE
+SIPLAH_TANGGAL_PEMBAYARAN
+SIPLAH_REFERENSI_BAYAR
+SIPLAH_STATUS_DQ
+SIPLAH_STATUS_MAPPING
+SIPLAH_RINCIAN_ITEM
+```
+
+Perbedaan wajib:
 
 ```text
 SIPLAH_NOMOR_PESANAN = nomor marketplace/order SiPLah
-NOMOR_PESANAN         = Nomor Surat Pesanan SPJ internal
+NOMOR_PESANAN         = nomor Surat Pesanan SPJ internal
 ```
 
-Jangan saling mengganti kedua placeholder tersebut.
+Keduanya tidak boleh saling menggantikan.
+
+Makna ringkas:
+
+- `SIPLAH_MARKETPLACE` — nama marketplace bila tersedia.
+- `SIPLAH_TRANSACTION_ID` — identifier transaksi marketplace.
+- `SIPLAH_NOMOR_PESANAN` — nomor order marketplace.
+- `SIPLAH_PENYEDIA` — merchant/penyedia SiPLah.
+- `SIPLAH_ALAMAT_PENYEDIA` — alamat merchant.
+- `SIPLAH_NPWP_PENYEDIA` — NPWP merchant/vendor.
+- `SIPLAH_NOMOR_INVOICE` — nomor invoice transaksi.
+- `SIPLAH_TANGGAL_INVOICE` — tanggal invoice.
+- `SIPLAH_TANGGAL_PEMBAYARAN` — tanggal/waktu pembayaran bila tersedia.
+- `SIPLAH_REFERENSI_BAYAR` — referensi pembayaran.
+- `SIPLAH_STATUS_DQ` — status data-quality SiPLah dalam label aplikasi.
+- `SIPLAH_STATUS_MAPPING` — status pemetaan anggaran/item.
+- `SIPLAH_RINCIAN_ITEM` — ringkasan item SiPLah multibaris.
+
+Untuk BARANG SiPLah, template tidak boleh menganggap Surat Pesanan internal selalu applicable. Applicability tetap ditentukan procurement/document requirement policy aplikasi.
 
 ---
 
-## 7. Nilai dan pajak
+## 8. Nilai dan pajak
 
-`NILAI_BRUTO`, `NILAI_PEKERJAAN`, `NILAI_PEKERJAAN_TERBILANG`, `PPN`, `PPH21`, `PPH22`, `PPH23`, `PPH4`, `SSPD`, `TOTAL_PAJAK`, `POTONGAN_PAJAK`, `NILAI_DIBAYARKAN`, `TERBILANG_NETO`.
+Placeholder canonical:
 
-Nilai uang diformat oleh aplikasi. `TERBILANG_NETO` dan `NILAI_PEKERJAAN_TERBILANG` menghasilkan teks terbilang bahasa Indonesia.
+```text
+NILAI_BRUTO
+NILAI_PEKERJAAN
+NILAI_PEKERJAAN_TERBILANG
+PPN
+PPH21
+PPH22
+PPH23
+PPH4
+SSPD
+TOTAL_PAJAK
+POTONGAN_PAJAK
+NILAI_DIBAYARKAN
+TERBILANG_NETO
+```
 
----
+Contract:
 
-## 8. Ringkasan multibaris
-
-`RINCIAN_BELANJA` dan `RINCIAN_UPAH` menghasilkan ringkasan teks multibaris.
-
-Gunakan repeating row placeholders bila dokumen membutuhkan tabel terstruktur.
-
----
-
-## 9. Repeating row barang
-
-`ITEM_NO`, `ITEM_URAIAN`, `ITEM_VOLUME`, `ITEM_SATUAN`, `ITEM_HARGA_SATUAN`, `ITEM_JUMLAH`, `ITEM_KODE_REKENING`, `ITEM_NAMA_REKENING`.
-
-Baris yang memuat `ITEM_NO` menjadi template row yang digandakan sesuai jumlah item.
-
----
-
-## 10. Repeating row upah/honor
-
-`UPAH_NO`, `UPAH_NAMA`, `UPAH_PEKERJAAN`, `UPAH_HARI`, `UPAH_TARIF_HARI`, `UPAH_JUMLAH`, `UPAH_PENERIMA_KUITANSI`.
-
-Baris yang memuat `UPAH_NO` menjadi template row yang digandakan sesuai jumlah pekerja/penerima honor.
-
----
-
-## 11. Catatan kompatibilitas
-
-- Gunakan nama canonical untuk template baru.
-- Alias lama tetap dipertahankan bila service masih mendukungnya.
-- Field seperti `KOP_SURAT`, alamat/NPWP/telepon penyedia, dan kecamatan dapat kosong bila source belum tersedia.
-- Tanggal ditampilkan dengan nama bulan Indonesia sesuai formatter service.
-- Preview/download tidak boleh menerbitkan nomor hanya karena placeholder nomor masih kosong.
+- tax/gross/net berasal dari source transaction.
+- generator tidak boleh menulis ulang source tax.
+- `POTONGAN_PAJAK` saat ini alias ke `TOTAL_PAJAK`.
+- `NILAI_PEKERJAAN` saat ini mengikuti `NILAI_BRUTO`.
+- `TERBILANG_NETO` dan `NILAI_PEKERJAAN_TERBILANG` menghasilkan teks terbilang bahasa Indonesia.
+- formatting rupiah dilakukan oleh service generator.
 
 ---
 
-## 12. Lokasi dokumen pada UI Paket
+## 9. Ringkasan multibaris
 
-Pada halaman Paket SPJ, daftar **Dokumen & Template** sekarang berada di sub-tab **Rincian**, sebagai panel terpisah dari Rincian Transaksi. Perubahan posisi UI ini tidak mengubah placeholder atau generator.
+Placeholder canonical:
+
+```text
+RINCIAN_BELANJA
+RINCIAN_UPAH
+RINCIAN_JASA
+```
+
+- `RINCIAN_BELANJA` — ringkasan item transaksi.
+- `RINCIAN_UPAH` — ringkasan pekerja/upah.
+- `RINCIAN_JASA` — ringkasan penerima jasa, termasuk quantity/unit/duration/value yang tersedia.
+
+Placeholder ini menghasilkan teks multibaris. Untuk tabel dokumen yang membutuhkan struktur baris/kolom nyata, gunakan repeating-row placeholder yang didukung.
+
+---
+
+## 10. Repeating row barang
+
+Placeholder:
+
+```text
+ITEM_NO
+ITEM_URAIAN
+ITEM_VOLUME
+ITEM_SATUAN
+ITEM_HARGA_SATUAN
+ITEM_JUMLAH
+ITEM_KODE_REKENING
+ITEM_NAMA_REKENING
+```
+
+Baris template yang memuat `ITEM_NO` menjadi template row yang digandakan mengikuti jumlah item.
+
+`ITEM_URAIAN` harus memakai effective item description sesuai mapping generator, bukan memaksa perubahan pada source description.
+
+---
+
+## 11. Repeating row upah/honor
+
+Placeholder:
+
+```text
+UPAH_NO
+UPAH_NAMA
+UPAH_PEKERJAAN
+UPAH_HARI
+UPAH_TARIF_HARI
+UPAH_JUMLAH
+UPAH_PENERIMA_KUITANSI
+```
+
+Baris template yang memuat `UPAH_NO` menjadi template row yang digandakan mengikuti pekerja/penerima yang didukung generator.
+
+Repeating row ini tidak otomatis berarti seluruh multi-recipient JASA_LAINNYA menggunakan schema `UPAH_*`. Untuk JASA gunakan placeholder/context yang memang disediakan generator atau template khusus yang sudah diverifikasi.
+
+---
+
+## 12. Scalar kosong dan unresolved marker
+
+Runtime generator menormalisasi scalar kosong menjadi:
+
+```text
+-
+```
+
+Pengecualian utama:
+
+```text
+KOP_SURAT
+```
+
+karena `KOP_SURAT` dapat ditangani sebagai gambar.
+
+Implikasi:
+
+- template resmi tidak boleh mengandalkan marker mentah tetap terlihat untuk menandai field kosong;
+- field yang memang belum mempunyai source akan tampil `-` setelah rendering;
+- unresolved placeholder yang seharusnya dikenal generator harus dianggap error, bukan output final yang valid.
+
+---
+
+## 13. DOCX, XLSX, preview, dan PDF
+
+Generator saat ini mendukung pengisian template:
+
+```text
+DOCX
+XLSX
+```
+
+Untuk XLSX, generator juga mendukung preview HTML dan export PDF melalui pipeline spreadsheet.
+
+Catatan penting:
+
+- unduh PDF langsung saat ini berasal dari template Excel/XLSX;
+- jangan mengasumsikan template DOCX otomatis mempunyai jalur PDF yang sama;
+- package XLSX/PDF dapat menggabungkan beberapa template sesuai document package flow;
+- visual fidelity, print area, page break, header/footer, ukuran kertas, dan hasil buka di Microsoft Office/PDF viewer tetap harus diverifikasi dengan template resmi/aktual.
+
+---
+
+## 14. Template lifecycle dan upload
+
+Contract lifecycle template:
+
+- upload invalid tidak boleh mengganti template aktif;
+- replacement file + database harus atomic dari perspektif aplikasi;
+- file lama baru boleh dihapus setelah replacement database berhasil;
+- template lifecycle memakai disk `local` yang sama dengan generator;
+- upload package dan single template mempunyai mode/error bag terpisah;
+- limit upload efektif tetap dipengaruhi PHP `upload_max_filesize` dan `post_max_size`.
+
+Detail status functional upload template berada di `CURRENT_PROGRESS.md`.
+
+---
+
+## 15. Ownership data untuk template
+
+Template adalah consumer dari context dokumen; template tidak menjadi alasan untuk mengubah ownership data.
+
+Contoh:
+
+```text
+NAMA_PENERIMA_BKU       -> source BKU/ARKAS
+NAMA_PENERIMA_KUITANSI  -> overlay/effective receipt recipient
+PPN/PPH/SSPD             -> source transaction
+UNTUK_PEMBAYARAN         -> operator payment description dengan fallback source
+ITEM_URAIAN               -> effective item description
+SIPLAH_*                  -> canonical SiPLah context bila tersedia
+```
+
+Jika template membutuhkan data yang belum tersedia, solusi yang benar adalah memperjelas contract/source atau menambah capability generator secara eksplisit — bukan mengisi source/operator data secara fiktif.
+
+---
+
+## 16. Lokasi dokumen pada UI Paket
+
+Pada Paket SPJ, daftar **Dokumen & Template** berada di sub-tab **Rincian** sebagai panel terpisah dari Rincian Transaksi.
+
+Perubahan posisi UI tidak mengubah:
+
+- ownership data;
+- placeholder catalog;
+- document requirement policy;
+- numbering;
+- lifecycle generator.
+
+---
+
+## 17. Checklist template resmi
+
+Sebelum template dianggap siap dipakai pada release:
+
+1. gunakan placeholder canonical dari katalog runtime;
+2. tidak ada marker unresolved setelah generate;
+3. nomor internal dan nomor marketplace SiPLah tidak tertukar;
+4. source recipient dan receipt recipient tidak tertukar;
+5. repeating row tidak merusak format tabel;
+6. nilai/tanggal memakai formatter yang benar;
+7. preview/download tidak menerbitkan nomor;
+8. DOCX/XLSX hasil generate dapat dibuka;
+9. XLSX → PDF dapat dirender bila jalur tersebut digunakan;
+10. print area, page break, header/footer, orientation, paper size, dan visual fidelity diverifikasi terhadap template resmi;
+11. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage.
