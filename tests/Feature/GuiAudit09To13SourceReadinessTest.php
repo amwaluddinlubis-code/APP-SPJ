@@ -65,6 +65,17 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringNotContainsString('◎', $layout);
     }
 
+    public function test_scroll_to_top_uses_theme_tokens_in_authenticated_layout_css(): void
+    {
+        $css = file_get_contents(resource_path('css/layout-token-native.css'));
+
+        $this->assertIsString($css);
+        $this->assertStringContainsString('#app-scroll-to-top', $css);
+        $this->assertStringContainsString('var(--ui-component-surface', $css);
+        $this->assertStringContainsString('var(--ui-component-text', $css);
+        $this->assertStringContainsString('var(--theme-accent)', $css);
+    }
+
     public function test_core_operator_lists_keep_desktop_and_mobile_source_fallbacks(): void
     {
         $employees = file_get_contents(resource_path('views/employees/index.blade.php'));
