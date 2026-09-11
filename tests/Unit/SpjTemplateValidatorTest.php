@@ -136,6 +136,33 @@ class SpjTemplateValidatorTest extends TestCase
     }
 
     #[Test]
+    public function loaded_worksheet_validation_matches_excel_contract(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('TPL_RINCIAN');
+        $sheet->setCellValue('A1', '{{NOMOR_DOKUMEN}}');
+        $sheet->setCellValue('B1', '{{NOMOR_BUKTI}}');
+        $sheet->setCellValue('C1', '{{NILAI_BRUTO}}');
+        $sheet->fromArray([
+            '{{ITEM_NO}}',
+            '{{ITEM_URAIAN}}',
+            '{{ITEM_VOLUME}}',
+            '{{ITEM_SATUAN}}',
+            '{{ITEM_HARGA_SATUAN}}',
+            '{{ITEM_JUMLAH}}',
+        ], null, 'A5');
+
+        $result = app(SpjTemplateValidator::class)->validateWorksheet(
+            SpjDocumentTypeRegistry::RINCIAN_BELANJA,
+            $sheet,
+        );
+
+        $this->assertTrue($result['valid']);
+        $this->assertSame('TPL_RINCIAN', $result['sheet']);
+    }
+
+    #[Test]
     public function single_sheet_excel_with_noncanonical_name_is_allowed_with_warning(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'spj-validator-').'.xlsx';

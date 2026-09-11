@@ -59,7 +59,7 @@
 
         <div class="grid gap-6 xl:grid-cols-2">
             <x-ui.form-section title="Import Paket Template"
-                description="Untuk master XLSX yang berisi seluruh 11 sheet canonical. Aplikasi memvalidasi semuanya lalu memisahkannya menjadi template independen.">
+                description="Untuk master XLSX yang berisi seluruh {{ count($documentTypes) }} sheet canonical. Aplikasi memvalidasi semuanya lalu memisahkannya menjadi template independen.">
                 <form method="POST" action="{{ route('document-templates.store', ['upload' => 'package']) }}"
                     enctype="multipart/form-data" class="space-y-5">
                     @csrf
@@ -85,7 +85,7 @@
                     </div>
 
                     <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4">
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-600">11 template canonical</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-slate-600">{{ count($documentTypes) }} template canonical</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             @foreach ($documentTypes as $documentType => $documentLabel)
                                 <span class="rounded-full bg-[var(--ui-surface-muted)] px-3 py-1 text-[11px] font-semibold text-slate-700">
@@ -99,7 +99,7 @@
                     </div>
 
                     <div class="ui-form-actions">
-                        <x-ui.button type="submit">Validasi & Import 11 Template</x-ui.button>
+                        <x-ui.button type="submit">Validasi & Import {{ count($documentTypes) }} Template</x-ui.button>
                     </div>
                 </form>
 

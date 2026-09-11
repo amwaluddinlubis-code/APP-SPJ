@@ -44,6 +44,26 @@ final class SpjTemplateValidator
     }
 
     /**
+     * Validate one worksheet from an already loaded workbook.
+     * This avoids reopening the same XLSX once per canonical document type.
+     *
+     * @return array<string,mixed>
+     */
+    public function validateWorksheet(string $documentType, Worksheet $sheet): array
+    {
+        $canonical = SpjDocumentTypeRegistry::canonical($documentType);
+        $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
+
+        if (! $canonical || ! $definition) {
+            return $this->invalidDocumentType($documentType);
+        }
+
+        [$markers, $markerRows] = $this->extractExcelMarkers($sheet);
+
+        return $this->validateMarkers($canonical, $markers, $markerRows, $sheet->getTitle());
+    }
+
+    /**
      * Validate an already extracted marker set. Useful for focused tests and
      * future template editors without requiring a physical document file.
      *
@@ -213,8 +233,7 @@ final class SpjTemplateValidator
             }
         }
 
-        [$markers, $markerRows] = $this->extractExcelMarkers($selected);
-        $result = $this->validateMarkers($canonical, $markers, $markerRows, $selected->getTitle());
+        $result = $this->validateWorksheet($canonical, $selected);
 
         if ($sheetWarning) {
             $result['warnings'][] = $sheetWarning;
