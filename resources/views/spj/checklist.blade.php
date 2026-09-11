@@ -1,156 +1,115 @@
 <x-layouts.tailwind-app>
+    @php
+        $transaction = $package->transaction;
+        $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
+        $transactionUrl = route('transactions.show', $transaction->id);
+        $failedChecks = $checklist->where('passed', false)->values();
+        $blockingRequirements = $documentRequirements->filter(fn ($item) => $item['applicable'] && $item['required'] && ! $item['available'])->values();
+        $blockingCount = $failedChecks->count() + $blockingRequirements->count();
+        $passedChecks = $checklist->where('passed', true)->values();
+        $readyRequirements = $documentRequirements->filter(fn ($item) => $item['applicable'] && $item['available'])->values();
+        $optionalMissing = $documentRequirements->filter(fn ($item) => $item['applicable'] && ! $item['required'] && ! $item['available'])->values();
+        $notApplicable = $documentRequirements->filter(fn ($item) => ! $item['applicable'])->values();
+        $doneCount = $passedChecks->count() + $readyRequirements->count();
+        $isTransactionUrl = fn ($url) => str_starts_with((string) $url, $transactionUrl);
+    @endphp
     <div class="spj-semantic-workspace space-y-6">
         <x-page-header
-            title="Apa yang masih kurang sebelum siap diberi nomor?"
-            subtitle="Aplikasi menentukan dokumen berdasarkan jalur SIPLah/Non-SIPLah dan jenis SPJ. Operator cukup melengkapi bagian yang masih kurang."
+            :title="'Checklist — '.($transaction->no_bukti ?: 'Tanpa nomor bukti')"
+            :subtitle="($transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia').' · Rp '.number_format((float) $transaction->gross_amount, 0, ',', '.')"
             kicker="Checklist Paket SPJ"
         >
             <x-slot:actions>
-                <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white">Buka paket lengkap</a>
-                <a href="{{ route('transactions.show', $package->transaction->id) }}" class="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-indigo-950">Lengkapi transaksi</a>
+                @if($canMarkReady)
+                    <form method="POST" action="{{ route('spj.ready', $package->id) }}">@csrf<x-ui.button type="submit">Tandai siap diproses →</x-ui.button></form>
+                @endif
+                <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
             </x-slot:actions>
 
-            <div class="grid gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Jalur pengadaan</p>
-                    <p class="mt-1 text-xl font-bold text-indigo-700">{{ $requirementSummary['channel'] }}</p>
-                </div>
-                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Dokumen wajib siap</p>
-                    <p class="mt-1 text-2xl font-bold text-emerald-700">{{ $requirementSummary['required_ready'] }} / {{ $requirementSummary['required_total'] }}</p>
-                </div>
-                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Masih wajib dilengkapi</p>
-                    <p class="mt-1 text-2xl font-bold {{ $requirementSummary['missing_required'] > 0 ? 'text-amber-700' : 'text-emerald-700' }}">{{ $requirementSummary['missing_required'] }}</p>
-                </div>
-                <div class="bg-[var(--ui-surface-base)] px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Status paket</p>
-                    <div class="mt-2"><x-ui.status-badge :status="$package->status" size="xs" /></div>
-                </div>
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                <x-stat-item label="Jalur pengadaan" :value="$requirementSummary['channel']" :hint="str_replace('_', ' ', (string) $transaction->spj_category) ?: 'Tanpa kategori'" />
+                <x-stat-item label="Dokumen wajib siap" :value="$requirementSummary['required_ready'].' / '.$requirementSummary['required_total']" :hint="$progress.'% lengkap'" />
+                <x-stat-item label="Masih menghalangi" :value="$blockingCount" :hint="$completedChecks.'/'.$totalChecks.' pemeriksaan lolos'" :value-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" />
+                <x-stat-item label="Status paket" :value="$package->status" :hint="$transaction->transaction_date?->translatedFormat('d F Y') ?: 'Tanggal belum tersedia'" />
             </div>
         </x-page-header>
 
-        <section class="overflow-hidden rounded-2xl border border-indigo-200 bg-[var(--ui-surface-base)] shadow-sm">
-            <div class="border-b border-indigo-100 bg-indigo-50/70 px-5 py-4 sm:px-6">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wide text-indigo-500">Mesin kebutuhan dokumen</p>
-                        <h2 class="mt-1 font-bold text-slate-900">Dokumen yang harus disiapkan untuk transaksi ini</h2>
-                        <p class="mt-1 text-sm text-slate-600">Wajib = harus lengkap sebelum paket siap. Opsional = disiapkan jika dibutuhkan. Tidak berlaku = tidak diperlukan untuk transaksi ini.</p>
-                    </div>
+        @if($blockingCount > 0)
+            <section class="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
+                <p class="font-bold">Belum siap diberi nomor — {{ $blockingCount }} hal perlu dilengkapi.</p>
+                <p class="mt-0.5">Kerjakan berurutan dari nomor 1. Setiap baris menunjukkan di mana memperbaikinya (Paket atau Transaksi).</p>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Yang menghalangi ({{ $blockingCount }})</h2>
                 </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                    <thead class="bg-[var(--ui-surface-soft)]">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Dokumen / Data</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kelompok</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Sumber</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Kebutuhan</th>
-                            <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                        @foreach($documentRequirements as $item)
-                            <tr class="align-top">
-                                <td class="px-5 py-4">
-                                    <p class="font-bold text-slate-900">{{ $item['label'] }}</p>
-                                    <p class="mt-1 max-w-xl text-xs leading-5 {{ $item['status'] === 'WAJIB_BELUM_LENGKAP' ? 'text-amber-800' : 'text-slate-500' }}">{{ $item['message'] }}</p>
-                                </td>
-                                <td class="px-4 py-4 text-slate-600">{{ $item['group'] }}</td>
-                                <td class="px-4 py-4 text-slate-600">{{ $item['source'] }}</td>
-                                <td class="px-4 py-4">
-                                    @if(!$item['applicable'])
-                                        <span class="rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-slate-500">Tidak berlaku</span>
-                                    @elseif($item['required'])
-                                        <span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">Wajib</span>
-                                    @else
-                                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">Opsional</span>
-                                    @endif
-                                </td>
-                                <td class="px-5 py-4">
-                                    @if(!$item['applicable'])
-                                        <span class="text-xs font-bold text-slate-400">—</span>
-                                    @elseif($item['available'])
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">✓ Tersedia</span>
-                                    @elseif($item['required'])
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">! Belum lengkap</span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-slate-500">Belum tersedia</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-            <article class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-                <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
-                    <h2 class="font-bold text-slate-900">Pemeriksaan isi data</h2>
-                    <p class="mt-1 text-sm text-slate-500">Bagian ini memeriksa isi transaksi dan dokumen wajib sebelum status paket dapat dilanjutkan.</p>
-                </div>
-
-                <div class="divide-y divide-[var(--ui-line)]">
-                    @foreach($checklist as $check)
-                        <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                <ol class="divide-y divide-[var(--ui-line)]">
+                    @foreach($failedChecks as $index => $check)
+                        <li class="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 gap-3">
-                                @if($check['passed'])
-                                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-100 text-sm font-black text-emerald-700">✓</span>
-                                @else
-                                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-amber-100 text-sm font-black text-amber-700">!</span>
-                                @endif
+                                <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-black text-amber-800">{{ $index + 1 }}</span>
                                 <div class="min-w-0">
-                                    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ $check['group'] }}</p>
-                                    <h3 class="mt-0.5 font-bold text-slate-900">{{ $check['label'] }}</h3>
-                                    <p class="mt-1 text-sm leading-6 {{ $check['passed'] ? 'text-slate-500' : 'text-amber-800' }}">{{ $check['message'] }}</p>
+                                    <p class="font-bold text-[var(--ui-fg-strong)]">{{ $check['label'] }} <x-ui.badge variant="neutral">{{ $isTransactionUrl($check['url']) ? 'Transaksi' : 'Paket' }}</x-ui.badge></p>
+                                    <p class="mt-0.5 text-sm leading-6 text-amber-800">{{ $check['message'] }}</p>
                                 </div>
                             </div>
-                            @if(!$check['passed'])
-                                <a href="{{ $check['url'] }}" class="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100">Perbaiki sekarang →</a>
-                            @endif
-                        </div>
+                            <x-ui.button variant="secondary" :href="$check['url']" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                        </li>
                     @endforeach
-                </div>
-            </article>
+                    @foreach($blockingRequirements as $index => $item)
+                        @php($fixUrl = $item['key'] === 'transaction_details' ? $transactionUrl.'#rincian-transaksi' : $packageUrl.'#spj-manual-form')
+                        <li class="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex min-w-0 gap-3">
+                                <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-black text-amber-800">{{ $failedChecks->count() + $index + 1 }}</span>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-[var(--ui-fg-strong)]">{{ $item['label'] }} <x-ui.badge variant="neutral">{{ $item['key'] === 'transaction_details' ? 'Transaksi' : 'Paket' }}</x-ui.badge></p>
+                                    <p class="mt-0.5 text-sm leading-6 text-amber-800">{{ $item['message'] }}</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }} · {{ $item['source'] }}</p>
+                                </div>
+                            </div>
+                            <x-ui.button variant="secondary" :href="$fixUrl" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                        </li>
+                    @endforeach
+                </ol>
+            </section>
+        @else
+            <section class="rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">
+                <p class="font-bold">Semua kebutuhan wajib lengkap — paket siap dilanjutkan.</p>
+                @if($canMarkReady)
+                    <p class="mt-0.5">Gunakan tombol “Tandai siap diproses” di atas untuk melanjutkan ke penomoran.</p>
+                @elseif($package->status !== 'DRAFT')
+                    <p class="mt-2"><x-ui.status-badge :status="$package->status" /></p>
+                @elseif(!$canEdit)
+                    <p class="mt-0.5">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
+                @endif
+            </section>
+        @endif
 
-            <aside class="space-y-4">
-                @php($blockingCount = max($remainingChecks, $requirementSummary['missing_required']))
-                <section class="rounded-2xl border {{ $blockingCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50' }} p-5 shadow-sm">
-                    @if($blockingCount > 0)
-                        <p class="text-xs font-bold uppercase tracking-wide text-amber-600">Belum siap diberi nomor</p>
-                        <h2 class="mt-2 text-lg font-bold text-amber-950">Masih ada data atau dokumen wajib yang kurang</h2>
-                        <p class="mt-2 text-sm leading-6 text-amber-800">Lengkapi item bertanda wajib atau gunakan tombol “Perbaiki sekarang”. Setelah disimpan, kembali ke halaman ini untuk memeriksa ulang.</p>
-                    @else
-                        <p class="text-xs font-bold uppercase tracking-wide text-emerald-600">Semua kebutuhan wajib lengkap</p>
-                        <h2 class="mt-2 text-lg font-bold text-emerald-950">Paket siap dilanjutkan</h2>
-                        <p class="mt-2 text-sm leading-6 text-emerald-800">Semua pemeriksaan wajib sudah lolos. Paket dapat dilanjutkan ke tahap penomoran.</p>
+        <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Sudah lengkap ({{ $doneCount }}) — klik untuk melihat</summary>
+            <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
+                @foreach($passedChecks as $check)
+                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">✓</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $check['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $check['group'] }}</span></li>
+                @endforeach
+                @foreach($readyRequirements as $item)
+                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">✓</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }}</span></li>
+                @endforeach
+            </ul>
+        </details>
 
-                        @if($canMarkReady)
-                            <form method="POST" action="{{ route('spj.ready', $package->id) }}" class="mt-4">
-                                @csrf
-                                <button class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-800">Tandai siap diproses →</button>
-                            </form>
-                        @elseif($package->status !== 'DRAFT')
-                            <div class="mt-4"><x-ui.status-badge :status="$package->status" /></div>
-                        @elseif(!$canEdit)
-                            <p class="mt-4 rounded-lg border border-[var(--ui-line)] bg-white/70 p-3 text-sm font-semibold text-slate-600">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
-                        @endif
-                    @endif
-                </section>
-
-                <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Paket yang diperiksa</p>
-                    <p class="mt-2 font-mono text-sm font-bold text-indigo-700">{{ $package->transaction->no_bukti ?: 'Tanpa nomor bukti' }}</p>
-                    <p class="mt-2 text-sm font-semibold text-slate-800">{{ $package->transaction->payment_description ?: $package->transaction->description ?: 'Uraian belum tersedia' }}</p>
-                    <p class="mt-2 text-xs text-slate-500">Kategori: {{ str_replace('_', ' ', (string) $package->transaction->spj_category) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Pengadaan: {{ $requirementSummary['channel'] }}</p>
-                </section>
-            </aside>
-        </section>
+        @if($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty())
+            <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-muted)]">Opsional / tidak berlaku ({{ $optionalMissing->count() + $notApplicable->count() }}) — tidak memblokir</summary>
+                <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
+                    @foreach($optionalMissing as $item)
+                        <li class="px-5 py-2 text-sm"><span class="font-semibold text-[var(--ui-fg-muted)]">{{ $item['label'] }}</span> <x-ui.badge variant="neutral">Opsional</x-ui.badge><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['message'] }}</p></li>
+                    @endforeach
+                    @foreach($notApplicable as $item)
+                        <li class="px-5 py-2 text-sm"><span class="font-semibold text-[var(--ui-fg-muted)]">{{ $item['label'] }}</span> <x-ui.badge variant="neutral">Tidak berlaku</x-ui.badge></li>
+                    @endforeach
+                </ul>
+            </details>
+        @endif
     </div>
 </x-layouts.tailwind-app>
