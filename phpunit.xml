@@ -66,6 +66,7 @@
             <file>tests/Feature/SpjSixCategoryE2eTest.php</file>
             <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
             <file>tests/Feature/StudentIndexThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/StudentFormDetailThemePrimitiveUiTest.php</file>
             <file>tests/Feature/SyncProgressUiTest.php</file>
             <file>tests/Feature/TransactionPurchaseDateValidationTest.php</file>
             <file>tests/Feature/UnifiedEmployeeMasterTest.php</file>
