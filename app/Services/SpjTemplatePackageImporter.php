@@ -127,9 +127,20 @@ final class SpjTemplatePackageImporter
 
         try {
             foreach ($definitions as $documentType => $definition) {
+                $sheetName = (string) $definition['sheet'];
                 $fileName = strtolower($documentType).'-'.bin2hex(random_bytes(8)).'.xlsx';
                 $relativePath = $directory.'/'.$fileName;
-                $this->extractCanonicalSheet($path, (string) $definition['sheet'], $disk->path($relativePath));
+
+                try {
+                    $this->extractCanonicalSheet($path, $sheetName, $disk->path($relativePath));
+                } catch (Throwable $exception) {
+                    throw new RuntimeException(
+                        'Gagal memisahkan template '.$documentType.' dari sheet '.$sheetName.': '.$exception->getMessage(),
+                        0,
+                        $exception,
+                    );
+                }
+
                 $newPaths[$documentType] = $relativePath;
             }
 
@@ -188,22 +199,23 @@ final class SpjTemplatePackageImporter
         $workbook = $reader->load($sourcePath);
 
         try {
-            $target = $workbook->getSheetByName($sheetName);
-            if (! $target) {
-                throw new RuntimeException('Sheet '.$sheetName.' tidak ditemukan saat pemisahan paket template.');
+            if ($workbook->getSheetCount() !== 1) {
+                throw new RuntimeException(
+                    'Workbook hasil ekstraksi harus berisi tepat satu sheet, ditemukan '.$workbook->getSheetCount().'.'
+                );
             }
 
-            // setLoadSheetsOnly() keeps extraction lightweight and avoids repeatedly
-            // loading every worksheet from the master package. Keep this fallback
-            // pruning so the persisted artifact is always a one-sheet workbook.
-            $workbook->setActiveSheetIndex($workbook->getIndex($target));
-
-            for ($index = $workbook->getSheetCount() - 1; $index >= 0; $index--) {
-                if ($workbook->getSheet($index)->getTitle() !== $sheetName) {
-                    $workbook->removeSheetByIndex($index);
-                }
+            $target = $workbook->getSheet(0);
+            if ($target->getTitle() !== $sheetName) {
+                throw new RuntimeException(
+                    'Sheet hasil ekstraksi tidak sesuai. Diharapkan '.$sheetName.', ditemukan '.$target->getTitle().'.'
+                );
             }
 
+            // setLoadSheetsOnly() sudah menghasilkan workbook satu-sheet. Jangan
+            // mencari kembali index worksheet melalui Spreadsheet::getIndex(),
+            // karena workbook hasil generator tertentu dapat memiliki hash worksheet
+            // yang berubah setelah partial-load meskipun sheet tersebut valid.
             $workbook->setActiveSheetIndex(0);
             (new Xlsx($workbook))->save($destinationPath);
         } finally {
