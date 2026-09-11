@@ -1,0 +1,19 @@
+---
+description: Mandatory documentation maintenance for all APP-SPJ changes
+alwaysApply: true
+---
+
+Before editing APP-SPJ, read:
+
+- `AGENTS.md`
+- `.ai/rules/index.md`
+- `docs/README.md`
+- `docs/DOCUMENTATION_MAINTENANCE.md`
+- `docs/CURRENT_PROGRESS.md`
+- `docs/DEVELOPMENT_ROADMAP.md`
+
+Before completing any task, perform the Documentation Impact Review defined in `docs/DOCUMENTATION_MAINTENANCE.md`.
+
+Do not hard-code the current project priority in this rule. Derive active status and priority from `docs/CURRENT_PROGRESS.md` and `docs/DEVELOPMENT_ROADMAP.md`.
+
+If behavior, architecture, workflow, verification evidence, or release status changes, update the impacted docs in the same change. Stale documentation is a defect. Never claim PASS/verified without actual evidence.
