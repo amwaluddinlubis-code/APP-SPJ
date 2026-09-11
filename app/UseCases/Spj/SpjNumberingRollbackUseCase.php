@@ -32,6 +32,21 @@ class SpjNumberingRollbackUseCase
         ]);
 
         $sequence = (int) $data['sequence_number'];
+        $permanentCancelled = SpjDocument::query()
+            ->where('document_type', 'SPJ')
+            ->where('scope_key', 'MAIN')
+            ->where('status', 'CANCELLED')
+            ->whereNotNull('sequence_number')
+            ->where('sequence_number', '>=', $sequence)
+            ->whereHas('package.transaction', fn ($query) => $query
+                ->where('fiscal_year_id', $this->context->fiscalYearId())
+                ->where('fund_source_id', $this->context->fundSourceId()))
+            ->orderBy('sequence_number')
+            ->first();
+        if ($permanentCancelled) {
+            return back()->with('error', 'Rollback tidak dapat melewati nomor '.$permanentCancelled->document_number.' karena nomor tersebut adalah pembatalan individual permanen dan harus tetap menjadi histori.');
+        }
+
         $documents = SpjDocument::query()
             ->with('package.transaction')
             ->where('document_type', 'SPJ')
@@ -78,17 +93,30 @@ class SpjNumberingRollbackUseCase
         ]);
         $quarter = (int) $data['quarter'];
 
-        $futureQuarter = collect(range($quarter + 1, 4))->first(function (int $candidate): bool {
-            return SpjDocument::query()
-                ->where('document_type', 'SPJ')
-                ->where('scope_key', 'MAIN')
-                ->where('status', '!=', 'CANCELLED')
-                ->whereNotNull('document_number')
-                ->whereHas('package.transaction', fn ($query) => $this->applyQuarterContext($query, $candidate))
-                ->exists();
-        });
+        $futureQuarter = $quarter < 4
+            ? collect(range($quarter + 1, 4))->first(function (int $candidate): bool {
+                return SpjDocument::query()
+                    ->where('document_type', 'SPJ')
+                    ->where('scope_key', 'MAIN')
+                    ->where('status', '!=', 'CANCELLED')
+                    ->whereNotNull('document_number')
+                    ->whereHas('package.transaction', fn ($query) => $this->applyQuarterContext($query, $candidate))
+                    ->exists();
+            })
+            : null;
         if ($futureQuarter !== null) {
             return back()->with('error', "Penomoran Triwulan {$quarter} tidak dapat dibatalkan karena Triwulan {$futureQuarter} masih memiliki penomoran. Batalkan triwulan terbaru terlebih dahulu.");
+        }
+
+        $cancelledHistory = SpjDocument::query()
+            ->where('document_type', 'SPJ')
+            ->where('scope_key', 'MAIN')
+            ->where('status', 'CANCELLED')
+            ->whereNotNull('document_number')
+            ->whereHas('package.transaction', fn ($query) => $this->applyQuarterContext($query, $quarter))
+            ->first();
+        if ($cancelledHistory) {
+            return back()->with('error', 'Penomoran Triwulan '.$quarter.' tidak dapat di-reset penuh karena terdapat nomor pembatalan individual permanen '.$cancelledHistory->document_number.'.');
         }
 
         $period = FiscalPeriodClosure::query()->where([
