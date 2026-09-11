@@ -7,6 +7,26 @@ use App\Models\SpjPackage;
 
 class ExtendedSpjTemplateService extends SpjTemplateService
 {
+    /** @return array<string,array<int,string>> */
+    public static function placeholderGroups(): array
+    {
+        return parent::placeholderGroups() + [
+            'Konsumsi & kegiatan' => [
+                'TANGGAL_KEGIATAN',
+                'TEMPAT_KEGIATAN',
+                'NAMA_PENANGGUNG_JAWAB',
+                'NIP_PENANGGUNG_JAWAB',
+                'KONSUMSI_NO',
+                'KONSUMSI_NAMA',
+                'KONSUMSI_IDENTITAS',
+                'KONSUMSI_PORSI',
+                'KONSUMSI_HARGA_PORSI',
+                'KONSUMSI_JUMLAH',
+                'TOTAL_KONSUMSI',
+            ],
+        ];
+    }
+
     /** @return array<string,string> */
     public function placeholders(SpjPackage $package, School $school): array
     {
