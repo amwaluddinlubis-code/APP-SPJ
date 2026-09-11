@@ -224,6 +224,14 @@ main:has(#spj-main-tabs) .spj-semantic-workspace {
     --profile-table-row-y: .625rem;
 }
 
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-main {
+    min-height: 0 !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-summary {
+    padding: 0 !important;
+}
+
 main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-title {
     font-size: 1.5rem !important;
     line-height: 1.9rem !important;
@@ -235,10 +243,23 @@ main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-description {
     line-height: 1.35rem !important;
 }
 
+main:has(#spj-main-tabs) .spj-semantic-workspace .ui-field > label {
+    font-size: .8125rem !important;
+    line-height: 1.125rem !important;
+}
+
 main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
     padding-block: .5rem !important;
     font-size: .875rem !important;
     line-height: 1.25rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace .spj-work-summary > * {
+    padding: .75rem 1rem !important;
+}
+
+main:has(#spj-main-tabs) .spj-semantic-workspace div[x-show="tab === 'persiapan'"] > div:first-child {
+    padding-block: 1rem !important;
 }
 
 /* Keep the operator workspace compact on desktop so the queue starts within
@@ -249,27 +270,19 @@ main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
     }
 
     .spj-semantic-workspace .page-header-main {
-        padding-block: 1.15rem !important;
+        padding-block: 1rem !important;
     }
 
     .spj-semantic-workspace .page-header-description {
         max-width: 40rem;
         line-height: 1.35rem !important;
     }
-
-    .spj-semantic-workspace .page-header-summary>.spj-work-summary>* {
-        padding-block: .75rem !important;
-    }
 }
 
 /* Summary cards distinguish queued work from packages that are already in the
    document lifecycle. The percentage is explicitly scoped to created packages. */
-.spj-semantic-workspace .spj-work-summary>button {
+.spj-semantic-workspace .spj-work-summary > * {
     position: relative;
-}
-
-.spj-semantic-workspace .spj-work-summary>button:hover {
-    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--spj-surface)) !important;
 }
 
 /* Filters read as one compact toolbar at desktop widths. */
@@ -284,8 +297,8 @@ main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
     align-items: center;
     justify-content: space-between;
     gap: .75rem;
-    min-height: 3.25rem;
-    padding: .625rem .75rem;
+    min-height: 2.75rem;
+    padding: .5rem .75rem;
     border: 1px solid var(--spj-border);
     border-radius: var(--profile-control-radius, .625rem);
     background: var(--spj-surface-soft);
@@ -315,6 +328,16 @@ main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
 .spj-semantic-workspace .spj-work-queue-item:focus-visible {
     outline: 3px solid color-mix(in srgb, var(--theme-accent) 28%, transparent);
     outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+    main:has(#spj-main-tabs) .spj-semantic-workspace {
+        --profile-control-height: 2.75rem;
+    }
+
+    main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
+        min-height: 2.75rem;
+    }
 }
 
 @media (min-width: 1024px) {
