@@ -145,16 +145,16 @@
     </div>
 
     <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <x-ui.field label="Nama Acara/Rapat" for="event_name" required :error="$errors->first('event_name')">
+        <x-ui.field label="Nama Acara/Rapat" for="event_name" required :error="($errors ?? null)?->first('event_name')">
             <x-ui.input id="event_name" name="event_name" :value="old('event_name', $transaction->event_name)" required class="!py-1.5 !text-sm" />
         </x-ui.field>
-        <x-ui.field label="Tempat Pelaksanaan" for="event_location" required :error="$errors->first('event_location')">
+        <x-ui.field label="Tempat Pelaksanaan" for="event_location" required :error="($errors ?? null)?->first('event_location')">
             <x-ui.input id="event_location" name="event_location" :value="old('event_location', $transaction->event_location)" required class="!py-1.5 !text-sm" />
         </x-ui.field>
-        <x-ui.field label="Tanggal Kegiatan" for="event_date" required :error="$errors->first('event_date')">
+        <x-ui.field label="Tanggal Kegiatan" for="event_date" required :error="($errors ?? null)?->first('event_date')">
             <x-ui.input id="event_date" type="date" name="event_date" :value="old('event_date', $transaction->event_date?->format('Y-m-d') ?: $transactionDateLimit)" :max="$transactionDateLimit" required class="!py-1.5 !text-sm" />
         </x-ui.field>
-        <x-ui.field label="Jumlah Peserta" for="participant_count" required :error="$errors->first('participant_count')">
+        <x-ui.field label="Jumlah Peserta" for="participant_count" required :error="($errors ?? null)?->first('participant_count')">
             <x-ui.input id="participant_count" type="number" min="1" step="1" inputmode="numeric" name="participant_count" x-model.number="participantCount" required class="!py-1.5 text-right font-mono !text-sm" ::class="participantCount === listedParticipantCount ? 'border-[var(--ui-line-strong)]' : 'border-rose-400 bg-rose-50'" />
         </x-ui.field>
     </div>
