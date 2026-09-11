@@ -151,6 +151,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/pengaturan/dapodik/tes', [DapodikIntegrationController::class, 'test'])->name('dapodik.test');
             Route::post('/pengaturan/dapodik/sinkron', [DapodikIntegrationController::class, 'sync'])->name('dapodik.sync');
             Route::post('/spj/penomoran-triwulan', [SpjController::class, 'assignQuarterNumbers'])->name('spj.quarter-numbering');
+            Route::post('/spj/penomoran/rollback', [SpjController::class, 'rollbackNumbering'])->name('spj.numbering.rollback');
+            Route::post('/spj/penomoran-triwulan/batal', [SpjController::class, 'cancelQuarterNumbering'])->name('spj.quarter-numbering.cancel');
             Route::post('/spj/tutup-triwulan', [SpjController::class, 'closeQuarter'])->name('spj.quarter-close');
             Route::post('/spj/triwulan/{periodId}/buka', [SpjController::class, 'reopenQuarter'])->name('spj.quarter-reopen');
             Route::post('/spj/paket/{packageId}/buka-kunci', [SpjController::class, 'unlockPackage'])->name('spj.unlock');
