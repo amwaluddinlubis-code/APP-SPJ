@@ -4,34 +4,37 @@
             title="Reset Database Sekolah"
             subtitle="Menghapus seluruh database tenant sekolah aktif lalu membangun ulang schema dari migration. Semua data sekolah di database tenant, sequence, dan auto-increment akan kembali ke kondisi awal."
             kicker="Administrasi · Database Sekolah"
-            gradient="from-slate-950 via-rose-950 to-rose-900"
         />
 
         @if(!$active['school'])
             <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <h2 class="font-bold text-amber-900">Belum ada sekolah aktif</h2>
                 <p class="mt-1 text-sm text-amber-800">Pilih sekolah yang akan direset terlebih dahulu.</p>
-                <a href="{{ route('schools.select') }}" class="mt-4 inline-flex rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800">Pilih Sekolah</a>
+                <div class="mt-4">
+                    <x-ui.button variant="secondary" :href="route('schools.select')">Pilih Sekolah</x-ui.button>
+                </div>
             </section>
         @else
             <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah aktif</p>
-                        <p class="mt-1 text-lg font-bold text-slate-900">{{ $active['school']->name }}</p>
-                        <p class="text-sm text-slate-500">NPSN {{ $active['school']->npsn }}</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Sekolah aktif</p>
+                        <p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ $active['school']->name }}</p>
+                        <p class="text-sm text-[var(--ui-fg-muted)]">NPSN {{ $active['school']->npsn }}</p>
                     </div>
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Database tenant</p>
-                        <p class="mt-1 break-all font-mono text-sm font-semibold text-slate-800">{{ $activeStatus['path'] ?? $active['database'] }}</p>
-                        <p class="mt-1 text-xs text-slate-500">Status: {{ $activeStatus['status'] ?? '—' }} · Integrity: {{ $activeStatus['integrity'] ?? '—' }}</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Database tenant</p>
+                        <p class="mt-1 break-all font-mono text-sm font-semibold text-[var(--ui-fg)]">{{ $activeStatus['path'] ?? $active['database'] }}</p>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Status: {{ $activeStatus['status'] ?? '—' }} · Integrity: {{ $activeStatus['integrity'] ?? '—' }}</p>
                     </div>
                 </div>
             </section>
 
             <section class="rounded-2xl border border-rose-300 bg-rose-50 p-5 shadow-sm">
                 <div class="flex items-start gap-3">
-                    <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-rose-700 font-bold text-white">!</div>
+                    <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-rose-700 text-white">
+                        <x-ui.icon name="warning" size="sm" />
+                    </div>
                     <div>
                         <h2 class="text-lg font-bold text-rose-950">Aksi permanen</h2>
                         <p class="mt-1 text-sm leading-6 text-rose-900">
@@ -67,8 +70,8 @@
 
                     <div class="flex flex-wrap items-center gap-3 border-t border-rose-200 pt-4">
                         <x-ui.button type="submit" variant="danger">Reset Database Sekarang</x-ui.button>
-                        <a href="{{ route('database-manager.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">Batal</a>
-                        <a href="{{ route('school-backups.index') }}" class="text-sm font-bold text-indigo-700 hover:underline">Buka Backup & Pemulihan</a>
+                        <x-ui.button variant="secondary" :href="route('database-manager.index')">Batal</x-ui.button>
+                        <x-ui.button variant="secondary" :href="route('school-backups.index')">Backup & Pemulihan</x-ui.button>
                     </div>
                 </form>
             </section>
