@@ -1,8 +1,8 @@
 # Modul Importer dan Sinkronisasi ARKAS
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
-Angka checkpoint/CI di bawah ini penanda waktu penulisan; gate mutakhir selalu dibaca dari `P0_VERIFICATION_KIT.md` dan `CURRENT_PROGRESS.md`.
+Checkpoint commit di dokumen ini adalah **implementation history** untuk fitur importer, bukan functional gate aplikasi saat ini. Evidence gate mutakhir selalu dibaca dari `P0_VERIFICATION_KIT.md` §1 dan status release dari `CURRENT_PROGRESS.md`.
 
 Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, menyimpan snapshot staging, memvalidasi mapping, melakukan preview rekonsiliasi, dan mengisi domain aplikasi melalui adapter.
 
@@ -10,7 +10,7 @@ Modul ini adalah jalur kanonik untuk membaca database ARKAS melalui Bridge, meny
 
 **IMPLEMENTED / SOURCE-KEY PASS / TENANT BOUNDARY PASS / SYNC-MODE PASS / RELEASE-GUARD PASS / HARDENING PASS / READY FOR OPERATOR TEST.**
 
-Checkpoint correctness:
+Implementation checkpoints historis:
 
 ```text
 6aed816a4034c6351498922f6dfdaf74a76d7566
@@ -29,16 +29,7 @@ preview/raw/source-empty/schema-drift/queue release-safety regression
 concurrency lock + timestamp semantics + semantic import metrics regression
 ```
 
-CI pada checkpoint terbaru:
-
-```text
-frontend build         PASS
-Blade view cache       PASS
-SPJ Critical PHPUnit   PASS — 145 tests / 993 assertions
-repository Pint        WARN — 1 pre-existing single_quote issue
-```
-
-Pint warning tetap berada pada `tests/Feature/SyncProgressUiTest.php` dan bukan regression importer.
+Checkpoint di atas berguna untuk audit implementasi fitur, tetapi tidak boleh dipakai sebagai pengganti CI code gate aktif atau jumlah test/assertion terkini.
 
 ## Alur data
 
@@ -342,13 +333,14 @@ Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker cor
 
 ## Status release
 
-Generic Importer sekarang **READY FOR OPERATOR TEST** dari sisi functional correctness/hardening yang sudah diketahui dan diregresikan. CI checkpoint `111de8c` PASS `145 tests / 993 assertions`.
+Generic Importer sekarang **READY FOR OPERATOR TEST** dari sisi functional correctness/hardening yang sudah diketahui dan diregresikan.
 
-Ini belum berarti keseluruhan aplikasi release-ready: real-tenant verification, E2E enam kategori, generator dokumen nyata, dan APP DATA runtime masih harus ditutup pada roadmap utama.
+Ini bukan klaim bahwa keseluruhan aplikasi final release-ready. Yang masih terbuka berada pada real-tenant/operator verification, official-template/output QA, browser/runtime QA, installed-runtime checks yang masih DEFERRED, serta scale/performance importer. Six-category deterministic workflow dan functional document generator sendiri sudah berstatus PASS pada status canonical saat ini.
 
 Status canonical dibaca bersama:
 
 ```text
 docs/CURRENT_PROGRESS.md
+docs/P0_VERIFICATION_KIT.md §1
 docs/DEVELOPMENT_ROADMAP.md
 ```
