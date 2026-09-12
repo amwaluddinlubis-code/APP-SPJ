@@ -194,8 +194,8 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
         $this->assertIsString($page);
         $this->assertIsString($modal);
         $this->assertStringContainsString('Cek Placeholder', $page);
-        $this->assertStringContainsString("$dispatch('open-placeholder-checker')", $page);
-        $this->assertStringContainsString("document-templates.partials.placeholder-checker", $page);
+        $this->assertStringContainsString('$dispatch(\'open-placeholder-checker\')', $page);
+        $this->assertStringContainsString('document-templates.partials.placeholder-checker', $page);
         $this->assertStringContainsString("url.searchParams.set('placeholder_reference', reference)", $modal);
         $this->assertStringContainsString("'Accept': 'application/json'", $modal);
         $this->assertStringContainsString('group.placeholders', $modal);
