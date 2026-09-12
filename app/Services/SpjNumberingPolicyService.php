@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DocumentNumberFormat;
 use App\Models\Transaction;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 /**
  * Canonical policy for automatic SPJ document numbering.
@@ -35,14 +36,25 @@ class SpjNumberingPolicyService
         return self::AUTOMATIC_DOCUMENT_TYPES;
     }
 
+    public function canonicalAutomaticDocumentType(string $documentType): ?string
+    {
+        $canonical = $this->automaticTypeAlias($documentType);
+
+        return in_array($canonical, self::AUTOMATIC_DOCUMENT_TYPES, true) ? $canonical : null;
+    }
+
     public function isAutomaticDocumentType(string $documentType): bool
     {
-        return in_array($this->automaticTypeAlias($documentType), self::AUTOMATIC_DOCUMENT_TYPES, true);
+        return $this->canonicalAutomaticDocumentType($documentType) !== null;
     }
 
     public function isAutomaticDocumentEligible(Transaction $transaction, string $documentType): bool
     {
-        $documentType = $this->automaticTypeAlias($documentType);
+        $documentType = $this->canonicalAutomaticDocumentType($documentType);
+        if ($documentType === null) {
+            return false;
+        }
+
         $category = $this->canonicalCategory((string) $transaction->spj_category);
         $isSiplah = $this->procurementPolicy->isSiplah($transaction);
 
@@ -79,7 +91,10 @@ class SpjNumberingPolicyService
 
     public function formatFor(int $fiscalYearId, string $documentType): DocumentNumberFormat
     {
-        $documentType = strtoupper(trim($documentType));
+        $documentType = $this->canonicalAutomaticDocumentType($documentType);
+        if ($documentType === null) {
+            throw new InvalidArgumentException('Jenis dokumen tidak termasuk domain penomoran canonical aplikasi.');
+        }
 
         return DocumentNumberFormat::query()->firstOrCreate(
             [
