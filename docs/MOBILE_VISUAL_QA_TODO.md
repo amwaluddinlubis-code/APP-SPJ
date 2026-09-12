@@ -1,12 +1,12 @@
 # TODO — Mobile Visual Regression QA
 
-Status: **TODO / RVR — NON-BLOCKER untuk target release desktop/laptop saat ini**
+Status: **LEGACY/ADDITIONAL TODO — RVR — NON-BLOCKER untuk target release desktop/laptop saat ini**
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
-Dokumen ini mencatat bahwa visual regression mobile belum ditutup. Aplikasi **belum boleh disebut mobile-verified/mobile-complete** sebelum checklist berikut dijalankan pada viewport target.
+Dokumen ini adalah checklist tambahan untuk visual regression mobile. Checklist canonical penutupan GUI-AUDIT-13 berada di `GUI_RUNTIME_QA.md`; bila ada perbedaan viewport atau status, `GUI_RUNTIME_QA.md` dan `CURRENT_PROGRESS.md` yang berlaku.
 
-Target operator release aktif saat ini adalah **desktop/laptop**. Karena itu, mobile/responsive penuh tidak menjadi blocker release saat ini, tetapi setiap klaim kompatibilitas mobile tetap harus menunggu evidence checklist ini.
+Aplikasi **belum boleh disebut mobile-verified/mobile-complete** sebelum runtime QA dilakukan pada viewport canonical. Target operator release aktif saat ini adalah **desktop/laptop**, sehingga mobile/responsive penuh bukan blocker release utama, tetapi minimum usability mobile/tablet tetap RVR sampai mempunyai evidence.
 
 Status release keseluruhan dan prioritas aktif tetap mengikuti `CURRENT_PROGRESS.md` dan `DEVELOPMENT_ROADMAP.md`.
 
@@ -14,13 +14,19 @@ Status release keseluruhan dan prioritas aktif tetap mengikuti `CURRENT_PROGRESS
 
 ## 1. Viewport target
 
-Target utama:
+Viewport canonical GUI-AUDIT-13:
+
+```text
+375 × 812
+768 × 1024
+1024 × 768
+```
+
+Viewport berikut boleh dipakai sebagai regression tambahan/legacy compatibility target, tetapi tidak menggantikan matrix canonical:
 
 ```text
 390 × 844
 ```
-
-Tambahkan tablet portrait/landscape bila tersedia.
 
 ---
 
@@ -83,19 +89,19 @@ Bila memungkinkan tambahkan Slate Minimal dan Indigo Executive.
 
 ## 6. Checklist khusus SPJ Paket
 
-Perubahan 2026-09-06 dan redesign 2026-09-11 wajib masuk regression:
+Perubahan workspace/package yang sudah masuk wajib tetap tercakup dalam regression runtime:
 
 ### Checklist Paket (`/spj/paket/{id}/checklist`)
 
-- daftar blocking bernomor terbaca tanpa scroll horizontal;
+- daftar blocking bernomor terbaca tanpa scroll horizontal yang tidak disengaja;
 - badge Paket/Transaksi tidak overflow;
 - `details` Sudah lengkap/Opsional dapat dibuka via touch;
-- 4 kolom stat tidak bertumpuk pada 390px.
+- stat cards tidak bertumpuk atau kehilangan informasi pada viewport sempit.
 
 ### Strip ringkasan `/spj` dan tabel persiapan
 
-- 4 stat `x-stat-item` terbaca pada 390px;
-- tabel persiapan dapat di-scroll horizontal tanpa memotong kolom Aksi.
+- stat `x-stat-item` tetap terbaca pada viewport canonical;
+- tabel persiapan dapat di-scroll horizontal bila memang diperlukan tanpa memotong kolom Aksi secara permanen.
 
 ### Tab Rincian
 
@@ -124,23 +130,25 @@ Perubahan 2026-09-06 dan redesign 2026-09-11 wajib masuk regression:
 
 ## 7. Status dan pelaporan
 
-Jika halaman/theme belum benar-benar diuji pada viewport target, gunakan:
+Jika halaman/theme belum benar-benar diuji pada matrix canonical, gunakan:
 
 ```text
 RVR
 ```
 
-Jangan mengubah ke PASS berdasarkan desktop/tablet observation saja. Sebaliknya, status mobile `RVR` tidak boleh digunakan untuk menurunkan functional PASS desktop/laptop yang sudah mempunyai evidence terpisah.
+Source-level responsive guard atau observation pada satu viewport tambahan tidak boleh dipromosikan menjadi mobile/tablet PASS. Sebaliknya, status mobile `RVR` tidak boleh digunakan untuk menurunkan functional PASS desktop/laptop yang mempunyai evidence terpisah.
 
 ---
 
 ## 8. Exit criteria
 
-TODO dapat ditutup jika:
+Checklist tambahan ini dapat dianggap tertutup hanya bila:
 
-1. viewport sekitar `390 × 844` diuji secara reliabel;
-2. seluruh halaman minimum diperiksa;
+1. matrix canonical `375 × 812`, `768 × 1024`, dan `1024 × 768` sudah diuji secara reliabel sesuai `GUI_RUNTIME_QA.md`;
+2. seluruh halaman minimum yang applicable diperiksa;
 3. Dark, Yellow, dan Violet minimal diperiksa;
 4. package layout terbaru diperiksa pada Rincian/Isian Manual/Penomoran;
 5. tidak ada BLOCKER/HIGH mobile issue tersisa;
 6. hasil akhir dicatat di regression report atau dokumentasi GUI.
+
+Viewport `390 × 844` tetap berguna sebagai additional regression target, tetapi bukan syarat tunggal penutupan GUI-AUDIT-13.
