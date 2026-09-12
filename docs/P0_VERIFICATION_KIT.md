@@ -11,13 +11,40 @@ Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan men
 Latest completed green source gate saat checkpoint dokumentasi ini dibuat:
 
 ```text
-commit        : b167476d1b034cd19e9019234353cdafa7ac4fce
-CI run        : 34674547646 (#443)
+commit        : e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2
+CI run        : 34688492879 (#458)
 workflow      : SPJ Critical Verification
 result        : SUCCESS
 ```
 
-Perubahan utama yang sudah tercakup gate #443:
+Blocking workflow #458:
+
+```text
+npm run build          -> PASS
+php artisan view:cache -> PASS
+SPJ Critical PHPUnit   -> PASS : 277 tests / 2067 assertions
+Full Unit PHPUnit      -> PASS : 49 tests / 169 assertions
+Full Feature PHPUnit   -> PASS : 348 tests / 2466 assertions
+```
+
+Perubahan master template yang sudah tercakup gate #458:
+
+```text
+- Master Template Terbaru dirakit saat download dari template XLSX aktif per document type canonical
+- source master historis tidak dimutasi ketika template individu diperbarui
+- update XLSX individu menggantikan versi document type tersebut pada master download berikutnya
+- record lain yang berasal dari salinan master multi-sheet tetap menyumbangkan sheet canonical aktifnya
+- nama dan urutan sheet output dinormalisasi mengikuti SpjDocumentTypeRegistry
+- workbook hasil rakitan divalidasi ulang melalui SpjTemplatePackageImporter
+- master parsial ditolak bila satu atau lebih template XLSX canonical aktif tidak tersedia
+- Download Template per baris tetap merupakan download dokumen terpilih, terpisah dari download master
+```
+
+Focused regression `DocumentTemplateMasterExportTest` pada gate #458 meniru flow nyata `import master -> update satu XLSX -> download master terbaru`: source template yang tidak diubah berbentuk salinan penuh workbook master multi-sheet, sedangkan `RINCIAN_BELANJA` diganti oleh file XLSX individu. Hasil export memakai versi individu terbaru untuk Rincian Belanja, mempertahankan versi aktif untuk tipe lain, mempunyai sheet canonical lengkap, dan lolos validator paket yang sama dengan jalur import.
+
+Kontrak ini berstatus **FUNCTIONAL PASS**. Gate tersebut membuktikan struktur workbook dapat dibaca ulang oleh parser aplikasi dan memenuhi kontrak re-import, tetapi belum membuktikan visual fidelity pada Microsoft Excel/LibreOffice, print area, page break, header/footer, drawing, atau hasil cetak. Area visual/document runtime tetap **RVR**.
+
+Refactor canonical numbering registry yang sebelumnya sudah PASS tetap dipertahankan oleh gate #458, termasuk:
 
 ```text
 - canonical numbering registry sebagai source of truth
@@ -30,21 +57,19 @@ Perubahan utama yang sudah tercakup gate #443:
 - token {TW} tetap I/II/III/IV tanpa prefix TW. otomatis
 ```
 
-Blocking workflow #443:
+Repository Pint tetap **advisory** (`continue-on-error: true`) pada workflow release saat ini. Pada run #458, command `php vendor/bin/pint --test` masih melaporkan **5 style issue repository-wide** pada file lama yang tidak terkait implementasi Master Template Terbaru:
 
 ```text
-npm run build          -> PASS
-php artisan view:cache -> PASS
-SPJ Critical PHPUnit   -> PASS
-Full Unit PHPUnit      -> PASS
-Full Feature PHPUnit   -> PASS
+app/Console/Commands/TestIsolatedSpjCancellation.php
+app/Console/Commands/TestIsolatedSpjNumbering.php
+app/Console/Commands/TestIsolatedSpjQuarterRollback.php
+app/Console/Commands/TestIsolatedSpjTailRollback.php
+tests/Feature/SpjIsolatedQuarterRollbackCommandTest.php
 ```
 
-Repository Pint tetap advisory (`continue-on-error: true`) pada konfigurasi release saat ini, tetapi check Pint pada run #443 juga PASS.
+Karena step tersebut advisory, workflow #458 tetap SUCCESS. Jangan menyatakan repository-wide Pint clean sampai lima issue tersebut benar-benar diperbaiki. File master-template yang berubah pada pekerjaan ini tidak termasuk daftar issue Pint di atas.
 
-Tidak ada regression test baru yang ditambahkan untuk refactor registry. Existing regression menemukan dua mismatch selama proses refactor—constructor policy yang dipakai langsung oleh unit test lama dan eligibility SPJ legacy tanpa kategori—lalu source diselaraskan tanpa mengubah business rule.
-
-Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah gate #443 tidak memicu checkpoint CI baru dan tidak menggantikan code gate tersebut.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah gate #458 tidak memicu checkpoint CI baru dan tidak menggantikan code gate `e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2`.
 
 ---
 
@@ -84,11 +109,11 @@ php artisan spj:verify --skip-tests
 php artisan test --testsuite="SPJ Critical" --compact
 ```
 
-Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, maintenance, ARKAS importer, template upload, SiPLah, employee identity, quarter audit, ownership/workspace migration, dan reconciliation.
+Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, maintenance, ARKAS importer, template upload, SiPLah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan lifecycle master template.
 
 Nama/jumlah test dapat berubah. Jangan menyalin angka test lama sebagai status branch aktif bila tidak tersedia sebagai evidence verbatim.
 
-Gate #443 menjadi evidence bahwa refactor numbering registry mempertahankan behavior existing pada critical, unit, dan feature suite tanpa membuat source list numbering baru di consumer.
+Gate #458 menjadi evidence bahwa behavior existing tetap terjaga setelah penambahan Master Template Terbaru dan regression import-master/update-individu/download-master.
 
 ---
 
