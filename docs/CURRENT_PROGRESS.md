@@ -15,20 +15,37 @@ Definisi status:
 
 ## Checkpoint terbaru
 
-Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar hash/run tidak diduplikasikan di banyak dokumen.
+Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar detail hash/run/test tidak diduplikasikan di banyak dokumen.
 
-Status branch saat dokumentasi ini diperbarui:
+Status code gate saat dokumentasi ini diperbarui:
 
 ```text
-CURRENT SOURCE HEAD       : b167476d1b034cd19e9019234353cdafa7ac4fce
-LATEST COMPLETED CODE GATE: CI #443 / run 34674547646 / SUCCESS
+LATEST TESTED CODE HEAD   : e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2
+LATEST COMPLETED CODE GATE: CI #458 / run 34688492879 / SUCCESS
 WORKFLOW                  : SPJ Critical Verification
+MASTER TEMPLATE LIFECYCLE : FUNCTIONAL PASS
 NUMBERING REGISTRY        : CANONICAL / SOURCE OF TRUTH ACTIVE
+REPOSITORY-WIDE PINT      : ADVISORY / 5 PRE-EXISTING UNRELATED STYLE ISSUES REMAIN
 ```
 
-CI #443 berhasil setelah refactor numbering registry. Blocking build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository Pint tetap advisory pada workflow, tetapi run #443 juga PASS untuk Pint check.
+CI #458 berhasil setelah implementasi **Master Template Terbaru** dan regression yang meniru flow nyata `import master -> update satu XLSX -> download master`. Blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository-wide Pint masih advisory dan command Pint pada run #458 tetap melaporkan 5 style issue lama pada file isolated-numbering/rollback yang tidak terkait perubahan template; detail canonical berada di `P0_VERIFICATION_KIT.md` §1.
 
-Refactor ini **tidak mengubah aturan bisnis numbering**. Tujuannya menghilangkan duplikasi metadata dokumen bernomor dari controller/service/UI. Source of truth numbering sekarang:
+Commit dokumentasi-only setelah `e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2` tidak memicu workflow karena `docs/**` di-ignore dan **tidak menggantikan** code gate tersebut.
+
+Kontrak Master Template Terbaru sekarang:
+
+```text
+source of truth = template XLSX aktif per document type canonical
+upload/update satu XLSX = versi itu dipakai pada master download berikutnya
+master lama = tidak dimutasi/ditulis ulang sebagai source of truth
+download master = dirakit on demand dari seluruh XLSX canonical aktif
+master parsial = ditolak
+hasil rakitan = divalidasi ulang melalui validator paket canonical
+download per baris = tetap template individu, bukan paket
+DOCX = tetap individual dan tidak digabung ke master XLSX
+```
+
+Refactor numbering registry **tidak berubah** oleh pekerjaan ini. Source of truth numbering tetap:
 
 ```text
 app/Services/SpjNumberingDocumentRegistry.php
@@ -56,14 +73,15 @@ Token `{TW}` tetap menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) t
 ## Status release saat ini
 
 ```text
-FUNCTIONAL CORE : PASS pada HEAD b167476d... / CI #443
+FUNCTIONAL CORE : PASS pada code gate e46cfd894... / CI #458
 REAL-DATA       : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback; output QA masih ACTIVE
+MASTER TEMPLATE : FUNCTIONAL PASS / EXCEL-LIBREOFFICE VISUAL QA RVR
 OFFICIAL OUTPUT : RVR ACTIVE
 BROWSER/RUNTIME : RVR ACTIVE
 FINAL RELEASE   : NOT YET
 ```
 
-Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generated-document real-data, official-template visual QA, browser/operator runtime, dan installed-runtime yang masih deferred tetap merupakan gate terpisah.
+Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generated-document real-data, Master Template Terbaru pada viewer Office aktual, official-template visual QA, browser/operator runtime, dan installed-runtime yang masih deferred tetap merupakan gate terpisah.
 
 ---
 
@@ -135,10 +153,13 @@ Audit real-data TW2 / Fund Source 1 sudah PASS pada 66 transaksi ber-item / 66 P
 ## P0-02 — Document generator / template
 
 ```text
-FUNCTIONAL GENERATOR        : PASS
-TEMPLATE UPLOAD HARDENING   : PASS
-REAL-DATA GENERATED OUTPUT  : ACTIVE / OPERATOR QA
-OFFICIAL-TEMPLATE VISUAL QA : RVR
+FUNCTIONAL GENERATOR          : PASS
+TEMPLATE UPLOAD HARDENING     : PASS
+INDIVIDUAL TEMPLATE DOWNLOAD  : FUNCTIONAL PASS
+MASTER TEMPLATE RECOMPOSITION : FUNCTIONAL PASS
+MASTER EXCEL/LIBREOFFICE QA   : RVR
+REAL-DATA GENERATED OUTPUT    : ACTIVE / OPERATOR QA
+OFFICIAL-TEMPLATE VISUAL QA   : RVR
 ```
 
 Kontrak yang sudah dijaga:
@@ -146,9 +167,23 @@ Kontrak yang sudah dijaga:
 - preview/download tidak menerbitkan nomor;
 - template invalid tidak mengganti template aktif;
 - unresolved placeholder tidak boleh diam-diam lolos;
-- functional generation tidak sama dengan visual verification dokumen resmi.
+- per-row **Download Template** mengunduh dokumen terpilih, bukan seluruh paket;
+- **Unduh Master Template Terbaru** merakit satu sheet canonical dari setiap template XLSX aktif pada fiscal year aktif;
+- update satu XLSX individu langsung menjadi source document type tersebut pada master download berikutnya tanpa memutasi master historis;
+- record template lain boleh tetap berasal dari salinan master multi-sheet hasil importer dan export hanya mengambil sheet canonical milik document type tersebut;
+- nama/urutan sheet master mengikuti `SpjDocumentTypeRegistry`;
+- master hasil rakitan wajib lolos `SpjTemplatePackageImporter::validatePackage()` sebelum dikirim;
+- master parsial ditolak bila satu atau lebih XLSX canonical aktif tidak tersedia;
+- DOCX tetap template individu dan tidak masuk master XLSX;
+- functional generation/re-import contract tidak sama dengan visual verification dokumen resmi atau workbook Office aktual.
 
-Fokus operator sekarang adalah generate dokumen dari aplikasi menggunakan Paket nyata, kemudian memperbaiki bug yang benar-benar terlihat pada output. Tidak perlu menambah test baru hanya untuk memperbesar coverage; regression baru ditambahkan bila ada bug nyata yang perlu dikunci.
+Focused regression `DocumentTemplateMasterExportTest` pada CI #458 secara eksplisit membuktikan flow `import master -> update RINCIAN_BELANJA individu -> download master terbaru`: sheet Rincian memakai versi baru, sheet lain memakai versi aktif masing-masing, output lengkap mengikuti registry, dan paket lolos validator re-import. Source/master yang sudah tersimpan tidak ditulis balik ketika download berlangsung.
+
+Panduan lifecycle khusus fitur ini: `docs/TEMPLATE_MASTER_WORKFLOW.md`.
+
+Fokus operator berikutnya untuk area template adalah membuka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice dan memeriksa fidelity workbook nyata—terutama drawing, formula/reference lintas sheet, print area, page break, header/footer, serta hasil cetak. Sampai itu dilakukan, visual/document runtime tetap RVR meskipun struktur functional sudah PASS.
+
+Untuk generated SPJ output, fokus operator tetap generate dokumen dari aplikasi menggunakan Paket nyata, kemudian memperbaiki bug yang benar-benar terlihat pada output. Tidak perlu menambah test baru hanya untuk memperbesar coverage; regression baru ditambahkan bila ada bug nyata yang perlu dikunci.
 
 ---
 
@@ -353,16 +388,17 @@ SiPLah tetap channel/payment context, bukan `spj_category`.
 
 Prioritas sekarang sengaja dipersempit ke penggunaan aplikasi nyata:
 
-1. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
-2. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
-3. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
-4. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
-5. lanjutkan official-template visual/output QA;
-6. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
-7. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
-8. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
+1. buka dan inspeksi `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice untuk menutup visual/document RVR;
+2. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
+3. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
+4. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
+5. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
+6. lanjutkan official-template visual/output QA;
+7. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
+8. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
+9. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
 
-Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Refactor canonical registry sudah digate hijau pada CI #443.
+Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Canonical numbering registry tetap digate hijau oleh code gate terbaru #458.
 
 ---
 
@@ -370,6 +406,7 @@ Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak d
 
 Belum boleh diberi status final sampai evidence tersedia untuk:
 
+- Master Template Terbaru visual/runtime QA pada Excel/LibreOffice untuk workbook nyata;
 - generated-document real-data per kategori yang masih aktif;
 - official-template visual/output RVR;
 - GUI-AUDIT-12 browser/operator runtime QA;
