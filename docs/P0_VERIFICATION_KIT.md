@@ -1,43 +1,42 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release tidak ditentukan oleh dokumen ini; gunakan `CURRENT_PROGRESS.md` sebagai sumber utama.
 
 ## 1. Functional gate aktif
 
-Angka gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan menyalin angka.
+Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan menyalin checkpoint/angka gate.
 
-CI gate terakhir (belum mencakup commit code setelahnya):
-
-```text
-commit : 8180d566621dcf7b1a84b9183a666f2f7a64b398
-CI run : 34613781674 (#326)
-CI job : 103310602936
-PASS   : 261 tests / 1996 assertions
-```
-
-Verifikasi lokal pada HEAD `5d8b0b1` (2026-09-11, mencakup 2 commit code setelah gate CI di atas):
+CI code gate terbaru yang mencakup source branch `gui-standardization` sebelum perubahan dokumentasi-only ini:
 
 ```text
-npm run build            PASS
-php artisan view:cache   PASS
-SPJ Critical (lokal)     PASS — 265 tests / 2007 assertions
-vendor/bin/pint --test   ADVISORY — 3 file pre-existing, non-blocking
+commit        : 3d52bdb251a8f41f41db1193b7b95b9e2f27ee3d
+CI run        : 34661155452 (#372)
+CI job        : 103463759747
+workflow      : SPJ Critical Verification
+job result    : SUCCESS
+frontend build: PASS
+Blade compile : PASS
+SPJ Critical  : PASS
+Full Unit     : PASS
+Full Feature  : PASS
 ```
 
-CI penuh wajib dijalankan ulang sebelum klaim release apa pun; angka lokal bukan pengganti CI.
+Jumlah test/assertion tidak disalin dari checkpoint lama bila tidak tersedia sebagai evidence verbatim pada metadata CI yang sedang diperiksa. Snapshot lama `261 tests / 1996 assertions` dan verifikasi lokal `265 tests / 2007 assertions` tetap merupakan evidence historis, tetapi bukan angka canonical untuk code gate aktif di atas.
 
-Gate:
+Repository Pint tetap **ADVISORY** pada konfigurasi release sekarang. Workflow menjalankannya dengan `continue-on-error: true`, sedangkan gate berikut bersifat blocking:
 
 ```text
 Repository Pint --test   -> ADVISORY
-SPJ Critical PHPUnit     -> BLOCKING
 npm run build            -> BLOCKING
 php artisan view:cache   -> BLOCKING
+SPJ Critical PHPUnit     -> BLOCKING
+Full Unit PHPUnit        -> BLOCKING di CI
+Full Feature PHPUnit     -> BLOCKING di CI
 ```
 
-Bila ada commit code setelah gate CI, gate CI tidak lagi canonical untuk HEAD; blok verifikasi lokal di atas menjadi evidence sementara sampai CI hijau berikutnya.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan perubahan `docs/**` dan root `*.md`. Karena itu, perubahan dokumentasi-only tidak membuat checkpoint CI baru dan tidak dengan sendirinya membatalkan code gate terakhir. Jika ada commit source/code setelah gate CI di atas, gate tersebut tidak lagi canonical untuk source HEAD sampai CI hijau berikutnya tersedia.
 
 ## 2. Command canonical
 
@@ -56,6 +55,8 @@ Repository Pint --test
 → php artisan view:cache
 → optional real-tenant audit
 ```
+
+`spj:verify` adalah command canonical untuk verifikasi lokal/developer. GitHub Actions menambahkan full `Unit` dan full `Feature` suite sebagai blocking CI coverage di luar urutan default command tersebut.
 
 Pint tetap advisory pada konfigurasi release sekarang. Bila style perlu dijadikan blocking gate:
 
