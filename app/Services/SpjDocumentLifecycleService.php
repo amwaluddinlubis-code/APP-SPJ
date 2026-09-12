@@ -120,13 +120,15 @@ class SpjDocumentLifecycleService
 
         DB::connection('school')->transaction(function () use ($document, $userId, $reason): void {
             $packageWasFinal = $document->package()->where('status', 'FINAL')->exists();
+            $definition = $this->numberingPolicy->numberingDefinition($document->document_type);
 
             $document->forceFill([
                 'status' => 'CANCELLED', 'cancelled_at' => now(),
                 'cancelled_by' => $userId, 'cancellation_reason' => trim($reason),
             ])->save();
 
-            if ($document->document_type === 'SPJ' && $document->scope_key === 'MAIN') {
+            $isPackageNumber = ($definition['number_target']['relation'] ?? null) === 'package' && $document->scope_key === 'MAIN';
+            if ($isPackageNumber) {
                 $document->package()->update([
                     'status' => 'CANCELLED', 'document_number' => null, 'numbered_at' => null,
                     'snapshot' => null, 'finalized_at' => null, 'finalized_by' => null,
@@ -157,16 +159,17 @@ class SpjDocumentLifecycleService
             $package = $document->package()->with(['transaction.goods', 'transaction.workOrder', 'transaction.travels'])->first();
             $transaction = $package?->transaction;
             $number = $document->document_number;
-            if ($transaction && filled($number)) {
-                match ($document->document_type) {
-                    'PESANAN' => $transaction->goods()->where('order_number', $number)->update(['order_number' => null]),
-                    'BAP' => $transaction->goods()->where('bap_number', $number)->update(['bap_number' => null]),
-                    'BAST' => $transaction->goods()->where('bast_number', $number)->update(['bast_number' => null]),
-                    'SPK' => $transaction->workOrder?->spk_number === $number ? $transaction->workOrder->forceFill(['spk_number' => null])->save() : null,
-                    'RAB' => $transaction->workOrder?->rab_number === $number ? $transaction->workOrder->forceFill(['rab_number' => null])->save() : null,
-                    'SURAT_TUGAS_PERJALANAN_DINAS' => $transaction->travels->firstWhere('assignment_letter_number', $number)?->forceFill(['assignment_letter_number' => null])->save(),
-                    default => null,
-                };
+            if ($transaction && filled($number) && $definition) {
+                $target = $definition['number_target'];
+                $field = $target['field'];
+                if ($field) {
+                    match ($target['relation']) {
+                        'goods' => $transaction->goods()->where($field, $number)->update([$field => null]),
+                        'workOrder' => $transaction->workOrder?->{$field} === $number ? $transaction->workOrder->forceFill([$field => null])->save() : null,
+                        'travels' => $transaction->travels->firstWhere($field, $number)?->forceFill([$field => null])->save(),
+                        default => null,
+                    };
+                }
             }
         });
 
@@ -182,39 +185,31 @@ class SpjDocumentLifecycleService
     private function requiredDocumentIdentities(SpjPackage $package): array
     {
         $transaction = $package->transaction;
-        $requirements = [
-            ['document_type' => 'SPJ', 'scope_key' => 'MAIN'],
-        ];
+        $requirements = [];
 
-        foreach ([
-            'PESANAN' => 'order_date',
-            'BAP' => 'bap_date',
-            'BAST' => 'bast_date',
-        ] as $documentType => $dateField) {
-            if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, $documentType)
-                && $transaction->goods->pluck($dateField)->filter()->isNotEmpty()) {
-                $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
+        foreach ($this->numberingPolicy->automaticDocumentTypes() as $documentType) {
+            if (! $this->numberingPolicy->isAutomaticDocumentEligible($transaction, $documentType)) {
+                continue;
             }
-        }
 
-        foreach ([
-            'SPK' => 'spk_date',
-            'RAB' => 'rab_date',
-        ] as $documentType => $dateField) {
-            if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, $documentType)
-                && filled($transaction->workOrder?->{$dateField})) {
-                $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
+            $definition = $this->numberingPolicy->numberingDefinition($documentType);
+            if (! $definition) {
+                continue;
             }
-        }
 
-        if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, 'SURAT_TUGAS_PERJALANAN_DINAS')) {
-            foreach ($transaction->travels as $travel) {
-                if ($travel->assignment_letter_date || $travel->departure_date) {
-                    $requirements[] = [
-                        'document_type' => 'SURAT_TUGAS_PERJALANAN_DINAS',
-                        'scope_key' => 'TRAVEL-'.$travel->id,
-                    ];
+            if ($definition['scope_rule'] === 'TRAVEL') {
+                foreach ($transaction->travels as $travel) {
+                    $scopeKey = 'TRAVEL-'.$travel->id;
+                    if (filled($this->numberingPolicy->documentEventDateValue($transaction, $documentType, $scopeKey))) {
+                        $requirements[] = ['document_type' => $documentType, 'scope_key' => $scopeKey];
+                    }
                 }
+
+                continue;
+            }
+
+            if (filled($this->numberingPolicy->documentEventDateValue($transaction, $documentType))) {
+                $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
             }
         }
 
