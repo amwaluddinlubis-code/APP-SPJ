@@ -41,21 +41,26 @@ Pekerjaan aktif:
 
 ## P0-02 — Generator dokumen + template upload
 
-**Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / MASTER TEMPLATE RECOMPOSITION PASS / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
+**Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / TRUE SINGLE-SHEET DOWNLOAD PASS / MASTER TEMPLATE RECOMPOSITION PASS / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
 
 Sudah selesai:
 
-- [x] download template individu tidak lagi mengembalikan seluruh paket master;
+- [x] **Download Template** XLSX individu benar-benar menghasilkan workbook dengan tepat satu worksheet fisik; sheet lain dibuang dari copy download, bukan sekadar `hidden`/`veryHidden`;
+- [x] source/master tersimpan tetap utuh ketika workbook individu dipruning untuk download;
+- [x] **Cek Placeholder** menyediakan lookup AJAX read-only berdasarkan nomor Paket/dokumen/No. Bukti dan menampilkan nilai aktual dari resolver generator yang sama;
+- [x] placeholder checker menjaga School + Fiscal Year + Fund Source context dan tidak menerbitkan nomor atau memutasi source;
 - [x] `Unduh Master Template Terbaru` merakit seluruh XLSX canonical aktif saat request dijalankan;
 - [x] update satu XLSX individu otomatis menggantikan versi document type tersebut pada master download berikutnya;
 - [x] master historis/source template tidak dimutasi saat update/download;
 - [x] output master dinormalisasi mengikuti nama/urutan sheet `SpjDocumentTypeRegistry`;
 - [x] master hasil rakitan divalidasi ulang melalui validator paket canonical;
 - [x] master parsial ditolak bila satu template XLSX canonical aktif hilang;
-- [x] regression meniru storage nyata importer: record lama berupa salinan master multi-sheet + satu update XLSX individu.
+- [x] regression meniru storage nyata importer: record lama berupa salinan master multi-sheet + satu update XLSX individu;
+- [x] regression download individu memverifikasi `getSheetCount() === 1`, worksheet lain hilang dari paket OOXML, dan source tetap multi-sheet/utuh.
 
 Pekerjaan aktif:
 
+- [ ] buka satu file **Download Template** individu dari source master nyata pada Microsoft Excel/LibreOffice dan periksa drawing, formula/defined-name, print area, serta tidak ada prompt repair;
 - [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` pada Microsoft Excel/LibreOffice dan verifikasi drawing, formula/reference, print area, page break, header/footer, serta hasil cetak;
 - [ ] buka/generate dokumen nyata BARANG;
 - [ ] buka/generate dokumen nyata KONSUMSI;
@@ -237,6 +242,7 @@ Fokus hanya pada flow operator nyata: sidebar, Paket SPJ, tab, modal, dropdown, 
 
 ## P1-06 — Official-template visual/output QA
 
+- [ ] buka hasil **Download Template** individu dan pastikan benar-benar satu worksheet serta tidak meminta repair pada Excel/LibreOffice;
 - [ ] buka Master Template Terbaru pada Microsoft Excel/LibreOffice dan pastikan fidelity template sumber tetap layak;
 - [ ] template resmi/aktual sekolah;
 - [ ] visual fidelity Word/Excel/PDF;
