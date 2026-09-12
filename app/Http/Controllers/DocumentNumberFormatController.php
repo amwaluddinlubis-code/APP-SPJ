@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentNumberFormat;
-use App\Models\DocumentTemplate;
 use App\Models\FiscalYear;
 use App\Models\School;
 use App\Services\OperationalAuditService;
+use App\Services\SpjNumberingPolicyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -19,7 +18,7 @@ class DocumentNumberFormatController extends Controller
     /** @var list<string> */
     private const PLACEHOLDERS = ['SEQ', 'TYPE', 'SCHOOL', 'NPSN', 'YEAR', 'MONTH', 'ROMAN_MONTH', 'TW'];
 
-    public function index(): View
+    public function index(SpjNumberingPolicyService $numberingPolicy): View
     {
         $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
         $school = School::query()->findOrFail(session('active_school_id'));
@@ -32,7 +31,7 @@ class DocumentNumberFormatController extends Controller
             'year' => $year,
             'school' => $school,
             'formats' => $formats,
-            'documentTypes' => $this->documentTypes($year->id, $formats),
+            'documentTypes' => collect($numberingPolicy->automaticDocumentTypes()),
             'placeholders' => self::PLACEHOLDERS,
         ]);
     }
@@ -81,22 +80,6 @@ class DocumentNumberFormatController extends Controller
         }
 
         return back()->with('success', $message);
-    }
-
-    /**
-     * @param  Collection<string, DocumentNumberFormat>  $formats
-     * @return Collection<int, string>
-     */
-    private function documentTypes(int $yearId, Collection $formats): Collection
-    {
-        return collect(['SPJ', 'PESANAN', 'BAP', 'BAST', 'SPK', 'RAB', 'SURAT_TUGAS_PERJALANAN_DINAS', 'KUITANSI', 'RINCIAN_BELANJA', 'CHECKLIST', 'REKAP_PAJAK', 'INVOICE_PESANAN'])
-            ->merge(DocumentTemplate::query()->where('fiscal_year_id', $yearId)->pluck('document_type'))
-            ->merge($formats->keys())
-            ->map(fn ($type) => strtoupper(trim((string) $type)))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
     }
 
     private function validatePattern(string $pattern): void
