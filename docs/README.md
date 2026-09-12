@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `gui-standardization`. Tujuannya adalah membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan arsip agar dokumen lama tidak mengalahkan kondisi project terbaru.
 
@@ -19,7 +19,7 @@ Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.m
 
 ## Functional gate aktif
 
-Angka gate hidup di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
+Evidence gate hidup di `P0_VERIFICATION_KIT.md` §1 dan tidak disalin ke dokumen lain agar tidak divergen.
 
 Status keseluruhan tetap **belum final release-ready** karena real-data verification, official-template output, dan browser/runtime RVR masih aktif.
 
@@ -27,11 +27,11 @@ Status keseluruhan tetap **belum final release-ready** karena real-data verifica
 
 | Dokumen | Peran / status |
 |---|---|
-| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS** — sumber status release utama. |
-| `DEVELOPMENT_ROADMAP.md` | **ACTIVE** — prioritas dan urutan pekerjaan. |
+| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-12** — sumber status release utama. |
+| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-12** — prioritas dan urutan pekerjaan. |
 | `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, matriks impact, evidence rules, dan aturan wajib untuk semua AI/coding agent. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
-| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-11** — arsitektur aktif. |
+| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-12** — arsitektur aktif tanpa hard-coded gate snapshot. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
@@ -46,9 +46,9 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 
 | Dokumen | Peran / status |
 |---|---|
-| `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer; functional hardening PASS, operator-data test berikutnya. |
+| `ARKAS_IMPORTER.md` | **ACTIVE / REFRESHED 2026-09-12** — Generic ARKAS Importer; functional hardening PASS, operator-data test berikutnya; checkpoint internal hanya implementation history. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder template. |
-| `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED** — command/gate release-safety dan real-tenant audit. |
+| `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED 2026-09-12** — command/gate release-safety dan real-tenant audit. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARKAS_IMPORTER.md` bila perubahan khusus menyentuh Generic ARKAS Importer/profile-driven import.
@@ -63,7 +63,7 @@ Untuk penutupan standardisasi GUI, baca `GUI_STANDARDIZATION.md` lalu jalankan `
 |---|---|
 | `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPLah sudah FUNCTIONAL PASS; generated-document E2E + official-template output masih RVR. |
 | `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — GUI-AUDIT-12 desktop/laptop dan GUI-AUDIT-13 mobile/tablet. |
-| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO** — tetap dapat dipakai sebagai detail tambahan; checklist canonical penutupan GUI sekarang `GUI_RUNTIME_QA.md`. |
+| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO / REFRESHED 2026-09-12** — matrix canonical mengikuti `GUI_RUNTIME_QA.md`; viewport 390×844 hanya additional regression target. |
 
 `SIPLAH_MVP_PLAN.md` sengaja belum di-rename agar link lama tidak rusak. Jangan membaca nama file sebagai tanda bahwa core SiPLah masih berada pada fase MVP awal.
 
