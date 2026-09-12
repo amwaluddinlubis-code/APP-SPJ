@@ -16,6 +16,7 @@ class DocumentTemplateControllerArchitectureTest extends TestCase
         $this->assertStringContainsString('ImportDocumentTemplatePackageUseCase', $source);
         $this->assertStringContainsString('DocumentTemplateSampleGenerator', $source);
         $this->assertStringContainsString('DocumentTemplateLibraryService', $source);
+        $this->assertStringContainsString('DocumentTemplateMasterExportService', $source);
 
         foreach ([
             'DocumentTemplateReplacementService',
