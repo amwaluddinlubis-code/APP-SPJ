@@ -45,11 +45,18 @@ final class DocumentTemplateMasterExportService
                 try {
                     $expectedSheet = (string) $definition['sheet'];
                     $selected = $this->canonicalSheet($source, $documentType, $expectedSheet);
-                    $copy = clone $selected;
-                    $copy->setTitle($expectedSheet);
-                    $copy->setSheetState(Worksheet::SHEETSTATE_VISIBLE);
-                    $master->addExternalSheet($copy);
+                    $selected->setTitle($expectedSheet);
+                    $selected->setSheetState(Worksheet::SHEETSTATE_VISIBLE);
+
+                    // addExternalSheet() moves a worksheet out of its original workbook.
+                    // Pass the registered worksheet itself rather than a clone: a cloned
+                    // worksheet keeps the old parent but is not present in that parent's
+                    // collection, which makes PhpSpreadsheet::rebindParent() fail with
+                    // "Sheet does not exist".
+                    $master->addExternalSheet($selected);
                 } finally {
+                    // The selected sheet has already moved to $master. Only worksheets
+                    // that remain in the loaded source are disconnected here.
                     $source->disconnectWorksheets();
                 }
             }
