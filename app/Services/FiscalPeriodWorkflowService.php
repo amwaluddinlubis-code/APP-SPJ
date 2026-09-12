@@ -35,10 +35,15 @@ class FiscalPeriodWorkflowService
         if ((clone $transactions)->where(fn ($query) => $query->where('requires_reconciliation', true)->orWhere('source_status', 'SOURCE_MISSING'))->exists()) {
             throw new \RuntimeException('Masih ada transaksi yang harus direkonsiliasi atau hilang dari sumber ARKAS.');
         }
-        $unfinished = SpjPackage::query()->whereHas('transaction', fn ($query) => $this->applyPeriod($query, $period, $fundSourceId))
-            ->whereNotIn('status', ['NUMBERED', 'FINAL'])->count();
+
+        $withoutPackage = (clone $transactions)->has('items')->doesntHave('spjPackage')->count();
+        $notFinal = SpjPackage::query()
+            ->whereHas('transaction', fn ($query) => $this->applyPeriod($query, $period, $fundSourceId))
+            ->where('status', '!=', 'FINAL')
+            ->count();
+        $unfinished = $withoutPackage + $notFinal;
         if ($unfinished > 0) {
-            throw new \RuntimeException("Masih ada {$unfinished} paket yang belum bernomor atau final.");
+            throw new \RuntimeException("Masih ada {$unfinished} transaksi/paket yang belum FINAL. Periksa hasil cetak dan finalkan seluruh paket sebelum menutup triwulan.");
         }
 
         return tap($period)->update(['status' => 'CLOSED', 'closed_at' => now(), 'closed_by' => $userId]);
