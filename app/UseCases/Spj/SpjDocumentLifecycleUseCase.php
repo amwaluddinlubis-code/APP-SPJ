@@ -6,6 +6,7 @@ use App\Models\SpjDocument;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentLifecycleService;
 use App\Services\SpjDocumentNumberService;
+use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingPolicyService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ class SpjDocumentLifecycleUseCase
         private readonly SpjDocumentLifecycleService $lifecycle,
         private readonly SpjDocumentNumberService $numbers,
         private readonly SpjNumberingPolicyService $numberingPolicy,
+        private readonly SpjNumberingGateService $numberingGate,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -62,6 +64,9 @@ class SpjDocumentLifecycleUseCase
         $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($old->document_type);
         if ($documentType === null) {
             return back()->with('error', 'Dokumen legacy/noncanonical tidak dapat diterbitkan ulang melalui workflow penomoran canonical.');
+        }
+        if ($blocker = $this->numberingGate->periodBlocker($old->package)) {
+            return back()->with('error', $blocker);
         }
 
         $oldNumber = $old->document_number;
