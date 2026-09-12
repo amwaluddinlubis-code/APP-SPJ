@@ -141,6 +141,16 @@ class PreflightSpjNumbering extends Command
                 ])
                 ->values();
 
+            // Turunkan scope paket langsung dari transaksi yang sudah dibatasi oleh
+            // year + fund source + quarter. Ini menghindari scope kedua yang dapat
+            // berbeda dari daftar transaksi yang sedang dipreflight.
+            $readyPackageIds = $transactions
+                ->map(fn (Transaction $transaction): ?int => in_array($transaction->spjPackage?->status, ['READY', 'NUMBERED'], true)
+                    ? (int) $transaction->spjPackage->id
+                    : null)
+                ->filter()
+                ->values();
+
             $packages = SpjPackage::query()
                 ->with([
                     'documents',
@@ -156,9 +166,10 @@ class PreflightSpjNumbering extends Command
                     'transaction.serviceRecipients',
                     'transaction.spjPackage',
                 ])
-                ->whereIn('status', ['READY', 'NUMBERED'])
-                ->whereHas('transaction', $transactionScope)
+                ->whereKey($readyPackageIds->all())
                 ->get();
+
+            $scopeMismatch = abs($readyPackageIds->count() - $packages->count());
 
             $invalidPackages = $packages
                 ->map(function (SpjPackage $package) use ($validator): ?array {
@@ -215,6 +226,7 @@ class PreflightSpjNumbering extends Command
                     'not_ready' => $notReady->count(),
                     'invalid_packages' => $invalidPackages->count(),
                     'ordered_packages' => $ordering->count(),
+                    'scope_mismatch' => $scopeMismatch,
                 ],
                 'not_ready' => $notReady->all(),
                 'invalid_packages' => $invalidPackages->all(),
@@ -269,13 +281,14 @@ class PreflightSpjNumbering extends Command
 
         $summary = $report['summary'];
         $this->table(
-            ['Tx ber-item', 'Paket READY/NUMBERED', 'Belum READY', 'Paket invalid', 'Urutan'],
+            ['Tx ber-item', 'Paket READY/NUMBERED', 'Belum READY', 'Paket invalid', 'Urutan', 'Scope mismatch'],
             [[
                 $summary['transactions_with_items'],
                 $summary['packages_ready_or_numbered'],
                 $summary['not_ready'],
                 $summary['invalid_packages'],
                 $summary['ordered_packages'],
+                $summary['scope_mismatch'],
             ]]
         );
 
@@ -386,10 +399,14 @@ class PreflightSpjNumbering extends Command
     /** @param array<string, mixed> $report */
     private function isClean(array $report): bool
     {
+        $summary = $report['summary'] ?? [];
+
         return ($report['query_only'] ?? false) === true
             && ($report['database_hash_unchanged'] ?? false) === true
-            && (int) ($report['summary']['not_ready'] ?? 1) === 0
-            && (int) ($report['summary']['invalid_packages'] ?? 1) === 0;
+            && (int) ($summary['not_ready'] ?? 1) === 0
+            && (int) ($summary['invalid_packages'] ?? 1) === 0
+            && (int) ($summary['scope_mismatch'] ?? 1) === 0
+            && (int) ($summary['ordered_packages'] ?? -1) === (int) ($summary['packages_ready_or_numbered'] ?? -2);
     }
 
     private function resolveExistingDatabasePath(School $school): ?string
