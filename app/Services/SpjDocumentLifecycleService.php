@@ -45,22 +45,18 @@ class SpjDocumentLifecycleService
             }
 
             $activeDocuments = $package->documents->where('status', '!=', 'CANCELLED');
-            $invalidActiveDocuments = $activeDocuments->filter(
-                fn (SpjDocument $document): bool => blank($document->document_number)
-                    || ! in_array($document->status, ['NUMBERED', 'FINAL'], true)
-            );
+            $invalidActiveDocuments = $activeDocuments->filter(fn (SpjDocument $document): bool => blank($document->document_number)
+                || ! in_array($document->status, ['NUMBERED', 'FINAL'], true));
             if ($invalidActiveDocuments->isNotEmpty()) {
                 throw new \RuntimeException('Finalisasi paket ditolak karena masih ada dokumen aktif yang belum bernomor.');
             }
 
             $missingRequired = collect($this->requiredDocumentIdentities($package))
                 ->filter(function (array $identity) use ($activeDocuments): bool {
-                    return ! $activeDocuments->contains(fn (SpjDocument $document): bool =>
-                        $document->document_type === $identity['document_type']
+                    return ! $activeDocuments->contains(fn (SpjDocument $document): bool => $document->document_type === $identity['document_type']
                         && $document->scope_key === $identity['scope_key']
                         && filled($document->document_number)
-                        && in_array($document->status, ['NUMBERED', 'FINAL'], true)
-                    );
+                        && in_array($document->status, ['NUMBERED', 'FINAL'], true));
                 })
                 ->map(fn (array $identity): string => $identity['scope_key'] === 'MAIN'
                     ? $identity['document_type']
