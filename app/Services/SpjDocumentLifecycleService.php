@@ -119,6 +119,8 @@ class SpjDocumentLifecycleService
         }
 
         DB::connection('school')->transaction(function () use ($document, $userId, $reason): void {
+            $packageWasFinal = $document->package()->where('status', 'FINAL')->exists();
+
             $document->forceFill([
                 'status' => 'CANCELLED', 'cancelled_at' => now(),
                 'cancelled_by' => $userId, 'cancellation_reason' => trim($reason),
@@ -137,6 +139,19 @@ class SpjDocumentLifecycleService
                     'finalized_at' => null,
                     'finalized_by' => null,
                 ]);
+            }
+
+            if ($packageWasFinal) {
+                $document->package->documents()
+                    ->where('status', 'FINAL')
+                    ->update([
+                        'status' => 'NUMBERED',
+                        'snapshot' => null,
+                        'template_snapshot' => null,
+                        'template_hash' => null,
+                        'finalized_at' => null,
+                        'finalized_by' => null,
+                    ]);
             }
 
             $package = $document->package()->with(['transaction.goods', 'transaction.workOrder', 'transaction.travels'])->first();
