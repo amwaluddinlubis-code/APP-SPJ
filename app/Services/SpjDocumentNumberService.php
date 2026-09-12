@@ -9,6 +9,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class SpjDocumentNumberService
 {
@@ -31,7 +32,10 @@ class SpjDocumentNumberService
         $skipped = 0;
         $selectedTypes = $onlyDocumentTypes === null
             ? null
-            : collect($onlyDocumentTypes)->map(fn (string $type): string => strtoupper(trim($type)))->filter()->values();
+            : collect($onlyDocumentTypes)
+                ->map(fn (string $type): ?string => $this->policy->canonicalAutomaticDocumentType($type))
+                ->filter()
+                ->values();
         $shouldAssign = fn (string $type): bool => ($selectedTypes === null || $selectedTypes->contains($type))
             && $this->policy->isAutomaticDocumentEligible($transaction, $type);
 
@@ -125,7 +129,10 @@ class SpjDocumentNumberService
         ?int $templateId = null,
         ?string $npsn = null,
     ): SpjDocument {
-        $documentType = strtoupper(trim($documentType));
+        $documentType = $this->policy->canonicalAutomaticDocumentType($documentType);
+        if ($documentType === null) {
+            throw new InvalidArgumentException('Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.');
+        }
         $documentDate = $this->canonicalDocumentDate($package, $documentType, $documentDate);
 
         return DB::connection('school')->transaction(function () use ($package, $documentType, $documentDate, $schoolCode, $scopeKey, $templateId, $npsn): SpjDocument {
@@ -222,14 +229,13 @@ class SpjDocumentNumberService
         $transaction = $package->transaction;
         $value = match ($documentType) {
             'SPJ' => $transaction->transaction_date,
-            'ORDER', 'PESANAN', 'SURAT_PESANAN' => $transaction->goods->pluck('order_date')->filter()->sort()->first(),
+            'PESANAN' => $transaction->goods->pluck('order_date')->filter()->sort()->first(),
             'BAP' => $transaction->goods->pluck('bap_date')->filter()->sort()->first(),
-            'BAST', 'RECEIPT', 'PENERIMAAN' => $transaction->goods->pluck('bast_date')->filter()->sort()->first(),
-            'SPK', 'WORK_ORDER' => $transaction->workOrder?->spk_date,
+            'BAST' => $transaction->goods->pluck('bast_date')->filter()->sort()->first(),
+            'SPK' => $transaction->workOrder?->spk_date,
             'RAB' => $transaction->workOrder?->rab_date,
             'SURAT_TUGAS_PERJALANAN_DINAS' => $transaction->travels->pluck('assignment_letter_date')->filter()->sort()->first()
                 ?: $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
-            'SPPD' => $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
             default => null,
         };
 
