@@ -17,16 +17,34 @@ workflow      : SPJ Critical Verification
 result        : SUCCESS
 ```
 
-Source HEAD berikutnya:
+Perubahan token `{TW}`:
 
 ```text
 commit        : 68ab857dc698a1652e3b50233267e9ff64f40ba3
 change        : remove automatic `TW.` prefix from `{TW}` numbering token
 CI run        : 34667172478 (#387)
+result        : FAILURE
+cause         : 4 existing assertions masih mengharapkan TW.I/TW.II; source output sudah I/II sesuai requirement baru
+```
+
+Tidak ada regression test baru yang ditambahkan. Empat expectation existing diselaraskan melalui rangkaian commit:
+
+```text
+861a966711c582e99bd24026fe7f74590d142b61  QuarterNumberingPlaceholderTest
+a21791f640a3e6f11a428c5ae7b5f708a01840f3  DocumentNumberFormatSettingsTest
+c8541321e9d0348fc269b64d0d20585227e4a447  SpjAutomaticNumberingPolicyTest
+a44dd0811122e9ffd16ca38d03fba13c362121bb  SpjPreNumberingRegressionTest
+```
+
+Current source/test HEAD yang sedang di-gate:
+
+```text
+commit        : a44dd0811122e9ffd16ca38d03fba13c362121bb
+CI run        : 34667534772 (#391)
 status        : IN PROGRESS saat checkpoint dokumentasi dibuat
 ```
 
-Karena `68ab857...` adalah source change, gate `#386` tetap latest completed green gate tetapi belum menjadi canonical gate untuk source HEAD sampai `#387` selesai hijau.
+Gate #386 tetap latest completed green gate sampai #391 selesai hijau.
 
 Workflow blocking:
 
@@ -83,6 +101,8 @@ php artisan test --testsuite="SPJ Critical" --compact
 Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, maintenance, ARKAS importer, template upload, SiPLah, employee identity, quarter audit, ownership/workspace migration, dan reconciliation.
 
 Nama/jumlah test dapat berubah. Jangan menyalin angka test lama sebagai status branch aktif bila tidak tersedia sebagai evidence verbatim.
+
+CI #387 memberi evidence langsung bahwa perubahan format numbering harus menyelaraskan expectation lama, bukan mempertahankan prefix yang sudah dihapus oleh requirement operator.
 
 ---
 
@@ -269,7 +289,7 @@ Jangan membuat test/smoke test baru hanya untuk memperbesar coverage setelah kon
 
 ## 12. Current real-data focus
 
-Fokus aktif sudah berpindah dari menambah smoke test numbering ke operator output QA:
+Fokus aktif sudah berpindah dari menambah smoke test numbering ke operator output QA setelah HEAD kembali hijau:
 
 - generate dokumen nyata melalui aplikasi;
 - BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, HONOR_PEGAWAI;
