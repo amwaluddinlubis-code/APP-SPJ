@@ -22,7 +22,7 @@ final class SpjNumberingDocumentRegistry
      *     applicable_categories:list<string>,
      *     channel:string,
      *     event_date_rule:array{relation:string,field:string,fallback_field:?string},
-     *     number_field:?string,
+     *     number_target:array{relation:string,field:?string},
      *     scope_rule:string
      * }>
      */
@@ -39,6 +39,7 @@ final class SpjNumberingDocumentRegistry
                 'transaction',
                 'transaction_date',
                 null,
+                'package',
                 'document_number',
                 'MAIN',
             ),
@@ -50,6 +51,7 @@ final class SpjNumberingDocumentRegistry
                 'goods',
                 'order_date',
                 null,
+                'goods',
                 'order_number',
                 'MAIN',
             ),
@@ -61,6 +63,7 @@ final class SpjNumberingDocumentRegistry
                 'goods',
                 'bap_date',
                 null,
+                'goods',
                 'bap_number',
                 'MAIN',
             ),
@@ -72,6 +75,7 @@ final class SpjNumberingDocumentRegistry
                 'goods',
                 'bast_date',
                 null,
+                'goods',
                 'bast_number',
                 'MAIN',
             ),
@@ -83,6 +87,7 @@ final class SpjNumberingDocumentRegistry
                 'workOrder',
                 'spk_date',
                 null,
+                'workOrder',
                 'spk_number',
                 'MAIN',
             ),
@@ -94,6 +99,7 @@ final class SpjNumberingDocumentRegistry
                 'workOrder',
                 'rab_date',
                 null,
+                'workOrder',
                 'rab_number',
                 'MAIN',
             ),
@@ -105,6 +111,7 @@ final class SpjNumberingDocumentRegistry
                 'travels',
                 'assignment_letter_date',
                 'departure_date',
+                'travels',
                 'assignment_letter_number',
                 'TRAVEL',
             ),
@@ -168,7 +175,8 @@ final class SpjNumberingDocumentRegistry
         string $eventRelation,
         string $eventField,
         ?string $fallbackField,
-        ?string $numberField,
+        string $targetRelation,
+        ?string $targetField,
         string $scopeRule,
     ): array {
         return [
@@ -182,7 +190,10 @@ final class SpjNumberingDocumentRegistry
                 'field' => $eventField,
                 'fallback_field' => $fallbackField,
             ],
-            'number_field' => $numberField,
+            'number_target' => [
+                'relation' => $targetRelation,
+                'field' => $targetField,
+            ],
             'scope_rule' => $scopeRule,
         ];
     }
