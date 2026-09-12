@@ -41,10 +41,22 @@ Pekerjaan aktif:
 
 ## P0-02 — Generator dokumen + template upload
 
-**Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
+**Status: FUNCTIONAL GENERATOR PASS / TEMPLATE UPLOAD HARDENED PASS / MASTER TEMPLATE RECOMPOSITION PASS / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
+
+Sudah selesai:
+
+- [x] download template individu tidak lagi mengembalikan seluruh paket master;
+- [x] `Unduh Master Template Terbaru` merakit seluruh XLSX canonical aktif saat request dijalankan;
+- [x] update satu XLSX individu otomatis menggantikan versi document type tersebut pada master download berikutnya;
+- [x] master historis/source template tidak dimutasi saat update/download;
+- [x] output master dinormalisasi mengikuti nama/urutan sheet `SpjDocumentTypeRegistry`;
+- [x] master hasil rakitan divalidasi ulang melalui validator paket canonical;
+- [x] master parsial ditolak bila satu template XLSX canonical aktif hilang;
+- [x] regression meniru storage nyata importer: record lama berupa salinan master multi-sheet + satu update XLSX individu.
 
 Pekerjaan aktif:
 
+- [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` pada Microsoft Excel/LibreOffice dan verifikasi drawing, formula/reference, print area, page break, header/footer, serta hasil cetak;
 - [ ] buka/generate dokumen nyata BARANG;
 - [ ] buka/generate dokumen nyata KONSUMSI;
 - [ ] buka/generate dokumen nyata PEMELIHARAAN;
@@ -53,6 +65,8 @@ Pekerjaan aktif:
 - [ ] verifikasi field penting: identitas sekolah, no bukti, tanggal, uraian, penerima/vendor, nominal, pajak, nomor/tanggal dokumen turunan;
 - [ ] verifikasi XLSX/PDF dapat dibuka dan layout tidak clipping/berantakan;
 - [ ] lanjutkan official-template visual fidelity dan print layout setelah bug output dasar bersih.
+
+Lifecycle master canonical didokumentasikan di `TEMPLATE_MASTER_WORKFLOW.md`.
 
 Jika ditemukan bug, perbaiki bug tersebut dan tambahkan regression hanya jika diperlukan untuk mencegah recurrence.
 
@@ -223,6 +237,7 @@ Fokus hanya pada flow operator nyata: sidebar, Paket SPJ, tab, modal, dropdown, 
 
 ## P1-06 — Official-template visual/output QA
 
+- [ ] buka Master Template Terbaru pada Microsoft Excel/LibreOffice dan pastikan fidelity template sumber tetap layak;
 - [ ] template resmi/aktual sekolah;
 - [ ] visual fidelity Word/Excel/PDF;
 - [ ] print area/page break/header-footer;
