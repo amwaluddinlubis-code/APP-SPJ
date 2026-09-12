@@ -63,7 +63,7 @@ final class DocumentTemplateLibraryService
         return true;
     }
 
-    /** @return array{status:string,path?:string,name?:string} */
+    /** @return array{status:string,path?:string,name?:string,document_type?:string,format?:string} */
     public function storedDownload(string $templateId): array
     {
         $template = $this->findInActiveYear($templateId);
@@ -79,6 +79,8 @@ final class DocumentTemplateLibraryService
             'status' => 'ready',
             'path' => $template->file_path,
             'name' => $this->downloadName($template),
+            'document_type' => (string) $template->document_type,
+            'format' => (string) $template->format,
         ];
     }
 
