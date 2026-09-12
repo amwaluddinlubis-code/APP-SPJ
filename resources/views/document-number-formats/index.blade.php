@@ -2,7 +2,7 @@
     @php($labels = ['SPJ' => 'SPJ Utama', 'PESANAN' => 'Surat Pesanan', 'BAP' => 'Berita Acara Pemeriksaan', 'BAST' => 'Berita Acara Serah Terima', 'SPK' => 'Surat Perintah Kerja', 'RAB' => 'Rencana Anggaran Biaya', 'SURAT_TUGAS_PERJALANAN_DINAS' => 'Surat Tugas Perjalanan Dinas', 'KUITANSI' => 'Kuitansi', 'RINCIAN_BELANJA' => 'Rincian Belanja', 'CHECKLIST' => 'Checklist', 'REKAP_PAJAK' => 'Rekap Pajak', 'INVOICE_PESANAN' => 'Invoice / Pesanan'])
     @php($romanMonth = [1 => 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][now()->month])
     @php($quarterRoman = [1 => 'I', 'II', 'III', 'IV'][(int) ceil(now()->month / 3)])
-    @php($tw = 'TW.'.$quarterRoman)
+    @php($tw = $quarterRoman)
     <div class="space-y-6">
         <x-page-header
             title="Format Penomoran SPJ"
@@ -20,7 +20,7 @@
         <section class="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-900">
             <h2 class="font-bold">Placeholder yang tersedia</h2>
             <div class="mt-3 flex flex-wrap gap-2">@foreach($placeholders as $placeholder)<code class="rounded-md bg-[var(--ui-surface-base)] px-2.5 py-1 font-bold text-indigo-700 ring-1 ring-sky-200">&#123;{{ $placeholder }}&#125;</code>@endforeach</div>
-            <p class="mt-3 text-xs leading-5 text-sky-800"><strong>{SEQ}</strong> wajib ada. <strong>{SCHOOL}</strong> memakai Kode Sekolah, <strong>{NPSN}</strong> memakai NPSN, dan <strong>{TW}</strong> menghasilkan <code>TW.I</code> sampai <code>TW.IV</code> berdasarkan tanggal dokumen. Contoh: <code>{SEQ}/OP/{SCHOOL}/{TW}/{YEAR}</code>.</p>
+            <p class="mt-3 text-xs leading-5 text-sky-800"><strong>{SEQ}</strong> wajib ada. <strong>{SCHOOL}</strong> memakai Kode Sekolah, <strong>{NPSN}</strong> memakai NPSN, dan <strong>{TW}</strong> menghasilkan <code>I</code> sampai <code>IV</code> berdasarkan tanggal dokumen. Jika ingin menampilkan prefix, tulis literal <code>TW.{TW}</code> pada pola. Contoh tanpa prefix: <code>{SEQ}/OP/{SCHOOL}/{TW}/{YEAR}</code>.</p>
         </section>
 
         <div class="space-y-4">
@@ -34,7 +34,7 @@
                     <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-indigo-600">{{ $documentType }}</p><h2 class="mt-1 font-bold text-slate-900">{{ $labels[$documentType] ?? str_replace('_', ' ', $documentType) }}</h2></div><span class="w-fit rounded-full {{ $format ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }} px-2.5 py-1 text-xs font-bold">{{ $format ? 'Tersimpan' : 'Format bawaan' }}</span></div>
                     <form method="POST" action="{{ route('document-number-formats.update', $documentType) }}" class="p-5 sm:p-6">@csrf @method('PUT')<input type="hidden" name="document_type" value="{{ $documentType }}">
                         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_10rem]">
-                            <x-ui.field label="Pola nomor" :error="old('document_type') === $documentType ? $errors->first('format_pattern') : null" required><x-ui.input name="format_pattern" x-model="pattern" :value="$pattern" maxlength="80" class="font-mono" required /></x-ui.field>
+                            <x-ui.field label="Pola nomor" :error="old('document_type') === $documentType ? old('format_pattern') : null" required><x-ui.input name="format_pattern" x-model="pattern" :value="$pattern" maxlength="80" class="font-mono" required /></x-ui.field>
                             <x-ui.field label="Reset urutan" hint="Kapan urutan kembali ke awal."><x-ui.select name="reset_period">@foreach(['YEAR' => 'Setiap tahun', 'QUARTER' => 'Setiap triwulan', 'MONTH' => 'Setiap bulan', 'NONE' => 'Tidak pernah'] as $value => $label)<option value="{{ $value }}" @selected($reset === $value)>{{ $label }}</option>@endforeach</x-ui.select></x-ui.field>
                             <x-ui.field label="Digit urutan" hint="Jumlah digit nomor urut." required><x-ui.input name="padding" x-model="padding" type="number" min="1" max="8" :value="$padding" required /></x-ui.field>
                         </div>
