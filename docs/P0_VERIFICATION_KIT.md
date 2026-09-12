@@ -11,54 +11,40 @@ Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan men
 Latest completed green source gate saat checkpoint dokumentasi ini dibuat:
 
 ```text
-commit        : 0627ac45355453e138905cf0e81c235e6c5e2d2a
-CI run        : 34666556040 (#386)
+commit        : b167476d1b034cd19e9019234353cdafa7ac4fce
+CI run        : 34674547646 (#443)
 workflow      : SPJ Critical Verification
 result        : SUCCESS
 ```
 
-Perubahan token `{TW}`:
+Perubahan utama yang sudah tercakup gate #443:
 
 ```text
-commit        : 68ab857dc698a1652e3b50233267e9ff64f40ba3
-change        : remove automatic `TW.` prefix from `{TW}` numbering token
-CI run        : 34667172478 (#387)
-result        : FAILURE
-cause         : 4 existing assertions masih mengharapkan TW.I/TW.II; source output sudah I/II sesuai requirement baru
+- canonical numbering registry sebagai source of truth
+- halaman Format Penomoran membaca registry
+- halaman Penomoran Triwulan membaca registry
+- policy/gate/order/event-date resolver membaca registry
+- allocator membaca target relation/field/scope dari registry
+- lifecycle FINAL/cancel/replacement membaca registry
+- kompatibilitas behavior SPJ legacy tanpa kategori dipertahankan
+- token {TW} tetap I/II/III/IV tanpa prefix TW. otomatis
 ```
 
-Tidak ada regression test baru yang ditambahkan. Empat expectation existing diselaraskan melalui rangkaian commit:
+Blocking workflow #443:
 
 ```text
-861a966711c582e99bd24026fe7f74590d142b61  QuarterNumberingPlaceholderTest
-a21791f640a3e6f11a428c5ae7b5f708a01840f3  DocumentNumberFormatSettingsTest
-c8541321e9d0348fc269b64d0d20585227e4a447  SpjAutomaticNumberingPolicyTest
-a44dd0811122e9ffd16ca38d03fba13c362121bb  SpjPreNumberingRegressionTest
+npm run build          -> PASS
+php artisan view:cache -> PASS
+SPJ Critical PHPUnit   -> PASS
+Full Unit PHPUnit      -> PASS
+Full Feature PHPUnit   -> PASS
 ```
 
-Current source/test HEAD yang sedang di-gate:
+Repository Pint tetap advisory (`continue-on-error: true`) pada konfigurasi release saat ini, tetapi check Pint pada run #443 juga PASS.
 
-```text
-commit        : a44dd0811122e9ffd16ca38d03fba13c362121bb
-CI run        : 34667534772 (#391)
-status        : IN PROGRESS saat checkpoint dokumentasi dibuat
-```
+Tidak ada regression test baru yang ditambahkan untuk refactor registry. Existing regression menemukan dua mismatch selama proses refactor—constructor policy yang dipakai langsung oleh unit test lama dan eligibility SPJ legacy tanpa kategori—lalu source diselaraskan tanpa mengubah business rule.
 
-Gate #386 tetap latest completed green gate sampai #391 selesai hijau.
-
-Workflow blocking:
-
-```text
-npm run build          -> BLOCKING
-php artisan view:cache -> BLOCKING
-SPJ Critical PHPUnit   -> BLOCKING
-Full Unit PHPUnit      -> BLOCKING
-Full Feature PHPUnit   -> BLOCKING
-```
-
-Repository Pint tetap advisory (`continue-on-error: true`) pada konfigurasi release saat ini.
-
-Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit tidak memicu checkpoint CI baru.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah gate #443 tidak memicu checkpoint CI baru dan tidak menggantikan code gate tersebut.
 
 ---
 
@@ -102,11 +88,64 @@ Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, 
 
 Nama/jumlah test dapat berubah. Jangan menyalin angka test lama sebagai status branch aktif bila tidak tersedia sebagai evidence verbatim.
 
-CI #387 memberi evidence langsung bahwa perubahan format numbering harus menyelaraskan expectation lama, bukan mempertahankan prefix yang sudah dihapus oleh requirement operator.
+Gate #443 menjadi evidence bahwa refactor numbering registry mempertahankan behavior existing pada critical, unit, dan feature suite tanpa membuat source list numbering baru di consumer.
 
 ---
 
-## 4. Real-tenant audit — read-only
+## 4. Canonical numbering registry verification
+
+Source of truth metadata numbering:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Metadata canonical yang dimiliki registry:
+
+```text
+code
+label
+numbered
+applicable_categories
+channel
+event_date_rule
+number_target
+scope_rule
+```
+
+Consumer yang wajib membaca registry/policy adapter dan tidak boleh mempunyai daftar domain numbering sendiri:
+
+```text
+DocumentNumberFormatController / halaman Format Penomoran
+SpjNumberingUseCase / halaman Penomoran Triwulan
+SpjNumberingPolicyService
+SpjNumberingGateService
+SpjNumberingOrderService
+SpjDocumentNumberService
+SpjDocumentLifecycleService
+SpjDocumentLifecycleUseCase
+SpjSingleNumberingUseCase
+```
+
+Current canonical numbered codes:
+
+```text
+SPJ
+PESANAN
+BAP
+BAST
+SPK
+RAB
+SURAT_TUGAS_PERJALANAN_DINAS
+```
+
+Daftar di atas adalah snapshot dokumentasi untuk membantu pembaca, **bukan source executable**. Source executable tetap registry. Jika registry berubah, consumer harus ikut secara dinamis dan dokumentasi ini diperbarui bila perubahan tersebut mengubah kontrak operator/domain.
+
+`SpjDocumentTypeRegistry` bukan duplikat source numbering. Registry tersebut tetap menangani template/placeholder/output registry, sedangkan `SpjNumberingDocumentRegistry` menangani metadata domain penomoran.
+
+---
+
+## 5. Real-tenant audit — read-only
 
 Canonical command:
 
@@ -137,7 +176,7 @@ SPPD 2026 tidak tersedia pada real data; jangan dibuat fiktif untuk coverage.
 
 ---
 
-## 5. Read-only numbering preflight
+## 6. Read-only numbering preflight
 
 Sebelum mutation numbering pada data nyata:
 
@@ -168,7 +207,7 @@ number issued         : NONE
 
 ---
 
-## 6. Isolated mutation QA
+## 7. Isolated mutation QA
 
 Mutation real-data hanya boleh dilakukan pada copy terisolasi, bukan baseline asli.
 
@@ -208,15 +247,15 @@ Quarter rollback real-data runtime tidak perlu dipaksakan jika tidak ada bug ata
 
 ---
 
-## 7. Numbering token `{TW}`
+## 8. Numbering token `{TW}`
 
-Mulai source commit `68ab857dc698a1652e3b50233267e9ff64f40ba3`:
+Token canonical:
 
 ```text
 {TW} -> I / II / III / IV
 ```
 
-Prefix `TW.` tidak lagi ditambahkan otomatis oleh renderer. Operator dapat menambahkan literal prefix dalam pattern bila dibutuhkan:
+Prefix `TW.` tidak ditambahkan otomatis oleh renderer. Operator dapat menambahkan literal prefix dalam pattern bila dibutuhkan:
 
 ```text
 {SEQ}/SPJ/{SCHOOL}/TW.{TW}/{YEAR}
@@ -226,7 +265,7 @@ Nomor lama yang sudah diterbitkan tidak dimutasi otomatis.
 
 ---
 
-## 8. Audit snapshot dan diff
+## 9. Audit snapshot dan diff
 
 Jika perlu membandingkan before/after patch pada isolated copy:
 
@@ -240,7 +279,7 @@ Snapshot dengan school/year/quarter/fund-source berbeda tidak boleh diperlakukan
 
 ---
 
-## 9. Browser dan document QA
+## 10. Browser dan document QA
 
 CI/PHPUnit tidak membuktikan:
 
@@ -256,7 +295,7 @@ Area tersebut tetap RVR/DEFERRED sesuai `CURRENT_PROGRESS.md`.
 
 ---
 
-## 10. Verification workflow per perubahan
+## 11. Verification workflow per perubahan
 
 Gunakan pendekatan proporsional terhadap risiko dan bug yang benar-benar ditemukan:
 
@@ -273,9 +312,11 @@ Gunakan pendekatan proporsional terhadap risiko dan bug yang benar-benar ditemuk
 
 Jangan membuat test/smoke test baru hanya untuk memperbesar coverage setelah kontrak sudah cukup dibuktikan.
 
+Untuk perubahan numbering metadata, mulai dari `SpjNumberingDocumentRegistry`; jangan menambahkan array kode/label/event-date/target baru di controller, Blade, gate, atau allocator.
+
 ---
 
-## 11. Real-data rules
+## 12. Real-data rules
 
 - original database immutable;
 - audit original read-only;
@@ -287,9 +328,9 @@ Jangan membuat test/smoke test baru hanya untuk memperbesar coverage setelah kon
 
 ---
 
-## 12. Current real-data focus
+## 13. Current real-data focus
 
-Fokus aktif sudah berpindah dari menambah smoke test numbering ke operator output QA setelah HEAD kembali hijau:
+Fokus aktif sudah berpindah dari menambah smoke test numbering ke operator output QA:
 
 - generate dokumen nyata melalui aplikasi;
 - BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, HONOR_PEGAWAI;
