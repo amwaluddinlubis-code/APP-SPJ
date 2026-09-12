@@ -20,6 +20,8 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
 {
+    public function __construct(private readonly ArkasActivityHierarchyResolver $activityHierarchyResolver) {}
+
     /** @return array<string,array<int,string>> */
     public static function placeholderGroups(): array
     {
@@ -27,7 +29,7 @@ class SpjTemplateService
             'Dokumen & periode' => ['NOMOR_SPJ', 'NOMOR_DOKUMEN', 'NO_BUKTI', 'NOMOR_BUKTI', 'TANGGAL_TRANSAKSI', 'TANGGAL_DOKUMEN', 'TAHUN_ANGGARAN', 'SUMBER_DANA', 'SUMBER_DANA_PERIODE', 'TRIWULAN', 'SEMESTER', 'JENIS_SPJ'],
             'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
             'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
-            'Transaksi & pembayaran' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
+            'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
             'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
             'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
             'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
@@ -42,6 +44,7 @@ class SpjTemplateService
     {
         $transaction = $package->transaction;
         $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers', 'serviceRecipients']);
+        $activityHierarchy = $this->activityHierarchyResolver->resolve($transaction);
 
         $year = FiscalYear::query()->findOrFail($transaction->fiscal_year_id);
         $profile = DB::connection('school')->table('school_profiles')->where('fiscal_year_id', $year->id)->first();
@@ -102,6 +105,10 @@ class SpjTemplateService
             'PENERIMA_PENYEDIA' => $vendorName,
             'NAMA_PENYEDIA' => $vendorName,
             'NPWP_PENYEDIA' => (string) $transaction->vendor_npwp,
+            'KODE_PROGRAM' => $activityHierarchy['program_code'],
+            'NAMA_PROGRAM' => $activityHierarchy['program_name'],
+            'KODE_SUB_PROGRAM' => $activityHierarchy['sub_program_code'],
+            'NAMA_SUB_PROGRAM' => $activityHierarchy['sub_program_name'],
             'KODE_KEGIATAN' => (string) $transaction->activity_code,
             'NAMA_KEGIATAN' => (string) $transaction->activity_name,
             'KODE_REKENING' => (string) $transaction->account_code,

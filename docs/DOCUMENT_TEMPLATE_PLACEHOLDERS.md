@@ -1,6 +1,6 @@
 # Penanda Template Dokumen SPJ
 
-Terakhir diverifikasi: **2026-09-11** terhadap `SpjTemplateService` pada branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-12** terhadap `app/Services/SpjTemplateService.php`, `app/Services/ArkasActivityHierarchyResolver.php`, dan `bridge/src/ARKASBridge/Program.cs` pada branch `gui-standardization`.
 
 Dokumen ini adalah referensi placeholder canonical untuk template dokumen SPJ Word (`.docx`) dan Excel (`.xlsx`). Format placeholder memakai kurung kurawal ganda, misalnya:
 
@@ -118,6 +118,10 @@ Jangan menukar source recipient dan receipt recipient hanya demi menyesuaikan te
 Placeholder canonical:
 
 ```text
+KODE_PROGRAM
+NAMA_PROGRAM
+KODE_SUB_PROGRAM
+NAMA_SUB_PROGRAM
 KODE_KEGIATAN
 NAMA_KEGIATAN
 KODE_REKENING
@@ -129,7 +133,38 @@ REFERENSI_BAYAR
 CARA_BAYAR_REFERENSI
 ```
 
-Contract:
+### Hirarki Program → Sub Program → Kegiatan
+
+Contract sumber data canonical:
+
+```text
+ref_kode ARKAS
+  -> ARKASBridge RKAS v3
+  -> arkas_rkas_items.payload
+  -> ArkasActivityHierarchyResolver
+  -> SpjTemplateService
+  -> DOCX/XLSX/preview/PDF
+```
+
+Makna placeholder:
+
+- `KODE_PROGRAM` — kode parent level Program dari hirarki kode kegiatan ARKAS.
+- `NAMA_PROGRAM` — `uraian_kode` parent Program dari `ref_kode` ARKAS.
+- `KODE_SUB_PROGRAM` — kode parent level Sub Program dari hirarki kode kegiatan ARKAS.
+- `NAMA_SUB_PROGRAM` — `uraian_kode` parent Sub Program dari `ref_kode` ARKAS.
+- `KODE_KEGIATAN` — snapshot `activity_code` pada transaksi yang berasal dari RKAS.
+- `NAMA_KEGIATAN` — snapshot `activity_name` pada transaksi yang berasal dari RKAS.
+
+Aturan kebenaran data:
+
+- Bridge tidak menebak nama Program/Sub Program. Nama hanya berasal dari row parent `ref_kode` untuk tahun anggaran yang sama.
+- Kode Program/Sub Program dapat diturunkan secara deterministik dari `KODE_KEGIATAN` sebagai fallback untuk data hasil sinkronisasi lama.
+- Nama Program/Sub Program pada data lama yang belum memiliki field RKAS v3 **tidak boleh ditebak**; scalar kosong akan dirender `-`.
+- Agar `NAMA_PROGRAM` dan `NAMA_SUB_PROGRAM` terisi pada database sekolah yang telah disinkronkan sebelum contract RKAS v3, build ARKAS Bridge terbaru lalu lakukan sinkronisasi ulang RKAS/BKU untuk tahun anggaran tersebut.
+- `KODE_KEGIATAN` dan `NAMA_KEGIATAN` tetap memakai snapshot transaksi. Penambahan hirarki tidak mengubah ownership kegiatan yang sudah berjalan.
+- Parser `ArkasPipePayload` membaca header `FIELDS` secara dinamis, sehingga field RKAS v3 tersimpan di payload tanpa migrasi schema transaksi baru.
+
+Contract transaksi lain:
 
 - `URAIAN_TRANSAKSI` berasal dari uraian source transaksi.
 - `UNTUK_PEMBAYARAN` memakai `payment_description` operator jika tersedia, lalu fallback ke uraian transaksi.
@@ -397,10 +432,13 @@ Template adalah consumer dari context dokumen; template tidak menjadi alasan unt
 Contoh:
 
 ```text
-NAMA_PENERIMA_BKU       -> source BKU/ARKAS
-NAMA_PENERIMA_KUITANSI  -> overlay/effective receipt recipient
-PPN/PPH/SSPD             -> source transaction
-UNTUK_PEMBAYARAN         -> operator payment description dengan fallback source
+KODE/NAMA_PROGRAM         -> parent ref_kode ARKAS melalui payload RKAS tersinkron
+KODE/NAMA_SUB_PROGRAM     -> parent ref_kode ARKAS melalui payload RKAS tersinkron
+KODE/NAMA_KEGIATAN        -> snapshot kegiatan pada transaction
+NAMA_PENERIMA_BKU         -> source BKU/ARKAS
+NAMA_PENERIMA_KUITANSI    -> overlay/effective receipt recipient
+PPN/PPH/SSPD              -> source transaction
+UNTUK_PEMBAYARAN          -> operator payment description dengan fallback source
 ITEM_URAIAN               -> effective item description
 SIPLAH_*                  -> canonical SiPLah context bila tersedia
 ```
@@ -437,4 +475,5 @@ Sebelum template dianggap siap dipakai pada release:
 8. DOCX/XLSX hasil generate dapat dibuka;
 9. XLSX → PDF dapat dirender bila jalur tersebut digunakan;
 10. print area, page break, header/footer, orientation, paper size, dan visual fidelity diverifikasi terhadap template resmi;
-11. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage.
+11. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage;
+12. bila template memakai `NAMA_PROGRAM`/`NAMA_SUB_PROGRAM`, pastikan database sekolah sudah disinkronkan ulang dengan ARKAS Bridge RKAS v3.

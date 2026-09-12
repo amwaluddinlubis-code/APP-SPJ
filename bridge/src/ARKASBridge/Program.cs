@@ -615,9 +615,10 @@ ORDER BY name;";
         string? lastUpdatedAtColumn = FindColumn(rapbsColumns, "last_update", "updated_at", "tanggal_update", "tgl_update");
         string createdAtExpression = createdAtColumn == null ? "''" : "COALESCE(r." + QuoteIdentifier(createdAtColumn) + ", '')";
         string lastUpdatedAtExpression = lastUpdatedAtColumn == null ? "''" : "COALESCE(r." + QuoteIdentifier(lastUpdatedAtColumn) + ", '')";
+        Dictionary<string, string> activityReferenceNames = ReadActivityReferenceNames(con, year);
 
-        Console.WriteLine("SCHEMA|RKAS|2");
-        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_RAPBS|ID_ANGGARAN|ID_REF_KODE|KODE_KEGIATAN|NAMA_KEGIATAN|KODE_REKENING|ID_BARANG|URAIAN|SATUAN|HARGA_SATUAN|VOL_TW1|VOL_TW2|VOL_TW3|VOL_TW4|TW_1|TW_2|TW_3|TW_4|VOLUME_TOTAL|JUMLAH|CREATE_DATE|LAST_UPDATE");
+        Console.WriteLine("SCHEMA|RKAS|3");
+        Console.WriteLine("FIELDS|ID_REF_SUMBER_DANA|ID_RAPBS|ID_ANGGARAN|ID_REF_KODE|KODE_PROGRAM|NAMA_PROGRAM|KODE_SUB_PROGRAM|NAMA_SUB_PROGRAM|KODE_KEGIATAN|NAMA_KEGIATAN|KODE_REKENING|ID_BARANG|URAIAN|SATUAN|HARGA_SATUAN|VOL_TW1|VOL_TW2|VOL_TW3|VOL_TW4|TW_1|TW_2|TW_3|TW_4|VOLUME_TOTAL|JUMLAH|CREATE_DATE|LAST_UPDATE");
 
         string? anggaranSourceColumn = FindColumn(ReadTableColumns(con, "anggaran"), "id_ref_sumber_dana");
         string sourceExpression = anggaranSourceColumn == null
@@ -719,7 +720,17 @@ ORDER BY r.kode_rekening, r.uraian, r.id_rapbs;";
                 };
                 row[i] = strVal;
             }
-            Console.WriteLine("DATA|" + string.Join("|", row));
+
+            var hierarchy = ResolveActivityHierarchy(row[4], activityReferenceNames);
+            var output = new List<string>(27);
+            for (int i = 0; i < 4; i++) output.Add(row[i]);
+            output.Add(hierarchy.ProgramCode);
+            output.Add(hierarchy.ProgramName);
+            output.Add(hierarchy.SubProgramCode);
+            output.Add(hierarchy.SubProgramName);
+            for (int i = 4; i < row.Length; i++) output.Add(row[i]);
+
+            Console.WriteLine("DATA|" + string.Join("|", output));
         }
     }
 
@@ -888,6 +899,75 @@ ORDER BY k.tanggal_transaksi, k.create_date, k.id_kas_umum;";
             }
             Console.WriteLine("DATA|" + string.Join("|", row));
         }
+    }
+
+    private static Dictionary<string, string> ReadActivityReferenceNames(SqliteConnection con, string year)
+    {
+        var references = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"SELECT COALESCE(id_kode,''), COALESCE(uraian_kode,'')
+FROM ref_kode
+WHERE CAST(tahun AS TEXT) = $year;";
+        cmd.Parameters.AddWithValue("$year", year);
+
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            string code = NormalizeActivityCode(Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "");
+            string name = Clean(Convert.ToString(reader.GetValue(1), CultureInfo.InvariantCulture) ?? "");
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                continue;
+            }
+            if (!references.TryGetValue(code, out string? current) || string.IsNullOrWhiteSpace(current))
+            {
+                references[code] = name;
+            }
+        }
+
+        return references;
+    }
+
+    private static (string ProgramCode, string ProgramName, string SubProgramCode, string SubProgramName) ResolveActivityHierarchy(
+        string activityCode,
+        Dictionary<string, string> referenceNames)
+    {
+        string programCode = ActivityCodePrefix(activityCode, 1);
+        string subProgramCode = ActivityCodePrefix(activityCode, 2);
+        referenceNames.TryGetValue(NormalizeActivityCode(programCode), out string? programName);
+        referenceNames.TryGetValue(NormalizeActivityCode(subProgramCode), out string? subProgramName);
+
+        return (
+            programCode,
+            programName ?? "",
+            subProgramCode,
+            subProgramName ?? ""
+        );
+    }
+
+    private static string ActivityCodePrefix(string activityCode, int segmentCount)
+    {
+        string raw = activityCode.Trim();
+        string normalized = NormalizeActivityCode(raw);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return "";
+        }
+
+        string[] parts = normalized.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < segmentCount)
+        {
+            return "";
+        }
+
+        string prefix = string.Join(".", parts, 0, segmentCount);
+        return raw.EndsWith(".", StringComparison.Ordinal) ? prefix + "." : prefix;
+    }
+
+    private static string NormalizeActivityCode(string code)
+    {
+        string[] parts = code.Trim().Trim('.').Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Join(".", parts);
     }
 
     private static string Clean(string s)
