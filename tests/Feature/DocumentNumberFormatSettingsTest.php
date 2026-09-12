@@ -106,10 +106,10 @@ class DocumentNumberFormatSettingsTest extends TestCase
         $goodsResult = $numbers->assignAutomaticNumbers($goodsPackage, '10260756');
 
         $this->assertSame(4, $goodsResult['created']);
-        $this->assertStringContainsString('/TW.II/2026', $goodsPackage->fresh()->document_number);
-        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->order_number);
-        $this->assertStringContainsString('/TW.I/2026', $goods->fresh()->bap_number);
-        $this->assertStringContainsString('/TW.II/2026', $goods->fresh()->bast_number);
+        $this->assertStringContainsString('/II/2026', $goodsPackage->fresh()->document_number);
+        $this->assertStringContainsString('/I/2026', $goods->fresh()->order_number);
+        $this->assertStringContainsString('/I/2026', $goods->fresh()->bap_number);
+        $this->assertStringContainsString('/II/2026', $goods->fresh()->bast_number);
 
         $maintenance = SpjMaintenance::query()->create([
             'fiscal_year_id' => $year->id,
@@ -134,8 +134,8 @@ class DocumentNumberFormatSettingsTest extends TestCase
         $maintenanceResult = $numbers->assignAutomaticNumbers($maintenancePackage, '10260756');
 
         $this->assertSame(3, $maintenanceResult['created']);
-        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->spk_number);
-        $this->assertStringContainsString('/TW.II/2026', $workOrder->fresh()->rab_number);
+        $this->assertStringContainsString('/II/2026', $workOrder->fresh()->spk_number);
+        $this->assertStringContainsString('/II/2026', $workOrder->fresh()->rab_number);
 
         $travelTransaction = Transaction::query()->create([
             'fiscal_year_id' => $year->id,
@@ -154,7 +154,7 @@ class DocumentNumberFormatSettingsTest extends TestCase
         $travelResult = $numbers->assignAutomaticNumbers($travelPackage, '10260756');
 
         $this->assertSame(2, $travelResult['created']);
-        $this->assertStringContainsString('/TW.III/2026', $travel->fresh()->assignment_letter_number);
+        $this->assertStringContainsString('/III/2026', $travel->fresh()->assignment_letter_number);
 
         $existingOrderNumber = $goods->fresh()->order_number;
         $numbers->assignAutomaticNumbers($goodsPackage->fresh(), '10260756');
