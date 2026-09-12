@@ -14,7 +14,7 @@ Gunakan sumber canonical berikut untuk kondisi project terkini:
 - `docs/P0_VERIFICATION_KIT.md` §1 — CI code gate/release-safety evidence aktif;
 - `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
 
-Ringkasan status saat ini tetap:
+Ringkasan status saat ini:
 
 ```text
 FUNCTIONAL CORE : PASS
@@ -34,6 +34,7 @@ Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke README ini 
 - `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen.
 - `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aplikasi dan boundary tenant.
+- `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` — kontrak numbering, registry, cancel, rollback, dan correction.
 - `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer.
 - `docs/GUI_STANDARDIZATION.md` — kontrak GUI.
 - `docs/CSS_USAGE_GUIDE.md` — kontrak CSS/theme.
@@ -69,6 +70,45 @@ Aturan yang tidak boleh diregresikan:
 - Paket `READY` yang benar-benar berganti kategori wajib kembali ke `DRAFT` untuk revalidation;
 - preview/download tidak boleh menerbitkan nomor baru;
 - `NUMBERED`/`FINAL` terkunci dari edit normal.
+
+## Canonical numbering registry
+
+Metadata domain penomoran mempunyai satu source of truth:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Registry menyimpan metadata executable untuk setiap domain numbering:
+
+```text
+code
+label
+numbered
+applicable_categories
+channel
+event_date_rule
+number_target
+scope_rule
+```
+
+Format Penomoran, Penomoran Triwulan, policy, gate, order/event-date resolver, allocator, finalization, cancel, dan replacement membaca metadata dari registry yang sama. Consumer tidak boleh membuat array document type, label, category eligibility, event date, target number field, atau scope numbering sendiri.
+
+`SpjDocumentTypeRegistry` tetap mempunyai fungsi berbeda sebagai registry template/placeholder/output dan bukan source sequence numbering.
+
+Current numbered domains tetap:
+
+```text
+SPJ
+PESANAN
+BAP
+BAST
+SPK
+RAB
+SURAT_TUGAS_PERJALANAN_DINAS
+```
+
+Daftar di README ini hanya ringkasan dokumentasi; source executable tetap `SpjNumberingDocumentRegistry`.
 
 ## Workflow operator
 
