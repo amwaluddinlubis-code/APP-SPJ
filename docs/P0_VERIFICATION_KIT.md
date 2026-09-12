@@ -11,25 +11,33 @@ Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini, bukan men
 Latest completed green source gate saat checkpoint dokumentasi ini dibuat:
 
 ```text
-commit        : e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2
-CI run        : 34688492879 (#458)
+commit        : 32aa928671a94ec5bdbf78a7f86e8840c79cae5d
+CI run        : 34694289853 (#468)
 workflow      : SPJ Critical Verification
 result        : SUCCESS
 ```
 
-Blocking workflow #458:
+Blocking workflow #468:
 
 ```text
 npm run build          -> PASS
 php artisan view:cache -> PASS
 SPJ Critical PHPUnit   -> PASS : 277 tests / 2067 assertions
 Full Unit PHPUnit      -> PASS : 49 tests / 169 assertions
-Full Feature PHPUnit   -> PASS : 348 tests / 2466 assertions
+Full Feature PHPUnit   -> PASS : 352 tests / 2503 assertions
 ```
 
-Perubahan master template yang sudah tercakup gate #458:
+Perubahan template yang sudah tercakup gate #468:
 
 ```text
+- Download Template XLSX per baris benar-benar menghasilkan tepat satu worksheet fisik
+- worksheet lain dibuang dari copy download pada level OOXML, bukan hidden/veryHidden
+- source/master tersimpan tidak dimutasi oleh download individu
+- regression membuka ulang hasil download dan memverifikasi getSheetCount() === 1
+- regression ZIP memastikan part worksheet yang tidak dipilih benar-benar tidak ada
+- Cek Placeholder melakukan lookup read-only dan memakai resolver nilai generator yang sama
+- placeholder lookup dapat memakai nomor Paket/SPJ, nomor dokumen turunan, atau No. Bukti
+- placeholder lookup menjaga Fund Source context
 - Master Template Terbaru dirakit saat download dari template XLSX aktif per document type canonical
 - source master historis tidak dimutasi ketika template individu diperbarui
 - update XLSX individu menggantikan versi document type tersebut pada master download berikutnya
@@ -37,14 +45,17 @@ Perubahan master template yang sudah tercakup gate #458:
 - nama dan urutan sheet output dinormalisasi mengikuti SpjDocumentTypeRegistry
 - workbook hasil rakitan divalidasi ulang melalui SpjTemplatePackageImporter
 - master parsial ditolak bila satu atau lebih template XLSX canonical aktif tidak tersedia
-- Download Template per baris tetap merupakan download dokumen terpilih, terpisah dari download master
 ```
 
-Focused regression `DocumentTemplateMasterExportTest` pada gate #458 meniru flow nyata `import master -> update satu XLSX -> download master terbaru`: source template yang tidak diubah berbentuk salinan penuh workbook master multi-sheet, sedangkan `RINCIAN_BELANJA` diganti oleh file XLSX individu. Hasil export memakai versi individu terbaru untuk Rincian Belanja, mempertahankan versi aktif untuk tipe lain, mempunyai sheet canonical lengkap, dan lolos validator paket yang sama dengan jalur import.
+Focused regression `DocumentTemplateIndividualDownloadTest` pada gate #468 membuat source workbook multi-sheet dengan sheet canonical terpilih berada di posisi kedua. Output dibuka ulang dan harus mempunyai tepat satu sheet canonical; inspeksi ZIP memastikan part worksheet pertama/ketiga sudah hilang, sedangkan source tetap utuh. Dengan demikian `hidden`/`veryHidden` **tidak lagi diterima sebagai bukti single-template**.
 
-Kontrak ini berstatus **FUNCTIONAL PASS**. Gate tersebut membuktikan struktur workbook dapat dibaca ulang oleh parser aplikasi dan memenuhi kontrak re-import, tetapi belum membuktikan visual fidelity pada Microsoft Excel/LibreOffice, print area, page break, header/footer, drawing, atau hasil cetak. Area visual/document runtime tetap **RVR**.
+`DocumentTemplateMasterExportTest` pada gate yang sama tetap meniru flow nyata `import master -> update satu XLSX -> download master terbaru`: source template yang tidak diubah berbentuk salinan penuh workbook master multi-sheet, sedangkan `RINCIAN_BELANJA` diganti oleh file XLSX individu. Hasil export memakai versi individu terbaru untuk Rincian Belanja, mempertahankan versi aktif untuk tipe lain, mempunyai sheet canonical lengkap, dan lolos validator paket yang sama dengan jalur import.
 
-Refactor canonical numbering registry yang sebelumnya sudah PASS tetap dipertahankan oleh gate #458, termasuk:
+`DocumentTemplatePlaceholderInspectorTest` membuktikan lookup nilai aktual placeholder, pencarian melalui nomor Paket/dokumen/No. Bukti, isolasi Fund Source, dan contract AJAX pada halaman Pengaturan Template Dokumen.
+
+Kontrak tersebut berstatus **FUNCTIONAL PASS**. Gate membuktikan struktur workbook single-download dapat dibaca ulang, sheet lain benar-benar tidak ada pada paket OOXML hasil download, serta master memenuhi kontrak re-import. Gate **belum** membuktikan visual fidelity pada Microsoft Excel/LibreOffice, print area, page break, header/footer, drawing, defined name/formula kompleks, atau hasil cetak. Area visual/document runtime tetap **RVR**.
+
+Refactor canonical numbering registry yang sebelumnya sudah PASS tetap dipertahankan oleh gate #468, termasuk:
 
 ```text
 - canonical numbering registry sebagai source of truth
@@ -57,7 +68,7 @@ Refactor canonical numbering registry yang sebelumnya sudah PASS tetap dipertaha
 - token {TW} tetap I/II/III/IV tanpa prefix TW. otomatis
 ```
 
-Repository Pint tetap **advisory** (`continue-on-error: true`) pada workflow release saat ini. Pada run #458, command `php vendor/bin/pint --test` masih melaporkan **5 style issue repository-wide** pada file lama yang tidak terkait implementasi Master Template Terbaru:
+Repository Pint tetap **advisory** (`continue-on-error: true`) pada workflow release saat ini. Pada run #468, command `php vendor/bin/pint --test` masih melaporkan **5 style issue repository-wide** pada file lama yang tidak terkait koreksi template:
 
 ```text
 app/Console/Commands/TestIsolatedSpjCancellation.php
@@ -67,9 +78,9 @@ app/Console/Commands/TestIsolatedSpjTailRollback.php
 tests/Feature/SpjIsolatedQuarterRollbackCommandTest.php
 ```
 
-Karena step tersebut advisory, workflow #458 tetap SUCCESS. Jangan menyatakan repository-wide Pint clean sampai lima issue tersebut benar-benar diperbaiki. File master-template yang berubah pada pekerjaan ini tidak termasuk daftar issue Pint di atas.
+Karena step tersebut advisory, workflow #468 tetap SUCCESS. Jangan menyatakan repository-wide Pint clean sampai lima issue tersebut benar-benar diperbaiki. `DocumentTemplateIndividualDownloadService.php` dan regression template yang berubah pada gate #468 tidak termasuk daftar issue Pint di atas.
 
-Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah gate #458 tidak memicu checkpoint CI baru dan tidak menggantikan code gate `e46cfd8945430505ad7d84ff3b8b8bfc9b55c6a2`.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah gate #468 tidak memicu checkpoint CI baru dan tidak menggantikan code gate `32aa928671a94ec5bdbf78a7f86e8840c79cae5d`.
 
 ---
 
@@ -109,11 +120,11 @@ php artisan spj:verify --skip-tests
 php artisan test --testsuite="SPJ Critical" --compact
 ```
 
-Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, maintenance, ARKAS importer, template upload, SiPLah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan lifecycle master template.
+Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, maintenance, ARKAS importer, template upload/download, placeholder inspector, master template lifecycle, SiPLah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan lifecycle master template.
 
 Nama/jumlah test dapat berubah. Jangan menyalin angka test lama sebagai status branch aktif bila tidak tersedia sebagai evidence verbatim.
 
-Gate #458 menjadi evidence bahwa behavior existing tetap terjaga setelah penambahan Master Template Terbaru dan regression import-master/update-individu/download-master.
+Gate #468 menjadi evidence bahwa behavior existing tetap terjaga setelah koreksi true single-sheet download, penambahan placeholder inspector, dan lifecycle import-master/update-individu/download-master.
 
 ---
 
@@ -312,6 +323,7 @@ CI/PHPUnit tidak membuktikan:
 - desktop/laptop layout aktual;
 - mobile/tablet usability aktual;
 - Word/Excel/PDF visual fidelity;
+- single-template Office repair/fidelity pada workbook nyata;
 - print area/page break/header/footer;
 - hasil cetak fisik;
 - installed Windows runtime.
@@ -357,6 +369,9 @@ Untuk perubahan numbering metadata, mulai dari `SpjNumberingDocumentRegistry`; j
 
 Fokus aktif sudah berpindah dari menambah smoke test numbering ke operator output QA:
 
+- buka hasil Download Template individu pada Excel/LibreOffice dan pastikan satu worksheet tanpa repair prompt;
+- buka Master Template Terbaru pada Excel/LibreOffice;
+- gunakan Cek Placeholder untuk memeriksa nilai aktual tanpa upload berulang;
 - generate dokumen nyata melalui aplikasi;
 - BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, HONOR_PEGAWAI;
 - JASA_LAINNYA multi-recipient output;
