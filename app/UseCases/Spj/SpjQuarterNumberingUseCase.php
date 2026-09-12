@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Spj;
 
-use App\Models\DocumentTemplate;
 use App\Models\QuarterNumberingRun;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\FiscalPeriodWorkflowService;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
+use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
@@ -28,6 +28,7 @@ class SpjQuarterNumberingUseCase
         private readonly OperationalAuditService $audit,
         private readonly SpjNumberingOrderService $order,
         private readonly SpjNumberingPolicyService $numberingPolicy,
+        private readonly SpjNumberingGateService $numberingGate,
         private readonly ActiveSpjContext $context,
     ) {}
 
@@ -40,29 +41,30 @@ class SpjQuarterNumberingUseCase
         ]);
         $yearId = $this->context->fiscalYearId();
         $school = $this->context->school();
-        $templates = DocumentTemplate::query()->where(['fiscal_year_id' => $yearId, 'is_active' => true])->get();
-        $documentTypes = collect($data['document_types'] ?? $templates->pluck('document_type')->push('SPJ'))
-            ->map(fn ($type) => strtoupper(trim((string) $type)))->filter()->unique()->values();
         $quarter = (int) $data['quarter'];
 
-        if ($quarter > 1) {
-            $previousQuarter = $quarter - 1;
-            $previousQuarterScope = fn ($query) => $query->forSpjContext($this->context)
-                ->whereMonth('transaction_date', '>=', ($previousQuarter - 1) * 3 + 1)
-                ->whereMonth('transaction_date', '<=', $previousQuarter * 3);
-            $notFinal = Transaction::query()->where($previousQuarterScope)->has('items')
-                ->where(function ($query): void {
-                    $query->doesntHave('spjPackage')
-                        ->orWhereHas('spjPackage', fn ($package) => $package->where('status', '!=', 'FINAL'));
-                })
-                ->count();
+        $requestedTypes = collect($data['document_types'] ?? $this->numberingPolicy->automaticDocumentTypes())
+            ->map(fn ($type) => strtoupper(trim((string) $type)))
+            ->filter()
+            ->values();
+        $invalidTypes = $requestedTypes
+            ->filter(fn (string $type): bool => $this->numberingPolicy->canonicalAutomaticDocumentType($type) === null)
+            ->unique()
+            ->values();
+        if ($invalidTypes->isNotEmpty()) {
+            return back()->with('error', 'Penomoran dibatalkan. Jenis dokumen di luar 7 domain canonical: '.$invalidTypes->implode(', ').'.');
+        }
 
-            if ($notFinal > 0) {
-                return back()->with(
-                    'error',
-                    "Penomoran Triwulan {$quarter} dibatalkan: masih ada {$notFinal} transaksi Triwulan {$previousQuarter} yang paket SPJ-nya belum FINAL. Finalkan seluruh dokumen triwulan sebelumnya terlebih dahulu."
-                );
-            }
+        $documentTypes = $requestedTypes
+            ->map(fn (string $type): string => (string) $this->numberingPolicy->canonicalAutomaticDocumentType($type))
+            ->unique()
+            ->values();
+        if ($documentTypes->isEmpty()) {
+            return back()->with('error', 'Penomoran dibatalkan. Pilih minimal satu jenis dokumen canonical.');
+        }
+
+        if ($blocker = $this->numberingGate->previousQuarterFinalBlocker($quarter)) {
+            return back()->with('error', $blocker);
         }
 
         $quarterScope = fn ($query) => $query->forSpjContext($this->context)
@@ -150,28 +152,7 @@ class SpjQuarterNumberingUseCase
         $numbered = 0;
         $skipped = 0;
         try {
-            $manualDocumentTypes = $documentTypes
-                ->reject(fn (string $documentType): bool => $this->numberingPolicy->isAutomaticDocumentType($documentType));
-
-            foreach ($manualDocumentTypes as $documentType) {
-                $eligiblePackages = $packages->filter(function (SpjPackage $package) use ($documentType, $templates): bool {
-                    if ($this->validator->validateForNumbering($package)) {
-                        return false;
-                    }
-                    $category = strtoupper((string) $package->transaction->spj_category);
-
-                    return $templates->where('document_type', $documentType)->contains(fn (DocumentTemplate $template) => empty($template->applicable_categories) || in_array('SEMUA', $template->applicable_categories, true) || in_array($category, $template->applicable_categories, true));
-                });
-
-                foreach ($this->order->orderedPackagesForDocumentType($eligiblePackages, $documentType) as $package) {
-                    $templateId = $templates->where('document_type', $documentType)->first()?->id;
-                    $before = $package->documents()->where(['document_type' => $documentType, 'scope_key' => 'MAIN'])->where('status', '!=', 'CANCELLED')->whereNotNull('document_number')->exists();
-                    $this->numbers->assign($package, $documentType, $this->order->documentEventDate($package, $documentType), $school->school_code ?: $school->npsn, templateId: $templateId, npsn: $school->npsn);
-                    $before ? $skipped++ : $numbered++;
-                }
-            }
-
-            foreach ($this->numberingPolicy->automaticDocumentTypes() as $documentType) {
+            foreach ($documentTypes as $documentType) {
                 if ($documentType === 'SURAT_TUGAS_PERJALANAN_DINAS') {
                     $travelPackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
                         ->isAutomaticDocumentEligible($package->transaction, $documentType));
