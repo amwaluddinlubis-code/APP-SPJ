@@ -58,9 +58,9 @@ Jika ditemukan bug, perbaiki bug tersebut dan tambahkan regression hanya jika di
 
 ---
 
-## P0-03 — Numbering + lifecycle
+## P0-03 — Numbering + registry + lifecycle
 
-**Status: FUNCTIONAL PASS / REAL-DATA CORE MUTATION QA PASS untuk numbering pertama, cancel/reserve, tail rollback.**
+**Status: FUNCTIONAL PASS / CANONICAL REGISTRY PASS / REAL-DATA CORE MUTATION QA PASS untuk numbering pertama, cancel/reserve, tail rollback.**
 
 Sudah selesai:
 
@@ -72,12 +72,34 @@ Sudah selesai:
 - [x] released sequence dapat dipakai kembali setelah tail rollback;
 - [x] fund-source scoped sequence;
 - [x] quarter rollback dependency functional regression;
-- [x] `{TW}` tidak lagi memaksakan prefix literal `TW.`; operator dapat menambah `TW.{TW}` pada pattern bila dibutuhkan.
+- [x] `{TW}` tidak lagi memaksakan prefix literal `TW.`; operator dapat menambah `TW.{TW}` pada pattern bila dibutuhkan;
+- [x] satu `SpjNumberingDocumentRegistry` menjadi source of truth metadata numbering;
+- [x] kode + label document type pada Format Penomoran berasal dari registry;
+- [x] kode + label document type pada Penomoran Triwulan berasal dari registry;
+- [x] category/channel eligibility berasal dari registry + runtime policy adapter;
+- [x] event-date rule berasal dari registry;
+- [x] number target relation/field berasal dari registry;
+- [x] scope `MAIN`/`TRAVEL` berasal dari registry;
+- [x] allocator tidak lagi mempunyai loop document type hardcoded;
+- [x] lifecycle FINAL/cancel/replacement membaca registry;
+- [x] gate source HEAD setelah refactor registry hijau pada full release-safety workflow.
+
+Kontrak maintainability baru:
+
+```text
+Tambah/ubah metadata numbering
+-> edit SpjNumberingDocumentRegistry
+-> consumer membaca registry
+-> jangan membuat array type/label/event-date/target kedua
+```
+
+`SpjDocumentTypeRegistry` tetap khusus template/placeholder/output dan bukan source sequence numbering.
 
 Tidak menjadi fokus aktif:
 
 - [ ] isolated real-data quarter rollback runtime — **PENDING / OPTIONAL**, hanya dijalankan bila diperlukan oleh bug/operator flow;
-- [ ] full 66-package mutation smoke — **tidak diwajibkan** bila operator flow normal tidak menemukan masalah.
+- [ ] full 66-package mutation smoke — **tidak diwajibkan** bila operator flow normal tidak menemukan masalah;
+- [ ] menambah test registry baru hanya untuk coverage — **tidak diperlukan** selama existing regression tetap hijau dan tidak ada bug baru.
 
 Panduan canonical: `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
@@ -256,6 +278,8 @@ Kerjakan setelah desktop operator flow stabil atau jika ditemukan bug mobile yan
 - audit real-data dilakukan read-only sebelum mutation;
 - mutation real-data hanya pada isolated copy;
 - numbering mengikuti canonical order;
+- metadata numbering mempunyai satu source of truth: `SpjNumberingDocumentRegistry`;
+- consumer numbering tidak boleh membuat daftar type/label/category/event-date/number-target/scope sendiri;
 - perubahan domain/business rule dicatat di `SPJ_DESIGN_DECISIONS.md` dan feature guide terkait;
 - docs status membedakan FUNCTIONAL PASS, REAL-DATA VERIFIED, RVR, dan DEFERRED;
 - source-responsive PASS tidak sama dengan browser/mobile PASS;
