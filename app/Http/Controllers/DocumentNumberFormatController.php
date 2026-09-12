@@ -32,6 +32,7 @@ class DocumentNumberFormatController extends Controller
             'school' => $school,
             'formats' => $formats,
             'documentTypes' => collect($numberingPolicy->automaticDocumentTypes()),
+            'documentLabels' => $numberingPolicy->automaticDocumentLabels(),
             'placeholders' => self::PLACEHOLDERS,
         ]);
     }
