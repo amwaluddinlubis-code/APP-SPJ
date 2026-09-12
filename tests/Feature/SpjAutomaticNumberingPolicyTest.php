@@ -145,11 +145,11 @@ class SpjAutomaticNumberingPolicyTest extends TestCase
         $result = app(SpjDocumentNumberService::class)->assignAutomaticNumbers($package, '10200001');
 
         $this->assertSame(4, $result['created']);
-        $this->assertStringContainsString('/TW.II/2026', $package->fresh()->document_number);
+        $this->assertStringContainsString('/II/2026', $package->fresh()->document_number);
         $goods->refresh();
-        $this->assertStringContainsString('/TW.I/2026', $goods->order_number);
-        $this->assertStringContainsString('/TW.I/2026', $goods->bap_number);
-        $this->assertStringContainsString('/TW.I/2026', $goods->bast_number);
+        $this->assertStringContainsString('/I/2026', $goods->order_number);
+        $this->assertStringContainsString('/I/2026', $goods->bap_number);
+        $this->assertStringContainsString('/I/2026', $goods->bast_number);
     }
 
     public function test_canonical_automatic_formats_are_persisted_without_overwriting_custom_format(): void
