@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DocumentTemplate;
 use App\Models\FiscalPeriodClosure;
 use App\Models\QuarterNumberingRun;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\SpjNumberingPolicyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class SpjNumberingWorkflowController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, SpjNumberingPolicyService $numberingPolicy): View
     {
         $data = $request->validate([
             'quarter' => ['nullable', 'integer', 'between:1,4'],
@@ -36,7 +36,8 @@ class SpjNumberingWorkflowController extends Controller
             $withoutPackage = (clone $transactionQuery)->has('items')->doesntHave('spjPackage')->count();
             $draft = (clone $packageQuery)->where('status', 'DRAFT')->count();
             $ready = (clone $packageQuery)->where('status', 'READY')->count();
-            $numbered = (clone $packageQuery)->whereIn('status', ['NUMBERED', 'FINAL'])->count();
+            $numbered = (clone $packageQuery)->where('status', 'NUMBERED')->count();
+            $final = (clone $packageQuery)->where('status', 'FINAL')->count();
 
             return [$quarter => [
                 'quarter' => $quarter,
@@ -45,6 +46,7 @@ class SpjNumberingWorkflowController extends Controller
                 'draft' => $draft,
                 'ready' => $ready,
                 'numbered' => $numbered,
+                'final' => $final,
                 'blocked' => $withoutPackage + $draft,
                 'closure' => $closures->get($quarter),
             ]];
@@ -64,15 +66,7 @@ class SpjNumberingWorkflowController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $documentTypes = DocumentTemplate::query()
-            ->where(['fiscal_year_id' => $yearId, 'is_active' => true])
-            ->pluck('document_type')
-            ->push('SPJ')
-            ->map(fn ($type) => strtoupper(trim((string) $type)))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
+        $documentTypes = collect($numberingPolicy->automaticDocumentTypes());
 
         $recentRuns = QuarterNumberingRun::query()
             ->where('fiscal_year_id', $yearId)
