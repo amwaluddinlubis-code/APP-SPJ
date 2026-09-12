@@ -23,13 +23,13 @@ class SpjDocumentUseCase
 
     public function download(string $packageId)
     {
+        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
+        }
         $validator = app(SpjPackageValidationService::class);
         $templates = app(SpjTemplateService::class);
         $preflight = app(SpjTemplateRenderPreflight::class);
-        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
-        }
         $issues = $validator->validate($package);
         if ($issues) {
             return back()->with('error', 'PDF belum dapat dibuat. Lengkapi seluruh data wajib terlebih dahulu.');
@@ -47,8 +47,8 @@ class SpjDocumentUseCase
     public function downloadPackageExcel(string $packageId)
     {
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
         }
 
         $this->applyDocumentContext($package);
@@ -63,8 +63,8 @@ class SpjDocumentUseCase
     public function previewPackage(string $packageId): View|RedirectResponse
     {
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
-        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
         }
 
         $validationIssues = app(SpjPackageValidationService::class)->validate($package);
@@ -84,13 +84,13 @@ class SpjDocumentUseCase
 
     public function downloadTemplate(string $packageId, string $templateId)
     {
-        $validator = app(SpjPackageValidationService::class);
-        $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
         }
+        $validator = app(SpjPackageValidationService::class);
+        $templates = app(SpjTemplateService::class);
         if ($validator->validate($package)) {
             return back()->with('error', 'Dokumen dari template belum dapat dibuat. Lengkapi data wajib terlebih dahulu.');
         }
@@ -121,13 +121,13 @@ class SpjDocumentUseCase
 
     public function downloadTemplatePdf(string $packageId, string $templateId)
     {
-        $validator = app(SpjPackageValidationService::class);
-        $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template aktif tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template aktif tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
         }
+        $validator = app(SpjPackageValidationService::class);
+        $templates = app(SpjTemplateService::class);
         if ($validator->validate($package)) {
             return back()->with('error', 'PDF dari template belum dapat dibuat. Lengkapi data wajib terlebih dahulu.');
         }
@@ -146,8 +146,8 @@ class SpjDocumentUseCase
         $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
-        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesFiscalYear($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
         }
         $school = $this->context->school();
         $validationIssues = $validator->validate($package);

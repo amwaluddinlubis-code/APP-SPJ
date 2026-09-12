@@ -32,105 +32,19 @@
 
         <livewire:rkas-budget-filter />
 
-        @if (in_array($scope, ['quarter', 'semester'], true) && $scopeValue > 0)
-            @php($monthNames = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'])
-            <x-section-card title="Rincian pembagian pagu seperti PDF RKAS" :description="'Perbandingan rincian ' . $periodLabel . ' berdasarkan periode RKAS yang tersaring.'" :padding="false">
-                @php($periodColumns = $scope === 'quarter' ? $periodMonths : [1, 2])
-                <div
-                    class="mx-4 mt-4 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 text-sm text-[var(--ui-fg-strong)] sm:mx-6">
-                    <p class="font-semibold">Format mengikuti PDF RKAS</p>
-                    <p class="mt-1 text-xs leading-5 text-[var(--ui-fg-muted)]">Setiap baris menunjukkan satu item anggaran. Nilai
-                        periode berasal dari pembagian pagu ARKAS pada field TW, sehingga jumlah seluruh periode harus
-                        sama dengan pagu tahunan.</p>
-                </div>
-                <div class="mx-4 mt-4 overflow-x-auto rounded-xl border sm:mx-6" style="border-color: var(--ui-line)">
-                    <table class="min-w-[980px] w-full divide-y text-sm" style="border-color: var(--ui-line)">
-                        <thead style="background: var(--ui-surface-soft)">
-                            <tr>
-                                <th class="w-12 px-3 py-2 text-center text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">No</th>
-                                <th class="min-w-[300px] px-3 py-2 text-left text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Uraian / Kode Rekening</th>
-                                @if ($scope === 'quarter')
-                                    @foreach ($periodMonths as $month)
-                                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                            style="color: var(--ui-fg-muted)">{{ $monthNames[$month] }}</th>
-                                    @endforeach
-                                @else
-                                    @foreach ($periodColumns as $semester)
-                                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                            style="color: var(--ui-fg-muted)">Tahap {{ $semester }}</th>
-                                    @endforeach
-                                @endif
-                                <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y" style="border-color: var(--ui-line)">
-                            @php($detailNo = 0)
-                            @php($displayRows = $scope === 'quarter' ? $periodDetailRows : $periodPlanningRows)
-                            @forelse($displayRows->groupBy('activity_code') as $activityCode => $detailRows)
-                                <tr style="background: var(--ui-surface-soft)">
-                                    <td></td>
-                                    <td colspan="{{ count($periodColumns) + 2 }}"
-                                        class="px-3 py-2 text-xs font-bold" style="color: var(--ui-fg-strong)">
-                                        <span class="font-mono">{{ $activityCode ?: 'Tanpa kode kegiatan' }}</span>
-                                        <span class="ml-2"
-                                            style="color: var(--ui-fg-muted)">{{ $detailRows->first()['activity_name'] }}</span>
-                                    </td>
-                                </tr>
-                                @foreach ($detailRows as $detail)
-                                    @php($detailNo++)
-                                    <tr>
-                                        <td class="px-3 py-2 text-center text-xs" style="color: var(--ui-fg-muted)">
-                                            {{ $detailNo }}</td>
-                                        <td class="px-3 py-2">
-                                            <p class="font-semibold" style="color: var(--ui-fg-strong)">
-                                                {{ $detail['description'] }}</p>
-                                            <p class="mt-1 text-xs" style="color: var(--ui-fg-muted)"><span
-                                                    class="font-mono">{{ $detail['account_code'] }}</span> ·
-                                                {{ rtrim(rtrim(number_format($detail['volume'], 2, ',', '.'), '0'), ',') }}
-                                                {{ $detail['unit'] }} · {{ $rupiah($detail['unit_price']) }}</p>
-                                        </td>
-                                        @foreach ($periodColumns as $month)
-                                            <td class="whitespace-nowrap px-3 py-2 text-right text-xs">
-                                                {{ $detail['months'][$month] > 0 ? $rupiah($detail['months'][$month]) : '—' }}
-                                            </td>
-                                        @endforeach
-                                        <td class="whitespace-nowrap px-3 py-2 text-right text-xs font-bold"
-                                            style="color: var(--theme-content-accent)">{{ $rupiah($detail['total']) }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="{{ count($periodColumns) + 3 }}"
-                                        class="px-5 py-10 text-center text-sm" style="color: var(--ui-fg-muted)">Belum
-                                        ada rincian bulanan yang terpetakan untuk filter ini. Total triwulan tetap
-                                        dihitung dari pembagian pagu ARKAS (TW).</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </x-section-card>
-        @endif
+        <x-section-card title="Rincian Hierarki RKAS" :description="'Pagu, realisasi, dan sisa ' . $filterContext . '.'" :padding="false">
+            <x-slot:actions>
+                <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">•
+                    {{ number_format($treeTotals['items'], 0, ',', '.') }} data</span>
+                <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95"
+                    style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)"
+                    href="{{ route('synced-data.show', 'rkas') }}">
+                    <x-ui-icon name="database" class="h-4 w-4" />
+                    <span>Data Mentah</span>
+                </a>
+            </x-slot:actions>
 
-        @if (!in_array($scope, ['quarter', 'semester'], true))
-            <x-section-card title="Rincian Penganggaran RKAS"
-                description="Pagu anggaran dan realisasi BKU pada konteks aktif." :padding="false">
-                <x-slot:actions>
-                    <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">•
-                        {{ number_format($items->total(), 0, ',', '.') }} data</span>
-                    <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95"
-                        style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)"
-                        href="{{ route('synced-data.show', 'rkas') }}">
-                        <x-ui-icon name="database" class="h-4 w-4" />
-                        <span>Data Mentah</span>
-                    </a>
-                </x-slot:actions>
-
-                @if($scope !== 'year' || filled($search) || filled($programFilter) || filled($subprogramFilter) || filled($activityFilter))
+            @if($scope !== 'year' || filled($search) || filled($programFilter) || filled($subprogramFilter) || filled($activityFilter))
                 <div class="mx-4 mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border px-3 py-2 text-xs"
                     style="border-color: var(--ui-line); background: var(--ui-surface-soft); color: var(--ui-fg-muted)">
                     <span class="font-bold uppercase tracking-wide" style="color: var(--ui-fg-strong)">Subtotal
@@ -142,138 +56,152 @@
                     <span>Selisih <strong
                             style="color: var(--ui-fg-strong)">{{ $rupiah($remaining) }}</strong></span>
                 </div>
-                @endif
+            @endif
 
-                <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)">
-                    <table class="min-w-full divide-y text-sm" style="border-color: var(--ui-line)">
-                        <thead style="background: var(--ui-surface-soft)">
-                            <tr>
-                                <th class="w-12 px-3 py-2 text-center text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">No</th>
-                                <th class="px-3 py-2 text-left text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Uraian / Kode Rekening</th>
-                                <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Volume</th>
-                                <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Pagu Periode</th>
-                                <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Realisasi Dibukukan</th>
-                                <th class="px-3 py-2 text-right text-xs font-bold uppercase"
-                                    style="color: var(--ui-fg-muted)">Selisih</th>
+            <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)">
+                <table class="min-w-[1100px] w-full divide-y text-sm" style="border-color: var(--ui-line)" data-pagination="none">
+                    <thead style="background: var(--ui-surface-soft)">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Kode Program</th>
+                            <th class="min-w-[260px] px-3 py-2 text-left text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Uraian</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Kode Rekening</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Volume</th>
+                            <th class="px-3 py-2 text-left text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Satuan</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Tarif Harga</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Pagu</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Realisasi</th>
+                            <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                                style="color: var(--ui-fg-muted)">Selisih</th>
+                        </tr>
+                    </thead>
+                    <tbody x-data="{ open: {} }" class="divide-y" style="border-color: var(--ui-line)">
+                        @forelse($hierarchyTree as $program)
+                            <tr style="background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--ui-surface-base))">
+                                <td colspan="6" class="px-3 py-1.5 text-xs">
+                                    <button type="button"
+                                        class="inline-flex items-center gap-2 text-left font-bold"
+                                        style="color: var(--ui-fg-strong)"
+                                        x-on:click="open['p-{{ $program['code'] }}'] = ! open['p-{{ $program['code'] }}']">
+                                        <span
+                                            class="inline-flex h-5 w-5 items-center justify-center rounded-full border"
+                                            style="color: var(--theme-content-accent); border-color: color-mix(in srgb, var(--theme-content-accent) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 55%, var(--ui-surface-base))">
+                                            <x-ui.icon name="chevron-down" size="xs"
+                                                x-show="open['p-{{ $program['code'] }}']" />
+                                            <x-ui.icon name="chevron-right" size="xs"
+                                                x-show="! open['p-{{ $program['code'] }}']" />
+                                        </span>
+                                        <span class="font-mono">{{ $program['code'] }}</span>
+                                        <span>· {{ $program['name'] }}</span>
+                                    </button>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-bold"
+                                    style="color: var(--theme-content-accent)">{{ $rupiah($program['amount']) }}</td>
+                                <td class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-semibold text-emerald-700">
+                                    {{ $rupiah($program['realization']) }}</td>
+                                <td class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-bold"
+                                    style="color: var(--ui-fg-muted)">{{ $rupiah($program['remaining']) }}</td>
                             </tr>
-                        </thead>
-                        <tbody x-data="{ openActivities: {}, openAccounts: {} }" class="divide-y" style="border-color: var(--ui-line)">
-                            @forelse($rkasGroups as $activityIndex => $activity)
-                                @php($activityKey = 'activity-' . $activityIndex)
-                                <tr x-init="openActivities['{{ $activityKey }}'] = true" style="background: var(--ui-surface-soft)">
-                                    <td class="px-3 py-1.5 text-center text-xs font-semibold"
-                                        style="color: var(--ui-fg-muted)">{{ $activityIndex + 1 }}</td>
-                                    <td class="px-3 py-1.5 text-xs">
+                            @foreach ($program['subs'] as $sub)
+                                <tr x-show="open['p-{{ $program['code'] }}']"
+                                    style="background: color-mix(in srgb, var(--theme-accent-soft) 25%, var(--ui-surface-base))">
+                                    <td colspan="6" class="px-3 py-1 pl-8 text-xs">
                                         <button type="button"
-                                            class="inline-flex items-center gap-2 text-left font-bold"
+                                            class="inline-flex items-center gap-2 text-left font-semibold"
                                             style="color: var(--ui-fg-strong)"
-                                            x-on:click="openActivities['{{ $activityKey }}'] = ! openActivities['{{ $activityKey }}']">
+                                            x-on:click="open['s-{{ $sub['code'] }}'] = ! open['s-{{ $sub['code'] }}']">
                                             <span
-                                                class="inline-flex h-5 w-5 items-center justify-center rounded-full border"
-                                                style="color: var(--theme-content-accent); border-color: color-mix(in srgb, var(--theme-content-accent) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 55%, var(--ui-surface-base))">
+                                                class="inline-flex h-4 w-4 items-center justify-center rounded-full border"
+                                                style="color: var(--theme-accent-strong); border-color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 35%, var(--ui-surface-base))">
                                                 <x-ui.icon name="chevron-down" size="xs"
-                                                    x-show="openActivities['{{ $activityKey }}']" />
+                                                    x-show="open['s-{{ $sub['code'] }}']" />
                                                 <x-ui.icon name="chevron-right" size="xs"
-                                                    x-show="! openActivities['{{ $activityKey }}']" />
+                                                    x-show="! open['s-{{ $sub['code'] }}']" />
                                             </span>
-                                            <span class="flex flex-wrap items-center gap-1.5">
-                                                <span class="rounded border px-1.5 py-0.5 font-mono text-[10px]"
-                                                    title="{{ $activity['program_name'] ?: 'Program' }}"
-                                                    style="color: var(--ui-fg-muted); border-color: var(--ui-line-strong)">{{ $activity['program_code'] }}</span>
-                                                <span style="color: var(--ui-fg-muted)">›</span>
-                                                <span class="rounded border px-1.5 py-0.5 font-mono text-[10px]"
-                                                    title="{{ $activity['subprogram_name'] ?: 'Subprogram' }}"
-                                                    style="color: var(--ui-fg-muted); border-color: var(--ui-line-strong)">{{ $activity['subprogram_code'] }}</span>
-                                                <span style="color: var(--ui-fg-muted)">›</span>
-                                                <span class="font-mono">{{ $activity['code'] }}</span>
-                                                <span>· {{ $activity['name'] }}</span>
-                                            </span>
+                                            <span class="font-mono">{{ $sub['code'] }}</span>
+                                            <span>· {{ $sub['name'] }}</span>
                                         </button>
                                     </td>
-                                    <td></td>
-                                    <td class="px-3 py-1.5 text-right text-xs font-bold"
-                                        style="color: var(--theme-content-accent)">{{ $rupiah($activity['amount']) }}
-                                    </td>
-                                    <td class="px-3 py-1.5 text-right text-xs font-semibold text-emerald-700">
-                                        {{ $rupiah($activity['realization']) }}</td>
-                                    <td class="px-3 py-1.5 text-right text-xs font-bold"
-                                        style="color: var(--ui-fg-muted)">{{ $rupiah($activity['remaining']) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
+                                        style="color: var(--theme-content-accent)">{{ $rupiah($sub['amount']) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
+                                        {{ $rupiah($sub['realization']) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
+                                        style="color: var(--ui-fg-muted)">{{ $rupiah($sub['remaining']) }}</td>
                                 </tr>
-                                @foreach ($activity['accounts'] as $accountIndex => $account)
-                                    @php($accountKey = $activityKey . '-account-' . $accountIndex)
-                                    <tr x-show="openActivities['{{ $activityKey }}']" x-init="openAccounts['{{ $accountKey }}'] = true"
-                                        style="background: var(--ui-surface-muted)">
-                                        <td></td>
-                                        <td class="px-3 py-1 pl-10 text-xs">
+                                @foreach ($sub['activities'] as $activity)
+                                    <tr x-show="open['p-{{ $program['code'] }}'] && open['s-{{ $sub['code'] }}']"
+                                        style="background: var(--ui-surface-soft)">
+                                        <td colspan="6" class="px-3 py-1 pl-14 text-xs">
                                             <button type="button"
                                                 class="inline-flex items-center gap-2 text-left font-semibold"
                                                 style="color: var(--ui-fg-strong)"
-                                                x-on:click="openAccounts['{{ $accountKey }}'] = ! openAccounts['{{ $accountKey }}']">
+                                                x-on:click="open['k-{{ $activity['code'] }}'] = ! open['k-{{ $activity['code'] }}']">
                                                 <span
                                                     class="inline-flex h-4 w-4 items-center justify-center rounded-full border"
                                                     style="color: var(--theme-accent-strong); border-color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 35%, var(--ui-surface-base))">
                                                     <x-ui.icon name="chevron-down" size="xs"
-                                                        x-show="openAccounts['{{ $accountKey }}']" />
+                                                        x-show="open['k-{{ $activity['code'] }}']" />
                                                     <x-ui.icon name="chevron-right" size="xs"
-                                                        x-show="! openAccounts['{{ $accountKey }}']" />
+                                                        x-show="! open['k-{{ $activity['code'] }}']" />
                                                 </span>
-                                                <span class="font-mono">{{ $account['code'] }}</span>
+                                                <span class="font-mono">{{ $activity['code'] }}</span>
+                                                <span>· {{ $activity['name'] }}</span>
                                             </button>
                                         </td>
-                                        <td></td>
-                                        <td class="px-3 py-1 text-right text-xs font-semibold"
-                                            style="color: var(--theme-content-accent)">
-                                            {{ $rupiah($account['amount']) }}</td>
-                                        <td class="px-3 py-1 text-right text-xs text-emerald-700">
-                                            {{ $rupiah($account['realization']) }}</td>
-                                        <td class="px-3 py-1 text-right text-xs" style="color: var(--ui-fg-muted)">
-                                            {{ $rupiah($account['remaining']) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
+                                            style="color: var(--theme-content-accent)">{{ $rupiah($activity['amount']) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
+                                            {{ $rupiah($activity['realization']) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
+                                            style="color: var(--ui-fg-muted)">{{ $rupiah($activity['remaining']) }}</td>
                                     </tr>
-                                    @foreach ($account['items'] as $item)
-                                        <tr x-show="openActivities['{{ $activityKey }}'] && openAccounts['{{ $accountKey }}']"
+                                    @foreach ($activity['items'] as $item)
+                                        <tr x-show="open['p-{{ $program['code'] }}'] && open['s-{{ $sub['code'] }}'] && open['k-{{ $activity['code'] }}']"
                                             class="text-xs">
-                                            <td></td>
-                                            <td class="px-3 py-1 pl-20">
-                                                <p class="truncate font-semibold leading-tight"
-                                                    style="color: var(--ui-fg-strong)"
-                                                    title="{{ $item->description ?: 'Tanpa uraian' }}">
+                                            <td class="whitespace-nowrap px-3 py-1 pl-20 font-mono"
+                                                style="color: var(--ui-fg-muted)">{{ trim((string) $item->activity_code, '.') }}</td>
+                                            <td class="px-3 py-1">
+                                                <p class="font-semibold leading-tight" style="color: var(--ui-fg-strong)">
                                                     {{ $item->description ?: 'Tanpa uraian' }}</p>
                                             </td>
-                                            <td class="px-3 py-1 text-right">
-                                                {{ rtrim(rtrim(number_format($item->volume, 2, ',', '.'), '0'), ',') }}
-                                                {{ $item->unit }}</td>
-                                            <td class="px-3 py-1 text-right font-semibold"
-                                                style="color: var(--theme-content-accent)">
-                                                {{ $rupiah($item->display_amount) }}</td>
-                                            <td class="px-3 py-1 text-right text-emerald-700">
+                                            <td class="whitespace-nowrap px-3 py-1 font-mono"
+                                                style="color: var(--ui-fg-muted)">{{ $item->account_code ?: 'Tanpa kode rekening' }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1 text-right">
+                                                {{ rtrim(rtrim(number_format($item->volume, 2, ',', '.'), '0'), ',') }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1">{{ $item->unit }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1 text-right">
+                                                {{ $rupiah($item->unit_price) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1 text-right font-semibold"
+                                                style="color: var(--theme-content-accent)">{{ $rupiah($item->display_amount) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1 text-right text-emerald-700">
                                                 {{ $rupiah($item->realization) }}</td>
-                                            <td class="px-3 py-1 text-right" style="color: var(--ui-fg-muted)">
-                                                {{ $rupiah($item->variance) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-1 text-right"
+                                                style="color: var(--ui-fg-muted)">{{ $rupiah($item->variance) }}</td>
                                         </tr>
                                     @endforeach
                                 @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-5 py-14 text-center">
-                                        <p class="text-sm font-semibold" style="color: var(--ui-fg-strong)">Belum ada
-                                            RKAS.</p>
-                                        <p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Jalankan
-                                            sinkronisasi atau ubah kata kunci pencarian.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-
-                <x-ui.server-pagination :paginator="$items" noun="data" compact />
-            </x-section-card>
-        @endif
+                            @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-5 py-14 text-center">
+                                    <p class="text-sm font-semibold" style="color: var(--ui-fg-strong)">Belum ada
+                                        RKAS.</p>
+                                    <p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Jalankan
+                                        sinkronisasi atau ubah kata kunci pencarian.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </x-section-card>
     </div>
 </x-layouts.tailwind-app>

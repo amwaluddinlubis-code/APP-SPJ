@@ -27,8 +27,12 @@ class UpdateSpjPackageDetailsUseCase
                 ->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, atau sumber dana aktif.');
         }
 
+        if ($package->status === 'NUMBERED') {
+            return $this->updateNumberedDescriptions($package, $request);
+        }
+
         if (! $package->isEditable()) {
-            return back()->with('error', 'Paket sudah bernomor atau final. Buka kembali paket melalui administrator sebelum mengubah data.');
+            return back()->with('error', 'Paket sudah final atau dibatalkan. Koreksi hanya dapat dilakukan melalui lifecycle resmi.');
         }
 
         $request->merge($this->siplahDefaults($request, $package->transaction));
@@ -75,6 +79,35 @@ class UpdateSpjPackageDetailsUseCase
         );
 
         return back()->with('success', 'Isian Paket SPJ berhasil disimpan. Nilai PPN, PPh, dan SSPD tetap mengikuti transaksi/BKU.');
+    }
+
+    /**
+     * Koreksi non-substansi pada paket NUMBERED.
+     *
+     * Hanya payment_description yang dibaca dan disimpan; seluruh input
+     * lain (kategori, pembayaran, vendor, invoice, detail kategori)
+     * diabaikan agar tetap terkunci sampai rollback numbering yang sah.
+     */
+    private function updateNumberedDescriptions(SpjPackage $package, Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'payment_description' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        $description = trim((string) ($data['payment_description'] ?? ''));
+        $package->transaction->forceFill([
+            'payment_description' => $description !== '' ? $description : null,
+        ])->save();
+
+        $this->audit->record(
+            $package->transaction->fiscal_year_id,
+            'SPJ_PACKAGE',
+            $package->id,
+            'KOREKSI_URAIAN_NUMBERED',
+            'Uraian pembayaran paket '.$package->transaction->no_bukti.' dikoreksi pada status NUMBERED tanpa mengubah nomor, kategori, pembayaran, atau detail lain.'
+        );
+
+        return back()->with('success', 'Uraian pembayaran berhasil diperbarui. Nomor, kategori, dan data lain tidak berubah.');
     }
 
     private function clearIncompatibleGoodsDetails(Transaction $transaction, string $category): void

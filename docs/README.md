@@ -16,6 +16,8 @@ Jika ada perbedaan antar dokumen, gunakan urutan berikut:
 6. Dokumen `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya untuk jejak sejarah.
 
 Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.md`.
+Dokumen root-level aktif: `README.md` (setup + kontrak), `ARCHITECTURE.md` (peta struktur +
+ERD), `API.md` (daftar route, digenerate dari `route:list`), `AGENTS.md` (aturan agen AI).
 
 Untuk metadata domain numbering executable, source of truth adalah:
 
@@ -118,9 +120,9 @@ Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URG
 - Metadata numbering mempunyai satu source of truth: `SpjNumberingDocumentRegistry`.
 - Consumer numbering tidak boleh mempunyai daftar type/label/category/event-date/number-target/scope kedua.
 - Detail Transaksi hanya menulis `item_description`.
-- Koreksi `item_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence; FINAL tetap terkunci.
+- Koreksi `item_description` dan `payment_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence; FINAL tetap terkunci.
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
-- Perubahan kategori, data pembayaran, atau Isian Manual pada NUMBERED wajib didahului rollback numbering yang sesuai.
+- Perubahan kategori, data pembayaran (selain `payment_description`), atau Isian Manual substansi pada NUMBERED wajib didahului rollback numbering yang sesuai.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPLah adalah channel, bukan kategori; hanya berlaku untuk BARANG. Radio SiPLah/Non SiPLah UI-only (tidak menulis `payment_method`).
 - READY + category benar-benar berubah => DRAFT untuk revalidation.

@@ -15,6 +15,25 @@ class RkasBudgetUiTest extends TestCase
         $this->assertStringContainsString('<livewire:rkas-budget-filter />', $view);
     }
 
+    public function test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides(): void
+    {
+        $view = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+
+        $this->assertStringContainsString('Rincian Hierarki RKAS', $view);
+        $this->assertStringContainsString('$hierarchyTree', $view);
+        $this->assertStringContainsString('$treeTotals', $view);
+        $this->assertStringContainsString('$filterContext', $view);
+        $this->assertStringContainsString('color-mix(in srgb, var(--theme-accent-soft)', $view);
+        $this->assertStringContainsString('<x-ui.icon name="chevron-down"', $view);
+        $this->assertStringContainsString('data-pagination="none"', $view);
+        $this->assertStringNotContainsString('<style>', $view);
+        $this->assertStringNotContainsString('server-pagination', $view);
+        $this->assertStringNotContainsString('rkasGroups', $view);
+        $this->assertStringNotContainsString('bg-pink-', $view);
+        $this->assertStringNotContainsString('bg-green-', $view);
+        $this->assertStringNotContainsString('bg-yellow-', $view);
+    }
+
     public function test_rkas_filter_card_uses_canonical_primitives_and_theme_tokens(): void
     {
         $view = file_get_contents(resource_path('views/livewire/rkas-budget-filter.blade.php'));

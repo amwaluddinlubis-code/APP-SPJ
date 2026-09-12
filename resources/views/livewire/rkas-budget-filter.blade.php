@@ -28,7 +28,10 @@
 
             @if ($mode === 'bulan')
                 <x-ui.field label="Bulan" for="rkas-filter-periode" class="min-w-[12rem]">
-                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode">
+                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode"
+                        x-data
+                        x-init="if (! $wire.get('periode')) { const v = parseInt(localStorage.getItem('rkas-periode-bulan') || '', 10); if (v >= 1 && v <= 12) $wire.set('periode', v); }"
+                        x-on:change="if ($el.value) localStorage.setItem('rkas-periode-bulan', $el.value)">
                         <option value="">Pilih bulan…</option>
                         @foreach ($bulanOptions as $b)
                             <option value="{{ $b['id'] }}">{{ $b['nama'] }} ({{ $b['n'] }})</option>
@@ -37,7 +40,10 @@
                 </x-ui.field>
             @elseif ($mode === 'triwulan')
                 <x-ui.field label="Triwulan" for="rkas-filter-periode" class="min-w-[12rem]">
-                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode">
+                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode"
+                        x-data
+                        x-init="if (! $wire.get('periode')) { const v = parseInt(localStorage.getItem('rkas-periode-triwulan') || '', 10); if (v >= 1 && v <= 4) $wire.set('periode', v); }"
+                        x-on:change="if ($el.value) localStorage.setItem('rkas-periode-triwulan', $el.value)">
                         <option value="">Pilih triwulan…</option>
                         @foreach ($twOptions as $o)
                             <option value="{{ $o['id'] }}">{{ $o['nama'] }} ({{ $o['n'] }})</option>
@@ -46,7 +52,10 @@
                 </x-ui.field>
             @elseif ($mode === 'semester')
                 <x-ui.field label="Semester" for="rkas-filter-periode" class="min-w-[12rem]">
-                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode">
+                    <x-ui.select id="rkas-filter-periode" wire:model.live="periode"
+                        x-data
+                        x-init="if (! $wire.get('periode')) { const v = parseInt(localStorage.getItem('rkas-periode-semester') || '', 10); if (v >= 1 && v <= 2) $wire.set('periode', v); }"
+                        x-on:change="if ($el.value) localStorage.setItem('rkas-periode-semester', $el.value)">
                         <option value="">Pilih semester…</option>
                         @foreach ($semOptions as $o)
                             <option value="{{ $o['id'] }}">{{ $o['nama'] }} ({{ $o['n'] }})</option>

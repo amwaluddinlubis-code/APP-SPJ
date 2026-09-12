@@ -138,9 +138,11 @@ amount            readonly source
 
 Detail Transaksi tidak boleh menjadi workspace kedua untuk kategori SPJ, metode/referensi pembayaran, vendor, pajak, data kategori, numbering, atau lifecycle dokumen.
 
-### 4.2 Koreksi Detail Transaksi setelah NUMBERED
+### 4.2 Koreksi Detail Transaksi dan uraian setelah NUMBERED
 
 Perubahan `item_description` tetap diperbolehkan ketika Paket berstatus `NUMBERED`.
+
+`payment_description` (Uraian Pembayaran) diperlakukan sama: boleh dikoreksi pada `DRAFT`, `READY`, dan `NUMBERED` dari Detail Transaksi maupun Isian Manual Paket, karena keduanya adalah koreksi narasi non-substansi yang tidak mengubah nilai, kategori, pembayaran, vendor, pajak, detail kategori, lifecycle, maupun nomor.
 
 Koreksi ini:
 
@@ -186,6 +188,8 @@ Paket boleh membaca source transaction/item/tax untuk validasi dan rendering, te
 Data Paket yang memengaruhi substansi dokumen **tidak boleh diubah langsung saat masih `NUMBERED`**.
 
 Termasuk kategori, detail pembayaran, penerima, vendor, procurement, invoice/operator-owned SiPLah metadata, data peserta/pekerja/pelaksana/penerima, serta Isian Manual kategori.
+
+Pengecualian: `payment_description` dan `item_description` adalah koreksi non-substansi yang tetap boleh diubah pada `NUMBERED` sesuai §4.2. Seluruh field lain pada Isian Manual Paket diabaikan (tidak disimpan) selama status `NUMBERED`.
 
 Untuk mengubahnya:
 

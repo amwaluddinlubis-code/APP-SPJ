@@ -152,7 +152,6 @@ class RkasBudgetFilter extends Component
             'program' => $this->program !== '' ? $this->program : null,
             'sub' => $this->sub !== '' ? $this->sub : null,
             'kegiatan' => $this->kegiatan !== '' ? $this->kegiatan : null,
-            'per_page' => request()->query('per_page'),
         ], fn ($value): bool => $value !== null && $value !== '');
 
         $this->redirect(route('rkas-budget.index', $query), navigate: true);
@@ -260,11 +259,35 @@ class RkasBudgetFilter extends Component
             return [];
         }
 
-        return DB::connection('school')->table('activity_references')
+        $db = DB::connection('school');
+        $names = $db->table('activity_references')
             ->where('fiscal_year_id', $fiscalYearId)
             ->pluck('activity_name', 'activity_code')
             ->mapWithKeys(fn ($name, $code): array => [trim((string) $code, '.') => (string) $name])
             ->all();
+
+        try {
+            $hierarchy = $db->table('activity_hierarchy_references')
+                ->where('fiscal_year_id', $fiscalYearId)
+                ->select(['program_code', 'program_name', 'sub_program_code', 'sub_program_name'])
+                ->distinct()
+                ->get();
+        } catch (\Throwable) {
+            return $names;
+        }
+
+        foreach ($hierarchy as $row) {
+            $programCode = trim((string) ($row->program_code ?? ''), '.');
+            $subprogramCode = trim((string) ($row->sub_program_code ?? ''), '.');
+            if ($programCode !== '' && ! isset($names[$programCode])) {
+                $names[$programCode] = (string) ($row->program_name ?: 'Program');
+            }
+            if ($subprogramCode !== '' && ! isset($names[$subprogramCode])) {
+                $names[$subprogramCode] = (string) ($row->sub_program_name ?: 'Subprogram');
+            }
+        }
+
+        return $names;
     }
 
     /** @return Collection<int, string> */

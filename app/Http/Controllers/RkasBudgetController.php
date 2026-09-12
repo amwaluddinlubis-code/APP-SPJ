@@ -16,8 +16,6 @@ class RkasBudgetController extends Controller
         $yearId = (int) session('active_fiscal_year_id');
         $db = DB::connection('school');
         $search = trim((string) $request->query('q'));
-        $requestedPerPage = (int) $request->query('per_page', 15);
-        $perPage = in_array($requestedPerPage, [15, 30, 50, 100], true) ? $requestedPerPage : 15;
         $fundSourceId = (int) session('active_fund_source_id');
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
         $stagedActivityNames = $db->table('arkas_import_rows as rows')
@@ -200,110 +198,7 @@ class RkasBudgetController extends Controller
                 ->where('fund_source_id', $fundSourceId)
                 ->selectRaw("source_rapbs_id, ({$twAmount}) as scoped_amount, ({$twVolume}) as scoped_volume");
         }
-        $planningQuery = $db->table('arkas_rkas_items as r')
-            ->where('r.fiscal_year_id', $yearId)
-            ->where('r.fund_source_id', $fundSourceId);
-        if ($programFilter !== '') {
-            $planningQuery->where(function ($filter) use ($programFilter): void {
-                $filter->where('r.activity_code', $programFilter)->orWhere('r.activity_code', 'like', $programFilter.'.%');
-            });
-        }
-        if ($subprogramFilter !== '') {
-            $planningQuery->where(function ($filter) use ($subprogramFilter): void {
-                $filter->where('r.activity_code', $subprogramFilter)->orWhere('r.activity_code', 'like', $subprogramFilter.'.%');
-            });
-        }
-        if ($activityFilter !== '') {
-            $planningQuery->whereIn('r.activity_code', [$activityFilter, $activityFilter.'.']);
-        }
-        if ($search !== '') {
-            $planningQuery->where(function ($filter) use ($search): void {
-                $term = '%'.$search.'%';
-                $filter->where('r.account_code', 'like', $term)
-                    ->orWhere('r.activity_code', 'like', $term)
-                    ->orWhere('r.description', 'like', $term)
-                    ->orWhere('r.activity_name', 'like', $term);
-            });
-        }
-        $periodPlanningRows = $planningQuery->orderBy('r.activity_code')->orderBy('r.account_code')->orderBy('r.description')->get()->map(function ($item): array {
-            $payload = is_array($item->payload) ? $item->payload : (json_decode((string) $item->payload, true) ?: []);
-            $value = static fn (string $key): float => (float) ($payload[$key] ?? 0);
-
-            return [
-                'activity_code' => trim((string) $item->activity_code, '.'),
-                'activity_name' => $item->activity_name ?: 'Kegiatan belum diisi',
-                'account_code' => $item->account_code ?: 'Tanpa kode rekening',
-                'description' => $item->description ?: 'Tanpa uraian',
-                'unit' => $payload['SATUAN'] ?? '—',
-                'volume' => (float) ($payload['VOLUME_TOTAL'] ?? 0),
-                'unit_price' => $value('HARGA_SATUAN'),
-                'annual' => (float) $item->amount,
-                'quarters' => array_combine(range(1, 4), array_map(fn (int $quarter): float => $value('TW_'.$quarter), range(1, 4))),
-            ];
-        })->values();
-        $periodPlanningRows = $periodPlanningRows->map(function (array $row) use ($scope, $scopeValue): array {
-            $row['semesters'] = [1 => $row['quarters'][1] + $row['quarters'][2], 2 => $row['quarters'][3] + $row['quarters'][4]];
-            $row['months'] = $scope === 'quarter' ? $row['quarters'] : $row['semesters'];
-            $row['total'] = $scope === 'semester'
-                ? $row['semesters'][$scopeValue]
-                : $row['annual'];
-
-            return $row;
-        });
-        $periodDetailRows = collect();
-        if ($scope === 'quarter' && $scopeValue > 0) {
-            $detailQuery = $db->table('arkas_rkas_periods as p')
-                ->join('arkas_rkas_items as r', function ($join): void {
-                    $join->on('r.fiscal_year_id', '=', 'p.fiscal_year_id')
-                        ->on('r.fund_source_id', '=', 'p.fund_source_id')
-                        ->on('r.source_rapbs_id', '=', 'p.source_rapbs_id');
-                })
-                ->where('p.fiscal_year_id', $yearId)
-                ->where('p.fund_source_id', $fundSourceId)
-                ->whereIn('p.month_number', $periodMonths)
-                ->select(['p.month_number', 'p.volume', 'p.amount', 'r.source_rapbs_id', 'r.activity_code', 'r.activity_name', 'r.account_code', 'r.description', 'r.payload']);
-            if ($programFilter !== '') {
-                $detailQuery->where(function ($filter) use ($programFilter): void {
-                    $filter->where('r.activity_code', $programFilter)->orWhere('r.activity_code', 'like', $programFilter.'.%');
-                });
-            }
-            if ($subprogramFilter !== '') {
-                $detailQuery->where(function ($filter) use ($subprogramFilter): void {
-                    $filter->where('r.activity_code', $subprogramFilter)->orWhere('r.activity_code', 'like', $subprogramFilter.'.%');
-                });
-            }
-            if ($activityFilter !== '') {
-                $detailQuery->whereIn('r.activity_code', [$activityFilter, $activityFilter.'.']);
-            }
-            if ($search !== '') {
-                $detailQuery->where(function ($filter) use ($search): void {
-                    $term = '%'.$search.'%';
-                    $filter->where('r.account_code', 'like', $term)
-                        ->orWhere('r.activity_code', 'like', $term)
-                        ->orWhere('r.description', 'like', $term)
-                        ->orWhere('r.activity_name', 'like', $term);
-                });
-            }
-            $periodDetailRows = $detailQuery->orderBy('r.activity_code')->orderBy('r.account_code')->orderBy('r.description')->get()
-                ->groupBy('source_rapbs_id')
-                ->map(function ($rows) use ($periodMonths): array {
-                    $first = $rows->first();
-                    $payload = is_array($first->payload) ? $first->payload : (json_decode((string) $first->payload, true) ?: []);
-                    $byMonth = $rows->groupBy('month_number');
-
-                    return [
-                        'activity_code' => trim((string) $first->activity_code, '.'),
-                        'activity_name' => $first->activity_name ?: 'Kegiatan belum diisi',
-                        'account_code' => $first->account_code ?: 'Tanpa kode rekening',
-                        'description' => $first->description ?: 'Tanpa uraian',
-                        'unit' => $payload['SATUAN'] ?? '—',
-                        'unit_price' => (float) ($payload['HARGA_SATUAN'] ?? 0),
-                        'volume' => $rows->sum('volume'),
-                        'months' => collect($periodMonths)->mapWithKeys(fn (int $month): array => [$month => (float) $byMonth->get($month, collect())->sum('amount')])->all(),
-                        'total' => (float) $rows->sum('amount'),
-                    ];
-                })->values();
-        }
+        [$programNames, $subprogramNames] = $this->hierarchyLevelNames($db, $yearId);
         $query = $db->table('arkas_rkas_items as r')->leftJoinSub($realization, 'b', fn ($join) => $join->on('b.source_rapbs_id', '=', 'r.source_rapbs_id'))->where('r.fiscal_year_id', $yearId)->where('r.fund_source_id', $fundSourceId)->selectRaw('r.*, COALESCE(b.realization, 0) as realization, COALESCE(b.bku_count, 0) as bku_count');
         if ($scope !== 'year') {
             $query->joinSub($periods, 'p', fn ($join) => $join->on('p.source_rapbs_id', '=', 'r.source_rapbs_id'))
@@ -328,8 +223,8 @@ class RkasBudgetController extends Controller
                 $filter->where('r.account_code', 'like', $term)->orWhere('r.activity_code', 'like', $term)->orWhere('r.description', 'like', $term)->orWhere('r.activity_name', 'like', $term);
             });
         }
-        $items = $query->orderBy('r.activity_code')->orderBy('r.account_code')->paginate($perPage)->withQueryString();
-        $items->getCollection()->transform(function ($item) {
+        $rows = $query->orderBy('r.activity_code')->orderBy('r.account_code')->get();
+        $rows->transform(function ($item) {
             $payload = json_decode($item->payload, true) ?: [];
             $item->volume = (float) ($item->scoped_volume ?? $payload['VOLUME_TOTAL'] ?? 0);
             $item->unit = $payload['SATUAN'] ?? '—';
@@ -341,36 +236,69 @@ class RkasBudgetController extends Controller
 
             return $item;
         });
-        $activityGroups = $items->getCollection()->groupBy(fn ($item) => $item->activity_code ?: 'tanpa-kegiatan')->map(function ($activityItems, $activityKey) use ($activityNames): array {
-            $activityCode = trim((string) ($activityItems->first()->activity_code ?? ''), '.');
+        $hierarchyTree = [];
+        foreach ($rows as $item) {
+            $activityCode = trim((string) ($item->activity_code ?? ''), '.');
             $codeParts = $activityCode !== '' ? explode('.', $activityCode) : [];
             $programCode = $codeParts[0] ?? 'tanpa-program';
             $subprogramCode = count($codeParts) >= 2 ? implode('.', array_slice($codeParts, 0, 2)) : $programCode;
+            $activityKey = $activityCode !== '' ? $activityCode : 'tanpa-kegiatan';
+            if (! isset($hierarchyTree[$programCode])) {
+                $hierarchyTree[$programCode] = [
+                    'code' => $programCode,
+                    'name' => $programNames[$programCode] ?? $activityNames[$programCode] ?? 'Program',
+                    'amount' => 0.0,
+                    'realization' => 0.0,
+                    'remaining' => 0.0,
+                    'subs' => [],
+                ];
+            }
+            if (! isset($hierarchyTree[$programCode]['subs'][$subprogramCode])) {
+                $hierarchyTree[$programCode]['subs'][$subprogramCode] = [
+                    'code' => $subprogramCode,
+                    'name' => $subprogramNames[$subprogramCode] ?? $activityNames[$subprogramCode] ?? 'Subprogram',
+                    'amount' => 0.0,
+                    'realization' => 0.0,
+                    'remaining' => 0.0,
+                    'activities' => [],
+                ];
+            }
+            if (! isset($hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey])) {
+                $hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey] = [
+                    'code' => $activityCode !== '' ? $activityCode : 'Tanpa kode kegiatan',
+                    'name' => $item->activity_name ?: 'Kegiatan belum diisi',
+                    'amount' => 0.0,
+                    'realization' => 0.0,
+                    'remaining' => 0.0,
+                    'items' => [],
+                ];
+            }
+            $hierarchyTree[$programCode]['amount'] += $item->display_amount;
+            $hierarchyTree[$programCode]['realization'] += $item->realization;
+            $hierarchyTree[$programCode]['remaining'] += $item->variance;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['amount'] += $item->display_amount;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['realization'] += $item->realization;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['remaining'] += $item->variance;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey]['amount'] += $item->display_amount;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey]['realization'] += $item->realization;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey]['remaining'] += $item->variance;
+            $hierarchyTree[$programCode]['subs'][$subprogramCode]['activities'][$activityKey]['items'][] = $item;
+        }
+        $hierarchyTree = array_values(array_map(function (array $program): array {
+            $program['subs'] = array_values(array_map(function (array $sub): array {
+                $sub['activities'] = array_values($sub['activities']);
 
-            return [
-                'key' => $activityKey,
-                'program_code' => $programCode,
-                'program_name' => $activityNames[$programCode] ?? null,
-                'subprogram_code' => $subprogramCode,
-                'subprogram_name' => $activityNames[$subprogramCode] ?? null,
-                'code' => $activityCode !== '' ? $activityCode : 'Tanpa kode kegiatan',
-                'name' => $activityItems->first()->activity_name ?: 'Kegiatan belum diisi',
-                'amount' => $activityItems->sum('display_amount'),
-                'realization' => $activityItems->sum('realization'),
-                'remaining' => $activityItems->sum('variance'),
-                'accounts' => $activityItems->groupBy(fn ($item) => $item->account_code ?: 'tanpa-rekening')->map(function ($accountItems, $accountKey): array {
-                    return [
-                        'key' => $accountKey,
-                        'code' => $accountItems->first()->account_code ?: 'Tanpa kode rekening',
-                        'amount' => $accountItems->sum('display_amount'),
-                        'realization' => $accountItems->sum('realization'),
-                        'remaining' => $accountItems->sum('variance'),
-                        'items' => $accountItems,
-                    ];
-                })->values(),
-            ];
-        })->values();
-        $rkasGroups = $activityGroups;
+                return $sub;
+            }, $program['subs']));
+
+            return $program;
+        }, $hierarchyTree));
+        $treeTotals = [
+            'amount' => array_sum(array_column($hierarchyTree, 'amount')),
+            'realization' => array_sum(array_column($hierarchyTree, 'realization')),
+            'remaining' => array_sum(array_column($hierarchyTree, 'remaining')),
+            'items' => $rows->count(),
+        ];
         $budgetQuery = $db->table('arkas_rkas_items as r')
             ->where('r.fiscal_year_id', $yearId)
             ->where('r.fund_source_id', $fundSourceId);
@@ -425,6 +353,47 @@ class RkasBudgetController extends Controller
         $contextFundName = (string) ($db->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: '');
         $contextLabel = trim($fiscalYearNumber.' · '.$contextFundName, ' ·');
 
-        return view('rkas-budget.index', compact('items', 'rkasGroups', 'search', 'perPage', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'periodMonths', 'periodPlanningRows', 'periodDetailRows', 'programOptions', 'subprogramOptions', 'activityOptions', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'));
+        $filterContext = 'pada '.$periodLabel;
+        $contextTrail = array_filter([$programFilter, $subprogramFilter, $activityFilter]);
+        if ($contextTrail !== []) {
+            $filterContext .= ' · '.implode(' › ', $contextTrail);
+        }
+        if ($search !== '') {
+            $filterContext .= ' · pencarian "'.$search.'"';
+        }
+
+        return view('rkas-budget.index', compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'));
+    }
+
+    /**
+     * @return array{0:array<string,string>,1:array<string,string>}
+     */
+    protected function hierarchyLevelNames(object $db, int $yearId): array
+    {
+        $programs = [];
+        $subs = [];
+
+        try {
+            $rows = $db->table('activity_hierarchy_references')
+                ->where('fiscal_year_id', $yearId)
+                ->select(['program_code', 'program_name', 'sub_program_code', 'sub_program_name'])
+                ->distinct()
+                ->get();
+        } catch (\Throwable) {
+            return [$programs, $subs];
+        }
+
+        foreach ($rows as $row) {
+            $programCode = trim((string) ($row->program_code ?? ''), '.');
+            $subprogramCode = trim((string) ($row->sub_program_code ?? ''), '.');
+            if ($programCode !== '' && ! isset($programs[$programCode])) {
+                $programs[$programCode] = (string) ($row->program_name ?: 'Program');
+            }
+            if ($subprogramCode !== '' && ! isset($subs[$subprogramCode])) {
+                $subs[$subprogramCode] = (string) ($row->sub_program_name ?: 'Subprogram');
+            }
+        }
+
+        return [$programs, $subs];
     }
 }

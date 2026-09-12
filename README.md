@@ -2,11 +2,11 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diperbarui: **2026-09-12**.
+Terakhir diverifikasi terhadap kode: **2026-09-12**.
 
 ## Status branch saat ini
 
-Root README adalah entry point project, bukan sumber angka/checkpoint release yang harus dipelihara terpisah.
+Root README adalah entry point project, bukan sumber angka/checkpoint release yang harus dipelihara terpisah. Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke berkas ini karena cepat menjadi stale.
 
 Gunakan sumber canonical berikut untuk kondisi project terkini:
 
@@ -24,23 +24,107 @@ BROWSER/RUNTIME : RVR ACTIVE
 FINAL RELEASE   : NOT YET
 ```
 
-Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke README ini karena cepat menjadi stale. Commit dokumentasi-only setelah code gate juga tidak dianggap sebagai code gate baru.
+## Stack riil (terverifikasi dari `composer.json` / `package.json`)
 
-## Dokumentasi utama
+- PHP `^8.2` (runtime dev 8.4.0)
+- Laravel 12 (`^12.0`) — struktur ramping (middleware di `bootstrap/app.php`, tanpa `app/Http/Kernel.php`)
+- Livewire 3.7 + Alpine.js 3 (+ `@alpinejs/collapse`, `@alpinejs/persist`) + Chart.js 4
+- Tailwind CSS 4 + Vite 6 (`resources/css/app.css`, `resources/js/app.js`)
+- Filament 4 (`actions`, `schemas`, `tables` — dipakai pada komponen tabel Livewire, bukan full admin panel)
+- SQLite multi-koneksi (1 central + 1 per sekolah), session driver `database`, queue `database`
+- DomPDF (`barryvdh/laravel-dompdf`), PhpSpreadsheet, PHPWord
+- Auth session + login kustom (`/masuk`, throttle 5:1) — **tanpa** Sanctum/Passport/JWT; **tanpa** `routes/api.php`
+- Test: PHPUnit 11 (`tests/Unit`, `tests/Feature`, suite `SPJ Critical` di `phpunit.xml`)
 
-- `docs/README.md` — indeks dokumentasi, urutan source-of-truth, dan pemisahan dokumen aktif vs historis.
-- `docs/CURRENT_PROGRESS.md` — status release, checkpoint, gap aktif, dan evidence terbaru.
-- `docs/P0_VERIFICATION_KIT.md` — release-safety gate, command canonical, dan real-tenant audit.
-- `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
-- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen.
-- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aplikasi dan boundary tenant.
-- `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` — kontrak numbering, registry, cancel, rollback, dan correction.
-- `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer.
-- `docs/GUI_STANDARDIZATION.md` — kontrak GUI.
-- `docs/CSS_USAGE_GUIDE.md` — kontrak CSS/theme.
-- `docs/SIPLAH_MVP_PLAN.md` — legacy filename untuk verification guide SiPLah aktif.
+## Prasyarat lokal
 
-Untuk menentukan kondisi project saat ini, utamakan `docs/CURRENT_PROGRESS.md` dan `docs/P0_VERIFICATION_KIT.md`; gunakan `docs/DEVELOPMENT_ROADMAP.md` untuk urutan pekerjaan. Dokumen yang berstatus `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya dipertahankan sebagai jejak keputusan dan tidak boleh mengalahkan status aktif.
+- PHP 8.2+ dengan ekstensi `sqlite3`, `mbstring`, `xml`, `gd`/`imagick` (untuk render dokumen), `zip`
+- Composer 2, Node.js 18+ (Vite 6 + Tailwind 4)
+- Git (branch kerja: `gui-standardization`)
+
+## Instalasi lokal
+
+```powershell
+copy .env.example .env
+composer install
+New-Item database\database.sqlite -ItemType File
+php artisan key:generate
+php artisan migrate
+npm install
+npm run build
+php artisan serve
+```
+
+Buka `http://localhost:8000/setup` pada instalasi kosong — akun administrator dibuat oleh pemilik sekolah di halaman tersebut (`DatabaseSeeder` sengaja kosong).
+
+Mode dev (server + queue + log + vite paralel):
+
+```powershell
+composer run dev
+```
+
+## Environment penting (`.env`)
+
+```env
+APP_URL=http://localhost
+DB_CONNECTION=sqlite
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+ARKAS_SYNC_ASYNC=false        # true = sync ARKAS via queue operations
+SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data   # kosong = storage/app
+SCHOOL_DB_BUSY_TIMEOUT=5000
+SCHOOL_DB_JOURNAL_MODE=WAL
+```
+
+## Database & migration
+
+Central (default connection, `database/migrations/`, 4 berkas): `schools`, `users`, `school_databases`, `arkas_sources`, `school_backups`, `background_operations`, plus tabel framework (`sessions`, `cache`, `jobs`).
+
+Tenant sekolah (koneksi `school`, `database/migrations/school/`, 47 berkas + view): RKAS/BKU, transaksi, paket SPJ, numbering, template, importer state. **Database tenant tidak dibuat via `migrate` manual** — diprovisi per NPSN oleh `SchoolDatabaseManager`:
+
+```text
+{SPJ_DATA_PATH}/school-databases/{NPSN}/spj.sqlite
+```
+
+Reset tenant hanya boleh merebuild database sekolah target. Database utama tidak boleh ikut dihapus.
+
+Seeder: hanya `DatabaseSeeder` kosong (admin via `/setup`). Test memakai SQLite in-memory + session konteks aktif, bukan seeder.
+
+## Perintah Artisan khusus
+
+```powershell
+php artisan spj:verify                        # release verification canonical
+php artisan spj:audit-quarter <NPSN> --quarter=<1-4>   # audit read-only, tanpa mutasi
+php artisan spj:audit-diff
+php artisan spj:preflight-numbering           # preflight read-only sebelum penomoran
+php artisan spj:repair-quarter-numbering
+php artisan spj:test-numbering-copy           # numbering/cancel/rollback pada isolated copy
+php artisan spj:test-cancel-copy
+php artisan spj:test-tail-rollback-copy
+php artisan spj:test-quarter-rollback-copy
+php artisan arkas:reconcile
+php artisan employees:fuse-duplicates
+```
+
+Audit real-data tidak boleh memutasi baseline; mutasi pengujian hanya pada isolated copy (`docs/SYNCHRONIZATION.md` §22).
+
+## Verifikasi perubahan
+
+```powershell
+npm run theme:qa
+npm run build
+php artisan view:cache --no-interaction
+git diff --check
+php artisan test --compact <focused-test>
+```
+
+Untuk perubahan PHP:
+
+```powershell
+php vendor/bin/pint --dirty --format agent
+```
+
+Detail local-vs-CI ada di `docs/P0_VERIFICATION_KIT.md` §1–2.
 
 ## Kontrak arsitektur inti
 
@@ -69,46 +153,7 @@ Aturan yang tidak boleh diregresikan:
 - SiPLah adalah procurement/payment channel, bukan kategori;
 - Paket `READY` yang benar-benar berganti kategori wajib kembali ke `DRAFT` untuk revalidation;
 - preview/download tidak boleh menerbitkan nomor baru;
-- `NUMBERED`/`FINAL` terkunci dari edit normal.
-
-## Canonical numbering registry
-
-Metadata domain penomoran mempunyai satu source of truth:
-
-```text
-app/Services/SpjNumberingDocumentRegistry.php
-```
-
-Registry menyimpan metadata executable untuk setiap domain numbering:
-
-```text
-code
-label
-numbered
-applicable_categories
-channel
-event_date_rule
-number_target
-scope_rule
-```
-
-Format Penomoran, Penomoran Triwulan, policy, gate, order/event-date resolver, allocator, finalization, cancel, dan replacement membaca metadata dari registry yang sama. Consumer tidak boleh membuat array document type, label, category eligibility, event date, target number field, atau scope numbering sendiri.
-
-`SpjDocumentTypeRegistry` tetap mempunyai fungsi berbeda sebagai registry template/placeholder/output dan bukan source sequence numbering.
-
-Current numbered domains tetap:
-
-```text
-SPJ
-PESANAN
-BAP
-BAST
-SPK
-RAB
-SURAT_TUGAS_PERJALANAN_DINAS
-```
-
-Daftar di README ini hanya ringkasan dokumentasi; source executable tetap `SpjNumberingDocumentRegistry`.
+- `NUMBERED`/`FINAL` terkunci dari edit normal, kecuali koreksi `item_description` dan `payment_description` pada `NUMBERED` (lihat `docs/SPJ_DESIGN_DECISIONS.md` §4.2/§4.4).
 
 ## Workflow operator
 
@@ -128,163 +173,15 @@ Login
 → FINAL / Arsip
 ```
 
-## Template Dokumen — upload sudah di-hardening
+## Dokumentasi utama
 
-Halaman **Pengaturan Template Dokumen** mendukung dua jalur berbeda:
-
-```text
-Import Paket Template  = 1 workbook XLSX master → 11 template canonical
-Upload Satu Template   = 1 file DOCX/XLSX → 1 document type
-```
-
-Perbaikan upload yang sudah diregresikan:
-
-- form memakai mode eksplisit `?upload=package` dan `?upload=single`;
-- mode tetap dapat dikenali walaupun PHP membuang body POST karena `post_max_size` terlampaui;
-- error paket dan error upload individual memakai error bag terpisah;
-- validasi file memakai extension contract (`docx`, `xlsx`) dan tidak lagi bergantung pada MIME Windows yang bisa berbeda;
-- UI menampilkan `upload_max_filesize`, `post_max_size`, dan batas efektif server;
-- request yang melampaui `post_max_size` menghasilkan pesan yang menjelaskan batas PHP;
-- file template selalu disimpan, divalidasi, diunduh, dan dihapus melalui disk `local` yang sama dengan generator;
-- replacement tetap atomic: file lama dipertahankan sampai perubahan database berhasil;
-- upload invalid tidak mengganti template aktif.
-
-Regression yang mengunci jalur ini:
-
-```text
-tests/Feature/DocumentTemplateUploadValidationTest.php
-tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php
-```
-
-Keduanya berada pada release-safety regression aktif.
-
-## Generator dokumen
-
-Functional generator sudah mencakup:
-
-- DOCX/XLSX nyata yang dapat dibuka parser Office;
-- PDF nyata dengan signature dan EOF marker;
-- render preflight sebelum output;
-- unresolved placeholder guard;
-- final artifact validation;
-- package XLSX multi-sheet dan PDF;
-- preview/download tanpa numbering side effect;
-- placeholder umum untuk enam kategori canonical.
-
-Yang masih perlu real-template/operator verification adalah visual fidelity template resmi: print area, page break, header/footer, tabel dinamis, ukuran halaman, serta hasil akhir di Microsoft Word/Excel/PDF viewer target.
-
-## Real-data checkpoint
-
-Baseline audit real-data yang masih dirujuk pada status aktif mempunyai transaksi dan detail transaksi nyata serta Paket SPJ yang sudah disiapkan:
-
-```text
-transactions       170
-transaction_items  407
-spj_packages        66
-package status      66 READY
-spj_documents        0
-number sequences     0
-number formats       0
-```
-
-Kategori tahun 2026 tersedia untuk `BARANG`, `HONOR_PEGAWAI`, `JASA_LAINNYA`, `KONSUMSI`, dan `PEMELIHARAAN`. Data `SPPD` nyata tersedia pada tahun 2025, sehingga tidak boleh dibuat data SPPD 2026 hanya untuk memaksakan six-category real-data coverage.
-
-Real-data berikutnya harus tetap mengikuti aturan: audit read-only lebih dulu, numbering canonical order, berhenti pada blocker legitimate, dan tidak mengarang penerima/vendor/template/data source yang tidak tersedia. Status real-data terbaru tetap dibaca dari `docs/CURRENT_PROGRESS.md`.
-
-## Generic ARKAS Importer
-
-Generic ARKAS Importer sudah melewati functional correctness/hardening untuk:
-
-- stable source key;
-- tenant boundary;
-- Upsert / Incremental / Full Refresh;
-- preview reconciliation read-only;
-- schema drift blocking;
-- source-empty semantics;
-- queue tenant activation;
-- shared tenant/resource lock;
-- created-at preservation;
-- semantic import metrics.
-
-Pekerjaan lanjutan importer terutama operator-data verification dan scale/performance: Bridge-side delta fetch serta evaluasi/paginasi di atas limit fetch besar.
-
-## APP DATA / database tenant
-
-Root data tenant dapat dipindahkan dari source project:
-
-```env
-SPJ_DATA_PATH=D:/lrvProject/spj-bosp-data
-```
-
-Fallback ketika env kosong: `storage/app`.
-
-Struktur target:
-
-```text
-{SPJ_DATA_PATH}/
-├── school-databases/
-│   ├── _unselected.sqlite
-│   └── {NPSN}/spj.sqlite
-├── backups/
-└── exports/
-```
-
-Reset tenant hanya boleh merebuild database sekolah target. Database utama aplikasi tidak boleh ikut dihapus.
-
-## Stack
-
-- PHP 8.2+
-- Laravel 12
-- Livewire 3
-- Alpine.js 3
-- Tailwind CSS 4
-- Vite 6
-- SQLite multi-koneksi
-- DomPDF
-- PhpSpreadsheet
-- PHPWord
-- PHPUnit 11
-
-Vite canonical:
-
-```text
-resources/css/app.css
-resources/js/app.js
-```
-
-## Menjalankan project
-
-```powershell
-copy .env.example .env
-composer install
-New-Item database\database.sqlite -ItemType File
-php artisan key:generate
-php artisan migrate
-npm install
-npm run build
-php artisan serve
-```
-
-Minimum verification setelah perubahan relevan:
-
-```powershell
-npm run theme:qa
-npm run build
-php artisan view:cache --no-interaction
-git diff --check
-php artisan test --compact <focused-test>
-```
-
-Untuk perubahan PHP:
-
-```powershell
-php vendor/bin/pint --dirty --format agent
-```
-
-Release verification canonical:
-
-```powershell
-php artisan spj:verify
-```
-
-Evidence CI code gate aktif dan perbedaan antara local verification vs GitHub CI berada di `docs/P0_VERIFICATION_KIT.md` §1–2. Gunakan `--strict-style` bila repository-wide Pint ingin dijadikan blocking gate.
+- `ARCHITECTURE.md` — struktur folder, alur data, ERD (root)
+- `API.md` — daftar route aktif + middleware + controller (root, digenerate dari `route:list`)
+- `docs/README.md` — indeks dokumentasi dan source-of-truth
+- `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen
+- `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan boundary tenant (detail)
+- `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` — kontrak numbering/registry/cancel/rollback
+- `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer
+- `docs/SYNCHRONIZATION.md` — sinkronisasi, reconciliation, identity
+- `docs/GUI_STANDARDIZATION.md` + `docs/CSS_USAGE_GUIDE.md` — kontrak GUI/theme
+- `AGENTS.md` — aturan kerja agen AI di repositori ini

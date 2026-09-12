@@ -232,4 +232,41 @@ Preserve the decisions documented there.
 - Browser-check representative desktop and mobile pages after structural UI changes.
 - Do not claim mobile verification while `docs/MOBILE_VISUAL_QA_TODO.md` remains open.
 
+=== project/strict rules ===
+
+# SPJ BOSP Strict Project Rules (reality-verified 2026-09-12)
+
+Stack: PHP ^8.2, Laravel 12, Livewire 3.7, Alpine 3, Tailwind 4, Filament 4 (tables only),
+SQLite multi-DB, session auth. No `routes/api.php`, no Sanctum/Passport/JWT.
+
+## Architecture (must follow)
+
+- Thin controllers → `app/UseCases/Spj/*` → `app/Services/*` → Models. Never move orchestration back to controllers.
+- Every tenant read/write uses `ActiveSpjContext`: `matchesTransaction()` (year + fund source; school via connection). Never use year-only checks where fund scope applies.
+- `SpjPackage::isEditable()` = DRAFT/READY only. NUMBERED carve-out: ONLY `payment_description` + `item_description` editable; FINAL fully locked. See `docs/SPJ_DESIGN_DECISIONS.md` §4.2/§4.4.
+- Every sensitive mutation records `OperationalAuditService`. Tenant boundary: `School + Fiscal Year + Fund Source`.
+- Canonical categories: BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, HONOR_PEGAWAI. SiPlah is a channel, never a category.
+- Preview/download never issues numbers. Numbering registry: `app/Services/SpjNumberingDocumentRegistry.php`.
+
+## Agent prohibitions
+
+- Do NOT edit migrations that already ran; new changes need new migration files.
+- Do NOT delete functions/endpoints without explicit user confirmation.
+- Do NOT restore/reset/stash/checkout/commit the protected files without explicit instruction:
+  `resources/views/dashboard.blade.php`, `resources/views/students/index.blade.php`
+  (keep `spj-bosp-web-console.code-workspace` untracked — verify exact name before touching).
+- Do NOT commit secrets; never force-push, skip hooks, or amend failed commits.
+- Do NOT change dependencies, git config, or create new top-level folders without approval.
+- Do NOT touch other parties' uncommitted/conflicted files. Unmerged paths block your commit — report, don't resolve by guessing.
+- Do NOT fabricate data, tests, or verification evidence. No PASS claims without actual runs.
+
+## Workflow (commit & test)
+
+- Before committing: inspect `git status`, `git diff`, `git log --oneline -10`; stage only intended files.
+- After PHP changes: `vendor/bin/pint --dirty --format agent` (fix, not `--test`).
+- Before declaring done: narrowest `php artisan test --compact <file|filter>` + `git diff --check`; full suite only for broad changes.
+- Docs are Definition of Done: perform the Documentation Impact Review (`docs/DOCUMENTATION_MAINTENANCE.md`); behavior changes update impacted docs in the same work; stale/contradictory docs are defects.
+- Status/priority always derive from `docs/CURRENT_PROGRESS.md` + `docs/DEVELOPMENT_ROADMAP.md`; never hard-code.
+- Concise replies; `file_path:line_number` when referencing code.
+
 </laravel-boost-guidelines>
