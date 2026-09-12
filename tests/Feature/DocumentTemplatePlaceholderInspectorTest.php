@@ -37,6 +37,11 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
             '--path' => 'database/migrations/school/2026_09_02_200000_add_sort_order_to_spj_people_tables.php',
             '--force' => true,
         ]);
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/school/2026_09_06_204518_create_spj_service_recipients_table.php',
+            '--force' => true,
+        ]);
 
         DB::connection('school')->table('fund_sources')->insert([
             [
