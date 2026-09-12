@@ -2,9 +2,8 @@
     class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
     <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian Barang dan Jasa</h2>
-            <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Item pembentuk transaksi
-                {{ $transaction->no_bukti }}. {{ $transaction->is_siplah ? 'Gunakan nama barang dari metadata SiPLah.' : 'Uraian manual diprioritaskan bila tersedia.' }}</p>
+            <h2 class="font-bold text-[var(--ui-fg-strong)]">Uraian Pembayaran dan Rincian Barang/Jasa</h2>
+            <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Koreksi uraian yang dipakai pada dokumen SPJ tanpa mengubah data sumber ARKAS/BKU maupun nilai transaksi.</p>
         </div><span
             class="rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold text-[var(--theme-content-accent)]">{{ $transaction->items->count() }}
             baris detail</span>
@@ -23,21 +22,39 @@
                 ? $metadataItem['siplah_item_name']
                 : null;
         };
-        $itemDescriptionsEditable = ! $transaction->spjPackage
+        $spjDescriptionsEditable = ! $transaction->spjPackage
             || $transaction->spjPackage->isEditable()
             || $transaction->spjPackage->status === 'NUMBERED';
     @endphp
     @if($transaction->spjPackage?->status === 'NUMBERED')
         <div class="px-5 pt-4">
             <x-ui.alert type="info" title="Koreksi uraian tetap diperbolehkan">
-                Hanya nama atau uraian barang/jasa yang dapat diperbaiki pada tahap ini. Nomor SPJ, status paket, dan urutan penomoran tidak berubah.
+                Uraian pembayaran dan nama/uraian barang atau jasa masih dapat diperbaiki. Nomor SPJ, status paket, tanggal transaksi, nilai bruto, pajak, netto, dan urutan penomoran tidak berubah.
             </x-ui.alert>
         </div>
     @endif
     <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}"
-        @submit="itemDescriptionsDirty = false">@csrf
+        @submit="spjDescriptionsDirty = false">@csrf
         @method('PUT')
-        <fieldset @disabled(! $itemDescriptionsEditable) class="disabled:cursor-not-allowed disabled:opacity-60">
+        <fieldset @disabled(! $spjDescriptionsEditable) class="disabled:cursor-not-allowed disabled:opacity-60">
+            <div class="border-b border-[var(--ui-line)] px-5 py-5">
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
+                    <x-ui.field label="Uraian pembayaran untuk SPJ" hint="Boleh dikoreksi oleh operator. Dipakai untuk kuitansi dan dokumen SPJ; tidak mengubah data sumber ARKAS/BKU.">
+                        <x-ui.textarea
+                            name="payment_description"
+                            rows="3"
+                            maxlength="4000"
+                            @input="spjDescriptionsDirty = true"
+                            placeholder="Contoh: Pembayaran pembelian alat tulis kantor sesuai rincian belanja."
+                        >{{ old('payment_description', $transaction->payment_description ?: $transaction->description) }}</x-ui.textarea>
+                    </x-ui.field>
+                    <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
+                        <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian sumber ARKAS/BKU — read-only</p>
+                        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--ui-fg)]">{{ $transaction->description ?: 'Tidak ada uraian sumber.' }}</p>
+                        <p class="mt-3 text-xs leading-5 text-[var(--ui-fg-muted)]">Nilai ini tetap dipertahankan sebagai data sumber dan tidak ditimpa ketika operator menyimpan koreksi uraian SPJ.</p>
+                    </div>
+                </div>
+            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-[var(--ui-line)] text-base">
                     <thead class="bg-[var(--ui-surface-soft)]">
@@ -60,7 +77,7 @@
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                     <input name="items[{{ $index }}][item_description]"
                                         value="{{ $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $siplahNameForItem($item) ?: $item->description) : $item->description) }}"
-                                        @input="itemDescriptionsDirty = true"
+                                        @input="spjDescriptionsDirty = true"
                                         class="ui-input px-3 py-2 text-base" placeholder="{{ $transaction->is_siplah ? 'Nama barang dari SiPLah' : 'Contoh: Buku tulis' }}">
                                 </td>
                                 <td class="px-4 py-3.5 font-mono text-xs text-[var(--theme-content-accent)]">{{ $item->account_code ?: $transaction->account_code ?: '—' }}</td>
@@ -73,7 +90,7 @@
                             <tr>
                                 <td colspan="7" class="px-5 py-14 text-center">
                                     <p class="font-semibold text-[var(--ui-fg-strong)]">Rincian transaksi belum tersedia.</p>
-                                    <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Periksa kembali hasil sinkronisasi BKU untuk nomor bukti ini.</p>
+                                    <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Uraian pembayaran SPJ di atas tetap dapat diperbaiki. Periksa sinkronisasi BKU bila rincian barang/jasa seharusnya tersedia.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -88,14 +105,12 @@
                     @endif
                 </table>
             </div>
-            @if ($transaction->items->isNotEmpty())
-                <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
-                    <p x-show="itemDescriptionsDirty" x-cloak class="text-xs font-semibold text-amber-700">
-                        Ada perubahan uraian yang belum tersimpan.
-                    </p>
-                    <button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan Uraian Barang/Jasa</button>
-                </div>
-            @endif
+            <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
+                <p x-show="spjDescriptionsDirty" x-cloak class="text-xs font-semibold text-amber-700">
+                    Ada perubahan uraian SPJ yang belum tersimpan.
+                </p>
+                <button class="ui-btn ui-btn-primary px-4 py-2 text-sm">Simpan Koreksi Uraian</button>
+            </div>
         </fieldset>
     </form>
 </section>
