@@ -17,29 +17,37 @@ class TransactionController extends Controller
             return redirect()->route('transactions.index')->with('error', 'Transaksi tidak ditemukan pada tahun aktif.');
         }
         if ($transaction->spjPackage?->status === 'FINAL') {
-            return back()->with('error', 'Uraian item tidak dapat diubah karena paket SPJ sudah FINAL. Lakukan koreksi melalui lifecycle resmi terlebih dahulu.');
+            return back()->with('error', 'Uraian SPJ tidak dapat diubah karena paket sudah FINAL. Lakukan koreksi melalui lifecycle resmi terlebih dahulu.');
         }
 
         $data = $request->validate([
-            'items' => ['required', 'array'],
+            'payment_description' => ['nullable', 'string', 'max:4000'],
+            'items' => ['nullable', 'array'],
             'items.*.id' => ['required', 'integer'],
             'items.*.item_description' => ['required', 'string', 'max:4000'],
         ]);
 
         $itemIds = $transaction->items->pluck('id')->all();
-        foreach ($data['items'] as $itemData) {
+        foreach ($data['items'] ?? [] as $itemData) {
             if (! in_array((int) $itemData['id'], $itemIds, true)) {
                 abort(422, 'Rincian transaksi tidak valid.');
             }
         }
 
-        foreach ($data['items'] as $itemData) {
+        if (array_key_exists('payment_description', $data)) {
+            $paymentDescription = trim((string) ($data['payment_description'] ?? ''));
+            $transaction->update([
+                'payment_description' => $paymentDescription !== '' ? $paymentDescription : null,
+            ]);
+        }
+
+        foreach ($data['items'] ?? [] as $itemData) {
             $transaction->items->firstWhere('id', (int) $itemData['id'])->update([
                 'item_description' => trim($itemData['item_description']),
             ]);
         }
 
-        return back()->with('success', 'Uraian barang/jasa untuk SPJ berhasil disimpan tanpa mengubah penomoran.');
+        return back()->with('success', 'Uraian pembayaran dan barang/jasa untuk SPJ berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran.');
     }
 
     public function index(Request $request): View
