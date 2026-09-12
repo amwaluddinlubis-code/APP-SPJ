@@ -16,22 +16,15 @@ class SpjNumberingOrderService
         private readonly SpjNumberingPolicyService $numberingPolicy,
     ) {}
 
-    /**
-     * @param  Collection<int, SpjPackage>  $packages
-     * @return Collection<int, SpjPackage>
-     */
+    /** @param Collection<int, SpjPackage> $packages @return Collection<int, SpjPackage> */
     public function orderedPackagesForDocumentType(Collection $packages, string $documentType): Collection
     {
-        return $packages
-            ->sortBy(fn (SpjPackage $package): string => $this->numberingOrderKey($package, $documentType))
-            ->values();
+        return $packages->sortBy(fn (SpjPackage $package): string => $this->numberingOrderKey($package, $documentType))->values();
     }
 
     public function documentEventDate(SpjPackage $package, string $documentType): Carbon
     {
-        $date = $this->documentEventDateValue($package, $documentType)
-            ?? $package->transaction->transaction_date
-            ?? now();
+        $date = $this->documentEventDateValue($package, $documentType) ?? $package->transaction->transaction_date ?? now();
 
         return Carbon::parse($date);
     }
@@ -44,51 +37,23 @@ class SpjNumberingOrderService
     public function sourceOrderKey(Transaction $transaction): string
     {
         $arkasTimestampKey = $this->arkasTimestampOrderKey($transaction);
-        $sourceItemIds = $transaction->relationLoaded('items')
-            ? $transaction->items->pluck('source_item_id')
-            : $transaction->items()->pluck('source_item_id');
-        $firstSourceItemId = $sourceItemIds
-            ->filter(fn ($value): bool => filled($value))
-            ->map(fn ($value): string => trim((string) $value))
-            ->sortBy(fn (string $value): string => $this->normalizeSourceOrderPart($value))
-            ->first();
+        $sourceItemIds = $transaction->relationLoaded('items') ? $transaction->items->pluck('source_item_id') : $transaction->items()->pluck('source_item_id');
+        $firstSourceItemId = $sourceItemIds->filter(fn ($value): bool => filled($value))->map(fn ($value): string => trim((string) $value))->sortBy(fn (string $value): string => $this->normalizeSourceOrderPart($value))->first();
 
         if (filled($firstSourceItemId)) {
-            return implode('|', [
-                $arkasTimestampKey,
-                $this->normalizeSourceOrderPart($firstSourceItemId),
-                $this->normalizeSourceOrderPart($transaction->source_key),
-                $this->normalizeSourceOrderPart($transaction->no_bukti),
-            ]);
+            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($firstSourceItemId), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->no_bukti)]);
         }
-
         if (filled($transaction->id_kas_umum)) {
-            return implode('|', [
-                $arkasTimestampKey,
-                $this->normalizeSourceOrderPart($transaction->id_kas_umum),
-                $this->normalizeSourceOrderPart($transaction->source_key),
-                $this->normalizeSourceOrderPart($transaction->no_bukti),
-            ]);
+            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($transaction->id_kas_umum), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->no_bukti)]);
         }
-
         if (filled($transaction->source_key)) {
-            return implode('|', [
-                $arkasTimestampKey,
-                $this->normalizeSourceOrderPart($transaction->source_key),
-                $this->normalizeSourceOrderPart($transaction->no_bukti),
-            ]);
+            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->no_bukti)]);
         }
 
-        return $arkasTimestampKey.'|'.$this->normalizeSourceOrderPart($transaction->no_bukti)
-            .'|LOCAL:'.str_pad((string) $transaction->id, 20, '0', STR_PAD_LEFT);
+        return $arkasTimestampKey.'|'.$this->normalizeSourceOrderPart($transaction->no_bukti).'|LOCAL:'.str_pad((string) $transaction->id, 20, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Single-document issuance stays available, but it may not jump over an
-     * earlier unnumbered source transaction in the same quarter/domain.
-     *
-     * @param  array<int, string>  $documentTypes
-     */
+    /** @param array<int, string> $documentTypes */
     public function singleNumberingBlocker(SpjPackage $package, array $documentTypes): ?string
     {
         $transactionDate = $package->transaction->transaction_date;
@@ -100,37 +65,21 @@ class SpjNumberingOrderService
         $quarter = (int) ceil($month / 3);
         $startMonth = (($quarter - 1) * 3) + 1;
         $endMonth = $quarter * 3;
-        $candidates = SpjPackage::query()
-            ->with([
-                'documents',
-                'transaction.items',
-                'transaction.goods',
-                'transaction.goodsReceipts',
-                'transaction.workOrder',
-                'transaction.honors',
-                'transaction.travels',
-                'transaction.payments',
-                'transaction.workers',
-                'transaction.participants',
-                'transaction.serviceRecipients',
-                'transaction.spjPackage',
-            ])
-            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)
-                ->whereMonth('transaction_date', '>=', $startMonth)
-                ->whereMonth('transaction_date', '<=', $endMonth))
-            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK', 'CANCELLED'])
-            ->get();
+        $candidates = SpjPackage::query()->with([
+            'documents', 'transaction.items', 'transaction.goods', 'transaction.goodsReceipts', 'transaction.workOrder',
+            'transaction.honors', 'transaction.travels', 'transaction.payments', 'transaction.workers',
+            'transaction.participants', 'transaction.serviceRecipients', 'transaction.spjPackage',
+        ])->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)
+            ->whereMonth('transaction_date', '>=', $startMonth)->whereMonth('transaction_date', '<=', $endMonth))
+            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK', 'CANCELLED'])->get();
 
         foreach ($documentTypes as $documentType) {
             $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
             if ($documentType === null || $this->documentEventDateValue($package, $documentType) === null) {
                 continue;
             }
-
-            $eligible = $candidates->filter(fn (SpjPackage $candidate): bool =>
-                $this->documentEventDateValue($candidate, $documentType) !== null
-                && $this->numberingPolicy->isAutomaticDocumentEligible($candidate->transaction, $documentType)
-            );
+            $eligible = $candidates->filter(fn (SpjPackage $candidate): bool => $this->documentEventDateValue($candidate, $documentType) !== null
+                && $this->numberingPolicy->isAutomaticDocumentEligible($candidate->transaction, $documentType));
             foreach ($this->orderedPackagesForDocumentType($eligible, $documentType) as $candidate) {
                 if ($candidate->is($package)) {
                     break;
@@ -146,9 +95,7 @@ class SpjNumberingOrderService
 
     private function numberingOrderKey(SpjPackage $package, string $documentType): string
     {
-        $date = $this->documentEventDate($package, $documentType)->format('Y-m-d');
-
-        return $date.'|'.$this->sourceOrderKey($package->transaction);
+        return $this->documentEventDate($package, $documentType)->format('Y-m-d').'|'.$this->sourceOrderKey($package->transaction);
     }
 
     private function arkasTimestampOrderKey(Transaction $transaction): string
@@ -182,18 +129,18 @@ class SpjNumberingOrderService
             return false;
         }
 
-        $hasActiveDocument = $package->documents
-            ->contains(fn (SpjDocument $document): bool => $document->document_type === $documentType
-                && $document->status !== 'CANCELLED'
-                && filled($document->document_number));
+        $hasActiveDocument = $package->documents->contains(fn (SpjDocument $document): bool => $document->document_type === $documentType
+            && $document->status !== 'CANCELLED' && filled($document->document_number));
         if ($hasActiveDocument) {
             return false;
         }
 
-        $numberField = $definition['number_field'];
+        $target = $definition['number_target'];
+        $numberField = $target['field'];
         $rule = $definition['event_date_rule'];
 
-        return match ($rule['relation']) {
+        return match ($target['relation']) {
+            'package' => blank($numberField ? $package->{$numberField} : null),
             'goods' => $numberField ? ! $package->transaction->goods->pluck($numberField)->filter()->isNotEmpty() : true,
             'workOrder' => $numberField ? blank($package->transaction->workOrder?->{$numberField}) : true,
             'travels' => $numberField ? $package->transaction->travels->contains(function ($travel) use ($numberField, $rule): bool {
