@@ -28,13 +28,11 @@ final class SpjNumberingDocumentRegistry
      */
     public function all(): array
     {
-        $allCategories = ['BARANG', 'KONSUMSI', 'PEMELIHARAAN', 'SPPD', 'HONOR_PEGAWAI', 'JASA_LAINNYA'];
-
         return [
             'SPJ' => $this->definition(
                 'SPJ',
                 'SPJ Utama',
-                $allCategories,
+                ['*'],
                 self::CHANNEL_ANY,
                 'transaction',
                 'transaction_date',
