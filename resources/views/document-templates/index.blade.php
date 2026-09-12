@@ -27,6 +27,7 @@
             subtitle="Unggah, atur, validasi, dan tentukan kategori SPJ yang menggunakan setiap template dokumen."
             kicker="PENGATURAN TEMPLATE DOKUMEN">
             <x-slot:actions>
+                <x-ui.button :href="route('document-templates.master.download')">Unduh Master Template Terbaru</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'docx')">Unduh Contoh Word</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'xlsx')">Unduh Contoh Excel</x-ui.button>
             </x-slot:actions>
@@ -59,7 +60,7 @@
 
         <div class="grid gap-6 xl:grid-cols-2">
             <x-ui.form-section title="Import Paket Template"
-                description="Untuk master XLSX yang berisi seluruh {{ count($documentTypes) }} sheet canonical. Aplikasi memvalidasi semuanya lalu memisahkannya menjadi template independen.">
+                description="Untuk master XLSX yang berisi seluruh {{ count($documentTypes) }} sheet canonical. Aplikasi memvalidasi seluruh sheet lalu mendaftarkan tiap jenis dokumen sebagai template aktif. Update XLSX individu berikutnya otomatis menjadi sumber saat Master Template Terbaru dirakit.">
                 <form method="POST" action="{{ route('document-templates.store', ['upload' => 'package']) }}"
                     enctype="multipart/form-data" class="space-y-5">
                     @csrf
@@ -116,7 +117,7 @@
             </x-ui.form-section>
 
             <x-ui.form-section title="Tambah atau Ganti Satu Template"
-                description="Untuk satu file DOCX/XLSX. Pilih jenis dokumen yang sesuai dengan file, kemudian simpan sebagai template aktif.">
+                description="Untuk satu file DOCX/XLSX. Pilih jenis dokumen yang sesuai dengan file, kemudian simpan sebagai template aktif. Jika yang diperbarui XLSX, versi ini otomatis dipakai pada download Master Template Terbaru berikutnya.">
                 <form method="POST" action="{{ route('document-templates.store', ['upload' => 'single']) }}"
                     enctype="multipart/form-data" class="space-y-5">
                     @csrf
@@ -274,7 +275,7 @@
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
                 <h2 class="font-bold text-slate-800">Template yang Tersedia</h2>
-                <p class="mt-1 text-sm text-slate-500">Unduh template terakhir sebelum menggantinya jika perlu melakukan revisi lokal.</p>
+                <p class="mt-1 text-sm text-slate-500">Download Template mengunduh dokumen terpilih saja. Gunakan Unduh Master Template Terbaru untuk merakit seluruh template XLSX aktif.</p>
             </div>
             <form method="GET"
                 class="grid gap-3 border-b border-[var(--ui-line)] bg-slate-50/60 px-5 py-4 sm:grid-cols-[12rem_minmax(12rem,1fr)_auto_auto] sm:items-end">
