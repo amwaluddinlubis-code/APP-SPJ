@@ -40,7 +40,7 @@ class SpjNumberingGateService
         return "Penomoran Triwulan {$quarter} dibatalkan: masih ada {$notFinal} transaksi Triwulan {$previousQuarter} yang paket SPJ-nya belum FINAL. Finalkan seluruh paket triwulan sebelumnya terlebih dahulu.";
     }
 
-    public function issuanceBlocker(SpjPackage $package, ?string $documentType = null): ?string
+    public function periodBlocker(SpjPackage $package): ?string
     {
         if (! $package->relationLoaded('transaction')) {
             $package->load('transaction');
@@ -50,11 +50,6 @@ class SpjNumberingGateService
         if (! $transaction || ! $this->context->matchesTransaction($transaction)) {
             return 'Paket tidak berada pada konteks sekolah, tahun anggaran, dan sumber dana aktif.';
         }
-
-        if (! in_array($package->status, ['READY', 'NUMBERED'], true)) {
-            return 'Penomoran hanya dapat dilakukan pada paket READY atau NUMBERED. Selesaikan validasi paket terlebih dahulu.';
-        }
-
         if (! $transaction->transaction_date) {
             return 'Penomoran ditolak karena tanggal transaksi BKU belum tersedia.';
         }
@@ -72,14 +67,27 @@ class SpjNumberingGateService
             return 'Triwulan sudah ditutup. Administrator harus membuka kembali periode terlebih dahulu.';
         }
 
+        return null;
+    }
+
+    public function issuanceBlocker(SpjPackage $package, ?string $documentType = null): ?string
+    {
+        if ($blocker = $this->periodBlocker($package)) {
+            return $blocker;
+        }
+
+        if (! in_array($package->status, ['READY', 'NUMBERED'], true)) {
+            return 'Penomoran hanya dapat dilakukan pada paket READY atau NUMBERED. Selesaikan validasi paket terlebih dahulu.';
+        }
+
         if ($documentType !== null) {
             $canonicalType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
             if ($canonicalType === null) {
                 return 'Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.';
             }
 
-            if (! $this->numberingPolicy->isAutomaticDocumentEligible($transaction, $canonicalType)) {
-                $category = $this->numberingPolicy->canonicalCategory((string) $transaction->spj_category) ?: '-';
+            if (! $this->numberingPolicy->isAutomaticDocumentEligible($package->transaction, $canonicalType)) {
+                $category = $this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category) ?: '-';
 
                 return 'Penomoran '.$canonicalType.' tidak berlaku untuk kategori '.$category.'.';
             }
