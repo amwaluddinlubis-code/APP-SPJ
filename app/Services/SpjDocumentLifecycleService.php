@@ -8,44 +8,104 @@ use Illuminate\Support\Facades\DB;
 
 class SpjDocumentLifecycleService
 {
+    public function __construct(private readonly SpjNumberingPolicyService $numberingPolicy) {}
+
     public function finalize(SpjDocument $document, int $userId): SpjDocument
     {
-        if ($document->status !== 'NUMBERED') {
-            throw new \RuntimeException('Hanya dokumen bernomor yang dapat difinalkan.');
-        }
+        $package = $document->package()->with('transaction')->firstOrFail();
+        $this->finalizePackage($package, $userId);
 
-        return DB::connection('school')->transaction(function () use ($document, $userId): SpjDocument {
-            $package = $document->package()->with([
-                'transaction.items', 'transaction.goods', 'transaction.participants',
-                'transaction.travels', 'transaction.honors', 'transaction.workOrder.workers',
-            ])->firstOrFail();
-            $snapshot = [
-                'document' => $document->only(['document_type', 'document_number', 'document_date', 'event_date']),
-                'package' => $package->toArray(),
-                'captured_at' => now()->toIso8601String(),
-            ];
-            $template = $document->template;
-            $templateSnapshot = $template?->only(['id', 'document_type', 'name', 'format', 'file_path', 'applicable_categories', 'updated_at']);
-            $templatePath = $template ? storage_path('app/'.$template->file_path) : null;
-            $document->forceFill([
-                'status' => 'FINAL', 'snapshot' => $snapshot,
-                'template_snapshot' => $templateSnapshot,
-                'template_hash' => $templatePath && is_file($templatePath) ? hash_file('sha256', $templatePath) : null,
-                'finalized_at' => now(), 'finalized_by' => $userId,
-            ])->save();
+        return $document->fresh();
+    }
 
-            $unfinishedActiveDocuments = $package->documents()
-                ->where('status', '!=', 'CANCELLED')
-                ->where('status', '!=', 'FINAL')
-                ->exists();
-            if (! $unfinishedActiveDocuments) {
-                $package->forceFill([
-                    'status' => 'FINAL', 'snapshot' => $snapshot,
-                    'finalized_at' => now(), 'finalized_by' => $userId,
+    public function finalizePackage(SpjPackage $package, int $userId): SpjPackage
+    {
+        return DB::connection('school')->transaction(function () use ($package, $userId): SpjPackage {
+            $package = SpjPackage::query()
+                ->with([
+                    'documents.template',
+                    'transaction.items',
+                    'transaction.goods',
+                    'transaction.goodsReceipts',
+                    'transaction.participants',
+                    'transaction.travels',
+                    'transaction.honors',
+                    'transaction.payments',
+                    'transaction.serviceRecipients',
+                    'transaction.workOrder.workers',
+                ])
+                ->lockForUpdate()
+                ->findOrFail($package->id);
+
+            if ($package->status === 'FINAL') {
+                return $package;
+            }
+            if ($package->status !== 'NUMBERED') {
+                throw new \RuntimeException('Hanya paket NUMBERED yang dapat difinalkan.');
+            }
+
+            $activeDocuments = $package->documents->where('status', '!=', 'CANCELLED');
+            $invalidActiveDocuments = $activeDocuments->filter(fn (SpjDocument $document): bool =>
+                blank($document->document_number)
+                || ! in_array($document->status, ['NUMBERED', 'FINAL'], true)
+            );
+            if ($invalidActiveDocuments->isNotEmpty()) {
+                throw new \RuntimeException('Finalisasi paket ditolak karena masih ada dokumen aktif yang belum bernomor.');
+            }
+
+            $missingRequired = collect($this->requiredDocumentIdentities($package))
+                ->filter(function (array $identity) use ($activeDocuments): bool {
+                    return ! $activeDocuments->contains(fn (SpjDocument $document): bool =>
+                        $document->document_type === $identity['document_type']
+                        && $document->scope_key === $identity['scope_key']
+                        && filled($document->document_number)
+                        && in_array($document->status, ['NUMBERED', 'FINAL'], true)
+                    );
+                })
+                ->map(fn (array $identity): string => $identity['scope_key'] === 'MAIN'
+                    ? $identity['document_type']
+                    : $identity['document_type'].' ('.$identity['scope_key'].')')
+                ->values();
+
+            if ($missingRequired->isNotEmpty()) {
+                throw new \RuntimeException('Finalisasi paket ditolak. Nomor dokumen canonical belum lengkap: '.$missingRequired->implode(', ').'.');
+            }
+
+            $capturedAt = now();
+            $packageSnapshot = $package->toArray();
+            foreach ($activeDocuments as $document) {
+                if ($document->status === 'FINAL') {
+                    continue;
+                }
+
+                $template = $document->template;
+                $templateSnapshot = $template?->only(['id', 'document_type', 'name', 'format', 'file_path', 'applicable_categories', 'updated_at']);
+                $templatePath = $template ? storage_path('app/'.$template->file_path) : null;
+                $document->forceFill([
+                    'status' => 'FINAL',
+                    'snapshot' => [
+                        'document' => $document->only(['document_type', 'document_number', 'document_date', 'event_date', 'scope_key']),
+                        'package' => $packageSnapshot,
+                        'captured_at' => $capturedAt->toIso8601String(),
+                    ],
+                    'template_snapshot' => $templateSnapshot,
+                    'template_hash' => $templatePath && is_file($templatePath) ? hash_file('sha256', $templatePath) : null,
+                    'finalized_at' => $capturedAt,
+                    'finalized_by' => $userId,
                 ])->save();
             }
 
-            return $document;
+            $package->forceFill([
+                'status' => 'FINAL',
+                'snapshot' => [
+                    'package' => $packageSnapshot,
+                    'captured_at' => $capturedAt->toIso8601String(),
+                ],
+                'finalized_at' => $capturedAt,
+                'finalized_by' => $userId,
+            ])->save();
+
+            return $package;
         });
     }
 
@@ -66,8 +126,16 @@ class SpjDocumentLifecycleService
 
             if ($document->document_type === 'SPJ' && $document->scope_key === 'MAIN') {
                 $document->package()->update([
-                    'status' => 'CANCELLED', 'document_number' => null, 'numbered_at' => null, 'cancelled_at' => now(),
-                    'cancelled_by' => $userId, 'cancellation_reason' => trim($reason),
+                    'status' => 'CANCELLED', 'document_number' => null, 'numbered_at' => null,
+                    'snapshot' => null, 'finalized_at' => null, 'finalized_by' => null,
+                    'cancelled_at' => now(), 'cancelled_by' => $userId, 'cancellation_reason' => trim($reason),
+                ]);
+            } else {
+                $document->package()->where('status', 'FINAL')->update([
+                    'status' => 'NUMBERED',
+                    'snapshot' => null,
+                    'finalized_at' => null,
+                    'finalized_by' => null,
                 ]);
             }
 
@@ -92,18 +160,49 @@ class SpjDocumentLifecycleService
 
     public function unlock(SpjPackage $package, int $userId, string $reason): SpjPackage
     {
-        if (! in_array($package->status, ['NUMBERED', 'CANCELLED'], true)) {
-            throw new \RuntimeException('Hanya paket bernomor atau dibatalkan yang dapat dibuka kembali.');
-        }
-        if (blank($reason)) {
-            throw new \InvalidArgumentException('Alasan pembukaan kunci wajib diisi.');
+        throw new \RuntimeException('Buka kunci langsung paket bernomor dinonaktifkan. Gunakan rollback/cancel penomoran resmi agar histori dan sequence tetap konsisten.');
+    }
+
+    /** @return array<int,array{document_type:string,scope_key:string}> */
+    private function requiredDocumentIdentities(SpjPackage $package): array
+    {
+        $transaction = $package->transaction;
+        $requirements = [
+            ['document_type' => 'SPJ', 'scope_key' => 'MAIN'],
+        ];
+
+        foreach ([
+            'PESANAN' => 'order_date',
+            'BAP' => 'bap_date',
+            'BAST' => 'bast_date',
+        ] as $documentType => $dateField) {
+            if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, $documentType)
+                && $transaction->goods->pluck($dateField)->filter()->isNotEmpty()) {
+                $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
+            }
         }
 
-        $package->forceFill([
-            'status' => 'DRAFT', 'document_number' => null, 'numbered_at' => null, 'unlocked_at' => now(),
-            'unlocked_by' => $userId, 'unlock_reason' => trim($reason),
-        ])->save();
+        foreach ([
+            'SPK' => 'spk_date',
+            'RAB' => 'rab_date',
+        ] as $documentType => $dateField) {
+            if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, $documentType)
+                && filled($transaction->workOrder?->{$dateField})) {
+                $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
+            }
+        }
 
-        return $package;
+        if ($this->numberingPolicy->isAutomaticDocumentEligible($transaction, 'SURAT_TUGAS_PERJALANAN_DINAS')) {
+            foreach ($transaction->travels as $travel) {
+                if ($travel->assignment_letter_date || $travel->departure_date) {
+                    $requirements[] = [
+                        'document_type' => 'SURAT_TUGAS_PERJALANAN_DINAS',
+                        'scope_key' => 'TRAVEL-'.$travel->id,
+                    ];
+                }
+            }
+        }
+
+        return $requirements;
     }
 }
