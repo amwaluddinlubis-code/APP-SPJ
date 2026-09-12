@@ -6,6 +6,7 @@ use App\Models\SpjDocument;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentLifecycleService;
 use App\Services\SpjDocumentNumberService;
+use App\Services\SpjNumberingPolicyService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class SpjDocumentLifecycleUseCase
     public function __construct(
         private readonly SpjDocumentLifecycleService $lifecycle,
         private readonly SpjDocumentNumberService $numbers,
+        private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -22,10 +24,17 @@ class SpjDocumentLifecycleUseCase
     public function finalizeDocument(string $documentId): RedirectResponse
     {
         $document = SpjDocument::query()->with('package.transaction')->findOrFail($documentId);
-        abort_unless($this->context->matchesFiscalYear($document->package->transaction), 404);
-        $this->lifecycle->finalize($document, $this->context->actorId());
+        abort_unless($this->context->matchesTransaction($document->package->transaction), 404);
+        $package = $this->lifecycle->finalizePackage($document->package, $this->context->actorId());
+        $this->audit->record(
+            $package->transaction->fiscal_year_id,
+            'SPJ_PACKAGE',
+            $package->id,
+            'FINALISASI_PAKET',
+            'Seluruh dokumen aktif paket difinalkan secara atomik dan snapshot dikunci.',
+        );
 
-        return back()->with('success', 'Dokumen difinalkan dan snapshot dikunci.');
+        return back()->with('success', 'Paket SPJ difinalkan. Seluruh dokumen aktif dan snapshot paket telah dikunci.');
     }
 
     public function cancelDocument(Request $request, string $documentId): RedirectResponse
@@ -43,14 +52,78 @@ class SpjDocumentLifecycleUseCase
 
     public function replaceDocument(Request $request, string $documentId): RedirectResponse
     {
+        abort_unless($this->context->isAdministrator(), 403);
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
-        $old = SpjDocument::query()->with('package.transaction')->findOrFail($documentId);
+        $old = SpjDocument::query()
+            ->with(['package.transaction.goods', 'package.transaction.workOrder', 'package.transaction.travels'])
+            ->findOrFail($documentId);
         abort_unless($this->context->matchesTransaction($old->package->transaction), 404);
-        $this->lifecycle->cancel($old, $this->context->actorId(), $data['reason']);
-        $school = $this->context->school();
-        $replacement = $this->numbers->assign($old->package, $old->document_type, now(), $school->school_code ?: $school->npsn, 'REPLACEMENT:'.$old->id.':'.now()->format('YmdHis'), $old->document_template_id, $school->npsn);
-        $replacement->forceFill(['replaces_document_id' => $old->id, 'is_late_entry' => true])->save();
 
-        return back()->with('success', 'Dokumen lama dibatalkan dan dokumen pengganti mendapat nomor '.$replacement->document_number.'.');
+        $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($old->document_type);
+        if ($documentType === null) {
+            return back()->with('error', 'Dokumen legacy/noncanonical tidak dapat diterbitkan ulang melalui workflow penomoran canonical.');
+        }
+
+        $oldNumber = $old->document_number;
+        $scopeKey = $old->scope_key ?: 'MAIN';
+        $documentDate = $old->document_date ?: now();
+        $templateId = $old->document_template_id;
+
+        $this->lifecycle->cancel($old, $this->context->actorId(), $data['reason']);
+        $package = $old->package->fresh(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
+        $school = $this->context->school();
+        $replacement = $this->numbers->assign(
+            $package,
+            $documentType,
+            $documentDate,
+            $school->school_code ?: $school->npsn,
+            $scopeKey,
+            $templateId,
+            $school->npsn,
+        );
+        $replacement->forceFill([
+            'replaces_document_id' => $old->id,
+            'is_late_entry' => true,
+        ])->save();
+        $this->syncDerivedNumber($replacement);
+
+        $this->audit->record(
+            $package->transaction->fiscal_year_id,
+            'SPJ_DOCUMENT',
+            $replacement->id,
+            'GANTI_DOKUMEN',
+            'Nomor '.$oldNumber.' dibatalkan dan diganti dengan '.$replacement->document_number.'. Alasan: '.$data['reason'],
+        );
+
+        return back()->with('success', 'Dokumen lama dibatalkan dan dokumen pengganti mendapat nomor '.$replacement->document_number.'. Paket kembali NUMBERED sampai difinalkan ulang.');
+    }
+
+    private function syncDerivedNumber(SpjDocument $document): void
+    {
+        $package = $document->package()->with(['transaction.goods', 'transaction.workOrder', 'transaction.travels'])->firstOrFail();
+        $transaction = $package->transaction;
+        $number = $document->document_number;
+
+        match ($document->document_type) {
+            'PESANAN' => $transaction->goods()->whereNull('order_number')->update(['order_number' => $number]),
+            'BAP' => $transaction->goods()->whereNull('bap_number')->update(['bap_number' => $number]),
+            'BAST' => $transaction->goods()->whereNull('bast_number')->update(['bast_number' => $number]),
+            'SPK' => $transaction->workOrder?->forceFill(['spk_number' => $number])->save(),
+            'RAB' => $transaction->workOrder?->forceFill(['rab_number' => $number])->save(),
+            'SURAT_TUGAS_PERJALANAN_DINAS' => $this->syncTravelNumber($transaction, $document->scope_key, $number),
+            default => null,
+        };
+    }
+
+    private function syncTravelNumber($transaction, string $scopeKey, string $number): void
+    {
+        if (! str_starts_with($scopeKey, 'TRAVEL-')) {
+            return;
+        }
+
+        $travelId = (int) substr($scopeKey, strlen('TRAVEL-'));
+        if ($travelId > 0) {
+            $transaction->travels()->whereKey($travelId)->update(['assignment_letter_number' => $number]);
+        }
     }
 }
