@@ -15,28 +15,48 @@ Definisi status:
 
 ## Checkpoint terbaru
 
-Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar hash/run tidak diduplikasiasikan di banyak dokumen.
+Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar hash/run tidak diduplikasikan di banyak dokumen.
 
 Status branch saat dokumentasi ini diperbarui:
 
 ```text
-LATEST COMPLETED GREEN GATE : commit 0627ac45355453e138905cf0e81c235e6c5e2d2a / CI #386 SUCCESS
-TW TOKEN SOURCE CHANGE      : commit 68ab857dc698a1652e3b50233267e9ff64f40ba3
-CI #387                     : FAILURE — 4 expectation lama masih mencari TW.I/TW.II
-CURRENT SOURCE/TEST HEAD    : commit a44dd0811122e9ffd16ca38d03fba13c362121bb
-HEAD CI                     : #391 IN PROGRESS saat checkpoint dokumentasi dibuat
+CURRENT SOURCE HEAD       : b167476d1b034cd19e9019234353cdafa7ac4fce
+LATEST COMPLETED CODE GATE: CI #443 / run 34674547646 / SUCCESS
+WORKFLOW                  : SPJ Critical Verification
+NUMBERING REGISTRY        : CANONICAL / SOURCE OF TRUTH ACTIVE
 ```
 
-Perubahan source membuat token numbering `{TW}` menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) tanpa prefix otomatis `TW.`. Failure #387 bukan rollback terhadap requirement tersebut: output source sudah sesuai requirement, tetapi empat existing regression masih mengharapkan string lama. Existing expectations kemudian diselaraskan tanpa menambah test baru.
+CI #443 berhasil setelah refactor numbering registry. Blocking build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository Pint tetap advisory pada workflow, tetapi run #443 juga PASS untuk Pint check.
 
-Operator dapat menambahkan literal `TW.` sendiri pada pattern bila dibutuhkan, misalnya `TW.{TW}`.
+Refactor ini **tidak mengubah aturan bisnis numbering**. Tujuannya menghilangkan duplikasi metadata dokumen bernomor dari controller/service/UI. Source of truth numbering sekarang:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Registry canonical menyimpan metadata:
+
+```text
+code
+label
+numbered
+applicable_categories
+channel
+event_date_rule
+number_target
+scope_rule
+```
+
+Halaman format penomoran, halaman penomoran triwulan, policy, gate, ordering/event-date resolver, allocator, lifecycle/finalization, cancel, dan replacement membaca definisi numbering dari registry yang sama. `SpjDocumentTypeRegistry` tetap mempunyai tanggung jawab berbeda sebagai registry template/placeholder, bukan sumber aturan numbering.
+
+Token `{TW}` tetap menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) tanpa prefix otomatis `TW.`. Operator dapat menambahkan literal `TW.` sendiri pada pattern bila dibutuhkan, misalnya `TW.{TW}`.
 
 ---
 
 ## Status release saat ini
 
 ```text
-FUNCTIONAL CORE : PASS pada latest completed green gate; HEAD sedang re-gate setelah perubahan format numbering
+FUNCTIONAL CORE : PASS pada HEAD b167476d... / CI #443
 REAL-DATA       : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback; output QA masih ACTIVE
 OFFICIAL OUTPUT : RVR ACTIVE
 BROWSER/RUNTIME : RVR ACTIVE
@@ -132,19 +152,49 @@ Fokus operator sekarang adalah generate dokumen dari aplikasi menggunakan Paket 
 
 ---
 
-## P0-03 — Numbering, lifecycle, correction & rollback
+## P0-03 — Numbering, registry, lifecycle, correction & rollback
 
 ```text
-FUNCTIONAL NUMBERING             : PASS pada gate hijau terakhir; perubahan token {TW} sedang re-gate
-READ-ONLY REAL-DATA PREFLIGHT    : PASS
-ISOLATED FIRST NUMBER            : PASS
-INDIVIDUAL CANCEL / RESERVE      : PASS
-ISOLATED TAIL ROLLBACK           : PASS
-FUNCTIONAL QUARTER ROLLBACK      : PASS
-ISOLATED QUARTER ROLLBACK RUNTIME: PENDING / OPTIONAL unless needed by bug or operator flow
-FUND-SOURCE SEQUENCE SCOPE       : PASS
-POST-NUMBERING EDIT RULE         : PASS
+FUNCTIONAL NUMBERING             : PASS
+CANONICAL NUMBERING REGISTRY     : PASS / ACTIVE SOURCE OF TRUTH
+FORMAT PAGE + NUMBERING PAGE     : REGISTRY-DRIVEN
+POLICY/GATE/ORDER/ALLOCATOR       : REGISTRY-DRIVEN
+FINALIZE/CANCEL/REPLACEMENT       : REGISTRY-DRIVEN
+READ-ONLY REAL-DATA PREFLIGHT     : PASS
+ISOLATED FIRST NUMBER             : PASS
+INDIVIDUAL CANCEL / RESERVE       : PASS
+ISOLATED TAIL ROLLBACK            : PASS
+FUNCTIONAL QUARTER ROLLBACK       : PASS
+ISOLATED QUARTER ROLLBACK RUNTIME : PENDING / OPTIONAL unless needed by bug or operator flow
+FUND-SOURCE SEQUENCE SCOPE        : PASS
+POST-NUMBERING EDIT RULE          : PASS
 ```
+
+### Canonical numbering registry
+
+Source of truth:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Current numbered document definitions tetap sesuai aturan bisnis yang sudah disepakati:
+
+```text
+SPJ
+PESANAN
+BAP
+BAST
+SPK
+RAB
+SURAT_TUGAS_PERJALANAN_DINAS
+```
+
+Daftar tersebut **bukan lagi hardcoded pada consumer**. Consumer memperoleh kode, label, kategori applicable, channel, event-date rule, target field nomor, dan scope dari registry. Penambahan atau perubahan definisi numbering dilakukan pada registry canonical, lalu consumer yang relevan membaca metadata tersebut secara dinamis.
+
+Alias lama seperti `ORDER`, `SURAT_PESANAN`, `WORK_ORDER`, `SPK_PEMELIHARAAN`, dan `RAB_PEMELIHARAAN` dinormalisasi melalui registry sebelum masuk workflow canonical.
+
+SPJ utama berlaku untuk setiap Paket (`applicable_categories = ['*']`) agar kompatibel dengan paket legacy yang belum mempunyai kategori, sedangkan dokumen turunan tetap dibatasi oleh kategori/channel applicable.
 
 ### Evidence real-data yang sudah PASS
 
@@ -190,21 +240,19 @@ Quarter rollback dependency tetap FUNCTIONAL PASS melalui regression. Karena dat
 
 ### Format token triwulan
 
-Mulai commit `68ab857dc698a1652e3b50233267e9ff64f40ba3`, token numbering:
+Token numbering:
 
 ```text
 {TW} -> I / II / III / IV
 ```
 
-Aplikasi tidak lagi menambahkan string `TW.` secara otomatis. Jika sekolah/operator membutuhkan prefix tersebut, pattern dapat ditulis manual:
+Aplikasi tidak menambahkan string `TW.` secara otomatis. Jika sekolah/operator membutuhkan prefix tersebut, pattern dapat ditulis manual:
 
 ```text
 {SEQ}/SPJ/{SCHOOL}/TW.{TW}/{YEAR}
 ```
 
 Nomor yang sudah pernah diterbitkan tidak diubah otomatis oleh perubahan format ini.
-
-CI #387 menemukan empat assertion lama yang masih mengharapkan prefix otomatis. Assertion existing tersebut sudah diperbarui pada rangkaian commit sampai HEAD `a44dd081...`; tidak ada test baru yang ditambahkan.
 
 Panduan domain lengkap: `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
@@ -305,17 +353,16 @@ SiPLah tetap channel/payment context, bukan `spj_category`.
 
 Prioritas sekarang sengaja dipersempit ke penggunaan aplikasi nyata:
 
-1. tunggu source HEAD kembali hijau setelah penyelarasan expectation `{TW}`;
-2. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
-3. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
-4. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
-5. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
-6. lanjutkan official-template visual/output QA;
-7. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
-8. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
-9. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
+1. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
+2. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
+3. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
+4. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
+5. lanjutkan official-template visual/output QA;
+6. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
+7. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
+8. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
 
-Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru.
+Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Refactor canonical registry sudah digate hijau pada CI #443.
 
 ---
 
@@ -323,7 +370,6 @@ Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak d
 
 Belum boleh diberi status final sampai evidence tersedia untuk:
 
-- CI HEAD `a44dd081...` / run #391 selesai hijau;
 - generated-document real-data per kategori yang masih aktif;
 - official-template visual/output RVR;
 - GUI-AUDIT-12 browser/operator runtime QA;
@@ -344,3 +390,4 @@ Quarter rollback real-data isolated runtime bukan blocker aktif bila tidak ada b
 6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, dan dokumen status.
 7. GUI source cleanup hanya boleh disebut source-level PASS; browser visual QA tetap RVR sampai diverifikasi runtime.
 8. Setelah kontrak inti PASS, gunakan pendekatan **operator flow -> temukan bug -> perbaiki -> regression bila perlu**, bukan menambah test tanpa kebutuhan nyata.
+9. Metadata numbering baru atau perubahan metadata numbering dilakukan melalui `SpjNumberingDocumentRegistry`; consumer tidak boleh membuat daftar/label/event-date/target numbering hardcoded sendiri.
