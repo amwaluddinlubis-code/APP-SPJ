@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\ArkasActivityHierarchyResolver;
 use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjTemplateService;
 use ReflectionMethod;
@@ -11,7 +12,7 @@ class SpjTemplateScalarFallbackTest extends TestCase
 {
     public function test_empty_scalar_values_render_as_dash_while_image_marker_stays_empty(): void
     {
-        $service = new SpjTemplateService;
+        $service = new SpjTemplateService(new ArkasActivityHierarchyResolver);
         $method = new ReflectionMethod($service, 'normalizeScalarPlaceholders');
 
         $result = $method->invoke($service, [
