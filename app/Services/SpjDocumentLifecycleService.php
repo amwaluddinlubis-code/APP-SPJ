@@ -34,7 +34,11 @@ class SpjDocumentLifecycleService
                 'finalized_at' => now(), 'finalized_by' => $userId,
             ])->save();
 
-            if ($package->documents()->where('status', '!=', 'FINAL')->doesntExist()) {
+            $unfinishedActiveDocuments = $package->documents()
+                ->where('status', '!=', 'CANCELLED')
+                ->where('status', '!=', 'FINAL')
+                ->exists();
+            if (! $unfinishedActiveDocuments) {
                 $package->forceFill([
                     'status' => 'FINAL', 'snapshot' => $snapshot,
                     'finalized_at' => now(), 'finalized_by' => $userId,
