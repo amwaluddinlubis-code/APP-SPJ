@@ -42,8 +42,9 @@ class SpjQuarterNumberingUseCase
         $yearId = $this->context->fiscalYearId();
         $school = $this->context->school();
         $quarter = (int) $data['quarter'];
+        $canonicalTypes = $this->numberingPolicy->automaticDocumentTypes();
 
-        $requestedTypes = collect($data['document_types'] ?? $this->numberingPolicy->automaticDocumentTypes())
+        $requestedTypes = collect($data['document_types'] ?? $canonicalTypes)
             ->map(fn ($type) => strtoupper(trim((string) $type)))
             ->filter()
             ->values();
@@ -52,7 +53,7 @@ class SpjQuarterNumberingUseCase
             ->unique()
             ->values();
         if ($invalidTypes->isNotEmpty()) {
-            return back()->with('error', 'Penomoran dibatalkan. Jenis dokumen di luar 7 domain canonical: '.$invalidTypes->implode(', ').'.');
+            return back()->with('error', 'Penomoran dibatalkan. Jenis dokumen di luar '.count($canonicalTypes).' domain canonical: '.$invalidTypes->implode(', ').'.');
         }
 
         $documentTypes = $requestedTypes
@@ -84,8 +85,6 @@ class SpjQuarterNumberingUseCase
             return back()->with('error', 'Triwulan sudah ditutup. Administrator harus membuka kembali periode terlebih dahulu.');
         }
 
-        // Jadikan format default eksplisit sebelum nomor pertama diterbitkan.
-        // firstOrCreate menjaga setiap format yang sudah dikustomisasi sekolah.
         $this->numberingPolicy->ensureAutomaticFormats($yearId);
 
         $run = QuarterNumberingRun::query()->create([
@@ -138,10 +137,15 @@ class SpjQuarterNumberingUseCase
         $skipped = 0;
         try {
             foreach ($documentTypes as $documentType) {
-                if ($documentType === 'SURAT_TUGAS_PERJALANAN_DINAS') {
+                $definition = $this->numberingPolicy->numberingDefinition($documentType);
+                if (! $definition) {
+                    continue;
+                }
+
+                if ($definition['scope_rule'] === 'TRAVEL') {
                     $travelPackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
                         ->isAutomaticDocumentEligible($package->transaction, $documentType));
-                    $travelResult = $this->assignQuarterTravelNumbers($travelPackages, $school->school_code ?: $school->npsn, $school->npsn);
+                    $travelResult = $this->assignQuarterScopedNumbers($travelPackages, $documentType, $school->school_code ?: $school->npsn, $school->npsn);
                     $numbered += $travelResult['created'];
                     $skipped += $travelResult['skipped'];
 
@@ -171,19 +175,20 @@ class SpjQuarterNumberingUseCase
         return back()->with('success', "Penomoran triwulan selesai: {$numbered} nomor baru; {$skipped} dokumen dilewati karena sudah bernomor.");
     }
 
-    /**
-     * Surat tugas memiliki scope per pelaksana, sehingga batch harus mengurutkan
-     * setiap peristiwa perjalanan lintas paket, bukan hanya mengurutkan paket.
-     *
-     * @param  Collection<int, SpjPackage>  $packages
-     * @return array{created:int,skipped:int}
-     */
-    private function assignQuarterTravelNumbers(Collection $packages, string $schoolCode, ?string $npsn): array
+    /** @param Collection<int, SpjPackage> $packages @return array{created:int,skipped:int} */
+    private function assignQuarterScopedNumbers(Collection $packages, string $documentType, string $schoolCode, ?string $npsn): array
     {
+        $definition = $this->numberingPolicy->numberingDefinition($documentType);
+        if (! $definition || $definition['scope_rule'] !== 'TRAVEL') {
+            return ['created' => 0, 'skipped' => 0];
+        }
+
+        $rule = $definition['event_date_rule'];
+        $targetField = $definition['number_target']['field'];
         $entries = collect();
         foreach ($packages as $package) {
             foreach ($package->transaction->travels as $travel) {
-                $eventDate = $travel->assignment_letter_date ?: $travel->departure_date;
+                $eventDate = $travel->{$rule['field']} ?: ($rule['fallback_field'] ? $travel->{$rule['fallback_field']} : null);
                 if (! $eventDate) {
                     continue;
                 }
@@ -203,22 +208,24 @@ class SpjQuarterNumberingUseCase
         foreach ($entries->sortBy('key')->values() as $entry) {
             $package = $entry['package'];
             $travel = $entry['travel'];
-            if (filled($travel->assignment_letter_number)) {
+            if ($targetField && filled($travel->{$targetField})) {
                 $skipped++;
 
                 continue;
             }
             $scopeKey = 'TRAVEL-'.$travel->id;
             $before = $package->documents()
-                ->where(['document_type' => 'SURAT_TUGAS_PERJALANAN_DINAS', 'scope_key' => $scopeKey])
+                ->where(['document_type' => $documentType, 'scope_key' => $scopeKey])
                 ->where('status', '!=', 'CANCELLED')
                 ->whereNotNull('document_number')
                 ->exists();
-            $document = $this->numbers->assign($package, 'SURAT_TUGAS_PERJALANAN_DINAS', $entry['date'], $schoolCode, $scopeKey, npsn: $npsn);
-            $travel->forceFill([
-                'assignment_letter_number' => $document->document_number,
-                'assignment_letter_date' => $travel->assignment_letter_date ?: $entry['date'],
-            ])->save();
+            $document = $this->numbers->assign($package, $documentType, $entry['date'], $schoolCode, $scopeKey, npsn: $npsn);
+            if ($targetField) {
+                $travel->forceFill([$targetField => $document->document_number])->save();
+            }
+            if (blank($travel->{$rule['field']})) {
+                $travel->forceFill([$rule['field'] => $entry['date']])->save();
+            }
             $before ? $skipped++ : $created++;
         }
 
