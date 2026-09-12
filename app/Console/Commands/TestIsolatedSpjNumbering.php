@@ -27,7 +27,7 @@ class TestIsolatedSpjNumbering extends Command
         {--fund-source= : ID, kode, atau nama sumber dana}
         {--json : Tampilkan report JSON}';
 
-    protected $description = 'Smoke test mutation numbering pada copy SQLite terisolasi; baseline asli diverifikasi tidak berubah.';
+    protected $description = 'Smoke test mutation numbering pada copy SQLite terisolasi; seluruh baseline asli diverifikasi tidak berubah.';
 
     public function handle(): int
     {
@@ -60,21 +60,23 @@ class TestIsolatedSpjNumbering extends Command
             return self::FAILURE;
         }
 
-        $baselinePath = $this->resolveBaselinePath($school);
-        if ($baselinePath === null) {
+        $baselinePaths = $this->resolveBaselinePaths($school);
+        if ($baselinePaths === []) {
             $this->error('Baseline database sekolah tidak ditemukan.');
 
             return self::FAILURE;
         }
-        if ($this->samePath($copyPath, $baselinePath)) {
-            $this->error('DITOLAK: --database menunjuk baseline asli. Gunakan file copy terisolasi.');
+        foreach ($baselinePaths as $baselinePath) {
+            if ($this->samePath($copyPath, $baselinePath)) {
+                $this->error('DITOLAK: --database menunjuk salah satu baseline asli. Gunakan file copy terisolasi.');
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
         }
 
-        $baselineHashBefore = hash_file('sha256', $baselinePath);
+        $baselineHashesBefore = $this->hashPaths($baselinePaths);
         $copyHashBefore = hash_file('sha256', $copyPath);
-        if ($baselineHashBefore === false || $copyHashBefore === false) {
+        if ($baselineHashesBefore === null || $copyHashBefore === false) {
             $this->error('Hash database tidak dapat dibaca.');
 
             return self::FAILURE;
@@ -196,7 +198,8 @@ class TestIsolatedSpjNumbering extends Command
             $report = [
                 'isolated_copy' => true,
                 'school' => ['id' => $school->id, 'npsn' => $school->npsn, 'name' => $school->name],
-                'baseline_path' => $baselinePath,
+                'baseline_path' => $baselinePaths[0],
+                'baseline_paths' => $baselinePaths,
                 'copy_path' => $copyPath,
                 'context' => [
                     'year' => $year,
@@ -229,11 +232,14 @@ class TestIsolatedSpjNumbering extends Command
             app()->forgetInstance(ActiveSpjContext::class);
         }
 
-        clearstatcache(true, $baselinePath);
+        foreach ($baselinePaths as $baselinePath) {
+            clearstatcache(true, $baselinePath);
+        }
         clearstatcache(true, $copyPath);
-        $baselineHashAfter = hash_file('sha256', $baselinePath);
+        $baselineHashesAfter = $this->hashPaths($baselinePaths);
         $copyHashAfter = hash_file('sha256', $copyPath);
-        $baselineUnchanged = $baselineHashAfter !== false && hash_equals($baselineHashBefore, $baselineHashAfter);
+        $baselineUnchanged = $baselineHashesAfter !== null
+            && $this->sameHashes($baselineHashesBefore, $baselineHashesAfter);
         $copyChanged = $copyHashAfter !== false && ! hash_equals($copyHashBefore, $copyHashAfter);
 
         if ($failureMessage !== null) {
@@ -243,7 +249,7 @@ class TestIsolatedSpjNumbering extends Command
             return self::FAILURE;
         }
         if ($report === null || ! $baselineUnchanged || ! $copyChanged) {
-            $this->error('Isolated numbering guarantee gagal: baseline harus tetap sama dan copy harus berubah.');
+            $this->error('Isolated numbering guarantee gagal: seluruh baseline harus tetap sama dan copy harus berubah.');
 
             return self::FAILURE;
         }
@@ -259,7 +265,10 @@ class TestIsolatedSpjNumbering extends Command
 
         $this->newLine();
         $this->info('SPJ ISOLATED NUMBERING TEST');
-        $this->line('Baseline       : '.$baselinePath);
+        $this->line('Baseline       : '.$report['baseline_path']);
+        if (count($baselinePaths) > 1) {
+            $this->line('Protected DBs  : '.count($baselinePaths).' baseline paths');
+        }
         $this->line('Copy           : '.$copyPath);
         $this->line('Baseline hash  : UNCHANGED');
         $this->line('Copy hash      : CHANGED');
@@ -279,7 +288,7 @@ class TestIsolatedSpjNumbering extends Command
         );
         $this->line('Numbered packages : '.$report['mutation']['numbered_packages']);
         $this->line('Sequence SPJ      : '.$report['mutation']['sequence_last_number']);
-        $this->info('ISOLATED TEST RESULT: PASS — tepat 1 Paket bernomor pada copy; baseline asli tidak berubah.');
+        $this->info('ISOLATED TEST RESULT: PASS — tepat 1 Paket bernomor pada copy; seluruh baseline asli tidak berubah.');
 
         return self::SUCCESS;
     }
@@ -331,32 +340,78 @@ class TestIsolatedSpjNumbering extends Command
         return [$from->toDateString(), $to->toDateString()];
     }
 
-    private function resolveBaselinePath(School $school): ?string
+    /** @return list<string> */
+    private function resolveBaselinePaths(School $school): array
     {
         $managedPath = rtrim((string) config('spj.data_path'), '/\\')
             .DIRECTORY_SEPARATOR.'school-databases'
             .DIRECTORY_SEPARATOR.preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn)
             .DIRECTORY_SEPARATOR.'spj.sqlite';
         $paths = [$managedPath, (string) ($school->databaseRecord?->database_path ?? '')];
+        $resolved = [];
 
-        foreach (array_unique(array_filter($paths)) as $path) {
+        foreach (array_filter($paths) as $path) {
             $candidate = $this->absolutePath($path);
-            if (is_file($candidate)) {
-                return $candidate;
+            if (! is_file($candidate)) {
+                continue;
+            }
+            if (collect($resolved)->contains(fn (string $existing): bool => $this->samePath($candidate, $existing))) {
+                continue;
+            }
+            $resolved[] = $candidate;
+        }
+
+        return $resolved;
+    }
+
+    /** @param list<string> $paths
+     *  @return array<string,string>|null
+     */
+    private function hashPaths(array $paths): ?array
+    {
+        $hashes = [];
+        foreach ($paths as $path) {
+            $hash = hash_file('sha256', $path);
+            if ($hash === false) {
+                return null;
+            }
+            $hashes[$this->normalizedPath($path)] = $hash;
+        }
+
+        return $hashes;
+    }
+
+    /** @param array<string,string> $before
+     *  @param array<string,string> $after
+     */
+    private function sameHashes(array $before, array $after): bool
+    {
+        if (array_keys($before) !== array_keys($after)) {
+            return false;
+        }
+
+        foreach ($before as $path => $hash) {
+            if (! isset($after[$path]) || ! hash_equals($hash, $after[$path])) {
+                return false;
             }
         }
 
-        return null;
+        return true;
     }
 
     private function samePath(string $a, string $b): bool
     {
-        $realA = realpath($a);
-        $realB = realpath($b);
+        return $this->normalizedPath($a) === $this->normalizedPath($b);
+    }
 
-        return $realA !== false && $realB !== false
-            ? strcasecmp($realA, $realB) === 0
-            : strcasecmp($a, $b) === 0;
+    private function normalizedPath(string $path): string
+    {
+        $real = realpath($path);
+        $value = $real !== false ? $real : $this->absolutePath($path);
+        $value = str_replace('\\', '/', $value);
+        $value = rtrim($value, '/');
+
+        return DIRECTORY_SEPARATOR === '\\' ? mb_strtolower($value) : $value;
     }
 
     private function absolutePath(string $path): string
