@@ -2,7 +2,7 @@
 
 Terakhir diverifikasi: **2026-09-12** pada branch `gui-standardization`.
 
-Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **Cek Placeholder**, dan **Unduh Master Template Terbaru**. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
+Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **preview HTML dari Excel**, **Cek Placeholder**, dan **Unduh Master Template Terbaru**. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
 
 ## 1. Prinsip sumber kebenaran
 
@@ -82,7 +82,32 @@ Pruning dilakukan langsung pada paket OOXML agar worksheet terpilih tidak perlu 
 
 Jika source memang sudah merupakan workbook satu-sheet, aplikasi dapat mengunduh source tersebut langsung tanpa membuat copy sementara yang tidak diperlukan.
 
-## 5. Cek Placeholder tanpa upload ulang
+## 5. Preview HTML dari source Excel
+
+Preview HTML untuk template XLSX harus berasal dari **workbook Excel aktif yang sama** dengan generator, setelah placeholder/repeating row/kop diproses. Preview tidak mempunyai template HTML kedua yang menjadi source dokumen.
+
+Untuk source workbook multi-sheet hasil import master, pemilihan worksheet preview mengikuti `SpjDocumentTypeRegistry`:
+
+```text
+document_type aktif
+→ canonical document type
+→ nama worksheet canonical registry
+→ cari worksheet tersebut pada workbook Excel
+→ render worksheet canonical menjadi HTML
+```
+
+Kontrak wajib:
+
+- preview **tidak boleh** memilih worksheet hanya karena berada pada index `0` / sheet pertama;
+- pencocokan nama sheet canonical bersifat case-insensitive;
+- sheet teknis seperti `PLACEHOLDER_MAP` tidak boleh dipilih sebagai fallback dokumen;
+- bila nama canonical tidak ditemukan tetapi hanya ada tepat satu worksheet non-teknis, worksheet tersebut boleh dipakai sebagai fallback kompatibilitas template individu/legacy;
+- bila source multi-sheet ambigu dan sheet canonical tidak ditemukan, preview harus gagal dengan pesan yang jelas daripada menampilkan worksheet yang salah;
+- preview paket memakai resolver worksheet canonical yang sama untuk setiap template XLSX di dalam paket.
+
+Kontrak ini sengaja dibedakan dari **Download Template** pada halaman pengaturan: download individu menghasilkan workbook satu-sheet fisik, sedangkan preview runtime boleh membaca source workbook multi-sheet tersimpan tetapi hanya merender worksheet canonical milik `document_type` yang sedang dipreview.
+
+## 6. Cek Placeholder tanpa upload ulang
 
 Halaman **Pengaturan → Template Dokumen** menyediakan aksi **Cek Placeholder** untuk membantu perbaikan template tanpa siklus upload berulang.
 
@@ -100,7 +125,7 @@ Lookup dapat menemukan Paket melalui nomor SPJ/Paket, nomor dokumen turunan yang
 
 Fitur ini read-only: tidak menerbitkan nomor, tidak mengubah Paket SPJ, dan tidak memutasi ARKAS/BKU maupun template.
 
-## 6. Unduh Master Template Terbaru
+## 7. Unduh Master Template Terbaru
 
 Aksi **Unduh Master Template Terbaru** membangun workbook baru saat request dijalankan.
 
@@ -121,7 +146,7 @@ ambil seluruh document type canonical dari SpjDocumentTypeRegistry
 
 Dengan kontrak ini, update satu template otomatis tercermin pada master download berikutnya tanpa memodifikasi file master historis.
 
-## 7. Larangan master parsial
+## 8. Larangan master parsial
 
 Master terbaru **tidak boleh** dibuat jika satu atau lebih template XLSX canonical aktif tidak tersedia.
 
@@ -131,7 +156,7 @@ Jika set template tidak lengkap, request ditolak dengan pesan yang menyebut docu
 
 Berkas source aktif juga wajib tersedia pada disk `local`. Missing source tidak boleh diganti dengan sheet kosong atau data buatan.
 
-## 8. Scope dan boundary
+## 9. Scope dan boundary
 
 Master export dan Cek Placeholder memakai context aktif. Template master dibatasi oleh fiscal year aktif; placeholder inspector juga menjaga fund-source scope Paket yang dicari.
 
@@ -142,13 +167,14 @@ Fitur ini:
 - tidak mengubah numbering;
 - tidak menerbitkan nomor;
 - tidak mengubah lifecycle dokumen;
-- tidak memutasi source template ketika download berlangsung.
+- tidak memutasi source template ketika download atau preview berlangsung.
 
-## 9. Source implementation
+## 10. Source implementation
 
 Komponen utama:
 
 ```text
+app/Services/SpjTemplateService.php
 app/Services/DocumentTemplateMasterExportService.php
 app/Services/DocumentTemplateReplacementService.php
 app/Services/SpjTemplatePackageImporter.php
@@ -166,7 +192,14 @@ GET /pengaturan/template-dokumen/master/unduh
 document-templates.master.download
 ```
 
-## 10. Regression contract
+## 11. Regression contract
+
+`tests/Unit/SpjTemplateHtmlPreviewTest.php` mengunci behavior berikut:
+
+1. source workbook multi-sheet tidak boleh membuat preview memakai sheet pertama secara otomatis;
+2. preview memilih worksheet canonical sesuai `document_type` / `SpjDocumentTypeRegistry` walaupun worksheet tersebut berada pada posisi kedua atau berikutnya;
+3. jika nama canonical tidak tersedia, tepat satu worksheet non-teknis dapat menjadi fallback;
+4. sheet teknis tidak boleh dipilih sebagai fallback preview.
 
 `tests/Feature/DocumentTemplateIndividualDownloadTest.php` mengunci behavior berikut:
 
@@ -187,9 +220,11 @@ document-templates.master.download
 
 `tests/Feature/DocumentTemplatePlaceholderInspectorTest.php` mengunci lookup placeholder actual-value, pencarian melalui nomor Paket/dokumen/No. Bukti, dan isolasi Fund Source.
 
-## 11. Batas evidence
+## 12. Batas evidence
 
-Functional regression/CI membuktikan struktur source, workbook hasil single-download dapat dibaca ulang, worksheet lain benar-benar tidak ada pada OOXML hasil download, dan kontrak master dapat di-reimport. Evidence tersebut **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice atau hasil cetak**.
+Functional regression/CI membuktikan pemilihan worksheet canonical untuk preview HTML, struktur source, workbook hasil single-download dapat dibaca ulang, worksheet lain benar-benar tidak ada pada OOXML hasil download, dan kontrak master dapat di-reimport. Evidence tersebut **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice, browser HTML terhadap seluruh fitur Excel, atau hasil cetak**.
+
+HTML preview memakai renderer PhpSpreadsheet. Formula/drawing/print-layout yang bergantung pada implementasi Office dapat berbeda dari Microsoft Excel. Preview dipakai sebagai representasi workbook canonical, bukan bukti pixel-perfect terhadap Excel.
 
 Master workbook hasil komposisi memakai PhpSpreadsheet sehingga official-template visual QA, formula lintas-sheet yang kompleks, drawing, print area, page breaks, header/footer, dan target Office viewer tetap mengikuti status RVR pada `CURRENT_PROGRESS.md`.
 

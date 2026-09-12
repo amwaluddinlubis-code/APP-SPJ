@@ -20,19 +20,20 @@ Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar detail hash/ru
 Status code gate saat dokumentasi ini diperbarui:
 
 ```text
-LATEST TESTED CODE HEAD   : 32aa928671a94ec5bdbf78a7f86e8840c79cae5d
-LATEST COMPLETED CODE GATE: CI #468 / run 34694289853 / SUCCESS
+LATEST TESTED CODE HEAD   : fd01fc6681cf33642857fd3d0916764c4e140074
+LATEST COMPLETED CODE GATE: CI #469 / run 34695708139 / SUCCESS
 WORKFLOW                  : SPJ Critical Verification
 INDIVIDUAL XLSX DOWNLOAD  : TRUE SINGLE-SHEET / FUNCTIONAL PASS
+XLSX HTML PREVIEW         : CANONICAL EXCEL SHEET / FUNCTIONAL PASS
 PLACEHOLDER INSPECTOR     : FUNCTIONAL PASS
 MASTER TEMPLATE LIFECYCLE : FUNCTIONAL PASS
 NUMBERING REGISTRY        : CANONICAL / SOURCE OF TRUTH ACTIVE
 REPOSITORY-WIDE PINT      : ADVISORY / 5 PRE-EXISTING UNRELATED STYLE ISSUES REMAIN
 ```
 
-CI #468 berhasil setelah koreksi **Download Template** XLSX agar benar-benar satu worksheet fisik, bukan workbook multi-sheet dengan sheet lain `hidden`/`veryHidden`. Gate yang sama juga mempertahankan **Cek Placeholder** dan lifecycle **Master Template Terbaru**. Blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository-wide Pint masih advisory dan command Pint pada run #468 tetap melaporkan 5 style issue lama pada file isolated-numbering/rollback yang tidak terkait perubahan template; detail canonical berada di `P0_VERIFICATION_KIT.md` §1.
+CI #469 berhasil setelah koreksi **Preview HTML XLSX** agar memilih worksheet canonical dari source Excel berdasarkan `document_type` / `SpjDocumentTypeRegistry`, bukan selalu worksheet index `0`. Gate yang sama mempertahankan **Download Template** XLSX sebagai true single-sheet, **Cek Placeholder**, dan lifecycle **Master Template Terbaru**. Blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository-wide Pint masih advisory dan command Pint pada run #469 tetap melaporkan 5 style issue lama pada file isolated-numbering/rollback yang tidak terkait perubahan preview template; detail canonical berada di `P0_VERIFICATION_KIT.md` §1.
 
-Commit dokumentasi-only setelah `32aa928671a94ec5bdbf78a7f86e8840c79cae5d` tidak memicu workflow karena `docs/**` di-ignore dan **tidak menggantikan** code gate tersebut.
+Commit dokumentasi-only setelah `fd01fc6681cf33642857fd3d0916764c4e140074` tidak memicu workflow karena `docs/**` di-ignore dan **tidak menggantikan** code gate tersebut.
 
 Kontrak template sekarang:
 
@@ -45,6 +46,8 @@ master parsial = ditolak
 hasil rakitan = divalidasi ulang melalui validator paket canonical
 download per baris XLSX = tepat 1 worksheet fisik, bukan hidden-sheet package
 source/master download individu = tidak dimutasi
+preview HTML XLSX = render worksheet canonical dari workbook Excel aktif, bukan selalu sheet pertama
+preview fallback legacy = hanya jika tepat 1 worksheet non-teknis tersedia
 Cek Placeholder = read-only AJAX memakai resolver generator yang sama
 DOCX = tetap individual dan tidak digabung ke master XLSX
 ```
@@ -77,16 +80,16 @@ Token `{TW}` tetap menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) t
 ## Status release saat ini
 
 ```text
-FUNCTIONAL CORE : PASS pada code gate 32aa928671... / CI #468
+FUNCTIONAL CORE : PASS pada code gate fd01fc6681... / CI #469
 REAL-DATA       : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback; output QA masih ACTIVE
-TEMPLATE TOOLS  : SINGLE-SHEET DOWNLOAD + PLACEHOLDER INSPECTOR FUNCTIONAL PASS
+TEMPLATE TOOLS  : SINGLE-SHEET DOWNLOAD + CANONICAL XLSX HTML PREVIEW + PLACEHOLDER INSPECTOR FUNCTIONAL PASS
 MASTER TEMPLATE : FUNCTIONAL PASS / EXCEL-LIBREOFFICE VISUAL QA RVR
 OFFICIAL OUTPUT : RVR ACTIVE
 BROWSER/RUNTIME : RVR ACTIVE
 FINAL RELEASE   : NOT YET
 ```
 
-Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generated-document real-data, file single-template pada viewer Office aktual, Master Template Terbaru pada viewer Office aktual, official-template visual QA, browser/operator runtime, dan installed-runtime yang masih deferred tetap merupakan gate terpisah.
+Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generated-document real-data, file single-template pada viewer Office aktual, Master Template Terbaru pada viewer Office aktual, preview HTML pada template nyata/browser aktual, official-template visual QA, browser/operator runtime, dan installed-runtime yang masih deferred tetap merupakan gate terpisah.
 
 ---
 
@@ -161,6 +164,7 @@ Audit real-data TW2 / Fund Source 1 sudah PASS pada 66 transaksi ber-item / 66 P
 FUNCTIONAL GENERATOR          : PASS
 TEMPLATE UPLOAD HARDENING     : PASS
 INDIVIDUAL TEMPLATE DOWNLOAD  : TRUE SINGLE-SHEET / FUNCTIONAL PASS
+XLSX HTML PREVIEW             : CANONICAL EXCEL SHEET / FUNCTIONAL PASS
 PLACEHOLDER INSPECTOR         : FUNCTIONAL PASS
 MASTER TEMPLATE RECOMPOSITION : FUNCTIONAL PASS
 MASTER EXCEL/LIBREOFFICE QA   : RVR
@@ -173,6 +177,10 @@ Kontrak yang sudah dijaga:
 - preview/download tidak menerbitkan nomor;
 - template invalid tidak mengganti template aktif;
 - unresolved placeholder tidak boleh diam-diam lolos;
+- preview HTML XLSX memakai workbook Excel aktif yang sudah diisi oleh `SpjTemplateService` sebagai source;
+- preview memilih worksheet canonical dari `document_type` melalui `SpjDocumentTypeRegistry`, bukan selalu worksheet index `0`;
+- bila sheet canonical tidak ditemukan, preview hanya menerima fallback bila tepat satu worksheet non-teknis tersedia; source multi-sheet ambigu ditolak;
+- package preview memakai resolver worksheet canonical yang sama per template;
 - per-row **Download Template** XLSX menghasilkan tepat satu worksheet fisik untuk document type terpilih;
 - worksheet lain dibuang dari copy download pada level OOXML, bukan sekadar diberi status `hidden`/`veryHidden`;
 - source/master tersimpan tetap utuh setelah download individu;
@@ -185,17 +193,19 @@ Kontrak yang sudah dijaga:
 - master hasil rakitan wajib lolos `SpjTemplatePackageImporter::validatePackage()` sebelum dikirim;
 - master parsial ditolak bila satu atau lebih XLSX canonical aktif tidak tersedia;
 - DOCX tetap template individu dan tidak masuk master XLSX;
-- functional generation/re-import contract tidak sama dengan visual verification dokumen resmi atau workbook Office aktual.
+- functional generation/re-import/preview-sheet contract tidak sama dengan visual verification dokumen resmi, browser aktual, atau workbook Office aktual.
 
-Focused regression `DocumentTemplateIndividualDownloadTest` pada CI #468 membuktikan source multi-sheet menghasilkan output dengan `getSheetCount() === 1`, worksheet yang tersisa adalah sheet canonical terpilih, part worksheet lain benar-benar tidak ada di ZIP OOXML hasil download, dan source/master tetap utuh.
+Focused regression `SpjTemplateHtmlPreviewTest` pada CI #469 membuktikan source multi-sheet dengan worksheet canonical di posisi kedua tetap merender worksheet canonical dan tidak merender sheet pertama. Regression juga membuktikan fallback hanya memilih satu worksheet non-teknis ketika nama canonical tidak tersedia.
 
-`DocumentTemplateMasterExportTest` pada gate yang sama tetap membuktikan flow `import master -> update RINCIAN_BELANJA individu -> download master terbaru`: sheet Rincian memakai versi baru, sheet lain memakai versi aktif masing-masing, output lengkap mengikuti registry, dan paket lolos validator re-import. Source/master yang sudah tersimpan tidak ditulis balik ketika download berlangsung.
+Focused regression `DocumentTemplateIndividualDownloadTest` tetap membuktikan source multi-sheet menghasilkan output dengan `getSheetCount() === 1`, worksheet yang tersisa adalah sheet canonical terpilih, part worksheet lain benar-benar tidak ada di ZIP OOXML hasil download, dan source/master tetap utuh.
+
+`DocumentTemplateMasterExportTest` tetap membuktikan flow `import master -> update RINCIAN_BELANJA individu -> download master terbaru`: sheet Rincian memakai versi baru, sheet lain memakai versi aktif masing-masing, output lengkap mengikuti registry, dan paket lolos validator re-import. Source/master yang sudah tersimpan tidak ditulis balik ketika download berlangsung.
 
 `DocumentTemplatePlaceholderInspectorTest` membuktikan lookup nilai aktual placeholder, pencarian melalui nomor Paket/dokumen/No. Bukti, dan isolasi Fund Source.
 
 Panduan lifecycle khusus fitur ini: `docs/TEMPLATE_MASTER_WORKFLOW.md`.
 
-Fokus operator berikutnya untuk area template adalah membuka satu file **Download Template** individu dan `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice. Periksa tidak ada prompt repair, drawing/formula/defined-name yang relevan tetap layak, print area/page break/header/footer benar, serta hasil cetak sesuai kebutuhan. Sampai itu dilakukan, visual/document runtime tetap RVR meskipun struktur functional sudah PASS.
+Fokus operator berikutnya untuk area template adalah membuka satu file **Download Template** individu dan `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice, lalu membandingkan preview HTML template XLSX dengan worksheet canonical pada source Excel nyata. Periksa tidak ada prompt repair, drawing/formula/defined-name yang relevan tetap layak, print area/page break/header/footer benar, serta hasil cetak sesuai kebutuhan. Sampai itu dilakukan, visual/document/browser runtime tetap RVR meskipun pemilihan worksheet functional sudah PASS.
 
 Untuk generated SPJ output, fokus operator tetap generate dokumen dari aplikasi menggunakan Paket nyata, kemudian memperbaiki bug yang benar-benar terlihat pada output. Tidak perlu menambah test baru hanya untuk memperbesar coverage; regression baru ditambahkan bila ada bug nyata yang perlu dikunci.
 
@@ -404,17 +414,18 @@ Prioritas sekarang sengaja dipersempit ke penggunaan aplikasi nyata:
 
 1. buka satu hasil **Download Template** individu pada Microsoft Excel/LibreOffice dan pastikan file benar-benar satu worksheet, tidak meminta repair, dan fitur sheet terpilih tetap layak;
 2. buka dan inspeksi `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice untuk menutup visual/document RVR;
-3. gunakan **Cek Placeholder** pada Paket nyata saat memperbaiki template agar nilai placeholder dapat diverifikasi tanpa upload berulang;
-4. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
-5. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
-6. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
-7. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
-8. lanjutkan official-template visual/output QA;
-9. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
-10. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
-11. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
+3. preview template XLSX hasil import master dan pastikan HTML berasal dari worksheet canonical document type yang sama dengan source Excel, bukan sheet pertama workbook;
+4. gunakan **Cek Placeholder** pada Paket nyata saat memperbaiki template agar nilai placeholder dapat diverifikasi tanpa upload berulang;
+5. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
+6. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
+7. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
+8. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
+9. lanjutkan official-template visual/output QA;
+10. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
+11. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
+12. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
 
-Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Canonical numbering registry tetap digate hijau oleh code gate terbaru #468.
+Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Canonical numbering registry tetap digate hijau oleh code gate terbaru #469.
 
 ---
 
@@ -424,6 +435,7 @@ Belum boleh diberi status final sampai evidence tersedia untuk:
 
 - Download Template individu visual/runtime QA pada Excel/LibreOffice untuk workbook nyata;
 - Master Template Terbaru visual/runtime QA pada Excel/LibreOffice untuk workbook nyata;
+- preview HTML template XLSX pada browser aktual dibanding worksheet canonical source Excel nyata;
 - generated-document real-data per kategori yang masih aktif;
 - official-template visual/output RVR;
 - GUI-AUDIT-12 browser/operator runtime QA;

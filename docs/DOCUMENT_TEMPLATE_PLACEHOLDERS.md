@@ -205,7 +205,7 @@ Nomor ini:
 - dapat kosong pada `DRAFT` / `READY`;
 - bukan blocker sebelum numbering;
 - menjadi wajib setelah `NUMBERED` / `FINAL` bila internal purchase order applicable;
-- tidak sama dengan nomor order marketplace SiPLah.
+- tidak sama dengan nomor order marketplace SiPlah.
 
 ### `NOMOR_RAB`
 
@@ -401,11 +401,22 @@ XLSX
 
 Untuk XLSX, generator juga mendukung preview HTML dan export PDF melalui pipeline spreadsheet.
 
+Contract preview XLSX:
+
+- source preview adalah **workbook Excel aktif yang sama** yang di-load dan diisi oleh `SpjTemplateService`; tidak ada template HTML terpisah sebagai sumber dokumen;
+- untuk source multi-sheet, worksheet yang dirender ditentukan dari `document_type` → `SpjDocumentTypeRegistry` → nama sheet canonical;
+- preview tidak boleh menganggap worksheet index `0` / sheet pertama sebagai dokumen yang benar;
+- bila sheet canonical tidak ditemukan, fallback hanya diperbolehkan jika workbook mempunyai tepat satu worksheet non-teknis;
+- sheet teknis registry seperti `PLACEHOLDER_MAP` tidak boleh dipakai sebagai fallback preview;
+- source multi-sheet yang ambigu harus gagal daripada menampilkan worksheet yang salah;
+- package preview menerapkan resolver worksheet canonical yang sama pada setiap template XLSX.
+
 Catatan penting:
 
 - unduh PDF langsung saat ini berasal dari template Excel/XLSX;
 - jangan mengasumsikan template DOCX otomatis mempunyai jalur PDF yang sama;
 - package XLSX/PDF dapat menggabungkan beberapa template sesuai document package flow;
+- HTML preview adalah representasi workbook melalui renderer PhpSpreadsheet, bukan bukti pixel-perfect terhadap Microsoft Excel;
 - visual fidelity, print area, page break, header/footer, ukuran kertas, dan hasil buka di Microsoft Office/PDF viewer tetap harus diverifikasi dengan template resmi/aktual.
 
 ---
@@ -472,8 +483,9 @@ Sebelum template dianggap siap dipakai pada release:
 5. repeating row tidak merusak format tabel;
 6. nilai/tanggal memakai formatter yang benar;
 7. preview/download tidak menerbitkan nomor;
-8. DOCX/XLSX hasil generate dapat dibuka;
-9. XLSX → PDF dapat dirender bila jalur tersebut digunakan;
-10. print area, page break, header/footer, orientation, paper size, dan visual fidelity diverifikasi terhadap template resmi;
-11. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage;
-12. bila template memakai `NAMA_PROGRAM`/`NAMA_SUB_PROGRAM`, pastikan database sekolah sudah disinkronkan ulang dengan ARKAS Bridge RKAS v3.
+8. preview XLSX merender worksheet canonical milik `document_type`, bukan sekadar sheet pertama workbook;
+9. DOCX/XLSX hasil generate dapat dibuka;
+10. XLSX → PDF dapat dirender bila jalur tersebut digunakan;
+11. print area, page break, header/footer, orientation, paper size, dan visual fidelity diverifikasi terhadap template resmi;
+12. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage;
+13. bila template memakai `NAMA_PROGRAM`/`NAMA_SUB_PROGRAM`, pastikan database sekolah sudah disinkronkan ulang dengan ARKAS Bridge RKAS v3.
