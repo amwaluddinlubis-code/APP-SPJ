@@ -191,9 +191,9 @@
                                 <p x-show="message" x-cloak class="mt-1 text-xs font-semibold text-emerald-700" x-text="message"></p>
                                 <p x-show="error" x-cloak class="mt-1 text-xs font-semibold text-rose-600" x-text="error"></p>
                             </div>
-                            <x-ui.button type="submit" x-bind:disabled="saving || !dirty" class="shrink-0 disabled:cursor-default disabled:opacity-50">
-                                <span x-show="!saving && dirty">Simpan Format</span>
-                                <span x-show="!saving && !dirty">Tersimpan</span>
+                            <x-ui.button type="submit" x-bind:disabled="saving || (saved && !dirty)" class="shrink-0 disabled:cursor-default disabled:opacity-50">
+                                <span x-show="!saving && (!saved || dirty)">Simpan Format</span>
+                                <span x-show="!saving && saved && !dirty">Tersimpan</span>
                                 <span x-show="saving" x-cloak>Menyimpan…</span>
                             </x-ui.button>
                         </div>
