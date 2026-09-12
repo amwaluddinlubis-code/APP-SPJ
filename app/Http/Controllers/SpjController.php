@@ -91,11 +91,6 @@ class SpjController extends Controller
         return $useCase->storeGoodsReceipt($request, $transactionId);
     }
 
-    public function unlockPackage(Request $request, string $packageId, SpjPackageLifecycleUseCase $useCase): RedirectResponse
-    {
-        return $useCase->unlockPackage($request, $packageId);
-    }
-
     public function updateDetails(
         string $packageId,
         Request $request,

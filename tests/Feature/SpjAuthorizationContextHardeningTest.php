@@ -65,7 +65,6 @@ class SpjAuthorizationContextHardeningTest extends TestCase
             'spj.quarter-numbering',
             'spj.quarter-close',
             'spj.quarter-reopen',
-            'spj.unlock',
             'database-manager.reset',
             'school-backups.store',
             'school-backups.restore',

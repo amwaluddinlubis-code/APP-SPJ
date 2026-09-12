@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\SpjDescriptionService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,7 +12,7 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    public function updateSpjDescriptions(Request $request, string $transactionId, ActiveSpjContext $context): RedirectResponse
+    public function updateSpjDescriptions(Request $request, string $transactionId, ActiveSpjContext $context, SpjDescriptionService $descriptions): RedirectResponse
     {
         $transaction = Transaction::query()->with('items')->find($transactionId);
         if (! $transaction || ! $context->matchesTransaction($transaction)) {
@@ -36,10 +37,7 @@ class TransactionController extends Controller
         }
 
         if (array_key_exists('payment_description', $data)) {
-            $paymentDescription = trim((string) ($data['payment_description'] ?? ''));
-            $transaction->update([
-                'payment_description' => $paymentDescription !== '' ? $paymentDescription : null,
-            ]);
+            $descriptions->updatePaymentDescription($transaction, $data['payment_description'] ?? null);
         }
 
         foreach ($data['items'] ?? [] as $itemData) {

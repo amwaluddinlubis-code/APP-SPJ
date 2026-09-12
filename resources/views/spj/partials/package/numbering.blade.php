@@ -52,9 +52,6 @@
                                     @endforeach
                                 </div>
                             @endif
-                            @if($package->status === 'CANCELLED' && auth()->user()->isAdministrator())
-                                <form method="POST" action="{{ route('spj.unlock', $package->id) }}" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">@csrf<label class="text-xs font-bold text-amber-900">Buka paket untuk koreksi input</label><div class="mt-2 flex gap-2"><input name="reason" required minlength="5" placeholder="Alasan pembukaan paket" class="min-w-0 flex-1 rounded border-amber-300 text-sm"><button class="rounded bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700">Buka paket</button></div></form>
-                            @endif
                             @unless($isHonorPackage)<fieldset @disabled(!$package->isEditable()) class="mt-5 disabled:cursor-not-allowed disabled:opacity-60"><div class="grid gap-4 {{ $isGoodsPackage ? 'lg:grid-cols-2' : '' }}">
                                 @if($isGoodsPackage)<section class="rounded-lg border border-[var(--ui-line)] p-4">
                                     <h3 class="font-bold text-slate-800">Pembayaran bertahap</h3>

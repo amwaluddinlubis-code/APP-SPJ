@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\OperationalAuditService;
+use App\Services\SpjDescriptionService;
 use App\Services\SpjTransactionDetailsService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ class UpdateSpjPackageDetailsUseCase
 {
     public function __construct(
         private readonly SpjTransactionDetailsService $details,
+        private readonly SpjDescriptionService $descriptions,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -94,10 +96,7 @@ class UpdateSpjPackageDetailsUseCase
             'payment_description' => ['nullable', 'string', 'max:4000'],
         ]);
 
-        $description = trim((string) ($data['payment_description'] ?? ''));
-        $package->transaction->forceFill([
-            'payment_description' => $description !== '' ? $description : null,
-        ])->save();
+        $this->descriptions->updatePaymentDescription($package->transaction, $data['payment_description'] ?? null);
 
         $this->audit->record(
             $package->transaction->fiscal_year_id,

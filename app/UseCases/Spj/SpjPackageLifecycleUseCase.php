@@ -7,7 +7,6 @@ use App\Services\OperationalAuditService;
 use App\Services\SpjPackageValidationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class SpjPackageLifecycleUseCase
 {
@@ -46,17 +45,5 @@ class SpjPackageLifecycleUseCase
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_PACKAGE', $package->id, 'PAKET_READY', 'Paket dinyatakan siap untuk penomoran triwulan.');
 
         return back()->with('success', 'Paket siap dan akan masuk penomoran triwulan.');
-    }
-
-    public function unlockPackage(Request $request, string $packageId): RedirectResponse
-    {
-        $request->validate(['reason' => ['required', 'string', 'max:2000']]);
-        $package = SpjPackage::query()->with('transaction')->findOrFail($packageId);
-        abort_unless($this->context->matchesTransaction($package->transaction), 404);
-
-        return back()->with(
-            'error',
-            'Buka kunci langsung paket bernomor dinonaktifkan. Gunakan Koreksi Penomoran untuk rollback/cancel resmi agar histori nomor dan sequence tetap konsisten.'
-        );
     }
 }

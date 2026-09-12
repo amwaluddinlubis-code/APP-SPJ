@@ -80,11 +80,6 @@ class SpjNumberingUseCase
         return $this->settlement->storeGoodsReceipt($request, $transactionId);
     }
 
-    public function unlockPackage(Request $request, string $packageId): RedirectResponse
-    {
-        return $this->packageLifecycle->unlockPackage($request, $packageId);
-    }
-
     /**
      * @param  Collection<int, SpjPackage>  $packages
      * @return Collection<int, SpjPackage>
