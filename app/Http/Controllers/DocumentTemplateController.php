@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Services\DocumentTemplateIndividualDownloadService;
 use App\Services\DocumentTemplateLibraryService;
 use App\Services\DocumentTemplateMasterExportService;
+use App\Services\DocumentTemplatePlaceholderInspectorService;
 use App\Services\DocumentTemplateSampleGenerator;
 use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjTemplateService;
+use App\Support\ActiveSpjContext;
 use App\UseCases\DocumentTemplates\ImportDocumentTemplatePackageUseCase;
 use App\UseCases\DocumentTemplates\UploadDocumentTemplateUseCase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,14 +27,34 @@ class DocumentTemplateController extends Controller
         private readonly DocumentTemplateLibraryService $library,
         private readonly DocumentTemplateIndividualDownloadService $individualDownloads,
         private readonly DocumentTemplateMasterExportService $masterExports,
+        private readonly DocumentTemplatePlaceholderInspectorService $placeholderInspector,
         private readonly UploadDocumentTemplateUseCase $uploadTemplate,
         private readonly ImportDocumentTemplatePackageUseCase $importTemplatePackage,
         private readonly DocumentTemplateSampleGenerator $samples,
         private readonly SpjTemplateService $templateService,
+        private readonly ActiveSpjContext $context,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
+        if ($request->expectsJson() && $request->has('placeholder_reference')) {
+            $data = $request->validate([
+                'placeholder_reference' => ['required', 'string', 'max:160'],
+            ]);
+            $inspection = $this->placeholderInspector->inspect(
+                (string) $data['placeholder_reference'],
+                $this->context->school(),
+            );
+
+            if (! $inspection) {
+                return response()->json([
+                    'message' => 'Nomor dokumen atau No. Bukti tidak ditemukan pada tahun anggaran dan sumber dana aktif.',
+                ], 404);
+            }
+
+            return response()->json($inspection);
+        }
+
         $categories = SpjDocumentTypeRegistry::categories();
         $filters = $request->validate([
             'status' => ['nullable', 'in:all,active,inactive'],
