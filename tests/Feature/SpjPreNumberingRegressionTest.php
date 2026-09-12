@@ -159,8 +159,8 @@ class SpjPreNumberingRegressionTest extends TestCase
         $this->assertSame(2, $result['created']);
 
         $documents = $package->documents()->whereIn('document_type', ['SPK', 'RAB'])->get()->keyBy('document_type');
-        $this->assertStringContainsString('/SPK/SDN.318/TW.I/2026', $documents['SPK']->document_number);
-        $this->assertStringContainsString('/RAB/SDN.318/TW.I/2026', $documents['RAB']->document_number);
+        $this->assertStringContainsString('/SPK/SDN.318/I/2026', $documents['SPK']->document_number);
+        $this->assertStringContainsString('/RAB/SDN.318/I/2026', $documents['RAB']->document_number);
 
         $workOrder->refresh();
         $this->assertSame($documents['SPK']->document_number, $workOrder->spk_number);
