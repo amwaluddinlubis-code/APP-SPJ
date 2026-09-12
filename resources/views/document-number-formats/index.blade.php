@@ -1,5 +1,5 @@
 <x-layouts.tailwind-app>
-    @php($labels = ['SPJ' => 'SPJ Utama', 'PESANAN' => 'Surat Pesanan', 'BAP' => 'Berita Acara Pemeriksaan', 'BAST' => 'Berita Acara Serah Terima', 'SPK' => 'Surat Perintah Kerja', 'RAB' => 'Rencana Anggaran Biaya', 'SURAT_TUGAS_PERJALANAN_DINAS' => 'Surat Tugas Perjalanan Dinas', 'KUITANSI' => 'Kuitansi', 'RINCIAN_BELANJA' => 'Rincian Belanja', 'CHECKLIST' => 'Checklist', 'REKAP_PAJAK' => 'Rekap Pajak', 'INVOICE_PESANAN' => 'Invoice / Pesanan'])
+    @php($labels = $documentLabels)
     @php($romanMonth = [1 => 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][now()->month])
     @php($quarterRoman = [1 => 'I', 'II', 'III', 'IV'][(int) ceil(now()->month / 3)])
     @php($tw = $quarterRoman)
