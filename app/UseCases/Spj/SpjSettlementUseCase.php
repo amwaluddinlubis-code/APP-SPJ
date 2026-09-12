@@ -3,6 +3,7 @@
 namespace App\UseCases\Spj;
 
 use App\Models\Transaction;
+use App\Services\OperationalAuditService;
 use App\Services\TransactionSettlementService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,7 @@ class SpjSettlementUseCase
 {
     public function __construct(
         private readonly TransactionSettlementService $settlements,
+        private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
 
@@ -26,7 +28,14 @@ class SpjSettlementUseCase
             'tax_amount' => ['nullable', 'numeric', 'min:0'], 'payment_method' => ['nullable', 'string', 'max:40'],
             'payment_reference' => ['nullable', 'string', 'max:160'],
         ]);
-        $this->settlements->addPayment($transaction, $data);
+        $payment = $this->settlements->addPayment($transaction, $data);
+        $this->audit->record(
+            $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'TAMBAH_PEMBAYARAN',
+            'Tahap pembayaran '.$payment->scope_key.' ditambahkan pada transaksi '.$transaction->no_bukti.': bruto '.$payment->gross_amount.'.'
+        );
 
         return back()->with('success', 'Tahap pembayaran berhasil ditambahkan.');
     }
@@ -44,7 +53,14 @@ class SpjSettlementUseCase
         ]);
         $items = $data['items'];
         unset($data['items']);
-        $this->settlements->addGoodsReceipt($transaction, $data, $items);
+        $receipt = $this->settlements->addGoodsReceipt($transaction, $data, $items);
+        $this->audit->record(
+            $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'TAMBAH_PENERIMAAN',
+            'Tahap penerimaan barang '.$receipt->scope_key.' ditambahkan pada transaksi '.$transaction->no_bukti.'.'
+        );
 
         return back()->with('success', 'Tahap penerimaan barang berhasil ditambahkan.');
     }

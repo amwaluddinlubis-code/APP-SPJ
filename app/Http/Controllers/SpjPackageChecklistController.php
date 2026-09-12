@@ -6,6 +6,7 @@ use App\Models\SpjPackage;
 use App\Models\User;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -15,6 +16,7 @@ class SpjPackageChecklistController extends Controller
         string $packageId,
         SpjPackageValidationService $validator,
         SpjDocumentRequirementService $requirements,
+        ActiveSpjContext $context,
     ): View|RedirectResponse {
         $package = SpjPackage::query()
             ->with([
@@ -30,9 +32,7 @@ class SpjPackageChecklistController extends Controller
             ])
             ->find($packageId);
 
-        if (! $package
-            || $package->transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $package->transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $package || ! $package->transaction || ! $context->matchesTransaction($package->transaction)) {
             return redirect()
                 ->route('spj.index', ['tab' => 'persiapan'])
                 ->with('error', 'Paket SPJ tidak ditemukan pada konteks aktif.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -10,10 +11,10 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    public function updateSpjDescriptions(Request $request, string $transactionId): RedirectResponse
+    public function updateSpjDescriptions(Request $request, string $transactionId, ActiveSpjContext $context): RedirectResponse
     {
         $transaction = Transaction::query()->with('items')->find($transactionId);
-        if (! $transaction || $transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || (int) $transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $transaction || ! $context->matchesTransaction($transaction)) {
             return redirect()->route('transactions.index')->with('error', 'Transaksi tidak ditemukan pada tahun aktif.');
         }
         if ($transaction->spjPackage?->status === 'FINAL') {
@@ -55,10 +56,10 @@ class TransactionController extends Controller
         return view('transactions.index');
     }
 
-    public function show(string $transactionId): View|RedirectResponse
+    public function show(string $transactionId, ActiveSpjContext $context): View|RedirectResponse
     {
         $transaction = Transaction::query()->find($transactionId);
-        if (! $transaction || $transaction->fiscal_year_id !== (int) session('active_fiscal_year_id') || (int) $transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $transaction || ! $context->matchesTransaction($transaction)) {
             return redirect()->route('transactions.index')->with(
                 'error',
                 'Transaksi tidak ditemukan pada sekolah atau tahun anggaran yang sedang aktif. Jalankan sinkronisasi ARKAS atau buka transaksi dari daftar.'

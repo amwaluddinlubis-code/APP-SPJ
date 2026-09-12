@@ -533,6 +533,7 @@ Aktivitas sensitif yang harus dapat diaudit mencakup sekurang-kurangnya:
 - create/open draft;
 - perubahan kategori;
 - update Paket;
+- pembayaran/penerimaan bertahap;
 - READY;
 - numbering;
 - cancel individual;

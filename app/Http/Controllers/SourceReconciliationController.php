@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Services\SpjSourceReconciliationService;
+use App\Support\ActiveSpjContext;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,12 +12,10 @@ use Illuminate\Validation\Rule;
 
 class SourceReconciliationController extends Controller
 {
-    public function resolve(Request $request, string $transactionId, SpjSourceReconciliationService $service): RedirectResponse
+    public function resolve(Request $request, string $transactionId, SpjSourceReconciliationService $service, ActiveSpjContext $context): RedirectResponse
     {
         $transaction = Transaction::query()->with('spjPackage')->find($transactionId);
-        if (! $transaction
-            || $transaction->fiscal_year_id !== (int) session('active_fiscal_year_id')
-            || (int) $transaction->fund_source_id !== (int) session('active_fund_source_id')) {
+        if (! $transaction || ! $context->matchesTransaction($transaction)) {
             return redirect()->route('transactions.index')->with('error', 'Transaksi tidak ditemukan pada konteks aktif.');
         }
 

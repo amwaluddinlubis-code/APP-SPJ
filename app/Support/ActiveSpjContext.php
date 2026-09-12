@@ -51,6 +51,10 @@ final class ActiveSpjContext
         return School::query()->findOrFail($this->schoolId());
     }
 
+    /**
+     * @deprecated Hanya untuk pemakaian internal matchesTransaction().
+     * Kode baru wajib memakai matchesTransaction() agar scope sumber dana ikut dicek.
+     */
     public function matchesFiscalYear(Transaction $transaction): bool
     {
         return (int) $transaction->fiscal_year_id === $this->fiscalYearId();
