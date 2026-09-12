@@ -28,6 +28,7 @@
             kicker="PENGATURAN TEMPLATE DOKUMEN">
             <x-slot:actions>
                 <x-ui.button :href="route('document-templates.master.download')">Unduh Master Template Terbaru</x-ui.button>
+                <x-ui.button variant="secondary" x-on:click="$dispatch('open-placeholder-checker')">Cek Placeholder</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'docx')">Unduh Contoh Word</x-ui.button>
                 <x-ui.button variant="secondary" :href="route('document-templates.sample', 'xlsx')">Unduh Contoh Excel</x-ui.button>
             </x-slot:actions>
@@ -411,5 +412,7 @@
                 @endforeach
             </div>
         </details>
+
+        @include('document-templates.partials.placeholder-checker')
     </div>
 </x-layouts.tailwind-app>
