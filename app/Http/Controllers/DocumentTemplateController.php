@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DocumentTemplateIndividualDownloadService;
 use App\Services\DocumentTemplateLibraryService;
 use App\Services\DocumentTemplateSampleGenerator;
 use App\Services\SpjDocumentTypeRegistry;
@@ -13,11 +14,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class DocumentTemplateController extends Controller
 {
     public function __construct(
         private readonly DocumentTemplateLibraryService $library,
+        private readonly DocumentTemplateIndividualDownloadService $individualDownloads,
         private readonly UploadDocumentTemplateUseCase $uploadTemplate,
         private readonly ImportDocumentTemplatePackageUseCase $importTemplatePackage,
         private readonly DocumentTemplateSampleGenerator $samples,
@@ -163,7 +166,7 @@ class DocumentTemplateController extends Controller
         return back()->with('success', 'Pemetaan template berhasil diperbarui.');
     }
 
-    /** Mengunduh file template terakhir yang tersimpan tanpa menjalankan renderer SPJ. */
+    /** Mengunduh file template terpilih tanpa menjalankan renderer SPJ. */
     public function downloadStored(string $templateId)
     {
         $download = $this->library->storedDownload($templateId);
@@ -172,6 +175,22 @@ class DocumentTemplateController extends Controller
         }
         if ($download['status'] === 'file_missing') {
             return back()->with('error', 'Berkas template tidak ditemukan pada penyimpanan. Unggah ulang template ini.');
+        }
+
+        try {
+            $individualPath = $this->individualDownloads->prepare(
+                (string) $download['path'],
+                (string) $download['document_type'],
+                (string) $download['format'],
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Template terpilih tidak dapat disiapkan sebagai workbook individual. Berkas master tetap aman dan tidak diubah.');
+        }
+
+        if (is_string($individualPath) && $individualPath !== '') {
+            return response()->download($individualPath, $download['name'])->deleteFileAfterSend(true);
         }
 
         return Storage::disk('local')->download($download['path'], $download['name']);
