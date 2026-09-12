@@ -113,7 +113,7 @@
                                 @foreach($documentTypes as $documentType)
                                     <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--theme-content-accent)]">
                                         <input type="checkbox" name="document_types[]" value="{{ $documentType }}" checked class="rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
-                                        <span>{{ str_replace('_', ' ', $documentType) }}</span>
+                                        <span>{{ $documentLabels[$documentType] ?? $documentType }}</span>
                                     </label>
                                 @endforeach
                             </div>
