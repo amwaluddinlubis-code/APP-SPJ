@@ -21,18 +21,22 @@ Status branch saat dokumentasi ini diperbarui:
 
 ```text
 LATEST COMPLETED GREEN GATE : commit 0627ac45355453e138905cf0e81c235e6c5e2d2a / CI #386 SUCCESS
-SOURCE HEAD                 : commit 68ab857dc698a1652e3b50233267e9ff64f40ba3
-HEAD CI                     : #387 IN PROGRESS saat checkpoint dokumentasi dibuat
+TW TOKEN SOURCE CHANGE      : commit 68ab857dc698a1652e3b50233267e9ff64f40ba3
+CI #387                     : FAILURE — 4 expectation lama masih mencari TW.I/TW.II
+CURRENT SOURCE/TEST HEAD    : commit a44dd0811122e9ffd16ca38d03fba13c362121bb
+HEAD CI                     : #391 IN PROGRESS saat checkpoint dokumentasi dibuat
 ```
 
-Commit HEAD mengubah token numbering `{TW}` agar hanya menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) tanpa prefix otomatis `TW.`. Operator dapat menambahkan literal `TW.` sendiri pada pattern bila dibutuhkan, misalnya `TW.{TW}`.
+Perubahan source membuat token numbering `{TW}` menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) tanpa prefix otomatis `TW.`. Failure #387 bukan rollback terhadap requirement tersebut: output source sudah sesuai requirement, tetapi empat existing regression masih mengharapkan string lama. Existing expectations kemudian diselaraskan tanpa menambah test baru.
+
+Operator dapat menambahkan literal `TW.` sendiri pada pattern bila dibutuhkan, misalnya `TW.{TW}`.
 
 ---
 
 ## Status release saat ini
 
 ```text
-FUNCTIONAL CORE : PASS
+FUNCTIONAL CORE : PASS pada latest completed green gate; HEAD sedang re-gate setelah perubahan format numbering
 REAL-DATA       : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback; output QA masih ACTIVE
 OFFICIAL OUTPUT : RVR ACTIVE
 BROWSER/RUNTIME : RVR ACTIVE
@@ -131,7 +135,7 @@ Fokus operator sekarang adalah generate dokumen dari aplikasi menggunakan Paket 
 ## P0-03 — Numbering, lifecycle, correction & rollback
 
 ```text
-FUNCTIONAL NUMBERING             : PASS
+FUNCTIONAL NUMBERING             : PASS pada gate hijau terakhir; perubahan token {TW} sedang re-gate
 READ-ONLY REAL-DATA PREFLIGHT    : PASS
 ISOLATED FIRST NUMBER            : PASS
 INDIVIDUAL CANCEL / RESERVE      : PASS
@@ -199,6 +203,8 @@ Aplikasi tidak lagi menambahkan string `TW.` secara otomatis. Jika sekolah/opera
 ```
 
 Nomor yang sudah pernah diterbitkan tidak diubah otomatis oleh perubahan format ini.
+
+CI #387 menemukan empat assertion lama yang masih mengharapkan prefix otomatis. Assertion existing tersebut sudah diperbarui pada rangkaian commit sampai HEAD `a44dd081...`; tidak ada test baru yang ditambahkan.
 
 Panduan domain lengkap: `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
@@ -299,14 +305,15 @@ SiPLah tetap channel/payment context, bukan `spj_category`.
 
 Prioritas sekarang sengaja dipersempit ke penggunaan aplikasi nyata:
 
-1. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
-2. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
-3. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
-4. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
-5. lanjutkan official-template visual/output QA;
-6. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
-7. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
-8. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
+1. tunggu source HEAD kembali hijau setelah penyelarasan expectation `{TW}`;
+2. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
+3. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
+4. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
+5. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
+6. lanjutkan official-template visual/output QA;
+7. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
+8. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
+9. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
 
 Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru.
 
@@ -316,12 +323,12 @@ Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak d
 
 Belum boleh diberi status final sampai evidence tersedia untuk:
 
+- CI HEAD `a44dd081...` / run #391 selesai hijau;
 - generated-document real-data per kategori yang masih aktif;
 - official-template visual/output RVR;
 - GUI-AUDIT-12 browser/operator runtime QA;
 - mobile/tablet runtime QA bila ingin menutup minimum usability;
-- installed-runtime checks yang masih DEFERRED;
-- CI HEAD `68ab857...` sampai run #387 selesai hijau.
+- installed-runtime checks yang masih DEFERRED.
 
 Quarter rollback real-data isolated runtime bukan blocker aktif bila tidak ada bug/operator requirement yang menuntutnya; kontrak functional-nya sudah PASS.
 
