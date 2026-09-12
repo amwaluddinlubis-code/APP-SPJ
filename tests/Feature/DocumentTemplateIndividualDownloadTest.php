@@ -6,9 +6,9 @@ use App\Services\DocumentTemplateIndividualDownloadService;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
+use ZipArchive;
 
 class DocumentTemplateIndividualDownloadTest extends TestCase
 {
@@ -18,14 +18,14 @@ class DocumentTemplateIndividualDownloadTest extends TestCase
         Storage::fake('local');
     }
 
-    public function test_master_workbook_download_exposes_only_selected_canonical_document_sheet(): void
+    public function test_master_workbook_download_contains_only_the_selected_canonical_document_sheet(): void
     {
         $relativePath = 'document-templates/2026/package/master.xlsx';
         Storage::disk('local')->makeDirectory(dirname($relativePath));
 
         $workbook = new Spreadsheet;
-        $workbook->getActiveSheet()->setTitle('TPL_RINCIAN')->setCellValue('A1', 'Rincian');
-        $workbook->createSheet()->setTitle('TPL_CHECKLIST_SPJ')->setCellValue('A1', 'Checklist');
+        $workbook->getActiveSheet()->setTitle('TPL_CHECKLIST_SPJ')->setCellValue('A1', 'Checklist');
+        $workbook->createSheet()->setTitle('TPL_RINCIAN')->setCellValue('A1', 'Rincian');
         $workbook->createSheet()->setTitle('PLACEHOLDER_MAP')->setCellValue('A1', 'Teknis');
         (new Xlsx($workbook))->save(Storage::disk('local')->path($relativePath));
         $workbook->disconnectWorksheets();
@@ -42,26 +42,36 @@ class DocumentTemplateIndividualDownloadTest extends TestCase
         try {
             $reader = IOFactory::createReader('Xlsx');
             $prepared = $reader->load($preparedPath);
-            $visibleSheets = collect($prepared->getWorksheetIterator())
-                ->filter(fn (Worksheet $sheet): bool => $sheet->getSheetState() === Worksheet::SHEETSTATE_VISIBLE)
-                ->map(fn (Worksheet $sheet): string => $sheet->getTitle())
-                ->values()
-                ->all();
 
-            $this->assertSame(['TPL_RINCIAN'], $visibleSheets);
+            $this->assertSame(1, $prepared->getSheetCount());
+            $this->assertSame(['TPL_RINCIAN'], $prepared->getSheetNames());
             $this->assertSame('TPL_RINCIAN', $prepared->getActiveSheet()->getTitle());
-            $this->assertSame(Worksheet::SHEETSTATE_VERYHIDDEN, $prepared->getSheetByName('TPL_CHECKLIST_SPJ')?->getSheetState());
-            $this->assertSame(Worksheet::SHEETSTATE_VERYHIDDEN, $prepared->getSheetByName('PLACEHOLDER_MAP')?->getSheetState());
+            $this->assertSame('Rincian', $prepared->getActiveSheet()->getCell('A1')->getValue());
+            $this->assertNull($prepared->getSheetByName('TPL_CHECKLIST_SPJ'));
+            $this->assertNull($prepared->getSheetByName('PLACEHOLDER_MAP'));
             $prepared->disconnectWorksheets();
 
-            $source = $reader->load(Storage::disk('local')->path($relativePath));
-            $sourceVisibleSheets = collect($source->getWorksheetIterator())
-                ->filter(fn (Worksheet $sheet): bool => $sheet->getSheetState() === Worksheet::SHEETSTATE_VISIBLE)
-                ->map(fn (Worksheet $sheet): string => $sheet->getTitle())
-                ->values()
-                ->all();
+            $archive = new ZipArchive;
+            $this->assertTrue($archive->open($preparedPath) === true);
+            try {
+                $this->assertFalse($archive->locateName('xl/worksheets/sheet1.xml'));
+                $this->assertNotFalse($archive->locateName('xl/worksheets/sheet2.xml'));
+                $this->assertFalse($archive->locateName('xl/worksheets/sheet3.xml'));
 
-            $this->assertSame(['TPL_RINCIAN', 'TPL_CHECKLIST_SPJ', 'PLACEHOLDER_MAP'], $sourceVisibleSheets);
+                $workbookXml = $archive->getFromName('xl/workbook.xml');
+                $this->assertIsString($workbookXml);
+                $this->assertStringContainsString('name="TPL_RINCIAN"', $workbookXml);
+                $this->assertStringNotContainsString('TPL_CHECKLIST_SPJ', $workbookXml);
+                $this->assertStringNotContainsString('PLACEHOLDER_MAP', $workbookXml);
+            } finally {
+                $archive->close();
+            }
+
+            $source = $reader->load(Storage::disk('local')->path($relativePath));
+            $this->assertSame(
+                ['TPL_CHECKLIST_SPJ', 'TPL_RINCIAN', 'PLACEHOLDER_MAP'],
+                $source->getSheetNames(),
+            );
             $source->disconnectWorksheets();
         } finally {
             @unlink($preparedPath);
