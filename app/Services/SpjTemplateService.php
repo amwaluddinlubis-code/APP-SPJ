@@ -328,11 +328,57 @@ class SpjTemplateService
 
     private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
     {
-        $spreadsheet = $this->filledSpreadsheet($template, $package, $school);
+        return $this->spreadsheetHtmlFromWorkbook(
+            $this->filledSpreadsheet($template, $package, $school),
+            $template,
+        );
+    }
+
+    private function spreadsheetHtmlFromWorkbook(Spreadsheet $spreadsheet, DocumentTemplate $template): string
+    {
         $writer = new Html($spreadsheet);
-        $writer->setSheetIndex(0)->setEmbedImages(true)->setUseInlineCss(true);
+        $writer
+            ->setSheetIndex($this->previewSheetIndex($spreadsheet, $template))
+            ->setEmbedImages(true)
+            ->setUseInlineCss(true);
 
         return $writer->generateHtmlAll();
+    }
+
+    private function previewSheetIndex(Spreadsheet $spreadsheet, DocumentTemplate $template): int
+    {
+        $canonical = SpjDocumentTypeRegistry::canonical((string) $template->document_type);
+        $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
+        $expectedSheet = trim((string) ($definition['sheet'] ?? ''));
+
+        if ($expectedSheet !== '') {
+            foreach ($spreadsheet->getAllSheets() as $index => $sheet) {
+                if (strcasecmp($sheet->getTitle(), $expectedSheet) === 0) {
+                    return $index;
+                }
+            }
+        }
+
+        $technicalSheets = array_fill_keys(
+            array_map('strtoupper', SpjDocumentTypeRegistry::technicalSheets()),
+            true,
+        );
+        $candidates = [];
+        foreach ($spreadsheet->getAllSheets() as $index => $sheet) {
+            if (! isset($technicalSheets[strtoupper($sheet->getTitle())])) {
+                $candidates[] = $index;
+            }
+        }
+
+        if (count($candidates) === 1) {
+            return $candidates[0];
+        }
+
+        $sheetLabel = $expectedSheet !== '' ? $expectedSheet : (string) $template->document_type;
+
+        throw new \RuntimeException(
+            'Preview Excel tidak dapat menentukan sheet canonical '.$sheetLabel.' dari workbook template.'
+        );
     }
 
     private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
