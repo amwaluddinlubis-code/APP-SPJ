@@ -56,6 +56,7 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 |---|---|
 | `ARKAS_IMPORTER.md` | **ACTIVE / REFRESHED 2026-09-12** — Generic ARKAS Importer; functional hardening PASS, operator-data test berikutnya; checkpoint internal hanya implementation history. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder template. |
+| `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE / REFRESHED 2026-09-12** — lifecycle import paket, update template individu, download individu, dan rakitan Master Template Terbaru dari XLSX aktif. |
 | `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED 2026-09-12** — code gate release-safety terbaru, canonical numbering registry verification, command, dan real-tenant audit. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
 
