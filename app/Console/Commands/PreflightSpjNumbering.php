@@ -416,10 +416,11 @@ class PreflightSpjNumbering extends Command
             .DIRECTORY_SEPARATOR.preg_replace('/[^A-Za-z0-9_-]/', '_', $school->npsn)
             .DIRECTORY_SEPARATOR.'spj.sqlite';
 
-        $paths = [$managedPath];
+        $paths = [];
         if (filled($school->databaseRecord?->database_path)) {
             $paths[] = (string) $school->databaseRecord->database_path;
         }
+        $paths[] = $managedPath;
 
         foreach (array_unique($paths) as $path) {
             $candidate = $this->absolutePath($path);
