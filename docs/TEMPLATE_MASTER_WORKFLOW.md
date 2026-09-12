@@ -2,7 +2,7 @@
 
 Terakhir diverifikasi: **2026-09-12** pada branch `gui-standardization`.
 
-Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, dan **Unduh Master Template Terbaru**. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
+Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **Cek Placeholder**, dan **Unduh Master Template Terbaru**. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
 
 ## 1. Prinsip sumber kebenaran
 
@@ -31,7 +31,7 @@ upload workbook master XLSX
 
 Importer sengaja tidak memecah dan menulis ulang workbook kompleks secara destruktif. Source master dapat disimpan sebagai salinan penuh per record template agar relationship OOXML asli tidak rusak pada tahap import.
 
-Independensi template berada pada **record document type**, bukan berarti file hasil import harus dipotong secara fisik menjadi satu sheet.
+Independensi template berada pada **record document type**. Kontrak ini tidak berarti file source hasil import harus dipotong secara fisik menjadi satu sheet pada saat import.
 
 ## 3. Update satu template
 
@@ -65,11 +65,42 @@ Tidak ada proses menulis balik ke master lama pada saat upload individu.
 
 ## 4. Download template individu
 
-Aksi **Download Template** pada daftar template hanya mengunduh dokumen yang dipilih.
+Aksi **Download Template** pada daftar template harus benar-benar menghasilkan template individu.
 
-Untuk source XLSX yang berasal dari master multi-sheet, aplikasi membuat copy sementara dan mengekspos sheet canonical terpilih. Sheet lain dibuat `veryHidden` pada copy download agar source/master asli tidak dimutasi dan package OOXML kompleks tidak ditulis ulang secara destruktif.
+Untuk XLSX, definisi **individu** adalah:
 
-## 5. Unduh Master Template Terbaru
+```text
+workbook hasil download = tepat 1 worksheet fisik
+worksheet tersebut      = sheet canonical document type yang dipilih
+sheet document lain     = tidak ada di workbook hasil download
+source/master tersimpan = tidak berubah
+```
+
+Aplikasi membuat copy sementara dari source XLSX lalu melakukan pruning OOXML pada copy tersebut. Metadata `<sheet>`, relationship workbook, dan part worksheet milik sheet lain dibuang dari file download. Sheet lain **tidak boleh** sekadar disembunyikan dengan `hidden` atau `veryHidden` dan kemudian disebut sebagai single template.
+
+Pruning dilakukan langsung pada paket OOXML agar worksheet terpilih tidak perlu di-load lalu ditulis ulang seluruhnya dengan PhpSpreadsheet. Tujuannya adalah mempertahankan isi/relationship sheet terpilih sebanyak mungkin sekaligus benar-benar menghapus worksheet lain dari workbook hasil download.
+
+Jika source memang sudah merupakan workbook satu-sheet, aplikasi dapat mengunduh source tersebut langsung tanpa membuat copy sementara yang tidak diperlukan.
+
+## 5. Cek Placeholder tanpa upload ulang
+
+Halaman **Pengaturan → Template Dokumen** menyediakan aksi **Cek Placeholder** untuk membantu perbaikan template tanpa siklus upload berulang.
+
+Flow:
+
+```text
+buka Cek Placeholder
+→ masukkan Nomor Dokumen/SPJ atau No. Bukti
+→ AJAX lookup read-only pada context aktif
+→ resolve nilai memakai resolver generator yang sama
+→ tampilkan placeholder + nilai aktual per kelompok
+```
+
+Lookup dapat menemukan Paket melalui nomor SPJ/Paket, nomor dokumen turunan yang sudah diterbitkan, atau No. Bukti. Scope tetap dibatasi oleh School + Fiscal Year + Fund Source aktif.
+
+Fitur ini read-only: tidak menerbitkan nomor, tidak mengubah Paket SPJ, dan tidak memutasi ARKAS/BKU maupun template.
+
+## 6. Unduh Master Template Terbaru
 
 Aksi **Unduh Master Template Terbaru** membangun workbook baru saat request dijalankan.
 
@@ -90,7 +121,7 @@ ambil seluruh document type canonical dari SpjDocumentTypeRegistry
 
 Dengan kontrak ini, update satu template otomatis tercermin pada master download berikutnya tanpa memodifikasi file master historis.
 
-## 6. Larangan master parsial
+## 7. Larangan master parsial
 
 Master terbaru **tidak boleh** dibuat jika satu atau lebih template XLSX canonical aktif tidak tersedia.
 
@@ -100,9 +131,9 @@ Jika set template tidak lengkap, request ditolak dengan pesan yang menyebut docu
 
 Berkas source aktif juga wajib tersedia pada disk `local`. Missing source tidak boleh diganti dengan sheet kosong atau data buatan.
 
-## 7. Scope dan boundary
+## 8. Scope dan boundary
 
-Master export memakai fiscal year aktif melalui `ActiveSpjContext` dan hanya membaca template pada database tenant aktif.
+Master export dan Cek Placeholder memakai context aktif. Template master dibatasi oleh fiscal year aktif; placeholder inspector juga menjaga fund-source scope Paket yang dicari.
 
 Fitur ini:
 
@@ -113,7 +144,7 @@ Fitur ini:
 - tidak mengubah lifecycle dokumen;
 - tidak memutasi source template ketika download berlangsung.
 
-## 8. Source implementation
+## 9. Source implementation
 
 Komponen utama:
 
@@ -122,8 +153,10 @@ app/Services/DocumentTemplateMasterExportService.php
 app/Services/DocumentTemplateReplacementService.php
 app/Services/SpjTemplatePackageImporter.php
 app/Services/DocumentTemplateIndividualDownloadService.php
+app/Services/DocumentTemplatePlaceholderInspectorService.php
 app/Http/Controllers/DocumentTemplateController.php
 resources/views/document-templates/index.blade.php
+resources/views/document-templates/_placeholder-checker-modal.blade.php
 ```
 
 Route master:
@@ -133,7 +166,15 @@ GET /pengaturan/template-dokumen/master/unduh
 document-templates.master.download
 ```
 
-## 9. Regression contract
+## 10. Regression contract
+
+`tests/Feature/DocumentTemplateIndividualDownloadTest.php` mengunci behavior berikut:
+
+1. source multi-sheet menghasilkan file download dengan `getSheetCount() === 1`;
+2. satu-satunya worksheet adalah sheet canonical document type terpilih;
+3. part worksheet lain benar-benar hilang dari ZIP OOXML, bukan sekadar hidden/veryHidden;
+4. source/master tersimpan tetap utuh dan tidak dimutasi;
+5. source yang memang satu-sheet tidak membuat temporary copy yang tidak diperlukan.
 
 `tests/Feature/DocumentTemplateMasterExportTest.php` mengunci behavior berikut:
 
@@ -144,8 +185,12 @@ document-templates.master.download
 5. workbook hasil export lolos validasi paket canonical;
 6. master parsial ditolak bila satu document type XLSX aktif hilang.
 
-## 10. Batas evidence
+`tests/Feature/DocumentTemplatePlaceholderInspectorTest.php` mengunci lookup placeholder actual-value, pencarian melalui nomor Paket/dokumen/No. Bukti, dan isolasi Fund Source.
 
-Functional regression/CI membuktikan kontrak source dan parser, tetapi **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice atau hasil cetak**.
+## 11. Batas evidence
+
+Functional regression/CI membuktikan struktur source, workbook hasil single-download dapat dibaca ulang, worksheet lain benar-benar tidak ada pada OOXML hasil download, dan kontrak master dapat di-reimport. Evidence tersebut **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice atau hasil cetak**.
 
 Master workbook hasil komposisi memakai PhpSpreadsheet sehingga official-template visual QA, formula lintas-sheet yang kompleks, drawing, print area, page breaks, header/footer, dan target Office viewer tetap mengikuti status RVR pada `CURRENT_PROGRESS.md`.
+
+Untuk download individu, pruning OOXML menghindari rewrite worksheet terpilih, tetapi hasil aktual tetap perlu dibuka pada Microsoft Excel/LibreOffice bila template nyata memiliki drawing, formula/reference eksternal, defined name kompleks, atau fitur Office lain yang sensitif terhadap penghapusan worksheet.
