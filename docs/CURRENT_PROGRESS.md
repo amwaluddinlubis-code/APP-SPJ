@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
 Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`.
 
@@ -17,7 +17,7 @@ Definisi status:
 
 ### Release gate branch aktif
 
-Angka gate hidup di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen). Pint advisory tetap pada 3 file yang sudah dikenal (`ArkasStagingService`, `SpjDocumentNumberService`, `SyncProgressUiTest`) dan bukan functional regression.
+Evidence gate hidup di `P0_VERIFICATION_KIT.md` §1 dan tidak disalin ke sini agar checkpoint/angka tidak divergen. Pint advisory tetap non-blocking pada konfigurasi release sekarang dan bukan functional regression.
 
 ---
 
@@ -50,6 +50,8 @@ MOBILE SOURCE READINESS   : PASS
 MOBILE/TABLET RUNTIME     : RVR / NON-BLOCKER
 ```
 
+Bagian ini merangkum milestone source/evidence yang masih relevan terhadap status aktif. Detail kontrak dan kronologi GUI berada di `GUI_STANDARDIZATION.md` dan checklist runtime canonical berada di `GUI_RUNTIME_QA.md`.
+
 Perbaikan audit yang sudah masuk antara lain:
 
 - Detail Transaksi: `item_description` tetap editable pada Paket `NUMBERED` tanpa membuka field manual lain; `FINAL` tetap terkunci.
@@ -80,8 +82,6 @@ Perbaikan audit yang sudah masuk antara lain:
 
 Regression guard GUI yang aktif pada area ini:
 
-Regression guard GUI yang aktif pada area ini:
-
 ```text
 tests/Feature/StudentIndexThemePrimitiveUiTest.php
 tests/Feature/StudentFormDetailThemePrimitiveUiTest.php
@@ -91,7 +91,7 @@ tests/Feature/GuiAudit09To13SourceReadinessTest.php
 tests/Feature/SpjActiveContractsGuardTest.php
 ```
 
-Guard di atas bagian eksplisit suite `SPJ Critical`; `SpjActiveContractsGuardTest` lolos pada run lokal penuh 265/2007 (gate CI berikutnya masih harus hijau ulang).
+Guard di atas diregresikan melalui suite release-safety/feature pada CI code gate aktif. Evidence gate canonical tetap berada di `P0_VERIFICATION_KIT.md` §1; snapshot test count lokal lama tidak dipakai sebagai status branch aktif.
 
 Batas klaim:
 
@@ -378,7 +378,7 @@ REAL-SCHOOL VERIFICATION : ACTIVE
 
 Identity matching harus konservatif. Normalized name ambigu tidak boleh menyebabkan silent merge.
 
-Auto-fill KONSUMSI tetap menggunakan provenance Dapodik yang sah; participant manual tetap diperbolehkan.
+Auto-fill peserta KONSUMSI/SPPD menggunakan master Pegawai menyatu `(ARKAS + Dapodik + Manual)`; participant manual tetap diperbolehkan dan provenance source harus tetap dipertahankan.
 
 ---
 
@@ -432,7 +432,7 @@ Prioritas aktif:
 - Pint advisory repository pada 3 file yang sudah dikenal;
 - migrasi consumer legacy `<x-ui-icon>` menuju `<x-ui.icon>`;
 - GUI compatibility-layer cleanup setelah consumer legacy benar-benar selesai;
-- performance;
+- authenticated page-render/browser performance profiling, optimization, dan regression budget setelah transport baseline;
 - Bridge `bin/obj` hygiene;
 - report foundation;
 - mobile polish setelah target desktop/laptop stabil.
@@ -450,7 +450,7 @@ Belum boleh diberi status final sampai evidence tersedia untuk:
 - real-data category-specific document QA yang belum selesai;
 - installed-runtime checks yang masih DEFERRED.
 
-Tidak ada blocker functional deterministic baru pada code gate `8180d566...`; gate tersebut hijau.
+Tidak ada blocker functional deterministic baru pada CI code gate aktif yang dicatat di `P0_VERIFICATION_KIT.md` §1. Perubahan dokumentasi-only setelah gate tersebut tidak dianggap sebagai code gate baru.
 
 ---
 
@@ -460,7 +460,7 @@ Tidak ada blocker functional deterministic baru pada code gate `8180d566...`; ga
 2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Source/test change berikutnya harus menghasilkan gate baru sebelum menggantikan checkpoint `8180d566...`.
+5. Setiap source/test change setelah code gate aktif harus memperoleh CI code gate hijau baru sebelum menggantikan evidence canonical di `P0_VERIFICATION_KIT.md` §1.
 6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, test, dan dokumen ini.
 7. GUI source cleanup hanya boleh diberi status source-level PASS; browser visual QA tetap RVR sampai diverifikasi di runtime.
 8. Source responsive fallback tidak boleh dipromosikan menjadi desktop/mobile visual PASS tanpa menjalankan `docs/GUI_RUNTIME_QA.md`.
