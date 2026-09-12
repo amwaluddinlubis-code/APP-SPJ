@@ -7,6 +7,7 @@ use App\Models\DocumentTemplate;
 use App\Models\FiscalYear;
 use App\Models\School;
 use App\Services\OperationalAuditService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -36,7 +37,7 @@ class DocumentNumberFormatController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $documentType): RedirectResponse
+    public function update(Request $request, string $documentType): RedirectResponse|JsonResponse
     {
         $documentType = strtoupper(trim($documentType));
         abort_unless((bool) preg_match('/^[A-Z0-9_]{2,40}$/', $documentType), 404);
@@ -67,7 +68,19 @@ class DocumentNumberFormatController extends Controller
             "Format penomoran {$documentType} diperbarui."
         );
 
-        return back()->with('success', "Format penomoran {$documentType} berhasil disimpan. Perubahan berlaku untuk nomor baru.");
+        $message = "Format penomoran {$documentType} berhasil disimpan. Perubahan berlaku untuk nomor baru.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'document_type' => $documentType,
+                'format_pattern' => $format->format_pattern,
+                'reset_period' => $format->reset_period,
+                'padding' => $format->padding,
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
