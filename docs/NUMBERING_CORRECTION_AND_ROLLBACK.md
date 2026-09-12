@@ -4,7 +4,7 @@ Terakhir diperbarui: **2026-09-12**
 
 Status: **IMPLEMENTED / FUNCTIONAL PASS / REAL-DATA CORE MUTATION QA PASS**
 
-Dokumen ini menetapkan kontrak bisnis dan implementation guide untuk penomoran, cancel individual, tail rollback, cancel penomoran triwulan, koreksi setelah numbering, serta format token nomor.
+Dokumen ini menetapkan kontrak bisnis dan implementation guide untuk penomoran, finalization gate antar-triwulan, cancel individual, tail rollback, cancel penomoran triwulan, koreksi setelah numbering, serta format token nomor.
 
 Evidence CI aktif tidak disalin ke feature guide ini. Gunakan `P0_VERIFICATION_KIT.md` §1 untuk checkpoint source/CI terbaru dan `CURRENT_PROGRESS.md` untuk status PASS/PENDING/RVR.
 
@@ -125,13 +125,40 @@ Status: **PASS**.
 
 ---
 
-## 5. Cancel penomoran triwulan
+## 5. Gate FINAL sebelum penomoran triwulan berikutnya
 
-Penerbitan berjalan maju:
+Penerbitan nomor tetap berjalan maju:
 
 ```text
 TW1 -> TW2 -> TW3 -> TW4
 ```
+
+Mulai TW2, batch penomoran hanya boleh berjalan jika **seluruh Paket SPJ pada triwulan sebelumnya dalam School + Fiscal Year + Fund Source yang sama sudah FINAL**.
+
+Kontrak:
+
+```text
+TW1 belum FINAL semua -> TW2 BLOCKED
+TW2 belum FINAL semua -> TW3 BLOCKED
+TW3 belum FINAL semua -> TW4 BLOCKED
+```
+
+`FINAL` berarti seluruh dokumen aktif pada Paket sudah difinalkan dan snapshot dikunci. Dokumen histori berstatus `CANCELLED` tetap disimpan tetapi **tidak menghalangi Paket menjadi FINAL** setelah seluruh dokumen aktif/penggantinya sudah FINAL.
+
+Jika triwulan sebelumnya memang tidak mempunyai transaksi SPJ yang mempunyai item, tidak ada prasyarat Paket yang harus difinalkan dan penomoran triwulan berikutnya boleh berjalan.
+
+Gate ini diperiksa **sebelum** `QuarterNumberingRun` dibuat agar prasyarat lifecycle yang belum selesai tidak menghasilkan run FAILED semu.
+
+Tujuan aturan ini:
+
+- memastikan koreksi hasil cetak pada triwulan sebelumnya sudah selesai;
+- mencegah operator melanjutkan sequence periode berikutnya ketika dokumen sebelumnya masih terbuka untuk koreksi;
+- menjaga alur `NUMBERED -> cetak/periksa -> koreksi uraian bila perlu -> FINAL -> triwulan berikutnya`;
+- tidak mencampur sumber dana lain dalam dependency.
+
+---
+
+## 6. Cancel penomoran triwulan
 
 Pembatalan penuh berjalan mundur:
 
@@ -180,7 +207,7 @@ Tidak perlu menjalankan smoke test tambahan hanya untuk memperbesar coverage bil
 
 ---
 
-## 6. Apa yang dilepas saat rollback
+## 7. Apa yang dilepas saat rollback
 
 Rollback dilakukan dalam transaction database sekolah.
 
@@ -198,7 +225,7 @@ Rollback tidak pernah mengedit source ARKAS/BKU.
 
 ---
 
-## 7. Numbering-domain history vs operational audit
+## 8. Numbering-domain history vs operational audit
 
 Untuk numbering yang benar-benar di-rollback, identity numbering aktif dapat dilepas sehingga nomor tersedia kembali sesuai checkpoint.
 
@@ -216,36 +243,39 @@ Individual `CANCELLED` berbeda: history nomor dan sequence-nya permanen.
 
 ---
 
-## 8. Koreksi setelah NUMBERED
+## 9. Koreksi setelah NUMBERED
 
-### `item_description`
+### `item_description` dan `payment_description`
 
-Koreksi operator yang tetap diperbolehkan ketika Paket `NUMBERED`:
+Koreksi teks operator yang tetap diperbolehkan ketika Paket `NUMBERED`:
 
 ```text
 item_description
+payment_description
 ```
 
-Perubahan ini tidak membatalkan nomor, tidak menurunkan Paket, tidak mengubah sequence, dan tidak menulis ulang source description ARKAS/BKU.
+`description` dan rincian finansial source ARKAS/BKU tetap read-only.
 
-Pada `FINAL`, `item_description` terkunci.
+Perubahan dua uraian tersebut tidak membatalkan nomor, tidak menurunkan Paket, tidak mengubah sequence, dan tidak mengubah gross/tax/net. Preview/cetak ulang memakai uraian terbaru dengan nomor yang sama.
 
-### Data Paket/manual/payment
+Pada `FINAL`, kedua uraian tersebut terkunci dan koreksi harus melalui lifecycle resmi.
+
+### Data Paket lain
 
 Data berikut tidak boleh diubah langsung pada `NUMBERED`/`FINAL`:
 
 - `spj_category`;
-- payment description/method/reference;
+- payment method/reference selain koreksi `payment_description`;
 - penerima utama;
 - vendor/penyedia;
 - procurement/invoice/SiPLah operator-owned metadata;
-- data barang/pengadaan;
+- data barang/pengadaan selain koreksi teks `item_description`;
 - peserta konsumsi;
 - pekerja pemeliharaan;
 - penerima honor;
 - pelaksana SPPD;
 - penerima JASA_LAINNYA;
-- Isian Manual yang memengaruhi substansi dokumen.
+- Isian Manual lain yang memengaruhi substansi dokumen.
 
 Koreksi substansi mengikuti lifecycle:
 
@@ -261,7 +291,7 @@ NUMBERED
 
 ---
 
-## 9. Source order authoritative
+## 10. Source order authoritative
 
 Nomor SPJ tidak mengikuti:
 
@@ -276,7 +306,7 @@ Real-data preflight read-only sudah PASS sebelum mutation QA, dengan baseline SH
 
 ---
 
-## 10. Token format nomor `{TW}`
+## 11. Token format nomor `{TW}`
 
 Mulai commit `68ab857dc698a1652e3b50233267e9ff64f40ba3`, token:
 
@@ -308,7 +338,7 @@ Nomor yang telah diterbitkan sebelum perubahan format tidak dimutasi otomatis.
 
 ---
 
-## 11. Isolated real-data mutation commands
+## 12. Isolated real-data mutation commands
 
 Mutation QA tidak boleh diarahkan ke baseline asli.
 
@@ -335,13 +365,13 @@ quarter rollback       : PENDING / OPTIONAL
 
 ---
 
-## 12. UI dan authorization
+## 13. UI dan authorization
 
 Rollback numbering dan cancel numbering triwulan adalah action administrator. Backend authorization dan tenant context tetap authoritative; menyembunyikan tombol saja tidak cukup.
 
 ---
 
-## 13. Regression dan strategi test
+## 14. Regression dan strategi test
 
 Regression utama:
 
