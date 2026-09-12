@@ -43,9 +43,31 @@ class SpjQuarterNumberingUseCase
         $templates = DocumentTemplate::query()->where(['fiscal_year_id' => $yearId, 'is_active' => true])->get();
         $documentTypes = collect($data['document_types'] ?? $templates->pluck('document_type')->push('SPJ'))
             ->map(fn ($type) => strtoupper(trim((string) $type)))->filter()->unique()->values();
+        $quarter = (int) $data['quarter'];
+
+        if ($quarter > 1) {
+            $previousQuarter = $quarter - 1;
+            $previousQuarterScope = fn ($query) => $query->forSpjContext($this->context)
+                ->whereMonth('transaction_date', '>=', ($previousQuarter - 1) * 3 + 1)
+                ->whereMonth('transaction_date', '<=', $previousQuarter * 3);
+            $notFinal = Transaction::query()->where($previousQuarterScope)->has('items')
+                ->where(function ($query): void {
+                    $query->doesntHave('spjPackage')
+                        ->orWhereHas('spjPackage', fn ($package) => $package->where('status', '!=', 'FINAL'));
+                })
+                ->count();
+
+            if ($notFinal > 0) {
+                return back()->with(
+                    'error',
+                    "Penomoran Triwulan {$quarter} dibatalkan: masih ada {$notFinal} transaksi Triwulan {$previousQuarter} yang paket SPJ-nya belum FINAL. Finalkan seluruh dokumen triwulan sebelumnya terlebih dahulu."
+                );
+            }
+        }
+
         $quarterScope = fn ($query) => $query->forSpjContext($this->context)
-            ->whereMonth('transaction_date', '>=', ((int) $data['quarter'] - 1) * 3 + 1)
-            ->whereMonth('transaction_date', '<=', (int) $data['quarter'] * 3);
+            ->whereMonth('transaction_date', '>=', ($quarter - 1) * 3 + 1)
+            ->whereMonth('transaction_date', '<=', $quarter * 3);
         $notReady = Transaction::query()->where($quarterScope)->has('items')
             ->where(function ($query): void {
                 $query->doesntHave('spjPackage')
@@ -61,7 +83,7 @@ class SpjQuarterNumberingUseCase
             return back()->with('error', "Penomoran dibatalkan: masih ada {$notReady} transaksi triwulan ini yang belum berstatus READY.");
         }
 
-        $period = $this->periods->period($yearId, (int) $data['quarter']);
+        $period = $this->periods->period($yearId, $quarter);
         if ($period->status === 'CLOSED') {
             return back()->with('error', 'Triwulan sudah ditutup. Administrator harus membuka kembali periode terlebih dahulu.');
         }
@@ -73,7 +95,7 @@ class SpjQuarterNumberingUseCase
         $run = QuarterNumberingRun::query()->create([
             'fiscal_period_closure_id' => $period->id,
             'fiscal_year_id' => $yearId,
-            'quarter' => $data['quarter'],
+            'quarter' => $quarter,
             'status' => 'RUNNING',
             'document_types' => $documentTypes->all(),
             'started_by' => $this->context->actorId(),
@@ -178,7 +200,7 @@ class SpjQuarterNumberingUseCase
             return back()->with('error', 'Proses penomoran terhenti dan dapat dilanjutkan: '.$exception->getMessage());
         }
 
-        $this->audit->record($yearId, 'SPJ_QUARTER', (int) $data['quarter'], 'PENOMORAN_BATCH', "Penomoran triwulan {$data['quarter']}: {$numbered} nomor baru, {$skipped} sudah bernomor.");
+        $this->audit->record($yearId, 'SPJ_QUARTER', $quarter, 'PENOMORAN_BATCH', "Penomoran triwulan {$quarter}: {$numbered} nomor baru, {$skipped} sudah bernomor.");
 
         return back()->with('success', "Penomoran triwulan selesai: {$numbered} nomor baru; {$skipped} dokumen dilewati karena sudah bernomor.");
     }
