@@ -64,12 +64,12 @@ class SpjWorkspaceMigrationTest extends TestCase
         $item->update(['item_description' => null]);
         $this->put(route('transactions.spj-descriptions.update', $transaction->id), [
             'items' => [['id' => $item->id, 'item_description' => 'Uraian tersimpan']],
-            'payment_description' => 'Tidak boleh ditulis dari transaksi',
+            'payment_description' => 'Uraian pembayaran tersimpan',
             'spj_category' => 'SPPD',
         ])->assertSessionHasNoErrors();
         $this->assertSame('Uraian tersimpan', $item->fresh()->item_description);
         $this->assertSame('BARANG', $transaction->fresh()->spj_category);
-        $this->assertNull($transaction->fresh()->payment_description);
+        $this->assertSame('Uraian pembayaran tersimpan', $transaction->fresh()->payment_description);
         $package = $this->openDraft($transaction);
         $this->get(route('transactions.prepare-spj', $transaction->id))
             ->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]));
