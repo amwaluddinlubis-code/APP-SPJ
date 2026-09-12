@@ -58,8 +58,8 @@ class RkasBudgetController extends Controller
         $subprogramOptions = $hierarchyOptions->filter(fn (array $option): bool => $option['subprogram'] !== null)->unique('subprogram')->values();
         $activityOptions = $hierarchyOptions->unique('activity')->values();
         $programFilter = trim((string) $request->query('program'));
-        $subprogramFilter = trim((string) $request->query('subprogram'));
-        $activityFilter = trim((string) $request->query('activity'));
+        $subprogramFilter = trim((string) $request->query('sub', $request->query('subprogram')));
+        $activityFilter = trim((string) $request->query('kegiatan', $request->query('activity')));
         $isWithin = static fn (string $code, string $parent): bool => $code === $parent || str_starts_with($code, $parent.'.');
         $programCodes = $programOptions->pluck('program')->all();
         $subprogramCodes = $subprogramOptions->pluck('subprogram')->all();
@@ -88,8 +88,10 @@ class RkasBudgetController extends Controller
             ->filter(fn (array $option): bool => ($subprogramFilter !== '' && $isWithin($option['activity'], $subprogramFilter))
                 || ($subprogramFilter === '' && ($programFilter === '' || $isWithin($option['activity'], $programFilter))))
             ->values();
-        $scope = (string) $request->query('scope', 'year');
-        $scopeValue = (int) $request->query('scope_value', 0);
+        $modeAliases = ['semua' => 'year', 'bulan' => 'month', 'triwulan' => 'quarter', 'semester' => 'semester'];
+        $requestedMode = (string) $request->query('mode', '');
+        $scope = isset($modeAliases[$requestedMode]) ? $modeAliases[$requestedMode] : (string) $request->query('scope', 'year');
+        $scopeValue = (int) $request->query('periode', $request->query('scope_value', 0));
         if (! in_array($scope, ['month', 'quarter', 'semester', 'year'], true)) {
             $scope = 'year';
         }
@@ -420,6 +422,9 @@ class RkasBudgetController extends Controller
             default => 'Tahun anggaran '.$fiscalYearNumber,
         };
 
-        return view('rkas-budget.index', compact('items', 'rkasGroups', 'search', 'perPage', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'periodMonths', 'periodPlanningRows', 'periodDetailRows', 'programOptions', 'subprogramOptions', 'activityOptions', 'programFilter', 'subprogramFilter', 'activityFilter'));
+        $contextFundName = (string) ($db->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: '');
+        $contextLabel = trim($fiscalYearNumber.' · '.$contextFundName, ' ·');
+
+        return view('rkas-budget.index', compact('items', 'rkasGroups', 'search', 'perPage', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'periodMonths', 'periodPlanningRows', 'periodDetailRows', 'programOptions', 'subprogramOptions', 'activityOptions', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'));
     }
 }

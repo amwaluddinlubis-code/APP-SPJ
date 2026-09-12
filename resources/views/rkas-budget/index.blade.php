@@ -3,7 +3,7 @@
 
     <div class="space-y-6">
         <x-page-header title="Penganggaran RKAS"
-            subtitle="Pantau pagu RKAS dan realisasi BKU pada konteks tahun serta sumber dana aktif."
+            :subtitle="'Pantau pagu RKAS dan realisasi BKU pada konteks ' . $contextLabel . '.'"
             kicker="Anggaran & Realisasi">
             <x-slot:actions>
                 <form method="POST" action="{{ route('arkas.sync') }}"
@@ -30,89 +30,7 @@
             </div>
         </x-page-header>
 
-        <section class="ui-filter-panel" x-data="{ scope: @js($scope) }">
-            <form method="GET" class="ui-filter-grid lg:!grid-cols-4">
-                <div>
-                    <label class="ui-filter-label" for="rkas-scope">Tampilan periode</label>
-                    <x-ui.select id="rkas-scope" name="scope" x-model="scope" x-on:change="$el.form.submit()">
-                        <option value="year">Tahun anggaran</option>
-                        <option value="month">Bulan</option>
-                        <option value="quarter">Triwulan</option>
-                        <option value="semester">Semester</option>
-                    </x-ui.select>
-                </div>
-                <div x-show="scope !== 'year'" x-cloak>
-                    <label class="ui-filter-label" for="rkas-scope-value">Periode</label>
-                    <x-ui.select id="rkas-scope-value" name="scope_value" x-on:change="$el.form.submit()">
-                        <option value="">Pilih periode</option>
-                        <optgroup label="Bulan" x-show="scope === 'month'">
-                            @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $month)
-                                <option value="{{ $loop->iteration }}" x-show="scope === 'month'"
-                                    @selected($scope === 'month' && $scopeValue === $loop->iteration)>{{ $month }}</option>
-                            @endforeach
-                        </optgroup>
-                        <optgroup label="Triwulan" x-show="scope === 'quarter'">
-                            @foreach (range(1, 4) as $quarter)
-                                <option value="{{ $quarter }}" x-show="scope === 'quarter'"
-                                    @selected($scope === 'quarter' && $scopeValue === $quarter)>Triwulan {{ $quarter }}</option>
-                            @endforeach
-                        </optgroup>
-                        <optgroup label="Semester" x-show="scope === 'semester'">
-                            @foreach (range(1, 2) as $semester)
-                                <option value="{{ $semester }}" x-show="scope === 'semester'"
-                                    @selected($scope === 'semester' && $scopeValue === $semester)>Semester {{ $semester }}</option>
-                            @endforeach
-                        </optgroup>
-                    </x-ui.select>
-                </div>
-                <div>
-                    <label class="ui-filter-label" for="rkas-search-filter">Pencarian</label>
-                    <x-ui.input id="rkas-search-filter" name="q" :value="$search"
-                        placeholder="Kode rekening atau uraian" />
-                </div>
-                <details class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 lg:col-span-4">
-                    <summary class="cursor-pointer text-sm font-bold text-[var(--ui-fg-strong)]">Filter lanjutan (Program / Subprogram / Kegiatan)</summary>
-                    <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                <div>
-                    <label class="ui-filter-label" for="rkas-program-filter">Program</label>
-                    <x-ui.select id="rkas-program-filter" name="program" x-on:change="$el.form.submit()">
-                        <option value="">Semua program</option>
-                        @foreach ($programOptions as $option)
-                            <option value="{{ $option['program'] }}" @selected($programFilter === $option['program'])>
-                                {{ $option['program'] }} - {{ $option['program_name'] }}
-                            </option>
-                        @endforeach
-                    </x-ui.select>
-                </div>
-                <div>
-                    <label class="ui-filter-label" for="rkas-subprogram-filter">Subprogram</label>
-                    <x-ui.select id="rkas-subprogram-filter" name="subprogram" x-on:change="$el.form.submit()">
-                        <option value="">Semua subprogram</option>
-                        @foreach ($subprogramOptions as $option)
-                            <option value="{{ $option['subprogram'] }}" @selected($subprogramFilter === $option['subprogram'])>
-                                {{ $option['subprogram'] }} - {{ $option['subprogram_name'] }}
-                            </option>
-                        @endforeach
-                    </x-ui.select>
-                </div>
-                <div>
-                    <label class="ui-filter-label" for="rkas-activity-filter">Kegiatan</label>
-                    <x-ui.select id="rkas-activity-filter" name="activity" x-on:change="$el.form.submit()">
-                        <option value="">Semua kegiatan</option>
-                        @foreach ($activityOptions as $option)
-                            <option value="{{ $option['activity'] }}" @selected($activityFilter === $option['activity'])>
-                                {{ $option['activity'] }} - {{ $option['activity_name'] }}</option>
-                        @endforeach
-                    </x-ui.select>
-                </div>
-                    </div>
-                </details>
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
-                <div class="flex items-end">
-                    <x-ui.button type="submit" icon="filter">Tampilkan</x-ui.button>
-                </div>
-            </form>
-        </section>
+        <livewire:rkas-budget-filter />
 
         @if (in_array($scope, ['quarter', 'semester'], true) && $scopeValue > 0)
             @php($monthNames = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'])
