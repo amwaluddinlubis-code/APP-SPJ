@@ -83,13 +83,14 @@ class SpjNumberingGateService
         if ($documentType !== null) {
             $canonicalType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
             if ($canonicalType === null) {
-                return 'Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.';
+                return 'Jenis dokumen tidak termasuk '.count($this->numberingPolicy->automaticDocumentTypes()).' domain penomoran canonical aplikasi.';
             }
 
             if (! $this->numberingPolicy->isAutomaticDocumentEligible($package->transaction, $canonicalType)) {
                 $category = $this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category) ?: '-';
+                $label = $this->numberingPolicy->automaticDocumentLabels()[$canonicalType] ?? $canonicalType;
 
-                return 'Penomoran '.$canonicalType.' tidak berlaku untuk kategori '.$category.'.';
+                return 'Penomoran '.$label.' tidak berlaku untuk kategori '.$category.'.';
             }
         }
 
