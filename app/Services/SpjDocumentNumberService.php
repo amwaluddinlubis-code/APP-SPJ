@@ -264,7 +264,7 @@ class SpjDocumentNumberService
     {
         $quarter = (int) ceil((int) $date->format('n') / 3);
 
-        return 'TW.'.[1 => 'I', 'II', 'III', 'IV'][$quarter];
+        return [1 => 'I', 'II', 'III', 'IV'][$quarter];
     }
 
     private function romanMonth(int $month): string
