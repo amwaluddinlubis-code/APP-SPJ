@@ -67,6 +67,7 @@ class SpjNumberingWorkflowController extends Controller
             ->withQueryString();
 
         $documentTypes = collect($numberingPolicy->automaticDocumentTypes());
+        $documentLabels = $numberingPolicy->automaticDocumentLabels();
 
         $recentRuns = QuarterNumberingRun::query()
             ->where('fiscal_year_id', $yearId)
@@ -80,6 +81,7 @@ class SpjNumberingWorkflowController extends Controller
             'previewPackages' => $previewPackages,
             'pagedPackages' => $pagedPackages,
             'documentTypes' => $documentTypes,
+            'documentLabels' => $documentLabels,
             'recentRuns' => $recentRuns,
             'selectedSummary' => $quarterSummaries->get($selectedQuarter),
         ]);
