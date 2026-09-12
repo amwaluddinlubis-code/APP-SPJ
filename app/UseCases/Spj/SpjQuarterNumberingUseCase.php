@@ -73,13 +73,7 @@ class SpjQuarterNumberingUseCase
         $notReady = Transaction::query()->where($quarterScope)->has('items')
             ->where(function ($query): void {
                 $query->doesntHave('spjPackage')
-                    ->orWhereHas('spjPackage', function ($package): void {
-                        $package->where('status', 'DRAFT')
-                            ->whereDoesntHave('documents', fn ($document) => $document
-                                ->where('document_type', 'SPJ')
-                                ->where('scope_key', 'MAIN')
-                                ->where('status', 'CANCELLED'));
-                    });
+                    ->orWhereHas('spjPackage', fn ($package) => $package->where('status', 'DRAFT'));
             })->count();
         if ($notReady > 0) {
             return back()->with('error', "Penomoran dibatalkan: masih ada {$notReady} transaksi triwulan ini yang belum berstatus READY.");
@@ -119,16 +113,7 @@ class SpjQuarterNumberingUseCase
                 'transaction.serviceRecipients',
                 'transaction.spjPackage',
             ])
-            ->where(function ($query): void {
-                $query->whereIn('status', ['READY', 'NUMBERED'])
-                    ->orWhere(function ($cancelled): void {
-                        $cancelled->whereIn('status', ['DRAFT', 'CANCELLED'])
-                            ->whereHas('documents', fn ($document) => $document
-                                ->where('document_type', 'SPJ')
-                                ->where('scope_key', 'MAIN')
-                                ->where('status', 'CANCELLED'));
-                    });
-            })
+            ->whereIn('status', ['READY', 'NUMBERED'])
             ->whereHas('transaction', $quarterScope)
             ->get();
 
