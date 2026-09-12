@@ -72,7 +72,7 @@ class SpjLifecycleHardeningTest extends TestCase
         $this->assertNull($package->document_number);
     }
 
-    public function test_cancelled_package_can_be_unlocked_without_deleting_cancelled_document_history(): void
+    public function test_cancelled_package_cannot_be_unlocked_directly_and_preserves_cancelled_document_history(): void
     {
         $package = $this->package();
         $document = app(SpjDocumentNumberService::class)
@@ -82,16 +82,22 @@ class SpjLifecycleHardeningTest extends TestCase
         $lifecycle = app(SpjDocumentLifecycleService::class);
 
         $lifecycle->cancel($document, 1, 'Perlu koreksi');
-        $lifecycle->unlock($package->fresh(), 1, 'Perbaiki data sumber dokumen');
+
+        try {
+            $lifecycle->unlock($package->fresh(), 1, 'Perbaiki data sumber dokumen');
+            $this->fail('Direct unlock was accepted after numbering cancellation.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('rollback/cancel penomoran resmi', $exception->getMessage());
+        }
 
         $package->refresh();
         $historical = $package->documents()->findOrFail($originalId);
 
-        $this->assertSame('DRAFT', $package->status);
-        $this->assertTrue($package->isEditable());
+        $this->assertSame('CANCELLED', $package->status);
+        $this->assertFalse($package->isEditable());
         $this->assertSame('CANCELLED', $historical->status);
         $this->assertSame($originalNumber, $historical->document_number);
-        $this->assertSame('Perbaiki data sumber dokumen', $package->unlock_reason);
+        $this->assertNull($package->unlock_reason);
     }
 
     public function test_final_package_cannot_be_unlocked_directly(): void
