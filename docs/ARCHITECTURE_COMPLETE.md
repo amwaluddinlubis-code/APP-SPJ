@@ -20,7 +20,8 @@ Tujuan arsitektur:
 - source sync mempertahankan overlay dan identity;
 - authorization dipisahkan dari tenant/context guard;
 - controller tetap tipis dan orchestration berada di use case/service;
-- preview/download tidak menjadi shortcut numbering.
+- preview/download tidak menjadi shortcut numbering;
+- metadata domain numbering mempunyai satu canonical registry dan tidak diduplikasi di controller/UI/allocator.
 
 Stack utama: PHP 8.2+, Laravel 12, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite 6, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 11.
 
@@ -158,6 +159,8 @@ CreateSpjDraftUseCase
 UpdateSpjPackageDetailsUseCase
 SpjPackageCategoryUseCase
 SpjNumberingUseCase
+SpjSingleNumberingUseCase
+SpjDocumentLifecycleUseCase
 SpjDocumentUseCase
 SpjReportUseCase
 ```
@@ -168,13 +171,14 @@ Pembagian tanggung jawab:
 - create/open DRAFT;
 - update Paket;
 - category mutation;
-- numbering/lifecycle;
+- batch/single numbering;
+- lifecycle/finalization/cancel/replacement;
 - preview/download/generator;
 - report/export.
 
 ### Service domain
 
-Service reusable mencakup transaction details, package validation, document requirements, procurement policy, numbering, ARKAS synchronization, employee identity, tenant database maintenance, template/generator, dan operational audit.
+Service reusable mencakup transaction details, package validation, document requirements, procurement policy, canonical numbering registry, numbering policy/gate/order/allocator, ARKAS synchronization, employee identity, tenant database maintenance, template/generator, dan operational audit.
 
 Business validation tetap backend.
 
@@ -319,14 +323,95 @@ order_date <= bap_date
 bap_date <= bast_date
 ```
 
-## 15. Penomoran dokumen
+## 15. Penomoran dokumen — canonical registry
+
+### Source of truth
+
+Metadata numbering berada di satu registry:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Setiap definisi numbering membawa:
+
+```text
+code
+label
+numbered
+applicable_categories
+channel
+event_date_rule
+number_target
+scope_rule
+```
+
+Current canonical numbered definitions:
+
+```text
+SPJ
+PESANAN
+BAP
+BAST
+SPK
+RAB
+SURAT_TUGAS_PERJALANAN_DINAS
+```
+
+Daftar tersebut tidak boleh di-hardcode ulang pada consumer. Consumer memperoleh metadata melalui registry atau `SpjNumberingPolicyService` sebagai runtime policy adapter.
+
+### Tanggung jawab consumer
+
+```text
+SpjNumberingDocumentRegistry
+        │
+        ├── DocumentNumberFormatController / Format Penomoran
+        ├── SpjNumberingUseCase / Penomoran Triwulan
+        ├── SpjNumberingPolicyService
+        ├── SpjNumberingGateService
+        ├── SpjNumberingOrderService
+        ├── SpjDocumentNumberService
+        ├── SpjSingleNumberingUseCase
+        ├── SpjDocumentLifecycleService
+        └── SpjDocumentLifecycleUseCase
+```
+
+`SpjNumberingPolicyService` tidak memiliki daftar document type sendiri. Service ini menerapkan runtime condition seperti SiPlah/non-SiPlah, category normalization, event-date resolution, dan persistence default format berdasarkan metadata registry.
+
+### Event date dan target number
+
+`event_date_rule` mendeskripsikan relasi + field tanggal canonical dan optional fallback. `number_target` mendeskripsikan tempat nomor turunan disinkronkan, misalnya Paket, goods, work order, atau travel.
+
+Contoh behavior:
+
+```text
+SPJ      -> transaction.transaction_date -> package.document_number
+PESANAN  -> goods.order_date             -> goods.order_number
+BAP      -> goods.bap_date               -> goods.bap_number
+BAST     -> goods.bast_date              -> goods.bast_number
+SPK      -> workOrder.spk_date            -> workOrder.spk_number
+RAB      -> workOrder.rab_date            -> workOrder.rab_number
+SURAT_TUGAS_PERJALANAN_DINAS
+         -> travels.assignment_letter_date
+            fallback travels.departure_date
+         -> travels.assignment_letter_number
+```
+
+SPJ memakai applicable category wildcard `*` karena dokumen utama berlaku untuk setiap Paket termasuk legacy package yang belum mempunyai category. Dokumen turunan tetap mengikuti category/channel applicable.
+
+### Registry template berbeda tanggung jawab
+
+`SpjDocumentTypeRegistry` tetap digunakan untuk contract template/placeholder/output. Ia bukan source keputusan numbering dan tidak boleh dipakai untuk memperluas domain sequence secara otomatis.
+
+### Invariant numbering
 
 - domain nomor dipisahkan per document type;
 - nomor mengikuti tanggal/peristiwa canonical;
 - nomor aktif tidak boleh ganda/ditimpa;
 - cancelled number tetap history;
 - NUMBERED/FINAL locked;
-- preview/download tidak menerbitkan nomor.
+- preview/download tidak menerbitkan nomor;
+- boundary sequence tetap `School + Fiscal Year + Fund Source`.
 
 ## 16. Generator dokumen dan template
 
@@ -413,7 +498,7 @@ Functional gate aktif: lihat evidence gate di `P0_VERIFICATION_KIT.md` §1 (tida
 
 Area yang belum final:
 
-1. audit read-only 66 Paket READY pada real-data baseline;
+1. generated-document QA pada real-data package yang tersedia;
 2. JASA_LAINNYA multi-recipient generated-document E2E;
 3. PEMELIHARAAN bahan+upah full-document QA;
 4. SiPLah generated-document E2E;
@@ -434,6 +519,7 @@ docs/CURRENT_PROGRESS.md
 docs/P0_VERIFICATION_KIT.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/SPJ_DESIGN_DECISIONS.md
+docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
 docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
 docs/GUI_RUNTIME_QA.md
