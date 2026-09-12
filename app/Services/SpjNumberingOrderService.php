@@ -38,19 +38,7 @@ class SpjNumberingOrderService
 
     public function documentEventDateValue(SpjPackage $package, string $documentType): mixed
     {
-        $transaction = $package->transaction;
-
-        return match (strtoupper(trim($documentType))) {
-            'ORDER', 'PESANAN', 'SURAT_PESANAN' => $transaction->goods->pluck('order_date')->filter()->sort()->first(),
-            'BAP' => $transaction->goods->pluck('bap_date')->filter()->sort()->first(),
-            'BAST', 'RECEIPT', 'PENERIMAAN' => $transaction->goods->pluck('bast_date')->filter()->sort()->first(),
-            'SPK', 'WORK_ORDER' => $transaction->workOrder?->spk_date,
-            'RAB' => $transaction->workOrder?->rab_date,
-            'SURAT_TUGAS_PERJALANAN_DINAS' => $transaction->travels->pluck('assignment_letter_date')->filter()->sort()->first()
-                ?: $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
-            'SPPD' => $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
-            default => $transaction->transaction_date,
-        };
+        return $this->numberingPolicy->documentEventDateValue($package->transaction, $documentType);
     }
 
     public function sourceOrderKey(Transaction $transaction): string
@@ -134,21 +122,15 @@ class SpjNumberingOrderService
             ->get();
 
         foreach ($documentTypes as $documentType) {
-            if ($this->documentEventDateValue($package, $documentType) === null) {
+            $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
+            if ($documentType === null || $this->documentEventDateValue($package, $documentType) === null) {
                 continue;
             }
 
-            $eligible = $candidates->filter(function (SpjPackage $candidate) use ($documentType): bool {
-                if ($this->documentEventDateValue($candidate, $documentType) === null) {
-                    return false;
-                }
-
-                if (! $this->numberingPolicy->isAutomaticDocumentType($documentType)) {
-                    return true;
-                }
-
-                return $this->numberingPolicy->isAutomaticDocumentEligible($candidate->transaction, $documentType);
-            });
+            $eligible = $candidates->filter(fn (SpjPackage $candidate): bool =>
+                $this->documentEventDateValue($candidate, $documentType) !== null
+                && $this->numberingPolicy->isAutomaticDocumentEligible($candidate->transaction, $documentType)
+            );
             foreach ($this->orderedPackagesForDocumentType($eligible, $documentType) as $candidate) {
                 if ($candidate->is($package)) {
                     break;
@@ -194,7 +176,12 @@ class SpjNumberingOrderService
 
     private function needsAutomaticNumber(SpjPackage $package, string $documentType): bool
     {
-        $documentType = strtoupper(trim($documentType));
+        $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
+        $definition = $documentType ? $this->numberingPolicy->numberingDefinition($documentType) : null;
+        if (! $documentType || ! $definition) {
+            return false;
+        }
+
         $hasActiveDocument = $package->documents
             ->contains(fn (SpjDocument $document): bool => $document->document_type === $documentType
                 && $document->status !== 'CANCELLED'
@@ -203,14 +190,17 @@ class SpjNumberingOrderService
             return false;
         }
 
-        return match ($documentType) {
-            'PESANAN' => ! $package->transaction->goods->pluck('order_number')->filter()->isNotEmpty(),
-            'BAP' => ! $package->transaction->goods->pluck('bap_number')->filter()->isNotEmpty(),
-            'BAST' => ! $package->transaction->goods->pluck('bast_number')->filter()->isNotEmpty(),
-            'SPK' => blank($package->transaction->workOrder?->spk_number),
-            'RAB' => blank($package->transaction->workOrder?->rab_number),
-            'SURAT_TUGAS_PERJALANAN_DINAS' => $package->transaction->travels
-                ->contains(fn ($travel): bool => ($travel->assignment_letter_date || $travel->departure_date) && blank($travel->assignment_letter_number)),
+        $numberField = $definition['number_field'];
+        $rule = $definition['event_date_rule'];
+
+        return match ($rule['relation']) {
+            'goods' => $numberField ? ! $package->transaction->goods->pluck($numberField)->filter()->isNotEmpty() : true,
+            'workOrder' => $numberField ? blank($package->transaction->workOrder?->{$numberField}) : true,
+            'travels' => $numberField ? $package->transaction->travels->contains(function ($travel) use ($numberField, $rule): bool {
+                $eventDate = $travel->{$rule['field']} ?: ($rule['fallback_field'] ? $travel->{$rule['fallback_field']} : null);
+
+                return filled($eventDate) && blank($travel->{$numberField});
+            }) : true,
             default => true,
         };
     }
