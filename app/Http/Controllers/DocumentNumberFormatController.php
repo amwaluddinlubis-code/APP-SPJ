@@ -36,10 +36,10 @@ class DocumentNumberFormatController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $documentType): RedirectResponse|JsonResponse
+    public function update(Request $request, string $documentType, SpjNumberingPolicyService $numberingPolicy): RedirectResponse|JsonResponse
     {
-        $documentType = strtoupper(trim($documentType));
-        abort_unless((bool) preg_match('/^[A-Z0-9_]{2,40}$/', $documentType), 404);
+        $documentType = $numberingPolicy->canonicalAutomaticDocumentType($documentType);
+        abort_unless($documentType !== null, 404);
 
         $data = $request->validate([
             'format_pattern' => ['required', 'string', 'max:80'],
