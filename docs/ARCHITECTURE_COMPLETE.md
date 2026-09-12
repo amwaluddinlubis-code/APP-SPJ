@@ -1,8 +1,10 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-11** terhadap source aplikasi/test yang sama dengan functional gate `0df9b2ffbf14ed191e36c063e6355f9cb63c4a66`.
+Terakhir diverifikasi: **2026-09-12** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `gui-standardization`.
 
-Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
+Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
+
+Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/assertion agar tidak menjadi stale ketika code gate bergerak.
 
 ## 1. Ringkasan
 
@@ -221,7 +223,7 @@ Sudah diregresikan:
 - created-at preservation;
 - semantic metrics.
 
-Sisa aktif importer adalah scale/performance, terutama Bridge-side delta fetch dan pagination/evaluation di atas row limit `100000`.
+Sisa aktif importer adalah operator-data verification dan scale/performance, terutama Bridge-side delta fetch dan pagination/evaluation di atas row limit `100000`.
 
 Pernyataan lama bahwa importer belum operator-ready karena resolver source key/tenant route gap sudah superseded.
 
@@ -393,7 +395,9 @@ resources/js/app.js
 
 Markup baru memakai token `--ui-*`, `--theme-*`, primitive `x-ui.*`, dan class `ui-*` sesuai `GUI_STANDARDIZATION.md` dan `CSS_USAGE_GUIDE.md`.
 
-Compatibility CSS/JS boleh tetap ada sementara, tetapi tidak boleh menjadi alasan menghidupkan stale standalone Vite entry.
+Authenticated shell memakai route/page marker (`main[data-page]` / `data-route`) untuk boundary styling feature yang sedang digeneralisasi. Compatibility CSS/JS boleh tetap ada sementara, tetapi tidak boleh menjadi alasan menghidupkan stale standalone Vite entry atau selector route heuristik baru.
+
+Source-level GUI readiness tidak sama dengan browser/runtime PASS; checklist runtime canonical berada di `GUI_RUNTIME_QA.md`.
 
 ## 20. Security/authorization
 
@@ -405,7 +409,7 @@ Authorization role dan tenant activation adalah boundary berbeda; lulus role che
 
 ## 21. Functional gate dan area RVR
 
-Functional gate aktif: lihat angka gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
+Functional gate aktif: lihat evidence gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
 
 Area yang belum final:
 
@@ -417,24 +421,25 @@ Area yang belum final:
 6. operational audit trail E2E;
 7. employee identity/participant real-data UX verification;
 8. official-template visual/runtime verification;
-9. importer scale/performance;
-10. P2 GUI/style/performance/report cleanup.
+9. importer operator-data/scale/performance verification;
+10. authenticated page-render/browser performance profiling + P2 GUI/style/report cleanup.
 
-Mobile/responsive penuh bukan release blocker untuk target operator desktop/laptop saat ini.
+Mobile/tablet runtime minimum usability tetap RVR/non-blocker untuk target operator desktop/laptop saat ini; status canonical mengikuti `CURRENT_PROGRESS.md` dan `GUI_RUNTIME_QA.md`.
 
 ## 22. Dokumen acuan
 
 ```text
 docs/README.md
 docs/CURRENT_PROGRESS.md
+docs/P0_VERIFICATION_KIT.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
+docs/GUI_RUNTIME_QA.md
 docs/CSS_USAGE_GUIDE.md
 docs/ARKAS_IMPORTER.md
 docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
-docs/P0_VERIFICATION_KIT.md
 docs/P0_01_SOURCE_AUDIT.md
 docs/SIPLAH_MVP_PLAN.md
 docs/MOBILE_VISUAL_QA_TODO.md
