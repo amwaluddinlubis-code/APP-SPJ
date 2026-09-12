@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
+use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
@@ -20,6 +21,7 @@ class SpjSingleNumberingUseCase
         private readonly SpjPackageValidationService $validator,
         private readonly SpjNumberingOrderService $order,
         private readonly SpjNumberingPolicyService $numberingPolicy,
+        private readonly SpjNumberingGateService $numberingGate,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -40,20 +42,20 @@ class SpjSingleNumberingUseCase
             'transaction.spjPackage',
             'documents',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
-            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
         }
         if ($package->document_number && in_array($package->status, ['NUMBERED', 'FINAL'], true)) {
             return back()->with('success', 'Nomor dokumen SPJ sudah ditetapkan.');
         }
-        if ($issues = $this->validator->validate($package)) {
+        if ($blocker = $this->numberingGate->issuanceBlocker($package, 'SPJ')) {
+            return back()->with('error', $blocker);
+        }
+        if ($issues = $this->validator->validateForNumbering($package)) {
             return back()->with('error', 'Penomoran ditolak. '.collect($issues)->pluck('message')->implode(' '));
         }
         if ($blocker = $this->order->singleNumberingBlocker($package, ['SPJ'])) {
             return back()->with('error', $blocker);
-        }
-        if ($package->status === 'CANCELLED') {
-            $package->forceFill(['document_number' => null, 'numbered_at' => null])->save();
         }
 
         $school = $this->context->school();
@@ -80,24 +82,26 @@ class SpjSingleNumberingUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesFiscalYear($package->transaction)) {
-            return back()->with('error', 'Paket tidak ditemukan pada tahun anggaran aktif.');
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return back()->with('error', 'Paket tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
         }
-        if ($issues = $this->validator->validate($package)) {
+
+        $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
+        if ($documentType === null) {
+            return back()->with('error', 'Penomoran ditolak. Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.');
+        }
+        if ($blocker = $this->numberingGate->issuanceBlocker($package, $documentType)) {
+            return back()->with('error', $blocker);
+        }
+        if ($issues = $this->validator->validateForNumbering($package)) {
             return back()->with('error', 'Penomoran ditolak. '.collect($issues)->pluck('message')->implode(' '));
         }
+
         $data = $request->validate([
             'document_date' => ['required', 'date'],
             'event_date' => ['nullable', 'date'],
             'scope_key' => ['nullable', 'string', 'max:80'],
         ]);
-        $documentType = strtoupper(trim($documentType));
-        if ($this->numberingPolicy->isAutomaticDocumentType($documentType)
-            && ! $this->numberingPolicy->isAutomaticDocumentEligible($package->transaction, $documentType)) {
-            $category = $this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category) ?: '-';
-
-            return back()->with('error', 'Penomoran '.$documentType.' tidak berlaku untuk kategori '.$category.'.');
-        }
         if ($blocker = $this->order->singleNumberingBlocker($package, [$documentType])) {
             return back()->with('error', $blocker);
         }
