@@ -53,6 +53,7 @@
                     x-data="{
                         open: @js(old('document_type') === $documentType),
                         saved: @js((bool) $format),
+                        dirty: false,
                         saving: false,
                         message: '',
                         error: '',
@@ -75,6 +76,11 @@
                                 .replaceAll('{MONTH}', this.month)
                                 .replaceAll('{ROMAN_MONTH}', this.romanMonth)
                                 .replaceAll('{TW}', this.tw)
+                        },
+                        markDirty() {
+                            this.dirty = true
+                            this.message = ''
+                            this.error = ''
                         },
                         async save(form) {
                             if (this.saving) return
@@ -103,6 +109,7 @@
                                 }
 
                                 this.saved = true
+                                this.dirty = false
                                 this.message = payload.message ?? 'Format berhasil disimpan.'
                                 window.setTimeout(() => { this.message = '' }, 3000)
                             } catch (error) {
@@ -137,8 +144,8 @@
                         <div class="flex shrink-0 items-center gap-2">
                             <span
                                 class="hidden rounded-full px-2.5 py-1 text-xs font-bold sm:inline-flex"
-                                :class="saving ? 'bg-sky-50 text-sky-700' : (saved ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')"
-                                x-text="saving ? 'Menyimpan…' : (saved ? 'Tersimpan' : 'Format bawaan')"
+                                :class="saving ? 'bg-sky-50 text-sky-700' : (dirty ? 'bg-amber-50 text-amber-700' : (saved ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'))"
+                                x-text="saving ? 'Menyimpan…' : (dirty ? 'Belum disimpan' : (saved ? 'Tersimpan' : 'Format bawaan'))"
                             ></span>
                             <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-[var(--ui-fg-muted)]" aria-hidden="true">
                                 <x-ui.icon name="chevron-down" size="sm" class="transition-transform duration-200" ::class="open ? 'rotate-180' : ''" />
@@ -150,6 +157,8 @@
                         id="number-format-panel-{{ strtolower($documentType) }}"
                         x-show="open"
                         x-collapse
+                        @input="markDirty()"
+                        @change="markDirty()"
                         @submit.prevent="save($event.currentTarget)"
                         method="POST"
                         action="{{ route('document-number-formats.update', $documentType) }}"
@@ -182,8 +191,9 @@
                                 <p x-show="message" x-cloak class="mt-1 text-xs font-semibold text-emerald-700" x-text="message"></p>
                                 <p x-show="error" x-cloak class="mt-1 text-xs font-semibold text-rose-600" x-text="error"></p>
                             </div>
-                            <x-ui.button type="submit" x-bind:disabled="saving" class="shrink-0 disabled:cursor-wait disabled:opacity-60">
-                                <span x-show="!saving">Simpan Format</span>
+                            <x-ui.button type="submit" x-bind:disabled="saving || !dirty" class="shrink-0 disabled:cursor-default disabled:opacity-50">
+                                <span x-show="!saving && dirty">Simpan Format</span>
+                                <span x-show="!saving && !dirty">Tersimpan</span>
                                 <span x-show="saving" x-cloak>Menyimpan…</span>
                             </x-ui.button>
                         </div>
