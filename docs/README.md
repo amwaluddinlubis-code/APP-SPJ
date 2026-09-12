@@ -17,23 +17,31 @@ Jika ada perbedaan antar dokumen, gunakan urutan berikut:
 
 Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.md`.
 
+Untuk metadata domain numbering executable, source of truth adalah:
+
+```text
+app/Services/SpjNumberingDocumentRegistry.php
+```
+
+Dokumentasi menjelaskan kontraknya, tetapi tidak menggantikan registry executable.
+
 ## Functional gate aktif
 
 Evidence gate hidup di `P0_VERIFICATION_KIT.md` §1 dan tidak disalin ke dokumen lain agar tidak divergen.
 
-Status keseluruhan tetap **belum final release-ready** karena real-data verification, official-template output, dan browser/runtime RVR masih aktif.
+Status keseluruhan tetap **belum final release-ready** karena real-data generated-output verification, official-template output, dan browser/runtime RVR masih aktif.
 
 ## Dokumen aktif utama
 
 | Dokumen | Peran / status |
 |---|---|
-| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-12** — sumber status release utama. |
-| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-12** — prioritas dan urutan pekerjaan. |
+| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-12** — sumber status release utama, termasuk canonical numbering registry checkpoint. |
+| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-12** — prioritas dan urutan pekerjaan; registry numbering sudah marked complete. |
 | `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, matriks impact, evidence rules, dan aturan wajib untuk semua AI/coding agent. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
-| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-12** — arsitektur aktif tanpa hard-coded gate snapshot. |
+| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-12** — arsitektur aktif, termasuk one-registry numbering architecture. |
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
-| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS** — cancel individual, rollback numbering, cancel numbering triwulan, reset sequence, dan aturan koreksi data setelah NUMBERED. |
+| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS / REFRESHED 2026-09-12** — canonical registry, event-date/number-target rules, cancel individual, rollback numbering, cancel numbering triwulan, dan aturan koreksi data setelah NUMBERED. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — kontrak GUI/layout, theme, primitive, icon canonical, dan aturan evidence visual. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — checklist browser desktop/laptop dan mobile/tablet untuk GUI-AUDIT-12/13. |
@@ -48,12 +56,12 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 |---|---|
 | `ARKAS_IMPORTER.md` | **ACTIVE / REFRESHED 2026-09-12** — Generic ARKAS Importer; functional hardening PASS, operator-data test berikutnya; checkpoint internal hanya implementation history. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder template. |
-| `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED 2026-09-12** — command/gate release-safety dan real-tenant audit. |
+| `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED 2026-09-12** — code gate release-safety terbaru, canonical numbering registry verification, command, dan real-tenant audit. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARKAS_IMPORTER.md` bila perubahan khusus menyentuh Generic ARKAS Importer/profile-driven import.
 
-Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md` sebelum mengubah use case numbering atau lifecycle.
+Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md` sebelum mengubah use case numbering atau lifecycle. Metadata numbering baru/berubah harus dimulai dari `SpjNumberingDocumentRegistry`, bukan dari daftar hardcoded di consumer.
 
 Untuk penutupan standardisasi GUI, baca `GUI_STANDARDIZATION.md` lalu jalankan `GUI_RUNTIME_QA.md`. Source/CI PASS tidak boleh diubah menjadi browser/mobile PASS tanpa runtime evidence.
 
@@ -67,6 +75,33 @@ Untuk penutupan standardisasi GUI, baca `GUI_STANDARDIZATION.md` lalu jalankan `
 
 `SIPLAH_MVP_PLAN.md` sengaja belum di-rename agar link lama tidak rusak. Jangan membaca nama file sebagai tanda bahwa core SiPLah masih berada pada fase MVP awal.
 
+## Canonical numbering architecture
+
+Metadata numbering executable berada di satu registry:
+
+```text
+SpjNumberingDocumentRegistry
+```
+
+Registry memiliki kode, label tampilan, flag `numbered`, kategori applicable, channel, aturan event date, target penyimpanan nomor, dan scope rule. Consumer berikut harus membacanya secara dinamis:
+
+```text
+Format Penomoran
+Penomoran Triwulan
+numbering policy
+gate
+order/event-date resolver
+allocator
+single numbering
+finalization
+cancel
+replacement
+```
+
+Current numbered domains adalah `SPJ`, `PESANAN`, `BAP`, `BAST`, `SPK`, `RAB`, dan `SURAT_TUGAS_PERJALANAN_DINAS`. Daftar ini hanya snapshot dokumentasi; source executable tetap registry.
+
+`SpjDocumentTypeRegistry` tetap khusus template/placeholder/output dan bukan registry sequence numbering.
+
 ## Dokumen historis / arsip
 
 Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URGENT_TRANSACTION_SPJ_MIGRATION.md`) telah dihapus dari `docs/` agar tidak menyesatkan. Jejaknya tetap tersedia di git history bila diperlukan audit.
@@ -79,6 +114,8 @@ Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URG
 - Perubahan source setelah pekerjaan operator dapat memerlukan reconciliation; NUMBERED/FINAL tidak dimutasi diam-diam.
 - Boundary tenant = `School + Fiscal Year + Fund Source`.
 - Sequence numbering terisolasi per sumber dana.
+- Metadata numbering mempunyai satu source of truth: `SpjNumberingDocumentRegistry`.
+- Consumer numbering tidak boleh mempunyai daftar type/label/category/event-date/number-target/scope kedua.
 - Detail Transaksi hanya menulis `item_description`.
 - Koreksi `item_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence; FINAL tetap terkunci.
 - Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
