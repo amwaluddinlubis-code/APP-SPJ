@@ -88,7 +88,11 @@ class SpjSingleNumberingUseCase
 
         $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
         if ($documentType === null) {
-            return back()->with('error', 'Penomoran ditolak. Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.');
+            return back()->with('error', 'Penomoran ditolak. Jenis dokumen tidak termasuk '.count($this->numberingPolicy->automaticDocumentTypes()).' domain penomoran canonical aplikasi.');
+        }
+        $definition = $this->numberingPolicy->numberingDefinition($documentType);
+        if (! $definition) {
+            return back()->with('error', 'Metadata penomoran canonical tidak ditemukan.');
         }
         if ($blocker = $this->numberingGate->issuanceBlocker($package, $documentType)) {
             return back()->with('error', $blocker);
@@ -102,6 +106,16 @@ class SpjSingleNumberingUseCase
             'event_date' => ['nullable', 'date'],
             'scope_key' => ['nullable', 'string', 'max:80'],
         ]);
+        $scopeKey = $data['scope_key'] ?? 'MAIN';
+        if ($definition['scope_rule'] === 'MAIN' && $scopeKey !== 'MAIN') {
+            return back()->with('error', 'Penomoran '.$definition['label'].' hanya menggunakan scope MAIN sesuai registry canonical.');
+        }
+        if ($definition['scope_rule'] === 'TRAVEL' && ! preg_match('/^TRAVEL-\d+$/', $scopeKey)) {
+            return back()->with('error', 'Penomoran '.$definition['label'].' memerlukan scope perjalanan yang valid.');
+        }
+        if (blank($this->numberingPolicy->documentEventDateValue($package->transaction, $documentType, $scopeKey))) {
+            return back()->with('error', 'Tanggal peristiwa '.$definition['label'].' belum tersedia sesuai aturan event date registry canonical.');
+        }
         if ($blocker = $this->order->singleNumberingBlocker($package, [$documentType])) {
             return back()->with('error', $blocker);
         }
@@ -112,7 +126,7 @@ class SpjSingleNumberingUseCase
             $documentType,
             Carbon::parse($data['document_date']),
             $school->school_code ?: $school->npsn,
-            $data['scope_key'] ?? 'MAIN',
+            $scopeKey,
             npsn: $school->npsn,
         );
         if (filled($data['event_date'] ?? null)) {
@@ -120,6 +134,6 @@ class SpjSingleNumberingUseCase
         }
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_DOCUMENT', $document->id, 'TETAPKAN_NOMOR', 'Nomor '.$document->document_type.' '.$document->document_number.' ditetapkan.');
 
-        return back()->with('success', 'Nomor '.$document->document_type.' berhasil dibuat: '.$document->document_number);
+        return back()->with('success', 'Nomor '.$definition['label'].' berhasil dibuat: '.$document->document_number);
     }
 }
