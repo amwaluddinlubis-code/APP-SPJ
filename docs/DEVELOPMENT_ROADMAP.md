@@ -1,15 +1,17 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-12**
 
 Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status rinci dan evidence ada di `CURRENT_PROGRESS.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 ## Release gate functional
 
-Gate tunggal ada di `docs/README.md` (disalin dari `CURRENT_PROGRESS.md`). Jangan menyalin angka gate ke sini; angka di bawah ini hanya penanda waktu penulisan dan wajib dibaca ulang dari sana:
+Evidence functional gate aktif berada di `P0_VERIFICATION_KIT.md` §1. Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke roadmap ini agar tidak divergen.
 
 ```text
-Lihat docs/README.md → Functional gate aktif.
+Status/evidence release : CURRENT_PROGRESS.md
+CI code gate aktif      : P0_VERIFICATION_KIT.md §1
+Prioritas pekerjaan     : DEVELOPMENT_ROADMAP.md (dokumen ini)
 ```
 
 `FUNCTIONAL PASS` tidak sama dengan final production verification. `RVR` tetap membutuhkan real-data, browser, template resmi, atau runtime evidence sesuai konteks.
@@ -213,12 +215,12 @@ Source-level GUI cleanup milestone 09–11:
 - [x] GUI-AUDIT-09 — SPJ navigation tabs memakai icon canonical, bukan emoji label;
 - [x] GUI-AUDIT-10 — Database Reset actions/theme memakai shared primitive/token;
 - [x] GUI-AUDIT-11 — `<x-ui.icon>` menjadi single registry; `<x-ui-icon>` hanya compatibility adapter;
-- [x] source-readiness guard GUI-AUDIT-12/13 masuk `SPJ Critical`;
+- [x] source-readiness guard GUI-AUDIT-12/13 masuk release-safety regression;
 - [ ] migrasikan consumer `<x-ui-icon>` lama secara bertahap sampai compatibility wrapper dapat dihapus;
 - [ ] cleanup compatibility CSS/JS setelah seluruh consumer lama hilang;
 - [ ] field-level validation UX;
-- [ ] selesaikan 3 advisory Pint yang masih dikenal;
-- [ ] performance profiling;
+- [ ] selesaikan Pint advisory repository yang masih dikenal;
+- [ ] authenticated page-render/browser performance profiling, optimization, dan regression budget setelah transport baseline;
 - [ ] Bridge generated `bin/obj` cleanup;
 - [ ] report foundation.
 
