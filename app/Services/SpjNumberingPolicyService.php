@@ -16,10 +16,14 @@ use InvalidArgumentException;
  */
 class SpjNumberingPolicyService
 {
+    private readonly SpjNumberingDocumentRegistry $registry;
+
     public function __construct(
         private readonly SpjProcurementPolicyService $procurementPolicy,
-        private readonly SpjNumberingDocumentRegistry $registry,
-    ) {}
+        ?SpjNumberingDocumentRegistry $registry = null,
+    ) {
+        $this->registry = $registry ?? new SpjNumberingDocumentRegistry;
+    }
 
     /** @return list<string> */
     public function automaticDocumentTypes(): array
@@ -66,7 +70,8 @@ class SpjNumberingPolicyService
         }
 
         $category = $this->canonicalCategory((string) $transaction->spj_category);
-        if (! in_array($category, $definition['applicable_categories'], true)) {
+        $categories = $definition['applicable_categories'];
+        if (! in_array('*', $categories, true) && ! in_array($category, $categories, true)) {
             return false;
         }
 
