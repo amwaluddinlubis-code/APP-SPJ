@@ -2,46 +2,44 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diperbarui: **2026-09-11**.
+Terakhir diperbarui: **2026-09-12**.
 
 ## Status branch saat ini
 
-Checkpoint kode terbaru yang sudah melewati release gate:
+Root README adalah entry point project, bukan sumber angka/checkpoint release yang harus dipelihara terpisah.
+
+Gunakan sumber canonical berikut untuk kondisi project terkini:
+
+- `docs/CURRENT_PROGRESS.md` — status release, blocker, RVR, dan evidence aktif;
+- `docs/P0_VERIFICATION_KIT.md` §1 — CI code gate/release-safety evidence aktif;
+- `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
+
+Ringkasan status saat ini tetap:
 
 ```text
-commit : 0df9b2ffbf14ed191e36c063e6355f9cb63c4a66
-subject: test: gate template upload routing regression
-CI run : 34578276166
-CI job : 103195683045
-result : PASS — 243 tests / 1848 assertions
+FUNCTIONAL CORE : PASS
+REAL-DATA       : VERIFICATION ACTIVE
+OFFICIAL OUTPUT : RVR ACTIVE
+BROWSER/RUNTIME : RVR ACTIVE
+FINAL RELEASE   : NOT YET
 ```
 
-Gate pada checkpoint tersebut:
-
-```text
-Frontend build       PASS
-Blade compile/cache  PASS
-SPJ Critical         PASS — 243 tests / 1848 assertions
-Repository Pint      ADVISORY — 2 style issues
-```
-
-Dua style issue Pint yang masih advisory berada di `app/Services/ArkasStagingService.php` dan `tests/Feature/SyncProgressUiTest.php`. Keduanya bukan blocker functional gate saat ini.
-
-Status release keseluruhan tetap **belum final release**. Core SPJ sudah mempunyai deterministic regression yang kuat, real-data verification sudah dimulai, sedangkan installed-runtime verification saat ini tidak menjadi fokus pekerjaan berikutnya.
+Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke README ini karena cepat menjadi stale. Commit dokumentasi-only setelah code gate juga tidak dianggap sebagai code gate baru.
 
 ## Dokumentasi utama
 
 - `docs/README.md` — indeks dokumentasi, urutan source-of-truth, dan pemisahan dokumen aktif vs historis.
 - `docs/CURRENT_PROGRESS.md` — status release, checkpoint, gap aktif, dan evidence terbaru.
+- `docs/P0_VERIFICATION_KIT.md` — release-safety gate, command canonical, dan real-tenant audit.
 - `docs/DEVELOPMENT_ROADMAP.md` — prioritas pekerjaan berikutnya.
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen.
 - `docs/ARCHITECTURE_COMPLETE.md` — arsitektur aplikasi dan boundary tenant.
 - `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer.
 - `docs/GUI_STANDARDIZATION.md` — kontrak GUI.
 - `docs/CSS_USAGE_GUIDE.md` — kontrak CSS/theme.
-- `docs/SIPLAH_MVP_PLAN.md` — batas MVP SiPLah.
+- `docs/SIPLAH_MVP_PLAN.md` — legacy filename untuk verification guide SiPLah aktif.
 
-Untuk menentukan kondisi project saat ini, utamakan `docs/CURRENT_PROGRESS.md` dan `docs/DEVELOPMENT_ROADMAP.md`. Dokumen yang berstatus `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya dipertahankan sebagai jejak keputusan dan tidak boleh mengalahkan status aktif.
+Untuk menentukan kondisi project saat ini, utamakan `docs/CURRENT_PROGRESS.md` dan `docs/P0_VERIFICATION_KIT.md`; gunakan `docs/DEVELOPMENT_ROADMAP.md` untuk urutan pekerjaan. Dokumen yang berstatus `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya dipertahankan sebagai jejak keputusan dan tidak boleh mengalahkan status aktif.
 
 ## Kontrak arsitektur inti
 
@@ -99,7 +97,7 @@ Import Paket Template  = 1 workbook XLSX master → 11 template canonical
 Upload Satu Template   = 1 file DOCX/XLSX → 1 document type
 ```
 
-Perbaikan upload terbaru:
+Perbaikan upload yang sudah diregresikan:
 
 - form memakai mode eksplisit `?upload=package` dan `?upload=single`;
 - mode tetap dapat dikenali walaupun PHP membuang body POST karena `post_max_size` terlampaui;
@@ -118,7 +116,7 @@ tests/Feature/DocumentTemplateUploadValidationTest.php
 tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php
 ```
 
-Keduanya berada di suite `SPJ Critical`.
+Keduanya berada pada release-safety regression aktif.
 
 ## Generator dokumen
 
@@ -137,7 +135,7 @@ Yang masih perlu real-template/operator verification adalah visual fidelity temp
 
 ## Real-data checkpoint
 
-Database sekolah nyata terbaru yang dianalisis mempunyai transaksi dan detail transaksi nyata serta Paket SPJ yang sudah disiapkan. Checkpoint real-data utama saat ini:
+Baseline audit real-data yang masih dirujuk pada status aktif mempunyai transaksi dan detail transaksi nyata serta Paket SPJ yang sudah disiapkan:
 
 ```text
 transactions       170
@@ -151,11 +149,11 @@ number formats       0
 
 Kategori tahun 2026 tersedia untuk `BARANG`, `HONOR_PEGAWAI`, `JASA_LAINNYA`, `KONSUMSI`, dan `PEMELIHARAAN`. Data `SPPD` nyata tersedia pada tahun 2025, sehingga tidak boleh dibuat data SPPD 2026 hanya untuk memaksakan six-category real-data coverage.
 
-Real-data berikutnya harus tetap mengikuti aturan: audit read-only lebih dulu, numbering canonical order, berhenti pada blocker legitimate, dan tidak mengarang penerima/vendor/template/data source yang tidak tersedia.
+Real-data berikutnya harus tetap mengikuti aturan: audit read-only lebih dulu, numbering canonical order, berhenti pada blocker legitimate, dan tidak mengarang penerima/vendor/template/data source yang tidak tersedia. Status real-data terbaru tetap dibaca dari `docs/CURRENT_PROGRESS.md`.
 
 ## Generic ARKAS Importer
 
-Generic ARKAS Importer sudah melewati functional correctness gate untuk:
+Generic ARKAS Importer sudah melewati functional correctness/hardening untuk:
 
 - stable source key;
 - tenant boundary;
@@ -168,7 +166,7 @@ Generic ARKAS Importer sudah melewati functional correctness gate untuk:
 - created-at preservation;
 - semantic import metrics.
 
-Pekerjaan lanjutan importer terutama scale/performance: Bridge-side delta fetch dan evaluasi/paginasi di atas limit fetch besar.
+Pekerjaan lanjutan importer terutama operator-data verification dan scale/performance: Bridge-side delta fetch serta evaluasi/paginasi di atas limit fetch besar.
 
 ## APP DATA / database tenant
 
@@ -243,10 +241,10 @@ Untuk perubahan PHP:
 php vendor/bin/pint --dirty --format agent
 ```
 
-Release gate canonical:
+Release verification canonical:
 
 ```powershell
 php artisan spj:verify
 ```
 
-Gunakan `--strict-style` bila repository-wide Pint ingin dijadikan blocking gate.
+Evidence CI code gate aktif dan perbedaan antara local verification vs GitHub CI berada di `docs/P0_VERIFICATION_KIT.md` §1–2. Gunakan `--strict-style` bila repository-wide Pint ingin dijadikan blocking gate.
