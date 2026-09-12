@@ -8,39 +8,49 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 /**
- * Canonical policy for automatic SPJ document numbering.
+ * Runtime policy adapter for the canonical numbering registry.
  *
- * The transaction/payment quarter determines which package enters a batch,
- * while each document keeps its own canonical event date. This service only
- * answers whether a document type is applicable to the transaction category
- * and owns the default number format used when a school has not customized it.
+ * Document identity, labels, categories, event-date rules and target number
+ * fields live in SpjNumberingDocumentRegistry. This service only applies
+ * runtime conditions such as the SiPlah channel and persists number formats.
  */
 class SpjNumberingPolicyService
 {
-    /** @var list<string> */
-    public const AUTOMATIC_DOCUMENT_TYPES = [
-        'SPJ',
-        'PESANAN',
-        'BAP',
-        'BAST',
-        'SPK',
-        'RAB',
-        'SURAT_TUGAS_PERJALANAN_DINAS',
-    ];
-
-    public function __construct(private readonly SpjProcurementPolicyService $procurementPolicy) {}
+    public function __construct(
+        private readonly SpjProcurementPolicyService $procurementPolicy,
+        private readonly SpjNumberingDocumentRegistry $registry,
+    ) {}
 
     /** @return list<string> */
     public function automaticDocumentTypes(): array
     {
-        return self::AUTOMATIC_DOCUMENT_TYPES;
+        return $this->registry->numberedCodes();
+    }
+
+    /** @return array<string,string> */
+    public function automaticDocumentLabels(): array
+    {
+        return $this->registry->numberedLabels();
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    public function numberingDefinitions(): array
+    {
+        return $this->registry->all();
+    }
+
+    /** @return array<string,mixed>|null */
+    public function numberingDefinition(string $documentType): ?array
+    {
+        return $this->registry->get($documentType);
     }
 
     public function canonicalAutomaticDocumentType(string $documentType): ?string
     {
-        $canonical = $this->automaticTypeAlias($documentType);
+        $canonical = $this->registry->canonical($documentType);
+        $definition = $canonical ? $this->registry->get($canonical) : null;
 
-        return in_array($canonical, self::AUTOMATIC_DOCUMENT_TYPES, true) ? $canonical : null;
+        return $definition && $definition['numbered'] === true ? $canonical : null;
     }
 
     public function isAutomaticDocumentType(string $documentType): bool
@@ -50,42 +60,53 @@ class SpjNumberingPolicyService
 
     public function isAutomaticDocumentEligible(Transaction $transaction, string $documentType): bool
     {
-        $documentType = $this->canonicalAutomaticDocumentType($documentType);
-        if ($documentType === null) {
+        $definition = $this->numberingDefinition($documentType);
+        if (! $definition || $definition['numbered'] !== true) {
             return false;
         }
 
         $category = $this->canonicalCategory((string) $transaction->spj_category);
-        $isSiplah = $this->procurementPolicy->isSiplah($transaction);
+        if (! in_array($category, $definition['applicable_categories'], true)) {
+            return false;
+        }
 
-        return match ($documentType) {
-            // Setiap paket SPJ mempunyai dokumen utama. Validasi paket tetap
-            // menolak kategori kosong/tidak canonical sebelum workflow riil.
-            'SPJ' => true,
+        return match ($definition['channel']) {
+            SpjNumberingDocumentRegistry::CHANNEL_NON_SIPLAH => ! $this->procurementPolicy->isSiplah($transaction),
+            default => true,
+        };
+    }
 
-            // Dokumen pengadaan internal hanya untuk BARANG/KONSUMSI Non-SiPLah.
-            'PESANAN', 'BAP', 'BAST' => ! $isSiplah
-                && in_array($category, ['BARANG', 'KONSUMSI'], true),
+    public function documentEventDateValue(Transaction $transaction, string $documentType, string $scopeKey = 'MAIN'): mixed
+    {
+        $definition = $this->numberingDefinition($documentType);
+        if (! $definition) {
+            return null;
+        }
 
-            // SPK/RAB adalah domain pekerjaan pemeliharaan.
-            'SPK', 'RAB' => $category === 'PEMELIHARAAN',
+        $rule = $definition['event_date_rule'];
+        $field = $rule['field'];
+        $fallbackField = $rule['fallback_field'];
 
-            // Surat tugas hanya diterbitkan untuk transaksi perjalanan dinas.
-            'SURAT_TUGAS_PERJALANAN_DINAS' => $category === 'SPPD',
-
-            default => false,
+        return match ($rule['relation']) {
+            'transaction' => $transaction->{$field},
+            'goods' => $transaction->goods->pluck($field)->filter()->sort()->first()
+                ?: ($fallbackField ? $transaction->goods->pluck($fallbackField)->filter()->sort()->first() : null),
+            'workOrder' => $transaction->workOrder?->{$field}
+                ?: ($fallbackField ? $transaction->workOrder?->{$fallbackField} : null),
+            'travels' => $this->travelEventDateValue($transaction, $scopeKey, $field, $fallbackField),
+            default => null,
         };
     }
 
     /**
-     * Persist canonical defaults for automatic document types without
+     * Persist canonical defaults for numbered document types without
      * overwriting any format already customized by the school/operator.
      *
      * @return Collection<int, DocumentNumberFormat>
      */
     public function ensureAutomaticFormats(int $fiscalYearId): Collection
     {
-        return collect(self::AUTOMATIC_DOCUMENT_TYPES)
+        return collect($this->automaticDocumentTypes())
             ->map(fn (string $documentType): DocumentNumberFormat => $this->formatFor($fiscalYearId, $documentType));
     }
 
@@ -108,15 +129,13 @@ class SpjNumberingPolicyService
     /** @return array{format_pattern:string,reset_period:string,padding:int,is_active:bool} */
     public function defaultFormat(string $documentType): array
     {
-        $documentType = strtoupper(trim($documentType));
-        $prefix = match ($documentType) {
-            'ORDER' => 'PESANAN',
-            'RECEIPT' => 'KWITANSI',
-            default => $documentType,
-        };
+        $canonical = $this->canonicalAutomaticDocumentType($documentType);
+        if ($canonical === null) {
+            throw new InvalidArgumentException('Jenis dokumen tidak termasuk domain penomoran canonical aplikasi.');
+        }
 
         return [
-            'format_pattern' => '{SEQ}/'.$prefix.'/{SCHOOL}/{TW}/{YEAR}',
+            'format_pattern' => '{SEQ}/'.$canonical.'/{SCHOOL}/{TW}/{YEAR}',
             'reset_period' => 'YEAR',
             'padding' => 4,
             'is_active' => true,
@@ -137,14 +156,16 @@ class SpjNumberingPolicyService
         };
     }
 
-    private function automaticTypeAlias(string $documentType): string
+    private function travelEventDateValue(Transaction $transaction, string $scopeKey, string $field, ?string $fallbackField): mixed
     {
-        $documentType = strtoupper(trim($documentType));
+        if (str_starts_with($scopeKey, 'TRAVEL-')) {
+            $travelId = (int) substr($scopeKey, strlen('TRAVEL-'));
+            $travel = $transaction->travels->firstWhere('id', $travelId);
 
-        return match ($documentType) {
-            'ORDER', 'SURAT_PESANAN' => 'PESANAN',
-            'WORK_ORDER' => 'SPK',
-            default => $documentType,
-        };
+            return $travel?->{$field} ?: ($fallbackField ? $travel?->{$fallbackField} : null);
+        }
+
+        return $transaction->travels->pluck($field)->filter()->sort()->first()
+            ?: ($fallbackField ? $transaction->travels->pluck($fallbackField)->filter()->sort()->first() : null);
     }
 }
