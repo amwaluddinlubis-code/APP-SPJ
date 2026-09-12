@@ -57,7 +57,7 @@ class DocumentTemplateMasterExportTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_master_export_uses_latest_active_xlsx_for_each_canonical_document(): void
+    public function test_master_export_uses_individual_update_over_imported_master_copies(): void
     {
         $updatedType = SpjDocumentTypeRegistry::RINCIAN_BELANJA;
         $this->storeCanonicalTemplateSet($updatedType);
@@ -114,23 +114,32 @@ class DocumentTemplateMasterExportTest extends TestCase
     private function storeCanonicalTemplateSet(?string $updatedType = null, ?string $skipType = null): void
     {
         $yearId = (int) session('active_fiscal_year_id');
+        $masterPath = $this->makeCanonicalMasterWorkbook();
+        $masterContents = file_get_contents($masterPath);
+        @unlink($masterPath);
+        $this->assertIsString($masterContents);
 
         foreach (SpjDocumentTypeRegistry::all() as $documentType => $definition) {
             if ($documentType === $skipType) {
                 continue;
             }
 
-            $sheetName = $documentType === $updatedType
-                ? 'Template Update Operator'
-                : (string) $definition['sheet'];
-            $sentinel = $documentType === $updatedType
-                ? 'VERSI-BARU-RINCIAN'
-                : 'VERSI-AKTIF-'.$documentType;
-            $temporaryPath = $this->makeCanonicalWorkbook($documentType, $sheetName, $sentinel);
             $relativePath = 'document-templates/'.$yearId.'/master-export/'.$documentType.'.xlsx';
 
-            Storage::disk('local')->put($relativePath, file_get_contents($temporaryPath));
-            @unlink($temporaryPath);
+            if ($documentType === $updatedType) {
+                $temporaryPath = $this->makeCanonicalWorkbook(
+                    $documentType,
+                    'Template Update Operator',
+                    'VERSI-BARU-RINCIAN',
+                );
+                Storage::disk('local')->put($relativePath, file_get_contents($temporaryPath));
+                @unlink($temporaryPath);
+            } else {
+                // Package import intentionally stores a safe full-master copy for each
+                // canonical row. Use that same storage shape here so this regression
+                // covers the real "import master -> update one -> download master" flow.
+                Storage::disk('local')->put($relativePath, $masterContents);
+            }
 
             DocumentTemplate::query()->create([
                 'fiscal_year_id' => $yearId,
@@ -144,6 +153,34 @@ class DocumentTemplateMasterExportTest extends TestCase
         }
     }
 
+    private function makeCanonicalMasterWorkbook(): string
+    {
+        $book = new Spreadsheet;
+        $first = true;
+
+        foreach (SpjDocumentTypeRegistry::all() as $documentType => $definition) {
+            if ($first) {
+                $sheet = $book->getActiveSheet()->setTitle((string) $definition['sheet']);
+                $first = false;
+            } else {
+                $sheet = new Worksheet($book, (string) $definition['sheet']);
+                $book->addSheet($sheet);
+            }
+
+            $this->populateCanonicalSheet(
+                $sheet,
+                $definition,
+                'VERSI-AKTIF-'.$documentType,
+            );
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'spj-master-export-source-').'.xlsx';
+        (new Xlsx($book))->save($path);
+        $book->disconnectWorksheets();
+
+        return $path;
+    }
+
     private function makeCanonicalWorkbook(string $documentType, string $sheetName, string $sentinel): string
     {
         $definition = SpjDocumentTypeRegistry::definition($documentType);
@@ -151,6 +188,18 @@ class DocumentTemplateMasterExportTest extends TestCase
 
         $book = new Spreadsheet;
         $sheet = $book->getActiveSheet()->setTitle($sheetName);
+        $this->populateCanonicalSheet($sheet, $definition, $sentinel);
+
+        $path = tempnam(sys_get_temp_dir(), 'spj-master-export-update-').'.xlsx';
+        (new Xlsx($book))->save($path);
+        $book->disconnectWorksheets();
+
+        return $path;
+    }
+
+    /** @param array<string,mixed> $definition */
+    private function populateCanonicalSheet(Worksheet $sheet, array $definition, string $sentinel): void
+    {
         $scalarMarkers = array_values(array_unique(array_merge(
             $definition['required'],
             $definition['optional'],
@@ -164,12 +213,6 @@ class DocumentTemplateMasterExportTest extends TestCase
         $this->writeMarkers($sheet, $scalarMarkers, 1);
         $this->writeMarkers($sheet, $repeatMarkers, 20);
         $sheet->setCellValue('Z30', $sentinel);
-
-        $path = tempnam(sys_get_temp_dir(), 'spj-master-export-').'.xlsx';
-        (new Xlsx($book))->save($path);
-        $book->disconnectWorksheets();
-
-        return $path;
     }
 
     /** @param array<int,string> $markers */
