@@ -51,7 +51,7 @@
                 <article
                     class="overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm"
                     x-data="{
-                        open: true,
+                        open: @js(old('document_type') === $documentType),
                         saved: @js((bool) $format),
                         saving: false,
                         message: '',
