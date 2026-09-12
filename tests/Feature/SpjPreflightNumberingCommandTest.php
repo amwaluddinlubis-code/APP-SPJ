@@ -78,6 +78,9 @@ class SpjPreflightNumberingCommandTest extends TestCase
         $this->assertSame(1, $exitCode, 'Fixture sengaja belum lengkap sehingga preflight harus BLOCKED.');
         $this->assertTrue($report['query_only']);
         $this->assertTrue($report['database_hash_unchanged']);
+        $this->assertSame(2, $report['summary']['transactions_with_items']);
+        $this->assertSame(2, $report['summary']['packages_ready_or_numbered']);
+        $this->assertSame(0, $report['summary']['scope_mismatch']);
         $this->assertSame(2, $report['summary']['ordered_packages']);
         $this->assertSame(['BPU02', 'BPU10'], array_column($report['ordering'], 'no_bukti'));
 
