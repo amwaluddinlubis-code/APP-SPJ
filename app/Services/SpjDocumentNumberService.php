@@ -16,7 +16,7 @@ class SpjDocumentNumberService
     public function __construct(private readonly SpjNumberingPolicyService $policy) {}
 
     /**
-     * Terbitkan nomor domain paket berdasarkan tanggal peristiwanya.
+     * Terbitkan nomor domain paket berdasarkan registry canonical.
      * Nomor yang sudah tersedia tidak pernah ditimpa.
      *
      * @param  array<int, string>|null  $onlyDocumentTypes
@@ -35,9 +35,8 @@ class SpjDocumentNumberService
             : collect($onlyDocumentTypes)
                 ->map(fn (string $type): ?string => $this->policy->canonicalAutomaticDocumentType($type))
                 ->filter()
+                ->unique()
                 ->values();
-        $shouldAssign = fn (string $type): bool => ($selectedTypes === null || $selectedTypes->contains($type))
-            && $this->policy->isAutomaticDocumentEligible($transaction, $type);
 
         $assign = function (string $type, CarbonInterface $date, string $scopeKey = 'MAIN') use ($package, $schoolCode, $npsn, $documents, &$created, &$skipped): SpjDocument {
             $alreadyNumbered = $package->documents()
@@ -52,68 +51,87 @@ class SpjDocumentNumberService
             return $document;
         };
 
-        if ($shouldAssign('SPJ') && $transaction->transaction_date) {
-            $assign('SPJ', Carbon::parse($transaction->transaction_date));
-        }
+        foreach ($this->policy->automaticDocumentTypes() as $type) {
+            if (($selectedTypes !== null && ! $selectedTypes->contains($type))
+                || ! $this->policy->isAutomaticDocumentEligible($transaction, $type)) {
+                continue;
+            }
 
-        foreach ([
-            'PESANAN' => ['date' => 'order_date', 'number' => 'order_number'],
-            'BAP' => ['date' => 'bap_date', 'number' => 'bap_number'],
-            'BAST' => ['date' => 'bast_date', 'number' => 'bast_number'],
-        ] as $type => $mapping) {
-            if (! $shouldAssign($type)) {
+            $definition = $this->policy->numberingDefinition($type);
+            if (! $definition) {
                 continue;
             }
-            $date = $transaction->goods->pluck($mapping['date'])->filter()->sort()->first();
-            if (! $date) {
-                continue;
-            }
-            $existing = $transaction->goods->pluck($mapping['number'])->filter()->first();
-            if ($existing) {
-                $transaction->goods()->whereNull($mapping['number'])->update([$mapping['number'] => $existing]);
-                $skipped++;
+            $target = $definition['number_target'];
+            $targetField = $target['field'];
+            $eventDate = $this->policy->documentEventDateValue($transaction, $type);
+
+            if ($target['relation'] === 'package') {
+                if ($eventDate) {
+                    $assign($type, Carbon::parse($eventDate));
+                }
 
                 continue;
             }
-            $document = $assign($type, Carbon::parse($date));
-            $transaction->goods()->whereNull($mapping['number'])->update([$mapping['number'] => $document->document_number]);
-        }
 
-        $workOrder = $transaction->workOrder;
-        foreach ([
-            'SPK' => ['date' => 'spk_date', 'number' => 'spk_number'],
-            'RAB' => ['date' => 'rab_date', 'number' => 'rab_number'],
-        ] as $type => $mapping) {
-            if (! $shouldAssign($type) || ! $workOrder?->{$mapping['date']}) {
-                continue;
-            }
-            if (filled($workOrder->{$mapping['number']})) {
-                $skipped++;
-
-                continue;
-            }
-            $document = $assign($type, Carbon::parse($workOrder->{$mapping['date']}));
-            $workOrder->forceFill([$mapping['number'] => $document->document_number])->save();
-        }
-
-        if ($shouldAssign('SURAT_TUGAS_PERJALANAN_DINAS')) {
-            $travels = $transaction->travels
-                ->sortBy(fn ($travel): string => Carbon::parse($travel->assignment_letter_date ?: $travel->departure_date ?: '9999-12-31')->format('Y-m-d').'-'.str_pad((string) ($travel->sort_order ?? 0), 8, '0', STR_PAD_LEFT).'-'.str_pad((string) $travel->id, 12, '0', STR_PAD_LEFT));
-            foreach ($travels as $travel) {
-                $eventDate = $travel->assignment_letter_date ?: $travel->departure_date;
-                if (! $eventDate) {
+            if ($target['relation'] === 'goods') {
+                if (! $eventDate || ! $targetField) {
                     continue;
                 }
-                if (filled($travel->assignment_letter_number)) {
+                $existing = $transaction->goods->pluck($targetField)->filter()->first();
+                if ($existing) {
+                    $transaction->goods()->whereNull($targetField)->update([$targetField => $existing]);
                     $skipped++;
 
                     continue;
                 }
-                $document = $assign('SURAT_TUGAS_PERJALANAN_DINAS', Carbon::parse($eventDate), 'TRAVEL-'.$travel->id);
-                $travel->forceFill([
-                    'assignment_letter_number' => $document->document_number,
-                    'assignment_letter_date' => $travel->assignment_letter_date ?: $eventDate,
-                ])->save();
+                $document = $assign($type, Carbon::parse($eventDate));
+                $transaction->goods()->whereNull($targetField)->update([$targetField => $document->document_number]);
+
+                continue;
+            }
+
+            if ($target['relation'] === 'workOrder') {
+                $workOrder = $transaction->workOrder;
+                if (! $workOrder || ! $eventDate || ! $targetField) {
+                    continue;
+                }
+                if (filled($workOrder->{$targetField})) {
+                    $skipped++;
+
+                    continue;
+                }
+                $document = $assign($type, Carbon::parse($eventDate));
+                $workOrder->forceFill([$targetField => $document->document_number])->save();
+
+                continue;
+            }
+
+            if ($target['relation'] === 'travels') {
+                $rule = $definition['event_date_rule'];
+                $travels = $transaction->travels->sortBy(function ($travel) use ($rule): string {
+                    $date = $travel->{$rule['field']} ?: ($rule['fallback_field'] ? $travel->{$rule['fallback_field']} : null) ?: '9999-12-31';
+
+                    return Carbon::parse($date)->format('Y-m-d').'-'.str_pad((string) ($travel->sort_order ?? 0), 8, '0', STR_PAD_LEFT).'-'.str_pad((string) $travel->id, 12, '0', STR_PAD_LEFT);
+                });
+                foreach ($travels as $travel) {
+                    $travelEventDate = $travel->{$rule['field']} ?: ($rule['fallback_field'] ? $travel->{$rule['fallback_field']} : null);
+                    if (! $travelEventDate) {
+                        continue;
+                    }
+                    if ($targetField && filled($travel->{$targetField})) {
+                        $skipped++;
+
+                        continue;
+                    }
+                    $scopeKey = $definition['scope_rule'] === 'TRAVEL' ? 'TRAVEL-'.$travel->id : 'MAIN';
+                    $document = $assign($type, Carbon::parse($travelEventDate), $scopeKey);
+                    if ($targetField) {
+                        $travel->forceFill([$targetField => $document->document_number])->save();
+                    }
+                    if ($rule['field'] === 'assignment_letter_date' && blank($travel->{$rule['field']})) {
+                        $travel->forceFill([$rule['field'] => $travelEventDate])->save();
+                    }
+                }
             }
         }
 
@@ -131,9 +149,9 @@ class SpjDocumentNumberService
     ): SpjDocument {
         $documentType = $this->policy->canonicalAutomaticDocumentType($documentType);
         if ($documentType === null) {
-            throw new InvalidArgumentException('Jenis dokumen tidak termasuk 7 domain penomoran canonical aplikasi.');
+            throw new InvalidArgumentException('Jenis dokumen tidak termasuk domain penomoran canonical aplikasi.');
         }
-        $documentDate = $this->canonicalDocumentDate($package, $documentType, $documentDate);
+        $documentDate = $this->canonicalDocumentDate($package, $documentType, $documentDate, $scopeKey);
 
         return DB::connection('school')->transaction(function () use ($package, $documentType, $documentDate, $schoolCode, $scopeKey, $templateId, $npsn): SpjDocument {
             $identity = [
@@ -150,10 +168,6 @@ class SpjDocumentNumberService
                 return $activeDocument;
             }
 
-            // CANCELLED adalah pembatalan bisnis individual dan nomornya tetap
-            // menjadi histori permanen. Identity baru harus mendapat sequence
-            // berikutnya; hanya rollback numbering yang boleh menghapus record
-            // numbering dan menurunkan sequence.
             $document = $activeDocument ?? new SpjDocument($identity);
             $yearId = (int) $package->transaction->fiscal_year_id;
             $fundSourceId = $package->transaction->fund_source_id === null ? null : (int) $package->transaction->fund_source_id;
@@ -196,15 +210,20 @@ class SpjDocumentNumberService
                 'cancellation_reason' => null,
             ])->save();
 
-            if ($documentType === 'SPJ' && $scopeKey === 'MAIN') {
-                $package->forceFill([
-                    'document_number' => $number,
+            $definition = $this->policy->numberingDefinition($documentType);
+            if (($definition['number_target']['relation'] ?? null) === 'package' && $scopeKey === 'MAIN') {
+                $field = $definition['number_target']['field'] ?? null;
+                $updates = [
                     'status' => 'NUMBERED',
                     'numbered_at' => now(),
                     'cancelled_at' => null,
                     'cancelled_by' => null,
                     'cancellation_reason' => null,
-                ])->save();
+                ];
+                if ($field) {
+                    $updates[$field] = $number;
+                }
+                $package->forceFill($updates)->save();
             }
 
             return $document;
@@ -222,22 +241,11 @@ class SpjDocumentNumberService
         return $this->renderNumber($format, strtoupper(trim($documentType)), $sequence, $documentDate, $schoolCode, $npsn);
     }
 
-    private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback): CarbonInterface
+    private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback, string $scopeKey): CarbonInterface
     {
         $package->load('transaction');
         $package->transaction?->load(['goods', 'workOrder', 'travels']);
-        $transaction = $package->transaction;
-        $value = match ($documentType) {
-            'SPJ' => $transaction->transaction_date,
-            'PESANAN' => $transaction->goods->pluck('order_date')->filter()->sort()->first(),
-            'BAP' => $transaction->goods->pluck('bap_date')->filter()->sort()->first(),
-            'BAST' => $transaction->goods->pluck('bast_date')->filter()->sort()->first(),
-            'SPK' => $transaction->workOrder?->spk_date,
-            'RAB' => $transaction->workOrder?->rab_date,
-            'SURAT_TUGAS_PERJALANAN_DINAS' => $transaction->travels->pluck('assignment_letter_date')->filter()->sort()->first()
-                ?: $transaction->travels->pluck('departure_date')->filter()->sort()->first(),
-            default => null,
-        };
+        $value = $this->policy->documentEventDateValue($package->transaction, $documentType, $scopeKey);
 
         return filled($value) ? Carbon::parse($value) : $fallback;
     }
