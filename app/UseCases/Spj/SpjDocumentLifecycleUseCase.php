@@ -105,22 +105,30 @@ class SpjDocumentLifecycleUseCase
 
     private function syncDerivedNumber(SpjDocument $document): void
     {
+        $definition = $this->numberingPolicy->numberingDefinition($document->document_type);
+        if (! $definition) {
+            return;
+        }
+
         $package = $document->package()->with(['transaction.goods', 'transaction.workOrder', 'transaction.travels'])->firstOrFail();
         $transaction = $package->transaction;
         $number = $document->document_number;
+        $target = $definition['number_target'];
+        $field = $target['field'];
+        if (! $field) {
+            return;
+        }
 
-        match ($document->document_type) {
-            'PESANAN' => $transaction->goods()->whereNull('order_number')->update(['order_number' => $number]),
-            'BAP' => $transaction->goods()->whereNull('bap_number')->update(['bap_number' => $number]),
-            'BAST' => $transaction->goods()->whereNull('bast_number')->update(['bast_number' => $number]),
-            'SPK' => $transaction->workOrder?->forceFill(['spk_number' => $number])->save(),
-            'RAB' => $transaction->workOrder?->forceFill(['rab_number' => $number])->save(),
-            'SURAT_TUGAS_PERJALANAN_DINAS' => $this->syncTravelNumber($transaction, $document->scope_key, $number),
+        match ($target['relation']) {
+            'package' => $package->forceFill([$field => $number])->save(),
+            'goods' => $transaction->goods()->whereNull($field)->update([$field => $number]),
+            'workOrder' => $transaction->workOrder?->forceFill([$field => $number])->save(),
+            'travels' => $this->syncScopedNumber($transaction, $document->scope_key, $field, $number),
             default => null,
         };
     }
 
-    private function syncTravelNumber($transaction, string $scopeKey, string $number): void
+    private function syncScopedNumber($transaction, string $scopeKey, string $field, string $number): void
     {
         if (! str_starts_with($scopeKey, 'TRAVEL-')) {
             return;
@@ -128,7 +136,7 @@ class SpjDocumentLifecycleUseCase
 
         $travelId = (int) substr($scopeKey, strlen('TRAVEL-'));
         if ($travelId > 0) {
-            $transaction->travels()->whereKey($travelId)->update(['assignment_letter_number' => $number]);
+            $transaction->travels()->whereKey($travelId)->update([$field => $number]);
         }
     }
 }
