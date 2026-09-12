@@ -3,10 +3,23 @@
    cannot reintroduce 10px/11px text. */
 
 :root {
-    --ui-font-size-min: 0.75rem; /* 12px at the browser default root size */
-    --ui-table-font-size: 0.875rem; /* 14px: primary table reading size */
-    --ui-table-small-font-size: 0.8125rem; /* 13px: secondary/small table text */
-    --ui-table-header-font-size: 0.8125rem; /* 13px: compact but readable headers */
+    --ui-font-size-min: 0.75rem;
+    /* 12px at the browser default root size */
+    --ui-font-body: 0.875rem;
+    /* 14px: default application reading size */
+    --ui-font-label: 0.8125rem;
+    /* 13px: labels, metadata, and compact headings */
+    --ui-font-caption: 0.75rem;
+    /* 12px: hints, helper text, and status metadata */
+    --ui-font-heading: 1rem;
+    /* 16px: panel and section headings */
+    --ui-font-page-title: 1.5rem;
+    /* 24px: page title */
+    --ui-line-body: 1.35rem;
+    --ui-line-caption: 1rem;
+    --ui-table-font-size: var(--ui-font-body);
+    --ui-table-small-font-size: var(--ui-font-label);
+    --ui-table-header-font-size: var(--ui-font-label);
 }
 
 /* Tailwind arbitrary-size utilities currently used by legacy and standardized views. */

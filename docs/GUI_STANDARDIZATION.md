@@ -33,6 +33,12 @@ Pada halaman panjang tersedia kontrol sticky **Ke atas**.
 
 Pada desktop saat sidebar diciutkan, hanya icon navigasi yang ditampilkan pada rail sempit. Label menu disembunyikan agar tidak terpotong; link dan tombol utama tetap menyediakan `title`/`aria-label` untuk identifikasi dan aksesibilitas. Kontrol expand/collapse hanya berada di header aplikasi; sidebar tidak memiliki toggle kedua. Pada mobile, kontrol header yang sama membuka dan menutup drawer navigasi.
 
+Label navigasi sidebar memakai skala body canonical `14px` dengan line-height `20px`. Tinggi item tetap sekitar `42px` agar area klik tidak terlalu kecil.
+
+Dashboard pada desktop menengah (`1024px` sampai `1279px`) memakai header satu baris yang lebih padat. Nama sekolah dan select tahun diberi batas lebar yang responsif, sedangkan profil user tetap tersedia melalui icon dengan `title`/aksesibilitas. Tujuannya mencegah header membungkus ke baris kedua saat sidebar expanded.
+
+Dashboard operator memakai hierarki visual berikut: header dan strip status, satu panel prioritas utama, kartu pekerjaan lanjutan, lalu antrean kerja dan panel samping. Redesign ini mengurangi dekorasi/card weight yang setara, mempertahankan semua link workflow existing, dan memprioritaskan pekerjaan operator yang dapat langsung dikerjakan.
+
 Header kanan authenticated memakai menu **Profil User**, bukan badge teknis runtime. Dropdown dapat menampilkan identitas user, role, akses manajemen user untuk admin, dan logout.
 
 ## 3. Sistem tema
@@ -60,6 +66,28 @@ Gunakan token utama:
 ```
 
 Semantic success/warning/danger tetap boleh memakai semantic color. Kode baru tidak boleh bergantung pada hard-coded palette non-semantik hanya karena compatibility layer tersedia.
+
+### Skala typography canonical
+
+Gunakan token typography berikut untuk primitive dan halaman baru:
+
+```text
+body/control        : 14px
+label/metadata      : 13px
+caption/helper      : 12px
+panel heading       : 16px
+page title          : 24px
+table body          : 14px
+table small/header  : 13px
+```
+
+Line-height body memakai sekitar `1.35rem`; caption memakai `1rem`. Teks aplikasi tidak boleh turun di bawah baseline aksesibilitas `12px`. Heading page tidak boleh kembali ke `30px` hanya karena media query atau theme profile.
+
+### Warna teks dan ikon canonical
+
+Foreground content/link wajib menggunakan token tema aktif (`--theme-content-accent`, `--ui-fg-*`, atau `--text-comfort-*`), bukan warna palette tetap. Kontras dark appearance ditentukan oleh `data-ui-appearance`, termasuk profile ARKAS dark, bukan hanya nama theme `dark`.
+
+`x-page-header` memilih ikon canonical berdasarkan konteks title/kicker bila consumer tidak mengirim ikon eksplisit. Ikon berasal dari registry tunggal `<x-ui.icon>`; emoji tidak digunakan sebagai ikon utama pada tab, heading, atau action. Ikon eksplisit hanya ditambahkan bila memberi makna berbeda, agar tidak terjadi ikon ganda.
 
 ## 4. Primitive UI resmi
 
@@ -328,6 +356,8 @@ package tab text       : 14px
 Nilai ini bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Primary table text tetap 14px, sedangkan header/secondary table text tetap minimal 13px sesuai `minimum-font-size.css`.
 
 Pilot juga menormalkan variasi profile agar theme tidak membatalkan density yang sedang diuji: profile header `bold` tidak boleh memaksa `min-height` besar di `/spj`, padding tambahan summary dari personality/profile dinetralkan di scope pilot, dan summary workspace memakai marker `.spj-work-summary` agar padding compact benar-benar diterapkan. Pada viewport di bawah desktop, control dan package tab mempertahankan minimum 44px untuk touch target.
+
+Pada desktop menengah, topbar `/spj` menggunakan mode satu baris dengan kontrol sekolah/tahun/tema/profil yang dipadatkan. Evidence browser terakhir pada viewport `1101x889` menunjukkan tinggi topbar `72px`, tidak ada horizontal overflow, dan tabel tetap berada dalam container scroll horizontal. Ini adalah evidence scoped untuk pilot; viewport resmi lainnya tetap mengikuti checklist runtime.
 
 Pilot hanya mengubah presentation/density; lifecycle, validation, numbering, source ownership, authorization, route, persistence, dan workflow tetap sama. Kenyamanan visual dan tidak adanya clipping/overlap harus diverifikasi melalui checklist runtime di `GUI_RUNTIME_QA.md` sebelum dipromosikan menjadi standar global atau diterapkan ke Daftar Transaksi/Detail Transaksi.
 

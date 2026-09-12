@@ -1,7 +1,7 @@
 /* Database Manager header + summary generalization.
    Scope: visual/structural normalization only. Existing Blade actions and data stay unchanged. */
 
-main:has(#db-tabs) {
+main[data-page="database"] {
     --db-header-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
     --db-header-surface-soft: var(--ui-surface-muted, var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc)));
     --db-header-line: var(--ui-line, var(--ui-component-border, var(--ui-border, #dbe3ec)));
@@ -13,7 +13,7 @@ main:has(#db-tabs) {
 
 /* Treat the legacy wrapper as a layout-only container. The hero and the
    operational summary become independent generalized primitives. */
-main:has(#db-tabs) > div > section:first-of-type {
+main[data-page="database"]>div>section:first-of-type {
     display: grid !important;
     gap: var(--profile-section-gap, 1.5rem) !important;
     overflow: visible !important;
@@ -24,7 +24,7 @@ main:has(#db-tabs) > div > section:first-of-type {
 }
 
 /* Canonical page-header geometry. */
-main:has(#db-tabs) > div > section:first-of-type > div:first-child {
+main[data-page="database"]>div>section:first-of-type>div:first-child {
     position: relative;
     overflow: hidden;
     border: 1px solid var(--db-header-line) !important;
@@ -33,7 +33,7 @@ main:has(#db-tabs) > div > section:first-of-type > div:first-child {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > div:first-child > p:first-child {
+main[data-page="database"]>div>section:first-of-type>div:first-child>p:first-child {
     margin: 0 0 .5rem !important;
     color: var(--text-comfort-on-dark-soft) !important;
     font-size: .6875rem !important;
@@ -43,7 +43,7 @@ main:has(#db-tabs) > div > section:first-of-type > div:first-child > p:first-chi
     text-transform: uppercase;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 {
+main[data-page="database"]>div>section:first-of-type>div:first-child>h1 {
     margin: 0 !important;
     color: var(--text-comfort-on-dark) !important;
     font-size: 1.5rem !important;
@@ -52,7 +52,7 @@ main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 {
     line-height: 2rem !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
+main[data-page="database"]>div>section:first-of-type>div:first-child>h1+p {
     margin: .5rem 0 0 !important;
     max-width: 48rem;
     color: var(--text-comfort-on-dark-soft) !important;
@@ -62,19 +62,19 @@ main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
 }
 
 @media (min-width: 640px) {
-    main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 {
+    main[data-page="database"]>div>section:first-of-type>div:first-child>h1 {
         font-size: 1.875rem !important;
         line-height: 2.25rem !important;
     }
 
-    main:has(#db-tabs) > div > section:first-of-type > div:first-child > h1 + p {
+    main[data-page="database"]>div>section:first-of-type>div:first-child>h1+p {
         font-size: 1rem !important;
     }
 }
 
 /* Summary follows the shared ui-stat language as a separate grid, not a
    continuation strip attached to the hero. */
-main:has(#db-tabs) > div > section:first-of-type > .grid {
+main[data-page="database"]>div>section:first-of-type>.grid {
     display: grid !important;
     gap: .75rem !important;
     border: 0 !important;
@@ -82,7 +82,7 @@ main:has(#db-tabs) > div > section:first-of-type > .grid {
     padding: 0 !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div {
+main[data-page="database"]>div>section:first-of-type>.grid>div {
     position: relative;
     overflow: hidden;
     min-width: 0;
@@ -94,12 +94,12 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div + div {
+main[data-page="database"]>div>section:first-of-type>.grid>div+div {
     border-top: 1px solid var(--db-header-line) !important;
     border-left: 1px solid var(--db-header-line) !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div::before {
+main[data-page="database"]>div>section:first-of-type>.grid>div::before {
     position: absolute;
     inset-block: .85rem;
     left: 0;
@@ -110,7 +110,7 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div::before {
     opacity: .8;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:first-child {
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:first-child {
     margin: 0 !important;
     color: var(--db-header-fg-muted) !important;
     font-size: .68rem !important;
@@ -120,7 +120,7 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:first-child {
     text-transform: uppercase;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(2) {
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:nth-child(2) {
     margin-top: .25rem !important;
     color: var(--db-header-fg-strong) !important;
     font-size: 1.125rem !important;
@@ -128,7 +128,7 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(2) 
     line-height: 1.5rem !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(n+3) {
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:nth-child(n+3) {
     margin-top: .35rem !important;
     color: var(--db-header-fg-muted) !important;
     font-size: .75rem !important;
@@ -137,30 +137,30 @@ main:has(#db-tabs) > div > section:first-of-type > .grid > div > p:nth-child(n+3
 
 /* Keep the three cards balanced and let long technical values truncate instead
    of changing card height. */
-main:has(#db-tabs) > div > section:first-of-type > .grid > div > p {
+main[data-page="database"]>div>section:first-of-type>.grid>div>p {
     min-width: 0;
 }
 
 /* Preserve semantic health states inside generalized stat cards. */
-main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-emerald-600,.text-emerald-700) {
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-emerald-600, .text-emerald-700) {
     color: var(--text-comfort-success) !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-amber-600,.text-amber-700) {
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-amber-600, .text-amber-700) {
     color: var(--text-comfort-warning) !important;
 }
 
-main:has(#db-tabs) > div > section:first-of-type > .grid :is(.text-rose-600,.text-rose-700) {
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-rose-600, .text-rose-700) {
     color: var(--text-comfort-danger) !important;
 }
 
 /* Give the workspace the same separation rhythm used by generalized pages. */
-main:has(#db-tabs) #db-tabs {
+main[data-page="database"] #db-tabs {
     margin-top: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    main:has(#db-tabs) > div > section:first-of-type * {
+    main[data-page="database"]>div>section:first-of-type * {
         transition: none !important;
     }
 }

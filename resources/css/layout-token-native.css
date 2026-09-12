@@ -40,6 +40,8 @@
 .app-sidebar .app-nav {
     color: var(--app-sidebar-text) !important;
     border-radius: var(--profile-sidebar-item-radius, var(--profile-control-radius)) !important;
+    font-size: var(--ui-font-body, .875rem) !important;
+    line-height: 1.25rem !important;
 }
 
 .app-sidebar .app-nav:hover {
@@ -134,6 +136,50 @@
     border-radius: 999px;
     background: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--ui-component-surface, #fff));
     color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--text-comfort-primary, #334155));
+}
+
+/* Shared medium-desktop chrome contract. Feature pages inherit this shell
+   behavior instead of each adding a topbar-specific :has() selector. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    main[data-page] .app-topbar {
+        flex-wrap: nowrap !important;
+        gap: .5rem !important;
+        padding: .75rem !important;
+    }
+
+    main[data-page] .app-topbar>.flex.min-w-0 {
+        flex: 1 1 auto;
+        gap: .5rem !important;
+    }
+
+    main[data-page] .app-topbar-school {
+        max-width: 12.5rem;
+    }
+
+    main[data-page] .app-topbar-title {
+        font-size: 1rem !important;
+    }
+
+    main[data-page] .app-fiscal-year-select {
+        max-width: 10.5rem;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-theme-select {
+        min-width: 8.5rem;
+        max-width: 8.5rem;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-runtime-badge {
+        width: 2.5rem;
+        justify-content: center;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-runtime-badge>span {
+        display: none;
+    }
 }
 
 .app-main-content {

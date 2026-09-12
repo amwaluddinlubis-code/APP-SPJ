@@ -23,7 +23,7 @@
     border: 1px solid transparent;
     border-radius: var(--profile-control-radius);
     padding: .55rem 1rem;
-    font-size: .875rem;
+    font-size: var(--ui-font-body);
     font-weight: 700;
     line-height: 1.25rem;
     text-decoration: none;
@@ -115,13 +115,13 @@
 .ui-select {
     min-height: var(--profile-control-height);
     padding: .5rem .75rem;
-    font-size: .875rem;
+    font-size: var(--ui-font-body);
 }
 
 .ui-textarea {
     min-height: 5.5rem;
     padding: .65rem .75rem;
-    font-size: .875rem;
+    font-size: var(--ui-font-body);
     line-height: 1.5rem;
     resize: vertical;
 }

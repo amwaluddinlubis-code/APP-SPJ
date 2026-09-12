@@ -2,7 +2,7 @@
    Keep numbering/finalization workflow markup untouched while normalizing legacy
    structural colors through the canonical theme/component contract. */
 
-main:has(#spj-main-tabs) {
+main[data-page="spj"] {
     --spj-surface: var(--ui-component-surface, var(--ui-surface, #fff));
     --spj-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
     --spj-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
@@ -13,7 +13,7 @@ main:has(#spj-main-tabs) {
 }
 
 /* Main tab workspace shell */
-main:has(#spj-main-tabs) section:has(> #spj-main-tabs) {
+main[data-page="spj"] section:has(> #spj-main-tabs) {
     overflow: hidden;
     border-color: var(--spj-border) !important;
     border-radius: var(--profile-card-radius) !important;
@@ -22,72 +22,72 @@ main:has(#spj-main-tabs) section:has(> #spj-main-tabs) {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(#spj-main-tabs) #spj-main-tabs {
+main[data-page="spj"] #spj-main-tabs {
     border-bottom: 1px solid var(--spj-border);
     background: var(--spj-surface-soft);
 }
 
 /* Preparation filter */
-main:has(#spj-main-tabs) form[method="GET"]:has(input[name="tab"][value="persiapan"]) {
+main[data-page="spj"] form[method="GET"]:has(input[name="tab"][value="persiapan"]) {
     border-color: var(--spj-border) !important;
     border-radius: var(--profile-control-radius) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--spj-surface-soft)) !important;
 }
 
 /* Preparation and package tables keep geometry from table-standardization.css. */
-main:has(#spj-main-tabs) table tbody {
+main[data-page="spj"] table tbody {
     background: transparent !important;
 }
 
-main:has(#spj-main-tabs) table tbody tr:hover {
+main[data-page="spj"] table tbody tr:hover {
     background: var(--ui-table-row-hover) !important;
 }
 
-main:has(#spj-main-tabs) table a[class*="bg-violet-600"],
-main:has(#spj-main-tabs) table button[class*="bg-violet-600"],
-main:has(#spj-main-tabs) table a[class*="bg-indigo-600"],
-main:has(#spj-main-tabs) table button[class*="bg-indigo-600"] {
+main[data-page="spj"] table a[class*="bg-violet-600"],
+main[data-page="spj"] table button[class*="bg-violet-600"],
+main[data-page="spj"] table a[class*="bg-indigo-600"],
+main[data-page="spj"] table button[class*="bg-indigo-600"] {
     border-color: transparent !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
-main:has(#spj-main-tabs) table a[class*="bg-violet-50"],
-main:has(#spj-main-tabs) table button[class*="bg-violet-50"] {
+main[data-page="spj"] table a[class*="bg-violet-50"],
+main[data-page="spj"] table button[class*="bg-violet-50"] {
     border-color: color-mix(in srgb, var(--theme-accent) 26%, var(--spj-border)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--spj-surface)) !important;
     color: var(--theme-content-accent) !important;
 }
 
 /* Legacy cards/panels inside package, report and monitoring tabs. */
-main:has(#spj-main-tabs) :is(section, article, aside, div)[class*="bg-white"][class*="border-"][class*="rounded-"] {
+main[data-page="spj"] :is(section, article, aside, div)[class*="bg-white"][class*="border-"][class*="rounded-"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface) !important;
     color: var(--spj-text) !important;
 }
 
-main:has(#spj-main-tabs) :is(section, article, aside, div)[class*="bg-slate-50"][class*="rounded-"] {
+main[data-page="spj"] :is(section, article, aside, div)[class*="bg-slate-50"][class*="rounded-"] {
     border-color: var(--spj-border) !important;
     background-color: var(--spj-surface-soft) !important;
     color: var(--spj-text) !important;
 }
 
 /* Keep semantic success/warning/danger surfaces recognizable; only accent-purple/indigo is theme-replaced. */
-main:has(#spj-main-tabs) :is(.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-violet-600, .text-violet-700, .text-violet-800):not([class*="bg-"]) {
+main[data-page="spj"] :is(.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-violet-600, .text-violet-700, .text-violet-800):not([class*="bg-"]) {
     color: var(--theme-content-accent) !important;
 }
 
-main:has(#spj-main-tabs) :is(.border-indigo-100, .border-indigo-200, .border-violet-100, .border-violet-200) {
+main[data-page="spj"] :is(.border-indigo-100, .border-indigo-200, .border-violet-100, .border-violet-200) {
     border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--spj-border)) !important;
 }
 
-main:has(#spj-main-tabs) :is(.bg-indigo-50, .bg-violet-50) {
+main[data-page="spj"] :is(.bg-indigo-50, .bg-violet-50) {
     background-color: color-mix(in srgb, var(--theme-accent-soft) 46%, var(--spj-surface)) !important;
 }
 
 /* Footer/pagination bands should remain subordinate to the work area. */
-main:has(#spj-main-tabs) div:has(> .page-table-per-page),
-main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
+main[data-page="spj"] div:has(> .page-table-per-page),
+main[data-page="spj"] div[class*="border-t"][class*="bg-slate-50"] {
     border-color: var(--spj-border) !important;
     background: var(--spj-surface-soft) !important;
 }
@@ -213,7 +213,7 @@ main:has(#spj-main-tabs) div[class*="border-t"][class*="bg-slate-50"] {
 
 /* Pilot density profile for the primary /spj operator workspace. Keep the
    change scoped here until browser QA confirms the reading rhythm. */
-main:has(#spj-main-tabs) .spj-semantic-workspace {
+main[data-page="spj"] .spj-semantic-workspace {
     --profile-card-radius: .75rem;
     --profile-control-radius: .5rem;
     --profile-section-gap: 1rem;
@@ -225,62 +225,62 @@ main:has(#spj-main-tabs) .spj-semantic-workspace {
     font-size: .875rem;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace.space-y-6> :not([hidden])~ :not([hidden]) {
+main[data-page="spj"] .spj-semantic-workspace.space-y-6> :not([hidden])~ :not([hidden]) {
     margin-top: 1rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace>section,
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-shell {
+main[data-page="spj"] .spj-semantic-workspace>section,
+main[data-page="spj"] .spj-semantic-workspace .page-header-shell {
     border-radius: .75rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-main {
+main[data-page="spj"] .spj-semantic-workspace .page-header-main {
     padding: 1rem 1.25rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace [class~="px-5"][class~="py-4"] {
+main[data-page="spj"] .spj-semantic-workspace [class~="px-5"][class~="py-4"] {
     padding: .75rem 1rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace table :is(th, td) {
+main[data-page="spj"] .spj-semantic-workspace table :is(th, td) {
     padding-block: .625rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-main {
+main[data-page="spj"] .spj-semantic-workspace .page-header-main {
     min-height: 0 !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-summary {
+main[data-page="spj"] .spj-semantic-workspace .page-header-summary {
     padding: 0 !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-title {
+main[data-page="spj"] .spj-semantic-workspace .page-header-title {
     font-size: 1.5rem !important;
     line-height: 1.9rem !important;
     letter-spacing: 0 !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .page-header-description {
+main[data-page="spj"] .spj-semantic-workspace .page-header-description {
     font-size: .875rem !important;
     line-height: 1.35rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .ui-field > label {
+main[data-page="spj"] .spj-semantic-workspace .ui-field>label {
     font-size: .8125rem !important;
     line-height: 1.125rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
+main[data-page="spj"] .spj-semantic-workspace [data-package-tab] {
     padding-block: .5rem !important;
     font-size: .875rem !important;
     line-height: 1.25rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace .spj-work-summary > * {
+main[data-page="spj"] .spj-semantic-workspace .spj-work-summary>* {
     padding: .75rem 1rem !important;
 }
 
-main:has(#spj-main-tabs) .spj-semantic-workspace div[x-show="tab === 'persiapan'"] > div:first-child {
+main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>div:first-child {
     padding-block: 1rem !important;
 }
 
@@ -303,7 +303,7 @@ main:has(#spj-main-tabs) .spj-semantic-workspace div[x-show="tab === 'persiapan'
 
 /* Summary cards distinguish queued work from packages that are already in the
    document lifecycle. The percentage is explicitly scoped to created packages. */
-.spj-semantic-workspace .spj-work-summary > * {
+.spj-semantic-workspace .spj-work-summary>* {
     position: relative;
 }
 
@@ -353,11 +353,11 @@ main:has(#spj-main-tabs) .spj-semantic-workspace div[x-show="tab === 'persiapan'
 }
 
 @media (max-width: 1023px) {
-    main:has(#spj-main-tabs) .spj-semantic-workspace {
+    main[data-page="spj"] .spj-semantic-workspace {
         --profile-control-height: 2.75rem;
     }
 
-    main:has(#spj-main-tabs) .spj-semantic-workspace [data-package-tab] {
+    main[data-page="spj"] .spj-semantic-workspace [data-package-tab] {
         min-height: 2.75rem;
     }
 }

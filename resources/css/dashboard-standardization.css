@@ -2,7 +2,7 @@
    Keep dashboard business markup intact while resolving legacy slate/indigo surfaces
    through the canonical theme contract. */
 
-main:has(a[href*="/spj/penomoran"]) {
+main[data-page="dashboard"] {
     --dashboard-surface: var(--ui-component-surface, var(--ui-surface, #fff));
     --dashboard-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
     --dashboard-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
@@ -13,7 +13,7 @@ main:has(a[href*="/spj/penomoran"]) {
 }
 
 /* Primary operator recommendation panel */
-main:has(a[href*="/spj/penomoran"]) section:has(a[href*="/transaksi"]):has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) {
+main[data-page="dashboard"] section:has(a[href*="/transaksi"]):has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) {
     overflow: hidden;
     border-color: var(--dashboard-border) !important;
     border-radius: var(--profile-card-radius) !important;
@@ -21,67 +21,65 @@ main:has(a[href*="/spj/penomoran"]) section:has(a[href*="/transaksi"]):has(.lg\:
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child {
-    background: linear-gradient(
-        118deg,
-        var(--theme-sidebar-deep) 0%,
-        var(--theme-sidebar) 54%,
-        color-mix(in srgb, var(--theme-accent-soft) 80%, var(--theme-sidebar) 20%) 100%
-    ) !important;
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child {
+    background: linear-gradient(118deg,
+            var(--theme-sidebar-deep) 0%,
+            var(--theme-sidebar) 54%,
+            color-mix(in srgb, var(--theme-accent-soft) 80%, var(--theme-sidebar) 20%) 100%) !important;
     color: var(--text-comfort-on-dark) !important;
 }
 
 /* The left workflow panel is always a deep sidebar-derived gradient, including
    Yellow Bright. Keep all non-interactive copy on the on-dark hierarchy instead
    of allowing global light-surface text normalization to leak into it. */
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child h2 {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child h2 {
     color: var(--text-comfort-on-dark, #e2e8f0) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child p,
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child span:not(a span) {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child p,
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child span:not(a span) {
     color: var(--text-comfort-on-dark-soft, #c3cedc) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child > div:first-child span:first-child {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child>div:first-child span:first-child {
     border-color: color-mix(in srgb, var(--text-comfort-on-dark) 24%, transparent) !important;
     background: color-mix(in srgb, var(--text-comfort-on-dark) 10%, transparent) !important;
     color: var(--text-comfort-on-dark, #e2e8f0) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:first-child a {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:first-child a {
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:last-child {
     border-color: var(--dashboard-border) !important;
     background: var(--dashboard-surface-soft) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child > p {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:last-child>p {
     color: var(--theme-content-accent) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child h3 {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:last-child h3 {
     color: var(--dashboard-text-strong) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child a {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:last-child a {
     border-color: var(--dashboard-border) !important;
     background: var(--dashboard-surface) !important;
     color: var(--dashboard-text) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\]) > div > div:last-child a:hover {
+main[data-page="dashboard"] section:has(.lg\:grid-cols-\[1\.15fr_\.85fr\])>div>div:last-child a:hover {
     border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--dashboard-border)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 24%, var(--dashboard-surface)) !important;
 }
 
 /* Queue and side panels */
-main:has(a[href*="/spj/penomoran"]) article,
-main:has(a[href*="/spj/penomoran"]) aside > section,
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) {
+main[data-page="dashboard"] article,
+main[data-page="dashboard"] aside>section,
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"]) {
     border-color: var(--dashboard-border) !important;
     border-radius: var(--profile-card-radius) !important;
     background: var(--dashboard-surface) !important;
@@ -89,51 +87,51 @@ main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) article > div:first-child,
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > div:first-child {
+main[data-page="dashboard"] article>div:first-child,
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"])>div:first-child {
     border-color: var(--dashboard-border) !important;
     background: var(--dashboard-surface-soft) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) article h2,
-main:has(a[href*="/spj/penomoran"]) article p.font-semibold,
-main:has(a[href*="/spj/penomoran"]) aside h2,
-main:has(a[href*="/spj/penomoran"]) aside h3,
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) h2,
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) h3 {
+main[data-page="dashboard"] article h2,
+main[data-page="dashboard"] article p.font-semibold,
+main[data-page="dashboard"] aside h2,
+main[data-page="dashboard"] aside h3,
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"]) h2,
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"]) h3 {
     color: var(--dashboard-text-strong) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) article :is(.text-slate-400,.text-slate-500),
-main:has(a[href*="/spj/penomoran"]) aside :is(.text-slate-400,.text-slate-500),
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) :is(.text-slate-400,.text-slate-500) {
+main[data-page="dashboard"] article :is(.text-slate-400, .text-slate-500),
+main[data-page="dashboard"] aside :is(.text-slate-400, .text-slate-500),
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"]) :is(.text-slate-400, .text-slate-500) {
     color: var(--dashboard-text-muted) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) article a[class*="bg-white"] {
+main[data-page="dashboard"] article a[class*="bg-white"] {
     border-color: var(--dashboard-border-strong) !important;
     background: var(--dashboard-surface) !important;
     color: var(--dashboard-text) !important;
 }
 
 /* Progress cards keep semantic meaning while avoiding theme-breaking pale utility surfaces. */
-main:has(a[href*="/spj/penomoran"]) aside section .grid.grid-cols-3 > div {
+main[data-page="dashboard"] aside section .grid.grid-cols-3>div {
     border: 1px solid var(--dashboard-border) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 14%, var(--dashboard-surface-soft)) !important;
 }
 
 /* Quarter readiness behaves as one unified panel with simple dividers. */
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > div:last-child {
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"])>div:last-child {
     gap: 1px !important;
     background: var(--dashboard-border) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > div:last-child > a {
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"])>div:last-child>a {
     background: var(--dashboard-surface) !important;
     color: var(--dashboard-text) !important;
 }
 
-main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > div:last-child > a:hover {
+main[data-page="dashboard"] section:has(> div > a[href*="quarter"])>div:last-child>a:hover {
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, var(--dashboard-surface)) !important;
 }
 
@@ -164,4 +162,198 @@ main:has(a[href*="/spj/penomoran"]) section:has(> div > a[href*="quarter"]) > di
 
 .dashboard-priority-panel .dashboard-priority-action :is(span, svg) {
     color: inherit !important;
+}
+
+/* Dashboard density pilot: reduce vertical chrome while preserving the
+   operator hierarchy and all existing workflow links. */
+main[data-page="dashboard"]>div.space-y-6> :not([hidden])~ :not([hidden]) {
+    margin-top: 1rem !important;
+}
+
+main[data-page="dashboard"] .page-header-main {
+    padding: 1rem 1.25rem !important;
+}
+
+main[data-page="dashboard"] .page-header-title {
+    font-size: 1.5rem !important;
+    line-height: 1.9rem !important;
+    letter-spacing: 0 !important;
+}
+
+main[data-page="dashboard"] .page-header-description {
+    font-size: .875rem !important;
+    line-height: 1.35rem !important;
+}
+
+main[data-page="dashboard"] .page-header-shell> :last-child>a {
+    padding-block: .75rem !important;
+}
+
+main[data-page="dashboard"] .page-header-shell [class~="px-5"][class~="py-4"] {
+    padding: .75rem 1rem !important;
+}
+
+main[data-page="dashboard"] .page-header-shell [class~="text-3xl"] {
+    font-size: 1.75rem !important;
+    line-height: 2rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-panel {
+    padding: 1.25rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-panel h2 {
+    margin-top: .75rem !important;
+    font-size: 1.5rem !important;
+    line-height: 1.9rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-panel p {
+    margin-top: .625rem !important;
+    line-height: 1.35rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-action {
+    min-height: 2.5rem !important;
+    margin-top: 1rem !important;
+    padding-block: .5rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-panel+div {
+    padding: 1.25rem !important;
+}
+
+main[data-page="dashboard"] .dashboard-priority-panel+div .mt-5 {
+    margin-top: 1rem !important;
+}
+
+main[data-page="dashboard"] article>header,
+main[data-page="dashboard"] article>div:first-child {
+    padding-block: .75rem !important;
+}
+
+main[data-page="dashboard"] article>div:not(:first-child) {
+    padding-block: 1rem !important;
+}
+
+/* Operator dashboard redesign: one clear priority, one compact status strip,
+   and a queue that reads like a working list rather than a gallery of cards. */
+.dashboard-workspace {
+    --dashboard-gap: 1rem;
+    gap: var(--dashboard-gap) !important;
+}
+
+.dashboard-workspace .dashboard-page-header {
+    border-radius: var(--profile-card-radius) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+.dashboard-workspace .dashboard-page-header .page-header-main {
+    padding-block: 1rem !important;
+}
+
+.dashboard-workspace .dashboard-page-header .page-header-layout {
+    gap: .75rem !important;
+}
+
+.dashboard-workspace .dashboard-summary-grid {
+    border-top: 1px solid var(--ui-line);
+}
+
+.dashboard-workspace .dashboard-summary-card {
+    min-height: 6rem;
+    padding: .875rem 1rem !important;
+}
+
+.dashboard-workspace .dashboard-summary-card>p:nth-child(2) {
+    margin-top: .375rem !important;
+    font-size: 1.75rem !important;
+    line-height: 2rem !important;
+}
+
+.dashboard-workspace .dashboard-summary-card>p:last-child {
+    margin-top: .25rem !important;
+    line-height: 1rem !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel {
+    border-radius: var(--profile-card-radius) !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel {
+    min-height: 14rem;
+    padding: 1.25rem !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel h2 {
+    max-width: 38rem;
+    font-size: 1.375rem !important;
+    line-height: 1.75rem !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel p {
+    max-width: 42rem;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel+div {
+    padding: 1.25rem !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel+div .text-4xl {
+    font-size: 2rem !important;
+    line-height: 2.25rem !important;
+}
+
+.dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel+div .grid.grid-cols-3>div {
+    padding: .625rem .5rem !important;
+}
+
+.dashboard-workspace .dashboard-work-cards,
+.dashboard-workspace .dashboard-queue-layout {
+    gap: var(--dashboard-gap) !important;
+}
+
+.dashboard-workspace .dashboard-work-card,
+.dashboard-workspace .dashboard-queue-panel,
+.dashboard-workspace .dashboard-side-panels>section {
+    border-radius: var(--profile-card-radius) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+.dashboard-workspace .dashboard-work-card>header,
+.dashboard-workspace .dashboard-queue-panel>div:first-child {
+    padding: .75rem 1rem !important;
+}
+
+.dashboard-workspace .dashboard-work-card>div:last-child {
+    padding: 1rem !important;
+}
+
+.dashboard-workspace .dashboard-work-card>div:last-child>div {
+    padding: .875rem !important;
+}
+
+.dashboard-workspace .dashboard-queue-panel>.divide-y>div {
+    padding: .75rem 1rem !important;
+}
+
+.dashboard-workspace .dashboard-side-panels>section {
+    padding: 1rem !important;
+}
+
+@media (min-width: 1280px) {
+    .dashboard-workspace {
+        max-width: 1440px;
+        margin-inline: auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .dashboard-workspace .dashboard-summary-card {
+        min-height: 5.5rem;
+    }
+
+    .dashboard-workspace .dashboard-focus-panel .dashboard-priority-panel {
+        min-height: 0;
+    }
 }

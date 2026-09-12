@@ -46,7 +46,7 @@ html[data-theme='violet'] {
     --theme-action-fg: #f8fafc;
 }
 
-html[data-theme='dark'] {
+html[data-ui-appearance='dark'] {
     --theme-content-accent: #cbd5e1;
     --theme-focus-ring: #cbd5e1;
     --theme-focus-halo: rgb(203 213 225 / .24);
@@ -146,7 +146,7 @@ html[data-theme='yellow'][data-ui-header='soft'] .page-header-main {
    wrapper. Scope by stable page markers rather than wrapper depth so Livewire
    and localized routes cannot break the contrast safety net. */
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku'],
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a[href='/transaksi'] {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a[href='/transaksi'] {
     border: 1px solid color-mix(in srgb, var(--theme-sidebar) 42%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 76%, white) !important;
     color: #0f172a !important;
@@ -154,14 +154,14 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a[href
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku']:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a[href='/transaksi']:hover {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a[href='/transaksi']:hover {
     border-color: color-mix(in srgb, var(--theme-sidebar) 58%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 58%, white) !important;
     color: #0f172a !important;
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj'],
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button[data-tab='monitoring'] {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button[data-tab='monitoring'] {
     border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, #0f172a) !important;
     background: var(--theme-action-bg) !important;
     color: #0f172a !important;
@@ -169,14 +169,14 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj']:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button[data-tab='monitoring']:hover {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button[data-tab='monitoring']:hover {
     border-color: color-mix(in srgb, var(--theme-action-bg) 52%, #0f172a) !important;
     background: color-mix(in srgb, var(--theme-action-bg) 86%, white) !important;
     color: #0f172a !important;
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) :is(a[href*='/data-sinkron/bku'], a[href='/spj']) :is(svg, .app-nav-icon),
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[href='/transaksi'], button[data-tab='monitoring']) :is(svg, .app-nav-icon) {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] :is(a[href='/transaksi'], button[data-tab='monitoring']) :is(svg, .app-nav-icon) {
     color: currentColor !important;
 }
 
@@ -184,7 +184,7 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) :is(a[
    still emitted by Transactions/SPJ Blade. This intentionally keys off the
    concrete legacy utility combinations instead of href shape or wrapper depth. */
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a.bg-white\/10.text-white {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a.bg-white\/10.text-white {
     border: 1px solid color-mix(in srgb, var(--theme-sidebar) 48%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
     color: #0f172a !important;
@@ -192,14 +192,14 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a.bg-w
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) a.bg-white\/10.text-white:hover {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a.bg-white\/10.text-white:hover {
     border-color: color-mix(in srgb, var(--theme-sidebar) 62%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
     color: #0f172a !important;
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button.bg-white.text-indigo-900 {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button.bg-white.text-indigo-900 {
     border: 1px solid color-mix(in srgb, var(--theme-action-bg) 66%, #0f172a) !important;
     background: var(--theme-action-bg) !important;
     color: #0f172a !important;
@@ -207,7 +207,7 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button
 }
 
 html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
-html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button.bg-white.text-indigo-900:hover {
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button.bg-white.text-indigo-900:hover {
     border-color: color-mix(in srgb, var(--theme-action-bg) 48%, #0f172a) !important;
     background: color-mix(in srgb, var(--theme-action-bg) 84%, white) !important;
     color: #0f172a !important;
@@ -217,7 +217,7 @@ html[data-theme='yellow'][data-ui-header='soft'] main:has(#spj-main-tabs) button
    utility pairs. Secondary actions use a pale theme surface with dark content
    accent; primary actions use the canonical action background/foreground pair. */
 html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) a.bg-white\/10.text-white {
+html:not([data-ui-appearance='dark']) main[data-page='spj'] a.bg-white\/10.text-white {
     border: 1px solid color-mix(in srgb, var(--theme-content-accent) 34%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
     color: var(--theme-content-accent) !important;
@@ -225,14 +225,14 @@ html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) a.bg-white\/10.te
 }
 
 html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) a.bg-white\/10.text-white:hover {
+html:not([data-ui-appearance='dark']) main[data-page='spj'] a.bg-white\/10.text-white:hover {
     border-color: color-mix(in srgb, var(--theme-content-accent) 48%, var(--theme-accent-soft)) !important;
     background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
     color: var(--theme-content-accent) !important;
 }
 
 html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.text-indigo-900 {
+html:not([data-ui-appearance='dark']) main[data-page='spj'] button.bg-white.text-indigo-900 {
     border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, var(--theme-action-fg)) !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
@@ -240,14 +240,14 @@ html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.t
 }
 
 html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) button.bg-white.text-indigo-900:hover {
+html:not([data-ui-appearance='dark']) main[data-page='spj'] button.bg-white.text-indigo-900:hover {
     border-color: color-mix(in srgb, var(--theme-action-bg) 54%, var(--theme-action-fg)) !important;
     background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
     color: var(--theme-action-fg) !important;
 }
 
 html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) :is(a.bg-white\/10.text-white, a.bg-white.text-indigo-900) :is(svg, .app-nav-icon),
-html:not([data-ui-appearance='dark']) main:has(#spj-main-tabs) :is(a.bg-white\/10.text-white, button.bg-white.text-indigo-900) :is(svg, .app-nav-icon) {
+html:not([data-ui-appearance='dark']) main[data-page='spj'] :is(a.bg-white\/10.text-white, button.bg-white.text-indigo-900) :is(svg, .app-nav-icon) {
     color: currentColor !important;
 }
 

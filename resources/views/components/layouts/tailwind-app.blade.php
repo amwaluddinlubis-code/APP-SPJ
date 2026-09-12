@@ -226,7 +226,24 @@
                             class="nav-label">Keluar</span></button></form>
             </nav>
         </aside>
-        <main>
+        @php
+            $currentRouteName = (string) request()->route()?->getName();
+            $pageKey = match (true) {
+                str_starts_with($currentRouteName, 'spj.') => 'spj',
+                str_starts_with($currentRouteName, 'transactions.') => 'transactions',
+                str_starts_with($currentRouteName, 'rkas-') => 'rkas',
+                str_starts_with($currentRouteName, 'dashboard') || $currentRouteName === 'dashboard' => 'dashboard',
+                str_starts_with($currentRouteName, 'employees.') => 'employees',
+                str_starts_with($currentRouteName, 'students.') => 'students',
+                str_starts_with($currentRouteName, 'reconciliation.') => 'reconciliation',
+                str_starts_with($currentRouteName, 'database-manager.') => 'database',
+                str_starts_with($currentRouteName, 'audit-reports.') => 'audit',
+                str_starts_with($currentRouteName, 'document-') => 'documents',
+                str_starts_with($currentRouteName, 'synced-data.') => 'synced-data',
+                default => 'application',
+            };
+        @endphp
+        <main data-page="{{ $pageKey }}" data-route="{{ $currentRouteName }}">
             <header
                 class="app-topbar sticky top-0 z-30 flex min-h-18 flex-wrap items-center justify-between gap-3 px-5 py-4">
                 <button type="button" @click="toggleNavigation()"

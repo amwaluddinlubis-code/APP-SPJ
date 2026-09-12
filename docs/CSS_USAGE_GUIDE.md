@@ -45,6 +45,12 @@ semantic-status-colors.css
 
 Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer global terakhir untuk **warna non-semantik** pada authenticated application views. `semantic-status-colors.css` adalah satu-satunya exception setelahnya dan hanya mengembalikan identitas warna status workflow canonical agar `READY`, `NUMBERED`, `PRINTED`, dan status sejenis tetap mudah dibedakan. Keduanya tidak mengubah business rule atau markup domain.
 
+Authenticated shell menandai `<main>` dengan `data-page` dan `data-route`. Gunakan marker ini untuk pengecualian layout yang benar-benar page-specific. Kontrak shell seperti topbar, sidebar, typography, control, dan responsive chrome harus memakai selector parent global (`main[data-page]` atau `.app-*`), bukan `:has()` berbasis href/action.
+
+Migrasi aktif: dashboard dan workspace SPJ sudah memakai `main[data-page="dashboard"]` / `main[data-page="spj"]` untuk boundary route. `:has()` yang tersisa pada area tersebut hanya boleh menemukan struktur internal seperti panel, tabel, atau quarter block; jangan gunakan untuk mendeteksi halaman.
+
+Boundary yang sudah dimigrasikan berikutnya: `main[data-page="database"]`, `main[data-page="documents"]`, dan `main[data-page="transactions"]`. `synced-data` tidak menerima selector transaksi lama karena pola href `/data-sinkron/bku` ternyata dimiliki daftar transaksi; page marker mencegah salah-scope semacam ini.
+
 ---
 
 ## 3. Token canonical

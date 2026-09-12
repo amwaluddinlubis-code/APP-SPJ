@@ -3,14 +3,14 @@
    Keep only the remaining list/card/table surface normalization until those
    structural shells are migrated physically. */
 
-main:has(a[href*="/data-sinkron/bku"]) {
+main[data-page="transactions"] {
     --transactions-surface: var(--ui-component-surface, var(--ui-surface, #fff));
     --transactions-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
     --transactions-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
 }
 
 /* Transaction list shell */
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) {
+main[data-page="transactions"] section:has(table[data-pagination="server"]) {
     overflow: hidden;
     border-color: var(--transactions-border) !important;
     border-radius: var(--profile-card-radius) !important;
@@ -19,7 +19,7 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
 }
 
 /* Mobile transaction cards */
-main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) article {
+main[data-page="transactions"] section:has(table[data-pagination="server"]) article {
     border-color: var(--transactions-border) !important;
     border-radius: var(--profile-card-radius) !important;
     background: var(--transactions-surface) !important;
@@ -28,17 +28,18 @@ main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server
 }
 
 /* Desktop table: leave geometry to table-standardization.css; only neutralize legacy surface classes. */
-main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody {
+main[data-page="transactions"] table[data-pagination="server"] tbody {
     background: transparent !important;
 }
 
-main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] tbody tr:hover {
+main[data-page="transactions"] table[data-pagination="server"] tbody tr:hover {
     background: var(--ui-table-row-hover) !important;
 }
+
 /* Transaction detail workspace.
    #modul-buat-spj exists only on /transaksi/{transaction}, so this remains
    route-local without adding hooks to the large Blade view. */
-main:has(#modul-buat-spj) {
+main[data-page="transactions"] {
     --transaction-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
     --transaction-surface-soft: var(--ui-surface-soft, var(--ui-component-surface-soft, #f8fafc));
     --transaction-surface-muted: var(--ui-surface-muted, var(--transaction-surface-soft));
@@ -51,7 +52,7 @@ main:has(#modul-buat-spj) {
 
 /* Yellow Bright uses an accent-to-soft page-header gradient. Keep the detail
    header copy dark across both ends without affecting the deep SPJ builder. */
-html[data-theme='yellow'] main:has(#modul-buat-spj) .page-header-main :is(.page-header-title,.page-header-kicker) {
+html[data-theme='yellow'] main:has(#modul-buat-spj) .page-header-main :is(.page-header-title, .page-header-kicker) {
     color: var(--theme-sidebar) !important;
 }
 
@@ -60,25 +61,23 @@ html[data-theme='yellow'] main:has(#modul-buat-spj) .page-header-description {
 }
 
 /* Neutral surfaces and borders */
-main:has(#modul-buat-spj) :is(
-    article.bg-white,
+main:has(#modul-buat-spj) :is(article.bg-white,
     section.bg-white,
     form.bg-white,
     details.bg-white,
     #modul-buat-spj.bg-white,
     .bg-slate-50,
-    .bg-slate-100
-) {
+    .bg-slate-100) {
     border-color: var(--transaction-line) !important;
     background: var(--transaction-surface) !important;
     color: var(--transaction-fg) !important;
 }
 
-main:has(#modul-buat-spj) :is(.bg-slate-50,.bg-slate-100) {
+main:has(#modul-buat-spj) :is(.bg-slate-50, .bg-slate-100) {
     background: var(--transaction-surface-soft) !important;
 }
 
-main:has(#modul-buat-spj) :is(.border-slate-100,.border-slate-200) {
+main:has(#modul-buat-spj) :is(.border-slate-100, .border-slate-200) {
     border-color: var(--transaction-line) !important;
 }
 
@@ -87,7 +86,7 @@ main:has(#modul-buat-spj) .border-slate-300 {
 }
 
 /* Reading hierarchy */
-main:has(#modul-buat-spj) :is(.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700) {
+main:has(#modul-buat-spj) :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
     color: var(--transaction-fg-strong) !important;
 }
 
@@ -95,109 +94,103 @@ main:has(#modul-buat-spj) .text-slate-600 {
     color: var(--transaction-fg) !important;
 }
 
-main:has(#modul-buat-spj) :is(.text-slate-500,.text-slate-400) {
+main:has(#modul-buat-spj) :is(.text-slate-500, .text-slate-400) {
     color: var(--transaction-fg-muted) !important;
 }
 
-main:has(#modul-buat-spj) :is(.text-indigo-700,.text-sky-700,.text-violet-700) {
+main:has(#modul-buat-spj) :is(.text-indigo-700, .text-sky-700, .text-violet-700) {
     color: var(--theme-content-accent) !important;
 }
 
 /* Back navigation and neutral actions */
-main:has(#modul-buat-spj) > div > div:first-child > a[href*="/transaksi"],
-main:has(#modul-buat-spj) :is(.ui-btn-secondary,.btn-outline-secondary) {
+main:has(#modul-buat-spj)>div>div:first-child>a[href*="/transaksi"],
+main:has(#modul-buat-spj) :is(.ui-btn-secondary, .btn-outline-secondary) {
     border-color: var(--transaction-line-strong) !important;
     background: var(--transaction-surface) !important;
     color: var(--transaction-fg) !important;
 }
 
-main:has(#modul-buat-spj) > div > div:first-child > a[href*="/transaksi"]:hover,
-main:has(#modul-buat-spj) :is(.ui-btn-secondary,.btn-outline-secondary):hover {
+main:has(#modul-buat-spj)>div>div:first-child>a[href*="/transaksi"]:hover,
+main:has(#modul-buat-spj) :is(.ui-btn-secondary, .btn-outline-secondary):hover {
     background: var(--transaction-surface-soft) !important;
     color: var(--transaction-fg-strong) !important;
 }
 
 /* Theme-aware primary actions. Yellow Bright intentionally uses dark foreground. */
-main:has(#modul-buat-spj) :is(
-    .spj-builder-primary,
+main:has(#modul-buat-spj) :is(.spj-builder-primary,
     a[href="#modul-buat-spj"].bg-violet-600,
     button.bg-violet-600,
     button.bg-indigo-600,
-    a.bg-indigo-600
-) {
+    a.bg-indigo-600) {
     border-color: color-mix(in srgb, var(--theme-action-bg) 74%, var(--transaction-line-strong)) !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
-main:has(#modul-buat-spj) :is(
-    .spj-builder-primary,
+main:has(#modul-buat-spj) :is(.spj-builder-primary,
     a[href="#modul-buat-spj"].bg-violet-600,
     button.bg-violet-600,
     button.bg-indigo-600,
-    a.bg-indigo-600
-):hover {
+    a.bg-indigo-600):hover {
     background: var(--theme-action-hover-bg, var(--theme-action-bg)) !important;
     color: var(--theme-action-fg) !important;
 }
 
-main:has(#modul-buat-spj) :is(.spj-builder-primary,a[href="#modul-buat-spj"],button,a) svg {
+main:has(#modul-buat-spj) :is(.spj-builder-primary, a[href="#modul-buat-spj"], button, a) svg {
     color: currentColor;
     stroke: currentColor;
 }
 
 /* ARKAS/BKU reference card stays visually read-only. */
-main:has(#modul-buat-spj) x-page-header + section article,
+main:has(#modul-buat-spj) x-page-header+section article,
 main:has(#modul-buat-spj) section:first-of-type article {
     border-color: var(--transaction-line) !important;
     background: var(--transaction-surface-soft) !important;
 }
 
-main:has(#modul-buat-spj) section:first-of-type article > div:first-child {
+main:has(#modul-buat-spj) section:first-of-type article>div:first-child {
     border-color: var(--transaction-line) !important;
     background: var(--transaction-surface-muted) !important;
 }
 
-main:has(#modul-buat-spj) section:first-of-type article > div:last-child > div {
+main:has(#modul-buat-spj) section:first-of-type article>div:last-child>div {
     border-color: var(--transaction-line) !important;
 }
 
 /* Operator controls */
-main:has(#modul-buat-spj) #modul-buat-spj :is(
-    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+main:has(#modul-buat-spj) #modul-buat-spj :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
     select,
-    textarea
-) {
+    textarea) {
     border-color: var(--transaction-line-strong) !important;
     background: var(--transaction-surface) !important;
     color: var(--transaction-fg-strong) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(input,textarea)::placeholder {
+main:has(#modul-buat-spj) #modul-buat-spj :is(input, textarea)::placeholder {
     color: var(--transaction-fg-muted) !important;
     opacity: 1;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):hover:not(:disabled):not([readonly]) {
+main:has(#modul-buat-spj) #modul-buat-spj :is(input, select, textarea):hover:not(:disabled):not([readonly]) {
     border-color: color-mix(in srgb, var(--theme-content-accent) 36%, var(--transaction-line-strong)) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):focus-visible {
+main:has(#modul-buat-spj) #modul-buat-spj :is(input, select, textarea):focus-visible {
     border-color: var(--theme-content-accent) !important;
     outline: 2px solid color-mix(in srgb, var(--theme-content-accent) 38%, transparent) !important;
     outline-offset: 2px;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-content-accent) 12%, transparent) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea)[readonly] {
+main:has(#modul-buat-spj) #modul-buat-spj :is(input, select, textarea)[readonly] {
     cursor: default;
     border-color: var(--transaction-line) !important;
     background: var(--transaction-surface-muted) !important;
     color: var(--transaction-fg-muted) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(input,select,textarea):disabled,
-main:has(#modul-buat-spj) #modul-buat-spj fieldset:disabled :is(input,select,textarea,button) {
+main:has(#modul-buat-spj) #modul-buat-spj :is(input, select, textarea):disabled,
+main:has(#modul-buat-spj) #modul-buat-spj fieldset:disabled :is(input, select, textarea, button) {
     cursor: not-allowed;
     border-color: var(--transaction-line) !important;
     background: var(--transaction-surface-muted) !important;
@@ -214,7 +207,7 @@ main:has(#modul-buat-spj) .spj-builder-header {
     border-color: color-mix(in srgb, var(--text-comfort-on-dark) 18%, transparent) !important;
 }
 
-main:has(#modul-buat-spj) .spj-builder-header :is(h1,h2,h3,strong) {
+main:has(#modul-buat-spj) .spj-builder-header :is(h1, h2, h3, strong) {
     color: var(--text-comfort-on-dark) !important;
 }
 
@@ -222,7 +215,7 @@ main:has(#modul-buat-spj) .spj-builder-header p {
     color: var(--text-comfort-on-dark-soft) !important;
 }
 
-main:has(#modul-buat-spj) .spj-builder-header > div p:first-child {
+main:has(#modul-buat-spj) .spj-builder-header>div p:first-child {
     border-color: color-mix(in srgb, var(--text-comfort-on-dark) 20%, transparent) !important;
     background: color-mix(in srgb, var(--text-comfort-on-dark) 10%, transparent) !important;
     color: var(--text-comfort-on-dark-soft) !important;
@@ -238,7 +231,7 @@ main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) the
     background: var(--transaction-surface-soft) !important;
 }
 
-main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th,td) {
+main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) :is(th, td) {
     border-color: var(--transaction-line) !important;
 }
 
@@ -247,7 +240,7 @@ main:has(#modul-buat-spj) table:not(.fi-ta-table):not([data-ui-table="off"]) tbo
 }
 
 /* Sticky/action shells */
-main:has(#modul-buat-spj) :is(.ui-form-actions,.ui-sticky-actions,[class*="sticky"][class*="border"]) {
+main:has(#modul-buat-spj) :is(.ui-form-actions, .ui-sticky-actions, [class*="sticky"][class*="border"]) {
     border-color: var(--transaction-line) !important;
     background: color-mix(in srgb, var(--transaction-surface) 94%, transparent) !important;
     color: var(--transaction-fg) !important;
@@ -257,9 +250,9 @@ main:has(#modul-buat-spj) :is(.ui-form-actions,.ui-sticky-actions,[class*="stick
 /* Detail transaction: every neutral form/panel follows the selected theme.
    This layer intentionally normalizes the large legacy Blade view without
    changing semantic success/warning/danger meaning. */
-main:has(#modul-buat-spj) > div > :is(section,article),
-main:has(#modul-buat-spj) > div > section :is(article,form,fieldset,details),
-main:has(#modul-buat-spj) #modul-buat-spj > div:last-child,
+main:has(#modul-buat-spj)>div> :is(section, article),
+main:has(#modul-buat-spj)>div>section :is(article, form, fieldset, details),
+main:has(#modul-buat-spj) #modul-buat-spj>div:last-child,
 main:has(#modul-buat-spj) #modul-buat-spj .spj-builder-form,
 main:has(#modul-buat-spj) #rincian-transaksi,
 main:has(#modul-buat-spj) #rincian-transaksi form {
@@ -268,64 +261,68 @@ main:has(#modul-buat-spj) #rincian-transaksi form {
     color: var(--transaction-fg) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(fieldset,details) > :is(div,section):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]),
-main:has(#modul-buat-spj) #rincian-transaksi :is(thead,tfoot) {
+main:has(#modul-buat-spj) #modul-buat-spj :is(fieldset, details)> :is(div, section):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]),
+main:has(#modul-buat-spj) #rincian-transaksi :is(thead, tfoot) {
     border-color: var(--transaction-line) !important;
     background-color: var(--transaction-surface-soft) !important;
     color: var(--transaction-fg) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(h2,h3,h4,label,strong,summary),
-main:has(#modul-buat-spj) #rincian-transaksi :is(h2,h3,h4,label,strong,summary) {
+main:has(#modul-buat-spj) #modul-buat-spj :is(h2, h3, h4, label, strong, summary),
+main:has(#modul-buat-spj) #rincian-transaksi :is(h2, h3, h4, label, strong, summary) {
     color: var(--transaction-fg-strong) !important;
 }
 
-main:has(#modul-buat-spj) #modul-buat-spj :is(p,span,small,dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]),
-main:has(#modul-buat-spj) #rincian-transaksi :is(p,span,small,dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]) {
+main:has(#modul-buat-spj) #modul-buat-spj :is(p, span, small, dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]),
+main:has(#modul-buat-spj) #rincian-transaksi :is(p, span, small, dt):not(.text-white):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]) {
     color: var(--transaction-fg-muted) !important;
 }
 
 /* Semantic panels are tinted from the current surface instead of forcing a
    light-only background. The semantic foregrounds stay readable in dark and light. */
-main:has(#modul-buat-spj) :is(.bg-emerald-50,.bg-green-50) {
+main:has(#modul-buat-spj) :is(.bg-emerald-50, .bg-green-50) {
     background-color: color-mix(in srgb, var(--transaction-surface) 84%, #10b981) !important;
 }
-main:has(#modul-buat-spj) :is(.bg-amber-50,.bg-yellow-50) {
+
+main:has(#modul-buat-spj) :is(.bg-amber-50, .bg-yellow-50) {
     background-color: color-mix(in srgb, var(--transaction-surface) 84%, #f59e0b) !important;
 }
-main:has(#modul-buat-spj) :is(.bg-rose-50,.bg-red-50) {
+
+main:has(#modul-buat-spj) :is(.bg-rose-50, .bg-red-50) {
     background-color: color-mix(in srgb, var(--transaction-surface) 84%, #f43f5e) !important;
 }
 
-html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-emerald-700,.text-emerald-800,.text-green-700,.text-green-800) {
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-emerald-700, .text-emerald-800, .text-green-700, .text-green-800) {
     color: #a7f3d0 !important;
 }
-html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-amber-700,.text-amber-800,.text-yellow-700,.text-yellow-800) {
+
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-amber-700, .text-amber-800, .text-yellow-700, .text-yellow-800) {
     color: #fde68a !important;
 }
-html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-rose-700,.text-rose-800,.text-red-700,.text-red-800) {
+
+html[data-ui-appearance='dark'] main:has(#modul-buat-spj) :is(.text-rose-700, .text-rose-800, .text-red-700, .text-red-800) {
     color: #fecdd3 !important;
 }
 
 /* Rincian Barang/Jasa: compact operator-oriented layout. */
-main:has(#modul-buat-spj) #rincian-transaksi > div:first-child {
+main:has(#modul-buat-spj) #rincian-transaksi>div:first-child {
     gap: .5rem !important;
     padding: .75rem 1rem !important;
     background: var(--transaction-surface-soft) !important;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi > div:first-child h2 {
+main:has(#modul-buat-spj) #rincian-transaksi>div:first-child h2 {
     font-size: .9375rem !important;
     line-height: 1.25rem !important;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi > div:first-child p {
+main:has(#modul-buat-spj) #rincian-transaksi>div:first-child p {
     margin-top: .125rem !important;
     font-size: .75rem !important;
     line-height: 1.1rem !important;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi > div:first-child > span {
+main:has(#modul-buat-spj) #rincian-transaksi>div:first-child>span {
     padding: .35rem .625rem !important;
     font-size: .75rem !important;
 }
@@ -368,7 +365,7 @@ main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(n+4) {
     white-space: nowrap;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2) > p {
+main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2)>p {
     margin: 0 0 .2rem !important;
     max-width: 44rem;
     overflow: hidden;
@@ -400,18 +397,19 @@ main:has(#modul-buat-spj) #rincian-transaksi tfoot td {
     font-size: .8125rem !important;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi form > fieldset > div:last-child {
+main:has(#modul-buat-spj) #rincian-transaksi form>fieldset>div:last-child {
     padding: .55rem 1rem !important;
     background: var(--transaction-surface-soft) !important;
 }
 
-main:has(#modul-buat-spj) #rincian-transaksi form > fieldset > div:last-child .ui-btn {
+main:has(#modul-buat-spj) #rincian-transaksi form>fieldset>div:last-child .ui-btn {
     min-height: 2.2rem !important;
     padding: .4rem .8rem !important;
     font-size: .8125rem !important;
 }
 
 @media (max-width: 767px) {
+
     main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2),
     main:has(#modul-buat-spj) #rincian-transaksi thead th:nth-child(2) {
         min-width: 15rem !important;
@@ -420,7 +418,7 @@ main:has(#modul-buat-spj) #rincian-transaksi form > fieldset > div:last-child .u
 }
 
 @media (prefers-reduced-motion: reduce) {
-    main:has(#modul-buat-spj) :is(a,button,input,select,textarea) {
+    main:has(#modul-buat-spj) :is(a, button, input, select, textarea) {
         transition: none !important;
     }
 }

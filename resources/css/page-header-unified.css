@@ -14,13 +14,11 @@ html[data-ui-header] .page-header-main {
     position: relative;
     overflow: hidden;
     padding: 1.75rem 1.25rem !important;
-    background: linear-gradient(
-        112deg,
-        var(--theme-sidebar-deep) 0%,
-        var(--theme-sidebar) 46%,
-        color-mix(in srgb, var(--theme-accent) 46%, var(--theme-sidebar)) 76%,
-        color-mix(in srgb, var(--theme-accent) 68%, var(--theme-sidebar)) 100%
-    ) !important;
+    background: linear-gradient(112deg,
+            var(--theme-sidebar-deep) 0%,
+            var(--theme-sidebar) 46%,
+            color-mix(in srgb, var(--theme-accent) 46%, var(--theme-sidebar)) 76%,
+            color-mix(in srgb, var(--theme-accent) 68%, var(--theme-sidebar)) 100%) !important;
     color: var(--text-comfort-on-dark, #e8edf4) !important;
     min-height: auto !important;
     display: block !important;
@@ -49,7 +47,7 @@ html[data-ui-header] .page-header-kicker {
     background: rgb(245 158 11 / .12) !important;
     padding: .3rem .65rem !important;
     color: #fef3c7 !important;
-    font-size: .875rem !important;
+    font-size: var(--ui-font-label) !important;
     font-weight: 700 !important;
     letter-spacing: .08em !important;
     line-height: 1.25rem !important;
@@ -58,7 +56,7 @@ html[data-ui-header] .page-header-kicker {
 
 html[data-ui-header] .page-header-title {
     color: var(--text-comfort-on-dark, #e8edf4) !important;
-    font-size: 1.5rem !important;
+    font-size: var(--ui-font-page-title) !important;
     font-weight: 700 !important;
     letter-spacing: -.025em !important;
     line-height: 2rem !important;
@@ -67,8 +65,8 @@ html[data-ui-header] .page-header-title {
 html[data-ui-header] .page-header-description {
     max-width: 48rem;
     color: var(--text-comfort-on-dark-soft, #d1d9e4) !important;
-    font-size: .875rem !important;
-    line-height: 1.5rem !important;
+    font-size: var(--ui-font-body) !important;
+    line-height: var(--ui-line-body) !important;
 }
 
 .page-header-actions {
@@ -83,23 +81,23 @@ html[data-ui-header] .page-header-description {
 /* Header actions own their semantic foreground/background pairing. Primary
    actions must never inherit the generic on-dark foreground because bright
    themes intentionally use a dark --theme-action-fg. */
-.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn) {
+.page-header-actions :is(.ui-btn-primary, .btn-primary, .theme-btn) {
     border-color: color-mix(in srgb, var(--theme-action-bg) 74%, var(--theme-action-fg)) !important;
     background: var(--theme-action-bg) !important;
     color: var(--theme-action-fg) !important;
 }
 
-.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn):hover {
+.page-header-actions :is(.ui-btn-primary, .btn-primary, .theme-btn):hover {
     background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
     color: var(--theme-action-fg) !important;
 }
 
-.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn):focus-visible {
+.page-header-actions :is(.ui-btn-primary, .btn-primary, .theme-btn):focus-visible {
     color: var(--theme-action-fg) !important;
 }
 
-.page-header-actions :is(.ui-btn-primary,.btn-primary,.theme-btn) :is(svg,.app-nav-icon),
-.page-header-actions :is(.ui-btn-secondary,a.bg-white,button.bg-white) :is(svg,.app-nav-icon) {
+.page-header-actions :is(.ui-btn-primary, .btn-primary, .theme-btn) :is(svg, .app-nav-icon),
+.page-header-actions :is(.ui-btn-secondary, a.bg-white, button.bg-white) :is(svg, .app-nav-icon) {
     color: currentColor !important;
 }
 
@@ -123,8 +121,8 @@ html[data-ui-header] .page-header-description {
     color: var(--text-comfort-on-dark, #e8edf4) !important;
 }
 
-.page-header-actions :is(.ui-btn-primary,.ui-btn-secondary,.btn-primary,.theme-btn,a.bg-white,button.bg-white):disabled,
-.page-header-actions :is(.ui-btn-primary,.ui-btn-secondary,.btn-primary,.theme-btn,a.bg-white,button.bg-white)[aria-disabled='true'] {
+.page-header-actions :is(.ui-btn-primary, .ui-btn-secondary, .btn-primary, .theme-btn, a.bg-white, button.bg-white):disabled,
+.page-header-actions :is(.ui-btn-primary, .ui-btn-secondary, .btn-primary, .theme-btn, a.bg-white, button.bg-white)[aria-disabled='true'] {
     opacity: .72 !important;
 }
 
@@ -135,13 +133,13 @@ html[data-ui-personality] .page-header-summary {
     background: var(--ui-component-surface, var(--ui-surface, #fff)) !important;
 }
 
-html[data-ui-personality] .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
+html[data-ui-personality] .page-header-summary> :is(.grid, [class*="grid-cols-"]) {
     gap: 1px !important;
     background: var(--ui-component-border, var(--ui-border, #e2e8f0)) !important;
 }
 
 html[data-ui-personality] .page-header-summary .ui-stat,
-html[data-ui-personality] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+html[data-ui-personality] .page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) {
     min-width: 0;
     border: 0 !important;
     border-radius: 0 !important;
@@ -160,18 +158,18 @@ html[data-ui-personality] .page-header-summary > :is(.grid,[class*="grid-cols-"]
 
 .page-header-summary .ui-stat-label,
 .page-header-summary .ui-stat-hint,
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
+.page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) :is(.text-slate-400, .text-slate-500) {
     color: var(--text-comfort-muted, #718096) !important;
 }
 
 .page-header-summary .ui-stat-value,
-.page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
+.page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) :is(.text-slate-800, .text-slate-900) {
     color: var(--text-comfort-strong, #1f2937) !important;
 }
 
 /* Legacy migration layer. Legacy palette class names may still exist in Blade,
    but they no longer own any color; all visual values resolve through tokens. */
-.page-header-legacy.page-header-shell > .page-header-main,
+.page-header-legacy.page-header-shell>.page-header-main,
 .page-header-legacy .page-header-main {
     padding: 1.75rem 1.25rem !important;
 }
@@ -189,17 +187,15 @@ html[data-ui-personality] .page-header-summary > :is(.grid,[class*="grid-cols-"]
     margin-top: .5rem !important;
 }
 
-.page-header-legacy .page-header-summary > :is(.grid,[class*="grid-cols-"]) > * {
+.page-header-legacy .page-header-summary> :is(.grid, [class*="grid-cols-"])>* {
     padding: 1rem !important;
 }
 
 .page-header-legacy .page-header-main[style*="background-image"] {
-    background-image: linear-gradient(
-        135deg,
-        var(--theme-sidebar-deep) 0%,
-        var(--theme-sidebar) 52%,
-        color-mix(in srgb, var(--theme-accent) 72%, var(--theme-sidebar)) 100%
-    ) !important;
+    background-image: linear-gradient(135deg,
+            var(--theme-sidebar-deep) 0%,
+            var(--theme-sidebar) 52%,
+            color-mix(in srgb, var(--theme-accent) 72%, var(--theme-sidebar)) 100%) !important;
 }
 
 html[data-ui-appearance='dark'] .page-header-shell {
@@ -209,51 +205,50 @@ html[data-ui-appearance='dark'] .page-header-shell {
 }
 
 html[data-ui-appearance='dark'][data-ui-header] .page-header-main {
-    background: linear-gradient(
-        112deg,
-        var(--theme-sidebar-deep) 0%,
-        color-mix(in srgb, var(--theme-sidebar) 88%, var(--theme-sidebar-deep)) 46%,
-        color-mix(in srgb, var(--theme-accent) 16%, var(--theme-sidebar)) 76%,
-        color-mix(in srgb, var(--theme-accent) 28%, var(--theme-sidebar)) 100%
-    ) !important;
+    background: linear-gradient(112deg,
+            var(--theme-sidebar-deep) 0%,
+            color-mix(in srgb, var(--theme-sidebar) 88%, var(--theme-sidebar-deep)) 46%,
+            color-mix(in srgb, var(--theme-accent) 16%, var(--theme-sidebar)) 76%,
+            color-mix(in srgb, var(--theme-accent) 28%, var(--theme-sidebar)) 100%) !important;
 }
 
 html[data-ui-appearance='dark'] .page-header-summary,
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat,
-html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) {
+html[data-ui-appearance='dark'] .page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) {
     background: color-mix(in srgb, var(--theme-accent-soft) 12%, var(--ui-component-surface, var(--ui-surface, #111827))) !important;
 }
 
-html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) {
+html[data-ui-appearance='dark'] .page-header-summary> :is(.grid, [class*="grid-cols-"]) {
     background: var(--ui-component-border, var(--ui-border, #263244)) !important;
 }
 
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-label,
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-hint,
-html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-400,.text-slate-500) {
+html[data-ui-appearance='dark'] .page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) :is(.text-slate-400, .text-slate-500) {
     color: var(--text-comfort-muted, #8f9bad) !important;
 }
 
 html[data-ui-appearance='dark'] .page-header-summary .ui-stat-value,
-html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-cols-"]) > :not(.ui-stat) :is(.text-slate-800,.text-slate-900) {
+html[data-ui-appearance='dark'] .page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) :is(.text-slate-800, .text-slate-900) {
     color: var(--text-comfort-strong, #dce3ec) !important;
 }
 
 @media (min-width: 640px) {
+
     .page-header-main,
-    .page-header-legacy.page-header-shell > .page-header-main,
+    .page-header-legacy.page-header-shell>.page-header-main,
     .page-header-legacy .page-header-main {
         padding-inline: 1.75rem !important;
     }
 
     html[data-ui-header] .page-header-title,
     .page-header-legacy .page-header-main h1 {
-        font-size: 1.875rem !important;
-        line-height: 2.25rem !important;
+        font-size: var(--ui-font-page-title) !important;
+        line-height: 1.9rem !important;
     }
 
     html[data-ui-header] .page-header-description {
-        font-size: 1rem !important;
+        font-size: var(--ui-font-body) !important;
     }
 }
 
@@ -271,8 +266,9 @@ html[data-ui-appearance='dark'] .page-header-summary > :is(.grid,[class*="grid-c
 }
 
 @media (max-width: 640px) {
+
     .page-header-main,
-    .page-header-legacy.page-header-shell > .page-header-main,
+    .page-header-legacy.page-header-shell>.page-header-main,
     .page-header-legacy .page-header-main {
         padding-block: 1.4rem !important;
     }
