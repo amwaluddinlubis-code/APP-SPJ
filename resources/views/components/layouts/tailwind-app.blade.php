@@ -25,7 +25,8 @@
         open: false,
         collapsed: true,
         groups: {
-            finance: {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'true' : 'false' }},
+            finance: {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'true' : 'false' }},
+            reference: {{ request()->routeIs('employees.*', 'students.*') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.importer*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
@@ -53,12 +54,14 @@
             this.groups[group] = !this.groups[group];
         }
     }" @keydown.escape.window="if (open) open = false"
-        :class="collapsed ? 'lg:grid-cols-[5.25rem_1fr]' : 'lg:grid-cols-[17rem_1fr]'" class="min-h-screen lg:grid">
+        :class="collapsed ? 'app-shell-collapsed' : 'app-shell-expanded'"
+        class="min-h-screen">
         <div x-show="open" @click="open=false" x-transition.opacity
             class="app-sidebar-overlay fixed inset-0 z-30 backdrop-blur-sm lg:hidden"></div>
         <aside id="app-sidebar" :aria-hidden="(!open).toString()"
-            :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed' : '']"
-            class="app-sidebar fixed lg:static inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:w-auto lg:translate-x-0">
+            :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed lg:w-[5.25rem]' : 'lg:w-[17rem]']"
+            class="app-sidebar fixed inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:translate-x-0"
+            :style="window.innerWidth >= 1024 ? { width: collapsed ? '5.25rem' : '17rem' } : {}">
             <div class="mb-8 flex items-center justify-between gap-2">
                 <a href="{{ route('dashboard') }}"
                     class="app-sidebar-brand flex min-w-0 items-center gap-3 text-lg font-bold"><span
@@ -78,7 +81,7 @@
                 <div class="pt-3">
                     <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()"
                         aria-controls="nav-finance"
-                        class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'employees.*', 'students.*', 'taxes.*') ? 'app-nav-section-active' : '' }}"
+                        class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'app-nav-section-active' : '' }}"
                         title="Keuangan"><x-ui.icon name="transaction" /><span x-show="!collapsed || open"
                             class="nav-label flex-1">Keuangan</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
@@ -94,12 +97,6 @@
                         <a class="app-nav {{ request()->routeIs('transactions.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('transactions.index') }}"><x-ui.icon name="transaction" /><span
                                 class="nav-label">Transaksi</span></a>
-                        <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}"
-                            href="{{ route('employees.index') }}"><x-ui.icon name="employee" /><span
-                                class="nav-label">Pegawai</span></a>
-                        <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}"
-                            href="{{ route('students.index') }}"><x-ui.icon name="employee" /><span
-                                class="nav-label">Siswa</span></a>
                         <a class="app-nav {{ request()->routeIs('taxes.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('taxes.index') }}"><x-ui.icon name="tax" /><span class="nav-label">Pajak
                                 Sinkronisasi</span></a>
@@ -107,11 +104,30 @@
                 </div>
 
                 <div>
+                    <button type="button" @click="toggleGroup('reference')"
+                        :aria-expanded="groups.reference.toString()" aria-controls="nav-reference"
+                        class="app-nav w-full text-left {{ request()->routeIs('employees.*', 'students.*') ? 'app-nav-section-active' : '' }}"
+                        title="Referensi"><x-ui.icon name="database" /><span x-show="!collapsed || open"
+                            class="nav-label flex-1">Referensi</span><x-ui.icon x-show="!collapsed || open"
+                            name="chevron-down" size="xs" class="transition-transform"
+                            ::class="groups.reference ? 'rotate-180' : ''" /></button>
+                    <div id="nav-reference" x-show="(!collapsed || open) && groups.reference" x-collapse
+                        class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
+                        <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}"
+                            href="{{ route('employees.index') }}"><x-ui.icon name="employee" /><span
+                                class="nav-label">Pegawai</span></a>
+                        <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}"
+                            href="{{ route('students.index') }}"><x-ui.icon name="employee" /><span
+                                class="nav-label">Siswa</span></a>
+                    </div>
+                </div>
+
+                <div>
                     <button type="button" @click="toggleGroup('documents')"
                         :aria-expanded="groups.documents.toString()" aria-controls="nav-documents"
                         class="app-nav w-full text-left {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'app-nav-section-active' : '' }}"
-                        title="Dokumen & Laporan"><x-ui.icon name="document" /><span x-show="!collapsed || open"
-                            class="nav-label flex-1">Dokumen & Laporan</span><x-ui.icon x-show="!collapsed || open"
+                        title="SPJ & Laporan"><x-ui.icon name="document" /><span x-show="!collapsed || open"
+                            class="nav-label flex-1">SPJ & Laporan</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
                             ::class="groups.documents ? 'rotate-180' : ''" /></button>
                     <div id="nav-documents" x-show="(!collapsed || open) && groups.documents" x-collapse
@@ -148,8 +164,8 @@
                     <button type="button" @click="toggleGroup('data')" :aria-expanded="groups.data.toString()"
                         aria-controls="nav-data"
                         class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}"
-                        title="Data & Sinkronisasi"><x-ui.icon name="database" /><span x-show="!collapsed || open"
-                            class="nav-label flex-1">Data & Sinkronisasi</span><x-ui.icon x-show="!collapsed || open"
+                        title="Data & Integrasi"><x-ui.icon name="database" /><span x-show="!collapsed || open"
+                            class="nav-label flex-1">Data & Integrasi</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
                             ::class="groups.data ? 'rotate-180' : ''" /></button>
                     <div id="nav-data" x-show="(!collapsed || open) && groups.data" x-collapse
@@ -243,7 +259,10 @@
                 default => 'application',
             };
         @endphp
-        <main data-page="{{ $pageKey }}" data-route="{{ $currentRouteName }}">
+        <main
+            class="min-w-0"
+            :style="window.innerWidth >= 1024 ? { paddingLeft: collapsed ? '5.25rem' : '17rem' } : {}"
+            data-page="{{ $pageKey }}" data-route="{{ $currentRouteName }}">
             <header
                 class="app-topbar sticky top-0 z-30 flex min-h-18 flex-wrap items-center justify-between gap-3 px-5 py-4">
                 <button type="button" @click="toggleNavigation()"

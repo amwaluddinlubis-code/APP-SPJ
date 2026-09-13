@@ -185,7 +185,9 @@ Kontrak yang sudah dijaga:
 - worksheet lain dibuang dari copy download pada level OOXML, bukan sekadar diberi status `hidden`/`veryHidden`;
 - source/master tersimpan tetap utuh setelah download individu;
 - **Cek Placeholder** melakukan lookup read-only melalui nomor Paket/SPJ, nomor dokumen turunan, atau No. Bukti dan memakai resolver nilai generator yang sama;
+- placeholder nominal pada generator, repeating row, preview/download, PDF, dan Cek Placeholder menghasilkan integer digit-only tanpa prefix `Rp` atau pemisah ribuan;
 - placeholder checker menjaga context School + Fiscal Year + Fund Source dan tidak menerbitkan nomor;
+- alur **Pembayaran Honor** menyediakan dua halaman: memilih transaksi `HONOR_PEGAWAI` secara manual, lalu menyusun/mengekspor laporan gabungan dengan referensi BPU dan kolom tanda tangan;
 - **Unduh Master Template Terbaru** merakit satu sheet canonical dari setiap template XLSX aktif pada fiscal year aktif;
 - update satu XLSX individu langsung menjadi source document type tersebut pada master download berikutnya tanpa memutasi master historis;
 - record template lain boleh tetap berasal dari salinan master multi-sheet hasil importer dan export hanya mengambil sheet canonical milik document type tersebut;

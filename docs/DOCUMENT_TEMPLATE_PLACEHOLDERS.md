@@ -308,7 +308,8 @@ Contract:
 - `POTONGAN_PAJAK` saat ini alias ke `TOTAL_PAJAK`.
 - `NILAI_PEKERJAAN` saat ini mengikuti `NILAI_BRUTO`.
 - `TERBILANG_NETO` dan `NILAI_PEKERJAAN_TERBILANG` menghasilkan teks terbilang bahasa Indonesia.
-- formatting rupiah dilakukan oleh service generator.
+- seluruh placeholder nominal menghasilkan string integer digit-only, tanpa prefix `Rp` dan tanpa titik/koma pemisah ribuan. Contoh: `1234567`.
+- kontrak ini berlaku konsisten untuk DOCX, XLSX, PDF, preview, download, dan Cek Placeholder; tampilan UI biasa di luar placeholder tetap boleh memakai format Rupiah.
 
 ---
 

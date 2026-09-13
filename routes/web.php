@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/sekolah', [SchoolConfigurationController::class, 'index'])->name('schools.settings');
         Route::get('/pengaturan/sekolah/kop-surat', [SchoolConfigurationController::class, 'letterhead'])->name('schools.letterhead');
         Route::put('/pengaturan/sekolah/profil', [SchoolConfigurationController::class, 'updateProfile'])->name('schools.profile.update');
+        Route::put('/pengaturan/dokumen/penyimpanan', [SchoolConfigurationController::class, 'updateDocumentStorage'])->name('documents.storage.update');
         Route::get('/pengaturan/backup', [SchoolBackupController::class, 'index'])->name('school-backups.index');
         Route::post('/pengaturan/backup', [SchoolBackupController::class, 'store'])->name('school-backups.store');
         Route::post('/pengaturan/backup/{backupId}/pulihkan', [SchoolBackupController::class, 'restore'])->name('school-backups.restore');
@@ -141,6 +142,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh', [SpjController::class, 'downloadTemplate'])->name('spj.download-template');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh-pdf', [SpjController::class, 'downloadTemplatePdf'])->name('spj.download-template-pdf');
+        Route::get('/spj/laporan/honor/pilih', [SpjController::class, 'selectHonorPayments'])->name('spj.honor-payments.select');
+        Route::post('/spj/laporan/honor/susun', [SpjController::class, 'composeHonorPayments'])->name('spj.honor-payments.compose');
         Route::get('/spj/laporan/honor/{format}', [SpjController::class, 'exportHonorPayments'])->name('spj.honor-payments.export');
         Route::get('/spj/unduh/{format}', [SpjController::class, 'export'])->name('spj.export');
         Route::get('/laporan-audit', [AuditReportController::class, 'index'])->name('audit-reports.index');

@@ -142,8 +142,13 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
         $this->assertSame('Kepala Sekolah Test', $values['NAMA_KEPALA_SEKOLAH']);
         $this->assertSame('Kertas A4 80 gsm', $values['ITEM_URAIAN']);
         $this->assertSame('2.00', $values['ITEM_VOLUME']);
-        $this->assertSame('Rp 75.000', $values['ITEM_HARGA_SATUAN']);
-        $this->assertSame('Rp 150.000', $values['ITEM_JUMLAH']);
+        $this->assertSame('75000', $values['ITEM_HARGA_SATUAN']);
+        $this->assertSame('150000', $values['ITEM_JUMLAH']);
+        $this->assertMatchesRegularExpression('/^\d+$/', $values['ITEM_HARGA_SATUAN']);
+        $this->assertMatchesRegularExpression('/^\d+$/', $values['ITEM_JUMLAH']);
+        $this->assertStringNotContainsString('Rp', $values['ITEM_HARGA_SATUAN']);
+        $this->assertStringNotContainsString('.', $values['ITEM_HARGA_SATUAN']);
+        $this->assertStringNotContainsString(',', $values['ITEM_HARGA_SATUAN']);
         $this->assertSame(SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE, $values['UPAH_NAMA']);
     }
 

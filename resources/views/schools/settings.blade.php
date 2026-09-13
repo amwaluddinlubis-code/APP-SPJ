@@ -107,6 +107,25 @@
                     </div>
                 </x-ui.form-section>
 
+                <x-ui.form-section title="Penyimpanan Dokumen Global"
+                    description="Semua dokumen SPJ yang diunduh akan disalin ke Tahun/Nomor Dokumen SPJ/Nama File. Path harus berupa folder absolut yang sudah ada dan dapat ditulisi aplikasi.">
+                    <form method="POST" action="{{ route('documents.storage.update') }}" class="space-y-3">
+                        @csrf @method('PUT')
+                        <x-ui.field label="Path tersimpan" for="document_storage_path">
+                            <x-ui.input id="document_storage_path" name="document_storage_path"
+                                placeholder="D:\\Dokumen-SPJ" :value="old('document_storage_path', $documentStoragePath ?? '')" required />
+                        </x-ui.field>
+                        @if(!empty($documentStoragePathError))
+                            <p class="text-sm font-semibold text-rose-700">{{ $documentStoragePathError }}</p>
+                        @elseif(!empty($documentStoragePath))
+                            <p class="text-sm font-semibold text-emerald-700">Path aktif dan dapat ditulisi.</p>
+                        @else
+                            <p class="text-sm font-semibold text-amber-700">Belum diatur. Download dokumen akan meminta path terlebih dahulu.</p>
+                        @endif
+                        <x-ui.button type="submit">Simpan Path Dokumen</x-ui.button>
+                    </form>
+                </x-ui.form-section>
+
                 <div class="ui-form-actions"><x-ui.button type="submit">Simpan Perubahan Profil</x-ui.button></div>
             </form>
         @else

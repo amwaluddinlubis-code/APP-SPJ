@@ -14,6 +14,7 @@ class DocumentTemplatePlaceholderInspectorService
         private readonly ActiveSpjContext $context,
         private readonly SpjTemplateService $templates,
         private readonly SpjMaintenanceDocumentContextService $maintenanceContext,
+        private readonly SpjPlaceholderValueFormatter $placeholderValues,
     ) {}
 
     /**
@@ -135,8 +136,8 @@ class DocumentTemplatePlaceholderInspectorService
                 'ITEM_URAIAN' => $this->displayValue((string) ($item->item_description ?: $item->description)),
                 'ITEM_VOLUME' => $this->displayValue((string) $item->quantity),
                 'ITEM_SATUAN' => $this->displayValue((string) ($item->unit ?: '—')),
-                'ITEM_HARGA_SATUAN' => $this->rupiah($item->unit_price),
-                'ITEM_JUMLAH' => $this->rupiah($item->amount),
+                'ITEM_HARGA_SATUAN' => $this->placeholderValues->amount($item->unit_price),
+                'ITEM_JUMLAH' => $this->placeholderValues->amount($item->amount),
                 'ITEM_KODE_REKENING' => $this->displayValue((string) ($item->account_code ?: $transaction->account_code)),
                 'ITEM_NAMA_REKENING' => $this->displayValue((string) ($item->account_name ?: $transaction->account_name)),
             ];
@@ -148,8 +149,8 @@ class DocumentTemplatePlaceholderInspectorService
                 'UPAH_NAMA' => $this->displayValue((string) $worker->name),
                 'UPAH_PEKERJAAN' => $this->displayValue((string) $worker->job_description),
                 'UPAH_HARI' => $this->displayValue((string) $worker->work_days),
-                'UPAH_TARIF_HARI' => $this->rupiah($worker->daily_rate),
-                'UPAH_JUMLAH' => $this->rupiah($worker->amount),
+                'UPAH_TARIF_HARI' => $this->placeholderValues->amount($worker->daily_rate),
+                'UPAH_JUMLAH' => $this->placeholderValues->amount($worker->amount),
                 'UPAH_PENERIMA_KUITANSI' => $worker->is_receipt_recipient ? 'YA' : 'TIDAK',
             ];
         });
@@ -198,10 +199,5 @@ class DocumentTemplatePlaceholderInspectorService
     private function displayValue(string $value): string
     {
         return trim($value) === '' ? SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE : $value;
-    }
-
-    private function rupiah(mixed $amount): string
-    {
-        return 'Rp '.number_format((float) $amount, 0, ',', '.');
     }
 }

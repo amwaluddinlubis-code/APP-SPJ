@@ -12,8 +12,8 @@
     <style>
         @page { margin: 18mm 16mm 16mm; }
         body { font-family: DejaVu Sans, sans-serif; color:#111827; font-size:10px; line-height:1.45; }
-        .kop { border-bottom:3px double #111827; padding-bottom:8px; margin-bottom:14px; min-height:60px; }
-        .kop img { width:100%; max-height:100px; object-fit:contain; object-position:left center; }
+        .kop { border-bottom:3px double #111827; padding-bottom:8px; margin-bottom:14px; height:38mm; overflow:hidden; text-align:center; }
+        .kop img { width:100%; height:100%; object-fit:contain; object-position:top center; }
         .kop h1 { font-size:14px; margin:0; } .kop p { margin:2px 0; color:#4b5563; }
         h2 { text-align:center; font-size:14px; margin:10px 0 4px; } h3 { font-size:11px; margin:14px 0 6px; }
         table { width:100%; border-collapse:collapse; } th,td { border:1px solid #374151; padding:5px 6px; vertical-align:top; }

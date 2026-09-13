@@ -255,16 +255,21 @@ class SpjReportUseCase
 
     private function applyReportTransactionFilters($query, Request $request, FiscalYear $year)
     {
-        if ($request->filled('month')) {
-            $query->whereMonth('transaction_date', $request->integer('month'));
+        $mode = (string) $request->input('mode', '');
+        $periode = $request->integer('periode') ?: null;
+
+        // Compatibility for bookmarked URLs that used the previous three filters.
+        if ($mode === '') {
+            $mode = $request->filled('month') ? 'bulan' : ($request->filled('quarter') ? 'triwulan' : ($request->filled('semester') ? 'semester' : 'semua'));
+            $periode = $mode === 'bulan' ? $request->integer('month') : ($mode === 'triwulan' ? $request->integer('quarter') : ($mode === 'semester' ? $request->integer('semester') : null));
         }
-        if ($request->filled('quarter')) {
-            $quarter = $request->integer('quarter');
-            $query->whereBetween('transaction_date', [now()->setYear($year->year)->setMonth(($quarter - 1) * 3 + 1)->startOfMonth(), now()->setYear($year->year)->setMonth($quarter * 3)->endOfMonth()]);
-        }
-        if ($request->filled('semester')) {
-            $semester = $request->integer('semester');
-            $query->whereBetween('transaction_date', [now()->setYear($year->year)->setMonth($semester === 1 ? 1 : 7)->startOfMonth(), now()->setYear($year->year)->setMonth($semester === 1 ? 6 : 12)->endOfMonth()]);
+
+        if ($mode === 'bulan' && $periode >= 1 && $periode <= 12) {
+            $query->whereYear('transaction_date', $year->year)->whereMonth('transaction_date', $periode);
+        } elseif ($mode === 'triwulan' && $periode >= 1 && $periode <= 4) {
+            $query->whereBetween('transaction_date', [now()->setYear($year->year)->setMonth(($periode - 1) * 3 + 1)->startOfMonth(), now()->setYear($year->year)->setMonth($periode * 3)->endOfMonth()]);
+        } elseif ($mode === 'semester' && $periode >= 1 && $periode <= 2) {
+            $query->whereBetween('transaction_date', [now()->setYear($year->year)->setMonth($periode === 1 ? 1 : 7)->startOfMonth(), now()->setYear($year->year)->setMonth($periode === 1 ? 6 : 12)->endOfMonth()]);
         }
 
         return $query;

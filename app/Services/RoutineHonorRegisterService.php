@@ -37,6 +37,8 @@ class RoutineHonorRegisterService
                     ->filter()
                     ->unique()
                     ->values();
+                $proofReferences = $transactions->map(fn ($transaction): string => trim((string) $transaction->no_bukti))->filter()->unique()->values();
+                $spjReferences = $transactions->map(fn ($transaction): string => trim((string) $transaction->spjPackage?->document_number))->filter()->unique()->values();
                 $periods = $transactions
                     ->map(fn ($transaction) => $transaction->transaction_date?->translatedFormat('F Y'))
                     ->filter()
@@ -54,6 +56,8 @@ class RoutineHonorRegisterService
                     'tax' => (float) $group->sum(fn (SpjHonor $honor) => (float) $honor->tax_amount),
                     'net' => (float) $group->sum(fn (SpjHonor $honor) => (float) $honor->net_amount),
                     'package_references' => $references->implode('; '),
+                    'proof_references' => $proofReferences->implode('; '),
+                    'spj_references' => $spjReferences->implode('; '),
                     'is_routine' => $group->count() > 1,
                 ];
             })

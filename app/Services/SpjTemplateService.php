@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Drawing as SharedDrawing;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
@@ -49,8 +51,8 @@ class SpjTemplateService
         $activityHierarchy = $this->activityHierarchy($transaction->fiscal_year_id, (string) $transaction->activity_code);
         $goods = $transaction->goods->first();
         $workOrder = $transaction->workOrder;
-        $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->description).' | '.$item->quantity.' '.($item->unit ?: '—').' | '.$this->rupiah($item->amount))->implode("\n");
-        $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.$this->rupiah($recipient->amount))->implode("\n");
+        $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->description).' | '.$item->quantity.' '.($item->unit ?: '—').' | '.app(SpjPlaceholderValueFormatter::class)->amount($item->amount))->implode("\n");
+        $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.app(SpjPlaceholderValueFormatter::class)->amount($recipient->amount))->implode("\n");
 
         $transactionDate = $transaction->transaction_date?->translatedFormat('d F Y') ?: '';
         $orderDate = $goods?->order_date?->translatedFormat('d F Y') ?: '';
@@ -71,7 +73,7 @@ class SpjTemplateService
             $quantity = $item->siplah_quantity_received ?? $item->siplah_mapped_quantity ?? $item->quantity;
             $price = $item->siplah_unit_price ?? $item->unit_price;
 
-            return ($index + 1).'. '.$name.' | diterima '.$quantity.' '.$item->unit.' | harga '.$this->rupiah($price).' | MPID '.($item->siplah_item_mpid ?: '-');
+            return ($index + 1).'. '.$name.' | diterima '.$quantity.' '.$item->unit.' | harga '.app(SpjPlaceholderValueFormatter::class)->amount($price).' | MPID '.($item->siplah_item_mpid ?: '-');
         })->implode("\n");
         $siplahMappingStatus = empty($siplahResponse)
             ? ''
@@ -147,18 +149,18 @@ class SpjTemplateService
             'TEMPAT_PENYERAHAN' => (string) ($workOrder?->work_location ?: $transaction->event_location ?: $school->address),
             'NAMA_PENANDATANGAN' => (string) ($transaction->signatory_name ?: $transaction->effective_receipt_recipient_name),
             'JABATAN_PENANDATANGAN' => (string) $transaction->signatory_role,
-            'NILAI_BRUTO' => $this->rupiah($transaction->gross_amount),
-            'PPN' => $this->rupiah($transaction->ppn),
-            'PPH21' => $this->rupiah($transaction->pph21),
-            'PPH22' => $this->rupiah($transaction->pph22),
-            'PPH23' => $this->rupiah($transaction->pph23),
-            'PPH4' => $this->rupiah($transaction->pph4),
-            'SSPD' => $this->rupiah($transaction->sspd),
-            'TOTAL_PAJAK' => $this->rupiah($transaction->tax_total),
-            'NILAI_DIBAYARKAN' => $this->rupiah($transaction->net_amount),
+            'NILAI_BRUTO' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->gross_amount),
+            'PPN' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->ppn),
+            'PPH21' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->pph21),
+            'PPH22' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->pph22),
+            'PPH23' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->pph23),
+            'PPH4' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->pph4),
+            'SSPD' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sspd),
+            'TOTAL_PAJAK' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->tax_total),
+            'NILAI_DIBAYARKAN' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->net_amount),
             'RINCIAN_BELANJA' => $items,
             'RINCIAN_JASA' => $services,
-            'RINCIAN_UPAH' => $transaction->workers->map(fn ($worker, $index) => ($index + 1).'. '.$worker->name.' | '.$worker->job_description.' | '.$worker->work_days.' hari × '.$this->rupiah($worker->daily_rate).' = '.$this->rupiah($worker->amount))->implode("\n"),
+            'RINCIAN_UPAH' => $transaction->workers->map(fn ($worker, $index) => ($index + 1).'. '.$worker->name.' | '.$worker->job_description.' | '.$worker->work_days.' hari × '.app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate).' = '.app(SpjPlaceholderValueFormatter::class)->amount($worker->amount))->implode("\n"),
         ];
 
         $allValues = $values + [
@@ -277,7 +279,11 @@ class SpjTemplateService
             throw $exception;
         }
 
-        return response()->download($output, $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension))->deleteFileAfterSend(true);
+        $fileName = $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension);
+        $stored = app(DocumentStoragePathService::class)->persist($output, $package, $fileName);
+        @unlink($output);
+
+        return response()->download($stored, $fileName);
     }
 
     /** Menghasilkan HTML dari template Excel untuk pratinjau di browser. */
@@ -293,7 +299,7 @@ class SpjTemplateService
     /** @param Collection<int, DocumentTemplate> $templates */
     public function downloadPackagePdf(Collection $templates, SpjPackage $package, School $school)
     {
-        return $this->pdfResponse($this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school)), 'PAKET-SPJ-'.$package->document_number.'.pdf');
+        return $this->pdfResponse($this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school)), 'PAKET-SPJ-'.$package->document_number.'.pdf', $package);
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
@@ -307,7 +313,11 @@ class SpjTemplateService
         try {
             IOFactory::createWriter($this->packageSpreadsheet($templates, $package, $school), 'Xlsx')->save($temporaryFile);
 
-            return response()->download($temporaryFile, $this->safeName('PAKET-SPJ-'.$package->document_number.'.xlsx'))->deleteFileAfterSend(true);
+            $fileName = $this->safeName('PAKET-SPJ-'.$package->document_number.'.xlsx');
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $fileName);
+            @unlink($temporaryFile);
+
+            return response()->download($stored, $fileName);
         } catch (\Throwable $exception) {
             @unlink($temporaryFile);
 
@@ -339,7 +349,7 @@ class SpjTemplateService
             throw new \RuntimeException('Unduh PDF saat ini hanya tersedia untuk template Excel.');
         }
 
-        return $this->pdfResponse($this->spreadsheetPdfContents($this->filledSpreadsheet($template, $package, $school)), $template->document_type.'-'.$package->document_number.'.pdf');
+        return $this->pdfResponse($this->spreadsheetPdfContents($this->filledSpreadsheet($template, $package, $school)), $template->document_type.'-'.$package->document_number.'.pdf', $package);
     }
 
     private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
@@ -460,19 +470,31 @@ class SpjTemplateService
         }
     }
 
-    private function pdfResponse(string $contents, string $fileName)
+    private function pdfResponse(string $contents, string $fileName, ?SpjPackage $package = null)
     {
+        if ($package) {
+            $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
+            if ($temporaryFile === false || file_put_contents($temporaryFile, $contents) === false) {
+                throw new \RuntimeException('File sementara PDF tidak dapat disimpan.');
+            }
+            $downloadName = $this->safeName($fileName);
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
+            @unlink($temporaryFile);
+
+            return response($contents, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+                'Content-Length' => (string) strlen($contents),
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ]);
+        }
+
         return response($contents, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$this->safeName($fileName).'"',
             'Content-Length' => (string) strlen($contents),
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);
-    }
-
-    private function rupiah(mixed $amount): string
-    {
-        return 'Rp '.number_format((float) $amount, 0, ',', '.');
     }
 
     private function paymentMethodLabel(string $value): string
@@ -502,8 +524,8 @@ class SpjTemplateService
         return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'dokumen-spj';
     }
 
-    /** Sisipkan gambar kop pada sel penanda tanpa mengubah tata letak TPL. */
-    private function fillExcelLetterhead(Worksheet $sheet, School $school): void
+    /** Sisipkan gambar kop selebar area cetak tanpa mengubah rasio gambar. */
+    protected function fillExcelLetterhead(Worksheet $sheet, School $school): void
     {
         $relativePath = $school->letterhead_path;
         $disk = Storage::disk('local');
@@ -519,12 +541,47 @@ class SpjTemplateService
             $drawing = new Drawing;
             $drawing->setPath($path);
             $drawing->setCoordinates($coordinate);
-            $drawing->setHeight(115);
+            $dimensions = @getimagesize($path);
+            if (! is_array($dimensions) || ($dimensions[0] ?? 0) < 1 || ($dimensions[1] ?? 0) < 1) {
+                return;
+            }
+
+            $targetWidth = $this->excelPrintAreaWidth($sheet);
+            $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
+            $drawing->setWidth($targetWidth);
+            $drawing->setResizeProportional(true);
             $drawing->setOffsetX(2);
             $drawing->setOffsetY(2);
             $drawing->setWorksheet($sheet);
+
+            $row = $sheet->getCell($coordinate)->getRow();
+            $currentHeight = $sheet->getRowDimension($row)->getRowHeight();
+            $sheet->getRowDimension($row)->setRowHeight(max(
+                $currentHeight > 0 ? $currentHeight : 0,
+                SharedDrawing::pixelsToPoints($targetHeight) + 4,
+            ));
             break;
         }
+    }
+
+    private function excelPrintAreaWidth(Worksheet $sheet): int
+    {
+        $printArea = (string) $sheet->getPageSetup()->getPrintArea();
+        preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/', $printArea, $matches);
+        $lastColumn = $matches[2] ?? $sheet->getHighestColumn();
+        $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
+        $width = 0;
+
+        for ($column = 1; $column <= $lastColumnIndex; $column++) {
+            $letter = Coordinate::stringFromColumnIndex($column);
+            $columnWidth = $sheet->getColumnDimension($letter)->getWidth();
+            $width += SharedDrawing::cellDimensionToPixels(
+                $columnWidth > 0 ? $columnWidth : 8.43,
+                new Font(false),
+            );
+        }
+
+        return max(1, $width - 4);
     }
 
     /** Konversi nilai rupiah ke terbilang Indonesia untuk kuitansi dan SPK. */
@@ -582,8 +639,8 @@ class SpjTemplateService
             'ITEM_URAIAN' => (string) ($item->item_description ?: $item->description),
             'ITEM_VOLUME' => (string) $item->quantity,
             'ITEM_SATUAN' => (string) ($item->unit ?: '—'),
-            'ITEM_HARGA_SATUAN' => $this->rupiah($item->unit_price),
-            'ITEM_JUMLAH' => $this->rupiah($item->amount),
+            'ITEM_HARGA_SATUAN' => app(SpjPlaceholderValueFormatter::class)->amount($item->unit_price),
+            'ITEM_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($item->amount),
             'ITEM_KODE_REKENING' => (string) ($item->account_code ?: $package->transaction->account_code),
             'ITEM_NAMA_REKENING' => (string) ($item->account_name ?: $package->transaction->account_name),
         ];
@@ -663,8 +720,8 @@ class SpjTemplateService
             'UPAH_NAMA' => (string) $worker->name,
             'UPAH_PEKERJAAN' => (string) $worker->job_description,
             'UPAH_HARI' => (string) $worker->work_days,
-            'UPAH_TARIF_HARI' => $this->rupiah($worker->daily_rate),
-            'UPAH_JUMLAH' => $this->rupiah($worker->amount),
+            'UPAH_TARIF_HARI' => app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate),
+            'UPAH_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($worker->amount),
             'UPAH_PENERIMA_KUITANSI' => $worker->is_receipt_recipient ? 'YA' : 'TIDAK',
         ];
     }

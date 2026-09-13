@@ -18,6 +18,24 @@
     font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
 }
 
+@media (min-width: 1024px) {
+    .app-shell-collapsed .app-sidebar {
+        width: 5.25rem !important;
+    }
+
+    .app-shell-expanded .app-sidebar {
+        width: 17rem !important;
+    }
+
+    .app-shell-collapsed > main {
+        padding-left: 5.25rem !important;
+    }
+
+    .app-shell-expanded > main {
+        padding-left: 17rem !important;
+    }
+}
+
 .app-sidebar-overlay {
     background: var(--app-overlay-bg) !important;
 }

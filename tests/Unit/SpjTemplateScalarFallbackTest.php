@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Services\ArkasActivityHierarchyResolver;
 use App\Services\SpjDocumentTypeRegistry;
+use App\Services\SpjPlaceholderValueFormatter;
 use App\Services\SpjTemplateService;
 use ReflectionMethod;
 use Tests\TestCase;
@@ -42,5 +43,16 @@ class SpjTemplateScalarFallbackTest extends TestCase
         $this->assertSame(SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE, $result['REFERENSI_BAYAR']);
         $this->assertSame('SD Negeri Contoh', $result['NAMA_SEKOLAH']);
         $this->assertSame('', $result['KOP_SURAT']);
+    }
+
+    public function test_placeholder_amounts_are_plain_integer_strings_without_locale_formatting(): void
+    {
+        $value = (new SpjPlaceholderValueFormatter)->amount('1234567.00');
+
+        $this->assertSame('1234567', $value);
+        $this->assertMatchesRegularExpression('/^\d+$/', $value);
+        $this->assertStringNotContainsString('Rp', $value);
+        $this->assertStringNotContainsString('.', $value);
+        $this->assertStringNotContainsString(',', $value);
     }
 }

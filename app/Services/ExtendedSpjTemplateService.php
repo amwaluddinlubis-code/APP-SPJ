@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
 use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf as SpreadsheetPdfWriter;
@@ -72,8 +71,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             $participantNames[] = trim((string) $participant->name) ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE;
             $participantIdentities[] = $identity ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE;
             $participantPortions[] = $this->plainNumber($portions);
-            $participantPrices[] = $this->rupiahValue($price);
-            $participantAmounts[] = $this->rupiahValue($amount);
+            $participantPrices[] = app(SpjPlaceholderValueFormatter::class)->amount($price);
+            $participantAmounts[] = app(SpjPlaceholderValueFormatter::class)->amount($amount);
             $totalConsumption += $amount;
         }
 
@@ -90,7 +89,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             'KONSUMSI_PORSI' => $participantPortions !== [] ? implode("\n", $participantPortions) : $fallback,
             'KONSUMSI_HARGA_PORSI' => $participantPrices !== [] ? implode("\n", $participantPrices) : $fallback,
             'KONSUMSI_JUMLAH' => $participantAmounts !== [] ? implode("\n", $participantAmounts) : $fallback,
-            'TOTAL_KONSUMSI' => $this->rupiahValue($totalConsumption),
+            'TOTAL_KONSUMSI' => app(SpjPlaceholderValueFormatter::class)->amount($totalConsumption),
         ];
     }
 
@@ -154,7 +153,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         try {
             return $this->pdfResponseExtended(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, false),
-                $template->document_type.'-'.$package->document_number.'.pdf',
+                $template->document_type.'-'.$package->document_number.'.pdf', $package,
             );
         } finally {
             $spreadsheet->disconnectWorksheets();
@@ -174,10 +173,11 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         try {
             IOFactory::createWriter($spreadsheet, 'Xlsx')->save($temporaryFile);
 
-            return response()->download(
-                $temporaryFile,
-                $this->safeDownloadName('PAKET-SPJ-'.$package->document_number.'.xlsx'),
-            )->deleteFileAfterSend(true);
+            $downloadName = $this->safeDownloadName('PAKET-SPJ-'.$package->document_number.'.xlsx');
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
+            @unlink($temporaryFile);
+
+            return response()->download($stored, $downloadName);
         } catch (\Throwable $exception) {
             @unlink($temporaryFile);
             throw $exception;
@@ -193,7 +193,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         try {
             return $this->pdfResponseExtended(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, true),
-                'PAKET-SPJ-'.$package->document_number.'.pdf',
+                'PAKET-SPJ-'.$package->document_number.'.pdf', $package,
             );
         } finally {
             $spreadsheet->disconnectWorksheets();
@@ -323,7 +323,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         $values = $this->placeholders($package, $school);
         $this->fillExcelItemsExtended($sheet, $package);
         $this->fillExcelWorkersExtended($sheet, $package);
-        $this->fillExcelLetterheadExtended($sheet, $school);
+        $this->fillExcelLetterhead($sheet, $school);
 
         $replacements = array_combine(
             array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)),
@@ -347,8 +347,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             'ITEM_URAIAN' => (string) ($item->item_description ?: $item->description),
             'ITEM_VOLUME' => (string) $item->quantity,
             'ITEM_SATUAN' => (string) ($item->unit ?: '—'),
-            'ITEM_HARGA_SATUAN' => $this->rupiahValue((float) $item->unit_price),
-            'ITEM_JUMLAH' => $this->rupiahValue((float) $item->amount),
+            'ITEM_HARGA_SATUAN' => app(SpjPlaceholderValueFormatter::class)->amount($item->unit_price),
+            'ITEM_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($item->amount),
             'ITEM_KODE_REKENING' => (string) ($item->account_code ?: $package->transaction->account_code),
             'ITEM_NAMA_REKENING' => (string) ($item->account_name ?: $package->transaction->account_name),
         ];
@@ -419,8 +419,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             'UPAH_NAMA' => (string) $worker->name,
             'UPAH_PEKERJAAN' => (string) $worker->job_description,
             'UPAH_HARI' => (string) $worker->work_days,
-            'UPAH_TARIF_HARI' => $this->rupiahValue((float) $worker->daily_rate),
-            'UPAH_JUMLAH' => $this->rupiahValue((float) $worker->amount),
+            'UPAH_TARIF_HARI' => app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate),
+            'UPAH_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($worker->amount),
             'UPAH_PENERIMA_KUITANSI' => $worker->is_receipt_recipient ? 'YA' : 'TIDAK',
         ];
     }
@@ -468,32 +468,6 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    private function fillExcelLetterheadExtended(Worksheet $sheet, School $school): void
-    {
-        $relativePath = $school->letterhead_path;
-        $disk = Storage::disk('local');
-        if (blank($relativePath) || ! $disk->exists($relativePath)) {
-            return;
-        }
-
-        $path = $disk->path($relativePath);
-        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
-            if (trim((string) $sheet->getCell($coordinate)->getValue()) !== '{{KOP_SURAT}}') {
-                continue;
-            }
-
-            $sheet->setCellValue($coordinate, '');
-            $drawing = new Drawing;
-            $drawing->setPath($path);
-            $drawing->setCoordinates($coordinate);
-            $drawing->setHeight(115);
-            $drawing->setOffsetX(2);
-            $drawing->setOffsetY(2);
-            $drawing->setWorksheet($sheet);
-            break;
-        }
-    }
-
     private function spreadsheetPdfContentsExtended(Spreadsheet $spreadsheet, bool $allSheets): string
     {
         $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
@@ -516,8 +490,25 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    private function pdfResponseExtended(string $contents, string $fileName)
+    private function pdfResponseExtended(string $contents, string $fileName, ?SpjPackage $package = null)
     {
+        if ($package) {
+            $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
+            if ($temporaryFile === false || file_put_contents($temporaryFile, $contents) === false) {
+                throw new \RuntimeException('File sementara PDF tidak dapat disimpan.');
+            }
+            $downloadName = $this->safeDownloadName($fileName);
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
+            @unlink($temporaryFile);
+
+            return response($contents, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+                'Content-Length' => (string) strlen($contents),
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ]);
+        }
+
         return response($contents, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$this->safeDownloadName($fileName).'"',
@@ -542,15 +533,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'dokumen-spj';
     }
 
-    private function rupiahValue(float $amount): string
-    {
-        return 'Rp '.number_format($amount, 0, ',', '.');
-    }
-
     private function plainNumber(float $value): string
     {
-        return abs($value - round($value)) < 0.00001
-            ? number_format($value, 0, ',', '.')
-            : rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',');
+        return app(SpjPlaceholderValueFormatter::class)->number($value);
     }
 }

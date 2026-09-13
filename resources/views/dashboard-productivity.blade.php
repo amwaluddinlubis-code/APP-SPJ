@@ -200,9 +200,9 @@
                         <x-ui-icon name="queue" class="h-5 w-5 text-[var(--theme-content-accent)]" />
                         <h2 class="font-bold text-[var(--ui-fg-strong)]">Antrean kerja terdekat</h2>
                     </div>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Maksimal delapan transaksi yang perlu dilengkapi,
-                        belum dikerjakan, atau membutuhkan perhatian. Paket Siap Dinomori tidak ditampilkan di antrean
-                        ini.</p>
+                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">
+                        Maksimal delapan transaksi yang perlu dilengkapi, belum dikerjakan, atau membutuhkan perhatian. Paket Siap Dinomori tidak ditampilkan di antrean ini.
+                    </p>
                 </div>
                 <div class="divide-y divide-[var(--ui-line)]">
                     @forelse($workQueue as $transaction)

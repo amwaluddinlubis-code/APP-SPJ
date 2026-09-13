@@ -4,10 +4,13 @@ namespace App\UseCases\Spj;
 
 use App\Models\FiscalYear;
 use App\Models\SpjHonor;
+use App\Models\Transaction;
 use App\Services\RoutineHonorRegisterService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -20,6 +23,55 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         parent::__construct($activeContext);
     }
 
+    public function selectHonorPayments(Request $request): View
+    {
+        $transactions = Transaction::query()
+            ->with(['honors', 'spjPackage'])
+            ->forSpjContext($this->activeContext)
+            ->where('spj_category', 'HONOR_PEGAWAI')
+            ->has('honors')
+            ->when($request->filled('month'), fn ($query) => $query->whereMonth('transaction_date', $request->integer('month')))
+            ->when($request->filled('quarter'), fn ($query) => $query->whereBetween(DB::raw('CAST(strftime(\'%m\', transaction_date) AS INTEGER)'), [(($request->integer('quarter') - 1) * 3) + 1, $request->integer('quarter') * 3]))
+            ->when($request->filled('semester'), fn ($query) => $query->whereBetween(DB::raw('CAST(strftime(\'%m\', transaction_date) AS INTEGER)'), [$request->integer('semester') === 1 ? 1 : 7, $request->integer('semester') === 1 ? 6 : 12]))
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        return view('spj-reports.honor-select', compact('transactions'));
+    }
+
+    public function composeHonorPayments(Request $request): View
+    {
+        $data = $request->validate([
+            'transaction_ids' => ['required', 'array', 'min:1'],
+            'transaction_ids.*' => ['integer', 'distinct'],
+        ]);
+        $transactions = Transaction::query()
+            ->with(['honors', 'spjPackage'])
+            ->forSpjContext($this->activeContext)
+            ->where('spj_category', 'HONOR_PEGAWAI')
+            ->whereKey($data['transaction_ids'])
+            ->has('honors')
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+        abort_if($transactions->count() !== count($data['transaction_ids']), 422, 'Sebagian transaksi honor tidak berada pada konteks aktif atau bukan kategori Honor Pegawai.');
+
+        $honors = SpjHonor::query()
+            ->with(['item.transaction.spjPackage'])
+            ->whereHas('item', fn ($query) => $query->whereIn('transaction_id', $transactions->modelKeys()))
+            ->get()
+            ->sortBy(fn (SpjHonor $honor) => sprintf('%s-%010d-%010d', $honor->item->transaction->transaction_date?->format('Y-m-d') ?? '', $honor->item->transaction_id, $honor->id))
+            ->values();
+        $register = $this->routineHonorRegister->aggregate($honors);
+
+        return view('spj-reports.honor-compose', [
+            'transactions' => $transactions,
+            'rows' => $register['rows'],
+            'summary' => $register['summary'],
+        ]);
+    }
+
     public function exportHonorPayments(Request $request, string $format)
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
@@ -30,6 +82,9 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             ->with(['item.transaction.spjPackage'])
             ->whereHas('item.transaction', function ($query) use ($request): void {
                 $query->forSpjContext($this->activeContext)->where('spj_category', 'HONOR_PEGAWAI');
+                if ($request->filled('transaction_ids')) {
+                    $query->whereIn('id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
+                }
                 if ($request->filled('month')) {
                     $query->whereMonth('transaction_date', $request->integer('month'));
                 }
@@ -68,7 +123,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $sheet = $book->getActiveSheet()->setTitle('Penerimaan Honor');
         $sheet->fromArray([
             'No', 'Penerima', 'Jabatan/Jenis Honor', 'Periode', 'Bulan/Kali', 'Tarif',
-            'Bruto', 'PPh 21', 'Dibayarkan', 'Referensi Paket SPJ', 'Tanda Tangan',
+            'Bruto', 'PPh 21', 'Dibayarkan', 'No Bukti/BPU', 'Nomor SPJ', 'Tanda Tangan',
         ], null, 'A1');
 
         foreach ($rows as $index => $row) {
@@ -82,19 +137,20 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
                 $row['gross'],
                 $row['tax'],
                 $row['net'],
-                $row['package_references'],
+                $row['proof_references'],
+                $row['spj_references'],
                 ($index + 1).'. __________________',
             ]], null, 'A'.($index + 2));
         }
 
         $totalRow = $rows->count() + 2;
-        $sheet->fromArray([['', '', '', '', '', 'TOTAL', $summary['gross'], $summary['tax'], $summary['net'], '', '']], null, 'A'.$totalRow);
+        $sheet->fromArray([['', '', '', '', '', 'TOTAL', $summary['gross'], $summary['tax'], $summary['net'], '', '', '']], null, 'A'.$totalRow);
         foreach (['F', 'G', 'H', 'I'] as $column) {
             $sheet->getStyle($column.'2:'.$column.$totalRow)->getNumberFormat()->setFormatCode('#,##0');
         }
         $sheet->getStyle('A1:K1')->getFont()->setBold(true);
         $sheet->getStyle('A1:K'.$totalRow)->getAlignment()->setWrapText(true)->setVertical('center');
-        foreach (range('A', 'K') as $column) {
+        foreach (range('A', 'L') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
         $sheet->getPageSetup()->setOrientation('landscape')->setPaperSize(9)->setFitToWidth(1)->setFitToHeight(1);

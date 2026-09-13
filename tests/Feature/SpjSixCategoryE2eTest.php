@@ -176,7 +176,7 @@ class SpjSixCategoryE2eTest extends TestCase
             $this->assertSame($category, $sheet->getCell('A1')->getValue());
             $this->assertSame('SD Negeri E2E SPJ', $sheet->getCell('A2')->getValue());
             $this->assertSame($package->document_number, $sheet->getCell('A3')->getValue());
-            $this->assertSame('Rp 1.000', $sheet->getCell('A4')->getValue());
+            $this->assertSame(1000, $sheet->getCell('A4')->getValue());
         } finally {
             if (is_file($excelPath)) {
                 @unlink($excelPath);

@@ -42,7 +42,8 @@
                 <th>Bruto</th>
                 <th>PPh 21</th>
                 <th>Dibayarkan</th>
-                <th>Referensi Paket SPJ</th>
+                <th>No Bukti/BPU</th>
+                <th>Nomor SPJ</th>
                 <th>Tanda Tangan</th>
             </tr>
         </thead>
@@ -58,12 +59,13 @@
                     <td class="number">Rp {{ number_format((float) $row['gross'], 0, ',', '.') }}</td>
                     <td class="number">Rp {{ number_format((float) $row['tax'], 0, ',', '.') }}</td>
                     <td class="number">Rp {{ number_format((float) $row['net'], 0, ',', '.') }}</td>
-                    <td><small>{{ $row['package_references'] ?: '-' }}</small></td>
+                    <td><small>{{ $row['proof_references'] ?: '-' }}</small></td>
+                    <td><small>{{ $row['spj_references'] ?: '-' }}</small></td>
                     <td class="signature">{{ $index + 1 }}. __________________</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" class="center">Belum ada data pembayaran honor pada periode ini.</td>
+                    <td colspan="12" class="center">Belum ada data pembayaran honor pada periode ini.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -73,7 +75,7 @@
                 <td class="number">Rp {{ number_format($summary['gross'], 0, ',', '.') }}</td>
                 <td class="number">Rp {{ number_format($summary['tax'], 0, ',', '.') }}</td>
                 <td class="number">Rp {{ number_format($summary['net'], 0, ',', '.') }}</td>
-                <td colspan="2"></td>
+                    <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>

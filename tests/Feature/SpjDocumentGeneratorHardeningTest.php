@@ -97,7 +97,8 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
             $this->assertSame('SD Negeri Generator Uji', $sheet->getCell('A1')->getValue());
             $this->assertSame('001/SPJ/2026', $sheet->getCell('A2')->getValue());
             $this->assertSame('BKU-001', $sheet->getCell('A3')->getValue());
-            $this->assertSame('Rp 1.000', $sheet->getCell('A4')->getValue());
+            $this->assertSame(1000, $sheet->getCell('A4')->getValue());
+            $this->assertMatchesRegularExpression('/^\d+$/', (string) $sheet->getCell('A4')->getValue());
             $this->assertSame('1', (string) $sheet->getCell('A6')->getValue());
             $this->assertSame('Barang generator uji', $sheet->getCell('B6')->getValue());
             $this->assertSame([], app(SpjUnresolvedPlaceholderGuard::class)->findInFile('RINCIAN_BELANJA', $path, 'xlsx'));
@@ -206,9 +207,15 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
             $this->assertSame('SD Negeri Generator Uji', $values['NAMA_SEKOLAH']);
             $this->assertNotSame('', trim($values['NOMOR_DOKUMEN']));
             $this->assertNotSame('', trim($values['NOMOR_BUKTI']));
-            $this->assertSame('Rp 1.000', $values['NILAI_BRUTO']);
-            $this->assertSame('Rp 100', $values['TOTAL_PAJAK']);
-            $this->assertSame('Rp 900', $values['NILAI_DIBAYARKAN']);
+            $this->assertSame('1000', $values['NILAI_BRUTO']);
+            $this->assertSame('100', $values['TOTAL_PAJAK']);
+            $this->assertSame('900', $values['NILAI_DIBAYARKAN']);
+            foreach (['NILAI_BRUTO', 'TOTAL_PAJAK', 'NILAI_DIBAYARKAN'] as $placeholder) {
+                $this->assertMatchesRegularExpression('/^\d+$/', $values[$placeholder]);
+                $this->assertStringNotContainsString('Rp', $values[$placeholder]);
+                $this->assertStringNotContainsString('.', $values[$placeholder]);
+                $this->assertStringNotContainsString(',', $values[$placeholder]);
+            }
             $this->assertSame('Kepala Sekolah Uji', $values['NAMA_KEPALA_SEKOLAH']);
             $this->assertSame('Bendahara Uji', $values['NAMA_BENDAHARA_BOSP']);
         }

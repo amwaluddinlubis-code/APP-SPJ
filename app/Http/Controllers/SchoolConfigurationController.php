@@ -5,16 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
+use App\Services\DocumentStoragePathService;
 use App\Services\SchoolDatabaseManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SchoolConfigurationController extends Controller
 {
-    public function index(SchoolDatabaseManager $databases): View
+    public function index(SchoolDatabaseManager $databases, DocumentStoragePathService $documentStorage): View
     {
         $schools = School::query()->with('databaseRecord')->orderBy('name')->get();
         $activeSchool = School::query()->find(session('active_school_id'));
@@ -35,7 +37,22 @@ class SchoolConfigurationController extends Controller
             }
         }
 
-        return view('schools.settings', compact('schools', 'activeSchool', 'activeYear', 'profile', 'fundSources'));
+        $documentStoragePath = $documentStorage->configuredPath();
+        $documentStoragePathError = $documentStoragePath ? $documentStorage->validatePath($documentStoragePath) : null;
+
+        return view('schools.settings', compact('schools', 'activeSchool', 'activeYear', 'profile', 'fundSources', 'documentStoragePath', 'documentStoragePathError'));
+    }
+
+    public function updateDocumentStorage(Request $request, DocumentStoragePathService $documentStorage): RedirectResponse
+    {
+        $path = trim((string) $request->input('document_storage_path'));
+        if ($error = $documentStorage->validatePath($path)) {
+            throw ValidationException::withMessages(['document_storage_path' => $error]);
+        }
+
+        $documentStorage->savePath($path);
+
+        return back()->with('success', 'Path penyimpanan dokumen berhasil disimpan.');
     }
 
     public function updateProfile(Request $request, SchoolDatabaseManager $databases): RedirectResponse
