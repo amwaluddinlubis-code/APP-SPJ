@@ -44,6 +44,27 @@ Bridge ARKAS
 
 Data ARKAS tetap readonly. Data operator SPJ adalah overlay dan tidak boleh ditimpa sembarang jalur importer.
 
+## Mode penggunaan
+
+Halaman importer hanya dapat diakses oleh **administrator** dan menyediakan dua mode:
+
+- **Sederhana**: memakai preset bawaan, konteks tahun/sumber dana aktif, dan mapping otomatis untuk tabel ARKAS yang dikenal. Administrator cukup menyimpan preset, melihat preview perubahan, lalu menjalankan sinkronisasi.
+- **Lanjutan**: menampilkan target domain, source key, kolom konteks, mode sinkronisasi, dan peran setiap kolom untuk kebutuhan administrator atau tabel custom.
+
+Mode sederhana adalah tampilan default. Perubahan mapping atau strategi sinkronisasi tetap harus dilakukan melalui mode lanjutan.
+
+### Urutan penggunaan yang aman
+
+1. Pastikan sekolah, tahun anggaran, sumber dana, database ARKAS, dan Bridge yang aktif sudah benar.
+2. Buka **Pengaturan → Sinkronisasi Data ARKAS**. Halaman ini bukan untuk mengunggah file Excel; sumbernya adalah database ARKAS melalui Bridge.
+3. Pilih tabel yang diperlukan. Untuk mengisi nama Program, Subprogram, dan Kegiatan, pilih `ref_kode`.
+4. Pada mode sederhana, klik **Simpan Preset Otomatis**. Untuk `ref_kode`, preset memakai `id_kode`, `uraian_kode`, `parent_kode`, `tahun`, dan `sumber_dana_id`.
+5. Jalankan **Preview perubahan**, periksa jumlah data baru/berubah/hilang, lalu klik **Sinkronkan**.
+6. Untuk perubahan mapping atau tabel custom, pindah ke mode **Lanjutan**.
+7. Setelah import referensi, jalankan **Sinkronisasi ARKAS/BKU** bila data RKAS/BKU atau nama kegiatan pada transaksi juga perlu diperbarui.
+
+Preview tidak menulis data. Sinkronisasi menulis staging dan domain target pada konteks tenant aktif (`School + Fiscal Year + Fund Source`). Jangan menjalankan Full Refresh kecuali memang ingin mengganti snapshot profile dan sudah memeriksa hasil preview.
+
 ## Tenant boundary
 
 Setiap action Generic Importer yang menyentuh connection `school` wajib melewati:
@@ -300,6 +321,20 @@ Preset utama:
 | `kas_umum_nota` | Raw | Metadata nota |
 | `kas_umum_nota_pajak` | Raw | Rincian pajak |
 | `ref_rekening` | Raw | Master rekening |
+
+Untuk `ref_kode`, gunakan target domain **Referensi kegiatan** dengan mapping `id_kode` →
+Kode, `uraian_kode` → Nama, dan `parent_kode` → Induk. Jika tabel sumber membawa kolom
+`tahun` dan `sumber_dana_id`, isi keduanya pada konfigurasi profile. Importer akan menyaring
+baris berdasarkan tahun anggaran dan sumber dana aktif sebelum staging dan upsert ke
+`activity_references`; ini mencegah referensi lintas tahun atau sumber dana tercampur.
+
+Untuk konsumsi data hierarki pada laporan/dokumen, gunakan view tenant
+`activity_hierarchy_references`, bukan melakukan join ulang di setiap consumer. View ini
+dibuat oleh migration
+`2026_09_12_150000_create_activity_hierarchy_references_view` dan menyediakan
+`program_code`, `program_name`, `sub_program_code`, `sub_program_name`,
+`activity_code`, serta `activity_name`. View membatasi parent dan child pada
+`fiscal_year_id` yang sama.
 
 Tabel tanpa adapter domain dapat disimpan sebagai raw snapshot bila source-key contract-nya aman.
 

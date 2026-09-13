@@ -31,6 +31,10 @@ class ArkasImporterController implements HasMiddleware
     public function __invoke(Request $request, ArkasDatabaseExplorer $explorer, ArkasSourceKeyResolver $sourceKeys): View
     {
         $source = ArkasSource::query()->where('school_id', session('active_school_id'))->first();
+        $mode = in_array($request->query('mode'), ['simple', 'advanced'], true)
+            ? (string) $request->query('mode')
+            : 'simple';
+        $activeYear = FiscalYear::query()->with('fundSource')->find(session('active_fiscal_year_id'));
         // `_` is a SQL wildcard; filtering with `not like '__%'` accidentally
         // excluded every normal source table. Exclude only internal profiles
         // whose names literally start with two underscores.
@@ -109,7 +113,7 @@ class ArkasImporterController implements HasMiddleware
             $error = 'Sumber database ARKAS untuk sekolah aktif belum dikonfigurasi.';
         }
 
-        return view('arkas.importer', compact('tables', 'columns', 'rows', 'selectedTable', 'limit', 'error', 'source', 'profiles', 'profile', 'targetDomains', 'preset', 'effectiveTargetDomain', 'effectiveMapping', 'effectiveSourceKeyColumn', 'currentStatus', 'recentRun', 'runHistory', 'previewDiff', 'reconciliation', 'schemaDrift'));
+        return view('arkas.importer', compact('tables', 'columns', 'rows', 'selectedTable', 'limit', 'error', 'source', 'profiles', 'profile', 'targetDomains', 'preset', 'effectiveTargetDomain', 'effectiveMapping', 'effectiveSourceKeyColumn', 'currentStatus', 'recentRun', 'runHistory', 'previewDiff', 'reconciliation', 'schemaDrift', 'mode', 'activeYear'));
     }
 
     public function store(Request $request, ArkasDatabaseExplorer $explorer, ArkasImportGuard $guard): RedirectResponse

@@ -95,11 +95,45 @@ class ArkasStagingService
         if (in_array($command, ['bku', 'rkas'], true)) {
             $records = array_values(array_filter($records, fn (array $record): bool => (int) ($record['ID_REF_SUMBER_DANA'] ?? $record['id_ref_sumber_dana'] ?? 0) === (int) $year->fund_source_id));
         }
+        $records = $this->filterToFiscalContext($records, $profile, $year);
         if ($profile->source_table === 'rapbs_periode') {
             $records = $this->filterToActiveBudget($records, $source, $year);
         }
 
         return $this->deduplicate($records, $profile, $preset);
+    }
+
+    /**
+     * Reference tables are fetched through the generic rows command, so the
+     * bridge cannot apply the active fiscal context for them. Apply the
+     * configured source columns before staging and domain synchronization.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterToFiscalContext(array $records, ArkasImportProfile $profile, FiscalYear $year): array
+    {
+        if (blank($profile->year_column) && blank($profile->fund_source_column)) {
+            return $records;
+        }
+
+        return array_values(array_filter($records, function (array $record) use ($profile, $year): bool {
+            if (filled($profile->year_column)) {
+                $sourceYear = $this->value($record, (string) $profile->year_column);
+                if ($sourceYear !== null && (int) $sourceYear !== (int) $year->year) {
+                    return false;
+                }
+            }
+
+            if (filled($profile->fund_source_column)) {
+                $sourceFund = $this->value($record, (string) $profile->fund_source_column);
+                if ($sourceFund !== null && (int) $sourceFund !== (int) $year->fund_source_id) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     /**

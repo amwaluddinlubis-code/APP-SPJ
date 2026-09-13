@@ -135,15 +135,14 @@ CARA_BAYAR_REFERENSI
 
 ### Hirarki Program → Sub Program → Kegiatan
 
-Contract sumber data canonical:
+Lokasi canonical untuk hierarki Program/Sub Program/Kegiatan adalah view tenant
+`activity_hierarchy_references`, yang dibentuk dari `activity_references` berdasarkan
+`fiscal_year_id` dan prefix kode:
 
 ```text
-ref_kode ARKAS
-  -> ARKASBridge RKAS v3
-  -> arkas_rkas_items.payload
-  -> ArkasActivityHierarchyResolver
-  -> SpjTemplateService
-  -> DOCX/XLSX/preview/PDF
+06.        -> Program
+06.05.     -> Sub Program
+06.05.08.  -> Kegiatan
 ```
 
 Makna placeholder:
@@ -157,12 +156,18 @@ Makna placeholder:
 
 Aturan kebenaran data:
 
-- Bridge tidak menebak nama Program/Sub Program. Nama hanya berasal dari row parent `ref_kode` untuk tahun anggaran yang sama.
-- Kode Program/Sub Program dapat diturunkan secara deterministik dari `KODE_KEGIATAN` sebagai fallback untuk data hasil sinkronisasi lama.
-- Nama Program/Sub Program pada data lama yang belum memiliki field RKAS v3 **tidak boleh ditebak**; scalar kosong akan dirender `-`.
-- Agar `NAMA_PROGRAM` dan `NAMA_SUB_PROGRAM` terisi pada database sekolah yang telah disinkronkan sebelum contract RKAS v3, build ARKAS Bridge terbaru lalu lakukan sinkronisasi ulang RKAS/BKU untuk tahun anggaran tersebut.
-- `KODE_KEGIATAN` dan `NAMA_KEGIATAN` tetap memakai snapshot transaksi. Penambahan hirarki tidak mengubah ownership kegiatan yang sudah berjalan.
-- Parser `ArkasPipePayload` membaca header `FIELDS` secara dinamis, sehingga field RKAS v3 tersimpan di payload tanpa migrasi schema transaksi baru.
+- Nama Program/Sub Program tidak boleh ditebak. Nama hanya berasal dari row parent
+  `ref_kode` untuk tahun anggaran yang sama.
+- Kode Program/Sub Program dapat diturunkan secara deterministik dari `KODE_KEGIATAN`
+  sebagai fallback untuk data hasil sinkronisasi lama.
+- Jika referensi hierarki belum tersedia pada database lama, empat placeholder
+  Program/Sub Program dirender sebagai nilai kosong standar (`-`), bukan ditebak
+  dari nama kegiatan.
+- Agar `NAMA_PROGRAM` dan `NAMA_SUB_PROGRAM` terisi pada database sekolah lama,
+  lakukan sinkronisasi ulang RKAS/BKU untuk tahun anggaran tersebut setelah baris
+  induk `ref_kode` tersedia.
+- `KODE_KEGIATAN` dan `NAMA_KEGIATAN` tetap memakai snapshot transaksi. Penambahan
+  hirarki tidak mengubah ownership kegiatan yang sudah berjalan.
 
 Contract transaksi lain:
 

@@ -83,6 +83,23 @@ Kontrak penting:
 - NUMBERED/FINAL tidak diedit melalui mutation normal;
 - jika source berubah/hilang, gunakan reconciliation dan lifecycle yang sah.
 
+### Sinkronisasi referensi ARKAS
+
+Pengaturan importer adalah alur administrator, bukan alur upload Excel operator. Administrator memastikan konteks sekolah, tahun anggaran, dan sumber dana aktif sebelum membuka **Pengaturan → Sinkronisasi Data ARKAS**.
+
+Untuk melengkapi nama Program, Subprogram, dan Kegiatan:
+
+```text
+Pilih tabel ref_kode
+→ Mode Sederhana
+→ Simpan Preset Otomatis
+→ Preview perubahan
+→ Sinkronkan
+→ Sinkronisasi ARKAS/BKU bila nama transaksi lama perlu diperbarui
+```
+
+Mode Lanjutan hanya digunakan bila preset tidak cocok atau tabel custom memerlukan mapping manual. Importer membaca database ARKAS melalui Bridge, bukan file template Excel. Preview bersifat read-only; sinkronisasi dibatasi pada konteks sekolah+tahun+sumber dana aktif dan tidak boleh mengarang referensi yang tidak tersedia di sumber.
+
 ---
 
 ## 4. Jalur audit real-data sebelum mutation

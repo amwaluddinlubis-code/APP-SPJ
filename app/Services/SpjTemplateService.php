@@ -20,8 +20,6 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
 {
-    public function __construct(private readonly ArkasActivityHierarchyResolver $activityHierarchyResolver) {}
-
     /** @return array<string,array<int,string>> */
     public static function placeholderGroups(): array
     {
@@ -44,10 +42,11 @@ class SpjTemplateService
     {
         $transaction = $package->transaction;
         $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers', 'serviceRecipients']);
-        $activityHierarchy = $this->activityHierarchyResolver->resolve($transaction);
+        $activityHierarchy = $this->activityHierarchy($transaction->fiscal_year_id, (string) $transaction->activity_code);
 
         $year = FiscalYear::query()->findOrFail($transaction->fiscal_year_id);
         $profile = DB::connection('school')->table('school_profiles')->where('fiscal_year_id', $year->id)->first();
+        $activityHierarchy = $this->activityHierarchy($transaction->fiscal_year_id, (string) $transaction->activity_code);
         $goods = $transaction->goods->first();
         $workOrder = $transaction->workOrder;
         $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->description).' | '.$item->quantity.' '.($item->unit ?: '—').' | '.$this->rupiah($item->amount))->implode("\n");
@@ -105,10 +104,10 @@ class SpjTemplateService
             'PENERIMA_PENYEDIA' => $vendorName,
             'NAMA_PENYEDIA' => $vendorName,
             'NPWP_PENYEDIA' => (string) $transaction->vendor_npwp,
-            'KODE_PROGRAM' => $activityHierarchy['program_code'],
-            'NAMA_PROGRAM' => $activityHierarchy['program_name'],
-            'KODE_SUB_PROGRAM' => $activityHierarchy['sub_program_code'],
-            'NAMA_SUB_PROGRAM' => $activityHierarchy['sub_program_name'],
+            'KODE_PROGRAM' => (string) ($activityHierarchy?->program_code ?? ''),
+            'NAMA_PROGRAM' => (string) ($activityHierarchy?->program_name ?? ''),
+            'KODE_SUB_PROGRAM' => (string) ($activityHierarchy?->sub_program_code ?? ''),
+            'NAMA_SUB_PROGRAM' => (string) ($activityHierarchy?->sub_program_name ?? ''),
             'KODE_KEGIATAN' => (string) $transaction->activity_code,
             'NAMA_KEGIATAN' => (string) $transaction->activity_name,
             'KODE_REKENING' => (string) $transaction->account_code,
@@ -184,6 +183,23 @@ class SpjTemplateService
         ];
 
         return $this->normalizeScalarPlaceholders($allValues);
+    }
+
+    private function activityHierarchy(int $fiscalYearId, string $activityCode): ?object
+    {
+        if ($activityCode === '') {
+            return null;
+        }
+
+        try {
+            return DB::connection('school')
+                ->table('activity_hierarchy_references')
+                ->where('fiscal_year_id', $fiscalYearId)
+                ->where('activity_code', $activityCode)
+                ->first();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

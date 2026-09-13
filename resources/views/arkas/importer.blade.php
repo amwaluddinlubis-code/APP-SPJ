@@ -1,12 +1,16 @@
 <x-layouts.tailwind-app>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="ARKAS Database Explorer"
-            subtitle="Jelajahi tabel dan struktur database ARKAS melalui Bridge generik sebelum membuat konfigurasi sinkronisasi."
+            title="Sinkronisasi Data ARKAS"
+            subtitle="Perbarui referensi dan data ARKAS pada sekolah serta tahun anggaran aktif."
             kicker="Importer ARKAS"
         >
             <x-slot:actions>
-                <x-ui.button variant="secondary" :href="route('arkas.settings')">Pengaturan Sumber</x-ui.button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('arkas.importer', array_filter(['table' => $selectedTable, 'limit' => $limit])) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: {{ $mode === 'simple' ? 'var(--theme-content-accent)' : 'var(--ui-line)' }}; color: var(--ui-fg-strong); background: var(--ui-bg)">Sederhana</a>
+                    <a href="{{ route('arkas.importer', array_filter(['table' => $selectedTable, 'limit' => $limit, 'mode' => 'advanced'])) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: {{ $mode === 'advanced' ? 'var(--theme-content-accent)' : 'var(--ui-line)' }}; color: var(--ui-fg-strong); background: var(--ui-bg)">Lanjutan</a>
+                    <x-ui.button variant="secondary" :href="route('arkas.settings')">Pengaturan Sumber</x-ui.button>
+                </div>
             </x-slot:actions>
         </x-page-header>
 
@@ -16,6 +20,16 @@
         @if(session('success'))
             <div class="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
         @endif
+
+        <section class="rounded-xl border px-4 py-3" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Konteks sinkronisasi</p>
+                    <p class="mt-1 text-sm font-semibold" style="color: var(--ui-fg-strong)">Tahun {{ $activeYear?->year ?: 'belum dipilih' }} · {{ $activeYear?->fundSource?->name ?: ($activeYear?->fund_source ?: 'Sumber dana belum dipilih') }}</p>
+                </div>
+                <p class="max-w-xl text-xs" style="color: var(--ui-fg-muted)">{{ $mode === 'simple' ? 'Mode sederhana memakai preset bawaan dan menyembunyikan detail teknis mapping.' : 'Mode lanjutan menampilkan seluruh kontrol mapping dan strategi sinkronisasi.' }}</p>
+            </div>
+        </section>
 
         <section class="grid gap-6 lg:grid-cols-[18rem_1fr]">
             <x-ui.form-section title="Pilih Tabel" description="Daftar dibaca langsung dari database ARKAS aktif.">
@@ -54,7 +68,41 @@
             </x-ui.form-section>
 
             <div class="space-y-6">
-                @if($selectedTable !== '')
+                @if($selectedTable !== '' && $mode === 'simple')
+                    <x-ui.form-section title="Sinkronisasi Terarah" description="Pilih tabel, simpan preset otomatis, lalu jalankan preview atau sinkronisasi.">
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div class="rounded-xl border p-4" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
+                                <p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Tabel dipilih</p>
+                                <p class="mt-1 text-base font-semibold" style="color: var(--ui-fg-strong)">{{ $selectedTable }}</p>
+                                <p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">{{ $preset['description'] }}</p>
+                            </div>
+                            <div class="rounded-xl border p-4" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
+                                <p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Preset otomatis</p>
+                                <p class="mt-1 text-sm font-semibold" style="color: var(--ui-fg-strong)">{{ $effectiveTargetDomain === 'activity_reference' ? 'Referensi kegiatan' : ($targetDomains[$effectiveTargetDomain] ?? $effectiveTargetDomain) }}</p>
+                                <p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Mode Upsert · kunci dan mapping dikenali otomatis</p>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ route('arkas.importer.mapping.store') }}" class="mt-4 flex flex-wrap items-center gap-2">
+                            @csrf
+                            <input type="hidden" name="source_table" value="{{ $selectedTable }}">
+                            <input type="hidden" name="label" value="{{ $profile?->label ?: 'Referensi '.strtoupper($selectedTable) }}">
+                            <input type="hidden" name="target_domain" value="{{ $effectiveTargetDomain }}">
+                            <input type="hidden" name="sync_mode" value="upsert">
+                            <input type="hidden" name="source_key_column" value="{{ $profile?->source_key_column ?: '' }}">
+                            <input type="hidden" name="year_column" value="{{ $profile?->year_column ?: ($selectedTable === 'ref_kode' ? 'tahun' : '') }}">
+                            <input type="hidden" name="fund_source_column" value="{{ $profile?->fund_source_column ?: ($selectedTable === 'ref_kode' ? 'sumber_dana_id' : '') }}">
+                            @foreach($effectiveMapping as $column => $role)
+                                <input type="hidden" name="mapping[{{ $column }}]" value="{{ $role }}">
+                            @endforeach
+                            <x-ui.button type="submit" icon="save">Simpan Preset Otomatis</x-ui.button>
+                            @if($profile)
+                                <button type="submit" formaction="{{ route('arkas.importer.preview', $profile->id) }}" formmethod="POST" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: var(--ui-line-strong); color: var(--ui-fg-strong); background: var(--ui-bg)"><x-ui-icon name="search" class="h-4 w-4" /> Preview perubahan</button>
+                                <button type="submit" formaction="{{ route('arkas.importer.sync', $profile->id) }}" formmethod="POST" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: var(--theme-content-accent); color: var(--theme-content-accent); background: var(--ui-bg)"><x-ui-icon name="refresh" class="h-4 w-4" /> Sinkronkan</button>
+                            @endif
+                        </form>
+                        <p class="mt-3 text-xs" style="color: var(--ui-fg-muted)">Untuk mengubah mapping, target domain, atau mode sinkronisasi, gunakan mode lanjutan.</p>
+                    </x-ui.form-section>
+                @elseif($selectedTable !== '' && $mode === 'advanced')
                     <x-ui.form-section title="Mapping & Sinkronisasi" description="Simpan aturan tabel ini sebelum menjalankan sinkronisasi generik.">
                         <div class="mb-4 grid gap-3 lg:grid-cols-[1.25fr_1fr]">
                             <div class="rounded-xl border px-3 py-2.5" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">

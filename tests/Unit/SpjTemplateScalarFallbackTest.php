@@ -10,6 +10,18 @@ use Tests\TestCase;
 
 class SpjTemplateScalarFallbackTest extends TestCase
 {
+    public function test_activity_hierarchy_placeholders_are_exposed_in_runtime_catalog(): void
+    {
+        $groups = SpjTemplateService::placeholderGroups();
+
+        $this->assertContains('KODE_PROGRAM', $groups['Transaksi & pembayaran']);
+        $this->assertContains('NAMA_PROGRAM', $groups['Transaksi & pembayaran']);
+        $this->assertContains('KODE_SUB_PROGRAM', $groups['Transaksi & pembayaran']);
+        $this->assertContains('NAMA_SUB_PROGRAM', $groups['Transaksi & pembayaran']);
+        $this->assertContains('KODE_KEGIATAN', $groups['Transaksi & pembayaran']);
+        $this->assertContains('NAMA_KEGIATAN', $groups['Transaksi & pembayaran']);
+    }
+
     public function test_empty_scalar_values_render_as_dash_while_image_marker_stays_empty(): void
     {
         $service = new SpjTemplateService(new ArkasActivityHierarchyResolver);

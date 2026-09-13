@@ -75,7 +75,7 @@
         aria-modal="true"
         aria-labelledby="placeholder-checker-title"
     >
-        <div class="ui-modal" style="max-width: 72rem" x-on:click.outside="closeChecker()">
+        <div class="ui-modal w-full" style="max-width: 72rem; max-height: calc(100vh - 2rem); display: flex; flex-direction: column;" x-on:click.outside="closeChecker()">
             <div class="ui-modal-header">
                 <div>
                     <h2 id="placeholder-checker-title" class="ui-modal-title">Cek Placeholder</h2>
@@ -85,7 +85,7 @@
                 </div>
             </div>
 
-            <div class="ui-modal-body space-y-4">
+            <div class="ui-modal-body space-y-4" style="overflow-y: auto;">
                 <form class="flex flex-col gap-3 sm:flex-row sm:items-end" x-on:submit.prevent="inspect()">
                     <div class="min-w-0 flex-1">
                         <x-ui.field label="Nomor Dokumen / No. Bukti" for="placeholder_reference"

@@ -72,6 +72,8 @@ Gunakan `ARKAS_IMPORTER.md` untuk detail mapping, sync mode, stable source key, 
 
 Generic Importer **bukan pengganti otomatis** canonical transaction sync; keduanya memiliki tujuan dan boundary berbeda.
 
+Pada UI, Generic Importer memiliki mode **Sederhana** (preset tabel yang dikenal) dan **Lanjutan** (mapping/profile custom). Mode sederhana tetap hanya tersedia untuk administrator. Untuk referensi Program/Subprogram/Kegiatan, gunakan profile `ref_kode` dengan target `activity_reference`; setelah itu canonical sync RKAS/BKU tetap diperlukan bila transaksi lama perlu menerima perubahan nama kegiatan.
+
 ### 2.3 Dapodik synchronization
 
 Entry point:
@@ -177,6 +179,48 @@ Route/job yang memakai connection `school` wajib memastikan tenant sekolah benar
 - business partners/rekanan derived dari source.
 
 Reference sync tidak boleh mengubah operator SPJ overlay hanya karena source reference berubah.
+
+### 6.1 Hierarki referensi kegiatan — lokasi canonical
+
+Jangan mencari Program/Sub Program dari tabel transaksi atau menebak namanya dari
+`activity_name`. Sumber canonical hierarki kegiatan berada pada:
+
+```text
+Tabel sumber       : activity_references
+View siap pakai    : activity_hierarchy_references
+Migration          : 2026_09_12_150000_create_activity_hierarchy_references_view
+```
+
+View tersebut menggabungkan baris `activity_references` berdasarkan `fiscal_year_id`
+dan prefix `activity_code`:
+
+```text
+Panjang 3 karakter  = Program
+Panjang 6 karakter  = Sub Program
+Panjang 9 karakter  = Kegiatan
+```
+
+Contoh:
+
+```text
+06.        -> program_code / program_name
+06.05.     -> sub_program_code / sub_program_name
+06.05.08.  -> activity_code / activity_name
+```
+
+Kolom canonical pada view:
+
+```text
+fiscal_year_id
+program_code, program_name
+sub_program_code, sub_program_name
+activity_code, activity_name
+```
+
+Seluruh query hierarki wajib mengikat `fiscal_year_id`; kode yang sama dari tahun
+anggaran berbeda tidak boleh dicampur. `SpjTemplateService` membaca view ini untuk
+placeholder Program/Sub Program, sedangkan `KODE_KEGIATAN` dan `NAMA_KEGIATAN` tetap
+mengikuti snapshot transaksi.
 
 ---
 
