@@ -130,7 +130,10 @@ class SpjWorkspaceMigrationTest extends TestCase
         $item = $transaction->items()->firstOrFail();
 
         $package->update(['status' => 'NUMBERED', 'document_number' => '0001/SPJ/2026']);
-        $this->put(route('spj.update', $package->id), ['vendor_name' => 'Ditolak'])->assertSessionHas('error');
+        $this->put(route('spj.update', $package->id), ['vendor_name' => 'Ditolak'])
+            ->assertSessionHasNoErrors()
+            ->assertSessionMissing('error');
+        $this->assertNull($transaction->fresh()->vendor_name);
         $this->putJson(route('spj.update', $package->id), ['category_switch' => 1, 'spj_category' => 'SPPD'])->assertUnprocessable();
         session()->forget('error');
         $this->put(route('transactions.spj-descriptions.update', $transaction->id), [

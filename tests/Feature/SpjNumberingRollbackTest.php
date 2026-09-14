@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\TransactionController;
 use App\Models\DocumentNumberFormat;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
@@ -154,16 +153,17 @@ class SpjNumberingRollbackTest extends TestCase
             'active_fiscal_year_id' => $year->id,
             'active_fund_source_id' => $fund->id,
         ]);
+        $this->withoutMiddleware();
 
-        app(TransactionController::class)->updateSpjDescriptions($this->request([
+        $this->put(route('transactions.spj-descriptions.update', $package->transaction_id), [
             'items' => [['id' => $item->id, 'item_description' => 'Nama baru setelah numbering']],
-        ]), (string) $package->transaction_id);
+        ])->assertSessionHasNoErrors()->assertSessionMissing('error');
         $this->assertSame('Nama baru setelah numbering', $item->fresh()->item_description);
 
         $package->forceFill(['status' => 'FINAL'])->save();
-        app(TransactionController::class)->updateSpjDescriptions($this->request([
+        $this->put(route('transactions.spj-descriptions.update', $package->transaction_id), [
             'items' => [['id' => $item->id, 'item_description' => 'Tidak boleh berubah']],
-        ]), (string) $package->transaction_id);
+        ])->assertSessionHas('error');
         $this->assertSame('Nama baru setelah numbering', $item->fresh()->item_description);
     }
 
