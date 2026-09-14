@@ -134,9 +134,7 @@
                         <a class="app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}"
                             href="{{ route('spj.numbering-workflow') }}"><x-ui.icon name="number" /><span
                                 class="nav-label">Penomoran SPJ</span></a>
-                        <a class="app-nav {{ request()->routeIs('spj.*') && request('tab') === 'laporan' ? 'app-nav-active' : '' }}"
-                            href="{{ route('spj.index', ['tab' => 'laporan']) }}"><x-ui.icon name="report" /><span
-                                class="nav-label">Laporan SPJ</span></a>
+                        @include('components.layouts.partials.spj-report-navigation')
                         <a class="app-nav {{ request()->routeIs('audit-reports.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('audit-reports.index') }}"><x-ui.icon name="audit" /><span
                                 class="nav-label">Laporan Audit</span></a>
