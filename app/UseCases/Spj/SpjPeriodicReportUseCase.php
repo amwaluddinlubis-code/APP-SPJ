@@ -18,7 +18,7 @@ final class SpjPeriodicReportUseCase
     ) {}
 
     /**
-     * Payload standar untuk renderer template laporan.
+     * Payload standar untuk generator internal laporan periode.
      *
      * @return array{report:array{key:string,label:string},summary:array<string,mixed>,transactions:Collection<int,Transaction>}|null
      */
@@ -65,11 +65,11 @@ final class SpjPeriodicReportUseCase
     }
 
     /**
-     * Ringkasan sumber data untuk paket laporan periodik.
+     * Ringkasan sumber data untuk generator laporan periode.
      *
-     * Nilai ini sengaja tidak menerapkan formula dokumen resmi per-formulir.
-     * Template/formula setiap laporan dapat dipasang kemudian tanpa mengubah
-     * kontrak periode dan boundary ActiveSpjContext di modul ini.
+     * Nilai agregat ini menjadi kontrak sumber data bersama. Penyajian setiap
+     * dokumen (ledger, rekap, pernyataan, atau lampiran) dibangun oleh service
+     * laporan periode tanpa bergantung pada template Paket SPJ.
      *
      * @return array{
      *   ready:bool,
