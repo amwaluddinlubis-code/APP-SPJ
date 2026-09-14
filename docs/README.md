@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-15**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `gui-standardization`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
@@ -27,26 +27,14 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui:
-
-```text
-LATEST SUCCESSFUL CANONICAL GATE : CI #469 / fd01fc6681... / SUCCESS
-CURRENT BRANCH HEAD              : 2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35
-LATEST HEAD ATTEMPT              : CI #476 / FAILURE at SPJ Critical tests
-FRONTEND BUILD #476              : PASS
-BLADE COMPILE #476               : PASS
-FULL UNIT / FEATURE #476         : SKIPPED after critical failure
-FINAL RELEASE                    : NOT YET
-```
-
-Karena current HEAD belum hijau, dokumen tidak boleh menyebut batch source setelah gate #469 sebagai canonical FUNCTIONAL PASS. Docs-only commit juga tidak menghasilkan functional gate baru.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Jangan mempromosikan source change baru menjadi FUNCTIONAL PASS sebelum CI/test aktual pada head terkait selesai hijau.
 
 ## Dokumen aktif utama
 
 | Dokumen | Peran / status |
 |---|---|
-| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-14** — status release, current red gate, Livewire boundary audit, blockers, dan RVR. |
-| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-14** — P0 integration gate + Livewire authorization hardening sebelum pekerjaan migrasi baru; generated-output QA tetap prioritas produk setelah gate stabil. |
+| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS** — status release, evidence, blocker, dan RVR terbaru. |
+| `DEVELOPMENT_ROADMAP.md` | **ACTIVE** — prioritas dan milestone pengembangan aktif. |
 | `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, impact matrix, evidence rules, dan aturan wajib contributor/AI. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE ARCHITECTURE** — layer aplikasi, ownership, tenant boundary, dan registry architecture. |
@@ -54,11 +42,11 @@ Karena current HEAD belum hijau, dokumen tidak boleh menyebut batch source setel
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
-| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / SOURCE IMPLEMENTED** — kontrak empat kelompok laporan periodik, source summary, boundary template, dan navigasi sidebar Laporan SPJ. |
+| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat kelompok/39 slot laporan periode, generator internal, browser print, PDF, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
-| `LIVEWIRE_MIGRATION_PLAN.md` | **ACTIVE / PHASE 1 BOUNDARY AUDIT COMPLETE / REFRESHED 2026-09-14** — inventaris 25 component, read/write classification, authorization gaps, dan Phase 2 hardening. |
+| `LIVEWIRE_MIGRATION_PLAN.md` | **ACTIVE** — inventaris dan aturan migrasi Livewire/TALL. |
 
 Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.md` dan melakukan **Documentation Impact Review** sebelum menyatakan pekerjaan selesai.
 
@@ -69,34 +57,10 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 | `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer, source key, profile-driven import, hardening, dan operator-data verification. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder registry/usage dan template contract. |
 | `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
-| `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command dan successful canonical release-safety gate; jangan mengubahnya menjadi klaim bahwa current HEAD hijau bila run terbaru gagal. |
+| `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command dan successful canonical release-safety gate. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — six-category source/real-data audit guidance. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk numbering/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Untuk penutupan GUI, baca `GUI_STANDARDIZATION.md` lalu `GUI_RUNTIME_QA.md`.
-
-## Livewire/TALL status khusus
-
-Phase 1 audit pada 2026-09-14 memeriksa seluruh `app/Livewire/` di current HEAD dan menemukan:
-
-```text
-25 components total
-17 read-only / UI-state
-1 guarded mutation (SchoolSelector)
-1 accepted context mutation (YearSelector)
-5 active mutation boundaries require role hardening
-1 unmounted mutation component requires hardening before reuse
-```
-
-Mutation boundaries yang harus ditutup sebelum migrasi baru:
-
-- `UserManagement` user/role mutation;
-- `SchoolMaster` school creation/provisioning;
-- `DatabaseMaintenance` checkpoint/migrate/vacuum/provision;
-- `DatabaseResetForm` destructive reset;
-- `DatabaseSchoolList` activate/migrate;
-- `DocumentStorageSettings` bila akan dipakai kembali.
-
-Audit ini adalah source architecture finding, bukan klaim exploit runtime. Detail matrix dan rules berada di `LIVEWIRE_MIGRATION_PLAN.md`.
 
 ## Feature verification / RVR aktif
 
@@ -125,6 +89,7 @@ Audit ini adalah source architecture finding, bukan klaim exploit runtime. Detai
 - Icon canonical dimiliki `<x-ui.icon>`; compatibility adapter lama tidak boleh menjadi registry kedua.
 - Source-level responsive regression bukan bukti browser visual PASS.
 - Livewire mutation wajib mempertahankan authorization dan tenant boundary; route GET middleware saja bukan bukti action Livewire independently authorized.
+- Laporan Periode dimiliki generator internal APP-SPJ; perbaikan template Paket SPJ tidak menjadi dependency untuk browser print/PDF Laporan Periode.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memaksa coverage.
 
 ## Klasifikasi status yang wajib dipakai
