@@ -85,32 +85,32 @@
     --ui-table-row-hover: var(--ui-dark-surface-hover);
 }
 
-.dark main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not(.fi-ta-table):not([data-ui-table="off"])) {
+.dark main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:not([data-ui-table="off"])) {
     background: var(--ui-dark-surface) !important;
     border-color: var(--ui-dark-border) !important;
 }
 
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) {
+.dark main table:not([data-ui-table="off"]) {
     color: var(--ui-dark-text-soft) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead,
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead[class*="bg-"] {
+.dark main table:not([data-ui-table="off"]) thead,
+.dark main table:not([data-ui-table="off"]) thead[class*="bg-"] {
     background: var(--ui-table-head-bg) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th {
+.dark main table:not([data-ui-table="off"]) thead th {
     color: var(--ui-table-head-text) !important;
     border-color: var(--ui-dark-border) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
+.dark main table:not([data-ui-table="off"]) tbody td {
     color: var(--ui-dark-text-soft) !important;
     border-color: var(--ui-table-border-soft) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr,
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-odd {
+.dark main table:not([data-ui-table="off"]) tbody tr,
+.dark main table:not([data-ui-table="off"]) tbody tr.app-table-row-odd {
     background: var(--ui-dark-surface) !important;
 }
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr:nth-child(even),
-.dark main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody tr.app-table-row-even {
+.dark main table:not([data-ui-table="off"]) tbody tr:nth-child(even),
+.dark main table:not([data-ui-table="off"]) tbody tr.app-table-row-even {
     background: var(--ui-dark-surface-alt) !important;
 }
 
@@ -162,16 +162,6 @@ html.dark[data-theme='dark'] body main table tbody tr:hover {
 .dark main .app-table-pagination button:not(:disabled):hover {
     background: var(--ui-dark-surface-hover) !important;
     color: var(--ui-dark-text-strong) !important;
-}
-
-/* Filament tables receive the same softer contrast without overriding semantic colors. */
-.dark .fi-ta-header,
-.dark .fi-ta-header-cell {
-    background: #0d1522 !important;
-    color: var(--ui-dark-muted) !important;
-}
-.dark .fi-ta-row {
-    border-color: var(--ui-dark-border) !important;
 }
 
 /* Keep semantic colors intact, but avoid pure-white text unless explicitly requested. */

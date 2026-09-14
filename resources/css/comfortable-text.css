@@ -116,19 +116,19 @@ main :is(input, select, textarea, [readonly]):disabled {
 }
 
 /* Tables should be comfortable for long reading sessions. */
-main table:not(.fi-ta-table):not([data-ui-table='off']) {
+main table:not([data-ui-table='off']) {
     color: var(--text-comfort-primary) !important;
 }
 
-main table:not(.fi-ta-table):not([data-ui-table='off']) thead th {
+main table:not([data-ui-table='off']) thead th {
     color: var(--text-comfort-muted) !important;
 }
 
-main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td {
+main table:not([data-ui-table='off']) tbody td {
     color: var(--text-comfort-secondary) !important;
 }
 
-main table:not(.fi-ta-table):not([data-ui-table='off']) tbody td :is(.font-bold, .font-semibold, .font-extrabold) {
+main table:not([data-ui-table='off']) tbody td :is(.font-bold, .font-semibold, .font-extrabold) {
     color: var(--text-comfort-primary) !important;
 }
 
@@ -206,16 +206,6 @@ main :is(.theme-btn, .bg-indigo-600, .bg-indigo-700, .bg-blue-600, .bg-violet-60
 .ui-alert-info,
 .ui-alert-info .ui-alert-title {
     color: var(--text-comfort-info) !important;
-}
-
-/* Filament text also follows the calm dark/light hierarchy where possible. */
-.fi-body,
-.fi-main {
-    color: var(--text-comfort-primary);
-}
-
-.fi-ta-header-cell {
-    color: var(--text-comfort-muted) !important;
 }
 
 /* Never add glow or text shadow: crisp text is easier on the eyes. */

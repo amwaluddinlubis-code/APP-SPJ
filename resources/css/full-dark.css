@@ -158,22 +158,6 @@ html[data-ui-appearance='dark'] *::-webkit-scrollbar-track { background: #030712
 html[data-ui-appearance='dark'] *::-webkit-scrollbar-thumb { background: #374151; border: 3px solid #030712; border-radius: 999px; }
 html[data-ui-appearance='dark'] *::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
-/* Filament surfaces. */
-html[data-ui-appearance='dark'] .fi-body,
-html[data-ui-appearance='dark'] .fi-main,
-html[data-ui-appearance='dark'] .fi-simple-main {
-    background: #030712 !important;
-    color: var(--text-comfort-primary, #c4cfdd) !important;
-}
-
-html[data-ui-appearance='dark'] .fi-section,
-html[data-ui-appearance='dark'] .fi-ta,
-html[data-ui-appearance='dark'] .fi-fo-field-wrp { --tw-ring-color: var(--ui-border-strong, #374151); }
-html[data-ui-appearance='dark'] .fi-section,
-html[data-ui-appearance='dark'] .fi-ta-ctn { background: var(--ui-surface, #111827) !important; border-color: var(--ui-border, #1f2937) !important; }
-html[data-ui-appearance='dark'] .fi-input-wrp { background: #0b1220 !important; border-color: var(--ui-border-strong, #374151) !important; }
-html[data-ui-appearance='dark'] .fi-input { color: var(--text-comfort-strong, #dce3ec) !important; }
-
 /* Semantic feedback remains semantic in dark mode. */
 html[data-ui-appearance='dark'] main :is(.bg-emerald-50,.bg-green-50) { background-color: rgb(6 78 59 / .30) !important; }
 html[data-ui-appearance='dark'] main :is(.bg-amber-50,.bg-yellow-50) { background-color: rgb(120 53 15 / .30) !important; }

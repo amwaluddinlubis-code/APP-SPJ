@@ -7,7 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'SPJ BOSP Web') }}</title>
     <x-theme-init />
-    @filamentStyles
     @livewireStyles
     @vite('resources/css/app.css')
 </head>
@@ -359,7 +358,6 @@
             </div>
         </main>
     </div>
-    @filamentScripts
     @livewireScripts
     @vite('resources/js/app.js')
     <div id="app-confirm-dialog"

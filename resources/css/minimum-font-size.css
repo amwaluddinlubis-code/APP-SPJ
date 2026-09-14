@@ -78,20 +78,19 @@ main table :is(.ui-badge, .ui-status-badge, [class*='text-[10px]']) {
     line-height: 1.15rem;
 }
 
-/* Filament/Livewire tables use their own component classes, so reinforce the
+/* Livewire tables use their own component classes, so reinforce the
    same readable baseline without changing spacing or table structure. */
-main .fi-ta-table :is(td, .fi-ta-cell),
-main .fi-ta-table :is(td, .fi-ta-cell) :is(p, a, span:not(.fi-badge), strong) {
+main table :is(td, th),
+main table :is(td, th) :is(p, a, span, strong) {
     font-size: var(--ui-table-font-size) !important;
     line-height: 1.4rem;
 }
 
-main .fi-ta-table :is(th, .fi-ta-header-cell),
-main .fi-ta-table :is(th, .fi-ta-header-cell) :is(span, p) {
+main table :is(th) :is(span, p) {
     font-size: var(--ui-table-header-font-size) !important;
 }
 
-main .fi-ta-table :is(.text-xs, .text-\[11px\], [class*='text-[11px]'], .fi-badge) {
+main table :is(.text-xs, .text-\[11px\], [class*='text-[11px]']) {
     font-size: var(--ui-table-small-font-size) !important;
     line-height: 1.15rem;
 }

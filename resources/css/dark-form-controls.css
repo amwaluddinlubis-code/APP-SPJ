@@ -11,7 +11,7 @@ html[data-ui-appearance='dark'] {
     --ui-dark-control-placeholder: #94a3b8;
 }
 
-html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+html[data-ui-appearance='dark'] :is(main, [role='dialog'])
 :is(
     input[type='text'],
     input[type='search'],
@@ -32,8 +32,7 @@ html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi
     .ui-textarea,
     .ui-select,
     .form-control,
-    .form-select,
-    .fi-input
+    .form-select
 ) {
     color-scheme: dark;
     background-color: var(--ui-dark-control-bg) !important;
@@ -41,7 +40,7 @@ html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi
     color: var(--ui-dark-control-text) !important;
 }
 
-html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+html[data-ui-appearance='dark'] :is(main, [role='dialog'])
 :is(
     input[type='text'],
     input[type='search'],
@@ -54,14 +53,13 @@ html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi
     textarea,
     .ui-input,
     .ui-textarea,
-    .form-control,
-    .fi-input
+    .form-control
 )::placeholder {
     color: var(--ui-dark-control-placeholder) !important;
     opacity: 1 !important;
 }
 
-html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi-dropdown-panel)
+html[data-ui-appearance='dark'] :is(main, [role='dialog'])
 :is(
     input[type='text'],
     input[type='search'],
@@ -82,8 +80,7 @@ html[data-ui-appearance='dark'] :is(main, [role='dialog'], .fi-modal-window, .fi
     .ui-textarea,
     .ui-select,
     .form-control,
-    .form-select,
-    .fi-input
+    .form-select
 ):is([readonly], :disabled),
 html[data-ui-appearance='dark'] .ui-input-readonly {
     background-color: var(--ui-dark-control-bg-soft) !important;
