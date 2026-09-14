@@ -23,7 +23,7 @@ class TransactionNumberedItemDescriptionUiTest extends TestCase
 
         $this->assertIsString($controller);
         $this->assertStringContainsString("\$transaction->spjPackage?->status === 'FINAL'", $controller);
-        $this->assertStringContainsString("'payment_description' => \$paymentDescription !== '' ? \$paymentDescription : null", $controller);
+        $this->assertStringContainsString("\$descriptions->updatePaymentDescription(\$transaction, \$data['payment_description'] ?? null)", $controller);
         $this->assertStringContainsString("'item_description' => trim(\$itemData['item_description'])", $controller);
         $this->assertStringContainsString('berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran', $controller);
     }
