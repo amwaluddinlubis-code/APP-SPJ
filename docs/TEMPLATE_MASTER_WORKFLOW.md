@@ -228,4 +228,10 @@ HTML preview memakai renderer PhpSpreadsheet. Formula/drawing/print-layout yang 
 
 Master workbook hasil komposisi memakai PhpSpreadsheet sehingga official-template visual QA, formula lintas-sheet yang kompleks, drawing, print area, page breaks, header/footer, dan target Office viewer tetap mengikuti status RVR pada `CURRENT_PROGRESS.md`.
 
+Untuk PDF dari workbook, generator terlebih dahulu menyimpan workbook sementara lalu mencoba konversi native melalui LibreOffice (`soffice`/`libreoffice`, atau path dari `SPJ_LIBREOFFICE_BINARY`). `SPJ_LIBREOFFICE_BINARY` menerima path file lengkap (`C:/Program Files/LibreOffice/program/soffice.exe`) maupun direktori instalasi. Jalur ini mempertahankan font, print area, page setup, scaling, merge, row/column dimension, page break, header/footer, dan drawing sesuai konfigurasi Excel. Jika LibreOffice tidak tersedia, generator memakai fallback Dompdf dengan normalisasi print area dan registrasi font sistem; fallback tetap fungsional tetapi tidak dapat dijadikan bukti pixel-perfect terhadap Excel/Office.
+
+Halaman pratinjau tidak menjalankan preflight download dan tidak me-render PDF/HTML dua kali: readiness PDF dicek murah (`xlsx` siap, `docx` butuh LibreOffice), HTML hanya dihitung bila PDF tidak siap, dan PDF paket/template di-render lazy melalui endpoint `pratinjau-pdf`. Kegagalan render pratinjau dikembalikan sebagai redirect dengan pesan error, bukan 500.
+
+Kontrak peran: pratinjau PDF adalah cetakan resmi SPJ (sahih penuh setelah nomor terbit melalui numbering; halaman memberi peringatan bila nomor belum terbit), sedangkan unduhan Excel/PDF hanya untuk arsip dan tetap tersimpan ke folder dokumen.
+
 Untuk download individu, pruning OOXML menghindari rewrite worksheet terpilih, tetapi hasil aktual tetap perlu dibuka pada Microsoft Excel/LibreOffice bila template nyata memiliki drawing, formula/reference eksternal, defined name kompleks, atau fitur Office lain yang sensitif terhadap penghapusan worksheet.

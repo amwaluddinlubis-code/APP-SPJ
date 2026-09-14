@@ -1,6 +1,6 @@
 # Rencana Migrasi Livewire (TALL) — Status, Audit Boundary, dan Urutan
 
-Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, canonical code gate HEAD `887d0219142d634e6a85b6672d3bffb02b5b1584`, dengan pembaruan stack Laravel 13 + pure TALL terverifikasi lokal pada `a4dd395`.
+Terakhir diverifikasi: **2026-09-15** pada branch `gui-standardization`, dengan pembaruan stack Laravel 13 + pure TALL terverifikasi lokal pada `a4dd395`.
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan berada di `CURRENT_PROGRESS.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; evidence gate berada di `P0_VERIFICATION_KIT.md`.
 
@@ -33,7 +33,7 @@ Temuan Phase 1 tentang `HARDENING REQUIRED` telah ditutup pada Phase 2. Route mi
 
 **Status: COMPLETE (SOURCE AUDIT), 2026-09-14.**
 
-Inventaris `app/Livewire/` pada audit berisi **25 component**. Setelah pencopotan Filament mati pada `a4dd395` (`RkasTable` orphan + `RkasBudgetTable` yang hanya dipakai view orphan), inventaris aktif tinggal **23 component**.
+Inventaris `app/Livewire/` pada audit terbaru berisi **27 component**. Setelah pencopotan Filament mati dan penambahan workspace detail transaksi, component aktif yang relevan bertambah pada area transaksi tanpa mengubah boundary domain.
 
 ### 3.1 Mutation/context boundaries setelah Phase 2
 
@@ -59,6 +59,7 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 - `DatabaseStatusSummary`
 - `DatabaseTableExplorer`
 - `EmployeeDirectory`
+- `TransactionDetailWorkspace`
 - `RkasBudgetFilter`
 - `SpjMonitoringList`
 - `SpjPackageList`
@@ -71,9 +72,9 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 Catatan:
 
 - `DatabaseTableExplorer::openTable()` hanya membaca schema/data melalui `SchoolDatabaseManager`.
-- `RkasBudgetFilter` memegang filter state dan navigasi ke canonical GET URL; query option tetap scoped.
+- `RkasBudgetWorkspace` memegang surface workspace RKAS read-only, sementara `RkasBudgetFilter` memegang filter state dan navigasi ke canonical GET URL; query option dan data tetap scoped.
 - `TransactionsTable` memakai active context dan hanya menghasilkan filter/stat/pagination/view helpers.
-- `Spj*Filter/List` memakai use case canonical; detail Paket SPJ mutation-heavy tetap server-rendered.
+- `Spj*Filter/List` memakai use case canonical; `TransactionDetailWorkspace` memegang detail transaksi dan aksi koreksi uraian/rekonsiliasi, sedangkan detail Paket SPJ mutation-heavy tetap server-rendered.
 
 ## 4. Boundary middleware dan rule authorization
 
@@ -140,9 +141,10 @@ Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau ro
 
 | Area | Implementasi source | Status integrasi |
 |---|---|---|
-| Transaksi | `TransactionsTable` filter/search/pagination | Implemented; read-only boundary audit PASS; code gate #480 PASS; runtime RVR |
+| Transaksi | `TransactionsTable` daftar + `TransactionDetailWorkspace` detail transaksi dan aksi koreksi/rekonsiliasi | Implemented 2026-09-15; tenant/lock/service regression PASS 384 assertions; runtime RVR |
 | Rekonsiliasi | `ReconciliationList` filter/search/pagination (read-only; query parity dengan controller lama, `#[Url]` bookmarkable) | Implemented 2026-09-14; full Feature PASS lokal 416/3001; runtime RVR |
-| RKAS budget | `RkasBudgetFilter` + native hierarchy (`rkas-budget.index`; tabel Filament mati dihapus pada `a4dd395`) | Implemented; read-only boundary audit PASS; code gate PASS; runtime RVR |
+| RKAS budget | `RkasBudgetWorkspace` + `RkasBudgetFilter` dengan hierarchy/stat surface Livewire (`rkas-budget.index`; tabel Filament mati dihapus pada `a4dd395`) | Implemented 2026-09-15; read-only boundary audit PASS; focused Feature PASS 94 assertions; runtime RVR |
+| RKAS planning/saran | `RkasPlanningSuggestionTables` dengan pagination Livewire terpisah untuk Modul 1 dan Modul 2 | Implemented 2026-09-15; focused Feature PASS 19 assertions; operator pagination verification PASS |
 | SPJ Persiapan/Paket/Laporan/Monitoring | `SpjPreparationFilter`, `SpjPackageList`, `SpjReportFilter`, `SpjMonitoringList`, SPA tab navigation | Implemented; filter/list read-only; detail Paket mutation tetap server-rendered; code gate PASS; runtime RVR |
 | Pajak | `TaxFilter` | Implemented; read-only boundary audit PASS; runtime RVR |
 | Pegawai | `EmployeeDirectory` | Implemented; read-only boundary audit PASS; runtime RVR |

@@ -13,6 +13,16 @@ class RkasBudgetController extends Controller
 {
     public function __invoke(Request $request): View
     {
+        return view('rkas-budget.index', $this->renderData($request));
+    }
+
+    /**
+     * Build the read-only data set consumed by the Livewire RKAS workspace.
+     *
+     * @return array<string, mixed>
+     */
+    public function renderData(Request $request): array
+    {
         $yearId = (int) session('active_fiscal_year_id');
         $db = DB::connection('school');
         $search = trim((string) $request->query('q'));
@@ -362,7 +372,7 @@ class RkasBudgetController extends Controller
             $filterContext .= ' · pencarian "'.$search.'"';
         }
 
-        return view('rkas-budget.index', compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'));
+        return compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel');
     }
 
     /**

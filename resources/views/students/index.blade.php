@@ -107,7 +107,7 @@
                 @endforelse
             </div>
 
-            @if($students->hasPages())<div class="mt-5 border-t border-[var(--ui-line)] pt-4" data-pagination="server">{{ $students->links() }}</div>@endif
+            @if($students->hasPages())<x-ui.server-pagination :paginator="$students" class="mt-5" noun="siswa" />@endif
         </x-ui.form-section>
     </div>
 </x-layouts.tailwind-app>

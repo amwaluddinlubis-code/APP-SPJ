@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\YearSelector;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
@@ -10,6 +11,7 @@ use App\Services\SchoolDatabaseManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 use Mockery;
 use Tests\TestCase;
 
@@ -61,7 +63,9 @@ class SchoolYearSelectionFlowTest extends TestCase
         }));
 
         FundSource::on('school')->create(['code' => 'BOS', 'name' => 'BOS Reguler']);
+        FundSource::on('school')->create(['id' => 2, 'code' => 'LAIN', 'name' => 'Dana Lain']);
         FiscalYear::on('school')->create(['year' => 2026, 'fund_source' => 'BOS Reguler', 'fund_source_id' => 1, 'is_active' => true]);
+        FiscalYear::on('school')->create(['year' => 2027, 'fund_source' => 'Dana Lain', 'fund_source_id' => 2, 'is_active' => true]);
 
         $this->actingAs($user)
             ->post(route('schools.activate'), ['school_id' => $school->id])
@@ -69,5 +73,20 @@ class SchoolYearSelectionFlowTest extends TestCase
             ->assertSessionHas('active_school_id', $school->id)
             ->assertSessionMissing('active_fiscal_year_id')
             ->assertSessionMissing('active_fund_source_id');
+
+        Livewire::actingAs($user)
+            ->test(YearSelector::class, ['hasFundSourceContext' => true])
+            ->assertDontSee('Belum ada pilihan yang tersedia')
+            ->set('selectedYear', 2026)
+            ->assertSee('BOS Reguler')
+            ->assertDontSee('Dana Lain')
+            ->assertDontSee('id="context-fund-source" disabled', false)
+            ->set('selectedFundSourceId', 1)
+            ->call('selectContext')
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertSame($school->id, session('active_school_id'));
+        $this->assertSame(1, session('active_fiscal_year_id'));
+        $this->assertSame(1, session('active_fund_source_id'));
     }
 }

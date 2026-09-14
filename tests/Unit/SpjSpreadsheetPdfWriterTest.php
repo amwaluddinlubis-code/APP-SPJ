@@ -45,4 +45,24 @@ class SpjSpreadsheetPdfWriterTest extends TestCase
 
         @unlink($output);
     }
+
+    public function test_qualified_print_area_is_normalized_for_pdf_rendering(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('TPL_TEST');
+        $sheet->getPageSetup()->setPrintArea('A1:B2');
+        $sheet->setCellValue('A1', 'Dalam area cetak');
+        $sheet->setCellValue('A3', 'Di luar area cetak');
+
+        $reloadedSheet = $spreadsheet->getActiveSheet();
+        $printArea = (new \ReflectionClass($reloadedSheet->getPageSetup()))->getProperty('printArea');
+        $printArea->setAccessible(true);
+        $printArea->setValue($reloadedSheet->getPageSetup(), "'TPL_TEST'!\$A\$1:\$B\$2");
+        $this->assertStringContainsString('!', $reloadedSheet->getPageSetup()->getPrintArea());
+
+        (new SpjSpreadsheetPdfWriter($spreadsheet))->generateHTMLAll();
+
+        $this->assertSame('A1:B2', $reloadedSheet->getPageSetup()->getPrintArea());
+    }
 }

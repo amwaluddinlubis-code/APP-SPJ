@@ -119,6 +119,11 @@ class SpjController extends Controller
         return $useCase->previewPackage($packageId);
     }
 
+    public function previewPackagePdf(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->previewPackagePdf($packageId);
+    }
+
     public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
     {
         return $useCase->downloadTemplate($packageId, $templateId);
@@ -132,6 +137,11 @@ class SpjController extends Controller
     public function previewTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase): View|RedirectResponse
     {
         return $useCase->previewTemplate($packageId, $templateId);
+    }
+
+    public function previewTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->previewTemplatePdf($packageId, $templateId);
     }
 
     public function export(Request $request, string $format, SpjReportUseCase $useCase)

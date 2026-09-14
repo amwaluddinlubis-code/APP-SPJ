@@ -32,5 +32,20 @@
             </tbody>
         </table>
     </div>
-    @if($packageList->hasPages())<div class="border-t border-[var(--ui-line)] px-5 py-4">{{ $packageList->links() }}</div>@endif
+    <div class="flex flex-col gap-3 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-2 text-xs" style="color: var(--ui-fg-muted)">
+            <label for="spj-package-per-page" class="font-semibold">Baris</label>
+            <x-ui.select id="spj-package-per-page" wire:model.live="perPage" aria-label="Baris per halaman" class="!min-h-9 !w-auto !py-1.5 !text-xs">
+                <option value="10">10 baris</option>
+                <option value="15">15 baris</option>
+                <option value="25">25 baris</option>
+                <option value="50">50 baris</option>
+                <option value="100">100 baris</option>
+            </x-ui.select>
+            <span class="hidden xl:inline">• {{ number_format($packageList->total(), 0, ',', '.') }} data</span>
+        </div>
+        @if($packageList->hasPages())
+            <x-ui.server-pagination :paginator="$packageList" noun="paket" />
+        @endif
+    </div>
 </div>

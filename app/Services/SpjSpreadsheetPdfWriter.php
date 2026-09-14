@@ -61,6 +61,18 @@ class SpjSpreadsheetPdfWriter extends SpreadsheetPdfWriter
         return array_keys($this->registeredFamilies);
     }
 
+    public function generateHTMLAll(): string
+    {
+        foreach ($this->spreadsheet->getWorksheetIterator() as $sheet) {
+            $printArea = str_replace('$', '', (string) $sheet->getPageSetup()->getPrintArea());
+            if (preg_match('/!([A-Z]+\\d+:[A-Z]+\\d+)$/i', $printArea, $matches) === 1) {
+                $sheet->getPageSetup()->setPrintArea($matches[1]);
+            }
+        }
+
+        return parent::generateHTMLAll();
+    }
+
     private function registerWorkbookFonts(Dompdf $pdf): void
     {
         foreach ($this->workbookFontFamilies($this->spreadsheet) as $family) {

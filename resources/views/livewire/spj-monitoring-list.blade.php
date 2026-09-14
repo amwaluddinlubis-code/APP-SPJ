@@ -5,15 +5,15 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-[var(--ui-line)] px-5 py-4 bg-[var(--ui-surface-soft)]">
         <div class="ui-toolbar-group flex items-center gap-2 text-xs">
             <label for="spj-monitoring-per-page" class="font-semibold" style="color: var(--ui-fg-muted)">Baris</label>
-            <select id="spj-monitoring-per-page" wire:model.live="pendingPerPage" aria-label="Baris per halaman"
-                class="ui-select !min-h-9 !w-auto !py-1.5 !text-xs">
+            <x-ui.select id="spj-monitoring-per-page" wire:model.live="pendingPerPage" aria-label="Baris per halaman"
+                class="!min-h-9 !w-auto !py-1.5 !text-xs">
                 <option value="15">15 baris</option>
                 <option value="25">25 baris</option>
                 <option value="50">50 baris</option>
                 <option value="100">100 baris</option>
-            </select>
+            </x-ui.select>
             <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">• {{ number_format($pendingPaginator?->total() ?? 0, 0, ',', '.') }} data</span>
         </div>
-        <div class="w-full sm:w-auto">{{ $pendingPaginator?->links() }}</div>
+        <x-ui.server-pagination :paginator="$pendingPaginator" noun="transaksi" />
     </div>
 </div>

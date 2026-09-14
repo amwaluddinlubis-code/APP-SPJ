@@ -1,3 +1,6 @@
+@if(! isset($renderedByWorkspace))
+    <livewire:rkas-budget-workspace />
+@else
 <x-layouts.tailwind-app>
     @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
 
@@ -205,3 +208,4 @@
         </x-section-card>
     </div>
 </x-layouts.tailwind-app>
+@endif

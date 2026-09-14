@@ -58,7 +58,7 @@
                 <thead><tr><th>No Bukti</th><th>Tanggal</th><th class="text-right">RKAS</th><th class="text-right">BKU</th><th class="text-right">Transaksi</th><th class="text-right">Selisih</th><th>SPJ</th><th>Status</th></tr></thead>
                 <tbody>@forelse($reconciliationRows as $row)<tr><td class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $row->no_bukti }}</td><td>{{ optional($row->transaction_date)->translatedFormat('d F Y') ?: '-' }}</td><td class="text-right">{{ $rupiah($row->rkas_amount) }}</td><td class="text-right">{{ $rupiah($row->bku_amount) }}</td><td class="text-right">{{ $rupiah($row->transaction_amount) }}</td><td class="text-right font-semibold {{ abs($row->variance) > .01 ? 'text-rose-600' : 'text-emerald-700' }}">{{ $rupiah($row->variance) }}</td><td>{{ $row->spj_status }}</td><td><span class="rounded-full px-2 py-1 text-xs font-bold {{ $row->status === 'SESUAI' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ $row->status }}</span></td></tr>@empty<tr><td colspan="8" class="empty-cell">Belum ada data rekonsiliasi.</td></tr>@endforelse</tbody>
             </x-ui.table>
-            <div class="border-t border-[var(--ui-line)] px-5 py-4 sm:px-6">{{ $reconciliationRows->links() }}</div>
+            <x-ui.server-pagination :paginator="$reconciliationRows" noun="baris rekonsiliasi" />
         </section>
 
         <section x-show="tab === 'register'" x-cloak class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
@@ -67,7 +67,7 @@
                 <thead><tr><th>Bukti / Tanggal</th><th>Uraian / Penerima</th><th>Kegiatan / Rekening</th><th class="text-right">Bruto</th><th class="text-right">Pajak</th><th>SPJ</th></tr></thead>
                 <tbody>@forelse($register as $transaction)<tr><td><a class="font-mono font-bold text-[var(--theme-content-accent)]" href="{{ route('transactions.show', $transaction->id) }}">{{ $transaction->no_bukti }}</a><p class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?: '-' }}</p></td><td><p class="max-w-xs truncate font-semibold">{{ $transaction->description ?: '-' }}</p><p class="max-w-xs truncate text-xs text-[var(--ui-fg-muted)]">{{ $transaction->recipient_name ?: '-' }}</p></td><td><p class="font-mono text-xs">{{ $transaction->activity_code ?: '-' }}</p><p class="text-xs text-[var(--ui-fg-muted)]">{{ $transaction->account_code ?: 'Belum diisi' }}</p></td><td class="text-right">{{ $rupiah($transaction->gross_amount) }}</td><td class="text-right">{{ $rupiah($transaction->tax_total) }}</td><td>{{ $transaction->spjPackage?->document_number ?: ($transaction->spjPackage ? 'DRAFT' : 'BELUM ADA') }}</td></tr>@empty<tr><td colspan="6" class="empty-cell">Belum ada transaksi tersinkron.</td></tr>@endforelse</tbody>
             </x-ui.table>
-            <div class="border-t border-[var(--ui-line)] px-5 py-4 sm:px-6">{{ $register->links() }}</div>
+            <x-ui.server-pagination :paginator="$register" noun="transaksi" />
         </section>
 
         <section x-show="tab === 'tax'" x-cloak class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
@@ -84,7 +84,7 @@
                 <thead><tr><th>No Bukti</th><th>Tanggal</th><th>Penerima</th><th class="text-right">Bruto</th><th>Status</th><th>Temuan</th></tr></thead>
                 <tbody>@forelse($completenessRows as $row)<tr><td class="font-mono font-bold">{{ $row->no_bukti }}</td><td>{{ optional($row->transaction_date)->translatedFormat('d F Y') ?: '-' }}</td><td>{{ $row->recipient_name ?: '-' }}</td><td class="text-right">{{ $rupiah($row->amount) }}</td><td class="{{ $row->status === 'LENGKAP' ? 'text-emerald-700' : 'text-rose-700' }}">{{ $row->status }}</td><td class="whitespace-normal text-xs [overflow-wrap:anywhere]">{{ $row->issues ? implode('; ', $row->issues) : '-' }}</td></tr>@empty<tr><td colspan="6" class="empty-cell">Tidak ada data pengecualian.</td></tr>@endforelse</tbody>
             </x-ui.table>
-            <div class="border-t border-[var(--ui-line)] px-5 py-4 sm:px-6">{{ $completenessRows->links() }}</div>
+            <x-ui.server-pagination :paginator="$completenessRows" noun="baris kelengkapan" />
         </section>
 
         <section x-show="tab === 'history'" x-cloak class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
@@ -93,7 +93,7 @@
                 <thead><tr><th>Jenis</th><th>Status / Aksi</th><th>Waktu</th><th>Keterangan</th></tr></thead>
                 <tbody>@forelse($syncRuns as $row)<tr><td>SINKRONISASI {{ $row->source }}</td><td>{{ $row->status }}</td><td>{{ $row->started_at }}</td><td>{{ $row->message ?: 'Data dibaca: '.$row->records_read.' · ditulis: '.$row->records_written }}</td></tr>@empty<tr><td colspan="4" class="empty-cell">Belum ada riwayat sinkronisasi.</td></tr>@endforelse @foreach($auditLogs as $row)<tr><td>{{ $row->entity_type }}</td><td>{{ $row->action }}</td><td>{{ $row->created_at }}</td><td>{{ $row->description }}</td></tr>@endforeach</tbody>
             </x-ui.table>
-            <div class="border-t border-[var(--ui-line)] px-5 py-4 sm:px-6">{{ $syncRuns->links() }}</div>
+            <x-ui.server-pagination :paginator="$syncRuns" noun="sinkronisasi" />
         </section>
     </div>
 </x-layouts.tailwind-app>

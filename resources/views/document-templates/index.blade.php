@@ -408,7 +408,7 @@
                 </table>
                 </div>
                 @if ($templates->hasPages())
-                    <div class="border-t border-[var(--ui-line)] px-5 py-4">{{ $templates->links() }}</div>
+                    <x-ui.server-pagination :paginator="$templates" noun="template" />
                 @endif
             </div>
         </section>

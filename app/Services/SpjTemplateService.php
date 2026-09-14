@@ -332,6 +332,31 @@ class SpjTemplateService
 
     public function download(DocumentTemplate $template, SpjPackage $package, School $school)
     {
+        $output = $this->filledTemplateFile($template, $package, $school);
+        $extension = strtolower($template->format);
+
+        try {
+            (new SpjUnresolvedPlaceholderGuard)->assertResolved((string) $template->document_type, $output, $extension);
+        } catch (\Throwable $exception) {
+            if (is_file($output)) {
+                @unlink($output);
+            }
+            throw $exception;
+        }
+
+        $fileName = $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension);
+        $stored = app(DocumentStoragePathService::class)->persist($output, $package, $fileName);
+        @unlink($output);
+
+        return response()->download($stored, $fileName);
+    }
+
+    /**
+     * Fill template placeholders into a temp file. The caller owns cleanup.
+     * Shared by download and preview so both render the same filled input.
+     */
+    public function filledTemplateFile(DocumentTemplate $template, SpjPackage $package, School $school): string
+    {
         $source = $this->templateSourcePath($template);
         if (! is_file($source)) {
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
@@ -373,20 +398,27 @@ class SpjTemplateService
             throw new \RuntimeException('Format template tidak didukung.');
         }
 
-        try {
-            (new SpjUnresolvedPlaceholderGuard)->assertResolved((string) $template->document_type, $output, $extension);
-        } catch (\Throwable $exception) {
-            if (is_file($output)) {
-                @unlink($output);
-            }
-            throw $exception;
+        return $output;
+    }
+
+    /**
+     * PDF bytes for print-worthy preview. Same engine and same filled input
+     * as the download path, so the operator prints exactly what gets archived.
+     * Null only when LibreOffice is required (Word template) but unavailable.
+     */
+    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    {
+        if (strtolower($template->format) === 'xlsx') {
+            return $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($this->filledSpreadsheet($template, $package, $school), $template));
         }
 
-        $fileName = $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension);
-        $stored = app(DocumentStoragePathService::class)->persist($output, $package, $fileName);
-        @unlink($output);
+        $filled = $this->filledTemplateFile($template, $package, $school);
 
-        return response()->download($stored, $fileName);
+        try {
+            return app(SpjSpreadsheetPdfConverter::class)->convertFile($filled);
+        } finally {
+            @unlink($filled);
+        }
     }
 
     /** Menghasilkan HTML dari template Excel untuk pratinjau di browser. */
@@ -426,6 +458,17 @@ class SpjTemplateService
 
             throw $exception;
         }
+    }
+
+    /**
+     * Combined package PDF bytes for print-worthy preview. Same engine and
+     * same filled input as downloadPackagePdf, so preview matches the archive.
+     *
+     * @param  Collection<int, DocumentTemplate>  $templates
+     */
+    public function packagePreviewPdfBytes(Collection $templates, SpjPackage $package, School $school): string
+    {
+        return $this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school));
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
@@ -573,6 +616,11 @@ class SpjTemplateService
 
     private function spreadsheetPdfContents(Spreadsheet $spreadsheet): string
     {
+        $nativePdf = app(SpjSpreadsheetPdfConverter::class)->convert($spreadsheet);
+        if ($nativePdf !== null) {
+            return $nativePdf;
+        }
+
         $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
         if ($temporaryFile === false) {
             throw new \RuntimeException('File sementara PDF tidak dapat dibuat.');

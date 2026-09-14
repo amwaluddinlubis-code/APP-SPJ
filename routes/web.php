@@ -140,8 +140,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
         Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
+        Route::get('/spj/paket/{packageId}/pratinjau-pdf', [SpjController::class, 'previewPackagePdf'])->name('spj.preview-package-pdf');
         Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
+        Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau-pdf', [SpjController::class, 'previewTemplatePdf'])->name('spj.preview-template-pdf');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh', [SpjController::class, 'downloadTemplate'])->name('spj.download-template');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh-pdf', [SpjController::class, 'downloadTemplatePdf'])->name('spj.download-template-pdf');
         Route::get('/spj/laporan/honor/pilih', [SpjController::class, 'selectHonorPayments'])->name('spj.honor-payments.select');

@@ -7,6 +7,7 @@ use App\Models\SpjPackage;
 use App\Services\SpjGeneratedDocumentValidator;
 use App\Services\SpjMaintenanceDocumentContextService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjSpreadsheetPdfConverter;
 use App\Services\SpjTemplateRenderPreflight;
 use App\Services\SpjTemplateService;
 use App\Support\ActiveSpjContext;
@@ -71,13 +72,31 @@ class SpjDocumentUseCase
         $this->applyDocumentContext($package);
         $templates = $this->activeTemplatesForPackage($package);
         $school = $this->context->school();
-        app(SpjTemplateRenderPreflight::class)->assertAllRenderable($templates, $package, $school);
+        // Pratinjau adalah operasi baca ringan: jangan jalankan preflight
+        // download (assertAllRenderable) di sini karena itu me-render ulang
+        // seluruh workbook dan membuat halaman timeout/OOM. Validasi wajib
+        // sudah dihitung di atas; kegagalan render ditangani di bawah.
         $template = new DocumentTemplate(['name' => 'Paket SPJ', 'format' => 'xlsx']);
+        $previewPdfReady = $templates->contains(fn (DocumentTemplate $row): bool => strtolower((string) $row->format) === 'xlsx');
+
+        try {
+            // Bila PDF tersedia, HTML tidak perlu dihitung karena Blade
+            // mengutamakan <embed> PDF. Ini menghindari 2x render berat.
+            $previewHtml = $previewPdfReady
+                ? null
+                : app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Pratinjau paket gagal dibuat: '.$exception->getMessage());
+        }
 
         return view('spj-documents.template-preview', [
             'package' => $package,
             'template' => $template,
-            'previewHtml' => app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school),
+            'previewHtml' => $previewHtml,
+            'previewPdfUrl' => route('spj.preview-package-pdf', [$packageId]),
+            'previewPdfReady' => $previewPdfReady,
             'validationIssues' => $validationIssues,
         ]);
     }
@@ -152,15 +171,92 @@ class SpjDocumentUseCase
         $school = $this->context->school();
         $validationIssues = $validator->validate($package);
         $this->applyDocumentContext($package);
-        app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
-        $previewHtml = $templates->previewHtml($template, $package, $school);
+        // Jangan render PDF penuh hanya untuk cek readiness: itu mahal lalu
+        // PDF di-render ulang oleh <embed>. Cek murah: xlsx selalu siap
+        // (fallback Dompdf), docx butuh LibreOffice. HTML hanya dihitung
+        // bila PDF tidak siap.
+        $isXlsx = strtolower((string) $template->format) === 'xlsx';
+        $previewPdfReady = $isXlsx || app(SpjSpreadsheetPdfConverter::class)->isAvailable();
+
+        try {
+            $previewHtml = $previewPdfReady ? null : $templates->previewHtml($template, $package, $school);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Pratinjau dokumen gagal dibuat: '.$exception->getMessage());
+        }
 
         return view('spj-documents.template-preview', [
             'package' => $package,
             'template' => $template,
             'previewHtml' => $previewHtml,
+            'previewPdfUrl' => route('spj.preview-template-pdf', [$packageId, $templateId]),
+            'previewPdfReady' => $previewPdfReady,
             'validationIssues' => $validationIssues,
         ]);
+    }
+
+    /**
+     * Inline PDF for print-worthy preview. Render-only: same filled input and
+     * engine as the download path, never issues numbers or mutates lifecycle.
+     */
+    public function previewTemplatePdf(string $packageId, string $templateId): Response|RedirectResponse
+    {
+        $templates = app(SpjTemplateService::class);
+        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
+        $template = DocumentTemplate::query()->find($templateId);
+        if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
+        }
+        $school = $this->context->school();
+        $this->applyDocumentContext($package);
+        try {
+            $contents = $templates->previewTemplatePdfBytes($template, $package, $school);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('spj.preview-template', [$packageId, $templateId])->with('error', 'Pratinjau PDF gagal dibuat: '.$exception->getMessage());
+        }
+        if ($contents === null) {
+            return redirect()->route('spj.preview-template', [$packageId, $templateId])->with('error', 'Pratinjau PDF membutuhkan LibreOffice di server. Unduh dokumen asli lalu cetak dari aplikasi Office.');
+        }
+
+        // Download/preview adalah operasi baca. Lifecycle Paket hanya boleh berubah
+        // melalui workflow READY/NUMBERED/FINAL/CANCELLED yang eksplisit.
+
+        return $this->inlinePdfResponse($contents, 'PRATINJAU-'.$template->document_type.'-'.$package->document_number.'.pdf');
+    }
+
+    /**
+     * Combined package inline PDF for print-worthy preview. Render-only,
+     * same filled input and engine as downloadPackagePdf.
+     */
+    public function previewPackagePdf(string $packageId): Response|RedirectResponse
+    {
+        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
+        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+            return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
+        }
+
+        $this->applyDocumentContext($package);
+        $templates = $this->activeTemplatesForPackage($package);
+        $school = $this->context->school();
+        $xlsxTemplates = $templates->filter(fn (DocumentTemplate $template): bool => strtolower((string) $template->format) === 'xlsx')->values();
+        if ($xlsxTemplates->isEmpty()) {
+            return redirect()->route('spj.preview-package', [$packageId])->with('error', 'Belum ada template Excel aktif untuk pratinjau PDF paket ini.');
+        }
+        try {
+            $contents = app(SpjTemplateService::class)->packagePreviewPdfBytes($xlsxTemplates, $package, $school);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('spj.preview-package', [$packageId])->with('error', 'Pratinjau PDF paket gagal dibuat: '.$exception->getMessage());
+        }
+
+        // Download/preview adalah operasi baca. Lifecycle Paket hanya boleh berubah
+        // melalui workflow READY/NUMBERED/FINAL/CANCELLED yang eksplisit.
+
+        return $this->inlinePdfResponse($contents, 'PRATINJAU-PAKET-SPJ-'.$package->document_number.'.pdf');
     }
 
     /** @return Collection<int, DocumentTemplate> */
@@ -180,6 +276,21 @@ class SpjDocumentUseCase
     private function applyDocumentContext(SpjPackage $package): void
     {
         app(SpjMaintenanceDocumentContextService::class)->apply($package);
+    }
+
+    private function inlinePdfResponse(string $contents, string $fileName): Response
+    {
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$this->safeInlineName($fileName).'"',
+            'Content-Length' => (string) strlen($contents),
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
+    }
+
+    private function safeInlineName(string $name): string
+    {
+        return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'pratinjau-spj.pdf';
     }
 
     private function assertBinaryOutput(

@@ -17,19 +17,19 @@
                             </div>
                             <div class="flex items-center gap-2 text-xs">
                                 <label for="spj-report-row-count" class="text-sm font-semibold text-[var(--ui-fg-strong)]">Baris</label>
-                                <select id="spj-report-row-count" wire:model.live="perPage" aria-label="Baris per halaman"
-                                    class="ui-select !min-h-9 !w-auto !py-1.5 !text-xs">
+                                <x-ui.select id="spj-report-row-count" wire:model.live="perPage" aria-label="Baris per halaman"
+                                    class="!min-h-9 !w-auto !py-1.5 !text-xs">
                                     <option value="10">10 baris</option>
                                     <option value="15">15 baris</option>
                                     <option value="25">25 baris</option>
                                     <option value="50">50 baris</option>
                                     <option value="100">100 baris</option>
-                                </select>
+                                </x-ui.select>
                             </div>
                         </div>
                         <label for="spj-report-periode" class="shrink-0 whitespace-nowrap text-sm font-semibold text-[var(--ui-fg-strong)]">Pilih periode</label>
                         <div class="flex min-w-0 flex-wrap items-center gap-3">
-                            <select id="spj-report-periode" wire:model.live="periode" class="ui-input min-w-[12rem] flex-1" style="width: auto;">
+                            <x-ui.select id="spj-report-periode" wire:model.live="periode" class="min-w-[12rem] flex-1" style="width: auto;">
                                 <option value="">{{ $mode === 'semua' ? 'Semua periode' : 'Pilih '.$mode }}</option>
                                 @if($mode === 'semester')
                                     @foreach(range(1,2) as $semester)<option value="{{ $semester }}">Semester {{ $semester }}</option>@endforeach
@@ -38,7 +38,7 @@
                                 @elseif($mode === 'bulan')
                                     @foreach(range(1,12) as $month)<option value="{{ $month }}">{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach
                                 @endif
-                            </select>
+                            </x-ui.select>
                             <x-ui.action-menu label="Ekspor">
                                 <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.select') }}">Susun Laporan Honor Terpilih</a>
                                 <a class="ui-action-menu-item" href="{{ route('spj.export', array_merge($exportQuery, ['format' => 'pdf'])) }}" target="_blank">Pratinjau PDF</a>
@@ -103,6 +103,6 @@
             @endforelse
         </tbody></table></div>
     @if($packages->hasPages())
-        <div class="border-t border-[var(--ui-line)] px-5 py-4">{{ $packages->links() }}</div>
+        <x-ui.server-pagination :paginator="$packages" noun="paket" />
     @endif
 </div>

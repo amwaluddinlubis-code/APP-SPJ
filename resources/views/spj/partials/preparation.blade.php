@@ -141,6 +141,8 @@
     <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-[var(--ui-line)] px-5 py-4 bg-[var(--ui-surface-soft)]">
         <x-page-table-per-page :total="$transactions?->total() ?? 0" />
-        <div class="w-full sm:w-auto">{{ $transactions?->links() ?? '' }}</div>
+        @if($transactions?->hasPages())
+            <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
+        @endif
     </div>
 </div>

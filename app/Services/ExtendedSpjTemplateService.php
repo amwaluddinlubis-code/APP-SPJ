@@ -484,6 +484,11 @@ class ExtendedSpjTemplateService extends SpjTemplateService
 
     private function spreadsheetPdfContentsExtended(Spreadsheet $spreadsheet, bool $allSheets): string
     {
+        $nativePdf = app(SpjSpreadsheetPdfConverter::class)->convert($spreadsheet);
+        if ($nativePdf !== null) {
+            return $nativePdf;
+        }
+
         $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
         if ($temporaryFile === false) {
             throw new \RuntimeException('File sementara PDF tidak dapat dibuat.');

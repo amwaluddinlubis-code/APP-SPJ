@@ -74,9 +74,7 @@ class DocumentStoragePathService
         }
 
         $destination = $directory.DIRECTORY_SEPARATOR.$this->safeSegment($fileName);
-        if (! copy($source, $destination)) {
-            throw new \RuntimeException('Dokumen gagal disimpan ke path yang telah ditentukan.');
-        }
+        $this->copyWithRetry($source, $destination);
 
         return $destination;
     }
@@ -102,9 +100,7 @@ class DocumentStoragePathService
         }
 
         $destination = $directory.DIRECTORY_SEPARATOR.$this->safeSegment($fileName);
-        if (! copy($source, $destination)) {
-            throw new \RuntimeException('Dokumen gagal disimpan ke path yang telah ditentukan.');
-        }
+        $this->copyWithRetry($source, $destination);
 
         return $destination;
     }
@@ -151,5 +147,27 @@ class DocumentStoragePathService
     private function safeSegment(string $value): string
     {
         return preg_replace('/[^A-Za-z0-9._-]+/', '-', trim($value)) ?: 'dokumen';
+    }
+
+    /**
+     * Salin file dengan percobaan ulang singkat. Di Windows, file tujuan
+     * dapat terkunci sesaat (PDF sedang terbuka, antivirus/IDM memindai,
+     * atau dua klik unduh bersamaan) sehingga copy() pertama gagal dengan
+     * "Resource temporarily unavailable". Coba lagi beberapa kali sebelum
+     * menyerah dengan pesan yang bisa ditindaklanjuti operator.
+     */
+    private function copyWithRetry(string $source, string $destination, int $attempts = 4): void
+    {
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            clearstatcache(true, $destination);
+            if (@copy($source, $destination)) {
+                return;
+            }
+            if ($attempt < $attempts) {
+                usleep(150000);
+            }
+        }
+
+        throw new \RuntimeException('Dokumen gagal disimpan ke path yang telah ditentukan. Kemungkinan file tujuan sedang terbuka di program lain (PDF reader/IDM) atau dipindai antivirus — tutup file tersebut lalu coba lagi: '.$destination);
     }
 }

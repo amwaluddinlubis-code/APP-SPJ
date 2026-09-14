@@ -86,16 +86,14 @@
 
                 @if(!$latestHasChanges)
                     <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Anda sudah memeriksa perubahan sumber dan tidak ada nilai bisnis aktif yang berubah. Tandai sebagai sudah ditinjau untuk menutup status rekonsiliasi.</p>
-                    <form method="POST" action="{{ route('transactions.source-reconciliation.resolve', $transaction->id) }}" class="mt-3 space-y-3">
-                        @csrf
-                        <input type="hidden" name="source_event_id" value="{{ $latest->id }}">
-                        <input type="hidden" name="resolution" value="REVIEWED_NO_BUSINESS_CHANGE">
+                    <form wire:submit="resolveReconciliation('REVIEWED_NO_BUSINESS_CHANGE')" class="mt-3 space-y-3">
+                        <input type="hidden" wire:model="sourceEventId">
                         <div>
                             <x-ui.field label="Catatan (opsional)">
-                                <x-ui.textarea name="notes" rows="2" maxlength="2000" placeholder="Contoh: perubahan metadata ARKAS sudah diperiksa dan tidak memengaruhi dokumen SPJ." />
+                                <x-ui.textarea wire:model="resolutionNotes" rows="2" maxlength="2000" placeholder="Contoh: perubahan metadata ARKAS sudah diperiksa dan tidak memengaruhi dokumen SPJ." />
                             </x-ui.field>
                         </div>
-                        <x-ui.button type="submit" variant="success">Tandai Sudah Ditinjau</x-ui.button>
+                        <x-ui.button type="submit" variant="success" wire:click="$set('resolution', 'REVIEWED_NO_BUSINESS_CHANGE')">Tandai Sudah Ditinjau</x-ui.button>
                     </form>
                 @elseif($packageLocked)
                     <div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
@@ -103,19 +101,18 @@
                     </div>
                 @else
                     <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Pilih keputusan setelah membandingkan nilai sumber sebelum dan sesudah. Pilihan ini tidak menghapus riwayat perubahan ARKAS.</p>
-                    <form method="POST" action="{{ route('transactions.source-reconciliation.resolve', $transaction->id) }}" class="mt-3 space-y-3">
-                        @csrf
-                        <input type="hidden" name="source_event_id" value="{{ $latest->id }}">
+                    <form wire:submit="resolveReconciliation(null)" class="mt-3 space-y-3">
+                        <input type="hidden" wire:model="sourceEventId">
                         <div class="grid gap-2 lg:grid-cols-2">
                             <label class="flex cursor-pointer gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3">
-                                <input type="radio" name="resolution" value="ACCEPT_SOURCE" required class="mt-1">
+                                <input type="radio" wire:model="resolution" value="ACCEPT_SOURCE" required class="mt-1">
                                 <span>
                                     <strong class="block text-sm text-[var(--ui-fg-strong)]">Terima perubahan sumber ARKAS</strong>
                                     <span class="text-xs text-[var(--ui-fg-muted)]">Nilai sumber terbaru diakui sebagai dasar transaksi. Overlay manual SPJ yang masih relevan tetap tidak ditimpa otomatis.</span>
                                 </span>
                             </label>
                             <label class="flex cursor-pointer gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3">
-                                <input type="radio" name="resolution" value="KEEP_OVERLAY" required class="mt-1">
+                                <input type="radio" wire:model="resolution" value="KEEP_OVERLAY" required class="mt-1">
                                 <span>
                                     <strong class="block text-sm text-[var(--ui-fg-strong)]">Pertahankan overlay SPJ</strong>
                                     <span class="text-xs text-[var(--ui-fg-muted)]">Perubahan sumber sudah diperiksa, tetapi isian manual SPJ yang ada sengaja dipertahankan.</span>
@@ -124,7 +121,7 @@
                         </div>
                         <div>
                             <x-ui.field label="Catatan (opsional)">
-                                <x-ui.textarea name="notes" rows="2" maxlength="2000" placeholder="Tuliskan alasan keputusan rekonsiliasi bila diperlukan." />
+                            <x-ui.textarea wire:model="resolutionNotes" rows="2" maxlength="2000" placeholder="Tuliskan alasan keputusan rekonsiliasi bila diperlukan." />
                             </x-ui.field>
                         </div>
                         <x-ui.button type="submit">Konfirmasi Penyelesaian Rekonsiliasi</x-ui.button>

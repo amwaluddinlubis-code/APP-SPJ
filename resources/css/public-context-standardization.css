@@ -1,0 +1,49 @@
+/* Context selection pages use the same calm white light-theme panel as login.
+   Dark themes retain their themed surface through the base public layout. */
+html[data-ui-appearance='light'] main.context-selector-page > section.context-selector-surface {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page > section.context-selector-surface > div {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #334155 !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page :is(h1, h2, h3, h4, h5, h6) {
+    color: #1f2937 !important;
+    -webkit-text-fill-color: #1f2937 !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page :is(p, label, span) {
+    color: #334155;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .ui-btn-secondary {
+    border-color: #94a3b8 !important;
+    background: #ffffff !important;
+    color: #1f2937 !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .ui-btn-secondary:hover {
+    border-color: #64748b !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .ui-btn-primary {
+    border-color: #1f63e9 !important;
+    background: #1f63e9 !important;
+    color: #ffffff !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .ui-btn-primary:hover {
+    border-color: #1957cf !important;
+    background: #1957cf !important;
+    color: #ffffff !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .ui-btn svg {
+    color: currentColor !important;
+}

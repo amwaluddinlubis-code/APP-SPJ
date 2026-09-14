@@ -33,15 +33,14 @@
             </x-ui.alert>
         </div>
     @endif
-    <form method="POST" action="{{ route('transactions.spj-descriptions.update', $transaction->id) }}"
-        @submit="spjDescriptionsDirty = false">@csrf
-        @method('PUT')
+    <form wire:submit="saveDescriptions" @submit="spjDescriptionsDirty = false">
         <fieldset @disabled(! $spjDescriptionsEditable) class="disabled:cursor-not-allowed disabled:opacity-60">
             <div class="border-b border-[var(--ui-line)] px-5 py-5">
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
                     <x-ui.field label="Uraian pembayaran untuk SPJ" hint="Boleh dikoreksi oleh operator. Dipakai untuk kuitansi dan dokumen SPJ; tidak mengubah data sumber ARKAS/BKU.">
                         <x-ui.textarea
                             name="payment_description"
+                            wire:model="paymentDescription"
                             rows="3"
                             maxlength="4000"
                             @input="spjDescriptionsDirty = true"
@@ -75,8 +74,9 @@
                                 <td class="max-w-xl px-4 py-3.5">
                                     <p class="mb-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->is_siplah ? 'ARKAS: '.$item->description : 'Asli: '.$item->description }}</p>
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
-                                    <input name="items[{{ $index }}][item_description]"
-                                        value="{{ $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $siplahNameForItem($item) ?: $item->description) : $item->description) }}"
+                            <input name="items[{{ $index }}][item_description]"
+                                wire:model="itemDescriptions.{{ $item->id }}"
+                                value="{{ $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $siplahNameForItem($item) ?: $item->description) : $item->description) }}"
                                         @input="spjDescriptionsDirty = true"
                                         class="ui-input px-3 py-2 text-base" placeholder="{{ $transaction->is_siplah ? 'Nama barang dari SiPLah' : 'Contoh: Buku tulis' }}">
                                 </td>

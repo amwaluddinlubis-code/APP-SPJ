@@ -98,7 +98,7 @@
                 </table>
             </div>
             @if($pagedPackages->hasPages())
-                <div class="mt-3 flex justify-end">{{ $pagedPackages->links() }}</div>
+                <x-ui.server-pagination :paginator="$pagedPackages" class="mt-3" noun="paket" />
             @endif
 
             @if(auth()->user()->isAdministrator())

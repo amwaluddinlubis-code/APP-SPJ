@@ -63,27 +63,8 @@ class TransactionController extends Controller
                 'Transaksi tidak ditemukan pada sekolah atau tahun anggaran yang sedang aktif. Jalankan sinkronisasi ARKAS atau buka transaksi dari daftar.'
             );
         }
-        $transaction->load([
-            'items' => fn ($query) => $query->orderBy('id'),
-            'goods',
-            'workers',
-            'participants',
-            'travels',
-            'honors',
-            'workOrder',
-            'spjPackage',
-        ]);
-        $headerVisual = $this->headerVisual($transaction);
-        $paymentMethod = $this->normalizePaymentMethod($transaction->payment_method, $transaction);
-        [$previousTransaction, $nextTransaction] = $this->adjacentTransactions($transaction);
 
-        return view('transactions.show', compact(
-            'transaction',
-            'headerVisual',
-            'paymentMethod',
-            'previousTransaction',
-            'nextTransaction'
-        ));
+        return view('transactions.show', ['transactionId' => $transaction->id]);
     }
 
     /** @return array{0: ?Transaction, 1: ?Transaction} */

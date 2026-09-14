@@ -101,7 +101,7 @@
         </div>
 
         @if($employees->hasPages())
-            <div class="mt-5 border-t border-[var(--ui-line)] pt-4" data-pagination="server">{{ $employees->links() }}</div>
+            <x-ui.server-pagination :paginator="$employees" class="mt-5" noun="pegawai" />
         @endif
     </x-ui.form-section>
 </div>

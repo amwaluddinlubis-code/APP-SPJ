@@ -59,6 +59,29 @@ class DocumentStoragePathServiceTest extends TestCase
         @unlink($response->getFile()->getPathname());
     }
 
+    public function test_persist_report_overwrites_existing_destination(): void
+    {
+        $service = app(DocumentStoragePathService::class);
+        $first = tempnam(sys_get_temp_dir(), 'spjreport');
+        file_put_contents($first, 'versi-pertama');
+
+        $destination = $service->persistReport($first, 'REKAP-TIMPA-2026.xlsx', 2026);
+        $this->assertSame('versi-pertama', file_get_contents($destination));
+
+        $second = tempnam(sys_get_temp_dir(), 'spjreport');
+        file_put_contents($second, 'versi-kedua');
+
+        // Klik unduh dua kali / file sudah ada: tetap tertimpa tanpa error.
+        $again = $service->persistReport($second, 'REKAP-TIMPA-2026.xlsx', 2026);
+
+        $this->assertSame($destination, $again);
+        $this->assertSame('versi-kedua', file_get_contents($destination));
+
+        @unlink($first);
+        @unlink($second);
+        @unlink($destination);
+    }
+
     protected function tearDown(): void
     {
         Storage::deleteDirectory('generated-documents');

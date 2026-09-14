@@ -1,30 +1,13 @@
 <x-layouts.public-tailwind title="Pilih Sekolah · SPJ BOSP">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <p class="text-xs font-bold tracking-[.16em] text-indigo-600">LANGKAH 1</p>
-      <h1 class="mt-2 text-2xl font-bold text-slate-900">Pilih Sekolah</h1>
-      <p class="mt-1 text-base text-slate-500">Tentukan database sekolah yang akan dipakai. Tahun dan sumber dana dipilih pada langkah berikutnya.</p>
+    <div class="flex flex-col gap-8">
+        <header class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--theme-accent-soft)] text-[var(--theme-content-accent)]"><x-ui.icon name="school" size="lg" /></div>
+                <div><p class="text-xs font-bold uppercase tracking-[.16em] text-[var(--theme-content-accent)]">Langkah 1 dari 2</p><h1 class="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ui-fg-strong)] sm:text-3xl">Pilih sekolah</h1><p class="mt-2 max-w-xl text-sm leading-6 text-[var(--ui-fg-muted)]">Tentukan ruang kerja sekolah yang akan digunakan. Tahun anggaran dan sumber dana dipilih setelah ini.</p></div>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">@csrf<x-ui.button type="submit" variant="secondary" icon="logout">Keluar</x-ui.button></form>
+        </header>
+        <nav aria-label="Progres pemilihan konteks" class="flex items-center gap-3 border-y border-[var(--ui-line)] py-4 text-xs font-bold"><span class="flex items-center gap-2 text-[var(--theme-content-accent)]"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--theme-accent)] text-white">1</span>Sekolah</span><span class="h-px flex-1 bg-[var(--ui-line)]"></span><span class="flex items-center gap-2 text-[var(--ui-fg-muted)]"><span class="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--ui-line-strong)]">2</span>Tahun &amp; dana</span></nav>
+        <livewire:school-selector />
     </div>
-    <form method="POST" action="{{ route('logout') }}">
-      @csrf
-      <button class="rounded-lg border border-[var(--ui-line-strong)] px-3 py-2 text-xs font-bold text-slate-700">Keluar</button>
-    </form>
-  </div>
-
-  <livewire:school-selector />
-  <div class="hidden mt-6 space-y-3">
-    @forelse($schools as $school)
-      <form method="POST" action="{{ route('schools.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
-        @csrf
-        <input type="hidden" name="school_id" value="{{ $school->id }}">
-        <div>
-          <p class="font-bold text-slate-800">{{ $school->name }}</p>
-          <p class="mt-1 text-xs text-slate-500">NPSN {{ $school->npsn }} · Database {{ $school->databaseRecord?->status ?? 'Belum diprovisikan' }}</p>
-        </div>
-        <button class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white">Pilih Sekolah</button>
-      </form>
-    @empty
-      <div class="rounded-lg bg-[var(--ui-surface-soft)] p-5 text-base text-slate-500">Belum ada sekolah.</div>
-    @endforelse
-  </div>
 </x-layouts.public-tailwind>
