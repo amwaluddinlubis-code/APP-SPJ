@@ -27,12 +27,12 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/spj-periodic-report-center.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('Paket laporan periodik', $blade);
+        $this->assertStringContainsString('Paket laporan periode', $blade);
         $this->assertStringContainsString('aria-label="Jenis paket laporan"', $blade);
         $this->assertStringContainsString('wire:click="setScope(', $blade);
         $this->assertStringContainsString('wire:model.live="periode"', $blade);
         $this->assertStringContainsString('Ringkasan sumber data', $blade);
-        $this->assertStringContainsString('Sumber data tersedia', $blade);
+        $this->assertStringContainsString('Siap dicetak', $blade);
     }
 
     public function test_spj_tabs_use_livewire_filters_without_full_page_reload(): void
