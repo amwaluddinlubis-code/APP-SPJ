@@ -6,12 +6,19 @@ use Tests\TestCase;
 
 class SpjPeriodicReportModuleUiTest extends TestCase
 {
-    public function test_periodic_report_center_is_mounted_inside_the_spj_report_tab(): void
+    public function test_periodic_report_center_uses_a_dedicated_surface_separate_from_spj_report_history(): void
     {
-        $blade = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
+        $spjReport = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
+        $periodicPage = file_get_contents(resource_path('views/livewire/spj-periodic-report-page.blade.php'));
+        $component = file_get_contents(app_path('Livewire/SpjReportFilter.php'));
 
-        $this->assertIsString($blade);
-        $this->assertStringContainsString('<livewire:spj-periodic-report-center', $blade);
+        $this->assertIsString($spjReport);
+        $this->assertIsString($periodicPage);
+        $this->assertIsString($component);
+        $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $spjReport);
+        $this->assertStringContainsString('<livewire:spj-periodic-report-center', $periodicPage);
+        $this->assertStringContainsString("request('jenis_laporan') === 'periode'", $component);
+        $this->assertStringContainsString("view('livewire.spj-periodic-report-page')", $component);
     }
 
     public function test_periodic_report_center_keeps_template_binding_separate_from_the_report_contract(): void
