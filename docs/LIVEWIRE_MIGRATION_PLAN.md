@@ -141,6 +141,7 @@ Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau ro
 | Area | Implementasi source | Status integrasi |
 |---|---|---|
 | Transaksi | `TransactionsTable` filter/search/pagination | Implemented; read-only boundary audit PASS; code gate #480 PASS; runtime RVR |
+| Rekonsiliasi | `ReconciliationList` filter/search/pagination (read-only; query parity dengan controller lama, `#[Url]` bookmarkable) | Implemented 2026-09-14; full Feature PASS lokal 416/3001; runtime RVR |
 | RKAS budget | `RkasBudgetFilter` + native hierarchy (`rkas-budget.index`; tabel Filament mati dihapus pada `a4dd395`) | Implemented; read-only boundary audit PASS; code gate PASS; runtime RVR |
 | SPJ Persiapan/Paket/Laporan/Monitoring | `SpjPreparationFilter`, `SpjPackageList`, `SpjReportFilter`, `SpjMonitoringList`, SPA tab navigation | Implemented; filter/list read-only; detail Paket mutation tetap server-rendered; code gate PASS; runtime RVR |
 | Pajak | `TaxFilter` | Implemented; read-only boundary audit PASS; runtime RVR |
@@ -199,7 +200,7 @@ Integration gate sudah hijau, tetapi migrasi Livewire baru bukan prioritas otoma
 
 Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat read-only:
 
-1. Rekonsiliasi — search/filter read-only.
+1. Rekonsiliasi — search/filter read-only — **IMPLEMENTED 2026-09-14** (`ReconciliationList`, uncommitted working tree saat dicatat).
 2. Template Dokumen — filter katalog; upload/update tetap canonical controller/service flow kecuali didesain ulang secara khusus.
 3. Laporan Audit — pagination/read-only filter.
 

@@ -1,0 +1,120 @@
+<div class="space-y-6">
+    @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
+
+    <x-page-header
+        title="Rekonsiliasi Data"
+        kicker="Perubahan sumber ARKAS"
+        subtitle="Tinjau transaksi yang berubah atau tidak lagi muncul pada sinkronisasi sebelum melanjutkan dokumen SPJ."
+    >
+        <div class="grid gap-px bg-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4">
+            <x-stat-item label="Perlu perhatian" :value="number_format($summary['total'], 0, ',', '.')" hint="Semua transaksi yang perlu ditinjau" />
+            <x-stat-item label="Data berubah" :value="number_format($summary['changed'], 0, ',', '.')" hint="Sumber ARKAS berubah setelah data SPJ tersedia" value-class="text-orange-700" />
+            <x-stat-item label="Tidak muncul" :value="number_format($summary['missing'], 0, ',', '.')" hint="Tidak ditemukan pada sinkronisasi terakhir" value-class="text-rose-700" />
+            <x-stat-item label="Sudah punya paket" :value="number_format($summary['with_package'], 0, ',', '.')" hint="Perlu kehati-hatian sebelum finalisasi" value-class="text-[var(--theme-content-accent)]" />
+        </div>
+    </x-page-header>
+
+    <section class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 font-bold text-amber-700">!</div>
+            <div>
+                <h2 class="font-bold text-amber-950">Rekonsiliasi tidak menghapus data SPJ operator</h2>
+                <p class="mt-1 text-sm leading-6 text-amber-800">Halaman ini hanya membantu meninjau transaksi yang perlu perhatian. Data manual, paket SPJ, dan nomor dokumen tetap dipertahankan. Untuk saat ini, perubahan ditinjau melalui Detail Transaksi agar tidak ada keputusan otomatis yang berisiko.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+        <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3 sm:px-6">
+            <div>
+                <h2 class="font-bold" style="color: var(--ui-fg)">Transaksi yang perlu ditinjau</h2>
+                <p class="mt-0.5 text-sm" style="color: var(--ui-fg-muted)">Bandingkan data sumber dengan data SPJ operator sebelum melanjutkan proses dokumen.</p>
+            </div>
+            <x-slot:actions>
+                <div class="flex flex-wrap items-end gap-2">
+                    <x-ui.field label="Cari" for="reconciliation-search" class="min-w-56">
+                        <x-ui.input id="reconciliation-search" wire:model.live.debounce.400ms="q" placeholder="Cari bukti, uraian, penerima..." />
+                    </x-ui.field>
+                    <x-ui.field label="Baris" for="reconciliation-per-page" class="!w-auto">
+                        <x-ui.select id="reconciliation-per-page" wire:model.live="perPage" class="!w-auto">
+                            <option value="15">15 baris</option>
+                            <option value="25">25 baris</option>
+                            <option value="50">50 baris</option>
+                            <option value="100">100 baris</option>
+                            <option value="all">Semua</option>
+                        </x-ui.select>
+                    </x-ui.field>
+                </div>
+            </x-slot:actions>
+        </x-ui.toolbar>
+
+        <div class="flex flex-wrap items-end gap-3 border-b border-[var(--ui-line)] px-5 py-3" style="background: var(--ui-bg-subtle)">
+            <x-ui.field label="Jenis perhatian" for="reconciliation-filter" class="min-w-56">
+                <x-ui.select id="reconciliation-filter" wire:model.live="filter">
+                    <option value="">Semua perhatian</option>
+                    <option value="changed">Data ARKAS berubah</option>
+                    <option value="missing">Tidak muncul di sinkronisasi</option>
+                    <option value="with_package">Sudah punya paket SPJ</option>
+                </x-ui.select>
+            </x-ui.field>
+            <x-ui.button type="button" variant="secondary" wire:click="clearFilters">Reset</x-ui.button>
+        </div>
+
+        <div class="grid gap-3 p-4 lg:hidden">
+            @forelse($transactions as $transaction)
+                <article class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm" wire:key="reconciliation-card-{{ $transaction->id }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-mono text-sm font-bold text-[var(--theme-content-accent)]">{{ $transaction->no_bukti }}</p>
+                            <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-1.5">
+                            @if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif
+                            @if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" />@endif
+                        </div>
+                    </div>
+                    <div class="mt-3 grid gap-3 rounded-lg bg-[var(--ui-surface-soft)] p-3">
+                        <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p></div>
+                        <div class="border-t border-[var(--ui-line)] pt-3"><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data SPJ Operator</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-3 border-t border-[var(--ui-line)] pt-3"><div><p class="text-xs text-[var(--ui-fg-muted)]">Nilai bruto</p><p class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->gross_amount) }}</p></div><a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-lg bg-[var(--theme-action-bg)] px-3 py-2 text-xs font-bold text-white hover:bg-[var(--theme-action-hover-bg)]">Tinjau detail →</a></div>
+                </article>
+            @empty
+                <div class="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 p-8 text-center"><p class="font-bold text-emerald-800">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-emerald-700">Semua transaksi pada konteks aktif saat ini tidak memiliki tanda perubahan sumber.</p></div>
+            @endforelse
+        </div>
+
+        <div class="hidden overflow-x-auto lg:block">
+            <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Perhatian</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data SPJ Operator</th><th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Tindakan</th></tr></thead>
+                <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
+                    @forelse($transactions as $transaction)
+                        <tr class="align-top transition hover:bg-amber-50/40" wire:key="reconciliation-row-{{ $transaction->id }}">
+                            <td class="px-5 py-4"><p class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $transaction->no_bukti }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian</p></td>
+                            <td class="px-4 py-4"><div class="flex max-w-48 flex-wrap gap-1.5">@if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif @if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" />@endif @if($transaction->spjPackage)<x-ui.status-badge :status="$transaction->spjPackage->status" />@endif</div>@if($transaction->source_missing_since)<p class="mt-2 text-xs text-[var(--ui-fg-muted)]">Sejak {{ $transaction->source_missing_since->translatedFormat('d M Y H:i') }}</p>@endif</td>
+                            <td class="max-w-sm px-4 py-4"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->description ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->recipient_name ?: 'Belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->activity_code ?: 'Tanpa kode kegiatan' }} · {{ $transaction->account_code ?: 'Tanpa kode rekening' }}</p></td>
+                            <td class="max-w-sm px-4 py-4"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kategori: {{ $transaction->spj_category ? str_replace('_', ' ', $transaction->spj_category) : 'Belum dipilih' }}</p></td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->gross_amount) }}</td>
+                            <td class="px-5 py-4 text-right"><a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-3 py-2 text-xs font-bold text-[var(--theme-content-accent)] hover:bg-[var(--theme-accent-soft)]">Tinjau detail →</a></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="px-5 py-14 text-center"><p class="font-bold text-emerald-700">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Antrean akan muncul otomatis bila sinkronisasi mendeteksi perubahan sumber.</p></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
+            <p style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->firstItem() ?? 0 }}–{{ $transactions->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->total() }}</span> transaksi</p>
+            @if($transactions->hasPages())
+                <nav class="flex items-center gap-1" aria-label="Navigasi halaman rekonsiliasi">
+                    <button type="button" wire:click="previousPage" @disabled($transactions->onFirstPage()) class="inline-flex h-9 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Halaman sebelumnya"><x-ui.icon name="chevron-left" size="sm" /></button>
+                    @for($page = max(1, $transactions->currentPage() - 2); $page <= min($transactions->lastPage(), $transactions->currentPage() + 2); $page++)
+                        <button type="button" wire:click="gotoPage({{ $page }})" aria-current="{{ $transactions->currentPage() === $page ? 'page' : 'false' }}" class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-2 font-semibold {{ $transactions->currentPage() === $page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)] text-slate-600 hover:bg-slate-100' }}">{{ $page }}</button>
+                    @endfor
+                    <button type="button" wire:click="nextPage" @disabled(!$transactions->hasMorePages()) class="inline-flex h-9 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Halaman berikutnya"><x-ui.icon name="chevron-right" size="sm" /></button>
+                </nav>
+            @endif
+        </div>
+    </section>
+</div>
