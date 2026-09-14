@@ -27,6 +27,7 @@ class UserManagement extends Component
 
     public function createUser(): void
     {
+        $this->authorizeAdministrator();
         $this->validate($this->rules());
         User::query()->create([
             'name' => $this->name,
@@ -42,6 +43,7 @@ class UserManagement extends Component
 
     public function updateUser(int $userId, string $name, string $email, string $role, ?int $schoolId = null, string $password = '', string $passwordConfirmation = ''): void
     {
+        $this->authorizeAdministrator();
         $user = User::query()->findOrFail($userId);
         $this->fill(compact('name', 'email', 'role', 'schoolId', 'password', 'passwordConfirmation'));
         $data = $this->validate([
@@ -78,6 +80,7 @@ class UserManagement extends Component
 
     public function deleteUser(int $userId): void
     {
+        $this->authorizeAdministrator();
         $user = User::query()->findOrFail($userId);
         if ($user->is(auth()->user())) {
             $this->addError('form', 'Anda tidak dapat menghapus akun yang sedang digunakan.');
@@ -133,5 +136,10 @@ class UserManagement extends Component
     private function adminCount(): int
     {
         return User::query()->where('role', User::ROLE_ADMIN)->count();
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }

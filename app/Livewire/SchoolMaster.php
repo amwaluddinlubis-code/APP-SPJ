@@ -29,6 +29,7 @@ class SchoolMaster extends Component
 
     public function createSchool(SchoolDatabaseManager $databases): void
     {
+        $this->authorizeAdministrator();
         $data = $this->validate([
             'schoolCode' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code'],
             'npsn' => ['required', 'string', 'max:16', 'unique:schools,npsn'],
@@ -58,5 +59,10 @@ class SchoolMaster extends Component
         }
 
         return view('livewire.school-master', ['schools' => $query->get()]);
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }

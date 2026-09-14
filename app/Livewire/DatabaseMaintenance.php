@@ -23,6 +23,8 @@ class DatabaseMaintenance extends Component
 
     public function run(string $action, SchoolDatabaseManager $manager, OperationalAuditService $audit): void
     {
+        $this->authorizeAdministrator();
+
         if (! $this->schoolId || ! in_array($action, ['checkpoint', 'migrate', 'vacuum', 'provision'], true)) {
             return;
         }
@@ -45,5 +47,10 @@ class DatabaseMaintenance extends Component
     public function render()
     {
         return view('livewire.database-maintenance');
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }

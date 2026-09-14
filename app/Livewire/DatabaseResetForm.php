@@ -29,6 +29,8 @@ class DatabaseResetForm extends Component
 
     public function resetDatabase(SchoolDatabaseResetService $resetter): void
     {
+        $this->authorizeAdministrator();
+
         if (! $this->school || (int) session('active_school_id') !== (int) $this->school->id) {
             throw ValidationException::withMessages(['confirmation' => 'Reset hanya dapat dijalankan untuk sekolah yang sedang aktif.']);
         }
@@ -44,5 +46,10 @@ class DatabaseResetForm extends Component
     public function render()
     {
         return view('livewire.database-reset-form');
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }

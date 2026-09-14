@@ -20,6 +20,7 @@ class DatabaseSchoolList extends Component
 
     public function activate(int $schoolId, SchoolDatabaseManager $manager, OperationalAuditService $audit): void
     {
+        $this->authorizeAdministrator();
         $school = School::findOrFail($schoolId);
         $manager->activate($school);
         session(['active_school_id' => $school->id]);
@@ -31,6 +32,7 @@ class DatabaseSchoolList extends Component
 
     public function migrate(int $schoolId, SchoolDatabaseManager $manager, OperationalAuditService $audit): void
     {
+        $this->authorizeAdministrator();
         $school = School::findOrFail($schoolId);
         try {
             $manager->migrate($school);
@@ -46,5 +48,10 @@ class DatabaseSchoolList extends Component
         $needle = strtolower(trim($this->search));
 
         return view('livewire.database-school-list', ['visibleRows' => collect($this->rows)->filter(fn (array $row): bool => $needle === '' || str_contains(strtolower($row['school']->name.' '.$row['school']->npsn), $needle))]);
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }

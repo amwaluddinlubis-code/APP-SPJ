@@ -17,6 +17,7 @@ class DocumentStorageSettings extends Component
 
     public function save(DocumentStoragePathService $storage): void
     {
+        $this->authorizeOperatorOrAdministrator();
         $this->validate(['path' => ['required', 'string']]);
         if ($error = $storage->validatePath(trim($this->path))) {
             $this->addError('path', $error);
@@ -30,5 +31,10 @@ class DocumentStorageSettings extends Component
     public function render(): View
     {
         return view('livewire.document-storage-settings');
+    }
+
+    private function authorizeOperatorOrAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isOperatorOrAdministrator(), 403);
     }
 }
