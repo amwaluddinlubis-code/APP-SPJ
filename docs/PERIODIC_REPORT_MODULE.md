@@ -7,16 +7,21 @@ Dokumen ini mendefinisikan kontrak modul laporan periodik. Audit, koreksi, dan b
 
 ## Integrasi UI
 
-Modul tampil di laman SPJ tab **Laporan** (`/spj?tab=laporan`) melalui komponen Livewire `SpjPeriodicReportCenter`, di atas workspace laporan transaksi yang sudah ada.
+Modul laporan periodik dipisahkan dari **Laporan SPJ**. Sidebar **SPJ & Laporan** sekarang memiliki dua entry berbeda:
 
-Navigasi sidebar **SPJ & Laporan** memakai parent **Laporan SPJ** dengan submenu periode:
+- **Laporan SPJ** → workspace riwayat/ekspor paket SPJ existing pada `/spj?tab=laporan`;
+- **Laporan Periode** → parent menu khusus untuk modul laporan periodik.
 
-- Bulanan → `paket_laporan=bulan`;
-- Triwulan → `paket_laporan=triwulan`;
-- Semester → `paket_laporan=semester`;
-- Tahunan → `paket_laporan=tahunan`.
+Submenu **Laporan Periode**:
 
-Markup submenu dipisahkan ke partial `resources/views/components/layouts/partials/spj-report-navigation.blade.php`. Alpine hanya mengelola buka/tutup submenu, sedangkan scope laporan tetap dimiliki state URL/Livewire `SpjPeriodicReportCenter` melalui parameter `paket_laporan`.
+- Bulanan → `jenis_laporan=periode&paket_laporan=bulan`;
+- Triwulan → `jenis_laporan=periode&paket_laporan=triwulan`;
+- Semester → `jenis_laporan=periode&paket_laporan=semester`;
+- Tahunan → `jenis_laporan=periode&paket_laporan=tahunan`.
+
+Keduanya masih memakai route SPJ yang sama agar middleware dan konteks aktif tetap konsisten, tetapi surface Livewire-nya terpisah. `SpjReportFilter` memilih surface periodik hanya ketika `jenis_laporan=periode`; tanpa parameter tersebut, halaman tetap merender Laporan SPJ lama dan tidak memasang pusat laporan periodik.
+
+Markup sidebar dipisahkan ke partial `resources/views/components/layouts/partials/spj-report-navigation.blade.php`. Alpine hanya mengelola buka/tutup parent **Laporan Periode**, sedangkan scope laporan tetap dimiliki state URL/Livewire `SpjPeriodicReportCenter` melalui parameter `paket_laporan`.
 
 Pengguna memilih kelompok periode dan, bila diperlukan, nomor periode. Modul kemudian membaca transaksi dari `ActiveSpjContext`, sehingga batas sekolah aktif, tahun anggaran aktif, dan sumber dana aktif tetap berlaku.
 
@@ -86,9 +91,11 @@ Periode: tahun anggaran aktif.
 - `App\Services\SpjPeriodicReportRegistry` adalah kontrak canonical untuk empat kelompok dan 39 slot laporan.
 - `App\UseCases\Spj\SpjPeriodicReportUseCase` menangani boundary periode dan ringkasan sumber data transaksi.
 - `App\Livewire\SpjPeriodicReportCenter` menangani state filter periode pada UI.
+- `App\Livewire\SpjReportFilter` menjadi switch surface: Laporan SPJ existing atau Laporan Periode berdasarkan `jenis_laporan`.
+- `resources/views/livewire/spj-periodic-report-page.blade.php` adalah surface khusus yang memasang `SpjPeriodicReportCenter`.
 - `resources/views/livewire/spj-periodic-report-center.blade.php` merender pusat laporan dengan shared theme primitives.
-- `resources/views/livewire/spj-report-filter.blade.php` memasang pusat laporan pada tab laporan SPJ.
-- `resources/views/components/layouts/partials/spj-report-navigation.blade.php` merender parent/submenu sidebar laporan tanpa mengambil alih state bisnis Livewire.
+- `resources/views/livewire/spj-report-filter.blade.php` kembali khusus untuk riwayat/ekspor Laporan SPJ dan tidak memasang pusat laporan periodik.
+- `resources/views/components/layouts/partials/spj-report-navigation.blade.php` merender entry **Laporan SPJ** dan parent/submenu **Laporan Periode** tanpa mengambil alih state bisnis Livewire.
 
 ## Boundary periode
 
@@ -133,13 +140,14 @@ Karena itu UI boleh menyatakan sumber data tersedia, tetapi tidak boleh mengklai
 
 `SpjPeriodicReportModuleUiTest` mengunci:
 
-- pusat laporan terpasang pada tab Laporan;
+- pusat laporan periodik berada pada surface khusus dan tidak lagi berada di view riwayat Laporan SPJ;
 - template binding tetap dipisahkan dari kontrak sumber data;
 - UI menggunakan shared theme primitives dan tidak menambah CSS lokal.
 
 `SpjReportSidebarNavigationTest` mengunci:
 
 - layout memakai partial sidebar laporan khusus;
-- parent `Laporan SPJ` tersedia;
+- `Laporan SPJ` tetap entry mandiri;
+- `Laporan Periode` menjadi parent mandiri;
 - submenu Bulanan, Triwulan, Semester, dan Tahunan tersedia;
-- link submenu meneruskan `tab=laporan` dan `paket_laporan` ke state URL Livewire.
+- link submenu meneruskan `tab=laporan`, `jenis_laporan=periode`, dan `paket_laporan` ke state URL Livewire.
