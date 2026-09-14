@@ -6,10 +6,10 @@ use Tests\TestCase;
 
 class SpjPeriodicReportModuleUiTest extends TestCase
 {
-    public function test_periodic_report_center_uses_a_dedicated_surface_separate_from_spj_report_history(): void
+    public function test_periodic_report_center_uses_a_dedicated_page_separate_from_spj_report_history(): void
     {
         $spjReport = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
-        $periodicPage = file_get_contents(resource_path('views/livewire/spj-periodic-report-page.blade.php'));
+        $periodicPage = file_get_contents(resource_path('views/periodic-reports/index.blade.php'));
         $component = file_get_contents(app_path('Livewire/SpjReportFilter.php'));
 
         $this->assertIsString($spjReport);
@@ -17,9 +17,9 @@ class SpjPeriodicReportModuleUiTest extends TestCase
         $this->assertIsString($component);
         $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $spjReport);
         $this->assertStringContainsString('<livewire:spj-periodic-report-center', $periodicPage);
-        $this->assertStringContainsString("#[Url(as: 'jenis_laporan', except: null)]", $component);
-        $this->assertStringContainsString("\$this->reportSurface === 'periode'", $component);
-        $this->assertStringContainsString("view('livewire.spj-periodic-report-page')", $component);
+        $this->assertStringContainsString('title="Laporan Periode"', $periodicPage);
+        $this->assertStringNotContainsString('reportSurface', $component);
+        $this->assertStringNotContainsString('jenis_laporan', $component);
     }
 
     public function test_periodic_report_center_keeps_template_binding_separate_from_the_report_contract(): void
