@@ -17,7 +17,8 @@ class SpjPeriodicReportModuleUiTest extends TestCase
         $this->assertIsString($component);
         $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $spjReport);
         $this->assertStringContainsString('<livewire:spj-periodic-report-center', $periodicPage);
-        $this->assertStringContainsString("request('jenis_laporan') === 'periode'", $component);
+        $this->assertStringContainsString("#[Url(as: 'jenis_laporan', except: null)]", $component);
+        $this->assertStringContainsString("\$this->reportSurface === 'periode'", $component);
         $this->assertStringContainsString("view('livewire.spj-periodic-report-page')", $component);
     }
 
