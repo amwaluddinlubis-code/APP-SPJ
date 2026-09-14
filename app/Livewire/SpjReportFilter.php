@@ -12,9 +12,6 @@ class SpjReportFilter extends Component
 {
     use WithPagination;
 
-    #[Url(as: 'jenis_laporan', except: null)]
-    public ?string $reportSurface = null;
-
     #[Url(except: 'semua')]
     public string $mode = 'semua';
 
@@ -26,10 +23,6 @@ class SpjReportFilter extends Component
 
     public function mount(): void
     {
-        if ($this->reportSurface !== 'periode') {
-            $this->reportSurface = null;
-        }
-
         [$mode, $periode] = SpjReportUseCase::resolveModePeriode(request()->all());
         $this->mode = in_array($mode, $this->allowedModes(), true) ? $mode : 'semua';
         $this->periode = $periode;
@@ -56,10 +49,6 @@ class SpjReportFilter extends Component
 
     public function render(): View
     {
-        if ($this->reportSurface === 'periode') {
-            return view('livewire.spj-periodic-report-page');
-        }
-
         [$packages, $summary] = app(SpjReportUseCase::class)
             ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15);
 
