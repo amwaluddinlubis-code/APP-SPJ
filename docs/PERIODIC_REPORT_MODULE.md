@@ -9,6 +9,15 @@ Dokumen ini mendefinisikan kontrak modul laporan periodik. Audit, koreksi, dan b
 
 Modul tampil di laman SPJ tab **Laporan** (`/spj?tab=laporan`) melalui komponen Livewire `SpjPeriodicReportCenter`, di atas workspace laporan transaksi yang sudah ada.
 
+Navigasi sidebar **SPJ & Laporan** memakai parent **Laporan SPJ** dengan submenu periode:
+
+- Bulanan → `paket_laporan=bulan`;
+- Triwulan → `paket_laporan=triwulan`;
+- Semester → `paket_laporan=semester`;
+- Tahunan → `paket_laporan=tahunan`.
+
+Markup submenu dipisahkan ke partial `resources/views/components/layouts/partials/spj-report-navigation.blade.php`. Alpine hanya mengelola buka/tutup submenu, sedangkan scope laporan tetap dimiliki state URL/Livewire `SpjPeriodicReportCenter` melalui parameter `paket_laporan`.
+
 Pengguna memilih kelompok periode dan, bila diperlukan, nomor periode. Modul kemudian membaca transaksi dari `ActiveSpjContext`, sehingga batas sekolah aktif, tahun anggaran aktif, dan sumber dana aktif tetap berlaku.
 
 ## Kelompok laporan
@@ -79,6 +88,7 @@ Periode: tahun anggaran aktif.
 - `App\Livewire\SpjPeriodicReportCenter` menangani state filter periode pada UI.
 - `resources/views/livewire/spj-periodic-report-center.blade.php` merender pusat laporan dengan shared theme primitives.
 - `resources/views/livewire/spj-report-filter.blade.php` memasang pusat laporan pada tab laporan SPJ.
+- `resources/views/components/layouts/partials/spj-report-navigation.blade.php` merender parent/submenu sidebar laporan tanpa mengambil alih state bisnis Livewire.
 
 ## Boundary periode
 
@@ -126,3 +136,10 @@ Karena itu UI boleh menyatakan sumber data tersedia, tetapi tidak boleh mengklai
 - pusat laporan terpasang pada tab Laporan;
 - template binding tetap dipisahkan dari kontrak sumber data;
 - UI menggunakan shared theme primitives dan tidak menambah CSS lokal.
+
+`SpjReportSidebarNavigationTest` mengunci:
+
+- layout memakai partial sidebar laporan khusus;
+- parent `Laporan SPJ` tersedia;
+- submenu Bulanan, Triwulan, Semester, dan Tahunan tersedia;
+- link submenu meneruskan `tab=laporan` dan `paket_laporan` ke state URL Livewire.
