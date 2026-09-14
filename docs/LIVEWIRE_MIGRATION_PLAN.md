@@ -1,10 +1,10 @@
 # Rencana Migrasi Livewire (TALL) — Status, Audit Boundary, dan Urutan
 
-Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, canonical code gate HEAD `887d0219142d634e6a85b6672d3bffb02b5b1584`.
+Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, canonical code gate HEAD `887d0219142d634e6a85b6672d3bffb02b5b1584`, dengan pembaruan stack Laravel 13 + pure TALL terverifikasi lokal pada `a4dd395`.
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan berada di `CURRENT_PROGRESS.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; evidence gate berada di `P0_VERIFICATION_KIT.md`.
 
-> Evidence saat ini: Phase 2 authorization hardening sudah selesai dan tetap PASS pada green repository gate CI #480. SPJ Critical, full Unit, dan full Feature semuanya hijau. Browser/operator runtime tetap RVR.
+> Evidence saat ini: Phase 2 authorization hardening sudah selesai dan tetap PASS pada green repository gate CI #480. SPJ Critical, full Unit, dan full Feature semuanya hijau. Stack naik ke Laravel 13 + pure TALL (Filament/Sail mati dicopot pada `a4dd395`, terverifikasi lokal: 288/60/412 PASS, build + view:cache PASS). Browser/operator runtime tetap RVR. CI gate canonical tetap #480 sampai workflow dijalankan ulang.
 
 ## 1. Prinsip canonical migrasi
 
@@ -33,7 +33,7 @@ Temuan Phase 1 tentang `HARDENING REQUIRED` telah ditutup pada Phase 2. Route mi
 
 **Status: COMPLETE (SOURCE AUDIT), 2026-09-14.**
 
-Inventaris `app/Livewire/` pada audit berisi **25 component**.
+Inventaris `app/Livewire/` pada audit berisi **25 component**. Setelah pencopotan Filament mati pada `a4dd395` (`RkasTable` orphan + `RkasBudgetTable` yang hanya dipakai view orphan), inventaris aktif tinggal **23 component**.
 
 ### 3.1 Mutation/context boundaries setelah Phase 2
 
@@ -60,8 +60,6 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 - `DatabaseTableExplorer`
 - `EmployeeDirectory`
 - `RkasBudgetFilter`
-- `RkasBudgetTable`
-- `RkasTable`
 - `SpjMonitoringList`
 - `SpjPackageList`
 - `SpjPreparationFilter`
@@ -143,7 +141,7 @@ Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau ro
 | Area | Implementasi source | Status integrasi |
 |---|---|---|
 | Transaksi | `TransactionsTable` filter/search/pagination | Implemented; read-only boundary audit PASS; code gate #480 PASS; runtime RVR |
-| RKAS budget | `RkasBudgetFilter`, `RkasBudgetTable` (+ `RkasTable` legacy/read-only) | Implemented; read-only boundary audit PASS; code gate PASS; runtime RVR |
+| RKAS budget | `RkasBudgetFilter` + native hierarchy (`rkas-budget.index`; tabel Filament mati dihapus pada `a4dd395`) | Implemented; read-only boundary audit PASS; code gate PASS; runtime RVR |
 | SPJ Persiapan/Paket/Laporan/Monitoring | `SpjPreparationFilter`, `SpjPackageList`, `SpjReportFilter`, `SpjMonitoringList`, SPA tab navigation | Implemented; filter/list read-only; detail Paket mutation tetap server-rendered; code gate PASS; runtime RVR |
 | Pajak | `TaxFilter` | Implemented; read-only boundary audit PASS; runtime RVR |
 | Pegawai | `EmployeeDirectory` | Implemented; read-only boundary audit PASS; runtime RVR |
@@ -192,6 +190,8 @@ Pint           : ADVISORY / 5 pre-existing style issues
 ```
 
 P0 integration gate tidak lagi menghalangi pekerjaan operator/runtime berikutnya.
+
+Perubahan stack setelah gate #480 (terverifikasi lokal, CI belum di-run ulang): Laravel 12 → 13 (`3582cef`), pencopotan Filament/Sail mati menuju pure TALL (`a4dd395`). Angka gate di atas tetap authoritative untuk #480; verifikasi lokal L13 tercatat di `CURRENT_PROGRESS.md`.
 
 ## 8. Kandidat migrasi setelah stabilization gate
 
