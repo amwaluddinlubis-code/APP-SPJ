@@ -1,0 +1,35 @@
+/* Bilah progres tipis di bagian atas viewport saat halaman dimuat,
+   pindah halaman, atau komponen Livewire memperbarui data. Warna mengikuti
+   aksen tema aktif; nonaktif total bila pengguna meminta reduced motion. */
+
+#app-top-progress {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 100;
+    height: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+#app-top-progress.is-active {
+    opacity: 1;
+}
+
+#app-top-progress > span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--theme-accent), var(--theme-action-bg, var(--theme-accent)));
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent) 55%, transparent);
+    transition: width .25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #app-top-progress,
+    #app-top-progress > span {
+        transition: none;
+    }
+}

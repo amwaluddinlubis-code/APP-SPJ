@@ -6,20 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'SPJ BOSP Web') }}</title>
-    <script>
-        (() => {
-            const saved = localStorage.getItem('spj-theme');
-            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.dataset.theme = theme;
-            document.documentElement.classList.toggle('dark', saved ? saved === 'dark' : theme === 'dark');
-        })();
-    </script>
+    <x-theme-init />
     @filamentStyles
     @livewireStyles
     @vite('resources/css/app.css')
 </head>
 
 <body class="app-body min-h-full">
+    <div id="app-top-progress" aria-hidden="true"><span></span></div>
     <x-toast-notifications />
     <div x-data="{
         open: false,

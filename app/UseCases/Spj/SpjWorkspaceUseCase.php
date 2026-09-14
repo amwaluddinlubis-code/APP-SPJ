@@ -10,8 +10,10 @@ use App\Models\Transaction;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class SpjWorkspaceUseCase
@@ -61,17 +63,27 @@ class SpjWorkspaceUseCase
             ->values();
     }
 
-    private function tabPersiapan(Request $request): View
+    /** @return array<string, array<int, string>> */
+    public static function preparationFilterRules(): array
     {
-        $filters = $request->validate([
+        return [
             'month' => ['nullable', 'integer', 'between:1,12'],
             'quarter' => ['nullable', 'integer', 'between:1,4'],
             'spj_category' => ['nullable', 'string', 'max:40'],
             'state' => ['nullable', 'in:all,attention,needs_details,unprepared,draft,ready,numbered'],
-        ]);
+        ];
+    }
 
-        $month = isset($filters['month']) ? (int) $filters['month'] : null;
-        $quarter = isset($filters['quarter']) ? (int) $filters['quarter'] : null;
+    /**
+     * Query antrean persiapan dari filter eksplisit memakai implementasi yang
+     * sama dengan jalur HTTP, untuk dipakai komponen Livewire.
+     *
+     * @return array{transactions: LengthAwarePaginator, workQueueCounts: array<string, int>, spjTypes: Collection}
+     */
+    public function preparationData(array $filters, int $perPage): array
+    {
+        $month = isset($filters['month']) && $filters['month'] !== null ? (int) $filters['month'] : null;
+        $quarter = isset($filters['quarter']) && $filters['quarter'] !== null ? (int) $filters['quarter'] : null;
 
         $query = Transaction::query()->forSpjContext($this->context)
             ->when($month, fn ($q, $selectedMonth) => $q->whereMonth('transaction_date', $selectedMonth))
@@ -89,10 +101,6 @@ class SpjWorkspaceUseCase
 
         $this->workflowFilters->apply($query, $filters['state'] ?? 'all');
 
-        $perPageRaw = $request->input('perPage', 15);
-        $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
-        $perPage = in_array($perPage, [15, 25, 50, 100, 10000]) ? $perPage : 15;
-
         $transactions = $query
             ->with('spjPackage')->withCount('items')
             ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' OR requires_reconciliation = 1 THEN 0 ELSE 1 END")
@@ -101,13 +109,42 @@ class SpjWorkspaceUseCase
             ->orderBy('id')
             ->paginate($perPage)->withQueryString();
 
+        return [
+            'transactions' => $transactions,
+            'workQueueCounts' => $workQueueCounts,
+            'spjTypes' => Transaction::query()->forSpjContext($this->context)->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
+        ];
+    }
+
+    public function packageListData(int $perPage): LengthAwarePaginator
+    {
+        return SpjPackage::query()
+            ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
+            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
+            ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
+            ->orderByDesc('numbered_at')
+            ->orderByDesc('id')
+            ->paginate($perPage, ['*'], 'package_page')
+            ->withQueryString();
+    }
+
+    private function tabPersiapan(Request $request): View
+    {
+        $filters = $request->validate(static::preparationFilterRules());
+
+        $perPageRaw = $request->input('perPage', 15);
+        $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
+        $perPage = in_array($perPage, [15, 25, 50, 100, 10000]) ? $perPage : 15;
+
+        $data = $this->preparationData($filters, $perPage);
+
         return view('spj.index', [
             'tab' => 'persiapan',
-            'transactions' => $transactions,
+            'transactions' => $data['transactions'],
             ...$this->overviewMetrics(),
-            'spjTypes' => Transaction::query()->forSpjContext($this->context)->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
+            'spjTypes' => $data['spjTypes'],
             'filters' => $filters,
-            'workQueueCounts' => $workQueueCounts,
+            'workQueueCounts' => $data['workQueueCounts'],
         ]);
     }
 
@@ -117,14 +154,7 @@ class SpjWorkspaceUseCase
         $packagePerPage = $request->integer('package_perPage', 15);
         $packagePerPage = in_array($packagePerPage, [10, 15, 25, 50, 100], true) ? $packagePerPage : 15;
 
-        $packageList = SpjPackage::query()
-            ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
-            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
-            ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
-            ->orderByDesc('numbered_at')
-            ->orderByDesc('id')
-            ->paginate($packagePerPage, ['*'], 'package_page')
-            ->withQueryString();
+        $packageList = $this->packageListData($packagePerPage);
 
         if (! $packageId) {
             return view('spj.index', [

@@ -22,9 +22,43 @@ main[data-page="spj"] section:has(> #spj-main-tabs) {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
+/* Navigasi tab utama sebagai satu segmented control yang menyatu:
+   satu kontainer abu-abu, tab aktif putih dengan shadow halus. */
 main[data-page="spj"] #spj-main-tabs {
     border-bottom: 1px solid var(--spj-border);
+    background: var(--spj-surface);
+    padding: .8rem 1.25rem .9rem;
+}
+
+main[data-page="spj"] #spj-main-tabs .ui-tabs {
+    overflow-x: visible;
+    border-bottom: 0;
+    background: transparent;
+    padding: 0;
+}
+
+main[data-page="spj"] #spj-main-tabs .ui-tabs-list {
+    display: inline-flex;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    align-items: center;
+    gap: .25rem;
+    border: 1px solid var(--spj-border);
+    border-radius: .9rem;
     background: var(--spj-surface-soft);
+    padding: .3rem;
+}
+
+main[data-page="spj"] #spj-main-tabs .ui-tab {
+    border-color: transparent;
+    white-space: nowrap;
+}
+
+main[data-page="spj"] #spj-main-tabs .ui-tab-active {
+    border-color: var(--spj-border);
+    background: var(--spj-surface);
+    box-shadow: 0 1px 4px rgb(15 23 42 / .10);
 }
 
 /* Preparation filter */
@@ -352,6 +386,12 @@ main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>
     outline-offset: 2px;
 }
 
+.spj-semantic-workspace .spj-work-queue-item[aria-current="true"] {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 45%, var(--spj-border));
+    background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--spj-surface));
+    box-shadow: var(--profile-card-shadow);
+}
+
 @media (max-width: 1023px) {
     main[data-page="spj"] .spj-semantic-workspace {
         --profile-control-height: 2.75rem;
@@ -397,16 +437,9 @@ main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>
     min-width: 60rem;
 }
 
-/* Exports form a secondary group after the reporting filters, so applying a
-   period is visually distinct from downloading an output. */
+/* Tombol pada toolbar laporan tidak menyusut agar sejajar rapi dengan select. */
 .spj-semantic-workspace .spj-report-toolbar> :is(a, button) {
     flex: 0 0 auto;
-}
-
-@media (min-width: 1024px) {
-    .spj-semantic-workspace .spj-report-toolbar>a:nth-of-type(1) {
-        margin-left: auto;
-    }
 }
 
 /* Monitoring should prioritize the unresolved work list over period controls. */

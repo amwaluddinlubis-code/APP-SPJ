@@ -2,10 +2,38 @@
 
 namespace Tests\Feature;
 
+use App\Models\FiscalYear;
+use App\Models\FundSource;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SpjMainTabsRenderingTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config()->set('database.connections.school.database', ':memory:');
+        config()->set('database.connections.school.journal_mode', null);
+        DB::purge('school');
+        Artisan::call('migrate', ['--database' => 'school', '--path' => 'database/migrations/school', '--force' => true]);
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        FiscalYear::query()->create(['id' => 1, 'year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $this->actingAs(User::factory()->create(['role' => 'ADMIN']));
+        $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1]);
+    }
+
+    protected function tearDown(): void
+    {
+        DB::purge('school');
+
+        parent::tearDown();
+    }
+
     public function test_main_tabs_only_render_navigation_and_not_tab_content_partials(): void
     {
         $mainTabs = file_get_contents(resource_path('views/spj/partials/main-tabs.blade.php'));
@@ -18,5 +46,21 @@ class SpjMainTabsRenderingTest extends TestCase
 
         $this->assertSame(1, substr_count($index, "x-show=\"tab === 'laporan'\""));
         $this->assertSame(1, substr_count($index, "x-show=\"tab === 'monitoring'\""));
+        $this->assertSame(1, substr_count($index, "x-show=\"tab === 'persiapan'\""));
+        $this->assertSame(1, substr_count($index, "x-show=\"tab === 'paket'\""));
+    }
+
+    public function test_each_tab_renders_its_own_panel(): void
+    {
+        foreach ([
+            'persiapan' => 'Antrean persiapan SPJ',
+            'paket' => 'Daftar Paket SPJ',
+            'laporan' => 'Ringkasan laporan',
+            'monitoring' => 'Monitoring Dokumen Belum Lengkap',
+        ] as $tab => $marker) {
+            $this->get(route('spj.index', ['tab' => $tab]))
+                ->assertOk()
+                ->assertSee($marker, false);
+        }
     }
 }

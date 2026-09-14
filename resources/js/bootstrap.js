@@ -1,4 +1,5 @@
 import axios from 'axios';
+import './top-progress';
 import './theme-profiles';
 import './table-server-markers';
 import './table-ui-standardization';

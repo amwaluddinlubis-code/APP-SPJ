@@ -63,6 +63,46 @@ class SpjReportUseCase
         ]);
     }
 
+    /**
+     * Resolve mode/periode dari input mentah, termasuk URL bookmark lama
+     * yang memakai month/quarter/semester terpisah.
+     *
+     * @return array{0: string, 1: int|null}
+     */
+    public static function resolveModePeriode(array $input): array
+    {
+        $mode = (string) ($input['mode'] ?? '');
+        $periode = isset($input['periode']) && $input['periode'] !== '' && $input['periode'] !== null
+            ? (int) $input['periode']
+            : null;
+
+        if ($mode === '') {
+            if (! empty($input['month'])) {
+                $mode = 'bulan';
+                $periode = (int) $input['month'];
+            } elseif (! empty($input['quarter'])) {
+                $mode = 'triwulan';
+                $periode = (int) $input['quarter'];
+            } elseif (! empty($input['semester'])) {
+                $mode = 'semester';
+                $periode = (int) $input['semester'];
+            } else {
+                $mode = 'semua';
+            }
+        }
+
+        return [$mode, $periode];
+    }
+
+    /**
+     * Jalankan query laporan dari parameter eksplisit memakai implementasi
+     * yang sama dengan jalur HTTP, untuk dipakai komponen Livewire.
+     */
+    public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15): array
+    {
+        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage);
+    }
+
     public function export(Request $request, string $format)
     {
         [$packages, $summary] = $this->report($request);

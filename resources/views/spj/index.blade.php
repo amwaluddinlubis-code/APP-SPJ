@@ -40,8 +40,10 @@
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
             @include('spj.partials.main-tabs')
 
-            {{-- Tab: Persiapan --}}
-            @include('spj.partials.preparation')
+            {{-- Tab: Persiapan (filter AJAX via Livewire, tanpa reload) --}}
+            <div x-show="tab === 'persiapan'" x-transition>
+                <livewire:spj-preparation-filter />
+            </div>
             {{-- Tab: Paket --}}
             <div x-show="tab === 'paket'" x-transition>
                 @php
@@ -172,90 +174,15 @@
                 @php
                     } else {
                 @endphp
-                    @php
-                        $listedPackages = $packageList ?? collect();
-                    @endphp
-                    <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
-                        <h2 class="font-bold" style="color: var(--ui-fg)">Daftar Paket SPJ</h2>
-                        <p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Pilih paket untuk memeriksa kelengkapan, memperbaiki isian manual, dan mengelola penomoran.</p>
-                    </div>
-                    <div class="grid gap-3 p-4 lg:hidden">
-                        @forelse($listedPackages as $listedPackage)
-                            <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $listedPackage->id]) }}" class="rounded-xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style="border-color: var(--ui-line); background: var(--ui-surface-base); color: var(--ui-fg)">
-                                <div class="flex items-start justify-between gap-3"><div><p class="font-mono text-sm font-bold theme-text">{{ $listedPackage->transaction->no_bukti }}</p><p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">{{ $listedPackage->transaction->transaction_date?->translatedFormat('d F Y') }}</p></div>@if($listedPackage->status === 'CANCELLED')<x-ui.status-badge status="CANCELLED" label="Dibatalkan" size="xs" />@elseif($listedPackage->document_number)<x-ui.status-badge status="NUMBERED" label="Bernomor" size="xs" />@else<x-ui.status-badge status="DRAFT" label="Draft" size="xs" />@endif</div>
-                                <p class="mt-2 line-clamp-2 text-sm font-semibold" style="color: var(--ui-fg)">{{ $listedPackage->transaction->payment_description ?: $listedPackage->transaction->description }}</p>
-                                <div class="mt-3 flex items-center justify-between text-xs" style="color: var(--ui-fg-muted)"><span style="color: var(--theme-content-accent)">{{ $spjTypeLabel($listedPackage->transaction->spj_category) }}</span><b style="color: var(--ui-fg)">{{ $rupiah($listedPackage->transaction->gross_amount) }}</b></div>
-                            </a>
-                        @empty
-                            <div class="rounded-xl border border-dashed p-8 text-center" style="border-color: var(--ui-line); color: var(--ui-fg-muted)">Belum ada paket SPJ. Siapkan transaksi dari tab Persiapan.</div>
-                        @endforelse
-                    </div>
-                    <div class="hidden overflow-x-auto lg:block">
-                        <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                            <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase text-slate-500">Bukti / Tanggal</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Uraian / Penerima</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Kategori</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Nilai</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">Status</th><th class="px-5 py-3 text-right text-xs font-bold uppercase text-slate-500">Aksi</th></tr></thead>
-                            <tbody class="divide-y divide-[var(--ui-line)]">
-                                @forelse($listedPackages as $listedPackage)
-                                    <tr class="hover:bg-slate-50"><td class="px-5 py-4"><p class="font-mono font-bold theme-text">{{ $listedPackage->transaction->no_bukti }}</p><p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">{{ $listedPackage->transaction->transaction_date?->translatedFormat('d F Y') }}</p></td><td class="max-w-sm px-4 py-4"><p class="truncate font-semibold" style="color: var(--ui-fg)">{{ $listedPackage->transaction->payment_description ?: $listedPackage->transaction->description }}</p><p class="mt-1 truncate text-xs" style="color: var(--ui-fg-muted)">{{ $listedPackage->transaction->recipient_name ?: 'Penerima belum diisi' }}</p></td><td class="px-4 py-4 text-xs font-bold" style="color: var(--theme-content-accent)">{{ $spjTypeLabel($listedPackage->transaction->spj_category) }}</td><td class="px-4 py-4 text-right font-semibold" style="color: var(--ui-fg)">{{ $rupiah($listedPackage->transaction->gross_amount) }}</td><td class="px-4 py-4">@if($listedPackage->status === 'CANCELLED')<x-ui.status-badge status="CANCELLED" label="Dibatalkan" />@elseif($listedPackage->document_number)<x-ui.status-badge status="NUMBERED" label="Bernomor" />@else<x-ui.status-badge status="DRAFT" label="Draft paket" />@endif @if($listedPackage->document_number)<p class="mt-1 font-mono text-[11px]" style="color: var(--ui-fg-muted)">{{ $listedPackage->document_number }}</p>@endif</td><td class="px-5 py-4 text-right"><x-ui.button :href="route('spj.index', ['tab' => 'paket', 'package_id' => $listedPackage->id])">Buka paket →</x-ui.button></td></tr>
-                                @empty<tr><td colspan="6" class="px-5 py-12 text-center" style="color: var(--ui-fg-muted)">Belum ada paket SPJ. Siapkan transaksi dari tab Persiapan.</td></tr>@endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    @if(isset($packageList) && $packageList->hasPages())<div class="border-t border-[var(--ui-line)] px-5 py-4">{{ $packageList->links() }}</div>@endif
+                    <livewire:spj-package-list />
                 @php
                     }
                 @endphp
             </div>
 
-            {{-- Tab: Laporan --}}
+            {{-- Tab: Laporan (filter AJAX via Livewire, tanpa reload) --}}
             <div x-show="tab === 'laporan'" x-transition>
-                <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
-                    @php
-                        $reportMode = request('mode', request('month') ? 'bulan' : (request('quarter') ? 'triwulan' : (request('semester') ? 'semester' : 'semua')));
-                        $reportPeriode = request('periode', request('month', request('quarter', request('semester'))));
-                    @endphp
-                    <form method="GET" class="spj-report-toolbar space-y-4">
-                        <input type="hidden" name="tab" value="laporan">
-                        <div class="space-y-1.5">
-                            <span class="block text-sm font-semibold text-[var(--ui-fg-strong)]">Periode</span>
-                            <div class="flex w-fit max-w-full overflow-x-auto rounded-lg border border-[var(--ui-line)] text-sm" role="group" aria-label="Jenis periode laporan">
-                                @foreach(['semua' => 'Semua', 'semester' => 'Semester', 'triwulan' => 'Triwulan', 'bulan' => 'Bulan'] as $mode => $label)
-                                    <button type="button" data-report-mode="{{ $mode }}" class="whitespace-nowrap px-3 py-2 transition {{ $reportMode === $mode ? 'font-bold text-white' : 'text-[var(--ui-fg-muted)]' }}" style="{{ $reportMode === $mode ? 'background: var(--theme-action-bg);' : 'background: var(--ui-surface-base);' }}">{{ $label }}</button>
-                                @endforeach
-                            </div>
-                        </div>
-                        <input type="hidden" name="mode" id="spj-report-mode" value="{{ $reportMode }}">
-                        <div class="flex flex-wrap items-end gap-3">
-                            <x-ui.field label="Pilih periode" class="min-w-[12rem]">
-                                <select name="periode" id="spj-report-periode" class="ui-input">
-                                    <option value="">{{ $reportMode === 'semua' ? 'Semua periode' : 'Pilih '.$reportMode }}</option>
-                                    @if($reportMode === 'semester') @foreach(range(1,2) as $semester)<option value="{{ $semester }}" @selected($reportPeriode == $semester)>Semester {{ $semester }}</option>@endforeach @elseif($reportMode === 'triwulan') @foreach(range(1,4) as $quarter)<option value="{{ $quarter }}" @selected($reportPeriode == $quarter)>Triwulan {{ $quarter }}</option>@endforeach @elseif($reportMode === 'bulan') @foreach(range(1,12) as $month)<option value="{{ $month }}" @selected($reportPeriode == $month)>{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach @endif
-                                </select>
-                            </x-ui.field>
-                            <x-ui.button type="submit">Terapkan</x-ui.button>
-                            <x-ui.action-menu label="Ekspor">
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.select') }}">Susun Laporan Honor Terpilih</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" target="_blank">Pratinjau PDF</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.export', array_merge(request()->query(), ['format' => 'xlsx'])) }}">Unduh Excel</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" target="_blank">Daftar Honor PDF</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.export', array_merge(request()->query(), ['format' => 'xlsx'])) }}">Daftar Honor Excel</a>
-                            </x-ui.action-menu>
-                        </div>
-                        <div class="grid items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                            @foreach([['Paket sukses',$summary['count'] ?? 0,'text-indigo-700'],['Paket dibatalkan',$summary['cancelled_count'] ?? 0,'text-rose-700'],['Nilai bruto',$rupiah($summary['gross'] ?? 0),'text-slate-800'],['Nilai dibayarkan',$rupiah($summary['net'] ?? 0),'text-emerald-700']] as [$label,$value,$color])
-                                <div class="flex min-h-[5.25rem] h-full flex-col justify-between rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2">
-                                    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ $label }}</p><p class="mt-1 text-lg font-bold {{ $color }}">{{ $value }}</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    </form>
-                </div>
-                <div class="overflow-x-auto p-5"><table class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">TINDAKAN</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">@php
-                    $isCancelled = false;
-                @endphp
-                @forelse($packages ?? [] as $package)@php
-                    $isCancelled = $package->report_status === 'CANCELLED';
-                    $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
-                @endphp<tr class="transition {{ $isCancelled ? 'bg-rose-50/70 text-slate-500' : 'hover:bg-indigo-50/40' }}"><td class="px-4 py-3 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}"><a href="{{ $packageUrl }}" class="hover:underline">{{ $package->report_document_number }}</a></td><td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>@if($isCancelled && $package->report_cancellation_reason)<p class="mt-1 max-w-48 text-xs text-rose-700">{{ $package->report_cancellation_reason }}</p>@endif</td><td class="px-4 py-3"><p class="font-semibold">{{ $package->transaction->no_bukti }}</p><p class="text-xs text-slate-500">{{ $package->transaction->transaction_date?->translatedFormat('d F Y') }}</p></td><td class="px-4 py-3">{{ $package->transaction->recipient_name }}</td><td class="px-4 py-3 text-right">{{ $rupiah($package->transaction->gross_amount) }}</td><td class="px-4 py-3 text-right {{ $isCancelled ? 'text-slate-400' : 'text-amber-700' }}">{{ $rupiah($package->transaction->tax_total) }}</td><td class="px-4 py-3 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->net_amount) }}</td><td class="px-4 py-3 text-right"><x-ui.action-menu label="Tindakan"><a class="ui-action-menu-item" href="{{ route('spj.preview-package', $package->id) }}" target="_blank">Preview dokumen</a>@if(! $isCancelled)<form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form><form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>@endif<a class="ui-action-menu-item" href="{{ $packageUrl }}">Buka Paket</a></x-ui.action-menu></td></tr>@empty<tr><td colspan="8" class="px-5 py-14 text-center text-slate-500">Belum ada riwayat paket SPJ untuk filter ini.</td></tr>@endforelse</tbody></table></div>
+                <livewire:spj-report-filter />
             </div>
 
             {{-- Tab: Monitoring --}}
@@ -283,9 +210,7 @@
                         </div>
                     @endif
                 </div>
-                <div class="overflow-x-auto p-5"><table class="min-w-full divide-y divide-amber-100 text-base"><thead class="bg-amber-50"><tr><th class="px-4 py-3 text-left text-xs font-bold text-amber-800">BUKTI</th><th class="px-4 py-3 text-left text-xs font-bold text-amber-800">URAIAN</th><th class="px-4 py-3 text-left text-xs font-bold text-amber-800">STATUS</th><th class="px-4 py-3 text-right text-xs font-bold text-amber-800">AKSI</th></tr></thead><tbody class="divide-y divide-amber-100">@forelse($pendingPaginator ?? [] as $transaction)@php
-                    $wasCancelled = $transaction->spjPackage?->documents?->contains('status', 'CANCELLED') ?? false;
-                @endphp<tr class="transition {{ $wasCancelled ? 'bg-rose-50/60 hover:bg-rose-50' : 'hover:bg-amber-50/60' }}"><td class="px-4 py-3 font-mono font-bold {{ $wasCancelled ? 'text-rose-800' : 'text-amber-900' }}">{{ $transaction->no_bukti }}</td><td class="px-4 py-3 max-w-sm truncate">{{ $transaction->description }}</td><td class="px-4 py-3"><span class="rounded-full border px-2 py-0.5 text-xs font-bold {{ $wasCancelled ? 'border-rose-200 bg-rose-100 text-rose-800' : ($transaction->spjPackage ? 'border-amber-200 bg-amber-100 text-amber-700' : 'border-[var(--ui-line)] bg-[var(--ui-surface-muted)] text-slate-500') }}">{{ $wasCancelled ? 'Dibatalkan — menunggu nomor baru' : ($transaction->spjPackage ? 'Draft — nomor belum ditetapkan' : 'Paket belum disiapkan') }}</span></td><td class="px-4 py-3 text-right">                            @if($transaction->spjPackage)<a href="{{ $wasCancelled ? route('spj.index', ['tab' => 'paket', 'package_id' => $transaction->spjPackage->id]) : route('spj.checklist', $transaction->spjPackage->id) }}" class="font-bold text-indigo-700 hover:underline">{{ $wasCancelled ? 'Periksa paket →' : 'Lihat checklist →' }}</a>@else<a href="{{ route('spj.index', ['tab' => 'persiapan', 'state' => 'unprepared']) }}" class="font-bold text-indigo-700 hover:underline">Buka persiapan →</a>@endif</td></tr>@empty<tr><td colspan="4" class="px-5 py-10 text-center text-emerald-700">Tidak ada transaksi ber-rincian yang tertunda.</td></tr>@endforelse</tbody></table></div>
+                <livewire:spj-monitoring-list />
             </div>
         </section>
     </div>
@@ -302,15 +227,6 @@
 
     <script>
         (() => {
-            const reportMode = document.getElementById('spj-report-mode');
-            const reportPeriode = document.getElementById('spj-report-periode');
-            document.querySelectorAll('[data-report-mode]').forEach((button) => button.addEventListener('click', () => {
-                if (! reportMode || ! reportPeriode) return;
-                reportMode.value = button.dataset.reportMode || 'semua';
-                reportPeriode.value = '';
-                button.closest('form')?.submit();
-            }));
-
             const modal = document.getElementById('template-preview-modal');
             const frame = document.getElementById('template-preview-frame');
             const title = document.getElementById('template-preview-title');

@@ -39,6 +39,8 @@ Sticky action / utility
 
 Pada halaman panjang tersedia kontrol sticky **Ke atas**.
 
+Bilah progres tipis `#app-top-progress` (warna aksen tema) tampil saat load/navigasi/update Livewire pada layout authenticated; implementasi di `resources/js/top-progress.js` + `resources/css/top-progress.css` tanpa dependency tambahan.
+
 Pada desktop saat sidebar diciutkan, hanya icon navigasi yang ditampilkan pada rail sempit. Label menu disembunyikan agar tidak terpotong; link dan tombol utama tetap menyediakan `title`/`aria-label` untuk identifikasi dan aksesibilitas. Kontrol expand/collapse hanya berada di header aplikasi; sidebar tidak memiliki toggle kedua. Pada mobile, kontrol header yang sama membuka dan menutup drawer navigasi.
 
 Label navigasi sidebar memakai skala body canonical `14px` dengan line-height `20px`. Tinggi item tetap sekitar `42px` agar area klik tidak terlalu kecil.
@@ -74,6 +76,8 @@ Gunakan token utama:
 ```
 
 Semantic success/warning/danger tetap boleh memakai semantic color. Kode baru tidak boleh bergantung pada hard-coded palette non-semantik hanya karena compatibility layer tersedia.
+
+Tema tersimpan diterapkan sinkron di `<head>` melalui `x-theme-init` sebelum first paint agar tidak terjadi flash tema lain saat pindah halaman. Peta profil di partial tersebut disalin dari `resources/js/theme-profiles.js`; parity keduanya dikunci `ThemeEarlyInitTest` — profil baru wajib ditambahkan di kedua tempat.
 
 ### Skala typography canonical
 
@@ -145,6 +149,8 @@ Kontrak umum:
 - hover mengikuti token theme;
 - satu tabel hanya boleh mempunyai satu pagination;
 - jika sebuah tabel sudah memiliki pager lokal Alpine, beri `data-pagination="none"` agar `table-ui-standardization.js` tidak menyuntik pager kedua.
+- pagination `links()` memakai override `views/vendor/pagination/tailwind.blade.php` yang bertoken-tema (halaman aktif memakai `--theme-action-bg`); teks memakai file bahasa Indonesia (`lang/id.json`, `lang/id/pagination.php`) — jangan mengembalikan gaya abu-abu vendor atau ringkasan ganda;
+- tabel di dalam komponen Livewire tidak membutuhkan marker pagination tambahan karena inisialisasi generik melewati subtree `[wire:id]`, tetapi tetap beri `data-pagination="server"` agar maksudnya eksplisit;
 
 Untuk tabel kategori SPJ non-BARANG:
 

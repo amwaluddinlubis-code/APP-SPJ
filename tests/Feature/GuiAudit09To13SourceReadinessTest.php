@@ -97,6 +97,10 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $employees = file_get_contents(resource_path('views/employees/index.blade.php'));
         $students = file_get_contents(resource_path('views/students/index.blade.php'));
         $spj = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $spjLivewire = implode("\n", array_map(
+            fn ($view): string => (string) file_get_contents(resource_path('views/livewire/'.$view)),
+            ['spj-preparation-filter.blade.php', 'spj-package-list.blade.php', 'spj-report-filter.blade.php', 'spj-monitoring-list.blade.php']
+        ));
 
         $this->assertIsString($employees);
         $this->assertIsString($students);
@@ -106,8 +110,8 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('md:hidden', $employees);
         $this->assertStringContainsString('hidden md:block', $students);
         $this->assertStringContainsString('md:hidden', $students);
-        $this->assertStringContainsString('lg:hidden', $spj);
-        $this->assertStringContainsString('overflow-x-auto', $spj);
+        $this->assertStringContainsString('lg:hidden', $spj.$spjLivewire);
+        $this->assertStringContainsString('overflow-x-auto', $spj.$spjLivewire);
     }
 
     public function test_wide_data_views_keep_horizontal_overflow_or_shared_table_contracts(): void

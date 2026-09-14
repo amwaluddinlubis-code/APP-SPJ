@@ -41,6 +41,9 @@ spj-package-theme-fix.css
 spj-package-document-placement.css
 view-theme-hardening.css
 semantic-status-colors.css
+minimum-font-size.css
+auth-login-standardization.css
+top-progress.css
 ```
 
 Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer global terakhir untuk **warna non-semantik** pada authenticated application views. `semantic-status-colors.css` adalah satu-satunya exception setelahnya dan hanya mengembalikan identitas warna status workflow canonical agar `READY`, `NUMBERED`, `PRINTED`, dan status sejenis tetap mudah dibedakan. Keduanya tidak mengubah business rule atau markup domain.
@@ -368,6 +371,9 @@ Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 | `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |
 | `view-theme-hardening.css` | Global bridge untuk hard-coded neutral/accent background, font, border, gradient, hover/focus/ring pada authenticated views |
 | `semantic-status-colors.css` | Exception semantic sesudah hardening untuk mempertahankan perbedaan workflow status canonical |
+| `minimum-font-size.css` | Baseline ukuran font minimum |
+| `auth-login-standardization.css` | Scoped halaman login (kartu selalu putih, kontrol terang) |
+| `top-progress.css` | Bilah progres atas mengikuti aksen tema |
 | `theme-accessibility.css` | Focus/contrast/accessibility |
 
 JavaScript placement terkait:

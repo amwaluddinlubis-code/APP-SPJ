@@ -122,6 +122,16 @@ Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
 - regression Livewire dan mount layout tercakup di `tests/Feature/TallProfileMasterTest.php`;
 - build frontend dan cache Blade sudah dijalankan; pemeriksaan browser/operator untuk dua halaman tersebut masih RVR.
 
+### TALL filter/pagination expansion — SPJ, Pajak
+
+Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
+
+- Filter + pagination tab Persiapan/Paket/Laporan/Monitoring (`/spj`) dan halaman Pajak (`/pajak`) kini Livewire tanpa reload; state filter tetap di URL (`#[Url]`) sehingga bookmark/share tidak berubah; query tetap milik use case/service canonical (`SpjWorkspaceUseCase`, `SpjReportUseCase`, `TaxFilterService`).
+- Navigasi antar-tab SPJ, workspace detail paket, ekspor/unduh, dan seluruh lifecycle/validation/numbering tidak berubah.
+- Pagination disatukan via override `views/vendor/pagination/tailwind.blade.php` bertoken-tema + label Indonesia (`lang/id.json`, `lang/id/pagination.php`); tidak ada pager ganda pada tabel Livewire (inisialisasi generik melewati subtree `[wire:id]`).
+- Tema diterapkan sinkron di head via `x-theme-init` (anti-flash saat pindah halaman; parity peta diuji) dan progress bar atas `#app-top-progress` tampil saat load/navigasi/update Livewire.
+- Regression tercakup di `SpjTabFiltersLivewireTest`, `TaxFilterLivewireTest`, `SpjReportLayoutTest`, `SpjMainTabsRenderingTest`, `ThemeEarlyInitTest`, `TopProgressTest`; `npm run build` + `view:cache` hijau.
+
 ---
 
 ## P0-01 — Six-category SPJ end-to-end
