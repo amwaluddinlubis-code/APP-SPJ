@@ -16,8 +16,10 @@ class SpjPeriodicReportCenter extends Component
     #[Url(as: 'periode_laporan', except: null)]
     public ?int $periode = null;
 
-    public function mount(SpjPeriodicReportRegistry $registry): void
+    public function mount(): void
     {
+        $registry = app(SpjPeriodicReportRegistry::class);
+
         if (! $registry->isScope($this->scope)) {
             $this->scope = SpjPeriodicReportRegistry::SCOPE_MONTHLY;
         }
@@ -29,8 +31,10 @@ class SpjPeriodicReportCenter extends Component
         }
     }
 
-    public function setScope(string $scope, SpjPeriodicReportRegistry $registry): void
+    public function setScope(string $scope): void
     {
+        $registry = app(SpjPeriodicReportRegistry::class);
+
         if (! $registry->isScope($scope)) {
             return;
         }
@@ -39,7 +43,7 @@ class SpjPeriodicReportCenter extends Component
         $this->periode = null;
     }
 
-    public function updatedPeriode(mixed $value, SpjPeriodicReportRegistry $registry): void
+    public function updatedPeriode(mixed $value): void
     {
         if ($value === null || $value === '') {
             $this->periode = null;
@@ -47,6 +51,7 @@ class SpjPeriodicReportCenter extends Component
             return;
         }
 
+        $registry = app(SpjPeriodicReportRegistry::class);
         $period = (int) $value;
         $this->periode = $registry->isValidPeriod($this->scope, $period) ? $period : null;
     }
@@ -83,10 +88,11 @@ class SpjPeriodicReportCenter extends Component
         };
     }
 
-    public function render(
-        SpjPeriodicReportRegistry $registry,
-        SpjPeriodicReportUseCase $reports,
-    ): View {
+    public function render(): View
+    {
+        $registry = app(SpjPeriodicReportRegistry::class);
+        $reports = app(SpjPeriodicReportUseCase::class);
+
         return view('livewire.spj-periodic-report-center', [
             'scopeLabels' => $registry->scopeLabels(),
             'reportDefinitions' => $registry->forScope($this->scope),
