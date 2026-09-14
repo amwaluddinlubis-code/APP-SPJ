@@ -75,7 +75,10 @@
         </tbody>
     </table>
 
-    @if($presentation !== 'statement')
+    @if(count($columns) > 0)
+        @if($presentation === 'statement')
+            <div style="margin-top:12px;font-weight:700;">Rekap Pendukung</div>
+        @endif
         <table class="report-table">
             <thead>
                 <tr>
