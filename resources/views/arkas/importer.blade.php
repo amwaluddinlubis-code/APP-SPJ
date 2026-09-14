@@ -6,20 +6,11 @@
             kicker="Importer ARKAS"
         >
             <x-slot:actions>
-                <div class="flex flex-wrap items-center gap-2">
-                    <a href="{{ route('arkas.importer', array_filter(['table' => $selectedTable, 'limit' => $limit])) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: {{ $mode === 'simple' ? 'var(--theme-content-accent)' : 'var(--ui-line)' }}; color: var(--ui-fg-strong); background: var(--ui-bg)">Sederhana</a>
-                    <a href="{{ route('arkas.importer', array_filter(['table' => $selectedTable, 'limit' => $limit, 'mode' => 'advanced'])) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold" style="border-color: {{ $mode === 'advanced' ? 'var(--theme-content-accent)' : 'var(--ui-line)' }}; color: var(--ui-fg-strong); background: var(--ui-bg)">Lanjutan</a>
-                    <x-ui.button variant="secondary" :href="route('arkas.settings')">Pengaturan Sumber</x-ui.button>
-                </div>
+                @include('arkas.partials.importer-mode-actions')
             </x-slot:actions>
         </x-page-header>
 
-        @if($error)
-            <div class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">{{ $error }}</div>
-        @endif
-        @if(session('success'))
-            <div class="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
-        @endif
+        @include('arkas.partials.importer-flash-messages')
 
         <section class="rounded-xl border px-4 py-3" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
             <div class="flex flex-wrap items-center justify-between gap-3">

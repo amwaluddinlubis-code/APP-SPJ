@@ -1,6 +1,6 @@
 <x-layouts.tailwind-app>
     <div class="dashboard-workspace space-y-6">
-        <x-page-header class="dashboard-page-header" title="Pusat Kerja Operator"
+        <x-page-header class="dashboard-page-header" title="Dashboard Saya"
             subtitle="Selesaikan pekerjaan yang sudah dimulai, lanjutkan transaksi berikutnya, lalu masuk ke penomoran tanpa kehilangan konteks."
             kicker="Dashboard">
             <x-slot:actions>

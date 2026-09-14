@@ -7,6 +7,7 @@ use App\Models\FiscalYear;
 use App\Models\SpjHonor;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\DocumentStoragePathService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -107,9 +108,10 @@ class SpjReportUseCase
     {
         [$packages, $summary] = $this->report($request);
         if ($format === 'pdf') {
-            return Pdf::loadView('spj-reports.pdf', compact('packages', 'summary'))
-                ->setPaper('a4', 'landscape')
-                ->stream('REKAP-SPJ-'.$summary['year'].'.pdf');
+            $pdf = Pdf::loadView('spj-reports.pdf', compact('packages', 'summary'))->setPaper('a4', 'landscape');
+            app(DocumentStoragePathService::class)->archiveReportPdf($pdf->output(), 'REKAP-SPJ-'.$summary['year'].'.pdf', (int) $summary['year']);
+
+            return $pdf->stream('REKAP-SPJ-'.$summary['year'].'.pdf');
         }
         abort_unless($format === 'xlsx', 404);
 
@@ -134,7 +136,7 @@ class SpjReportUseCase
         }
         (new Xlsx($book))->save($path);
 
-        return response()->download($path, 'REKAP-SPJ-'.$summary['year'].'.xlsx')->deleteFileAfterSend(true);
+        return app(DocumentStoragePathService::class)->downloadReportFile($path, 'REKAP-SPJ-'.$summary['year'].'.xlsx', (int) $summary['year']);
     }
 
     public function exportHonorPayments(Request $request, string $format)
@@ -176,9 +178,10 @@ class SpjReportUseCase
         ];
 
         if ($format === 'pdf') {
-            return Pdf::loadView('spj-reports.honor-payments', compact('honors', 'summary', 'year', 'school'))
-                ->setPaper('a4', 'landscape')
-                ->stream('DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.pdf');
+            $pdf = Pdf::loadView('spj-reports.honor-payments', compact('honors', 'summary', 'year', 'school'))->setPaper('a4', 'landscape');
+            app(DocumentStoragePathService::class)->archiveReportPdf($pdf->output(), 'DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.pdf', (int) $year->year);
+
+            return $pdf->stream('DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.pdf');
         }
 
         $book = new Spreadsheet;
@@ -202,7 +205,7 @@ class SpjReportUseCase
         }
         (new Xlsx($book))->save($path);
 
-        return response()->download($path, 'DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.xlsx')->deleteFileAfterSend(true);
+        return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.xlsx', (int) $year->year);
     }
 
     private function report(Request $request, ?int $perPage = null, ?int $pendingPerPage = null): array

@@ -12,7 +12,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
-use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf as SpreadsheetPdfWriter;
 
 class ExtendedSpjTemplateService extends SpjTemplateService
 {
@@ -33,6 +32,14 @@ class ExtendedSpjTemplateService extends SpjTemplateService
                 'KONSUMSI_JUMLAH',
                 'TOTAL_KONSUMSI',
             ],
+        ];
+    }
+
+    /** @return array<string,string> */
+    public static function placeholderGroupScopes(): array
+    {
+        return parent::placeholderGroupScopes() + [
+            'Konsumsi & kegiatan' => parent::PLACEHOLDER_SCOPE_KHUSUS,
         ];
     }
 
@@ -476,7 +483,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
 
         try {
-            $writer = new SpreadsheetPdfWriter($spreadsheet);
+            $writer = new SpjSpreadsheetPdfWriter($spreadsheet);
             if ($allSheets) {
                 $writer->writeAllSheets();
             } else {

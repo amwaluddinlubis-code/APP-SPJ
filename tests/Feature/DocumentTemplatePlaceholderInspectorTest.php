@@ -205,11 +205,14 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
     {
         $page = file_get_contents(resource_path('views/document-templates/index.blade.php'));
         $modal = file_get_contents(resource_path('views/document-templates/partials/placeholder-checker.blade.php'));
+        $actions = file_get_contents(resource_path('views/document-templates/partials/page-actions.blade.php'));
 
         $this->assertIsString($page);
         $this->assertIsString($modal);
-        $this->assertStringContainsString('Cek Placeholder', $page);
-        $this->assertStringContainsString('$dispatch(\'open-placeholder-checker\')', $page);
+        $this->assertIsString($actions);
+        $this->assertStringContainsString('Cek', $actions);
+        $this->assertStringContainsString('Placeholder', $actions);
+        $this->assertStringContainsString('$dispatch(\'open-placeholder-checker\')', $actions);
         $this->assertStringContainsString('document-templates.partials.placeholder-checker', $page);
         $this->assertStringContainsString("url.searchParams.set('placeholder_reference', reference)", $modal);
         $this->assertStringContainsString("'Accept': 'application/json'", $modal);

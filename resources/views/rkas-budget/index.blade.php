@@ -30,7 +30,7 @@
             </div>
         </x-page-header>
 
-        <livewire:rkas-budget-filter />
+        @include('rkas-budget.partials.filter')
 
         <x-section-card title="Rincian Hierarki RKAS" :description="'Pagu, realisasi, dan sisa ' . $filterContext . '.'" :padding="false">
             <x-slot:actions>

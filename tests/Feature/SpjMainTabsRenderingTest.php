@@ -61,6 +61,21 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringNotContainsString("querySelectorAll('[data-close-template-preview]')", $index);
     }
 
+    public function test_laporan_tab_is_livewire_driven_without_get_form(): void
+    {
+        $html = $this->get(route('spj.index', ['tab' => 'laporan']))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('wire:id', $html);
+        $this->assertStringContainsString('wire:click="setMode', $html);
+        $this->assertStringContainsString('wire:model.live="periode"', $html);
+        $this->assertStringContainsString('wire:model.live="perPage"', $html);
+        $this->assertStringNotContainsString('data-report-mode', $html);
+        $this->assertStringNotContainsString('id="spj-report-mode"', $html);
+        $this->assertStringNotContainsString('relocateReportRowControl', $html);
+    }
+
     public function test_each_tab_renders_its_own_panel(): void
     {
         foreach ([

@@ -7,6 +7,7 @@ use App\Models\FiscalYear;
 use App\Models\SpjPackage;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DocumentStoragePathService
 {
@@ -78,6 +79,73 @@ class DocumentStoragePathService
         }
 
         return $destination;
+    }
+
+    /**
+     * Simpan salinan laporan agregat (rekap/honor) ke folder tahun berjalan.
+     * Tidak terikat satu paket sehingga memakai subfolder LAPORAN.
+     */
+    public function persistReport(string $source, string $fileName, int $year): string
+    {
+        $basePath = $this->configuredPath();
+        if (app()->environment('testing') && $basePath !== null && ! is_dir($basePath)) {
+            mkdir($basePath, 0775, true);
+        }
+        $error = $this->validatePath($basePath);
+        if ($error !== null) {
+            throw ValidationException::withMessages(['document_storage_path' => $error]);
+        }
+
+        $directory = rtrim((string) $basePath, '\\/').DIRECTORY_SEPARATOR.$year.DIRECTORY_SEPARATOR.'LAPORAN';
+        if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
+            throw new \RuntimeException('Folder dokumen tidak dapat dibuat: '.$directory);
+        }
+
+        $destination = $directory.DIRECTORY_SEPARATOR.$this->safeSegment($fileName);
+        if (! copy($source, $destination)) {
+            throw new \RuntimeException('Dokumen gagal disimpan ke path yang telah ditentukan.');
+        }
+
+        return $destination;
+    }
+
+    /**
+     * Unduh file laporan: dari folder dokumen bila path terkonfigurasi,
+     * fallback file sementara yang dihapus setelah dikirim.
+     */
+    public function downloadReportFile(string $source, string $fileName, int $year): BinaryFileResponse
+    {
+        if ($this->configuredPath() !== null) {
+            $stored = $this->persistReport($source, $fileName, $year);
+            @unlink($source);
+
+            return response()->download($stored, $fileName);
+        }
+
+        return response()->download($source, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Arsipkan salinan PDF laporan ke folder dokumen; null bila path
+     * belum dikonfigurasi (respon stream pemanggil tidak berubah).
+     */
+    public function archiveReportPdf(string $contents, string $fileName, int $year): ?string
+    {
+        if ($this->configuredPath() === null) {
+            return null;
+        }
+
+        $temporary = tempnam(sys_get_temp_dir(), 'spjpdf');
+        if ($temporary === false) {
+            throw new \RuntimeException('File sementara PDF tidak dapat dibuat.');
+        }
+        file_put_contents($temporary, $contents);
+
+        try {
+            return $this->persistReport($temporary, $fileName, $year);
+        } finally {
+            @unlink($temporary);
+        }
     }
 
     private function safeSegment(string $value): string

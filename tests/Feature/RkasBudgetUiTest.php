@@ -12,7 +12,11 @@ class RkasBudgetUiTest extends TestCase
 
         $this->assertStringNotContainsString('<style>', $view);
         $this->assertStringNotContainsString('rkas-filter-grid', $view);
-        $this->assertStringContainsString('<livewire:rkas-budget-filter />', $view);
+        $this->assertStringContainsString("@include('rkas-budget.partials.filter')", $view);
+
+        $filterPartial = file_get_contents(resource_path('views/rkas-budget/partials/filter.blade.php'));
+
+        $this->assertStringContainsString('<livewire:rkas-budget-filter />', $filterPartial);
     }
 
     public function test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides(): void

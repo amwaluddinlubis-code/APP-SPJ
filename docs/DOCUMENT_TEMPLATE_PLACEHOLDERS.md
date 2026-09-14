@@ -495,3 +495,23 @@ Sebelum template dianggap siap dipakai pada release:
 11. print area, page break, header/footer, orientation, paper size, dan visual fidelity diverifikasi terhadap template resmi;
 12. output memakai real/canonical context, bukan data fiktif untuk memaksa coverage;
 13. bila template memakai `NAMA_PROGRAM`/`NAMA_SUB_PROGRAM`, pastikan database sekolah sudah disinkronkan ulang dengan ARKAS Bridge RKAS v3.
+
+---
+
+## 18. Klasifikasi scope Umum / Transaksional / Khusus
+
+Katalog `SpjTemplateService::placeholderGroups()` tidak mengubah resolver nilai; setiap grup dan marker kini membawa metadata scope read-only:
+
+```text
+UMUM          -> berlaku lintas kategori (sekolah, periode, transaksi dasar, pajak)
+TRANSAKSIONAL -> struktur repeating/ringkasan dari transaction detail (ITEM_*, UPAH_*, RINCIAN_*)
+KHUSUS        -> kategori/channel tertentu (pesanan/pekerjaan, SiPLah, konsumsi/kegiatan)
+```
+
+Aturan penentuan scope per marker (`SpjDocumentTypeRegistry::placeholderScope()`):
+
+- `ITEM_*` / `UPAH_*` / `RINCIAN_BELANJA|UPAH|JASA` selalu `transaksional`;
+- selain itu, union `applicable_categories` dari definisi dokumen yang memuat marker (alias resolver seperti `NOMOR_SPJ`/`NOMOR_DOKUMEN`, `NO_BUKTI`/`NOMOR_BUKTI` digabung) menentukan `umum` bila mencakup seluruh 6 kategori canonical, selain itu `khusus`;
+- marker extended yang tidak ada di registry (mis. sebagian `SIPLAH_*`, `KONSUMSI_*`) memakai fallback scope grupnya (`Pembelian SiPLah`, `Pesanan & pekerjaan`, `Konsumsi & kegiatan` = `khusus`).
+
+`Cek Placeholder` menampilkan badge scope per grup dan per marker (non-umum) beserta kategori berlaku bila tersedia dari registry. Scope adalah bantuan kontraktual untuk memilih placeholder per kategori, bukan perubahan ownership data atau resolver generator.

@@ -17,11 +17,16 @@ use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
-use PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf as SpreadsheetPdfWriter;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
 {
+    public const PLACEHOLDER_SCOPE_UMUM = 'umum';
+
+    public const PLACEHOLDER_SCOPE_TRANSAKSIONAL = 'transaksional';
+
+    public const PLACEHOLDER_SCOPE_KHUSUS = 'khusus';
+
     /** @return array<string,array<int,string>> */
     public static function placeholderGroups(): array
     {
@@ -37,6 +42,92 @@ class SpjTemplateService
             'Baris rincian barang' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH', 'ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
             'Baris upah/honor' => ['UPAH_NO', 'UPAH_NAMA', 'UPAH_PEKERJAAN', 'UPAH_HARI', 'UPAH_TARIF_HARI', 'UPAH_JUMLAH', 'UPAH_PENERIMA_KUITANSI'],
         ];
+    }
+
+    /**
+     * Scope Umum / Transaksional / Khusus per nama grup katalog.
+     * Keys wajib identik dengan placeholderGroups() agar Blade, inspector,
+     * dan validator tidak berubah kontrak. Resolver nilai tidak berubah.
+     *
+     * - umum: berlaku lintas kategori (sekolah, periode, transaksi dasar, pajak).
+     * - transaksional: struktur repeating/ringkasan dari transaction detail.
+     * - khusus: kategori/channel tertentu (pesanan/pekerjaan, SiPLah, konsumsi).
+     *
+     * @return array<string,string>
+     */
+    public static function placeholderGroupScopes(): array
+    {
+        return [
+            'Dokumen & periode' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Sekolah & pejabat' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Penerima & penyedia' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Transaksi & pembayaran' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Pembelian SiPLah' => self::PLACEHOLDER_SCOPE_KHUSUS,
+            'Pesanan & pekerjaan' => self::PLACEHOLDER_SCOPE_KHUSUS,
+            'Nilai & pajak' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Ringkasan' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+            'Baris rincian barang' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+            'Baris upah/honor' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+        ];
+    }
+
+    /**
+     * Scope per marker: pakai registry dinamis bila marker terdaftar pada
+     * definisi dokumen, fallback ke scope grup katalog untuk marker extended
+     * (mis. KONSUMSI_* dari ExtendedSpjTemplateService).
+     */
+    public static function placeholderScope(string $marker): string
+    {
+        $normalized = strtoupper(trim($marker));
+
+        $groupFallback = null;
+        foreach (static::placeholderGroups() as $groupName => $markers) {
+            if (in_array($normalized, $markers, true)) {
+                $groupFallback = static::placeholderGroupScopes()[$groupName] ?? null;
+                break;
+            }
+        }
+
+        // Marker repeating/ringkasan selalu transaksional.
+        if (str_starts_with($normalized, 'ITEM_') || str_starts_with($normalized, 'UPAH_')) {
+            return self::PLACEHOLDER_SCOPE_TRANSAKSIONAL;
+        }
+
+        if (in_array($normalized, ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'], true)) {
+            return self::PLACEHOLDER_SCOPE_TRANSAKSIONAL;
+        }
+
+        $applicable = SpjDocumentTypeRegistry::placeholderApplicableCategories($normalized);
+
+        if ($applicable !== []) {
+            return count($applicable) >= count(SpjDocumentTypeRegistry::categories())
+                ? self::PLACEHOLDER_SCOPE_UMUM
+                : self::PLACEHOLDER_SCOPE_KHUSUS;
+        }
+
+        return $groupFallback ?? self::PLACEHOLDER_SCOPE_KHUSUS;
+    }
+
+    /**
+     * Katalog dikelompokkan per scope untuk UI (Umum / Transaksional / Khusus).
+     * Nilai marker identik dengan placeholderGroups(), hanya pengelompokan beda.
+     *
+     * @return array<string,array<string,array<int,string>>>
+     */
+    public static function placeholderGroupsByScope(): array
+    {
+        $grouped = [
+            self::PLACEHOLDER_SCOPE_UMUM => [],
+            self::PLACEHOLDER_SCOPE_TRANSAKSIONAL => [],
+            self::PLACEHOLDER_SCOPE_KHUSUS => [],
+        ];
+
+        foreach (static::placeholderGroups() as $groupName => $markers) {
+            $scope = static::placeholderGroupScopes()[$groupName] ?? self::PLACEHOLDER_SCOPE_KHUSUS;
+            $grouped[$scope][$groupName] = $markers;
+        }
+
+        return $grouped;
     }
 
     /** @return array<string,string> */
@@ -461,7 +552,7 @@ class SpjTemplateService
         }
 
         try {
-            $writer = new SpreadsheetPdfWriter($spreadsheet);
+            $writer = new SpjSpreadsheetPdfWriter($spreadsheet);
             $writer->writeAllSheets()->save($temporaryFile);
 
             return (string) file_get_contents($temporaryFile);

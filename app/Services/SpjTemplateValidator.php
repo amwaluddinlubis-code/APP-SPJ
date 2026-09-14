@@ -192,32 +192,34 @@ final class SpjTemplateValidator
     /** @param array<string,mixed> $definition */
     private function validateExcel(string $canonical, array $definition, string $path): array
     {
-        $spreadsheet = IOFactory::load($path);
         $expectedSheet = (string) $definition['sheet'];
         $technical = array_fill_keys(SpjDocumentTypeRegistry::technicalSheets(), true);
-        $selected = null;
+
+        // Template individu hasil import master adalah salinan workbook multi-sheet
+        // (puluhan sheet). Memuat seluruh workbook per baris katalog membuat halaman
+        // /pengaturan/template-dokumen timeout (>30s untuk belasan template).
+        // Jadi: baca daftar sheet dulu (murah), lalu muat read-only hanya sheet
+        // yang dibutuhkan untuk ekstraksi placeholder.
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+
+        $sheetNames = $reader->listWorksheetNames($path);
+        $sheetToLoad = null;
         $sheetWarning = null;
 
-        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-            if ($sheet->getTitle() === $expectedSheet) {
-                $selected = $sheet;
-                break;
-            }
-        }
-
-        if (! $selected) {
-            $candidates = [];
-            foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-                if (! isset($technical[$sheet->getTitle()])) {
-                    $candidates[] = $sheet;
-                }
-            }
+        if (in_array($expectedSheet, $sheetNames, true)) {
+            $sheetToLoad = $expectedSheet;
+        } else {
+            $candidates = array_values(array_filter(
+                $sheetNames,
+                fn (string $name): bool => ! isset($technical[$name]),
+            ));
 
             if (count($candidates) === 1) {
-                $selected = $candidates[0];
+                $sheetToLoad = $candidates[0];
                 $sheetWarning = $this->issue(
                     'NON_CANONICAL_SHEET_NAME',
-                    'Nama sheet sebaiknya '.$expectedSheet.'; saat ini '.$selected->getTitle().'.',
+                    'Nama sheet sebaiknya '.$expectedSheet.'; saat ini '.$sheetToLoad.'.',
                     [],
                 );
             } else {
@@ -233,13 +235,22 @@ final class SpjTemplateValidator
             }
         }
 
-        $result = $this->validateWorksheet($canonical, $selected);
+        $reader->setLoadSheetsOnly([$sheetToLoad]);
+        $spreadsheet = $reader->load($path);
 
-        if ($sheetWarning) {
-            $result['warnings'][] = $sheetWarning;
+        try {
+            $selected = $spreadsheet->getSheetByName($sheetToLoad) ?? $spreadsheet->getActiveSheet();
+            $result = $this->validateWorksheet($canonical, $selected);
+
+            if ($sheetWarning) {
+                $result['warnings'][] = $sheetWarning;
+            }
+
+            return $result;
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
         }
-
-        return $result;
     }
 
     /** @param array<string,mixed> $definition */

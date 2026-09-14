@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\FiscalYear;
 use App\Models\SpjHonor;
 use App\Models\Transaction;
+use App\Services\DocumentStoragePathService;
 use App\Services\RoutineHonorRegisterService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -114,9 +115,10 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $summary = $register['summary'];
 
         if ($format === 'pdf') {
-            return Pdf::loadView('spj-reports.honor-routine-register', compact('rows', 'summary', 'year', 'school'))
-                ->setPaper('a4', 'landscape')
-                ->stream('DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.pdf');
+            $pdf = Pdf::loadView('spj-reports.honor-routine-register', compact('rows', 'summary', 'year', 'school'))->setPaper('a4', 'landscape');
+            app(DocumentStoragePathService::class)->archiveReportPdf($pdf->output(), 'DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.pdf', (int) $year->year);
+
+            return $pdf->stream('DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.pdf');
         }
 
         $book = new Spreadsheet;
@@ -162,6 +164,6 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         }
         (new Xlsx($book))->save($path);
 
-        return response()->download($path, 'DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.xlsx')->deleteFileAfterSend(true);
+        return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.xlsx', (int) $year->year);
     }
 }

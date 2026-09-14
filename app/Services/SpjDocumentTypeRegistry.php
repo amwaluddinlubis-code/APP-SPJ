@@ -423,4 +423,109 @@ final class SpjDocumentTypeRegistry
             $definition['image'],
         )));
     }
+
+    /**
+     * Alias resolver <-> registry. Registry memakai satu sisi alias
+     * (mis. NOMOR_DOKUMEN) sedangkan resolver menyediakan kedua sisi.
+     * Union kategori dihitung lintas alias agar scope tidak salah khusus.
+     *
+     * @return array<int,string>
+     */
+    public static function placeholderAliases(string $marker): array
+    {
+        $marker = strtoupper(trim($marker));
+
+        $groups = [
+            ['NOMOR_SPJ', 'NOMOR_DOKUMEN'],
+            ['NO_BUKTI', 'NOMOR_BUKTI'],
+            ['TANGGAL_TRANSAKSI', 'TANGGAL_DOKUMEN'],
+            ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN'],
+            ['TOTAL_PAJAK', 'POTONGAN_PAJAK'],
+            ['NILAI_BRUTO', 'NILAI_PEKERJAAN'],
+        ];
+
+        foreach ($groups as $group) {
+            if (in_array($marker, $group, true)) {
+                return $group;
+            }
+        }
+
+        return [$marker];
+    }
+
+    /**
+     * Kategori SPJ yang memakai suatu placeholder, dihitung dari union
+     * applicable_categories pada definisi dokumen yang memuat marker tersebut.
+     * '*' di-expand ke seluruh kategori canonical. Marker yang tidak terdaftar
+     * pada registry (mis. KONSUMSI_xx extended) mengembalikan array kosong agar
+     * caller dapat memakai fallback group-scope.
+     *
+     * @return array<int,string>
+     */
+    public static function placeholderApplicableCategories(string $marker): array
+    {
+        $variants = self::placeholderAliases($marker);
+        if ($variants === []) {
+            return [];
+        }
+
+        $allCategories = self::categories();
+        $union = [];
+
+        foreach (self::all() as $definition) {
+            $markers = array_map(
+                fn ($value): string => strtoupper(trim((string) $value)),
+                array_merge(
+                    $definition['required'],
+                    $definition['optional'],
+                    $definition['repeat_required'],
+                    $definition['repeat_optional'],
+                    $definition['image'],
+                )
+            );
+
+            if (array_intersect($variants, $markers) === []) {
+                continue;
+            }
+
+            $applicable = $definition['applicable_categories'];
+            if (in_array('*', $applicable, true)) {
+                $applicable = $allCategories;
+            }
+
+            foreach ($applicable as $category) {
+                $union[$category] = true;
+            }
+        }
+
+        return array_values(array_intersect($allCategories, array_keys($union)));
+    }
+
+    /**
+     * Klasifikasi Umum / Transaksional / Khusus per marker.
+     *
+     * - transaksional: repeating row ITEM_xx / UPAH_xx dan ringkasan RINCIAN_xx.
+     * - umum: union kategori mencakup seluruh kategori canonical.
+     * - khusus: sisanya (termasuk marker extended yang tidak ada di registry).
+     */
+    public static function placeholderScope(string $marker): string
+    {
+        $marker = strtoupper(trim($marker));
+
+        if (str_starts_with($marker, 'ITEM_') || str_starts_with($marker, 'UPAH_')) {
+            return 'transaksional';
+        }
+
+        if (in_array($marker, ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'], true)) {
+            return 'transaksional';
+        }
+
+        $applicable = self::placeholderApplicableCategories($marker);
+
+        if ($applicable === []) {
+            return 'khusus';
+        }
+
+        return count($applicable) >= count(self::categories()) ? 'umum' : 'khusus';
+    }
 }

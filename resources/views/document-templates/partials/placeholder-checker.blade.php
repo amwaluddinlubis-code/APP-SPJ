@@ -149,8 +149,9 @@
 
                         <template x-for="group in result.groups" x-bind:key="group.name">
                             <section class="overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-                                <header class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                                <header class="flex flex-wrap items-center gap-2 border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
                                     <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]" x-text="group.name"></h3>
+                                    <span class="rounded-full border border-[var(--ui-line)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]" x-text="group.scope === 'umum' ? 'Umum' : (group.scope === 'transaksional' ? 'Transaksional' : 'Khusus')"></span>
                                 </header>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full text-sm">
@@ -170,6 +171,12 @@
                                                                 x-show="placeholder.kind !== 'scalar'"
                                                                 class="rounded-full border border-[var(--ui-line)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]"
                                                                 x-text="placeholder.kind === 'repeat' ? 'baris berulang' : 'gambar'"
+                                                            ></span>
+                                                            <span
+                                                                x-show="placeholder.scope && placeholder.scope !== 'umum'"
+                                                                class="rounded-full border border-[var(--ui-line)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]"
+                                                                x-text="placeholder.scope === 'transaksional' ? 'transaksional' : 'khusus'"
+                                                                x-bind:title="placeholder.categories && placeholder.categories.length ? 'Berlaku: ' + placeholder.categories.join(', ') : 'Khusus kategori/channel tertentu'"
                                                             ></span>
                                                             <button
                                                                 type="button"

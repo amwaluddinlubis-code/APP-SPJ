@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\ProductivityDashboardDataService;
 use App\Services\SpjWorkflowFilterService;
 use Illuminate\View\View;
 
 class ProductivityDashboardController extends Controller
 {
     public function __invoke(
-        OperationalDashboardController $operationalDashboard,
+        ProductivityDashboardDataService $dashboardData,
         SpjWorkflowFilterService $workflowFilters,
     ): View {
-        $legacyDashboard = $operationalDashboard();
-        $data = $legacyDashboard->getData();
+        $data = $dashboardData->getData();
 
         $baseTransactions = Transaction::query()->activeContext();
 
@@ -52,7 +52,7 @@ class ProductivityDashboardController extends Controller
 
         $priority = $this->priority($productivity, $nextUnworkedTransaction, $nextDraftTransaction);
 
-        return view('dashboard-productivity', array_merge($data, compact(
+        return view('dashboard', array_merge($data, compact(
             'productivity',
             'nextUnworkedTransaction',
             'nextDraftTransaction',

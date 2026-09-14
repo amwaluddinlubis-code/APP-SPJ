@@ -34,6 +34,23 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringNotContainsString('data-report-mode', $index);
     }
 
+    public function test_report_preview_opens_in_shared_modal_partial(): void
+    {
+        $partial = file_get_contents(resource_path('views/spj/partials/preview-modal.blade.php'));
+        $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $report = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
+
+        $this->assertIsString($partial);
+        $this->assertIsString($index);
+        $this->assertIsString($report);
+        $this->assertSame(1, substr_count($partial, 'id="template-preview-modal"'));
+        $this->assertSame(1, substr_count($partial, 'id="template-preview-frame"'));
+        $this->assertStringContainsString("@include('spj.partials.preview-modal')", $index);
+        $this->assertStringNotContainsString('id="template-preview-modal"', $index);
+        $this->assertStringContainsString('data-template-preview', $report);
+        $this->assertStringNotContainsString('target="_blank">Preview dokumen', $report);
+    }
+
     public function test_spj_main_tabs_render_as_segmented_control(): void
     {
         $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));

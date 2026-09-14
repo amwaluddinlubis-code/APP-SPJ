@@ -21,7 +21,7 @@ class DocumentTemplatePlaceholderInspectorService
      * @return array{
      *     reference:string,
      *     package:array{id:string,document_number:string,no_bukti:string,status:string,category:string,transaction_date:string},
-     *     groups:array<int,array{name:string,placeholders:array<int,array{key:string,marker:string,value:string,kind:string}>}>,
+     *     groups:array<int,array{name:string,scope:string,placeholders:array<int,array{key:string,marker:string,value:string,kind:string,scope:string,categories:array<int,string>}>}>,
      *     total:int
      * }|null
      */
@@ -52,12 +52,15 @@ class DocumentTemplatePlaceholderInspectorService
                     'marker' => '{{'.$marker.'}}',
                     'value' => (string) ($values[$marker] ?? SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE),
                     'kind' => $this->placeholderKind($marker),
+                    'scope' => SpjTemplateService::placeholderScope($marker),
+                    'categories' => SpjDocumentTypeRegistry::placeholderApplicableCategories($marker),
                 ];
                 $total++;
             }
 
             $groups[] = [
                 'name' => $groupName,
+                'scope' => SpjTemplateService::placeholderGroupScopes()[$groupName] ?? SpjTemplateService::PLACEHOLDER_SCOPE_KHUSUS,
                 'placeholders' => $placeholders,
             ];
         }

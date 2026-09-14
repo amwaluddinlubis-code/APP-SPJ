@@ -32,7 +32,9 @@ final class SpjTemplatePackageImporter
             throw new RuntimeException('Workbook paket template tidak ditemukan.');
         }
 
-        $workbook = IOFactory::load($path);
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $workbook = $reader->load($path);
         $results = [];
         $errors = [];
         $warnings = [];
