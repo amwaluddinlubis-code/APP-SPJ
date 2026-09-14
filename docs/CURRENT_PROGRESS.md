@@ -18,22 +18,50 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: 887d0219142d634e6a85b6672d3bffb02b5b1584
-LATEST SUCCESSFUL CODE GATE: CI #480 / run 34839580942 / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+LATEST SUCCESSFUL CODE GATE: CI #486 / run 34853857969 / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
-REPOSITORY PINT            : ADVISORY / 5 pre-existing style issues
+COMPOSER VALIDATE          : PASS
+LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
+COMPOSER INSTALL           : PASS dari committed lock
+REPOSITORY PINT            : PASS pada gate #486
 FRONTEND BUILD             : PASS
 BLADE COMPILE              : PASS
-SPJ CRITICAL               : 287 PASS / 2236 assertions
-FULL UNIT                  : 60 PASS / 203 assertions
-FULL FEATURE               : 411 PASS / 2972 assertions
+SPJ CRITICAL               : PASS
+FULL UNIT                  : PASS
+FULL FEATURE               : PASS
 ```
 
-CI #480 adalah gate sukses terbaru yang membuktikan blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature untuk code head `887d0219...`. Detail authoritative berada di `P0_VERIFICATION_KIT.md` §1.
+CI #486 adalah gate sukses canonical terbaru untuk code head `ba8fa0b...`. Gate ini membuktikan dependency lock dapat di-install secara deterministik pada PHP 8.3, lalu frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature semuanya selesai sukses.
 
-Repository Pint belum clean: lima issue lama tetap advisory. Jangan mengubah status itu menjadi PASS/clean sampai benar-benar diperbaiki.
+Commit dokumentasi setelah `ba8fa0b...` tidak menggantikan code gate tersebut selama tidak mengubah source/runtime yang digate.
 
-### Integration repair #478 → #480
+### P0 dependency-platform repair — CI #483 → #486
+
+CI #483 pada head TALL migration `a4dd3954...` gagal sebelum test pada langkah `composer install`. Log membuktikan `composer.lock` mengunci sejumlah Symfony 8.x yang membutuhkan PHP `>=8.4`, sedangkan project mendeklarasikan PHP `^8.3` dan workflow canonical berjalan pada PHP 8.3.
+
+Perbaikan dilakukan tanpa menaikkan minimum PHP project dan tanpa mengubah business rule:
+
+1. `composer.json` menambahkan Composer platform floor `config.platform.php = 8.3.0` agar dependency resolution dari workstation PHP 8.4+ tetap kompatibel dengan minimum runtime project.
+2. CI repair #485 me-resolve dependency Symfony pada PHP 8.3, memverifikasi `composer install`, build, Blade, SPJ Critical, Unit, dan Feature, lalu hanya setelah seluruh gate PASS menyimpan `composer.lock` hasil repair.
+3. Workflow kemudian dikembalikan ke mode read-only/deterministik: tidak ada `composer update` di gate normal.
+4. Gate normal menambahkan `composer validate --strict` dan `composer check-platform-reqs --lock` sebelum `composer install` agar drift platform lock terdeteksi lebih awal.
+5. CI #486 pada `ba8fa0b...` membuktikan gate normal tersebut SUCCESS.
+
+Commit terkait:
+
+```text
+7b5615c4b98222f145a3ba0e18b409abb2b1e20d
+fix: constrain dependency resolution to PHP 8.3
+
+d3c786d841d431c4d78cf2441f9a1e358115afa6
+fix: keep dependency lock compatible with PHP 8.3
+
+ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+ci: enforce deterministic PHP 8.3 dependency gate
+```
+
+### Integration repair #478 → #480 — historical baseline
 
 Dua failure SPJ Critical #478 sudah ditutup pada commit:
 
@@ -54,13 +82,11 @@ CI #479 membuktikan dua failure tersebut selesai: SPJ Critical dan Unit PASS. Fu
 test: align description UI contract with service delegation
 ```
 
-Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang dilonggarkan untuk mendapatkan gate hijau.
-
-Commit dokumentasi setelah gate #480 tidak menggantikan code gate `887d0219...`.
+CI #480 adalah historical green baseline sebelum Laravel 13/TALL migration. Ia telah disupersede sebagai current canonical code gate oleh CI #486.
 
 ### Laravel 13 upgrade — local verification 2026-09-14
 
-`composer.json` dinaikkan: `php ^8.3`, `laravel/framework ^13.0`, `laravel/tinker ^3.0`, `phpunit/phpunit ^12.0`, `branch-alias 13.x-dev`. Hasil resolve: framework `v13.31.0`, Livewire `v3.8.8`, Filament `v4.13.1`, Boost `v2.8.1`, Pint `v1.32.1`, Symfony 7 → 8, Guzzle 7 → 8. Aset JS Filament ter-publish ulang via `filament:upgrade`. `composer update` memakai `--ignore-platform-req=ext-intl` karena PHP lokal (herd-lite 8.4.0) tidak menyertakan `intl` — kondisi yang sama dengan lock sebelumnya.
+`composer.json` dinaikkan: `php ^8.3`, `laravel/framework ^13.0`, `laravel/tinker ^3.0`, `phpunit/phpunit ^12.0`, `branch-alias 13.x-dev`. Pada tahap upgrade awal, resolve lokal PHP 8.4 sempat memilih dependency Symfony 8 dan Filament masih ada sebelum TALL cleanup berikutnya.
 
 Verifikasi lokal yang benar-benar dijalankan pada head upgrade (PHP 8.4.0):
 
@@ -74,7 +100,7 @@ pint --dirty : passed
 git diff --check: OK
 ```
 
-Selisih +1 test vs gate #480 berasal dari commit `5fa98ed` (satu head di depan gate), bukan dari upgrade framework. Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang diubah. CI gate canonical tetap #480 sampai workflow CI dijalankan ulang pada head baru.
+Selisih +1 test vs gate #480 berasal dari commit `5fa98ed` (satu head di depan gate), bukan dari upgrade framework. Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang diubah. Remote deterministic compatibility Laravel 13/TALL pada PHP 8.3 sekarang dibuktikan oleh CI #486.
 
 ### TALL migration — Filament + Sail removal 2026-09-14
 
@@ -82,15 +108,15 @@ Audit membuktikan seluruh surface Filament adalah dead code: `RkasTable` orphan 
 
 Dihapus: `filament/*` + `laravel/sail` dari `composer.json` (termasuk script `filament:upgrade`), 2 komponen + 3 view orphan, directive `@filamentStyles/@filamentScripts`, 5 CSS `@import` Filament, selector `.fi-*` basi, dan aset `public/js/filament`. Tidak ada paket baru — stack sudah full TALL (Laravel + Livewire + Alpine + Tailwind) dan halaman RKAS aktif memang sudah native.
 
-Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 assertions, Unit 60/206, Feature 412/2980 (identik dengan baseline L13), `npm run build` PASS (CSS 932KB → 425KB), `view:cache` PASS, `pint --dirty` passed.
+Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 assertions, Unit 60/206, Feature 412/2980 (identik dengan baseline L13), `npm run build` PASS (CSS 932KB → 425KB), `view:cache` PASS, `pint --dirty` passed. Remote deterministic gate pasca-removal sekarang PASS pada CI #486.
 
 ---
 
 ## Status release saat ini
 
 ```text
-FUNCTIONAL BASELINE : PASS pada 887d0219... / CI #480
-CURRENT CODE GATE   : GREEN / CI #480
+FUNCTIONAL BASELINE : PASS pada ba8fa0b... / CI #486
+CURRENT CODE GATE   : GREEN / CI #486
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
@@ -99,7 +125,7 @@ LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE
 FINAL RELEASE       : NOT YET
 ```
 
-P0 integration gate sudah kembali hijau. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---
 
@@ -140,7 +166,7 @@ Boundary yang sudah ditutup:
 - `SchoolSelector::selectSchool` mempertahankan guard admin/own-school;
 - `YearSelector::selectYear` tetap accepted context mutation.
 
-`LivewireMutationAuthorizationTest` berada di SPJ Critical dan tetap PASS pada green gate #480. Rule arsitektur tetap: mutation Livewire sensitif harus authorize pada request action/policy/persistent mechanism yang benar-benar berlaku, bukan hanya mengandalkan route GET halaman awal.
+`LivewireMutationAuthorizationTest` berada di SPJ Critical dan tetap tercakup oleh current green SPJ Critical gate #486. Rule arsitektur tetap: mutation Livewire sensitif harus authorize pada request action/policy/persistent mechanism yang benar-benar berlaku, bukan hanya mengandalkan route GET halaman awal.
 
 Status area yang dimigrasikan:
 
@@ -162,7 +188,7 @@ Browser/operator behavior tetap RVR sampai `GUI_RUNTIME_QA.md` dijalankan pada r
 
 ```text
 GUI STANDARDIZATION CORE : ESTABLISHED
-SOURCE-LEVEL REGRESSION  : COVERED oleh green gate #480 untuk current code head
+SOURCE-LEVEL REGRESSION  : COVERED oleh green gate #486 untuk current canonical code head
 BROWSER DESKTOP/LAPTOP   : RVR ACTIVE
 MOBILE/TABLET RUNTIME    : RVR / NON-BLOCKER untuk target desktop-laptop
 ```
@@ -242,7 +268,7 @@ Source of truth:
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Gate #480 mempertahankan regression first numbering, cancel/reserved sequence, tail rollback, quarter dependency, fund-source scope, NUMBERED description carve-out, FINAL lock, dan registry-based consumers.
+Gate #486 mempertahankan regression suite yang mencakup first numbering, cancel/reserved sequence, tail rollback, quarter dependency, fund-source scope, NUMBERED description carve-out, FINAL lock, dan registry-based consumers.
 
 `SpjDocumentTypeRegistry` tetap registry template/placeholder/output dan bukan source sequence numbering.
 
@@ -254,7 +280,7 @@ Gate #480 mempertahankan regression first numbering, cancel/reserved sequence, t
 HTTP/ROUTE AUTH BASELINE       : PASS
 LIVEWIRE MUTATION BOUNDARY     : HARDENED
 NEGATIVE ROLE REGRESSION       : PASS di current SPJ Critical gate
-OVERALL CURRENT CODE GATE      : GREEN / CI #480
+OVERALL CURRENT CODE GATE      : GREEN / CI #486
 RUNTIME/BROWSER VERIFICATION   : RVR
 ```
 
@@ -308,20 +334,19 @@ Importer stateful tidak menjadi target migrasi Livewire opportunistic.
 
 ## Prioritas kerja aktif
 
-P0 integration repair dan Phase 2 authorization sudah selesai. Prioritas berikutnya:
+P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas berikutnya:
 
 1. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
 2. **browser/operator QA desktop-laptop** berdasarkan `GUI_RUNTIME_QA.md`, khususnya repeated `Livewire.navigate`, SPA tab SPJ, modal preview, pagination, dropdown, dan filter URL state;
 3. **Office/PDF visual-output QA** untuk individual template, master terbaru, XLSX/PDF hasil generate, print area/page break/header/footer;
 4. lanjutkan JASA_LAINNYA multi-penerima dan PEMELIHARAAN bahan+upah pada output nyata bila ditemukan mismatch;
-5. setelah operator/runtime flow stabil, baru pertimbangkan kandidat migrasi Livewire read-only berikutnya seperti Rekonsiliasi;
-6. lima Pint advisory lama dapat ditutup pada maintenance window terpisah karena bukan blocker workflow saat ini.
+5. setelah operator/runtime flow stabil, baru pertimbangkan kandidat migrasi Livewire read-only berikutnya seperti Rekonsiliasi.
 
 ---
 
 ## Open verification / release blockers
 
-Code integration gate **bukan lagi blocker**. Blocker/verifikasi tersisa:
+Code/dependency integration gate **bukan lagi blocker**. Blocker/verifikasi tersisa:
 
 - generated-document real-data per kategori masih RVR/active;
 - individual template/master template Office visual QA masih RVR;
@@ -329,8 +354,7 @@ Code integration gate **bukan lagi blocker**. Blocker/verifikasi tersisa:
 - browser/operator desktop-laptop QA masih RVR;
 - official-template print/layout/output QA masih RVR;
 - installed-runtime checks masih DEFERRED;
-- mobile/tablet runtime QA tetap RVR/non-blocker untuk target desktop-laptop;
-- repository-wide Pint mempunyai 5 issue lama, tetapi saat ini bersifat advisory, bukan blocking gate.
+- mobile/tablet runtime QA tetap RVR/non-blocker untuk target desktop-laptop.
 
 ---
 
@@ -340,7 +364,7 @@ Code integration gate **bukan lagi blocker**. Blocker/verifikasi tersisa:
 2. Jangan memakai deterministic fixture sebagai bukti real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Setiap source change setelah gate `887d0219...` membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
+5. Setiap source/runtime change setelah gate `ba8fa0b...` membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
 6. Mutation Livewire sensitif harus mempunyai authorization boundary pada action request.
 7. GUI source PASS tidak sama dengan browser visual PASS.
 8. Bila business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md` dan feature guide terkait.
