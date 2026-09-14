@@ -57,7 +57,9 @@ final class SpjPeriodicReportPrintService
     private function presentation(string $reportKey): string
     {
         return match ($reportKey) {
-            'bku', 'buku_pembantu_kas', 'buku_pembantu_bank' => 'ledger',
+            'bku' => 'ledger',
+            'buku_pembantu_kas' => 'cash_ledger',
+            'buku_pembantu_bank' => 'bank_ledger',
             'buku_pembantu_pajak' => 'tax',
             'bos_k7a', 'bos_k8' => 'activity_summary',
             'format_k7', 'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
@@ -72,12 +74,30 @@ final class SpjPeriodicReportPrintService
     {
         return match ($presentation) {
             'ledger' => [$this->ledgerColumns(), $this->ledgerRows($transactions)],
+            'cash_ledger' => [$this->ledgerColumns(), $this->ledgerRows($this->cashTransactions($transactions))],
+            'bank_ledger' => [$this->ledgerColumns(), $this->ledgerRows($this->bankTransactions($transactions))],
             'tax' => [$this->taxColumns(), $this->taxRows($transactions)],
             'activity_summary' => [$this->activityColumns(), $this->activityRows($transactions)],
             'account_summary' => [$this->accountColumns(), $this->accountRows($transactions)],
             'transaction_recap' => [$this->recapColumns(), $this->recapRows($transactions)],
-            default => [[], []],
+            default => [$this->accountColumns(), $this->accountRows($transactions)],
         };
+    }
+
+    /** @return Collection<int,Transaction> */
+    private function cashTransactions(Collection $transactions): Collection
+    {
+        return $transactions
+            ->filter(fn (Transaction $transaction): bool => $transaction->payment_method === 'tunai')
+            ->values();
+    }
+
+    /** @return Collection<int,Transaction> */
+    private function bankTransactions(Collection $transactions): Collection
+    {
+        return $transactions
+            ->filter(fn (Transaction $transaction): bool => in_array($transaction->payment_method, ['transfer_bank', 'siplah'], true))
+            ->values();
     }
 
     /** @return list<array{key:string,label:string,type:string}> */
@@ -278,10 +298,10 @@ final class SpjPeriodicReportPrintService
                 'Hasil pemeriksaan ditandatangani setelah nilai pada laporan ini dicocokkan dengan bukti fisik dan saldo aktual.',
             ],
             'spb' => [
-                "SPB {$periodLabel} menyajikan ringkasan pengeluaran yang dipertanggungjawabkan pada periode laporan.",
+                "SPB {$periodLabel} menyajikan ringkasan pengeluaran yang dipertanggungjawabkan pada periode laporan beserta rekap rekening belanjanya.",
             ],
             'sp2b' => [
-                "SP2B {$periodLabel} merangkum nilai bruto, pajak, dan realisasi netto yang bersumber dari transaksi pada periode aktif.",
+                "SP2B {$periodLabel} merangkum nilai bruto, pajak, realisasi netto, dan rekap rekening transaksi pada periode aktif.",
             ],
             'sp2t' => [
                 "SP2T {$periodLabel} menyajikan pertanggungjawaban transaksi dan pajak periode aktif untuk proses penatausahaan berikutnya.",
@@ -296,7 +316,9 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'tax', 'transaction_recap'], true) ? 'landscape' : 'portrait';
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap'], true)
+            ? 'landscape'
+            : 'portrait';
     }
 
     private function fileName(string $label, string $periodLabel): string
