@@ -1,6 +1,6 @@
 @php
-    $isSpjReportRoute = request()->routeIs('spj.*') && request('tab') === 'laporan';
-    $isPeriodicReportRoute = $isSpjReportRoute && request('jenis_laporan') === 'periode';
+    $isSpjReportRoute = request()->routeIs('spj.index') && request('tab') === 'laporan';
+    $isPeriodicReportRoute = request()->routeIs('spj.periodic-reports.*');
     $activeReportScope = (string) request('paket_laporan', 'bulan');
     $reportScopes = [
         ['key' => 'bulan', 'label' => 'Bulanan', 'icon' => 'calendar'],
@@ -10,7 +10,7 @@
     ];
 @endphp
 
-<a class="app-nav {{ $isSpjReportRoute && ! $isPeriodicReportRoute ? 'app-nav-active' : '' }}"
+<a class="app-nav {{ $isSpjReportRoute ? 'app-nav-active' : '' }}"
     href="{{ route('spj.index', ['tab' => 'laporan']) }}" title="Laporan SPJ">
     <x-ui.icon name="report" />
     <span class="nav-label">Laporan SPJ</span>
@@ -33,11 +33,7 @@
         class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
         @foreach ($reportScopes as $reportScope)
             <a class="app-nav {{ $isPeriodicReportRoute && $activeReportScope === $reportScope['key'] ? 'app-nav-active' : '' }}"
-                href="{{ route('spj.index', [
-                    'tab' => 'laporan',
-                    'jenis_laporan' => 'periode',
-                    'paket_laporan' => $reportScope['key'],
-                ]) }}"
+                href="{{ route('spj.periodic-reports.index', ['paket_laporan' => $reportScope['key']]) }}"
                 title="Laporan Periode {{ $reportScope['label'] }}">
                 <x-ui.icon :name="$reportScope['icon']" size="xs" />
                 <span class="nav-label">{{ $reportScope['label'] }}</span>
