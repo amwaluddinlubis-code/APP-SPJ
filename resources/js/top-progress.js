@@ -84,11 +84,20 @@
     document.addEventListener('livewire:init', () => {
         if (!window.Livewire?.hook) return;
 
+        // Satu bilah saja: matikan bawaan Alpine navigate, pakai milik aplikasi.
+        try {
+            window.Alpine?.navigate?.disableProgressBar?.();
+        } catch (error) {
+            // Abaikan; bilah bawaan tetap non-fatal.
+        }
+
         window.Livewire.hook('request', ({ fail }) => {
             start();
             fail(() => done());
         });
         window.Livewire.hook('morph.updated', () => done());
     });
+    // Navigasi SPA (mis. pindah tab SPJ) tidak memicu beforeunload.
+    document.addEventListener('livewire:navigate', () => start());
     document.addEventListener('livewire:navigated', () => done());
 })();

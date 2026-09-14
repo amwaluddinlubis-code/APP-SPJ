@@ -33,7 +33,10 @@ class TopProgressTest extends TestCase
         $this->assertIsString($js);
         $this->assertStringContainsString('beforeunload', $js);
         $this->assertStringContainsString('livewire:init', $js);
+        $this->assertStringContainsString('livewire:navigate', $js);
+        $this->assertStringContainsString('livewire:navigated', $js);
         $this->assertStringContainsString('morph.updated', $js);
+        $this->assertStringContainsString('disableProgressBar', $js);
         $this->assertStringContainsString("addEventListener('load'", $js);
     }
 }

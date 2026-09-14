@@ -50,6 +50,17 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertSame(1, substr_count($index, "x-show=\"tab === 'paket'\""));
     }
 
+    public function test_tab_switching_prefers_spa_navigation_with_reload_fallback(): void
+    {
+        $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+
+        $this->assertIsString($index);
+        $this->assertStringContainsString('Livewire.navigate', $index);
+        $this->assertStringContainsString('window.location.assign', $index);
+        $this->assertStringContainsString("templatePreview('close')", $index);
+        $this->assertStringNotContainsString("querySelectorAll('[data-close-template-preview]')", $index);
+    }
+
     public function test_each_tab_renders_its_own_panel(): void
     {
         foreach ([

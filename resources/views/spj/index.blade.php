@@ -16,10 +16,14 @@
             if (this.tab === name || this.loadingTab) {
                 return;
             }
-            this.loadingTab = true;
             const url = new URL(window.location.href);
             url.searchParams.set('tab', name);
             if (name !== 'paket') url.searchParams.delete('package_id');
+            if (window.Livewire && typeof window.Livewire.navigate === 'function') {
+                window.Livewire.navigate(url.toString());
+                return;
+            }
+            this.loadingTab = true;
             window.location.assign(url.toString());
         }
     }" @click="const button = $event.target.closest('[data-tab]'); if (button) { $event.preventDefault(); changeTab(button.dataset.tab); }">
@@ -227,21 +231,38 @@
 
     <script>
         (() => {
-            const modal = document.getElementById('template-preview-modal');
-            const frame = document.getElementById('template-preview-frame');
-            const title = document.getElementById('template-preview-title');
-            const close = () => { modal?.classList.add('hidden'); modal?.classList.remove('flex'); if (frame) frame.src = 'about:blank'; };
-            document.addEventListener('click', (event) => {
-                const button = event.target.closest('[data-template-preview]');
-                if (!button || button.closest('[inert]')) return;
-                if (! frame || ! modal) return;
-                title.textContent = button.dataset.templateName || 'Pratinjau Template';
+            // Delegasi penuh di document agar modal tetap berfungsi setelah
+            // navigasi SPA mengganti isi body (tanpa listener pada elemen).
+            const templatePreview = (action, button) => {
+                const modal = document.getElementById('template-preview-modal');
+                if (!modal) return;
+                const frame = document.getElementById('template-preview-frame');
+                const title = document.getElementById('template-preview-title');
+                if (action === 'close') {
+                    modal.classList.add('hidden'); modal.classList.remove('flex');
+                    if (frame) frame.src = 'about:blank';
+                    return;
+                }
+                if (!button || !frame) return;
+                if (title) title.textContent = button.dataset.templateName || 'Pratinjau Template';
                 frame.src = button.dataset.templatePreview;
                 modal.classList.remove('hidden'); modal.classList.add('flex');
+            };
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('[data-close-template-preview]')) {
+                    templatePreview('close');
+                    return;
+                }
+                const modal = document.getElementById('template-preview-modal');
+                if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+                    templatePreview('close');
+                    return;
+                }
+                const button = event.target.closest('[data-template-preview]');
+                if (!button || button.closest('[inert]')) return;
+                templatePreview('open', button);
             });
-            document.querySelectorAll('[data-close-template-preview]').forEach((button) => button.addEventListener('click', close));
-            modal?.addEventListener('click', (event) => { if (event.target === modal) close(); });
-            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') templatePreview('close'); });
         })();
     </script>
 </x-layouts.tailwind-app>
