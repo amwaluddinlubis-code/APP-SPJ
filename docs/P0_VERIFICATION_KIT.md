@@ -11,35 +11,57 @@ Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak 
 Latest completed green source gate:
 
 ```text
-commit        : 887d0219142d634e6a85b6672d3bffb02b5b1584
-CI run        : 34839580942 (#480)
+commit        : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+CI run        : 34853857969 (#486)
 workflow      : SPJ Critical Verification
 result        : SUCCESS
+runtime floor : PHP 8.3
 ```
 
-Blocking workflow #480:
+Blocking workflow #486:
 
 ```text
-npm run build          -> PASS
-php artisan view:cache -> PASS
-SPJ Critical PHPUnit   -> PASS : 287 tests / 2236 assertions
-Full Unit PHPUnit      -> PASS : 60 tests / 203 assertions
-Full Feature PHPUnit   -> PASS : 411 tests / 2972 assertions
+composer validate --strict             -> PASS
+composer check-platform-reqs --lock    -> PASS
+composer install from committed lock   -> PASS
+php vendor/bin/pint --test             -> PASS (advisory step, clean on this gate)
+npm run build                           -> PASS
+php artisan view:cache                  -> PASS
+SPJ Critical PHPUnit                    -> PASS
+Full Unit PHPUnit                       -> PASS
+Full Feature PHPUnit                    -> PASS
 ```
 
-Repository Pint tetap **advisory** (`continue-on-error: true`). Pada run #480, `php vendor/bin/pint --test` masih melaporkan 5 style issue repository-wide yang sudah ada sebelumnya:
+Gate #486 tidak menjalankan `composer update`. Dependency installation berasal dari `composer.lock` yang sudah disimpan dan diverifikasi terhadap minimum PHP project.
+
+### P0 dependency-platform repair #483 → #486
+
+CI #483 pada `a4dd3954...` gagal di `composer install` sebelum frontend/test dijalankan. Log menunjukkan lock file mengandung beberapa Symfony 8.x yang membutuhkan PHP `>=8.4`, sedangkan workflow canonical menggunakan PHP 8.3 dan root requirement project adalah PHP `^8.3`.
+
+Repair dilakukan dengan prinsip minimum-runtime compatibility:
+
+1. `composer.json` menambahkan `config.platform.php = 8.3.0`.
+2. Run repair #485 me-resolve Symfony dependency pada PHP 8.3 dan baru menyimpan `composer.lock` setelah dependency install, frontend build, Blade compile, SPJ Critical, Unit, dan Feature semuanya PASS.
+3. Workflow kemudian dikembalikan ke permission `contents: read` dan mode `composer install` normal.
+4. `composer validate --strict` serta `composer check-platform-reqs --lock` ditambahkan sebagai blocking guard sebelum install.
+5. CI #486 membuktikan committed lock kompatibel PHP 8.3 dan seluruh blocking gate selesai SUCCESS.
+
+Commit repair utama:
 
 ```text
-app/Console/Commands/TestIsolatedSpjCancellation.php
-app/Console/Commands/TestIsolatedSpjNumbering.php
-app/Console/Commands/TestIsolatedSpjQuarterRollback.php
-app/Console/Commands/TestIsolatedSpjTailRollback.php
-tests/Feature/SpjIsolatedQuarterRollbackCommandTest.php
+7b5615c4b98222f145a3ba0e18b409abb2b1e20d
+fix: constrain dependency resolution to PHP 8.3
+
+d3c786d841d431c4d78cf2441f9a1e358115afa6
+fix: keep dependency lock compatible with PHP 8.3
+
+ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+ci: enforce deterministic PHP 8.3 dependency gate
 ```
 
-Karena step tersebut advisory, workflow #480 tetap SUCCESS. Jangan menyatakan repository-wide Pint clean sampai lima issue itu benar-benar diperbaiki.
+Jangan mengganti solusi ini dengan menaikkan CI ke PHP 8.4 saja atau `--ignore-platform-req=php`, karena minimum runtime project tetap PHP 8.3.
 
-### Integration repair yang ditutup sebelum gate #480
+### Integration repair yang ditutup sebelum historical gate #480
 
 CI #478 sebelumnya berhenti pada 2 regression SPJ Critical. Keduanya ditutup tanpa mengubah business rule aplikasi:
 
@@ -68,11 +90,11 @@ CI #479 kemudian membuktikan SPJ Critical dan Unit sudah hijau, lalu membuka sat
 test: align description UI contract with service delegation
 ```
 
-Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate hijau.
+CI #480 menjadi historical green baseline sebelum Laravel 13/TALL migration. Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate tersebut hijau. Current canonical gate sekarang #486.
 
-### Coverage penting yang dipertahankan gate #480
+### Coverage penting yang dipertahankan gate #486
 
-Gate #480 mencakup dan mempertahankan functional regression untuk:
+Current SPJ Critical/Unit/Feature gate mencakup dan mempertahankan functional regression untuk:
 
 - six-category SPJ lifecycle;
 - NUMBERED/FINAL description correction contract;
@@ -94,7 +116,7 @@ Gate #480 mencakup dan mempertahankan functional regression untuk:
 
 Functional gate tidak sama dengan browser/document visual verification. Microsoft Excel/LibreOffice fidelity, print area, page breaks, header/footer, drawing, defined-name/formula kompleks, browser interactions, dan installed runtime tetap RVR/DEFERRED sesuai `CURRENT_PROGRESS.md`.
 
-Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah #480 tidak menggantikan code gate `887d0219142d634e6a85b6672d3bffb02b5b1584`.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah #486 tidak menggantikan code gate `ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4`.
 
 ---
 
@@ -116,7 +138,7 @@ Repository Pint --test
 -> optional real-tenant audit
 ```
 
-GitHub Actions menambahkan full Unit dan full Feature suite sebagai blocking coverage.
+GitHub Actions menambahkan Composer metadata/platform-lock checks, deterministic `composer install`, full Unit, dan full Feature suite sebagai blocking coverage.
 
 Opsi iterasi developer tersedia, tetapi `--skip-*` bukan evidence release final:
 
@@ -136,7 +158,7 @@ php artisan test --testsuite="SPJ Critical" --compact
 
 Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, Livewire mutation authorization, maintenance, ARKAS importer, template upload/download, placeholder inspector, master template lifecycle, SiPlah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan generated-document validation.
 
-Nama/jumlah test dapat berubah. Angka pada §1 hanya authoritative untuk gate #480 dan tidak boleh diasumsikan tetap sama pada commit berikutnya.
+Nama/jumlah test dapat berubah. Jangan membawa angka test/assertion dari gate lama ke gate baru tanpa evidence log run yang bersangkutan.
 
 ---
 
