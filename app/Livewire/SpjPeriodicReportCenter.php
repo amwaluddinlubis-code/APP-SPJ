@@ -90,10 +90,6 @@ class SpjPeriodicReportCenter extends Component
 
     public function render(): View
     {
-        if (request('jenis_laporan') !== 'periode') {
-            return view('livewire.spj-periodic-report-empty');
-        }
-
         $registry = app(SpjPeriodicReportRegistry::class);
         $reports = app(SpjPeriodicReportUseCase::class);
 
