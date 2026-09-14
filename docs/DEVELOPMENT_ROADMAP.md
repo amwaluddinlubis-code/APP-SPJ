@@ -18,53 +18,48 @@ Jangan menambah smoke/regression test baru hanya untuk memperbesar coverage sete
 
 ## P0-00 — Current HEAD integration + Livewire authorization hardening
 
-**Status: SOURCE AUDIT COMPLETE / HARDENING REQUIRED / CI HEAD RED.**
+**Status: PHASE 1 AUDIT COMPLETE / PHASE 2 AUTHORIZATION HARDENING COMPLETE / FOCUSED AUTH REGRESSION PASS / OVERALL CI HEAD RED.**
 
-Phase 1 source audit selesai pada HEAD `2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35` dan mencakup seluruh 25 component di `app/Livewire/`.
+Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 ditutup pada commit source `3c7be408f5a93795a597878b79f975373df24412`, dan regression authorization dimasukkan ke SPJ Critical pada commit `701c73644b7dcf9d8aa710a842f28b2dad9a62d5`.
 
-Hasil audit:
+Phase 2 checklist:
+
+- [x] harden `UserManagement::{createUser,updateUser,deleteUser}` sebagai ADMIN-only;
+- [x] harden `SchoolMaster::createSchool` sebagai ADMIN-only;
+- [x] harden `DatabaseMaintenance::run` sebagai ADMIN-only;
+- [x] harden `DatabaseResetForm::resetDatabase` sebagai ADMIN-only selain active-school + confirmation guard;
+- [x] harden `DatabaseSchoolList::{activate,migrate}` sebagai ADMIN-only;
+- [x] harden `DocumentStorageSettings::save` sebagai OPERATOR/ADMIN sebelum reuse; component masih dormant pada halaman settings aktif;
+- [x] tambahkan negative regression OPERATOR/VIEWER untuk mutation ADMIN dan VIEWER untuk document-storage mutation;
+- [x] pertahankan lifecycle SPJ, numbering, sync, dan tenant ownership tanpa perubahan.
+
+Evidence CI #478:
 
 ```text
-17  READ-ONLY / UI-STATE
- 1  MUTATION GUARDED (SchoolSelector)
- 1  CONTEXT MUTATION ACCEPTED (YearSelector)
- 5  ACTIVE MUTATION BOUNDARIES NEED ROLE HARDENING
- 1  UNMOUNTED MUTATION COMPONENT NEEDS HARDENING BEFORE REUSE
+HEAD                              : 701c73644b7dcf9d8aa710a842f28b2dad9a62d5
+FRONTEND BUILD                    : PASS
+BLADE COMPILE                     : PASS
+LivewireMutationAuthorizationTest : PASS 2/2
+SPJ CRITICAL                      : 285 PASS / 2 FAIL / 2218 assertions
+FULL UNIT / FEATURE               : SKIPPED setelah critical failure
 ```
 
-Phase 2 yang harus dikerjakan sebelum menambah area Livewire baru:
+Dua blocker berikut **bukan Phase 2 authorization failure**:
 
-- [ ] harden `UserManagement::{createUser,updateUser,deleteUser}` sebagai ADMIN-only;
-- [ ] harden `SchoolMaster::createSchool` sebagai ADMIN-only;
-- [ ] harden `DatabaseMaintenance::run` sebagai ADMIN-only;
-- [ ] harden `DatabaseResetForm::resetDatabase` sebagai ADMIN-only selain active-school + confirmation guard yang sudah ada;
-- [ ] harden `DatabaseSchoolList::{activate,migrate}` sebagai ADMIN-only;
-- [ ] tentukan nasib `DocumentStorageSettings`; bila tetap dipakai, beri operator/admin authorization sebelum reuse;
-- [ ] tambahkan negative regression untuk actor yang tidak berhak;
-- [ ] jangan mengubah lifecycle SPJ, numbering, sync, atau tenant ownership ketika hardening.
+- [ ] `SpjNumberingRollbackTest`: test masih memanggil `TransactionController::updateSpjDescriptions()` dengan signature lama; perbaiki test agar memakai route/container canonical dan tidak couple ke constructor/method dependency internal;
+- [ ] `SpjWorkspaceMigrationTest`: ekspektasi session `error` pada update `vendor_name` Paket NUMBERED tidak cocok dengan current behavior; verifikasi contract lifecycle lalu perbaiki implementation atau test sesuai keputusan canonical.
 
-Integration gate setelah hardening:
+Integration gate berikutnya:
 
-- [ ] reproduce exact failure `SPJ Critical` current HEAD;
-- [ ] perbaiki regression yang benar-benar menjadi penyebab;
-- [ ] jalankan focused test terkait;
-- [ ] jalankan kembali workflow sampai SPJ Critical PASS;
+- [ ] tutup dua failure di atas;
+- [ ] jalankan kembali SPJ Critical sampai PASS;
 - [ ] pastikan full Unit PASS;
 - [ ] pastikan full Feature PASS;
 - [ ] baru promosikan current HEAD sebagai functional gate baru.
 
-Evidence saat roadmap ini diperbarui:
+Latest successful canonical full gate tetap CI #469 / `fd01fc6681...` sampai checklist integrasi di atas hijau.
 
-```text
-latest successful canonical gate : CI #469 / fd01fc6681...
-current HEAD attempt              : CI #476 / 2e0f65c... / FAILURE
-frontend build #476               : PASS
-Blade compile #476                : PASS
-SPJ Critical #476                 : FAILURE
-full Unit / Feature #476          : SKIPPED
-```
-
-Tidak ada migrasi Livewire baru sampai P0-00 ditutup.
+Tidak ada migrasi Livewire baru sampai P0-00 integration gate ditutup.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md`.
 
@@ -122,7 +117,7 @@ Panduan canonical: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOL
 
 ## P0-03 — Numbering + registry + lifecycle
 
-**Status: FUNCTIONAL BASELINE PASS / REGISTRY CANONICAL.**
+**Status: FUNCTIONAL BASELINE PASS / REGISTRY CANONICAL / TWO CURRENT TEST-INTEGRATION BLOCKERS OPEN.**
 
 Source of truth executable:
 
@@ -142,23 +137,23 @@ Sudah dibuktikan pada successful gate sebelumnya:
 - [x] `{TW}` tidak memaksakan prefix literal `TW.`;
 - [x] registry dipakai consumer numbering utama.
 
-Tidak menambah smoke test numbering tanpa bug/operator requirement baru.
+Current blocker `SpjNumberingRollbackTest` adalah stale direct-controller invocation dan tidak menjadi evidence bahwa numbering domain contract gagal. Tetap perbaiki regression sebelum gate dapat hijau.
 
 ---
 
 ## P0-04 — Authorization
 
-**Status: HTTP/ROUTE BASELINE PASS / LIVEWIRE MUTATION HARDENING OPEN.**
+**Status: HTTP/ROUTE BASELINE PASS / LIVEWIRE MUTATION HARDENING COMPLETE / FOCUSED NEGATIVE REGRESSION PASS / BROWSER RVR.**
 
-Pekerjaan authorization saat ini identik dengan P0-00 Phase 2. Temuan source menunjukkan route role middleware tidak cukup untuk dijadikan bukti bahwa action Livewire sensitif independently authorized; custom persistent middleware aplikasi hanya memuat active-school dan active-year.
+Definition of Done Phase 2:
 
-Definition of Done:
+- [x] action-level authorization seluruh mutation sensitif yang ditemukan Phase 1;
+- [x] ADMIN/OPERATOR/VIEWER negative regression sesuai matrix permission;
+- [x] tenant/context logic existing tidak dipindahkan ke UI;
+- [x] no privilege widening pada mutation Livewire yang diuji;
+- [ ] overall repository code gate hijau — tertahan dua regression SPJ non-authorization.
 
-- [ ] action-level/policy/persistent mechanism yang sah untuk seluruh mutation sensitif;
-- [ ] negative ADMIN/OPERATOR/VIEWER regression sesuai matrix permission;
-- [ ] tenant scope tetap canonical;
-- [ ] no privilege widening melalui Livewire update endpoint;
-- [ ] code gate hijau.
+Rule baru untuk semua migrasi berikutnya: route visibility/middleware GET tidak cukup sebagai bukti; mutation Livewire harus authorize pada request action melalui action guard, policy, atau persistent mechanism yang benar-benar berlaku.
 
 ---
 
@@ -177,7 +172,7 @@ Kerjakan hanya ketika ditemukan mismatch source/overlay nyata:
 
 ## P0-06 — Tenant/context isolation
 
-**Status: FUNCTIONAL BASELINE PASS.**
+**Status: FUNCTIONAL BASELINE PASS / LIVEWIRE PHASE 2 PRESERVES EXISTING CONTEXT CONTRACT.**
 
 Boundary canonical:
 
@@ -185,15 +180,15 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Phase 2 Livewire hardening wajib mempertahankan boundary ini. Tidak ada test tambahan aktif tanpa bug/boundary baru selain negative authorization yang diperlukan oleh mutation migration.
+Phase 2 hanya menambah role guard pada mutation boundary. Tidak ada test tambahan aktif tanpa bug/boundary baru selain negative authorization yang memang diperlukan oleh migration.
 
 ---
 
 ## P0-07 — APP DATA / backup / reset / restore
 
-**Status: FUNCTIONAL BASELINE PASS / LIVEWIRE RESET ROLE HARDENING OPEN / INSTALLED-RUNTIME DEFERRED.**
+**Status: FUNCTIONAL BASELINE PASS / LIVEWIRE RESET ROLE HARDENING COMPLETE / INSTALLED-RUNTIME DEFERRED.**
 
-`DatabaseResetForm` sudah mempunyai active-school match dan exact confirmation, tetapi role action guard masih harus ditutup pada P0-00.
+`DatabaseResetForm` sekarang memerlukan ADMIN, active-school match, dan exact confirmation sebelum reset service dipanggil.
 
 ---
 

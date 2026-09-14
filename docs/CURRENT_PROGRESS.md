@@ -28,16 +28,23 @@ CI #469 tetap menjadi gate sukses terakhir yang membuktikan blocking frontend bu
 ### Current branch HEAD attempt
 
 ```text
-CURRENT HEAD AUDITED       : 2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35
-LATEST ATTEMPTED GATE      : CI #476 / run 34830288269 / FAILURE
-FRONTEND BUILD             : PASS pada run #476
-BLADE COMPILE              : PASS pada run #476
-SPJ CRITICAL               : FAILURE pada run #476
+CURRENT HEAD AUDITED       : 701c73644b7dcf9d8aa710a842f28b2dad9a62d5
+LATEST ATTEMPTED GATE      : CI #478 / run 34838430998 / FAILURE
+REPOSITORY PINT            : ADVISORY / 5 pre-existing unrelated style issues
+FRONTEND BUILD             : PASS pada run #478
+BLADE COMPILE              : PASS pada run #478
+LIVEWIRE AUTH REGRESSION   : PASS 2/2 di dalam SPJ Critical #478
+SPJ CRITICAL               : 285 PASS / 2 FAIL / 2218 assertions
 FULL UNIT                  : NOT RUN / skipped setelah critical failure
 FULL FEATURE               : NOT RUN / skipped setelah critical failure
 ```
 
-Konsekuensi: perubahan source setelah `fd01fc6681...` **belum boleh dipromosikan menjadi canonical FUNCTIONAL PASS** hanya berdasarkan source review atau focused test lokal yang pernah dijalankan. Run #472, #473, #474, #475, dan #476 berada dalam rangkaian gate merah; karena itu kegagalan tidak boleh diasumsikan berasal hanya dari commit HEAD terakhir tanpa reproduksi test yang tepat.
+Dua failure SPJ Critical #478 adalah blocker integrasi yang sudah ada sebelum Phase 2 dan tidak berasal dari authorization hardening:
+
+1. `SpjNumberingRollbackTest::test_item_description_can_change_when_numbered_but_not_when_final` masih memanggil `TransactionController::updateSpjDescriptions()` secara langsung dengan signature lama (2 argumen), sedangkan controller canonical sekarang menerima `Request`, `transactionId`, `ActiveSpjContext`, dan `SpjDescriptionService`.
+2. `SpjWorkspaceMigrationTest::test_numbered_keeps_manual_paths_locked_but_allows_item_description_and_final_locks_everything` masih mengharapkan session `error` saat update `vendor_name` pada Paket NUMBERED, tetapi current workspace path tidak menghasilkan kontrak response tersebut.
+
+Konsekuensi: **Phase 2 authorization hardening mempunyai focused critical regression PASS**, tetapi current HEAD belum boleh dipromosikan menjadi canonical FUNCTIONAL PASS sampai dua blocker integrasi di atas ditutup dan full Unit + Feature benar-benar berjalan hijau.
 
 Commit docs-only tidak menggantikan code gate dan tidak boleh disebut functional verification baru.
 
@@ -47,70 +54,83 @@ Commit docs-only tidak menggantikan code gate dan tidak boleh disebut functional
 
 ```text
 FUNCTIONAL BASELINE : PASS pada successful gate fd01fc6681... / CI #469
-CURRENT HEAD GATE   : RED / SPJ Critical failure pada CI #476
+CURRENT HEAD GATE   : RED / 2 SPJ Critical regressions pada CI #478
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang sudah terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
 BROWSER/RUNTIME     : RVR ACTIVE
-LIVEWIRE MIGRATION : SOURCE IMPLEMENTED / MUTATION AUTHORIZATION HARDENING OPEN
+LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE; REPO GATE STILL RED
 FINAL RELEASE       : NOT YET
 ```
 
-Aplikasi belum boleh disebut final release-ready. Selain output/runtime QA yang memang belum selesai, current HEAD harus kembali memperoleh code gate hijau setelah integration/hardening issue ditutup.
+Aplikasi belum boleh disebut final release-ready. Current HEAD harus kembali memperoleh code gate hijau setelah dua regression integrasi ditutup; output/runtime QA tetap gate terpisah.
 
 ---
 
-## Livewire / TALL migration — Phase 1 boundary audit
+## Livewire / TALL migration — Phase 1 + Phase 2
 
-Status: **SOURCE AUDIT COMPLETE / HARDENING REQUIRED / BROWSER RUNTIME RVR** (2026-09-14).
+### Phase 1 — mutation boundary audit
 
-Audit seluruh `app/Livewire/` pada HEAD menemukan **25 component**:
+Status: **SOURCE AUDIT COMPLETE** (2026-09-14).
 
-```text
-17  READ-ONLY / UI-STATE
- 1  MUTATION GUARDED (SchoolSelector)
- 1  CONTEXT MUTATION ACCEPTED (YearSelector)
- 5  ACTIVE MUTATION BOUNDARIES NEED ROLE HARDENING
- 1  UNMOUNTED MUTATION COMPONENT NEEDS HARDENING BEFORE REUSE
-```
+Audit seluruh `app/Livewire/` menemukan **25 component** dan mengklasifikasikan read-only/UI-state, context mutation, serta mutation sensitif. Detail matriks tetap berada di `LIVEWIRE_MIGRATION_PLAN.md`.
 
-Active mutation boundaries yang perlu Phase 2:
+### Phase 2 — authorization hardening
 
-- `UserManagement::{createUser,updateUser,deleteUser}` — mutation user/role, expected ADMIN;
-- `SchoolMaster::createSchool` — create school + database provision, expected ADMIN;
-- `DatabaseMaintenance::run` — checkpoint/migrate/vacuum/provision, expected ADMIN;
-- `DatabaseResetForm::resetDatabase` — destructive reset; active-school + exact confirmation sudah ada, role ADMIN belum digate di action;
-- `DatabaseSchoolList::{activate,migrate}` — database/context maintenance, expected ADMIN.
+Status: **IMPLEMENTED + FOCUSED CRITICAL REGRESSION PASS / BROWSER RUNTIME RVR** (2026-09-14).
 
-`DocumentStorageSettings::save` menulis global path dan belum mempunyai operator/admin guard; component ini tidak ditemukan dipasang pada halaman settings aktif saat audit sehingga diklasifikasikan **UNMOUNTED / harden before reuse**, bukan active exploit claim.
-
-`SchoolSelector::selectSchool` sudah mempunyai guard eksplisit: administrator dapat memilih sekolah, non-admin hanya sekolah miliknya. `YearSelector::selectYear` hanya mengubah fiscal-year/fund-source session pada database sekolah aktif dan diklasifikasikan context mutation yang sesuai flow.
-
-Persistent middleware Livewire custom yang terdaftar aplikasi saat audit hanya:
+Commit source:
 
 ```text
-EnsureActiveSchool
-EnsureActiveFiscalYear
+3c7be408f5a93795a597878b79f975373df24412
+fix: harden Livewire mutation authorization
 ```
 
-`EnsureAdministrator`, `EnsureOperatorOrAdministrator`, dan `EnsureSpjActiveContext` tidak berada pada daftar persistent middleware custom tersebut. Karena itu action mutation sensitif tidak boleh dianggap independently authorized hanya karena route GET induknya memakai role middleware.
+Commit test-gate:
 
-Audit ini adalah temuan source architecture, **bukan klaim exploit runtime**. Livewire signed snapshot/checksum dan browser behavior tetap memerlukan runtime evidence.
+```text
+701c73644b7dcf9d8aa710a842f28b2dad9a62d5
+test: gate Livewire mutation authorization as critical
+```
 
-Panduan lengkap dan matriks 25 component: `LIVEWIRE_MIGRATION_PLAN.md`.
+Boundary yang sudah ditutup:
 
-### Status area Livewire yang sudah dimigrasikan
+- `UserManagement::{createUser,updateUser,deleteUser}` → ADMIN-only sebelum validation/query/mutation;
+- `SchoolMaster::createSchool` → ADMIN-only sebelum provisioning;
+- `DatabaseMaintenance::run` → ADMIN-only sebelum action allow-list/service call;
+- `DatabaseResetForm::resetDatabase` → ADMIN-only selain active-school match + exact confirmation yang sudah ada;
+- `DatabaseSchoolList::{activate,migrate}` → ADMIN-only sebelum school lookup/service/audit;
+- `DocumentStorageSettings::save` → OPERATOR/ADMIN sebelum validation/persistence. Component tetap belum mounted pada halaman settings aktif, tetapi aman sebelum reuse;
+- `SchoolSelector::selectSchool` tetap memakai guard eksplisit `admin || own school`;
+- `YearSelector::selectYear` tetap context mutation sesuai flow.
+
+Regression baru `LivewireMutationAuthorizationTest` berada di testsuite `SPJ Critical`. CI #478 membuktikan:
+
+```text
+PASS operator + viewer ditolak dari seluruh mutation ADMIN Livewire yang diaudit
+PASS operator dapat menyimpan document storage path
+PASS viewer ditolak dari document storage mutation
+```
+
+Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, business rule, atau tenant ownership. Authorization menggunakan kontrak model existing `isAdministrator()` / `isOperatorOrAdministrator()` sehingga tidak membuat role matrix baru.
+
+Persistent middleware Livewire custom aplikasi tetap hanya active-school/active-year; karena itu rule arsitektur tetap: **mutation Livewire sensitif harus re-assert authorization di action/policy/persistent mechanism yang benar-benar berlaku pada request Livewire, bukan mengandalkan route GET induk**.
+
+---
+
+## Status area Livewire yang sudah dimigrasikan
 
 - Transaksi: filter/search/pagination `TransactionsTable` — read-only boundary.
 - RKAS budget: `RkasBudgetFilter`, `RkasBudgetTable` — read-only boundary; `RkasTable` tetap read-only/legacy component.
-- SPJ Persiapan/Paket/Laporan/Monitoring: Livewire filters/lists + SPA tab navigation; workspace detail paket mutation-heavy tetap server-rendered.
+- SPJ Persiapan/Paket/Laporan/Monitoring: Livewire filters/lists + SPA tab navigation; workspace detail Paket mutation-heavy tetap server-rendered.
 - Pajak: `TaxFilter` read-only filter/summary.
 - Pegawai: `EmployeeDirectory` read-only filter/pagination.
 - Data Sinkronisasi: `SyncedDataNavigation` UI-state/read-only.
-- Database Aktif: summary/tab/explorer read-only panels sudah Livewire; mutation actions memerlukan hardening seperti daftar di atas.
-- Pengaturan user/master sekolah: source migration ada, tetapi status FUNCTIONAL PASS sebelumnya dicabut sampai authorization boundary + code gate hijau.
+- Database Aktif: summary/tab/explorer read-only panels + mutation actions sudah role-hardened.
+- Pengaturan user/master sekolah: mutation sudah ADMIN-hardened dan negative role regression PASS.
+- Penyimpanan Dokumen: class Livewire dormant sudah OPERATOR/ADMIN-hardened sebelum reuse; halaman settings aktif masih memakai canonical form/controller path.
 
-Status lama `WIP UNCOMMITTED` untuk Database Manager/Data Sinkronisasi sudah usang: component tersebut sekarang sudah committed pada current branch.
+Browser/operator behavior tetap RVR sampai `GUI_RUNTIME_QA.md` dijalankan pada runtime aktual.
 
 ---
 
@@ -177,9 +197,9 @@ Successful baseline sebelum current red gate membuktikan:
 - master parsial ditolak;
 - DOCX tetap individual.
 
-Source HEAD terbaru menambahkan optimasi validator XLSX agar daftar sheet dibaca lebih dahulu dan hanya sheet canonical yang dimuat `readDataOnly` untuk template individual; package importer juga memakai read-only load. Commit melaporkan penurunan waktu halaman template dari sekitar 33 detik menjadi sekitar 0,7 detik pada environment pengembang, tetapi angka ini **belum dipromosikan menjadi canonical runtime PASS** karena current HEAD code gate #476 merah dan browser/runtime independent verification belum dilakukan.
+Source HEAD terbaru menambahkan optimasi validator XLSX agar daftar sheet dibaca lebih dahulu dan hanya sheet canonical yang dimuat `readDataOnly` untuk template individual; package importer juga memakai read-only load. Commit pengembang melaporkan penurunan waktu halaman template dari sekitar 33 detik menjadi sekitar 0,7 detik pada environment pengembang, tetapi angka ini **belum dipromosikan menjadi canonical runtime PASS** karena current HEAD gate masih merah dan browser/runtime independent verification belum dilakukan.
 
-Source HEAD juga menambahkan `SpjSpreadsheetPdfWriter` dan persistence report path. Full Unit/Feature suite untuk HEAD belum berjalan pada CI #476, sehingga output-sensitive change tersebut masih memerlukan green gate + Office/PDF runtime QA.
+Source HEAD juga menambahkan `SpjSpreadsheetPdfWriter` dan persistence report path. Full Unit/Feature suite untuk HEAD belum berjalan karena SPJ Critical masih berhenti pada dua regression integrasi.
 
 Panduan lifecycle tetap: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.
 
@@ -193,7 +213,7 @@ Canonical source of truth tetap:
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Successful baseline sebelumnya sudah membuktikan first numbering, cancel/reserved sequence, tail rollback, fund-source scoped sequence, quarter rollback regression, dan registry-based consumers. Current Livewire migration tidak boleh mengubah kontrak numbering tersebut.
+Successful baseline sebelumnya sudah membuktikan first numbering, cancel/reserved sequence, tail rollback, fund-source scoped sequence, quarter rollback regression, dan registry-based consumers. Current Livewire migration tidak mengubah kontrak numbering tersebut.
 
 `SpjDocumentTypeRegistry` tetap registry template/placeholder/output dan bukan source sequence numbering.
 
@@ -201,18 +221,17 @@ Successful baseline sebelumnya sudah membuktikan first numbering, cancel/reserve
 
 ## P0-04 — Authorization
 
-Baseline HTTP authorization sebelumnya FUNCTIONAL PASS. **Livewire mutation authorization hardening sekarang menjadi open integration issue** karena sejumlah mutation action baru tidak mempunyai role guard action-level dan custom role middleware tidak terdaftar sebagai persistent Livewire middleware.
-
-Status saat ini:
+Status:
 
 ```text
-HTTP/ROUTE AUTH BASELINE       : PASS pada gate sebelumnya
-LIVEWIRE MUTATION BOUNDARY     : HARDENING REQUIRED
-NEGATIVE ROLE REGRESSION       : REQUIRED untuk mutation yang dipindahkan
-RUNTIME EXPLOITABILITY CLAIM   : NOT ASSERTED / RVR
+HTTP/ROUTE AUTH BASELINE       : PASS pada successful gate sebelumnya
+LIVEWIRE MUTATION BOUNDARY     : HARDENED pada Phase 2
+NEGATIVE ROLE REGRESSION       : PASS di SPJ Critical #478
+RUNTIME/BROWSER VERIFICATION   : RVR
+OVERALL CURRENT HEAD GATE      : RED karena 2 regression SPJ non-authorization
 ```
 
-Jangan menurunkan temuan ini menjadi sekadar cosmetic issue; mutation user, school provisioning, database maintenance, dan reset adalah action sensitif.
+Rule aktif: mutation user/role, school provisioning, database maintenance/reset/activation, dan global document-storage setting harus mengulang authorization pada boundary Livewire yang dieksekusi. Route GET visibility bukan authorization proof untuk request Livewire berikutnya.
 
 ---
 
@@ -226,7 +245,7 @@ Baseline contract tetap:
 - NUMBERED/FINAL tidak dimutasi diam-diam;
 - tenant boundary `School + Fiscal Year + Fund Source`.
 
-Current Livewire filter/navigation work tidak boleh mengubah contract tersebut. Real-data reconciliation tetap operator-flow driven.
+Current Livewire filter/navigation/hardening tidak mengubah contract tersebut. Real-data reconciliation tetap operator-flow driven.
 
 ---
 
@@ -238,13 +257,13 @@ Canonical boundary:
 School + Fiscal Year + Fund Source
 ```
 
-Read-only Livewire filter components yang diaudit tetap menggunakan active context atau query/service canonical. Phase 2 authorization hardening harus menjaga boundary ini dan tidak memindahkan scope logic ke Blade/Alpine.
+Read-only Livewire filter components tetap menggunakan active context atau query/service canonical. Phase 2 hanya menambah role enforcement dan tidak memindahkan scope logic ke Blade/Alpine.
 
 ---
 
 ## P0-07 — APP DATA / backup / reset / restore
 
-Baseline service/functionality tetap tersedia. `DatabaseResetForm` Livewire sekarang memiliki active-school match + exact confirmation guard, tetapi role ADMIN action guard perlu ditambahkan sebelum status migration tersebut dianggap fully hardened.
+Baseline service/functionality tetap tersedia. `DatabaseResetForm` Livewire sekarang memerlukan **ADMIN + active-school match + exact confirmation** sebelum reset service dipanggil.
 
 Installed Windows runtime tetap DEFERRED.
 
@@ -258,26 +277,25 @@ Status baseline: **FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE** pada 
 
 ## Prioritas kerja aktif
 
-Urutan langsung setelah audit ini:
+Phase 2 authorization sudah selesai. Urutan berikutnya:
 
-1. **Livewire authorization hardening Phase 2** untuk mutation boundaries yang teridentifikasi;
-2. focused negative role/tenant regression untuk mutation tersebut;
-3. identifikasi dan tutup failure `SPJ Critical` pada current HEAD;
-4. jalankan kembali blocking gate sampai SPJ Critical + Unit + Feature benar-benar hijau;
-5. setelah integration gate hijau, kembali ke operator-flow/generated-document real-data QA sebagai prioritas produk utama;
+1. **P0-00 integration repair**: tutup dua failure SPJ Critical #478 tanpa mengubah contract yang sudah benar;
+2. ubah `SpjNumberingRollbackTest` agar tidak memanggil controller dengan signature internal yang sudah usang—lebih baik uji melalui route/container HTTP canonical;
+3. tentukan kontrak benar untuk update Paket NUMBERED pada `SpjWorkspaceMigrationTest`: bila mutation substansi memang harus terkunci, restore response/error canonical; bila behavior sengaja berubah, sinkronkan test + dokumentasi contract;
+4. rerun SPJ Critical sampai hijau, lalu pastikan full Unit + Feature benar-benar berjalan PASS;
+5. setelah integration gate hijau, kembali ke generated-document real-data/operator QA sebagai prioritas produk;
 6. browser/operator QA desktop-laptop berdasarkan `GUI_RUNTIME_QA.md`;
 7. official-template/Excel/LibreOffice/PDF visual-output QA;
-8. mobile/tablet tetap RVR/non-blocker untuk target desktop-laptop.
+8. baru pertimbangkan migrasi Livewire read-only berikutnya seperti Rekonsiliasi.
 
-Jangan menambah area migrasi Livewire baru sebelum poin 1–4 selesai.
+Jangan menambah mutation-heavy Livewire baru sebelum poin 1–4 selesai.
 
 ---
 
 ## Open verification / release blockers
 
-- current branch HEAD code gate merah pada SPJ Critical;
-- Livewire mutation authorization hardening belum selesai;
-- full Unit + Feature suite belum dijalankan untuk HEAD `2e0f65c...` karena CI #476 berhenti lebih awal;
+- current branch HEAD gate merah karena dua SPJ Critical regression non-authorization;
+- full Unit + Feature suite belum dijalankan untuk HEAD `701c736...` karena critical failure;
 - generated-document real-data per kategori masih RVR/active;
 - individual template/master template Office visual QA masih RVR;
 - preview HTML template nyata pada browser aktual masih RVR;
@@ -285,6 +303,8 @@ Jangan menambah area migrasi Livewire baru sebelum poin 1–4 selesai.
 - official-template print/layout/output QA masih RVR;
 - installed-runtime checks masih DEFERRED;
 - mobile/tablet runtime QA tetap RVR/non-blocker untuk target desktop-laptop.
+
+Livewire mutation authorization **bukan lagi open blocker source/regression** setelah Phase 2, tetapi browser/runtime verification tetap RVR.
 
 ---
 
@@ -295,7 +315,7 @@ Jangan menambah area migrasi Livewire baru sebelum poin 1–4 selesai.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
 5. Setiap source change setelah successful code gate terakhir membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
-6. Source implementation tidak sama dengan authorization-hardened implementation.
+6. Mutation Livewire sensitif harus mempunyai authorization boundary yang benar-benar dieksekusi pada action request.
 7. GUI source cleanup tidak sama dengan browser visual PASS.
 8. Bila business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md` dan feature guide terkait.
 9. Metadata numbering baru/berubah dimulai dari `SpjNumberingDocumentRegistry`.

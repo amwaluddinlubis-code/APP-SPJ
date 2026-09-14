@@ -1,10 +1,10 @@
 # Rencana Migrasi Livewire (TALL) — Status, Audit Boundary, dan Urutan
 
-Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, HEAD source-audit `2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35`.
+Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, HEAD `701c73644b7dcf9d8aa710a842f28b2dad9a62d5`.
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan tetap berada di `CURRENT_PROGRESS.md`, sedangkan prioritas berada di `DEVELOPMENT_ROADMAP.md`.
 
-> Catatan evidence: HEAD `2e0f65c...` belum mempunyai code gate hijau. CI `SPJ Critical Verification` #476 gagal pada langkah **SPJ critical tests**; frontend build dan Blade compile lulus, tetapi full Unit dan Feature suite tidak dijalankan pada run tersebut. Karena itu status di dokumen ini membedakan implementasi source dari functional gate.
+> Catatan evidence: Phase 2 authorization hardening sudah dibuktikan oleh `LivewireMutationAuthorizationTest` PASS 2/2 di SPJ Critical CI #478. Overall workflow #478 tetap merah karena dua regression SPJ non-authorization; full Unit dan Feature suite tidak dijalankan setelah critical failure. Karena itu Phase 2 dapat dinyatakan selesai untuk scope authorization, tetapi current HEAD belum menjadi canonical FUNCTIONAL PASS repository.
 
 ## 1. Prinsip canonical migrasi
 
@@ -23,31 +23,30 @@ Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status rele
 READ-ONLY / UI-STATE       = tidak menulis persistence/domain; hanya query, filter, pagination, tab, atau detail baca.
 CONTEXT MUTATION ACCEPTED  = mengubah session context sesuai flow yang memang tersedia untuk user tersebut.
 MUTATION GUARDED           = mutation mempunyai authorization/context guard eksplisit yang relevan di component.
-HARDENING REQUIRED         = mutation sensitif belum mempunyai role/action guard eksplisit yang memadai di boundary Livewire.
 UNMOUNTED                  = class ada, tetapi tidak ditemukan dipasang pada halaman aktif yang diaudit.
 RVR                        = masih memerlukan runtime/operator/browser verification.
 ```
 
-`HARDENING REQUIRED` adalah temuan source architecture. Ini **bukan klaim exploit runtime**. Livewire memakai signed snapshot/checksum; eksploitabilitas aktual tidak dinyatakan tanpa runtime evidence. Namun repository tidak boleh menganggap route middleware saja sebagai authorization action setelah mutation dipindahkan ke component.
+Temuan Phase 1 tentang `HARDENING REQUIRED` telah ditutup pada Phase 2. Prinsip arsitektur tetap berlaku: route middleware yang melindungi halaman awal tidak dianggap otomatis menjadi authorization proof untuk request Livewire berikutnya.
 
 ## 3. Phase 1 — Mutation boundary audit
 
-**Status: COMPLETE (SOURCE AUDIT), 2026-09-14. Tidak ada behavior aplikasi yang diubah pada phase ini.**
+**Status: COMPLETE (SOURCE AUDIT), 2026-09-14.**
 
-Inventaris `app/Livewire/` pada HEAD berisi **25 component**.
+Inventaris `app/Livewire/` berisi **25 component**.
 
-### 3.1 Mutation/context boundaries
+### 3.1 Mutation/context boundaries setelah Phase 2
 
-| Component | Action | Dampak | Permission/constraint yang diharapkan | Kondisi source saat audit | Status |
-|---|---|---|---|---|---|
-| `UserManagement` | `createUser`, `updateUser`, `deleteUser` | create/update/delete akun dan role | ADMIN | Proteksi self-demotion + last-admin ada, tetapi tidak ada guard bahwa actor adalah administrator di action | **HARDENING REQUIRED** |
-| `SchoolMaster` | `createSchool` | membuat sekolah + provision database | ADMIN | Component hanya dirender dalam blok admin pada halaman settings, tetapi action tidak mempunyai guard administrator sendiri | **HARDENING REQUIRED** |
-| `DatabaseMaintenance` | `run` | checkpoint/migrate/vacuum/provision database sekolah | ADMIN | allow-list action + audit ada; tidak ada role guard di action | **HARDENING REQUIRED** |
-| `DatabaseResetForm` | `resetDatabase` | reset total database sekolah | ADMIN + active school + confirmation | Active-school match + exact confirmation ada; tidak ada role guard administrator di action | **HARDENING REQUIRED** |
-| `DatabaseSchoolList` | `activate`, `migrate` | ganti active school/database, migrasi database | ADMIN | service + operational audit dipakai; tidak ada role guard administrator di action | **HARDENING REQUIRED** |
-| `DocumentStorageSettings` | `save` | menulis global document storage path | OPERATOR/ADMIN bila component dipakai | Validasi path ada; tidak ada role guard. Component tidak ditemukan dipasang pada halaman settings aktif; halaman saat ini memakai form controller biasa | **UNMOUNTED / HARDEN BEFORE REUSE** |
-| `SchoolSelector` | `selectSchool` | ensure migration + ubah `active_school_id` | ADMIN dapat memilih sekolah; non-admin hanya sekolah sendiri | Guard eksplisit `admin || user.school_id === school.id` ada; fiscal/fund context direset | **MUTATION GUARDED** |
-| `YearSelector` | `selectYear` | ubah active fiscal year + fund source session | authenticated user setelah active school | Memilih record dari connection sekolah aktif dan mensyaratkan `fund_source_id`; ini context mutation, bukan domain persistence | **CONTEXT MUTATION ACCEPTED** |
+| Component | Action | Permission/constraint | Status setelah Phase 2 |
+|---|---|---|---|
+| `UserManagement` | `createUser`, `updateUser`, `deleteUser` | ADMIN | **MUTATION GUARDED** — `isAdministrator()` dicek sebelum validation/query/mutation |
+| `SchoolMaster` | `createSchool` | ADMIN | **MUTATION GUARDED** — role guard sebelum create/provision |
+| `DatabaseMaintenance` | `run` | ADMIN | **MUTATION GUARDED** — role guard sebelum allow-list/service/audit |
+| `DatabaseResetForm` | `resetDatabase` | ADMIN + active school + exact confirmation | **MUTATION GUARDED** — ketiga guard berlaku sebelum reset service |
+| `DatabaseSchoolList` | `activate`, `migrate` | ADMIN | **MUTATION GUARDED** — role guard sebelum school lookup/service/audit |
+| `DocumentStorageSettings` | `save` | OPERATOR/ADMIN | **MUTATION GUARDED / UNMOUNTED** — aman sebelum reuse; halaman settings aktif masih memakai canonical form/controller |
+| `SchoolSelector` | `selectSchool` | ADMIN dapat memilih sekolah; non-admin hanya sekolah sendiri | **MUTATION GUARDED** — guard existing dipertahankan |
+| `YearSelector` | `selectYear` | authenticated user setelah active school | **CONTEXT MUTATION ACCEPTED** |
 
 ### 3.2 Read-only / UI-state components
 
@@ -78,62 +77,103 @@ Catatan khusus:
 - `TransactionsTable` memakai `Transaction::activeContext()` dan hanya menghasilkan filter/stat/pagination/view helpers.
 - `Spj*Filter/List` memakai use case canonical; detail Paket SPJ mutation-heavy tetap server-rendered dan tidak dipindahkan pada batch ini.
 
-## 4. Temuan boundary middleware
+## 4. Boundary middleware dan rule authorization
 
-`AppServiceProvider` saat audit menambahkan persistent middleware Livewire khusus:
+`AppServiceProvider` menambahkan persistent middleware Livewire custom untuk active context sekolah/tahun. Role middleware route bukan bukti otomatis untuk request Livewire mutation.
 
-```text
-EnsureActiveSchool
-EnsureActiveFiscalYear
-```
-
-Custom role/context middleware berikut **tidak** terdaftar pada daftar persistent middleware aplikasi tersebut:
+Rule yang sekarang dibuktikan Phase 2:
 
 ```text
-EnsureAdministrator
-EnsureOperatorOrAdministrator
-EnsureSpjActiveContext
+ADMIN mutation:
+UserManagement
+SchoolMaster::createSchool
+DatabaseMaintenance::run
+DatabaseResetForm::resetDatabase
+DatabaseSchoolList::{activate,migrate}
+
+OPERATOR/ADMIN mutation:
+DocumentStorageSettings::save
 ```
 
-Route GET yang merender halaman admin/operator tetap penting, tetapi action Livewire sensitif harus mempunyai authorization yang dapat dibuktikan pada request action itu sendiri atau melalui mekanisme persistent middleware/policy yang setara. Phase 2 harus menyelesaikan ini tanpa memindahkan business rule ke UI.
+Implementasi memakai helper role canonical dari `App\Models\User`:
 
-## 5. Status per area migrasi
+```text
+isAdministrator()
+isOperatorOrAdministrator()
+```
+
+Business rule tidak diduplikasi di component; guard hanya enforcement permission sebelum service/use case/domain path yang sudah ada.
+
+## 5. Phase 2 — Authorization hardening
+
+**Status: COMPLETE untuk scope authorization / FOCUSED CRITICAL REGRESSION PASS / BROWSER RVR.**
+
+Source commit:
+
+```text
+3c7be408f5a93795a597878b79f975373df24412
+fix: harden Livewire mutation authorization
+```
+
+Critical-suite integration commit:
+
+```text
+701c73644b7dcf9d8aa710a842f28b2dad9a62d5
+test: gate Livewire mutation authorization as critical
+```
+
+Regression `tests/Feature/LivewireMutationAuthorizationTest.php` membuktikan pada CI #478:
+
+1. OPERATOR ditolak dari create/update/delete user;
+2. VIEWER ditolak dari create/update/delete user;
+3. OPERATOR dan VIEWER ditolak dari create school;
+4. OPERATOR dan VIEWER ditolak dari database maintenance;
+5. OPERATOR dan VIEWER ditolak dari reset database;
+6. OPERATOR dan VIEWER ditolak dari activate/migrate database school;
+7. OPERATOR boleh menyimpan document storage path;
+8. VIEWER ditolak dari document storage mutation;
+9. target user/school data yang dipakai negative test tetap tidak termutasi.
+
+Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau route contract.
+
+## 6. Status per area migrasi
 
 | Area | Implementasi source | Status integrasi saat ini |
 |---|---|---|
-| Transaksi | `TransactionsTable` filter/search/pagination | Implemented; read-only boundary audit PASS; HEAD code gate masih merah |
+| Transaksi | `TransactionsTable` filter/search/pagination | Implemented; read-only boundary audit PASS; overall HEAD gate masih merah |
 | RKAS budget | `RkasBudgetFilter`, `RkasBudgetTable` (+ `RkasTable` legacy/read-only) | Implemented; read-only boundary audit PASS; runtime RVR |
 | SPJ Persiapan/Paket/Laporan/Monitoring | `SpjPreparationFilter`, `SpjPackageList`, `SpjReportFilter`, `SpjMonitoringList`, SPA tab navigation | Implemented; filter/list read-only; workspace detail mutation tetap server-rendered; runtime RVR |
 | Pajak | `TaxFilter` | Implemented; read-only boundary audit PASS; runtime RVR |
 | Pegawai | `EmployeeDirectory` | Implemented; read-only boundary audit PASS; runtime RVR |
-| User | `UserManagement` | Implemented, tetapi **authorization hardening required** |
-| Master Sekolah | `SchoolMaster` | Implemented, tetapi **authorization hardening required** |
+| User | `UserManagement` | Implemented; ADMIN action guard + negative regression PASS |
+| Master Sekolah | `SchoolMaster` | Implemented; ADMIN action guard + negative regression PASS |
 | Pilih Sekolah | `SchoolSelector` | Implemented; explicit school/role guard ada |
 | Pilih Tahun | `YearSelector` | Implemented; accepted session-context mutation |
-| Database Aktif | summary/tabs/explorer/list/maintenance/reset | Implemented; read-only panels okay, **mutation actions hardening required** |
+| Database Aktif | summary/tabs/explorer/list/maintenance/reset | Implemented; read-only panels okay; mutation actions ADMIN-hardened |
 | Data Sinkronisasi | `SyncedDataNavigation` | Implemented; UI-state/read-only |
-| Penyimpanan Dokumen | `DocumentStorageSettings` class tersedia | **Unmouted pada halaman aktif; harden sebelum dipakai kembali** |
+| Penyimpanan Dokumen | `DocumentStorageSettings` class tersedia | Unmounted pada halaman aktif; OPERATOR/ADMIN-hardened sebelum reuse |
 
-Status `WIP UNCOMMITTED` dari versi dokumen sebelumnya sudah usang dan dicabut: komponen Database Manager/Data Sinkronisasi yang diaudit sudah berada di HEAD committed.
+## 7. Repository integration gate setelah Phase 2
 
-## 6. Phase 2 — Authorization hardening (NEXT)
+CI #478 menjalankan Phase 2 regression dan membuktikannya PASS, tetapi overall SPJ Critical tetap gagal:
 
-Jangan menambah area migrasi Livewire baru sebelum boundary berikut ditutup:
+```text
+LivewireMutationAuthorizationTest : PASS 2/2
+SPJ Critical total               : 285 PASS / 2 FAIL / 2218 assertions
+Full Unit                        : skipped
+Full Feature                     : skipped
+```
 
-1. tambahkan authorization action-level/policy yang sesuai untuk `UserManagement`;
-2. harden `SchoolMaster::createSchool()` sebagai ADMIN-only;
-3. harden `DatabaseMaintenance::run()` sebagai ADMIN-only;
-4. harden `DatabaseResetForm::resetDatabase()` sebagai ADMIN-only selain active-school + confirmation guard yang sudah ada;
-5. harden `DatabaseSchoolList::activate()` dan `migrate()` sebagai ADMIN-only;
-6. tentukan nasib `DocumentStorageSettings`: hapus hanya bila ada persetujuan eksplisit, atau beri operator/admin guard sebelum dipakai kembali;
-7. tambahkan negative regression untuk actor yang tidak berhak pada mutation boundary tersebut;
-8. jangan mengubah lifecycle SPJ, numbering, sync, atau tenant ownership sebagai bagian hardening ini.
+Dua blocker berikut harus ditutup sebelum migrasi Livewire diperluas:
 
-Setelah Phase 2, jalankan focused regression yang relevan lalu code gate repository. Jangan mempromosikan status ke FUNCTIONAL PASS sampai gate aktual hijau.
+1. `SpjNumberingRollbackTest` stale direct-controller call: test memanggil `TransactionController::updateSpjDescriptions()` dengan 2 argumen sementara signature canonical menerima 4 dependency. Rekomendasi: uji melalui route/container HTTP canonical agar test tidak couple ke signature internal controller.
+2. `SpjWorkspaceMigrationTest` mengharapkan session `error` pada update `vendor_name` Paket NUMBERED, sedangkan current behavior tidak mengembalikan kontrak itu. Verifikasi lifecycle contract; restore protection bila behavior source salah, atau sinkronkan regression bila contract memang telah berubah dengan sengaja.
 
-## 7. Kandidat migrasi setelah stabilization gate hijau
+Latest successful full canonical gate tetap CI #469 sampai SPJ Critical + full Unit + full Feature kembali hijau.
 
-Urutan ini **ditunda sementara** sampai Phase 2 + gate CI ditutup:
+## 8. Kandidat migrasi setelah stabilization gate hijau
+
+Urutan ini **ditunda sementara** sampai repository gate hijau:
 
 1. Rekonsiliasi — search/filter read-only bila manfaat operator jelas.
 2. Template dokumen — filter katalog dapat dipertimbangkan; upload/update tetap mengikuti controller/service canonical kecuali dirancang ulang secara khusus.
@@ -147,17 +187,17 @@ Tetap OUT OF SCOPE tanpa instruksi khusus:
 - Workspace detail Paket SPJ mutation-heavy;
 - perubahan domain Dapodik hanya demi konsistensi UI.
 
-## 8. Definition of Done per batch Livewire
+## 9. Definition of Done per batch Livewire
 
 ```text
-[ ] boundary read/write diklasifikasikan
-[ ] authorization mutation diverifikasi pada action Livewire
-[ ] School + Fiscal Year + Fund Source tetap terjaga
-[ ] query/business rule tetap di service/use case/model canonical
-[ ] negative role/tenant regression tersedia bila mutation sensitif
-[ ] focused test aktual dijalankan
-[ ] frontend build / Blade compile dijalankan bila UI berubah
-[ ] code gate repository hijau sebelum klaim FUNCTIONAL PASS
-[ ] documentation impact review selesai
-[ ] browser/runtime tetap RVR sampai benar-benar diuji
+[x] boundary read/write diklasifikasikan untuk batch Phase 1/2
+[x] authorization mutation Phase 2 diverifikasi pada action Livewire
+[x] School + Fiscal Year + Fund Source tetap terjaga oleh contract existing
+[x] query/business rule tetap di service/use case/model canonical
+[x] negative role regression Phase 2 tersedia dan PASS
+[x] focused critical test aktual dijalankan untuk Phase 2
+[x] frontend build / Blade compile CI #478 PASS
+[ ] repository code gate hijau — tertahan dua regression SPJ non-authorization
+[ ] browser/runtime — tetap RVR sampai benar-benar diuji
+[x] documentation impact review Phase 2 selesai
 ```
