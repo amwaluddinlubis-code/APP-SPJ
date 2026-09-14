@@ -22,8 +22,6 @@ class DatabaseManagerController extends Controller
         $activeStatus = null;
         $tables = [];
         $table = $request->query('table');
-        $schema = null;
-        $tableData = null;
         $tableError = null;
 
         if ($active['school']) {
@@ -46,21 +44,9 @@ class DatabaseManagerController extends Controller
                 Log::error('Database table listing failed.', ['exception' => $e]);
                 $tableError = 'Tabel database tidak dapat dibaca.';
             }
-            if ($table) {
-                try {
-                    $schema = $manager->tableSchema($active['school'], $table);
-                    $perPageRaw = $request->input('perPage', 15);
-                    $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
-                    $perPage = in_array($perPage, [15, 25, 50, 100, 10000]) ? $perPage : 15;
-                    $tableData = $manager->tableData($active['school'], $table, $perPage);
-                } catch (\Throwable $e) {
-                    Log::error('Database table inspection failed.', ['table' => $table, 'exception' => $e]);
-                    $tableError = 'Data tabel tidak dapat dibaca.';
-                }
-            }
         }
 
-        return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'schema', 'tableData', 'tableError'));
+        return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'tableError'));
     }
 
     public function tableSummary(SchoolDatabaseManager $manager, string $table): JsonResponse

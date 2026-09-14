@@ -95,6 +95,10 @@ Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generate
 
 ## GUI standardization
 
+### Redesign Pengaturan Sekolah
+
+Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14). Layout Pengaturan Sekolah telah dipisah menjadi workflow operator dan administrasi administrator; akses operator dibatasi ke sekolahnya sendiri. Panel Master Sekolah memakai satu header wrapper tanpa duplikasi. Pemilihan folder path dokumen tetap memerlukan adapter native/desktop karena browser tidak mengekspos absolute path folder secara aman. Halaman Integrasi Dapodik kini mengikuti lebar shell Pegawai dan memakai status panel compact.
+
 ### TALL settings expansion
 
 Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14).
@@ -122,12 +126,17 @@ Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
 - regression Livewire dan mount layout tercakup di `tests/Feature/TallProfileMasterTest.php`;
 - build frontend dan cache Blade sudah dijalankan; pemeriksaan browser/operator untuk dua halaman tersebut masih RVR.
 
-### TALL filter/pagination expansion — SPJ, Pajak
+### TALL filter/pagination expansion — Data Sinkronisasi
+
+Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14). Navigasi kelompok tabel pada Data Sinkronisasi memakai Livewire untuk pencarian tabel secara realtime. Ringkasan, query read-only, tenant scope, detail tabel, dan pagination tetap mengikuti controller canonical.
 
 Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
 
 - Filter + pagination tab Persiapan/Paket/Laporan/Monitoring (`/spj`) dan halaman Pajak (`/pajak`) kini Livewire tanpa reload; state filter tetap di URL (`#[Url]`) sehingga bookmark/share tidak berubah; query tetap milik use case/service canonical (`SpjWorkspaceUseCase`, `SpjReportUseCase`, `TaxFilterService`).
-- Navigasi antar-tab SPJ, workspace detail paket, ekspor/unduh, dan seluruh lifecycle/validation/numbering tidak berubah.
+- Pagination server, Livewire, dan tabel lokal kini memakai satu segmented control: maksimal tiga halaman awal dan tiga halaman akhir, elipsis untuk jarak, serta radius hanya pada sisi luar.
+- Modul Database Aktif tahap 2–4 memindahkan ringkasan, tab, diagnostik, explorer, daftar sekolah, maintenance, reset, dan aksi cepat ke Livewire; operasi tetap melalui service canonical dan audit.
+- Markup legacy halaman Database Aktif sudah dihapus; controller index hanya menyiapkan konteks awal dan endpoint detail lama tetap dipertahankan untuk kompatibilitas.
+- Pindah tab SPJ memakai navigasi SPA `Livewire.navigate` (fallback reload penuh; modal preview dibuat tahan ganti body via delegasi penuh); tujuan, URL, workspace detail paket, ekspor/unduh, dan seluruh lifecycle/validation/numbering tidak berubah.
 - Pagination disatukan via override `views/vendor/pagination/tailwind.blade.php` bertoken-tema + label Indonesia (`lang/id.json`, `lang/id/pagination.php`); tidak ada pager ganda pada tabel Livewire (inisialisasi generik melewati subtree `[wire:id]`).
 - Tema diterapkan sinkron di head via `x-theme-init` (anti-flash saat pindah halaman; parity peta diuji) dan progress bar atas `#app-top-progress` tampil saat load/navigasi/update Livewire.
 - Regression tercakup di `SpjTabFiltersLivewireTest`, `TaxFilterLivewireTest`, `SpjReportLayoutTest`, `SpjMainTabsRenderingTest`, `ThemeEarlyInitTest`, `TopProgressTest`; `npm run build` + `view:cache` hijau.

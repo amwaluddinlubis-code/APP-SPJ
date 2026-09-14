@@ -38,14 +38,16 @@ class UnifiedEmployeeMasterTest extends TestCase
     public function test_synced_employee_rows_are_crud_managed_by_the_employee_module(): void
     {
         $controller = file_get_contents(app_path('Http/Controllers/EmployeeController.php'));
-        $index = file_get_contents(resource_path('views/employees/index.blade.php'));
+        $directory = file_get_contents(resource_path('views/livewire/employee-directory.blade.php'));
+        $component = file_get_contents(app_path('Livewire/EmployeeDirectory.php'));
         $show = file_get_contents(resource_path('views/employees/show.blade.php'));
 
         $this->assertStringNotContainsString("source_type !== 'MANUAL'", $controller);
         $this->assertStringContainsString('$employee->delete();', $controller);
-        $this->assertStringContainsString("'source' => ['nullable', 'in:ARKAS,DAPODIK,MANUAL']", $controller);
-        $this->assertStringContainsString('$employee->source_label', $index);
-        $this->assertStringContainsString("route('employees.edit'", $index);
+        $this->assertStringContainsString("['ARKAS', 'DAPODIK', 'MANUAL']", $component);
+        $this->assertStringContainsString("['active', 'inactive']", $component);
+        $this->assertStringContainsString('$employee->source_label', $directory);
+        $this->assertStringContainsString("route('employees.edit'", $directory);
         $this->assertStringContainsString("route('employees.destroy'", $show);
     }
 }

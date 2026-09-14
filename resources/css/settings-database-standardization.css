@@ -54,7 +54,7 @@
 #database-control-center .db-table-counts>div:nth-last-child(-n+2){border-bottom:0}
 #database-control-center .db-table-counts strong{color:var(--db-strong)}
 #database-control-center .db-table-counts-wide{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-#database-control-center .db-action-card{display:flex;width:100%;min-height:5.2rem;border:1px solid var(--db-border);border-radius:.75rem;background:var(--db-soft);color:var(--db-text);text-align:left;transition:.15s}
+#database-control-center .db-action-card{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:5.2rem;border:1px solid var(--db-border);border-radius:.75rem;background:var(--db-soft);color:var(--db-text);text-align:left;transition:.15s}
 #database-control-center .db-action-card:hover{border-color:color-mix(in srgb,var(--theme-accent) 28%,var(--db-border));background:color-mix(in srgb,var(--theme-accent) 6%,var(--db-soft));transform:translateY(-1px)}
 #database-control-center .db-action-card>button,#database-control-center a.db-action-card{padding:.8rem}
 #database-control-center .db-action-card button{width:100%;text-align:left}
@@ -74,6 +74,7 @@
 #database-control-center .db-data-table tbody tr.is-active{background:color-mix(in srgb,var(--theme-accent) 8%,var(--db-surface))}
 #database-control-center .db-data-table td p{color:var(--db-subtle)}
 #database-control-center .db-data-table td strong{color:var(--db-strong)}
+#database-control-center [data-panel="list"]>.overflow-x-auto{border:0;border-radius:0;box-shadow:none}
 #database-control-center .db-empty-state{display:grid;place-items:center;align-content:center;gap:.45rem;min-height:10rem;padding:2rem;text-align:center;color:var(--db-subtle)}
 #database-control-center .db-empty-state strong{color:var(--db-strong)}
 #database-control-center .db-table-explorer{background:var(--db-surface)}

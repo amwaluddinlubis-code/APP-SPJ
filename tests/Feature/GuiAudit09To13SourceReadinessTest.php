@@ -27,16 +27,107 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
     public function test_database_reset_page_uses_shared_actions_and_theme_tokens(): void
     {
         $blade = file_get_contents(resource_path('views/database-manager/reset.blade.php'));
+        $component = file_get_contents(resource_path('views/livewire/database-reset-form.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('<x-ui.button type="submit" variant="danger">', $blade);
-        $this->assertStringContainsString('<x-ui.button variant="secondary"', $blade);
-        $this->assertStringContainsString('<x-ui.icon name="warning"', $blade);
-        $this->assertStringContainsString('var(--ui-fg-muted)', $blade);
-        $this->assertStringContainsString('var(--ui-surface-base)', $blade);
-        $this->assertStringNotContainsString('text-slate-', $blade);
-        $this->assertStringNotContainsString('text-indigo-', $blade);
-        $this->assertStringNotContainsString('bg-slate-', $blade);
+        $this->assertIsString($component);
+        $this->assertStringContainsString('<livewire:database-reset-form', $blade);
+        $this->assertStringContainsString('<x-ui.button type="submit" variant="danger"', $component);
+        $this->assertStringContainsString('<x-ui.danger-zone', $component);
+        $this->assertStringContainsString('var(--ui-fg-muted)', $component);
+        $this->assertStringContainsString('var(--ui-surface-base)', $component);
+        $this->assertStringNotContainsString('text-slate-', $component);
+        $this->assertStringNotContainsString('text-indigo-', $component);
+        $this->assertStringNotContainsString('bg-slate-', $component);
+    }
+
+    public function test_database_table_explorer_has_one_standard_pagination_control(): void
+    {
+        $blade = file_get_contents(resource_path('views/database-manager/index.blade.php'));
+        $partial = file_get_contents(resource_path('views/database-manager/partials/tables.blade.php'));
+        $component = file_get_contents(resource_path('views/livewire/database-table-explorer.blade.php'));
+        $css = file_get_contents(resource_path('css/ui-generalization.css'));
+
+        $this->assertIsString($blade);
+        $this->assertIsString($partial);
+        $this->assertIsString($component);
+        $this->assertIsString($css);
+        $this->assertStringContainsString("@include('database-manager.partials.tables')", $blade);
+        $this->assertStringContainsString('<livewire:database-table-explorer', $partial);
+        $this->assertStringContainsString('wire:model.live.debounce.250ms="search"', $component);
+        $this->assertStringContainsString('wire:click="setPage(', $component);
+        $this->assertStringContainsString('.ui-pagination-control:first-child', $css);
+        $this->assertStringContainsString('.ui-pagination-control:last-child', $css);
+    }
+
+    public function test_database_manager_summary_and_tabs_are_livewire_consumers(): void
+    {
+        $blade = file_get_contents(resource_path('views/database-manager/index.blade.php'));
+        $tabs = file_get_contents(resource_path('views/livewire/database-manager-tabs.blade.php'));
+        $summary = file_get_contents(resource_path('views/livewire/database-status-summary.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertIsString($tabs);
+        $this->assertIsString($summary);
+        $this->assertStringContainsString('<livewire:database-status-summary', $blade);
+        $this->assertStringContainsString('<livewire:database-manager-tabs', $blade);
+        $this->assertStringContainsString('wire:click="selectTab(', $tabs);
+        $this->assertStringContainsString('data-livewire-summary="true"', $summary);
+    }
+
+    public function test_database_diagnostics_is_a_livewire_read_only_panel(): void
+    {
+        $blade = file_get_contents(resource_path('views/database-manager/index.blade.php'));
+        $partial = file_get_contents(resource_path('views/database-manager/partials/diagnostics.blade.php'));
+        $component = file_get_contents(resource_path('views/livewire/database-diagnostics.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertIsString($partial);
+        $this->assertIsString($component);
+        $this->assertStringContainsString("@include('database-manager.partials.diagnostics')", $blade);
+        $this->assertStringContainsString('<livewire:database-diagnostics', $partial);
+        $this->assertStringContainsString('data-livewire-diagnostics="true"', $component);
+        $this->assertStringContainsString('Jalankan integrity check', $component);
+        $this->assertStringContainsString('tableCounts', $component);
+    }
+
+    public function test_database_school_maintenance_and_reset_use_livewire_consumers(): void
+    {
+        $index = file_get_contents(resource_path('views/database-manager/index.blade.php'));
+        $schoolPartial = file_get_contents(resource_path('views/database-manager/partials/school-list.blade.php'));
+        $maintenancePartial = file_get_contents(resource_path('views/database-manager/partials/maintenance.blade.php'));
+        $schoolList = file_get_contents(resource_path('views/livewire/database-school-list.blade.php'));
+        $maintenance = file_get_contents(resource_path('views/livewire/database-maintenance.blade.php'));
+        $reset = file_get_contents(resource_path('views/livewire/database-reset-form.blade.php'));
+
+        $this->assertIsString($index);
+        $this->assertIsString($schoolPartial);
+        $this->assertIsString($maintenancePartial);
+        $this->assertIsString($schoolList);
+        $this->assertIsString($maintenance);
+        $this->assertIsString($reset);
+        $this->assertStringContainsString("@include('database-manager.partials.school-list')", $index);
+        $this->assertStringContainsString("@include('database-manager.partials.maintenance')", $index);
+        $this->assertStringContainsString('<livewire:database-school-list', $schoolPartial);
+        $this->assertStringContainsString('<livewire:database-maintenance', $maintenancePartial);
+        $this->assertStringContainsString('wire:model.live.debounce.250ms="search"', $schoolList);
+        $this->assertStringContainsString('wire:click="run(', $maintenance);
+        $this->assertStringContainsString('wire:submit="resetDatabase"', $reset);
+    }
+
+    public function test_database_overview_is_a_livewire_panel(): void
+    {
+        $blade = file_get_contents(resource_path('views/database-manager/index.blade.php'));
+        $partial = file_get_contents(resource_path('views/database-manager/partials/overview.blade.php'));
+        $overview = file_get_contents(resource_path('views/livewire/database-overview.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertIsString($partial);
+        $this->assertIsString($overview);
+        $this->assertStringContainsString("@include('database-manager.partials.overview')", $blade);
+        $this->assertStringContainsString('<livewire:database-overview', $partial);
+        $this->assertStringContainsString('data-livewire-overview="true"', $overview);
+        $this->assertStringContainsString('Aksi cepat', $overview);
     }
 
     public function test_legacy_icon_component_is_only_a_compatibility_adapter(): void
@@ -95,6 +186,7 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
     public function test_core_operator_lists_keep_desktop_and_mobile_source_fallbacks(): void
     {
         $employees = file_get_contents(resource_path('views/employees/index.blade.php'));
+        $employeeComponent = file_get_contents(resource_path('views/livewire/employee-directory.blade.php'));
         $students = file_get_contents(resource_path('views/students/index.blade.php'));
         $spj = file_get_contents(resource_path('views/spj/index.blade.php'));
         $spjLivewire = implode("\n", array_map(
@@ -103,11 +195,12 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         ));
 
         $this->assertIsString($employees);
+        $this->assertIsString($employeeComponent);
         $this->assertIsString($students);
         $this->assertIsString($spj);
 
-        $this->assertStringContainsString('hidden md:block', $employees);
-        $this->assertStringContainsString('md:hidden', $employees);
+        $this->assertStringContainsString('<livewire:employee-directory', $employees);
+        $this->assertStringContainsString('wire:model.live.debounce.300ms="search"', $employeeComponent);
         $this->assertStringContainsString('hidden md:block', $students);
         $this->assertStringContainsString('md:hidden', $students);
         $this->assertStringContainsString('lg:hidden', $spj.$spjLivewire);

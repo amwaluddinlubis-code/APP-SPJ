@@ -17,11 +17,24 @@ Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 
 Halaman pengaturan yang dimigrasikan ke pola TALL menggunakan Livewire untuk state, pencarian, filter, dan submit UI. Controller/service lama tetap menjadi pemilik validasi, session context, provisioning database, sinkronisasi, dan persistence.
 
+Data Sinkronisasi menggunakan Livewire pada navigasi kelompok tabel dan pencarian read-only. Query serta batas konteks sekolah/tahun tetap dimiliki controller canonical.
+
+Modul Database Aktif dimigrasikan bertahap. Ringkasan status database, navigasi tab, panel overview, diagnostik, Explorer Tabel, daftar sekolah, maintenance, dan reset memakai Livewire; Explorer Tabel juga memakai Livewire untuk pencarian, sorting, pagination, serta detail baca-saja. Operasi database tetap dijalankan melalui service canonical dan audit yang ada.
+
+Isi setiap tab Database Aktif dirakit melalui partial Blade di `resources/views/database-manager/partials/`; partial hanya menjadi komposisi view, sedangkan state dan aksi reactive tetap dimiliki komponen Livewire.
+
+
+Panel bersarang tidak boleh menggandakan header section. Komponen child seperti Master Sekolah harus menyediakan isi/list saja ketika parent sudah menyediakan `x-ui.form-section`.
+
+Halaman Integrasi Dapodik mengikuti lebar shell authenticated yang sama dengan halaman Pegawai. Konfigurasi dan status memakai dua kolom seimbang; pesan status panjang dibatasi pada lebar baca yang nyaman dan dibungkus otomatis.
+
 ## 1.1 Ownership TALL pada halaman pengaturan
 
 Migrasi bertahap memakai pembagian berikut: Tailwind untuk layout dan visual, Alpine hanya untuk interaksi ringan pada baris form, Livewire untuk state/pencarian/aksi reactive, dan Laravel service/controller untuk validasi, otorisasi, persistence, serta provisioning database.
 
 Profil User dan Master Sekolah menjadi consumer pertama pola ini. Route lama tetap dipertahankan agar URL, middleware administrator, dan kontrak akses tidak berubah.
+
+Halaman Pengaturan Sekolah memakai layout dua kolom: workflow operator berada di kolom utama, sedangkan administrasi tahun anggaran, sekolah baru, dan Master Sekolah berada pada kolom administrator. Operator hanya dapat mengatur sekolah yang terikat pada akunnya.
 
 ## 2. Layout global
 
@@ -150,6 +163,7 @@ Kontrak umum:
 - satu tabel hanya boleh mempunyai satu pagination;
 - jika sebuah tabel sudah memiliki pager lokal Alpine, beri `data-pagination="none"` agar `table-ui-standardization.js` tidak menyuntik pager kedua.
 - pagination `links()` memakai override `views/vendor/pagination/tailwind.blade.php` yang bertoken-tema (halaman aktif memakai `--theme-action-bg`); teks memakai file bahasa Indonesia (`lang/id.json`, `lang/id/pagination.php`) — jangan mengembalikan gaya abu-abu vendor atau ringkasan ganda;
+- pagination wajib memakai satu kontrol segmented yang menyatu: tombol Sebelumnya, maksimal tiga halaman paling depan, elipsis bila ada jarak, maksimal tiga halaman paling belakang, lalu tombol Berikutnya. Radius hanya boleh berada pada kontrol paling kiri dan paling kanan; kontrol di tengah tanpa radius. Aturan ini berlaku untuk pagination server, Livewire, dan pagination tabel lokal;
 - tabel di dalam komponen Livewire tidak membutuhkan marker pagination tambahan karena inisialisasi generik melewati subtree `[wire:id]`, tetapi tetap beri `data-pagination="server"` agar maksudnya eksplisit;
 
 Untuk tabel kategori SPJ non-BARANG:

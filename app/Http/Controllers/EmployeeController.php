@@ -13,43 +13,9 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
-    public function index(Request $request): View
+    public function index(): View
     {
-        $filters = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'source' => ['nullable', 'in:ARKAS,DAPODIK,MANUAL'],
-            'status' => ['nullable', 'in:active,inactive'],
-            'perPage' => ['nullable', 'in:15,25,50,100'],
-        ]);
-        $perPage = (int) ($filters['perPage'] ?? 15);
-
-        $employees = Employee::query()
-            ->search($filters['q'] ?? null)
-            ->when(($filters['source'] ?? null) === 'ARKAS', fn (Builder $query) => $query->fromArkas())
-            ->when(($filters['source'] ?? null) === 'DAPODIK', fn (Builder $query) => $query->fromDapodik())
-            ->when(($filters['source'] ?? null) === 'MANUAL', fn (Builder $query) => $query->manualOnly())
-            ->when(($filters['status'] ?? null) === 'active', fn (Builder $query) => $query->where('is_active', true))
-            ->when(($filters['status'] ?? null) === 'inactive', fn (Builder $query) => $query->where('is_active', false))
-            ->orderByDesc('is_active')->orderBy('name')->orderBy('id')
-            ->paginate($perPage)->withQueryString();
-
-        $honors = $this->honorsFor($employees->getCollection()->all());
-        $employees->getCollection()->each(function (Employee $employee) use ($honors): void {
-            $rows = $honors->get($this->identityKey($employee), collect());
-            $employee->setAttribute('honor_count', $rows->count());
-            $employee->setAttribute('honor_gross', $rows->sum('gross_amount'));
-            $employee->setAttribute('honor_net', $rows->sum('net_amount'));
-        });
-
-        $summary = [
-            'total' => Employee::count(),
-            'active' => Employee::where('is_active', true)->count(),
-            'arkas' => Employee::query()->fromArkas()->count(),
-            'dapodik' => Employee::query()->fromDapodik()->count(),
-            'manual' => Employee::query()->manualOnly()->count(),
-        ];
-
-        return view('employees.index', compact('employees', 'filters', 'summary'));
+        return view('employees.index');
     }
 
     public function show(int $employeeId): View

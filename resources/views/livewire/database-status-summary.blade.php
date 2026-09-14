@@ -1,0 +1,6 @@
+<div data-livewire-summary="true" class="db-hero-summary grid sm:grid-cols-2 xl:grid-cols-4">
+    <div class="db-hero-stat"><p class="db-eyebrow">Database aktif</p><div class="mt-1 flex items-center gap-2"><span class="db-status-dot {{ $schoolName !== 'Belum dipilih' ? 'is-ok' : 'is-danger' }}"></span><p class="font-bold text-[var(--ui-fg-strong)]">{{ $schoolName }}</p></div><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">NPSN {{ $npsn }} · Session {{ $sessionId }}</p></div>
+    <div class="db-hero-stat"><p class="db-eyebrow">Kesehatan</p><p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ $health }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $healthHint }}</p></div>
+    <div class="db-hero-stat"><p class="db-eyebrow">Penyimpanan aktif</p><p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ $storage }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">DB {{ $databaseSize }} · WAL {{ $walSize }}</p></div>
+    <div class="db-hero-stat"><p class="db-eyebrow">Struktur aktif</p><p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ number_format($tableCount, 0, ',', '.') }} tabel</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $tableRows }} baris terhitung</p></div>
+</div>

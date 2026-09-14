@@ -223,15 +223,16 @@ const initializeClientTablePagination = (root = document) => {
         pagination.className = 'app-table-pagination';
         pagination.innerHTML = `
             <div class="app-table-pagination-summary"></div>
-            <div class="flex items-center gap-2">
-                <button type="button" data-action="prev">Sebelumnya</button>
-                <select aria-label="Baris per halaman">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                <button type="button" data-action="next">Berikutnya</button>
+            <select aria-label="Baris per halaman">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            <div class="ui-pagination-group">
+                <button type="button" data-action="prev" class="ui-pagination-control">Sebelumnya</button>
+                <span data-page-nav></span>
+                <button type="button" data-action="next" class="ui-pagination-control">Berikutnya</button>
             </div>
         `;
 
@@ -240,6 +241,7 @@ const initializeClientTablePagination = (root = document) => {
         const select = pagination.querySelector('select');
         const previous = pagination.querySelector('[data-action="prev"]');
         const next = pagination.querySelector('[data-action="next"]');
+        const pageNav = pagination.querySelector('[data-page-nav]');
         select.value = String(perPage);
 
         const render = () => {
@@ -255,6 +257,28 @@ const initializeClientTablePagination = (root = document) => {
             summary.textContent = `Menampilkan ${start + 1}–${end} dari ${rows.length} baris`;
             previous.disabled = page <= 1;
             next.disabled = page >= totalPages;
+            pageNav.replaceChildren();
+            const visiblePages = [...new Set([
+                ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => index + 1),
+                ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => totalPages - Math.min(3, totalPages) + index + 1),
+            ])].sort((left, right) => left - right);
+            let previousPage = null;
+            visiblePages.forEach((number) => {
+                if (previousPage !== null && number > previousPage + 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'ui-pagination-control ui-pagination-ellipsis';
+                    ellipsis.textContent = '…';
+                    pageNav.appendChild(ellipsis);
+                }
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `ui-pagination-control${number === page ? ' is-active' : ''}`;
+                button.textContent = String(number);
+                button.setAttribute('aria-current', number === page ? 'page' : 'false');
+                button.addEventListener('click', () => { page = number; render(); });
+                pageNav.appendChild(button);
+                previousPage = number;
+            });
         };
 
         previous.addEventListener('click', () => {
@@ -408,6 +432,34 @@ const initializeSiplahPurchaseUi = (root = document) => {
 
 initializeSiplahPurchaseUi();
 document.addEventListener('livewire:navigated', () => initializeSiplahPurchaseUi());
+
+const initializeDatabaseManagerTabs = () => {
+    const workspace = document.getElementById('db-tabs');
+    if (!(workspace instanceof HTMLElement) || workspace.dataset.tabsInitialized === 'true') return;
+
+    workspace.dataset.tabsInitialized = 'true';
+    const validTabs = ['overview', 'list', 'tables', 'diagnostic', 'maintenance'];
+    const render = (tab) => {
+        const selectedTab = validTabs.includes(tab) ? tab : 'overview';
+
+        workspace.querySelectorAll('[data-tab]').forEach((button) => {
+            button.dataset.active = button.dataset.tab === selectedTab ? 'true' : 'false';
+        });
+        workspace.querySelectorAll('[data-panel]').forEach((panel) => {
+            panel.hidden = panel.dataset.panel !== selectedTab;
+        });
+    };
+
+    workspace.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-tab]');
+        if (button instanceof HTMLElement && button.dataset.tab) render(button.dataset.tab);
+    });
+    window.addEventListener('database-tab-changed', (event) => render(event.detail?.tab));
+    render(window.location.hash.slice(1));
+};
+
+initializeDatabaseManagerTabs();
+document.addEventListener('livewire:navigated', initializeDatabaseManagerTabs);
 
 // Delegasi global untuk kontrol select tanpa inline handler:
 // - data-auto-submit="true" → submit form induk.

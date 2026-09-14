@@ -116,9 +116,17 @@ class TaxFilterLivewireTest extends TestCase
         $view = file_get_contents(resource_path('views/vendor/pagination/tailwind.blade.php'));
 
         $this->assertIsString($view);
-        $this->assertStringContainsString('--theme-action-bg', $view);
-        $this->assertStringContainsString('var(--ui-line)', $view);
+        $styles = file_get_contents(resource_path('css/ui-generalization.css'));
+
+        $this->assertIsString($styles);
+        $this->assertStringContainsString('--theme-action-bg', $styles);
+        $this->assertStringContainsString('var(--ui-line)', $styles);
         $this->assertStringContainsString('pagination.previous', $view);
+        $this->assertStringContainsString('ui-pagination-group', $view);
+        $this->assertStringContainsString('range(1, min(3, $lastPage))', $view);
+        $this->assertStringContainsString('range(max(1, $lastPage - 2), $lastPage)', $view);
+        $this->assertStringContainsString('data-pagination-standard="segmented"', $view);
+        $this->assertStringNotContainsString('rounded-lg', $view);
         $this->assertStringNotContainsString('Showing', $view);
         $this->assertStringNotContainsString('bg-white', $view);
     }

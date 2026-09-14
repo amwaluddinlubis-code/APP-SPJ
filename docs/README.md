@@ -49,6 +49,7 @@ Status keseluruhan tetap **belum final release-ready** karena real-data generate
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — checklist browser desktop/laptop dan mobile/tablet untuk GUI-AUDIT-12/13. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
+| `LIVEWIRE_MIGRATION_PLAN.md` | **ACTIVE PLAN / REFRESHED 2026-09-14** — status jujur migrasi Livewire per modul (done/uncommitted/not-started/out-of-scope), kandidat, dan aturan anti-tabrakan. |
 
 Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.md` dan melakukan **Documentation Impact Review** sebelum menyatakan pekerjaan selesai.
 

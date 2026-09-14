@@ -213,7 +213,7 @@ const initializeStandardClientTable = (table) => {
     summary.style.color = 'var(--ui-fg-muted)';
 
     const nav = document.createElement('div');
-    nav.className = 'flex items-center gap-1';
+    nav.className = 'ui-pagination-group';
     nav.setAttribute('aria-label', 'Navigasi halaman tabel');
 
     pagination.append(summary, nav);
@@ -234,6 +234,7 @@ const initializeStandardClientTable = (table) => {
 
         const previous = document.createElement('button');
         previous.type = 'button';
+        previous.className = 'ui-pagination-control';
         previous.textContent = '‹';
         previous.title = 'Halaman sebelumnya';
         previous.disabled = page <= 1;
@@ -244,11 +245,22 @@ const initializeStandardClientTable = (table) => {
         });
         nav.appendChild(previous);
 
-        const firstPage = Math.max(1, page - 2);
-        const lastPage = Math.min(totalPages, page + 2);
-        for (let number = firstPage; number <= lastPage; number += 1) {
+        const visiblePages = [...new Set([
+            ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => index + 1),
+            ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => totalPages - Math.min(3, totalPages) + index + 1),
+        ])].sort((left, right) => left - right);
+        let previousPage = null;
+        visiblePages.forEach((number) => {
+            if (previousPage !== null && number > previousPage + 1) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'ui-pagination-control ui-pagination-ellipsis';
+                ellipsis.textContent = '…';
+                ellipsis.setAttribute('aria-hidden', 'true');
+                nav.appendChild(ellipsis);
+            }
             const button = document.createElement('button');
             button.type = 'button';
+            button.className = `ui-pagination-control${number === page ? ' is-active' : ''}`;
             button.textContent = String(number);
             button.setAttribute('aria-current', number === page ? 'page' : 'false');
             applyButtonTheme(button, number === page);
@@ -257,10 +269,12 @@ const initializeStandardClientTable = (table) => {
                 render();
             });
             nav.appendChild(button);
-        }
+            previousPage = number;
+        });
 
         const next = document.createElement('button');
         next.type = 'button';
+        next.className = 'ui-pagination-control';
         next.textContent = '›';
         next.title = 'Halaman berikutnya';
         next.disabled = page >= totalPages;

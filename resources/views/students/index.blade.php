@@ -57,9 +57,12 @@
                     </x-ui.select>
                 </x-ui.field>
 
-                <div class="flex items-end gap-2 lg:col-span-2">
-                    <x-ui.button type="submit" class="flex-1">Terapkan</x-ui.button>
-                    <x-ui.button variant="secondary" :href="route('students.index')">Reset</x-ui.button>
+                <div class="lg:col-span-2">
+                    <span class="block text-sm font-semibold text-transparent select-none" aria-hidden="true">&nbsp;</span>
+                    <div class="mt-1.5 flex gap-2">
+                        <x-ui.button type="submit" class="flex-1">Terapkan</x-ui.button>
+                        <x-ui.button variant="secondary" :href="route('students.index')">Reset</x-ui.button>
+                    </div>
                 </div>
             </form>
 

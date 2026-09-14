@@ -56,11 +56,13 @@ Route::middleware('auth')->group(function () {
             ->middleware(['operator-or-administrator', 'throttle:3,1'])
             ->name('years.synchronize');
     });
-    Route::middleware('administrator')->group(function () {
+    Route::middleware('operator-or-administrator')->group(function () {
         Route::get('/pengaturan/sekolah', [SchoolConfigurationController::class, 'index'])->name('schools.settings');
         Route::get('/pengaturan/sekolah/kop-surat', [SchoolConfigurationController::class, 'letterhead'])->name('schools.letterhead');
         Route::put('/pengaturan/sekolah/profil', [SchoolConfigurationController::class, 'updateProfile'])->name('schools.profile.update');
         Route::put('/pengaturan/dokumen/penyimpanan', [SchoolConfigurationController::class, 'updateDocumentStorage'])->name('documents.storage.update');
+    });
+    Route::middleware('administrator')->group(function () {
         Route::get('/pengaturan/backup', [SchoolBackupController::class, 'index'])->name('school-backups.index');
         Route::post('/pengaturan/backup', [SchoolBackupController::class, 'store'])->name('school-backups.store');
         Route::post('/pengaturan/backup/{backupId}/pulihkan', [SchoolBackupController::class, 'restore'])->name('school-backups.restore');

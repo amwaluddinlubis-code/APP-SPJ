@@ -1,94 +1,22 @@
 <x-layouts.tailwind-app title="Integrasi Dapodik">
-    <div class="mx-auto max-w-6xl space-y-6">
-        <x-page-header
-            title="Integrasi Dapodik"
-            subtitle="Sinkronisasi satu arah GTK dan Peserta Didik. Token disimpan terenkripsi."
-            kicker="Web Service Resmi Lokal"
-        >
-            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item
-                    label="Status Koneksi"
-                    :value="$connection ? 'Terkonfigurasi' : 'Belum dikonfigurasi'"
-                    :hint="$connection?->last_status ?? 'Belum ada status sinkronisasi'"
-                    :value-class="$connection ? 'text-emerald-700' : 'text-amber-700'"
-                />
-                <x-stat-item
-                    label="Sinkronisasi Terakhir"
-                    :value="$connection?->last_synced_at?->translatedFormat('d M Y H:i') ?? '—'"
-                    hint="Waktu sinkronisasi terakhir"
-                    value-class="text-indigo-700"
-                />
-                <x-stat-item
-                    label="Sumber Data"
-                    value="GTK & Peserta Didik"
-                    hint="Dapodik → aplikasi SPJ"
-                    value-class="text-slate-800"
-                />
-            </div>
+    <div class="w-full space-y-6">
+        <x-page-header title="Integrasi Dapodik" subtitle="Hubungkan layanan Dapodik lokal untuk memperbarui data pegawai dan siswa." kicker="PENGATURAN DATA">
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0"><x-stat-item label="Status koneksi" :value="$connection ? 'Terkonfigurasi' : 'Belum dikonfigurasi'" :hint="$connection?->last_status ?? 'Belum ada sinkronisasi'" :value-class="$connection ? 'text-emerald-700' : 'text-amber-700'" /><x-stat-item label="Sinkron terakhir" :value="$connection?->last_synced_at?->translatedFormat('d M Y H:i') ?? '—'" hint="Waktu pembaruan terakhir" /><x-stat-item label="Sumber data" value="GTK & Peserta Didik" hint="Dapodik ke SPJ" /></div>
         </x-page-header>
+        @if(session('success'))<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{{ session('success') }}</div>@endif
+        @if(session('error'))<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{{ session('error') }}</div>@endif
+        @if($errors->any())<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{{ $errors->first() }}</div>@endif
 
-        <div class="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
-            <form method="POST" action="{{ route('dapodik.store') }}" class="space-y-6">
-                @csrf
-                @method('PUT')
+        <div class="grid gap-6 xl:grid-cols-2">
+            <x-ui.form-section title="Konfigurasi koneksi" description="Simpan alamat layanan dan token Dapodik lokal sekolah.">
+                <form method="POST" action="{{ route('dapodik.store') }}" class="space-y-5">@csrf @method('PUT')
+                    <div class="grid gap-4 md:grid-cols-2"><x-ui.field label="Alamat Dapodik" for="base_url" hint="Contoh: layanan lokal pada komputer server." :error="$errors->first('base_url')" required><x-ui.input id="base_url" name="base_url" :value="old('base_url',$connection?->base_url??'http://localhost:5774')" placeholder="http://localhost:5774" required /></x-ui.field><x-ui.field label="NPSN" for="npsn" hint="Harus sesuai sekolah aktif." :error="$errors->first('npsn')" required><x-ui.input id="npsn" name="npsn" :value="old('npsn',$connection?->npsn??'')" inputmode="numeric" required /></x-ui.field></div>
+                    <x-ui.field :label="$connection ? 'Bearer token baru' : 'Bearer token'" for="token" :required="!$connection" :hint="$connection ? 'Kosongkan jika tidak diganti.' : 'Wajib diisi saat konfigurasi pertama.'" :error="$errors->first('token')"><x-ui.input id="token" type="password" name="token" autocomplete="new-password" :required="!$connection" /></x-ui.field>
+                    <div class="flex justify-end border-t border-[var(--ui-line)] pt-4"><x-ui.button type="submit">Simpan Konfigurasi</x-ui.button></div>
+                </form>
+            </x-ui.form-section>
 
-                <x-ui.form-section title="Konfigurasi koneksi" description="Gunakan alamat layanan Dapodik lokal sekolah. Token tidak pernah ditampilkan kembali setelah disimpan.">
-                    <div class="grid gap-5">
-                        <x-ui.field label="Alamat Dapodik" for="base_url" required hint="Biasanya menggunakan layanan lokal pada komputer server Dapodik." :error="$errors->first('base_url')">
-                            <x-ui.input id="base_url" name="base_url" :value="old('base_url',$connection?->base_url??'http://localhost:5774')" placeholder="http://localhost:5774" required />
-                        </x-ui.field>
-
-                        <x-ui.field label="NPSN" for="npsn" required hint="Pastikan sama dengan sekolah yang sedang aktif." :error="$errors->first('npsn')">
-                            <x-ui.input id="npsn" name="npsn" :value="old('npsn',$connection?->npsn??'10260756')" inputmode="numeric" required />
-                        </x-ui.field>
-
-                        <x-ui.field
-                            :label="$connection ? 'Bearer token baru' : 'Bearer token'"
-                            for="token"
-                            :required="!$connection"
-                            :hint="$connection ? 'Kosongkan jika token tidak ingin diganti.' : 'Token diperlukan pada konfigurasi pertama.'"
-                            :error="$errors->first('token')"
-                        >
-                            <x-ui.input id="token" type="password" name="token" autocomplete="new-password" :required="!$connection" />
-                        </x-ui.field>
-                    </div>
-
-                    <div class="mt-6 flex justify-end border-t border-[var(--ui-line)] pt-5">
-                        <x-ui.button type="submit">Simpan konfigurasi</x-ui.button>
-                    </div>
-                </x-ui.form-section>
-            </form>
-
-            <div class="space-y-6">
-                <x-ui.form-section title="Status sinkronisasi" description="Pantau hasil koneksi terakhir sebelum menjalankan sinkronisasi data.">
-                    <dl class="grid gap-4 text-sm">
-                        <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Status terakhir</dt>
-                            <dd class="mt-1 font-semibold text-slate-900">{{ $connection?->last_status??'Belum dikonfigurasi' }}</dd>
-                        </div>
-                        <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu terakhir</dt>
-                            <dd class="mt-1 font-semibold text-slate-900">{{ $connection?->last_synced_at?->translatedFormat('d F Y H:i')??'—' }}</dd>
-                        </div>
-                        <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Keterangan</dt>
-                            <dd class="mt-1 leading-6 text-slate-700">{{ $connection?->last_message??'Belum ada hasil sinkronisasi.' }}</dd>
-                        </div>
-                    </dl>
-
-                    @if($connection)
-                        <div class="mt-6 grid gap-2 border-t border-[var(--ui-line)] pt-5 sm:grid-cols-2">
-                            <form method="POST" action="{{ route('dapodik.test') }}">@csrf<x-ui.button type="submit" variant="secondary" class="w-full">Tes layanan</x-ui.button></form>
-                            <form method="POST" action="{{ route('dapodik.sync') }}" data-confirm="Sinkronisasi akan mengambil seluruh GTK dan Peserta Didik dari Dapodik. Data manual dipadankan berdasarkan identitas dan tidak dihapus. Lanjutkan?">@csrf<x-ui.button type="submit" variant="success" class="w-full">Sinkronkan sekarang</x-ui.button></form>
-                        </div>
-                    @endif
-                </x-ui.form-section>
-
-                <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
-                    <p class="font-bold">Cara pemadanan data</p>
-                    <p class="mt-1">Pegawai menggunakan NUPTK, lalu nama ternormalisasi jika NUPTK kosong. Siswa menggunakan NISN, lalu ID Dapodik. Data yang tidak lagi dikirim akan dinonaktifkan, bukan dihapus.</p>
-                </section>
-            </div>
+            <div class="space-y-5"><x-ui.form-section title="Status sinkronisasi" description="Periksa koneksi sebelum mengambil data terbaru."><dl class="grid gap-3 text-sm"><div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><dt class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status terakhir</dt><dd class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $connection?->last_status ?? 'Belum dikonfigurasi' }}</dd></div><div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><dt class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Waktu terakhir</dt><dd class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $connection?->last_synced_at?->translatedFormat('d F Y H:i') ?? '—' }}</dd></div><div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><dt class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Keterangan</dt><dd class="mt-1 max-w-md break-words leading-6 text-[var(--ui-fg)]">{{ $connection?->last_message ?? 'Belum ada hasil sinkronisasi.' }}</dd></div></dl>@if($connection)<div class="grid gap-2 border-t border-[var(--ui-line)] pt-4 sm:grid-cols-2"><form method="POST" action="{{ route('dapodik.test') }}">@csrf<x-ui.button type="submit" variant="secondary" class="w-full">Tes Layanan</x-ui.button></form><form method="POST" action="{{ route('dapodik.sync') }}" data-confirm="Sinkronisasi akan mengambil data GTK dan Peserta Didik dari Dapodik. Lanjutkan?">@csrf<x-ui.button type="submit" variant="success" class="w-full">Sinkronkan Sekarang</x-ui.button></form></div>@endif</x-ui.form-section><section class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><p class="font-bold">Cara pemadanan data</p><p class="mt-1">Pegawai dipadankan dengan NUPTK lalu nama. Siswa menggunakan NISN lalu ID Dapodik. Data yang tidak lagi dikirim dinonaktifkan, bukan dihapus.</p></section></div>
         </div>
     </div>
 </x-layouts.tailwind-app>

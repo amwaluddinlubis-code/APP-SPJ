@@ -18,7 +18,9 @@ class SchoolConfigurationController extends Controller
 {
     public function index(SchoolDatabaseManager $databases, DocumentStoragePathService $documentStorage): View
     {
-        $schools = School::query()->with('databaseRecord')->orderBy('name')->get();
+        $schools = School::query()->with('databaseRecord')
+            ->when(! request()->user()->isAdministrator(), fn ($query) => $query->whereKey(request()->user()->school_id))
+            ->orderBy('name')->get();
         $activeSchool = School::query()->find(session('active_school_id'));
         $profile = null;
         $activeYear = null;
@@ -58,6 +60,7 @@ class SchoolConfigurationController extends Controller
     public function updateProfile(Request $request, SchoolDatabaseManager $databases): RedirectResponse
     {
         $school = School::query()->findOrFail(session('active_school_id'));
+        abort_unless($request->user()->isAdministrator() || $request->user()->school_id === $school->id, 403);
         $data = $request->validate([
             'npsn' => ['required', 'string', 'max:16', 'unique:schools,npsn,'.$school->id],
             'school_code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:schools,school_code,'.$school->id],
@@ -76,7 +79,11 @@ class SchoolConfigurationController extends Controller
             'treasurer_nip' => ['nullable', 'string', 'max:40'],
             'treasurer_email' => ['nullable', 'email', 'max:180'],
             'treasurer_phone' => ['nullable', 'string', 'max:40'],
+            'document_storage_path' => ['required', 'string'],
         ]);
+        if ($storageError = $this->documentStorageError($data['document_storage_path'])) {
+            throw ValidationException::withMessages(['document_storage_path' => $storageError]);
+        }
         $schoolData = collect($data)->only(['npsn', 'school_code', 'name', 'address', 'desa', 'district', 'regency', 'province'])->toArray();
         if ($request->hasFile('letterhead')) {
             if ($school->letterhead_path) {
@@ -85,6 +92,7 @@ class SchoolConfigurationController extends Controller
             $schoolData['letterhead_path'] = $request->file('letterhead')->store('letterheads');
         }
         $school->update($schoolData);
+        app(DocumentStoragePathService::class)->savePath($data['document_storage_path']);
         $databases->activate($school);
         $year = FiscalYear::query()->find(session('active_fiscal_year_id'));
         if ($year) {
@@ -95,6 +103,11 @@ class SchoolConfigurationController extends Controller
         }
 
         return back()->with('success', 'Profil sekolah dan penandatangan dokumen berhasil diperbarui.');
+    }
+
+    private function documentStorageError(string $path): ?string
+    {
+        return app(DocumentStoragePathService::class)->validatePath($path);
     }
 
     /** Menampilkan kop sekolah aktif dari disk privat melalui route terautentikasi. */

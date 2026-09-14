@@ -47,6 +47,9 @@
             </div>
         </nav>
 
+        <style>nav[aria-label="Navigasi kelompok data"] { display: none; }</style>
+        <livewire:synced-data-navigation :tables="$tables" :counts="$counts" :type="$type" />
+
         @if($type === 'overview')
             @foreach($groups as $group => $items)
                 <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow sm:p-6">

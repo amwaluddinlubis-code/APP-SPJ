@@ -821,12 +821,78 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--ui-line-strong);
-    border-radius: .6rem;
+    border-radius: 0;
     background: var(--ui-surface-base);
     padding: .35rem .65rem;
     color: var(--ui-fg);
     font-size: .78rem;
     font-weight: 750;
+}
+
+/* Canonical segmented pager: one connected control, rounded only at its ends. */
+.ui-pagination-group {
+    display: inline-flex;
+    align-items: stretch;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: .6rem;
+}
+
+.ui-pagination-group .ui-pagination-control {
+    border: 0;
+    border-right: 1px solid var(--ui-line);
+    border-radius: 0;
+    white-space: nowrap;
+}
+
+.ui-pagination-group .ui-pagination-control:first-child {
+    border-top-left-radius: .55rem;
+    border-bottom-left-radius: .55rem;
+}
+
+.ui-pagination-group .ui-pagination-control:last-child {
+    border-right: 0;
+    border-top-right-radius: .55rem;
+    border-bottom-right-radius: .55rem;
+}
+
+.ui-pagination-group [data-page-nav] {
+    display: inline-flex;
+    align-items: stretch;
+}
+
+.ui-pagination-group [data-page-nav] .ui-pagination-control {
+    border: 0;
+    border-right: 1px solid var(--ui-line);
+    border-radius: 0;
+}
+
+.ui-pagination-control {
+    display: inline-flex;
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    padding: .35rem .65rem;
+    color: var(--ui-fg);
+    font-size: .78rem;
+    font-weight: 750;
+}
+
+.ui-pagination-control:hover:not(.is-disabled):not(.is-active) {
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent-strong);
+}
+
+.ui-pagination-control.is-active {
+    background: var(--theme-action-bg);
+    color: var(--theme-action-fg);
+}
+
+.ui-pagination-control.is-disabled,
+.ui-pagination-ellipsis {
+    color: var(--ui-fg-muted);
 }
 
 .ui-pagination button:hover,

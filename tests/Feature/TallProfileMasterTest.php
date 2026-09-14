@@ -63,12 +63,30 @@ class TallProfileMasterTest extends TestCase
         $views = [
             resource_path('views/schools/select.blade.php') => '<livewire:school-selector',
             resource_path('views/years/select.blade.php') => '<livewire:year-selector',
-            resource_path('views/schools/settings.blade.php') => '<livewire:document-storage-settings',
+            resource_path('views/schools/settings.blade.php') => 'name="document_storage_path"',
             resource_path('views/employees/index.blade.php') => '<livewire:employee-directory',
         ];
 
         foreach ($views as $view => $component) {
             $this->assertStringContainsString($component, file_get_contents($view));
         }
+    }
+
+    public function test_school_master_uses_one_page_header_wrapper(): void
+    {
+        $view = file_get_contents(resource_path('views/schools/settings.blade.php'));
+
+        $this->assertSame(1, substr_count($view, 'title="Master Sekolah"'));
+        $this->assertSame(1, substr_count($view, '<livewire:school-master />'));
+    }
+
+    public function test_dapodik_layout_uses_shell_width_and_compact_status_panel(): void
+    {
+        $view = file_get_contents(resource_path('views/dapodik/index.blade.php'));
+
+        $this->assertStringContainsString('class="w-full space-y-6"', $view);
+        $this->assertStringContainsString('xl:grid-cols-2', $view);
+        $this->assertStringContainsString('max-w-md break-words', $view);
+        $this->assertStringContainsString('title="Integrasi Dapodik"', $view);
     }
 }
