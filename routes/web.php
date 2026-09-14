@@ -136,6 +136,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
+        Route::view('/laporan-periode', 'periodic-reports.index')->name('spj.periodic-reports.index');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
         Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
