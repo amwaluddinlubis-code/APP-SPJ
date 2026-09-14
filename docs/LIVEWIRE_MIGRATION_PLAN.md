@@ -4,7 +4,7 @@ Terakhir diverifikasi: **2026-09-14** pada branch `gui-standardization`, canonic
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan berada di `CURRENT_PROGRESS.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; evidence gate berada di `P0_VERIFICATION_KIT.md`.
 
-> Evidence saat ini: Phase 2 authorization hardening sudah selesai dan tetap PASS pada green repository gate CI #480. SPJ Critical, full Unit, dan full Feature semuanya hijau. Stack naik ke Laravel 13 + pure TALL (Filament/Sail mati dicopot pada `a4dd395`, terverifikasi lokal: 288/60/412 PASS, build + view:cache PASS). Browser/operator runtime tetap RVR. CI gate canonical tetap #480 sampai workflow dijalankan ulang.
+> Evidence saat ini: Phase 2 authorization hardening sudah selesai dan tetap PASS pada green repository gate. SPJ Critical, full Unit, dan full Feature semuanya hijau. Stack naik ke Laravel 13 + pure TALL (Filament/Sail mati dicopot pada `a4dd395`, terverifikasi lokal: 288/60/412 PASS, build + view:cache PASS). Canonical: CI #486 (di atas PHP 8.3 platform floor). Browser/operator runtime tetap RVR.
 
 ## 1. Prinsip canonical migrasi
 
@@ -191,7 +191,7 @@ Pint           : ADVISORY / 5 pre-existing style issues
 
 P0 integration gate tidak lagi menghalangi pekerjaan operator/runtime berikutnya.
 
-Perubahan stack setelah gate #480 (terverifikasi lokal, CI belum di-run ulang): Laravel 12 → 13 (`3582cef`), pencopotan Filament/Sail mati menuju pure TALL (`a4dd395`). Angka gate di atas tetap authoritative untuk #480; verifikasi lokal L13 tercatat di `CURRENT_PROGRESS.md`.
+Perubahan stack setelah historical gate #480 (Laravel 12 → 13 pada `3582cef`, pencopotan Filament/Sail mati menuju pure TALL pada `a4dd395`) kini tercakup oleh canonical gate CI #486; angka gate #480 di atas tetap authoritative hanya untuk run tersebut. Verifikasi lokal L13 tercatat di `CURRENT_PROGRESS.md`.
 
 ## 8. Kandidat migrasi setelah stabilization gate
 
