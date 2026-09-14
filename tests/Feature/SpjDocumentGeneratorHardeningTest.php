@@ -178,6 +178,69 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
         $this->assertSame($sequencesBefore, DB::connection('school')->table('document_number_sequences')->count());
     }
 
+    public function test_generated_xlsx_and_package_select_only_canonical_sheets_from_multi_sheet_master_source(): void
+    {
+        $package = $this->package('BARANG', 5);
+        $school = $this->school();
+
+        $book = new Spreadsheet;
+        $book->getActiveSheet()->setTitle('TPL_RINCIAN')->setCellValue('A1', 'Rincian {{NOMOR_DOKUMEN}}');
+        $book->createSheet()->setTitle('TPL_CHECKLIST_SPJ')->setCellValue('A1', 'Checklist {{NOMOR_DOKUMEN}}');
+        $book->createSheet()->setTitle('MAP_PLACEHOLDER')->setCellValue('A1', 'Sheet teknis');
+
+        Storage::disk('local')->makeDirectory('document-templates');
+        $relativePath = 'document-templates/master-generator-'.uniqid().'.xlsx';
+        (new Xlsx($book))->save(Storage::disk('local')->path($relativePath));
+        $book->disconnectWorksheets();
+
+        $rincian = new DocumentTemplate([
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'RINCIAN_BELANJA',
+            'name' => 'Rincian dari Master',
+            'format' => 'xlsx',
+            'file_path' => $relativePath,
+            'applicable_categories' => ['SEMUA'],
+            'is_active' => true,
+        ]);
+        $checklist = new DocumentTemplate([
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'SPJ_CHECKLIST',
+            'name' => 'Checklist dari Master',
+            'format' => 'xlsx',
+            'file_path' => $relativePath,
+            'applicable_categories' => ['SEMUA'],
+            'is_active' => true,
+        ]);
+
+        $service = app(SpjTemplateService::class);
+        $singleResponse = $service->download($rincian, $package, $school);
+        $singlePath = $singleResponse->getFile()->getPathname();
+
+        try {
+            $singleWorkbook = IOFactory::load($singlePath);
+            $this->assertSame(['TPL_RINCIAN'], $singleWorkbook->getSheetNames());
+            $this->assertSame('Rincian 005/SPJ/2026', $singleWorkbook->getActiveSheet()->getCell('A1')->getValue());
+        } finally {
+            if (is_file($singlePath)) {
+                @unlink($singlePath);
+            }
+        }
+
+        $packageResponse = $service->downloadPackageExcel(collect([$rincian, $checklist]), $package, $school);
+        $packagePath = $packageResponse->getFile()->getPathname();
+
+        try {
+            $packageWorkbook = IOFactory::load($packagePath);
+            $this->assertSame(['TPL_RINCIAN', 'TPL_CHECKLIST_SPJ'], $packageWorkbook->getSheetNames());
+            $this->assertSame('Rincian 005/SPJ/2026', $packageWorkbook->getSheetByName('TPL_RINCIAN')?->getCell('A1')->getValue());
+            $this->assertSame('Checklist 005/SPJ/2026', $packageWorkbook->getSheetByName('TPL_CHECKLIST_SPJ')?->getCell('A1')->getValue());
+        } finally {
+            if (is_file($packagePath)) {
+                @unlink($packagePath);
+            }
+        }
+    }
+
     public function test_preflight_rejects_unresolved_placeholder_before_preview_or_package_output(): void
     {
         $package = $this->package('BARANG', 4);

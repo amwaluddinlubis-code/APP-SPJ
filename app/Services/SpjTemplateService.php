@@ -356,6 +356,7 @@ class SpjTemplateService
                     $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
                 }
             }
+            $spreadsheet = $this->singleDocumentSpreadsheet($spreadsheet, $template);
             IOFactory::createWriter($spreadsheet, 'Xlsx')->save($output);
         } else {
             throw new \RuntimeException('Format template tidak didukung.');
@@ -440,7 +441,13 @@ class SpjTemplateService
             throw new \RuntimeException('Unduh PDF saat ini hanya tersedia untuk template Excel.');
         }
 
-        return $this->pdfResponse($this->spreadsheetPdfContents($this->filledSpreadsheet($template, $package, $school)), $template->document_type.'-'.$package->document_number.'.pdf', $package);
+        $spreadsheet = $this->filledSpreadsheet($template, $package, $school);
+
+        return $this->pdfResponse(
+            $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($spreadsheet, $template)),
+            $template->document_type.'-'.$package->document_number.'.pdf',
+            $package,
+        );
     }
 
     private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
@@ -498,6 +505,15 @@ class SpjTemplateService
         );
     }
 
+    private function singleDocumentSpreadsheet(Spreadsheet $source, DocumentTemplate $template): Spreadsheet
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+        $spreadsheet->addExternalSheet($source->getSheet($this->previewSheetIndex($source, $template)));
+
+        return $spreadsheet;
+    }
+
     private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
     {
         $source = $this->templateSourcePath($template);
@@ -536,9 +552,8 @@ class SpjTemplateService
                 throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
             }
 
-            foreach ($this->filledSpreadsheet($template, $package, $school)->getWorksheetIterator() as $sheet) {
-                $spreadsheet->addExternalSheet($sheet);
-            }
+            $filled = $this->filledSpreadsheet($template, $package, $school);
+            $spreadsheet->addExternalSheet($filled->getSheet($this->previewSheetIndex($filled, $template)));
         }
 
         return $spreadsheet;
