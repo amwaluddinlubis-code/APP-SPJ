@@ -35,9 +35,9 @@ final class SpjPeriodicReportRegistry
     }
 
     /**
-     * Registry ini hanya mendefinisikan kontrak modul laporan.
-     * Binding workbook/template resmi dikerjakan terpisah agar perubahan template
-     * tidak mengubah kontrak periode, daftar dokumen, atau query sumber data.
+     * Registry canonical untuk seluruh laporan periode milik APP-SPJ.
+     * Layout cetak/PDF dibuat oleh engine internal laporan periode dan tidak
+     * bergantung pada template Paket SPJ.
      *
      * @return array<string,list<array{key:string,label:string}>>
      */
