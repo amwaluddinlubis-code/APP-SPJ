@@ -233,7 +233,7 @@ final class SpjDocumentTypeRegistry
                     'NOMOR_DOKUMEN', 'TANGGAL_DOKUMEN', 'NOMOR_PESANAN', 'TANGGAL_PESANAN',
                     'NAMA_PENYEDIA', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
-                    'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                    'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
                 ],
                 'optional' => [
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NPWP_PENYEDIA',
@@ -291,7 +291,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['PEMELIHARAAN'],
                 'required' => [
-                    'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'NILAI_PEKERJAAN',
+                    'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'NILAI_PEKERJAAN', 'JENIS_RAB', 'TOTAL_RAB',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
@@ -300,7 +300,6 @@ final class SpjDocumentTypeRegistry
                 ],
                 'repeat_required' => [
                     'ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH',
-                    'UPAH_NO', 'UPAH_NAMA', 'UPAH_PEKERJAAN', 'UPAH_HARI', 'UPAH_TARIF_HARI', 'UPAH_JUMLAH',
                 ],
                 'repeat_optional' => ['UPAH_PENERIMA_KUITANSI'],
                 'image' => ['KOP_SURAT'],
@@ -355,12 +354,12 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['KONSUMSI'],
                 'required' => [
-                    'KODE_KEGIATAN', 'NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA',
-                    'KONSUMSI_NO', 'KONSUMSI_NAMA', 'KONSUMSI_PORSI', 'KONSUMSI_HARGA_PORSI',
-                    'KONSUMSI_JUMLAH', 'TOTAL_KONSUMSI',
+                    'TANGGAL_KEGIATAN', 'TEMPAT_KEGIATAN',
+                    'KONSUMSI_NO', 'KONSUMSI_NAMA', 'KONSUMSI_PORSI', 'TOTAL_KONSUMSI',
                 ],
                 'optional' => [
                     'KONSUMSI_IDENTITAS', 'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
+                    'KONSUMSI_HARGA_PORSI', 'KONSUMSI_JUMLAH',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],

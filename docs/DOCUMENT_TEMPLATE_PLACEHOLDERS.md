@@ -80,9 +80,17 @@ NIP_PENGURUS_BARANG
 
 `KOP_SURAT` tidak diisi sebagai teks biasa pada Excel; generator dapat memasukkan gambar letterhead melalui jalur khusus.
 
+Pada output XLSX, gambar `KOP_SURAT` selalu di-anchor mulai dari cell `A1`, dengan lebar mengikuti area print worksheet dan tinggi mempertahankan rasio gambar. Jika worksheet tidak mendefinisikan `printArea`, generator memakai lebar cetak A4 portrait yang konsisten. Marker pada template dibersihkan setelah gambar dipasang.
+
+Placeholder teks pada XLSX juga dapat digunakan di header dan footer worksheet. Gunakan format Excel seperti `&L{{NAMA_SEKOLAH}}`, `&C{{NOMOR_DOKUMEN}}`, atau `&R{{TANGGAL_DOKUMEN}}`; generator mengganti marker tanpa menghapus kontrol alignment header/footer.
+
 Untuk dokumen konsumsi, gunakan `NAMA_ACARA`, `TANGGAL_ACARA`, dan `TEMPAT_ACARA` untuk konteks acara/rapat. Placeholder `NAMA_KEGIATAN`, `TANGGAL_KEGIATAN`, dan `TEMPAT_KEGIATAN` tetap dipertahankan sebagai kompatibilitas template lama.
 
 Alias lama seperti `NAMA_BENDAHARA` / `NIP_BENDAHARA` tidak boleh diasumsikan tersedia untuk template baru kecuali service memang menambahkannya kembali secara eksplisit. Template baru harus memakai nama canonical di atas.
+
+Untuk template BAP terbaru, blok penandatangan menggunakan `NAMA_PENGURUS_BARANG` dan `NIP_PENGURUS_BARANG`. Marker bendahara BOSP tidak diwajibkan pada BAP; marker tersebut tetap digunakan oleh dokumen yang memang memiliki blok tanda tangan bendahara, seperti Cover SPJ, Kuitansi, dan BAST.
+
+Master template terbaru juga memakai `JENIS_RAB`/`TOTAL_RAB` pada RAB Pemeliharaan, `NAMA_REKENING` pada SPK, serta placeholder legacy kegiatan `TANGGAL_KEGIATAN`/`TEMPAT_KEGIATAN` pada Daftar Penerima Konsumsi. Marker tambahan `KONSUMSI_HARGA_PORSI` dan `KONSUMSI_JUMLAH` tetap dikenali sebagai opsional oleh runtime.
 
 ---
 

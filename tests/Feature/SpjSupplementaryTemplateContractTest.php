@@ -81,5 +81,24 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAP);
 
         $this->assertSame('TPL_BA_PEMERIKSAAN_PENERIMAAN', $definition['sheet']);
+        $this->assertContains('NAMA_PENGURUS_BARANG', $definition['required']);
+        $this->assertContains('NIP_PENGURUS_BARANG', $definition['required']);
+        $this->assertNotContains('NAMA_BENDAHARA_BOSP', $definition['required']);
+        $this->assertNotContains('NIP_BENDAHARA_BOSP', $definition['required']);
+    }
+
+    public function test_revised_master_contracts_match_rab_spk_and_consumption_sheets(): void
+    {
+        $rab = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::RAB_PEMELIHARAAN);
+        $recipients = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::DAFTAR_PENERIMA_KONSUMSI);
+
+        $this->assertContains('JENIS_RAB', $rab['required']);
+        $this->assertContains('TOTAL_RAB', $rab['required']);
+        $this->assertNotContains('UPAH_NO', $rab['repeat_required']);
+        $this->assertContains('NAMA_REKENING', SpjTemplateService::placeholderGroups()['Transaksi & pembayaran']);
+        $this->assertContains('TANGGAL_KEGIATAN', $recipients['required']);
+        $this->assertContains('KONSUMSI_HARGA_PORSI', $recipients['optional']);
+        $this->assertContains('KONSUMSI_JUMLAH', $recipients['optional']);
+        $this->assertNotContains('NAMA_ACARA', $recipients['required']);
     }
 }

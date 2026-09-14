@@ -21,6 +21,8 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
 {
+    private const DEFAULT_EXCEL_PRINT_WIDTH = 610;
+
     public const PLACEHOLDER_SCOPE_UMUM = 'umum';
 
     public const PLACEHOLDER_SCOPE_TRANSAKSIONAL = 'transaksional';
@@ -35,7 +37,7 @@ class SpjTemplateService
             'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG'],
             'Acara konsumsi' => ['NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA'],
             'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
-            'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
+            'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
             'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
             'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
             'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
@@ -272,6 +274,9 @@ class SpjTemplateService
             'TERBILANG_NETO' => $this->terbilang((float) $transaction->net_amount),
             'NILAI_PEKERJAAN' => $values['NILAI_BRUTO'],
             'NILAI_PEKERJAAN_TERBILANG' => $this->terbilang((float) $transaction->gross_amount),
+            'JENIS_RAB' => 'RAB Pemeliharaan',
+            'TOTAL_RAB' => $values['NILAI_BRUTO'],
+            'NAMA_REKENING' => (string) $transaction->account_name,
             // Field ini belum tersedia pada schema transaksi saat ini. Tetap dipetakan
             // sebagai placeholder resmi agar template tidak menyisakan marker mentah.
             'ALAMAT_PENYEDIA' => $siplahAddress,
@@ -360,6 +365,7 @@ class SpjTemplateService
                     }
                     $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
                 }
+                $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
             }
             $spreadsheet = $this->singleDocumentSpreadsheet($spreadsheet, $template);
             IOFactory::createWriter($spreadsheet, 'Xlsx')->save($output);
@@ -537,6 +543,7 @@ class SpjTemplateService
                     $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
                 }
             }
+            $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
         }
 
         return $spreadsheet;
@@ -661,13 +668,13 @@ class SpjTemplateService
             $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
             $drawing->setWidth($targetWidth);
             $drawing->setResizeProportional(true);
-            $drawing->setOffsetX(2);
-            $drawing->setOffsetY(2);
+            $drawing->setCoordinates('A1');
+            $drawing->setOffsetX(0);
+            $drawing->setOffsetY(0);
             $drawing->setWorksheet($sheet);
 
-            $row = $sheet->getCell($coordinate)->getRow();
-            $currentHeight = $sheet->getRowDimension($row)->getRowHeight();
-            $sheet->getRowDimension($row)->setRowHeight(max(
+            $currentHeight = $sheet->getRowDimension(1)->getRowHeight();
+            $sheet->getRowDimension(1)->setRowHeight(max(
                 $currentHeight > 0 ? $currentHeight : 0,
                 SharedDrawing::pixelsToPoints($targetHeight) + 4,
             ));
@@ -679,7 +686,11 @@ class SpjTemplateService
     {
         $printArea = (string) $sheet->getPageSetup()->getPrintArea();
         preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/', $printArea, $matches);
-        $lastColumn = $matches[2] ?? $sheet->getHighestColumn();
+        if (! isset($matches[2])) {
+            return self::DEFAULT_EXCEL_PRINT_WIDTH;
+        }
+
+        $lastColumn = $matches[2];
         $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
         $width = 0;
 
@@ -693,6 +704,29 @@ class SpjTemplateService
         }
 
         return max(1, $width - 4);
+    }
+
+    /** @param array<string,string> $values */
+    protected function replaceExcelHeaderFooterPlaceholders(Worksheet $sheet, array $values): void
+    {
+        $replacements = array_combine(
+            array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)),
+            array_values($values),
+        );
+        $headerFooter = $sheet->getHeaderFooter();
+
+        foreach ([
+            'getOddHeader', 'getEvenHeader', 'getFirstHeader',
+            'getOddFooter', 'getEvenFooter', 'getFirstFooter',
+        ] as $getter) {
+            $content = $headerFooter->{$getter}();
+            if (! is_string($content) || $content === '') {
+                continue;
+            }
+
+            $setter = 'set'.substr($getter, 3);
+            $headerFooter->{$setter}(strtr($content, $replacements));
+        }
     }
 
     /** Konversi nilai rupiah ke terbilang Indonesia untuk kuitansi dan SPK. */

@@ -349,6 +349,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
                 $cell->setValue(strtr($cell->getValue(), $replacements));
             }
         }
+        $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
     }
 
     private function itemValuesExtended(SpjPackage $package, int $index): array

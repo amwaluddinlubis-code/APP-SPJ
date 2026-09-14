@@ -306,6 +306,21 @@ final class SpjTemplateValidator
             }
         }
 
+        $headerFooter = $sheet->getHeaderFooter();
+        foreach ([
+            'getOddHeader', 'getEvenHeader', 'getFirstHeader',
+            'getOddFooter', 'getEvenFooter', 'getFirstFooter',
+        ] as $getter) {
+            $content = $headerFooter->{$getter}();
+            if (! is_string($content)) {
+                continue;
+            }
+
+            foreach ($this->extractMarkers($content) as $marker) {
+                $markers[$marker] = true;
+            }
+        }
+
         return [array_keys($markers), array_map('array_values', $markerRows)];
     }
 
@@ -325,7 +340,7 @@ final class SpjTemplateValidator
     /** @return array<string,true> */
     private function knownPlaceholders(): array
     {
-        $markers = collect(SpjTemplateService::placeholderGroups())->flatten();
+        $markers = collect(app(SpjTemplateService::class)::placeholderGroups())->flatten();
 
         foreach (SpjDocumentTypeRegistry::codes() as $documentType) {
             $markers = $markers->merge(SpjDocumentTypeRegistry::placeholdersFor($documentType));
