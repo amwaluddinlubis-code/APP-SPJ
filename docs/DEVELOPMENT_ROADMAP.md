@@ -2,15 +2,15 @@
 
 Terakhir diperbarui: **2026-09-14**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate historis berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
 ```text
-stabilize integration gate -> operator flow -> temukan bug nyata -> perbaiki -> regression bila perlu
+integration gate hijau -> operator flow -> temukan bug nyata -> perbaiki -> regression bila perlu
 ```
 
-Jangan menambah smoke/regression test baru hanya untuk memperbesar coverage setelah contract inti cukup dibuktikan. Exception: mutation boundary baru wajib mempunyai negative authorization/tenant regression bila tanpa test tersebut permission tidak dapat dibuktikan.
+Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contract inti cukup dibuktikan. Exception: mutation boundary baru wajib mempunyai negative authorization/tenant regression bila permission tidak dapat dibuktikan tanpa test tersebut.
 
 ---
 
@@ -18,48 +18,62 @@ Jangan menambah smoke/regression test baru hanya untuk memperbesar coverage sete
 
 ## P0-00 — Current HEAD integration + Livewire authorization hardening
 
-**Status: PHASE 1 AUDIT COMPLETE / PHASE 2 AUTHORIZATION HARDENING COMPLETE / FOCUSED AUTH REGRESSION PASS / OVERALL CI HEAD RED.**
+**Status: COMPLETE / CI #480 GREEN.**
 
-Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 ditutup pada commit source `3c7be408f5a93795a597878b79f975373df24412`, dan regression authorization dimasukkan ke SPJ Critical pada commit `701c73644b7dcf9d8aa710a842f28b2dad9a62d5`.
+Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary, dan integration repair setelah #478 mengembalikan repository ke green code gate.
 
-Phase 2 checklist:
-
-- [x] harden `UserManagement::{createUser,updateUser,deleteUser}` sebagai ADMIN-only;
-- [x] harden `SchoolMaster::createSchool` sebagai ADMIN-only;
-- [x] harden `DatabaseMaintenance::run` sebagai ADMIN-only;
-- [x] harden `DatabaseResetForm::resetDatabase` sebagai ADMIN-only selain active-school + confirmation guard;
-- [x] harden `DatabaseSchoolList::{activate,migrate}` sebagai ADMIN-only;
-- [x] harden `DocumentStorageSettings::save` sebagai OPERATOR/ADMIN sebelum reuse; component masih dormant pada halaman settings aktif;
-- [x] tambahkan negative regression OPERATOR/VIEWER untuk mutation ADMIN dan VIEWER untuk document-storage mutation;
-- [x] pertahankan lifecycle SPJ, numbering, sync, dan tenant ownership tanpa perubahan.
-
-Evidence CI #478:
+Phase 2 commits:
 
 ```text
-HEAD                              : 701c73644b7dcf9d8aa710a842f28b2dad9a62d5
-FRONTEND BUILD                    : PASS
-BLADE COMPILE                     : PASS
-LivewireMutationAuthorizationTest : PASS 2/2
-SPJ CRITICAL                      : 285 PASS / 2 FAIL / 2218 assertions
-FULL UNIT / FEATURE               : SKIPPED setelah critical failure
+3c7be408f5a93795a597878b79f975373df24412
+fix: harden Livewire mutation authorization
+
+701c73644b7dcf9d8aa710a842f28b2dad9a62d5
+test: gate Livewire mutation authorization as critical
 ```
 
-Dua blocker berikut **bukan Phase 2 authorization failure**:
+Integration repair:
 
-- [ ] `SpjNumberingRollbackTest`: test masih memanggil `TransactionController::updateSpjDescriptions()` dengan signature lama; perbaiki test agar memakai route/container canonical dan tidak couple ke constructor/method dependency internal;
-- [ ] `SpjWorkspaceMigrationTest`: ekspektasi session `error` pada update `vendor_name` Paket NUMBERED tidak cocok dengan current behavior; verifikasi contract lifecycle lalu perbaiki implementation atau test sesuai keputusan canonical.
+```text
+b61cdc621539cb6fc62dd17efc22da16a9c2a14c
+test: close SPJ critical integration regressions
 
-Integration gate berikutnya:
+887d0219142d634e6a85b6672d3bffb02b5b1584
+test: align description UI contract with service delegation
+```
 
-- [ ] tutup dua failure di atas;
-- [ ] jalankan kembali SPJ Critical sampai PASS;
-- [ ] pastikan full Unit PASS;
-- [ ] pastikan full Feature PASS;
-- [ ] baru promosikan current HEAD sebagai functional gate baru.
+Checklist P0-00:
 
-Latest successful canonical full gate tetap CI #469 / `fd01fc6681...` sampai checklist integrasi di atas hijau.
+- [x] audit seluruh mutation/read-only Livewire boundary;
+- [x] `UserManagement` ADMIN-only;
+- [x] `SchoolMaster::createSchool` ADMIN-only;
+- [x] `DatabaseMaintenance::run` ADMIN-only;
+- [x] `DatabaseResetForm::resetDatabase` ADMIN + active-school + confirmation;
+- [x] `DatabaseSchoolList::{activate,migrate}` ADMIN-only;
+- [x] `DocumentStorageSettings::save` OPERATOR/ADMIN sebelum reuse;
+- [x] negative regression OPERATOR/VIEWER;
+- [x] lifecycle SPJ, numbering, safe sync, dan tenant ownership tidak diubah;
+- [x] tutup dua regression SPJ Critical #478;
+- [x] tutup stale full-feature source-contract assertion yang baru terlihat di #479;
+- [x] SPJ Critical PASS;
+- [x] Full Unit PASS;
+- [x] Full Feature PASS;
+- [x] promote green code gate baru.
 
-Tidak ada migrasi Livewire baru sampai P0-00 integration gate ditutup.
+Evidence CI #480:
+
+```text
+HEAD                 : 887d0219142d634e6a85b6672d3bffb02b5b1584
+RUN                  : #480 / 34839580942 / SUCCESS
+FRONTEND BUILD       : PASS
+BLADE COMPILE        : PASS
+SPJ CRITICAL         : 287 PASS / 2236 assertions
+FULL UNIT            : 60 PASS / 203 assertions
+FULL FEATURE         : 411 PASS / 2972 assertions
+REPOSITORY PINT      : ADVISORY / 5 pre-existing style issues
+```
+
+P0-00 integration gate bukan lagi blocker. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md`.
 
@@ -67,9 +81,9 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md`.
 
 ## P0-01 — Six-category E2E
 
-**Status: FUNCTIONAL BASELINE PASS / REAL-DATA BASELINE VERIFIED / GENERATED-DOCUMENT QA ACTIVE / INSTALLED-RUNTIME DEFERRED.**
+**Status: FUNCTIONAL PASS / REAL-DATA BASELINE VERIFIED / GENERATED-DOCUMENT QA ACTIVE / INSTALLED-RUNTIME DEFERRED.**
 
-Sudah dibuktikan pada successful baseline sebelumnya:
+Sudah dibuktikan:
 
 - [x] six-category functional lifecycle;
 - [x] read-only real-data audit 2026/TW2 pada 66 READY package;
@@ -78,9 +92,10 @@ Sudah dibuktikan pada successful baseline sebelumnya:
 - [x] isolated first numbering;
 - [x] individual cancel + reserved sequence;
 - [x] isolated tail rollback;
-- [x] source transaction/item tetap immutable pada baseline.
+- [x] source transaction/item immutable pada baseline;
+- [x] current code gate hijau.
 
-Pekerjaan aktif setelah P0-00 hijau:
+Pekerjaan aktif:
 
 - [ ] generate output nyata untuk kategori yang tersedia;
 - [ ] koreksi hanya bug/operator overlay yang mempunyai evidence;
@@ -90,25 +105,27 @@ Pekerjaan aktif setelah P0-00 hijau:
 
 ## P0-02 — Generator dokumen + template
 
-**Status: SUCCESSFUL BASELINE PASS / CURRENT HEAD OUTPUT-SENSITIVE CHANGES REQUIRE GREEN GATE / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
+**Status: FUNCTIONAL CODE GATE PASS / REAL-DATA OUTPUT QA ACTIVE / OFFICIAL-TEMPLATE VISUAL RVR.**
 
-Baseline yang sudah dibuktikan:
+Functional coverage yang sudah hijau:
 
 - [x] Download Template XLSX individu true single-sheet;
 - [x] source/master tersimpan tetap utuh;
-- [x] Cek Placeholder read-only memakai resolver generator yang sama;
+- [x] Cek Placeholder read-only memakai resolver generator canonical;
 - [x] master template terbaru dirakit dari XLSX canonical aktif;
-- [x] update satu XLSX individu mengganti source document type berikutnya tanpa memutasi master historis;
+- [x] update XLSX individu mengganti source document type berikutnya tanpa mutasi master historis;
 - [x] master parsial ditolak;
-- [x] canonical XLSX HTML preview memilih worksheet document type yang benar.
+- [x] canonical XLSX HTML preview memilih worksheet yang benar;
+- [x] current HEAD memperoleh green code gate #480;
+- [x] validator/template load terbaru tercakup full regression;
+- [x] PDF/report writer path tercakup full Unit/Feature gate.
 
-Current HEAD menambahkan optimasi validator/template load dan PDF/report writer path. Sebelum statusnya dinaikkan:
+Masih RVR:
 
-- [ ] current HEAD harus memperoleh code gate hijau;
 - [ ] buka satu individual template nyata di Microsoft Excel/LibreOffice;
-- [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` pada Excel/LibreOffice;
-- [ ] periksa drawing, formula/reference, defined name, print area, page break, header/footer, dan repair prompt;
-- [ ] generate dan inspeksi XLSX/PDF nyata per kategori yang tersedia;
+- [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx`;
+- [ ] periksa drawing, formula/reference, defined name, print area, page break, header/footer, repair prompt;
+- [ ] generate dan inspeksi XLSX/PDF nyata per kategori tersedia;
 - [ ] verifikasi field identitas, bukti, tanggal, uraian, penerima/vendor, nominal, pajak, dan nomor dokumen turunan.
 
 Panduan canonical: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.
@@ -117,7 +134,7 @@ Panduan canonical: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOL
 
 ## P0-03 — Numbering + registry + lifecycle
 
-**Status: FUNCTIONAL BASELINE PASS / REGISTRY CANONICAL / TWO CURRENT TEST-INTEGRATION BLOCKERS OPEN.**
+**Status: FUNCTIONAL PASS / REGISTRY CANONICAL.**
 
 Source of truth executable:
 
@@ -125,7 +142,7 @@ Source of truth executable:
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Sudah dibuktikan pada successful gate sebelumnya:
+Sudah dibuktikan:
 
 - [x] first numbering;
 - [x] individual cancel mempertahankan `CANCELLED` permanen;
@@ -135,44 +152,47 @@ Sudah dibuktikan pada successful gate sebelumnya:
 - [x] fund-source scoped sequence;
 - [x] quarter rollback dependency regression;
 - [x] `{TW}` tidak memaksakan prefix literal `TW.`;
-- [x] registry dipakai consumer numbering utama.
+- [x] registry dipakai consumer numbering utama;
+- [x] NUMBERED tetap hanya mengizinkan `payment_description` + `item_description` correction carve-out;
+- [x] FINAL tetap locked;
+- [x] regression stale #478 ditutup tanpa mengubah contract.
 
-Current blocker `SpjNumberingRollbackTest` adalah stale direct-controller invocation dan tidak menjadi evidence bahwa numbering domain contract gagal. Tetap perbaiki regression sebelum gate dapat hijau.
+Tidak menambah smoke test numbering tanpa bug/operator requirement baru.
 
 ---
 
 ## P0-04 — Authorization
 
-**Status: HTTP/ROUTE BASELINE PASS / LIVEWIRE MUTATION HARDENING COMPLETE / FOCUSED NEGATIVE REGRESSION PASS / BROWSER RVR.**
+**Status: HTTP/ROUTE PASS / LIVEWIRE MUTATION HARDENING COMPLETE / NEGATIVE REGRESSION PASS / CODE GATE PASS / BROWSER RVR.**
 
 Definition of Done Phase 2:
 
-- [x] action-level authorization seluruh mutation sensitif yang ditemukan Phase 1;
-- [x] ADMIN/OPERATOR/VIEWER negative regression sesuai matrix permission;
+- [x] action-level authorization seluruh mutation sensitif Phase 1;
+- [x] ADMIN/OPERATOR/VIEWER regression sesuai matrix permission;
 - [x] tenant/context logic existing tidak dipindahkan ke UI;
 - [x] no privilege widening pada mutation Livewire yang diuji;
-- [ ] overall repository code gate hijau — tertahan dua regression SPJ non-authorization.
+- [x] overall repository code gate hijau #480.
 
-Rule baru untuk semua migrasi berikutnya: route visibility/middleware GET tidak cukup sebagai bukti; mutation Livewire harus authorize pada request action melalui action guard, policy, atau persistent mechanism yang benar-benar berlaku.
+Rule untuk migrasi berikutnya: route visibility/middleware GET tidak cukup sebagai bukti; mutation Livewire harus authorize pada request action melalui action guard, policy, atau persistent mechanism yang benar-benar berlaku.
 
 ---
 
 ## P0-05 — Safe sync + reconciliation
 
-**Status: FUNCTIONAL BASELINE PASS / REAL-DATA RECONCILIATION ACTIVE.**
+**Status: FUNCTIONAL PASS / REAL-DATA RECONCILIATION ACTIVE.**
 
 Kerjakan hanya ketika ditemukan mismatch source/overlay nyata:
 
 - [ ] source missing/returning identity;
 - [ ] overlay preservation;
-- [ ] NUMBERED/FINAL protection;
+- [ ] NUMBERED/FINAL protection pada kasus nyata;
 - [ ] reconciliation flag/operator resolution.
 
 ---
 
 ## P0-06 — Tenant/context isolation
 
-**Status: FUNCTIONAL BASELINE PASS / LIVEWIRE PHASE 2 PRESERVES EXISTING CONTEXT CONTRACT.**
+**Status: FUNCTIONAL PASS.**
 
 Boundary canonical:
 
@@ -180,33 +200,33 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Phase 2 hanya menambah role guard pada mutation boundary. Tidak ada test tambahan aktif tanpa bug/boundary baru selain negative authorization yang memang diperlukan oleh migration.
+Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/boundary baru.
 
 ---
 
 ## P0-07 — APP DATA / backup / reset / restore
 
-**Status: FUNCTIONAL BASELINE PASS / LIVEWIRE RESET ROLE HARDENING COMPLETE / INSTALLED-RUNTIME DEFERRED.**
+**Status: FUNCTIONAL PASS / LIVEWIRE RESET ROLE HARDENING COMPLETE / INSTALLED-RUNTIME DEFERRED.**
 
-`DatabaseResetForm` sekarang memerlukan ADMIN, active-school match, dan exact confirmation sebelum reset service dipanggil.
+`DatabaseResetForm` memerlukan ADMIN, active-school match, dan exact confirmation sebelum reset service dipanggil.
 
 ---
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: FUNCTIONAL BASELINE HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
+**Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 
-Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Kerjakan hanya issue nyata yang muncul pada operator flow.
+Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Kerjakan hanya issue nyata pada operator flow.
 
 ---
 
 # P1 — Real Data, Output, dan Operational Quality
 
-P1 kembali menjadi fokus produk utama **setelah P0-00 integration gate hijau**.
+**P1 sekarang menjadi fokus produk utama karena P0-00 integration gate sudah hijau.**
 
 ## P1-01 — Generated-document real-data QA
 
-Untuk setiap kategori nyata yang tersedia, pilih Paket representatif dan periksa hasil dokumen:
+**Prioritas tertinggi berikutnya.** Untuk setiap kategori nyata yang tersedia, pilih Paket representatif dan periksa hasil dokumen:
 
 - [ ] BARANG;
 - [ ] KONSUMSI;
@@ -217,7 +237,7 @@ Untuk setiap kategori nyata yang tersedia, pilih Paket representatif dan periksa
 
 SPPD 2026 tidak dipaksakan karena tidak ada real data.
 
-Bug yang perlu langsung diperbaiki bila ditemukan: data kosong/salah, tanggal/nomor tidak sinkron, placeholder gagal, penerima/vendor salah, total/pajak salah, nomor turunan salah, XLSX/PDF gagal dibuka, clipping/page break/header/footer bermasalah.
+Bug yang langsung diperbaiki bila ditemukan: data kosong/salah, tanggal/nomor tidak sinkron, placeholder gagal, penerima/vendor salah, total/pajak salah, nomor turunan salah, XLSX/PDF gagal dibuka, clipping/page-break/header-footer bermasalah.
 
 ## P1-02 — JASA_LAINNYA multi-penerima output
 
@@ -236,11 +256,11 @@ Bug yang perlu langsung diperbaiki bila ditemukan: data kosong/salah, tanggal/no
 
 ## P1-04 — SiPLah generated-document E2E
 
-Core procurement policy baseline tetap PASS. Tersisa:
+Core procurement policy functional PASS. Tersisa:
 
 - [ ] generated-document nyata;
 - [ ] official-template output;
-- [ ] browser reload/category/payment-method consistency bila ditemukan pada flow operator.
+- [ ] browser reload/category/payment-method consistency pada operator flow.
 
 ## P1-05 — Browser QA desktop/laptop
 
@@ -252,7 +272,7 @@ Viewport prioritas:
 - [ ] 1440×900;
 - [ ] 1920×1080.
 
-Fokus: sidebar, Paket SPJ, SPA tab navigation, modal preview, dropdown, pagination, preview/download, overflow/clipping, serta repeated Livewire navigation/update.
+Fokus: sidebar, Paket SPJ, SPA tab navigation, repeated `Livewire.navigate`, modal preview setelah body swap, dropdown, pagination, filter URL state, preview/download, overflow/clipping.
 
 ## P1-06 — Official-template visual/output QA
 
@@ -265,7 +285,7 @@ Fokus: sidebar, Paket SPJ, SPA tab navigation, modal preview, dropdown, paginati
 
 ## P1-07 — Operational audit E2E
 
-Audit flow nyata harus mampu menjelaskan actor, time, tenant context, entity, action, dan description untuk action sensitif. Mutation Livewire Database Manager yang dipertahankan harus tetap menggunakan `OperationalAuditService`.
+Audit flow nyata harus mampu menjelaskan actor, time, tenant context, entity, action, dan description untuk action sensitif. Mutation Livewire Database Manager yang dipertahankan harus tetap memakai `OperationalAuditService`.
 
 ## P1-08 — Employee identity + participant roster real-data
 
@@ -284,31 +304,30 @@ Functional identity baseline PASS. Tersisa bila muncul pada operator flow:
 - [ ] 768×1024;
 - [ ] 1024×768.
 
-Kerjakan setelah desktop operator flow stabil atau jika ditemukan bug mobile yang menghambat penggunaan nyata.
+Kerjakan setelah desktop operator flow stabil atau bila ada bug mobile yang menghambat penggunaan nyata.
 
 ---
 
 # P2 — Polish & Maintainability
 
-Setelah P0/P1 stabil:
+Setelah P1 operator/runtime flow stabil:
 
+- [ ] selesaikan 5 Pint advisory lama pada maintenance window;
 - [ ] migrasikan consumer `<x-ui-icon>` lama secara bertahap;
 - [ ] cleanup compatibility CSS/JS setelah consumer legacy hilang;
 - [ ] field-level validation UX;
-- [ ] selesaikan Pint advisory bila masuk maintenance window;
 - [ ] authenticated page-render/browser performance profiling;
 - [ ] cleanup generated `bin/obj` bila relevan;
 - [ ] report foundation/polish;
-- [ ] mobile polish lanjutan;
-- [ ] lanjutkan kandidat Livewire read-only berikutnya hanya bila manfaat operator jelas.
+- [ ] mobile polish lanjutan.
 
-Kandidat Livewire setelah stabilization gate:
+Kandidat Livewire read-only setelah operator/runtime priorities:
 
 1. Rekonsiliasi read-only filter/search;
-2. Template Dokumen filter katalog (upload/update tetap canonical flow);
+2. Template Dokumen filter katalog — upload/update tetap canonical flow;
 3. Laporan Audit pagination.
 
-Tetap ditunda: ARKAS importer stateful, workspace detail Paket mutation-heavy, dan protected Siswa tanpa instruksi eksplisit.
+Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful, workspace detail Paket mutation-heavy, Dashboard filter migration, dan protected Siswa.
 
 ---
 
@@ -320,7 +339,7 @@ Tetap ditunda: ARKAS importer stateful, workspace detail Paket mutation-heavy, d
 - mutation real-data hanya pada isolated copy;
 - numbering mengikuti canonical order dan registry;
 - Livewire mutation wajib mempunyai authorization boundary yang dapat dibuktikan;
-- custom role middleware route tidak boleh dianggap otomatis persisten pada Livewire action;
+- custom role middleware route tidak boleh dianggap otomatis persisten pada action Livewire;
 - business rule tetap di use case/service/model, bukan component UI;
 - docs status membedakan FUNCTIONAL PASS, REAL-DATA VERIFIED, RVR, dan DEFERRED;
 - source-responsive PASS tidak sama dengan browser/mobile PASS;
