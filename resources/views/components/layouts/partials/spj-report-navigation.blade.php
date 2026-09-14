@@ -14,7 +14,7 @@
         @click="reportMenuOpen = !reportMenuOpen"
         :aria-expanded="reportMenuOpen.toString()"
         aria-controls="nav-spj-reports"
-        class="app-nav w-full text-left {{ $isSpjReportRoute ? 'app-nav-active' : '' }}"
+        class="app-nav w-full text-left {{ $isSpjReportRoute ? 'app-nav-section-active' : '' }}"
         title="Laporan SPJ">
         <x-ui.icon name="report" />
         <span class="nav-label flex-1">Laporan SPJ</span>
