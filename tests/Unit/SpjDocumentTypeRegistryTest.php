@@ -48,6 +48,7 @@ class SpjDocumentTypeRegistryTest extends TestCase
         $this->assertSame([
             ['NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH'],
             ['NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
+            ['NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG'],
         ], SpjDocumentTypeRegistry::pairedPlaceholders());
     }
 

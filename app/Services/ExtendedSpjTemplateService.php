@@ -20,8 +20,11 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     {
         return parent::placeholderGroups() + [
             'Konsumsi & kegiatan' => [
+                'NAMA_ACARA',
                 'TANGGAL_KEGIATAN',
                 'TEMPAT_KEGIATAN',
+                'TANGGAL_ACARA',
+                'TEMPAT_ACARA',
                 'NAMA_PENANGGUNG_JAWAB',
                 'NIP_PENANGGUNG_JAWAB',
                 'KONSUMSI_NO',
@@ -86,8 +89,11 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         $fallback = SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE;
 
         return $values + [
+            'NAMA_ACARA' => (string) ($transaction->event_name ?: $fallback),
             'TANGGAL_KEGIATAN' => $eventDate,
             'TEMPAT_KEGIATAN' => $eventLocation !== '' ? $eventLocation : $fallback,
+            'TANGGAL_ACARA' => $eventDate,
+            'TEMPAT_ACARA' => $eventLocation !== '' ? $eventLocation : $fallback,
             'NAMA_PENANGGUNG_JAWAB' => $fallback,
             'NIP_PENANGGUNG_JAWAB' => $fallback,
             'KONSUMSI_NO' => $participantNumbers !== [] ? implode("\n", $participantNumbers) : $fallback,

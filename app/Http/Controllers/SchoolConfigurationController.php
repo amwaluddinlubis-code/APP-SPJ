@@ -79,6 +79,8 @@ class SchoolConfigurationController extends Controller
             'treasurer_nip' => ['nullable', 'string', 'max:40'],
             'treasurer_email' => ['nullable', 'email', 'max:180'],
             'treasurer_phone' => ['nullable', 'string', 'max:40'],
+            'inventory_manager_name' => ['nullable', 'string', 'max:180'],
+            'inventory_manager_nip' => ['nullable', 'string', 'max:40'],
             'document_storage_path' => ['required', 'string'],
         ]);
         if ($storageError = $this->documentStorageError($data['document_storage_path'])) {
@@ -98,7 +100,7 @@ class SchoolConfigurationController extends Controller
         if ($year) {
             DB::connection('school')->table('school_profiles')->updateOrInsert(
                 ['fiscal_year_id' => $year->id],
-                array_merge(collect($data)->only(['principal_name', 'principal_nip', 'principal_email', 'principal_phone', 'treasurer_name', 'treasurer_nip', 'treasurer_email', 'treasurer_phone'])->toArray(), ['updated_at' => now(), 'created_at' => now()])
+                array_merge(collect($data)->only(['principal_name', 'principal_nip', 'principal_email', 'principal_phone', 'treasurer_name', 'treasurer_nip', 'treasurer_email', 'treasurer_phone', 'inventory_manager_name', 'inventory_manager_nip'])->toArray(), ['updated_at' => now(), 'created_at' => now()])
             );
         }
 

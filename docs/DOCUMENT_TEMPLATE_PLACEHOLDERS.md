@@ -72,11 +72,15 @@ NAMA_KEPALA_SEKOLAH
 NIP_KEPALA_SEKOLAH
 NAMA_BENDAHARA_BOSP
 NIP_BENDAHARA_BOSP
+NAMA_PENGURUS_BARANG
+NIP_PENGURUS_BARANG
 ```
 
 `NAMA_SATUAN_PENDIDIKAN` adalah alias dari `NAMA_SEKOLAH`.
 
 `KOP_SURAT` tidak diisi sebagai teks biasa pada Excel; generator dapat memasukkan gambar letterhead melalui jalur khusus.
+
+Untuk dokumen konsumsi, gunakan `NAMA_ACARA`, `TANGGAL_ACARA`, dan `TEMPAT_ACARA` untuk konteks acara/rapat. Placeholder `NAMA_KEGIATAN`, `TANGGAL_KEGIATAN`, dan `TEMPAT_KEGIATAN` tetap dipertahankan sebagai kompatibilitas template lama.
 
 Alias lama seperti `NAMA_BENDAHARA` / `NIP_BENDAHARA` tidak boleh diasumsikan tersedia untuk template baru kecuali service memang menambahkannya kembali secara eksplisit. Template baru harus memakai nama canonical di atas.
 
@@ -125,7 +129,6 @@ NAMA_SUB_PROGRAM
 KODE_KEGIATAN
 NAMA_KEGIATAN
 KODE_REKENING
-NAMA_REKENING
 URAIAN_TRANSAKSI
 UNTUK_PEMBAYARAN
 CARA_BAYAR

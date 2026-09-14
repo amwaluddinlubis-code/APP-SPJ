@@ -32,6 +32,9 @@ class SpjSupplementaryTemplateContractTest extends TestCase
 
         $this->assertArrayHasKey('Konsumsi & kegiatan', $groups);
         $this->assertContains('TANGGAL_KEGIATAN', $groups['Konsumsi & kegiatan']);
+        $this->assertContains('NAMA_ACARA', $groups['Konsumsi & kegiatan']);
+        $this->assertContains('TANGGAL_ACARA', $groups['Konsumsi & kegiatan']);
+        $this->assertContains('TEMPAT_ACARA', $groups['Konsumsi & kegiatan']);
         $this->assertContains('KONSUMSI_NAMA', $groups['Konsumsi & kegiatan']);
         $this->assertContains('TOTAL_KONSUMSI', $groups['Konsumsi & kegiatan']);
     }

@@ -63,6 +63,7 @@ final class SpjDocumentTypeRegistry
         return [
             ['NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH'],
             ['NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP'],
+            ['NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG'],
         ];
     }
 
@@ -114,7 +115,7 @@ final class SpjDocumentTypeRegistry
                 'required' => [
                     'NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'SUMBER_DANA_PERIODE',
                     'JENIS_SPJ', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING',
-                    'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'NILAI_BRUTO', 'NILAI_DIBAYARKAN',
+                    'URAIAN_TRANSAKSI', 'NILAI_BRUTO', 'NILAI_DIBAYARKAN',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],
@@ -177,7 +178,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => $allCategories,
                 'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'NILAI_BRUTO'],
-                'optional' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING'],
+                'optional' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING'],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
                 'repeat_optional' => ['ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
                 'image' => [],
@@ -193,7 +194,7 @@ final class SpjDocumentTypeRegistry
                 'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'NILAI_BRUTO', 'TOTAL_PAJAK'],
                 'optional' => [
                     'NILAI_DIBAYARKAN', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
-                    'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'NAMA_PENYEDIA', 'NPWP_PENYEDIA',
+                    'KODE_REKENING', 'URAIAN_TRANSAKSI', 'NAMA_PENYEDIA', 'NPWP_PENYEDIA',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
@@ -213,7 +214,7 @@ final class SpjDocumentTypeRegistry
                     'TANGGAL_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
-                    'KODE_REKENING', 'NAMA_REKENING', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA',
+                    'KODE_REKENING', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA',
                     'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
@@ -235,7 +236,7 @@ final class SpjDocumentTypeRegistry
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],
                 'optional' => [
-                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'NPWP_PENYEDIA',
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NPWP_PENYEDIA',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN'],
                 'repeat_optional' => ['ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
@@ -334,7 +335,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['KONSUMSI'],
                 'required' => [
-                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'TANGGAL_KEGIATAN', 'TEMPAT_KEGIATAN',
+                    'KODE_KEGIATAN', 'NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA',
                     'KONSUMSI_NO', 'KONSUMSI_NAMA',
                 ],
                 'optional' => [
@@ -354,7 +355,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['KONSUMSI'],
                 'required' => [
-                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'TANGGAL_KEGIATAN', 'TEMPAT_KEGIATAN',
+                    'KODE_KEGIATAN', 'NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA',
                     'KONSUMSI_NO', 'KONSUMSI_NAMA', 'KONSUMSI_PORSI', 'KONSUMSI_HARGA_PORSI',
                     'KONSUMSI_JUMLAH', 'TOTAL_KONSUMSI',
                 ],
