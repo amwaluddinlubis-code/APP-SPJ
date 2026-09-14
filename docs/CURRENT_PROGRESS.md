@@ -58,6 +58,24 @@ Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau auth
 
 Commit dokumentasi setelah gate #480 tidak menggantikan code gate `887d0219...`.
 
+### Laravel 13 upgrade — local verification 2026-09-14
+
+`composer.json` dinaikkan: `php ^8.3`, `laravel/framework ^13.0`, `laravel/tinker ^3.0`, `phpunit/phpunit ^12.0`, `branch-alias 13.x-dev`. Hasil resolve: framework `v13.31.0`, Livewire `v3.8.8`, Filament `v4.13.1`, Boost `v2.8.1`, Pint `v1.32.1`, Symfony 7 → 8, Guzzle 7 → 8. Aset JS Filament ter-publish ulang via `filament:upgrade`. `composer update` memakai `--ignore-platform-req=ext-intl` karena PHP lokal (herd-lite 8.4.0) tidak menyertakan `intl` — kondisi yang sama dengan lock sebelumnya.
+
+Verifikasi lokal yang benar-benar dijalankan pada head upgrade (PHP 8.4.0):
+
+```text
+SPJ Critical : 288 PASS / 2244 assertions
+FULL UNIT    : 60 PASS / 206 assertions
+FULL FEATURE : 412 PASS / 2980 assertions
+npm run build: PASS (vite v6.4.3, ~3s)
+view:cache   : PASS
+pint --dirty : passed
+git diff --check: OK
+```
+
+Selisih +1 test vs gate #480 berasal dari commit `5fa98ed` (satu head di depan gate), bukan dari upgrade framework. Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang diubah. CI gate canonical tetap #480 sampai workflow CI dijalankan ulang pada head baru.
+
 ---
 
 ## Status release saat ini

@@ -1,6 +1,6 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-12** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-14** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `gui-standardization`.
 
 Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
 
@@ -8,7 +8,7 @@ Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/asser
 
 ## 1. Ringkasan
 
-SPJ BOSP Web adalah aplikasi Laravel 12 untuk menyusun dokumen pertanggungjawaban BOSP berdasarkan RKAS/BKU yang disinkronkan dari ARKAS.
+SPJ BOSP Web adalah aplikasi Laravel 13 untuk menyusun dokumen pertanggungjawaban BOSP berdasarkan RKAS/BKU yang disinkronkan dari ARKAS.
 
 Tujuan arsitektur:
 
@@ -23,7 +23,7 @@ Tujuan arsitektur:
 - preview/download tidak menjadi shortcut numbering;
 - metadata domain numbering mempunyai satu canonical registry dan tidak diduplikasi di controller/UI/allocator.
 
-Stack utama: PHP 8.2+, Laravel 12, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite 6, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 11.
+Stack utama: PHP 8.3+, Laravel 13, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite 6, SQLite multi-koneksi, DomPDF, PhpSpreadsheet, PHPWord, PHPUnit 12.
 
 ## 2. Multi-database
 
