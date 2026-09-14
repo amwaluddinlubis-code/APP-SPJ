@@ -41,6 +41,9 @@
     } elseif (request()->routeIs('reconciliation.*')) {
         $group = 'Dokumen & Laporan';
         $page = 'Periksa Perubahan ARKAS';
+    } elseif (request()->routeIs('spj.periodic-reports.*')) {
+        $group = 'Dokumen & Laporan';
+        $page = 'Laporan Periode';
     } elseif (request()->routeIs('spj.numbering-workflow')) {
         $group = 'Dokumen & Laporan';
         $page = 'Pekerjaan SPJ';
