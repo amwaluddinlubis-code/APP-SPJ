@@ -26,7 +26,7 @@ class SpjReportSidebarNavigationTest extends TestCase
         $this->assertStringContainsString('>Laporan Periode</span>', $partial);
         $this->assertStringContainsString('aria-controls="nav-periodic-reports"', $partial);
         $this->assertStringContainsString('reportMenuOpen', $partial);
-        $this->assertStringContainsString("request('jenis_laporan') === 'periode'", $partial);
+        $this->assertStringContainsString("request()->routeIs('spj.periodic-reports.*')", $partial);
         $this->assertStringContainsString("request('paket_laporan', 'bulan')", $partial);
 
         foreach (['bulan', 'triwulan', 'semester', 'tahunan'] as $scope) {
@@ -37,24 +37,28 @@ class SpjReportSidebarNavigationTest extends TestCase
             $this->assertStringContainsString("'label' => '{$label}'", $partial);
         }
 
-        $this->assertStringContainsString("'tab' => 'laporan'", $partial);
-        $this->assertStringContainsString("'jenis_laporan' => 'periode'", $partial);
+        $this->assertStringContainsString("route('spj.periodic-reports.index'", $partial);
         $this->assertStringContainsString("'paket_laporan' => \$reportScope['key']", $partial);
+        $this->assertStringNotContainsString("'jenis_laporan' => 'periode'", $partial);
     }
 
-    public function test_periodic_report_uses_a_dedicated_surface_instead_of_spj_report_history(): void
+    public function test_periodic_report_has_its_own_route_and_page(): void
     {
+        $routes = file_get_contents(base_path('routes/web.php'));
+        $periodicView = file_get_contents(resource_path('views/periodic-reports/index.blade.php'));
         $component = file_get_contents(app_path('Livewire/SpjReportFilter.php'));
-        $periodicView = file_get_contents(resource_path('views/livewire/spj-periodic-report-page.blade.php'));
         $spjReport = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
 
-        $this->assertIsString($component);
+        $this->assertIsString($routes);
         $this->assertIsString($periodicView);
+        $this->assertIsString($component);
         $this->assertIsString($spjReport);
-        $this->assertStringContainsString("#[Url(as: 'jenis_laporan', except: null)]", $component);
-        $this->assertStringContainsString("\$this->reportSurface === 'periode'", $component);
-        $this->assertStringContainsString("view('livewire.spj-periodic-report-page')", $component);
+
+        $this->assertStringContainsString("Route::view('/laporan-periode', 'periodic-reports.index')", $routes);
+        $this->assertStringContainsString("name('spj.periodic-reports.index')", $routes);
         $this->assertStringContainsString('<livewire:spj-periodic-report-center', $periodicView);
+        $this->assertStringNotContainsString('reportSurface', $component);
+        $this->assertStringNotContainsString('jenis_laporan', $component);
         $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $spjReport);
     }
 }
