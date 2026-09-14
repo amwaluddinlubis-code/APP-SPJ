@@ -6,9 +6,9 @@
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
             <p class="text-xs font-bold uppercase tracking-[0.12em] text-[var(--ui-fg-muted)]">Pusat Laporan Pertanggungjawaban</p>
-            <h2 id="periodic-report-heading" class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Paket laporan periodik</h2>
+            <h2 id="periodic-report-heading" class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Paket laporan periode</h2>
             <p class="mt-1 max-w-3xl text-sm text-[var(--ui-fg-muted)]">
-                Pilih jenis periode untuk menyiapkan sumber data laporan. Kontrak modul laporan sudah dipisahkan dari template sehingga format dokumen dapat diperbarui tanpa mengubah data dan periode.
+                Pilih periode lalu buka dokumen yang diperlukan. Setiap laporan dibuat langsung dari transaksi pada konteks sekolah, tahun anggaran, dan sumber dana aktif serta tersedia untuk pratinjau cetak dan PDF.
             </p>
         </div>
 
@@ -51,23 +51,47 @@
                     <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ count($reportDefinitions) }} dokumen dalam paket ini</p>
                 </div>
                 <span class="rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1 text-xs font-bold text-[var(--ui-fg-muted)]">
-                    {{ $summary['ready'] ? 'Data siap' : 'Menunggu periode' }}
+                    {{ $summary['ready'] ? 'Siap dicetak' : 'Menunggu periode' }}
                 </span>
             </div>
 
             <div class="divide-y divide-[var(--ui-line)]">
                 @foreach($reportDefinitions as $index => $report)
-                    <div class="flex min-h-12 items-center gap-3 px-4 py-2.5" wire:key="periodic-report-{{ $scope }}-{{ $report['key'] }}">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-xs font-bold text-[var(--ui-fg-muted)]">
-                            {{ $index + 1 }}
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $report['label'] }}</p>
-                            <p class="text-xs text-[var(--ui-fg-muted)]">Kode modul: {{ strtoupper($report['key']) }}</p>
+                    <div class="flex min-h-14 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center" wire:key="periodic-report-{{ $scope }}-{{ $report['key'] }}">
+                        <div class="flex min-w-0 flex-1 items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] text-xs font-bold text-[var(--ui-fg-muted)]">
+                                {{ $index + 1 }}
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $report['label'] }}</p>
+                                <p class="text-xs text-[var(--ui-fg-muted)]">Kode modul: {{ strtoupper($report['key']) }}</p>
+                            </div>
                         </div>
-                        <span class="shrink-0 text-xs font-semibold {{ $summary['ready'] ? 'text-emerald-700' : 'text-[var(--ui-fg-muted)]' }}">
-                            {{ $summary['ready'] ? 'Sumber data tersedia' : 'Pilih periode' }}
-                        </span>
+
+                        @if($summary['ready'])
+                            <div class="flex shrink-0 items-center gap-2 pl-10 sm:pl-0">
+                                <a
+                                    href="{{ route('spj.periodic-reports.print', ['scope' => $scope, 'report' => $report['key'], 'periode_laporan' => $periode]) }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="ui-btn ui-btn-secondary min-h-8 px-2.5 py-1.5 text-xs"
+                                    title="Pratinjau dan cetak {{ $report['label'] }}"
+                                >
+                                    Cetak
+                                </a>
+                                <a
+                                    href="{{ route('spj.periodic-reports.pdf', ['scope' => $scope, 'report' => $report['key'], 'periode_laporan' => $periode]) }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="ui-btn ui-btn-ghost min-h-8 px-2.5 py-1.5 text-xs"
+                                    title="Buka PDF {{ $report['label'] }}"
+                                >
+                                    PDF
+                                </a>
+                            </div>
+                        @else
+                            <span class="pl-10 text-xs font-semibold text-[var(--ui-fg-muted)] sm:pl-0">Pilih periode</span>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -105,13 +129,13 @@
 
                 <div class="mt-4 border-t border-[var(--ui-line)] pt-3">
                     <p class="text-xs leading-5 text-[var(--ui-fg-muted)]">
-                        Ringkasan ini berasal dari transaksi pada konteks sekolah, tahun anggaran, dan sumber dana aktif. Formula serta tata letak resmi tiap dokumen akan mengikuti template laporan yang dipasang kemudian.
+                        Laporan dibuat oleh engine internal APP-SPJ. Sebelum ditandatangani, cocokkan dengan bukti fisik, rekening koran, dan ketentuan instansi yang berlaku.
                     </p>
                 </div>
             @else
                 <div class="mt-4 rounded-lg border border-dashed border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-5 text-center">
                     <p class="text-sm font-semibold text-[var(--ui-fg-strong)]">Pilih periode untuk memuat sumber data.</p>
-                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Daftar dokumen tetap tersedia, tetapi nilai laporan belum dihitung sampai periodenya ditentukan.</p>
+                    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Tombol Cetak dan PDF aktif setelah periode valid dipilih.</p>
                 </div>
             @endif
         </aside>
