@@ -31,7 +31,7 @@ class SpjReportSidebarNavigationTest extends TestCase
             $this->assertStringContainsString("'key' => '{$scope}'", $partial);
         }
 
-        foreach (['Bulanan', 'Tahap & Triwulan', 'Semester', 'Tahunan'] as $label) {
+        foreach (['Bulanan', 'Triwulan', 'Semester', 'Tahunan'] as $label) {
             $this->assertStringContainsString("'label' => '{$label}'", $partial);
         }
 
