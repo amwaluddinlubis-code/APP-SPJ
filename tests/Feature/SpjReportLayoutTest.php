@@ -11,6 +11,7 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
 
         $this->assertIsString($blade);
+        $this->assertStringContainsString('<livewire:spj-periodic-report-center', $blade);
         $this->assertStringContainsString('aria-label="Filter laporan"', $blade);
         $this->assertStringContainsString('aria-label="Ringkasan laporan"', $blade);
         $this->assertStringContainsString('xl:grid-cols-5', $blade);
@@ -19,6 +20,19 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('wire:click="setMode(', $blade);
         $this->assertStringContainsString('wire:model.live="periode"', $blade);
         $this->assertStringContainsString('wire:model.live="perPage"', $blade);
+    }
+
+    public function test_periodic_report_center_lists_period_scopes_and_source_summary(): void
+    {
+        $blade = file_get_contents(resource_path('views/livewire/spj-periodic-report-center.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString('Paket laporan periodik', $blade);
+        $this->assertStringContainsString('aria-label="Jenis paket laporan"', $blade);
+        $this->assertStringContainsString('wire:click="setScope(', $blade);
+        $this->assertStringContainsString('wire:model.live="periode"', $blade);
+        $this->assertStringContainsString('Ringkasan sumber data', $blade);
+        $this->assertStringContainsString('Sumber data tersedia', $blade);
     }
 
     public function test_spj_tabs_use_livewire_filters_without_full_page_reload(): void
