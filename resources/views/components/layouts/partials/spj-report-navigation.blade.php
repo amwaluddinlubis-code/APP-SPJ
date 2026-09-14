@@ -3,7 +3,7 @@
     $activeReportScope = (string) request('paket_laporan', 'bulan');
     $reportScopes = [
         ['key' => 'bulan', 'label' => 'Bulanan', 'icon' => 'calendar'],
-        ['key' => 'triwulan', 'label' => 'Tahap & Triwulan', 'icon' => 'report'],
+        ['key' => 'triwulan', 'label' => 'Triwulan', 'icon' => 'report'],
         ['key' => 'semester', 'label' => 'Semester', 'icon' => 'report'],
         ['key' => 'tahunan', 'label' => 'Tahunan', 'icon' => 'calendar'],
     ];
