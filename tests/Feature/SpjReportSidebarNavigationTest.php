@@ -46,11 +46,15 @@ class SpjReportSidebarNavigationTest extends TestCase
     {
         $component = file_get_contents(app_path('Livewire/SpjReportFilter.php'));
         $periodicView = file_get_contents(resource_path('views/livewire/spj-periodic-report-page.blade.php'));
+        $spjReport = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
 
         $this->assertIsString($component);
         $this->assertIsString($periodicView);
-        $this->assertStringContainsString("request('jenis_laporan') === 'periode'", $component);
+        $this->assertIsString($spjReport);
+        $this->assertStringContainsString("#[Url(as: 'jenis_laporan', except: null)]", $component);
+        $this->assertStringContainsString("\$this->reportSurface === 'periode'", $component);
         $this->assertStringContainsString("view('livewire.spj-periodic-report-page')", $component);
         $this->assertStringContainsString('<livewire:spj-periodic-report-center', $periodicView);
+        $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $spjReport);
     }
 }
