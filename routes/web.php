@@ -14,6 +14,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MaintenanceTransactionLinkController;
+use App\Http\Controllers\PeriodicReportController;
 use App\Http\Controllers\ProductivityDashboardController;
 use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\RkasBudgetController;
@@ -137,6 +138,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
         Route::view('/laporan-periode', 'periodic-reports.index')->name('spj.periodic-reports.index');
+        Route::get('/laporan-periode/{scope}/{report}/cetak', [PeriodicReportController::class, 'show'])->name('spj.periodic-reports.print');
+        Route::get('/laporan-periode/{scope}/{report}/pdf', [PeriodicReportController::class, 'pdf'])->name('spj.periodic-reports.pdf');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
         Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
