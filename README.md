@@ -2,7 +2,7 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
 
-Terakhir diverifikasi terhadap kode: **2026-09-12**.
+Terakhir diverifikasi terhadap kode: **2026-09-14**.
 
 ## Status branch saat ini
 
@@ -26,20 +26,20 @@ FINAL RELEASE   : NOT YET
 
 ## Stack riil (terverifikasi dari `composer.json` / `package.json`)
 
-- PHP `^8.2` (runtime dev 8.4.0)
-- Laravel 12 (`^12.0`) — struktur ramping (middleware di `bootstrap/app.php`, tanpa `app/Http/Kernel.php`)
-- Livewire 3.7 + Alpine.js 3 (+ `@alpinejs/collapse`, `@alpinejs/persist`) + Chart.js 4
+- PHP `^8.3` dengan Composer platform floor `8.3.0`
+- Laravel 13 (`^13.0`) — struktur ramping (middleware di `bootstrap/app.php`, tanpa `app/Http/Kernel.php`)
+- Livewire 3 + Alpine.js 3 (+ `@alpinejs/collapse`, `@alpinejs/persist`) + Chart.js 4
 - Tailwind CSS 4 + Vite 6 (`resources/css/app.css`, `resources/js/app.js`)
-- Filament 4 (`actions`, `schemas`, `tables` — dipakai pada komponen tabel Livewire, bukan full admin panel)
+- Stack frontend **pure TALL**; Filament dan Laravel Sail yang tidak dipakai telah dihapus dari dependency/runtime aktif
 - SQLite multi-koneksi (1 central + 1 per sekolah), session driver `database`, queue `database`
 - DomPDF (`barryvdh/laravel-dompdf`), PhpSpreadsheet, PHPWord
 - Auth session + login kustom (`/masuk`, throttle 5:1) — **tanpa** Sanctum/Passport/JWT; **tanpa** `routes/api.php`
-- Test: PHPUnit 11 (`tests/Unit`, `tests/Feature`, suite `SPJ Critical` di `phpunit.xml`)
+- Test: PHPUnit 12 (`tests/Unit`, `tests/Feature`, suite `SPJ Critical` di `phpunit.xml`)
 
 ## Prasyarat lokal
 
-- PHP 8.2+ dengan ekstensi `sqlite3`, `mbstring`, `xml`, `gd`/`imagick` (untuk render dokumen), `zip`
-- Composer 2, Node.js 18+ (Vite 6 + Tailwind 4)
+- PHP 8.3+ dengan ekstensi `sqlite3`, `mbstring`, `xml`, `gd`/`imagick` (untuk render dokumen), `zip`
+- Composer 2, Node.js 18+ (CI memakai Node.js 22; Vite 6 + Tailwind 4)
 - Git (branch kerja: `gui-standardization`)
 
 ## Instalasi lokal
@@ -123,6 +123,8 @@ Untuk perubahan PHP:
 ```powershell
 php vendor/bin/pint --dirty --format agent
 ```
+
+CI juga memvalidasi metadata/locked platform Composer sebelum `composer install`, sehingga lock yang membutuhkan PHP di atas floor project tidak boleh lolos.
 
 Detail local-vs-CI ada di `docs/P0_VERIFICATION_KIT.md` §1–2.
 
