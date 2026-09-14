@@ -7,7 +7,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 ## Foundational Context
 
-This application is a Laravel application running on PHP 8.2. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+This application is a Laravel application with a PHP `^8.3` runtime contract. Composer dependency resolution is pinned to the PHP 8.3 platform floor so development on newer PHP versions must remain compatible with the minimum supported runtime. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
 
 Before relying on a package's API, confirm its installed version:
 - PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
@@ -115,26 +115,26 @@ Before relying on a package's API, confirm its installed version:
 
 - If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
-=== laravel/v12 rules ===
+=== laravel/v13 rules ===
 
-# Laravel 12
+# Laravel 13
 
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
+- Laravel 13 uses the streamlined application structure adopted in modern Laravel versions. Follow the structure present in this repository instead of restoring legacy Kernel-based conventions.
 
-## Laravel 12 Structure
+## Laravel 13 Structure
 
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
+- Middleware are not registered in `app/Http/Kernel.php` in this project.
 - Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
 - `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
 - `bootstrap/providers.php` contains application specific service providers.
-- The `app/Console/Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
+- The `app/Console/Kernel.php` file does not exist; use `bootstrap/app.php` or `routes/console.php` for console configuration.
 - Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
 
 ## Database
 
-- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
+- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they may be dropped and lost.
 
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
+- Limit eagerly loaded records with framework-native query capabilities rather than adding an external package when the installed Laravel version already supports the requirement.
 
 ### Models
 
@@ -159,7 +159,7 @@ Before relying on a package's API, confirm its installed version:
 
 # PHPUnit
 
-- This project uses PHPUnit. Create tests with `php artisan make:test --phpunit {name}`.
+- This project uses PHPUnit 12. Create tests with `php artisan make:test --phpunit {name}`.
 - Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
 - Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
 
@@ -234,10 +234,10 @@ Preserve the decisions documented there.
 
 === project/strict rules ===
 
-# SPJ BOSP Strict Project Rules (reality-verified 2026-09-12)
+# SPJ BOSP Strict Project Rules (reality-verified 2026-09-14)
 
-Stack: PHP ^8.2, Laravel 12, Livewire 3.7, Alpine 3, Tailwind 4, Filament 4 (tables only),
-SQLite multi-DB, session auth. No `routes/api.php`, no Sanctum/Passport/JWT.
+Stack: PHP ^8.3, Laravel 13, Livewire 3, Alpine 3, Tailwind 4, pure TALL frontend,
+SQLite multi-DB, session auth. Filament and Laravel Sail are not active dependencies. No `routes/api.php`, no Sanctum/Passport/JWT.
 
 ## Architecture (must follow)
 
@@ -265,6 +265,7 @@ SQLite multi-DB, session auth. No `routes/api.php`, no Sanctum/Passport/JWT.
 - Before committing: inspect `git status`, `git diff`, `git log --oneline -10`; stage only intended files.
 - After PHP changes: `vendor/bin/pint --dirty --format agent` (fix, not `--test`).
 - Before declaring done: narrowest `php artisan test --compact <file|filter>` + `git diff --check`; full suite only for broad changes.
+- For dependency changes, preserve the PHP 8.3 minimum-platform contract and keep `composer.lock` installable by the canonical PHP 8.3 CI gate; never hide incompatibility with `--ignore-platform-req=php`.
 - Docs are Definition of Done: perform the Documentation Impact Review (`docs/DOCUMENTATION_MAINTENANCE.md`); behavior changes update impacted docs in the same work; stale/contradictory docs are defects.
 - Status/priority always derive from `docs/CURRENT_PROGRESS.md` + `docs/DEVELOPMENT_ROADMAP.md`; never hard-code.
 - Concise replies; `file_path:line_number` when referencing code.
