@@ -54,6 +54,7 @@ Karena current HEAD belum hijau, dokumen tidak boleh menyebut batch source setel
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
+| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / SOURCE IMPLEMENTED** — kontrak empat kelompok laporan periodik, source summary, boundary template, dan navigasi sidebar Laporan SPJ. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
@@ -101,7 +102,7 @@ Audit ini adalah source architecture finding, bukan klaim exploit runtime. Detai
 
 | Dokumen | Status |
 |---|---|
-| `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPLah baseline functional; generated-document/official-template output tetap RVR. |
+| `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPlah baseline functional; generated-document/official-template output tetap RVR. |
 | `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — desktop/laptop dan mobile/tablet runtime checks. |
 | `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO** — jangan mengubah source readiness menjadi browser PASS. |
 
