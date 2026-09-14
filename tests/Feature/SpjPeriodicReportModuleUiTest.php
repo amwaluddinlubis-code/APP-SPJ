@@ -22,15 +22,17 @@ class SpjPeriodicReportModuleUiTest extends TestCase
         $this->assertStringNotContainsString('jenis_laporan', $component);
     }
 
-    public function test_periodic_report_center_keeps_template_binding_separate_from_the_report_contract(): void
+    public function test_periodic_report_center_uses_the_internal_print_generator(): void
     {
         $blade = file_get_contents(resource_path('views/livewire/spj-periodic-report-center.blade.php'));
 
         $this->assertIsString($blade);
         $this->assertStringContainsString('Pusat Laporan Pertanggungjawaban', $blade);
-        $this->assertStringContainsString('Paket laporan periodik', $blade);
-        $this->assertStringContainsString('Formula serta tata letak resmi tiap dokumen akan mengikuti template laporan yang dipasang kemudian.', $blade);
-        $this->assertStringNotContainsString('route(\'spj.periodic-report.export', $blade);
+        $this->assertStringContainsString('Paket laporan periode', $blade);
+        $this->assertStringContainsString('engine internal APP-SPJ', $blade);
+        $this->assertStringContainsString("route('spj.periodic-reports.print'", $blade);
+        $this->assertStringContainsString("route('spj.periodic-reports.pdf'", $blade);
+        $this->assertStringNotContainsString('template laporan yang dipasang kemudian', $blade);
     }
 
     public function test_periodic_report_center_uses_shared_theme_primitives_without_local_css(): void
