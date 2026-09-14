@@ -11,7 +11,7 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('<livewire:spj-periodic-report-center', $blade);
+        $this->assertStringNotContainsString('<livewire:spj-periodic-report-center', $blade);
         $this->assertStringContainsString('aria-label="Filter laporan"', $blade);
         $this->assertStringContainsString('aria-label="Ringkasan laporan"', $blade);
         $this->assertStringContainsString('xl:grid-cols-5', $blade);
