@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-12**
+Terakhir diperbarui: **2026-09-14**
 
-Dokumen ini adalah indeks dokumentasi untuk branch aktif `gui-standardization`. Tujuannya adalah membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan arsip agar dokumen lama tidak mengalahkan kondisi project terbaru.
+Dokumen ini adalah indeks dokumentasi untuk branch aktif `gui-standardization`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
 ## Urutan sumber kebenaran
 
@@ -16,40 +16,48 @@ Jika ada perbedaan antar dokumen, gunakan urutan berikut:
 6. Dokumen `HISTORICAL`, `SUPERSEDED`, atau `ARCHIVED` hanya untuk jejak sejarah.
 
 Root `README.md` adalah entry point project, bukan pengganti `CURRENT_PROGRESS.md`.
-Dokumen root-level aktif: `README.md` (setup + kontrak), `ARCHITECTURE.md` (peta struktur +
-ERD), `API.md` (daftar route, digenerate dari `route:list`), `AGENTS.md` (aturan agen AI).
 
-Untuk metadata domain numbering executable, source of truth adalah:
+Untuk metadata numbering executable, source of truth tetap:
 
 ```text
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Dokumentasi menjelaskan kontraknya, tetapi tidak menggantikan registry executable.
+Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Evidence gate hidup di `P0_VERIFICATION_KIT.md` §1 dan tidak disalin ke dokumen lain agar tidak divergen.
+Status saat indeks ini diperbarui:
 
-Status keseluruhan tetap **belum final release-ready** karena real-data generated-output verification, official-template output, dan browser/runtime RVR masih aktif.
+```text
+LATEST SUCCESSFUL CANONICAL GATE : CI #469 / fd01fc6681... / SUCCESS
+CURRENT BRANCH HEAD              : 2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35
+LATEST HEAD ATTEMPT              : CI #476 / FAILURE at SPJ Critical tests
+FRONTEND BUILD #476              : PASS
+BLADE COMPILE #476               : PASS
+FULL UNIT / FEATURE #476         : SKIPPED after critical failure
+FINAL RELEASE                    : NOT YET
+```
+
+Karena current HEAD belum hijau, dokumen tidak boleh menyebut batch source setelah gate #469 sebagai canonical FUNCTIONAL PASS. Docs-only commit juga tidak menghasilkan functional gate baru.
 
 ## Dokumen aktif utama
 
 | Dokumen | Peran / status |
 |---|---|
-| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-12** — sumber status release utama, termasuk canonical numbering registry checkpoint. |
-| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-12** — prioritas dan urutan pekerjaan; registry numbering sudah marked complete. |
-| `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, matriks impact, evidence rules, dan aturan wajib untuk semua AI/coding agent. |
+| `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS / REFRESHED 2026-09-14** — status release, current red gate, Livewire boundary audit, blockers, dan RVR. |
+| `DEVELOPMENT_ROADMAP.md` | **ACTIVE / REFRESHED 2026-09-14** — P0 integration gate + Livewire authorization hardening sebelum pekerjaan migrasi baru; generated-output QA tetap prioritas produk setelah gate stabil. |
+| `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, impact matrix, evidence rules, dan aturan wajib contributor/AI. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
-| `ARCHITECTURE_COMPLETE.md` | **ACTIVE / REFRESHED 2026-09-12** — arsitektur aktif, termasuk one-registry numbering architecture. |
-| `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, tenant/concurrency guard, dan safe-sync semantics. |
-| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **IMPLEMENTED / FUNCTIONAL GATE PASS / REFRESHED 2026-09-12** — canonical registry, event-date/number-target rules, cancel individual, rollback numbering, cancel numbering triwulan, dan aturan koreksi data setelah NUMBERED. |
+| `ARCHITECTURE_COMPLETE.md` | **ACTIVE ARCHITECTURE** — layer aplikasi, ownership, tenant boundary, dan registry architecture. |
+| `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, dan safe-sync semantics. |
+| `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
-| `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — kontrak GUI/layout, theme, primitive, icon canonical, dan aturan evidence visual. |
-| `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — checklist browser desktop/laptop dan mobile/tablet untuk GUI-AUDIT-12/13. |
+| `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
+| `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
-| `LIVEWIRE_MIGRATION_PLAN.md` | **ACTIVE PLAN / REFRESHED 2026-09-14** — status jujur migrasi Livewire per modul (done/uncommitted/not-started/out-of-scope), kandidat, dan aturan anti-tabrakan. |
+| `LIVEWIRE_MIGRATION_PLAN.md` | **ACTIVE / PHASE 1 BOUNDARY AUDIT COMPLETE / REFRESHED 2026-09-14** — inventaris 25 component, read/write classification, authorization gaps, dan Phase 2 hardening. |
 
 Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.md` dan melakukan **Documentation Impact Review** sebelum menyatakan pekerjaan selesai.
 
@@ -57,89 +65,65 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 
 | Dokumen | Peran / status |
 |---|---|
-| `ARKAS_IMPORTER.md` | **ACTIVE / REFRESHED 2026-09-12** — Generic ARKAS Importer; functional hardening PASS, operator-data test berikutnya; checkpoint internal hanya implementation history. |
-| `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder template. |
-| `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE / REFRESHED 2026-09-12** — lifecycle import paket, update template individu, download individu, dan rakitan Master Template Terbaru dari XLSX aktif. |
-| `P0_VERIFICATION_KIT.md` | **ACTIVE / REFRESHED 2026-09-12** — code gate release-safety terbaru, canonical numbering registry verification, command, dan real-tenant audit. |
-| `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — deterministic six-category sudah PASS; dokumen sekarang fokus audit real-data read-only. |
+| `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer, source key, profile-driven import, hardening, dan operator-data verification. |
+| `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder registry/usage dan template contract. |
+| `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
+| `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command dan successful canonical release-safety gate; jangan mengubahnya menjadi klaim bahwa current HEAD hijau bila run terbaru gagal. |
+| `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — six-category source/real-data audit guidance. |
 
-Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Gunakan `ARKAS_IMPORTER.md` bila perubahan khusus menyentuh Generic ARKAS Importer/profile-driven import.
+Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk numbering/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Untuk penutupan GUI, baca `GUI_STANDARDIZATION.md` lalu `GUI_RUNTIME_QA.md`.
 
-Untuk pekerjaan penomoran/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md` sebelum mengubah use case numbering atau lifecycle. Metadata numbering baru/berubah harus dimulai dari `SpjNumberingDocumentRegistry`, bukan dari daftar hardcoded di consumer.
+## Livewire/TALL status khusus
 
-Untuk penutupan standardisasi GUI, baca `GUI_STANDARDIZATION.md` lalu jalankan `GUI_RUNTIME_QA.md`. Source/CI PASS tidak boleh diubah menjadi browser/mobile PASS tanpa runtime evidence.
+Phase 1 audit pada 2026-09-14 memeriksa seluruh `app/Livewire/` di current HEAD dan menemukan:
+
+```text
+25 components total
+17 read-only / UI-state
+1 guarded mutation (SchoolSelector)
+1 accepted context mutation (YearSelector)
+5 active mutation boundaries require role hardening
+1 unmounted mutation component requires hardening before reuse
+```
+
+Mutation boundaries yang harus ditutup sebelum migrasi baru:
+
+- `UserManagement` user/role mutation;
+- `SchoolMaster` school creation/provisioning;
+- `DatabaseMaintenance` checkpoint/migrate/vacuum/provision;
+- `DatabaseResetForm` destructive reset;
+- `DatabaseSchoolList` activate/migrate;
+- `DocumentStorageSettings` bila akan dipakai kembali.
+
+Audit ini adalah source architecture finding, bukan klaim exploit runtime. Detail matrix dan rules berada di `LIVEWIRE_MIGRATION_PLAN.md`.
 
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |
 |---|---|
-| `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPLah sudah FUNCTIONAL PASS; generated-document E2E + official-template output masih RVR. |
-| `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — GUI-AUDIT-12 desktop/laptop dan GUI-AUDIT-13 mobile/tablet. |
-| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO / REFRESHED 2026-09-12** — matrix canonical mengikuti `GUI_RUNTIME_QA.md`; viewport 390×844 hanya additional regression target. |
-
-`SIPLAH_MVP_PLAN.md` sengaja belum di-rename agar link lama tidak rusak. Jangan membaca nama file sebagai tanda bahwa core SiPLah masih berada pada fase MVP awal.
-
-## Canonical numbering architecture
-
-Metadata numbering executable berada di satu registry:
-
-```text
-SpjNumberingDocumentRegistry
-```
-
-Registry memiliki kode, label tampilan, flag `numbered`, kategori applicable, channel, aturan event date, target penyimpanan nomor, dan scope rule. Consumer berikut harus membacanya secara dinamis:
-
-```text
-Format Penomoran
-Penomoran Triwulan
-numbering policy
-gate
-order/event-date resolver
-allocator
-single numbering
-finalization
-cancel
-replacement
-```
-
-Current numbered domains adalah `SPJ`, `PESANAN`, `BAP`, `BAST`, `SPK`, `RAB`, dan `SURAT_TUGAS_PERJALANAN_DINAS`. Daftar ini hanya snapshot dokumentasi; source executable tetap registry.
-
-`SpjDocumentTypeRegistry` tetap khusus template/placeholder/output dan bukan registry sequence numbering.
-
-## Dokumen historis / arsip
-
-Arsip yang pekerjaannya sudah selesai (`DEVELOPMENT_HANDOFF_2026-09-05.md`, `URGENT_TRANSACTION_SPJ_MIGRATION.md`) telah dihapus dari `docs/` agar tidak menyesatkan. Jejaknya tetap tersedia di git history bila diperlukan audit.
+| `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPLah baseline functional; generated-document/official-template output tetap RVR. |
+| `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — desktop/laptop dan mobile/tablet runtime checks. |
+| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO** — jangan mengubah source readiness menjadi browser PASS. |
 
 ## Kontrak aktif lintas dokumentasi
 
-- ARKAS/BKU = source readonly; operator SPJ = overlay.
+- ARKAS/BKU adalah source readonly; operator SPJ adalah overlay.
 - Source sync tidak menghapus overlay manual.
 - Source missing/returning mempertahankan identity dan pekerjaan operator.
-- Perubahan source setelah pekerjaan operator dapat memerlukan reconciliation; NUMBERED/FINAL tidak dimutasi diam-diam.
+- NUMBERED/FINAL tidak dimutasi diam-diam oleh sync.
 - Boundary tenant = `School + Fiscal Year + Fund Source`.
-- Sequence numbering terisolasi per sumber dana.
+- Sequence numbering terisolasi per fund source.
 - Metadata numbering mempunyai satu source of truth: `SpjNumberingDocumentRegistry`.
-- Consumer numbering tidak boleh mempunyai daftar type/label/category/event-date/number-target/scope kedua.
-- Detail Transaksi hanya menulis `item_description`.
-- Koreksi `item_description` dan `payment_description` tetap boleh pada NUMBERED tanpa membatalkan nomor atau mengubah sequence; FINAL tetap terkunci.
-- Paket SPJ memiliki ownership kategori, procurement/payment channel, penerima/vendor, detail kategori, numbering, template, output, lifecycle, dan finalisasi.
-- Perubahan kategori, data pembayaran (selain `payment_description`), atau Isian Manual substansi pada NUMBERED wajib didahului rollback numbering yang sesuai.
-- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
-- SiPLah adalah channel, bukan kategori; hanya berlaku untuk BARANG. Radio SiPLah/Non SiPLah UI-only (tidak menulis `payment_method`).
-- READY + category benar-benar berubah => DRAFT untuk revalidation.
+- `SpjDocumentTypeRegistry` khusus template/placeholder/output, bukan sequence numbering.
 - Preview/download tidak menerbitkan nomor baru.
-- Cancel individual mempertahankan nomor `CANCELLED` sebagai history permanen dan sequence tidak mundur.
-- Rollback numbering melepas nomor aktif dari titik rollback sampai ekor sequence; nomor yang dilepas boleh dipakai kembali.
-- Rollback tidak boleh melintasi nomor `CANCELLED` individual permanen.
-- Cancel Penomoran Triwulan berjalan mundur `TW4 -> TW3 -> TW2 -> TW1` pada context tenant+tahun+sumber dana yang sama.
-- Full quarter reset ditolak bila target memiliki nomor SPJ cancelled individual permanen.
-- Operational audit rollback tetap dipertahankan walaupun history numbering domain yang di-rollback dilepas.
-- Employee identity tidak boleh silent-merge orang berbeda hanya karena normalized name ambigu.
-- Operator-locked Employee tidak boleh ditimpa source sync.
-- Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill KONSUMSI/SPPD memakai roster menyatu, participant manual diperbolehkan.
-- Icon canonical dimiliki `<x-ui.icon>`; `<x-ui-icon>` hanya compatibility adapter dan tidak boleh memiliki registry SVG sendiri.
+- Cancel individual mempertahankan nomor `CANCELLED`; rollback adalah operasi berbeda yang dapat melepas active tail number.
+- Detail Transaksi hanya menulis `item_description`; correction `item_description` dan `payment_description` pada NUMBERED mengikuti contract aktif; FINAL tetap terkunci.
+- Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
+- SiPlah adalah channel, bukan kategori.
+- Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill KONSUMSI/SPPD memakai roster menyatu.
+- Icon canonical dimiliki `<x-ui.icon>`; compatibility adapter lama tidak boleh menjadi registry kedua.
 - Source-level responsive regression bukan bukti browser visual PASS.
-- Audit database real-data dilakukan read-only sebelum mutation.
+- Livewire mutation wajib mempertahankan authorization dan tenant boundary; route GET middleware saja bukan bukti action Livewire independently authorized.
 - Jangan fabrikasi source data, penerima, vendor, SPPD, atau template untuk memaksa coverage.
 
 ## Klasifikasi status yang wajib dipakai
@@ -152,24 +136,18 @@ DEFERRED
 HISTORICAL / SUPERSEDED / ARCHIVED
 ```
 
-Jangan memakai kata “selesai” bila yang tersedia hanya source path tanpa regression/runtime evidence.
+Jangan memakai kata “selesai”, “PASS”, atau “verified” bila yang tersedia hanya source path tanpa evidence yang sesuai.
 
 ## Aturan pemeliharaan dokumentasi
 
-Aturan lengkap dan checklist canonical berada di:
-
-```text
-docs/DOCUMENTATION_MAINTENANCE.md
-```
-
-Ringkasannya:
+Aturan lengkap berada di `DOCUMENTATION_MAINTENANCE.md`. Ringkasannya:
 
 1. dokumentasi adalah bagian Definition of Done;
-2. setiap perubahan wajib menjalani Documentation Impact Review;
+2. setiap perubahan menjalani Documentation Impact Review;
 3. status/evidence diperbarui di `CURRENT_PROGRESS.md`;
 4. prioritas/milestone diperbarui di `DEVELOPMENT_ROADMAP.md`;
-5. business rule, architecture, user flow, sync, numbering, GUI, dan feature guide diperbarui sesuai matriks dampak;
-6. dokumen baru/status dokumen berubah wajib direfleksikan di indeks ini;
+5. business rule, architecture, user flow, sync, numbering, GUI, dan feature guide diperbarui sesuai impact matrix;
+6. dokumen baru/status dokumen berubah direfleksikan di indeks ini;
 7. dokumentasi tidak boleh mengklaim PASS/verified melebihi evidence aktual;
-8. instruksi AI agent tidak boleh hard-code prioritas feature yang cepat berubah;
-9. dokumentasi usang atau kontradiktif dianggap defect dan harus diperbarui/diarsipkan/dihapus dengan aman.
+8. instruksi agent tidak boleh hard-code prioritas feature yang cepat berubah;
+9. dokumentasi usang/kontradiktif adalah defect dan harus diperbarui atau diarsipkan dengan aman.

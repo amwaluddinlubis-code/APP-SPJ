@@ -1,13 +1,13 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-12**
+Terakhir diperbarui: **2026-09-14**
 
-Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`.
+Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`. Detail gate historis dan command verification berada di `P0_VERIFICATION_KIT.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:
 
-- **FUNCTIONAL PASS**: dibuktikan oleh source + deterministic CI/regression;
-- **REAL-DATA VERIFIED**: dibuktikan pada database sekolah nyata atau isolated copy tanpa mengarang data yang tidak tersedia;
+- **FUNCTIONAL PASS**: dibuktikan oleh source + deterministic test/CI yang benar-benar dijalankan;
+- **REAL-DATA VERIFIED**: dibuktikan pada database sekolah nyata atau isolated copy tanpa fabrikasi data;
 - **RVR**: masih memerlukan real-value/runtime/operator verification;
 - **DEFERRED**: sengaja tidak menjadi fokus aktif saat ini, bukan berarti PASS.
 
@@ -15,144 +15,130 @@ Definisi status:
 
 ## Checkpoint terbaru
 
-Evidence CI canonical berada di `P0_VERIFICATION_KIT.md` §1 agar detail hash/run/test tidak diduplikasikan di banyak dokumen.
-
-Status code gate saat dokumentasi ini diperbarui:
+### Latest successful canonical gate
 
 ```text
-LATEST TESTED CODE HEAD   : fd01fc6681cf33642857fd3d0916764c4e140074
-LATEST COMPLETED CODE GATE: CI #469 / run 34695708139 / SUCCESS
-WORKFLOW                  : SPJ Critical Verification
-INDIVIDUAL XLSX DOWNLOAD  : TRUE SINGLE-SHEET / FUNCTIONAL PASS
-XLSX HTML PREVIEW         : CANONICAL EXCEL SHEET / FUNCTIONAL PASS
-PLACEHOLDER INSPECTOR     : FUNCTIONAL PASS
-MASTER TEMPLATE LIFECYCLE : FUNCTIONAL PASS
-NUMBERING REGISTRY        : CANONICAL / SOURCE OF TRUTH ACTIVE
-REPOSITORY-WIDE PINT      : ADVISORY / 5 PRE-EXISTING UNRELATED STYLE ISSUES REMAIN
+LATEST SUCCESSFUL CODE HEAD: fd01fc6681cf33642857fd3d0916764c4e140074
+LATEST SUCCESSFUL CODE GATE: CI #469 / run 34695708139 / SUCCESS
+WORKFLOW                   : SPJ Critical Verification
 ```
 
-CI #469 berhasil setelah koreksi **Preview HTML XLSX** agar memilih worksheet canonical dari source Excel berdasarkan `document_type` / `SpjDocumentTypeRegistry`, bukan selalu worksheet index `0`. Gate yang sama mempertahankan **Download Template** XLSX sebagai true single-sheet, **Cek Placeholder**, dan lifecycle **Master Template Terbaru**. Blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature suite semuanya PASS. Repository-wide Pint masih advisory dan command Pint pada run #469 tetap melaporkan 5 style issue lama pada file isolated-numbering/rollback yang tidak terkait perubahan preview template; detail canonical berada di `P0_VERIFICATION_KIT.md` §1.
+CI #469 tetap menjadi gate sukses terakhir yang membuktikan blocking frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature suite untuk code head tersebut. Detail evidence canonical tetap berada di `P0_VERIFICATION_KIT.md` §1.
 
-Commit dokumentasi-only setelah `fd01fc6681cf33642857fd3d0916764c4e140074` tidak memicu workflow karena `docs/**` di-ignore dan **tidak menggantikan** code gate tersebut.
-
-Kontrak template sekarang:
+### Current branch HEAD attempt
 
 ```text
-source of truth = template XLSX aktif per document type canonical
-upload/update satu XLSX = versi itu dipakai pada master download berikutnya
-master lama = tidak dimutasi/ditulis ulang sebagai source of truth
-download master = dirakit on demand dari seluruh XLSX canonical aktif
-master parsial = ditolak
-hasil rakitan = divalidasi ulang melalui validator paket canonical
-download per baris XLSX = tepat 1 worksheet fisik, bukan hidden-sheet package
-source/master download individu = tidak dimutasi
-preview HTML XLSX = render worksheet canonical dari workbook Excel aktif, bukan selalu sheet pertama
-preview fallback legacy = hanya jika tepat 1 worksheet non-teknis tersedia
-Cek Placeholder = read-only AJAX memakai resolver generator yang sama
-DOCX = tetap individual dan tidak digabung ke master XLSX
+CURRENT HEAD AUDITED       : 2e0f65cbd5c6e0fd8a8495f2d156805fd468ee35
+LATEST ATTEMPTED GATE      : CI #476 / run 34830288269 / FAILURE
+FRONTEND BUILD             : PASS pada run #476
+BLADE COMPILE              : PASS pada run #476
+SPJ CRITICAL               : FAILURE pada run #476
+FULL UNIT                  : NOT RUN / skipped setelah critical failure
+FULL FEATURE               : NOT RUN / skipped setelah critical failure
 ```
 
-Refactor numbering registry **tidak berubah** oleh pekerjaan ini. Source of truth numbering tetap:
+Konsekuensi: perubahan source setelah `fd01fc6681...` **belum boleh dipromosikan menjadi canonical FUNCTIONAL PASS** hanya berdasarkan source review atau focused test lokal yang pernah dijalankan. Run #472, #473, #474, #475, dan #476 berada dalam rangkaian gate merah; karena itu kegagalan tidak boleh diasumsikan berasal hanya dari commit HEAD terakhir tanpa reproduksi test yang tepat.
 
-```text
-app/Services/SpjNumberingDocumentRegistry.php
-```
-
-Registry canonical menyimpan metadata:
-
-```text
-code
-label
-numbered
-applicable_categories
-channel
-event_date_rule
-number_target
-scope_rule
-```
-
-Halaman format penomoran, halaman penomoran triwulan, policy, gate, ordering/event-date resolver, allocator, lifecycle/finalization, cancel, dan replacement membaca definisi numbering dari registry yang sama. `SpjDocumentTypeRegistry` tetap mempunyai tanggung jawab berbeda sebagai registry template/placeholder, bukan sumber aturan numbering.
-
-Token `{TW}` tetap menghasilkan angka Romawi triwulan (`I`, `II`, `III`, `IV`) tanpa prefix otomatis `TW.`. Operator dapat menambahkan literal `TW.` sendiri pada pattern bila dibutuhkan, misalnya `TW.{TW}`.
+Commit docs-only tidak menggantikan code gate dan tidak boleh disebut functional verification baru.
 
 ---
 
 ## Status release saat ini
 
 ```text
-FUNCTIONAL CORE : PASS pada code gate fd01fc6681... / CI #469
-REAL-DATA       : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback; output QA masih ACTIVE
-TEMPLATE TOOLS  : SINGLE-SHEET DOWNLOAD + CANONICAL XLSX HTML PREVIEW + PLACEHOLDER INSPECTOR FUNCTIONAL PASS
-MASTER TEMPLATE : FUNCTIONAL PASS / EXCEL-LIBREOFFICE VISUAL QA RVR
-OFFICIAL OUTPUT : RVR ACTIVE
-BROWSER/RUNTIME : RVR ACTIVE
-FINAL RELEASE   : NOT YET
+FUNCTIONAL BASELINE : PASS pada successful gate fd01fc6681... / CI #469
+CURRENT HEAD GATE   : RED / SPJ Critical failure pada CI #476
+REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang sudah terdokumentasi
+GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
+TEMPLATE OFFICE QA : RVR
+BROWSER/RUNTIME     : RVR ACTIVE
+LIVEWIRE MIGRATION : SOURCE IMPLEMENTED / MUTATION AUTHORIZATION HARDENING OPEN
+FINAL RELEASE       : NOT YET
 ```
 
-Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generated-document real-data, file single-template pada viewer Office aktual, Master Template Terbaru pada viewer Office aktual, preview HTML pada template nyata/browser aktual, official-template visual QA, browser/operator runtime, dan installed-runtime yang masih deferred tetap merupakan gate terpisah.
+Aplikasi belum boleh disebut final release-ready. Selain output/runtime QA yang memang belum selesai, current HEAD harus kembali memperoleh code gate hijau setelah integration/hardening issue ditutup.
+
+---
+
+## Livewire / TALL migration — Phase 1 boundary audit
+
+Status: **SOURCE AUDIT COMPLETE / HARDENING REQUIRED / BROWSER RUNTIME RVR** (2026-09-14).
+
+Audit seluruh `app/Livewire/` pada HEAD menemukan **25 component**:
+
+```text
+17  READ-ONLY / UI-STATE
+ 1  MUTATION GUARDED (SchoolSelector)
+ 1  CONTEXT MUTATION ACCEPTED (YearSelector)
+ 5  ACTIVE MUTATION BOUNDARIES NEED ROLE HARDENING
+ 1  UNMOUNTED MUTATION COMPONENT NEEDS HARDENING BEFORE REUSE
+```
+
+Active mutation boundaries yang perlu Phase 2:
+
+- `UserManagement::{createUser,updateUser,deleteUser}` — mutation user/role, expected ADMIN;
+- `SchoolMaster::createSchool` — create school + database provision, expected ADMIN;
+- `DatabaseMaintenance::run` — checkpoint/migrate/vacuum/provision, expected ADMIN;
+- `DatabaseResetForm::resetDatabase` — destructive reset; active-school + exact confirmation sudah ada, role ADMIN belum digate di action;
+- `DatabaseSchoolList::{activate,migrate}` — database/context maintenance, expected ADMIN.
+
+`DocumentStorageSettings::save` menulis global path dan belum mempunyai operator/admin guard; component ini tidak ditemukan dipasang pada halaman settings aktif saat audit sehingga diklasifikasikan **UNMOUNTED / harden before reuse**, bukan active exploit claim.
+
+`SchoolSelector::selectSchool` sudah mempunyai guard eksplisit: administrator dapat memilih sekolah, non-admin hanya sekolah miliknya. `YearSelector::selectYear` hanya mengubah fiscal-year/fund-source session pada database sekolah aktif dan diklasifikasikan context mutation yang sesuai flow.
+
+Persistent middleware Livewire custom yang terdaftar aplikasi saat audit hanya:
+
+```text
+EnsureActiveSchool
+EnsureActiveFiscalYear
+```
+
+`EnsureAdministrator`, `EnsureOperatorOrAdministrator`, dan `EnsureSpjActiveContext` tidak berada pada daftar persistent middleware custom tersebut. Karena itu action mutation sensitif tidak boleh dianggap independently authorized hanya karena route GET induknya memakai role middleware.
+
+Audit ini adalah temuan source architecture, **bukan klaim exploit runtime**. Livewire signed snapshot/checksum dan browser behavior tetap memerlukan runtime evidence.
+
+Panduan lengkap dan matriks 25 component: `LIVEWIRE_MIGRATION_PLAN.md`.
+
+### Status area Livewire yang sudah dimigrasikan
+
+- Transaksi: filter/search/pagination `TransactionsTable` — read-only boundary.
+- RKAS budget: `RkasBudgetFilter`, `RkasBudgetTable` — read-only boundary; `RkasTable` tetap read-only/legacy component.
+- SPJ Persiapan/Paket/Laporan/Monitoring: Livewire filters/lists + SPA tab navigation; workspace detail paket mutation-heavy tetap server-rendered.
+- Pajak: `TaxFilter` read-only filter/summary.
+- Pegawai: `EmployeeDirectory` read-only filter/pagination.
+- Data Sinkronisasi: `SyncedDataNavigation` UI-state/read-only.
+- Database Aktif: summary/tab/explorer read-only panels sudah Livewire; mutation actions memerlukan hardening seperti daftar di atas.
+- Pengaturan user/master sekolah: source migration ada, tetapi status FUNCTIONAL PASS sebelumnya dicabut sampai authorization boundary + code gate hijau.
+
+Status lama `WIP UNCOMMITTED` untuk Database Manager/Data Sinkronisasi sudah usang: component tersebut sekarang sudah committed pada current branch.
 
 ---
 
 ## GUI standardization
 
-### Redesign Pengaturan Sekolah
-
-Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14). Layout Pengaturan Sekolah telah dipisah menjadi workflow operator dan administrasi administrator; akses operator dibatasi ke sekolahnya sendiri. Panel Master Sekolah memakai satu header wrapper tanpa duplikasi. Pemilihan folder path dokumen tetap memerlukan adapter native/desktop karena browser tidak mengekspos absolute path folder secara aman. Halaman Integrasi Dapodik kini mengikuti lebar shell Pegawai dan memakai status panel compact.
-
-### TALL settings expansion
-
-Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14).
-
-Livewire kini dipakai pada Pengaturan Penyimpanan Dokumen, Pemilihan Tahun Anggaran, Pemilihan Sekolah, dan Master Pegawai sederhana. Komponen mengelola state, pencarian, filter, serta pilihan UI; validasi tenant, session context, provisioning database, sinkronisasi, dan persistence tetap mengikuti controller/service canonical. Regression layout tercakup dalam `tests/Feature/TallProfileMasterTest.php`.
-
 ```text
 GUI STANDARDIZATION CORE : ESTABLISHED
-SOURCE-LEVEL CLEANUP      : PASS untuk GUI-AUDIT-01 s.d. 13 source readiness
-DESKTOP SOURCE READINESS  : PASS
+SOURCE-LEVEL CLEANUP      : PASS untuk milestone source yang sudah digate pada baseline sebelumnya
 BROWSER DESKTOP/LAPTOP    : RVR ACTIVE
-MOBILE SOURCE READINESS   : PASS
 MOBILE/TABLET RUNTIME     : RVR / NON-BLOCKER untuk target desktop-laptop
 ```
 
-Milestone source yang sudah selesai mencakup shared `x-ui` primitives, semantic theme tokens, canonical icon registry, density/typography pass, route/page-marker generalization, responsive source guards, dan cleanup halaman utama yang sudah digate. Browser visual/runtime PASS tetap harus dibuktikan melalui `docs/GUI_RUNTIME_QA.md`; source readiness tidak boleh dipromosikan menjadi browser PASS.
+Shared `x-ui` primitives, semantic theme tokens, icon registry, density/typography, responsive source guards, pagination theme, early theme init, dan top progress integration tersedia di source. Klaim browser/mobile PASS tetap dilarang sampai `GUI_RUNTIME_QA.md` dijalankan pada runtime aktual.
 
-### Incremental TALL migration — Profil User dan Master Sekolah
-
-Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
-
-- `/pengaturan/user` sekarang memakai komponen `App\Livewire\UserManagement` untuk form tambah, pencarian, edit, dan hapus user;
-- bagian master sekolah pada `/pengaturan/sekolah` memakai `App\Livewire\SchoolMaster` untuk pencarian, daftar, dan tambah sekolah;
-- validasi role, perlindungan akun sendiri/admin terakhir, serta provisioning database sekolah tetap menggunakan kontrak backend yang sudah ada;
-- regression Livewire dan mount layout tercakup di `tests/Feature/TallProfileMasterTest.php`;
-- build frontend dan cache Blade sudah dijalankan; pemeriksaan browser/operator untuk dua halaman tersebut masih RVR.
-
-### TALL filter/pagination expansion — Data Sinkronisasi
-
-Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14). Navigasi kelompok tabel pada Data Sinkronisasi memakai Livewire untuk pencarian tabel secara realtime. Ringkasan, query read-only, tenant scope, detail tabel, dan pagination tetap mengikuti controller canonical.
-
-Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
-
-- Filter + pagination tab Persiapan/Paket/Laporan/Monitoring (`/spj`) dan halaman Pajak (`/pajak`) kini Livewire tanpa reload; state filter tetap di URL (`#[Url]`) sehingga bookmark/share tidak berubah; query tetap milik use case/service canonical (`SpjWorkspaceUseCase`, `SpjReportUseCase`, `TaxFilterService`).
-- Pagination server, Livewire, dan tabel lokal kini memakai satu segmented control: maksimal tiga halaman awal dan tiga halaman akhir, elipsis untuk jarak, serta radius hanya pada sisi luar.
-- Modul Database Aktif tahap 2–4 memindahkan ringkasan, tab, diagnostik, explorer, daftar sekolah, maintenance, reset, dan aksi cepat ke Livewire; operasi tetap melalui service canonical dan audit.
-- Markup legacy halaman Database Aktif sudah dihapus; controller index hanya menyiapkan konteks awal dan endpoint detail lama tetap dipertahankan untuk kompatibilitas.
-- Pindah tab SPJ memakai navigasi SPA `Livewire.navigate` (fallback reload penuh; modal preview dibuat tahan ganti body via delegasi penuh); tujuan, URL, workspace detail paket, ekspor/unduh, dan seluruh lifecycle/validation/numbering tidak berubah.
-- Pagination disatukan via override `views/vendor/pagination/tailwind.blade.php` bertoken-tema + label Indonesia (`lang/id.json`, `lang/id/pagination.php`); tidak ada pager ganda pada tabel Livewire (inisialisasi generik melewati subtree `[wire:id]`).
-- Tema diterapkan sinkron di head via `x-theme-init` (anti-flash saat pindah halaman; parity peta diuji) dan progress bar atas `#app-top-progress` tampil saat load/navigasi/update Livewire.
-- Regression tercakup di `SpjTabFiltersLivewireTest`, `TaxFilterLivewireTest`, `SpjReportLayoutTest`, `SpjMainTabsRenderingTest`, `ThemeEarlyInitTest`, `TopProgressTest`; `npm run build` + `view:cache` hijau.
+SPA tab SPJ memakai `Livewire.navigate` dengan full-reload fallback; modal template preview menggunakan delegated listener agar tetap bekerja setelah body swap. Source regression tersedia, tetapi browser repeated-navigation/modal verification masih RVR.
 
 ---
 
 ## P0-01 — Six-category SPJ end-to-end
 
 ```text
-FUNCTIONAL SIX-CATEGORY E2E : PASS
-REAL-DATA BASELINE/AUDIT    : PASS untuk scope yang tersedia
-GENERATED-DOCUMENT REAL DATA: ACTIVE
-INSTALLED-RUNTIME           : DEFERRED / RVR
+FUNCTIONAL SIX-CATEGORY BASELINE : PASS pada successful gate sebelumnya
+REAL-DATA BASELINE/AUDIT        : VERIFIED untuk scope yang tersedia
+GENERATED-DOCUMENT REAL DATA    : ACTIVE / RVR
+INSTALLED-RUNTIME               : DEFERRED
 ```
 
-Kategori canonical:
+Kategori canonical tetap:
 
 ```text
 BARANG
@@ -163,9 +149,7 @@ SPPD
 HONOR_PEGAWAI
 ```
 
-### Baseline real-data 2026
-
-School real-data yang digunakan pada verifikasi aktif mempunyai baseline:
+Baseline real-data 2026 yang sudah terdokumentasi:
 
 ```text
 transactions              : 170
@@ -176,321 +160,143 @@ document_number_sequences : 0
 document_number_formats   : 0
 ```
 
-Distribusi kategori 2026:
-
-```text
-BARANG          : 41
-HONOR_PEGAWAI   : 12
-JASA_LAINNYA    : 9
-KONSUMSI        : 2
-PEMELIHARAAN    : 2
-SPPD            : 0
-```
-
-SPPD nyata tersedia pada data 2025, bukan 2026. Jangan fabrikasi SPPD 2026 untuk memaksa coverage.
-
-Audit real-data TW2 / Fund Source 1 sudah PASS pada 66 transaksi ber-item / 66 Paket READY. Fund Source 2 pada scope yang sama tidak mempunyai transaksi, dan partition yang diuji tidak menunjukkan leakage. Original baseline tetap immutable; mutation QA dilakukan pada isolated copy.
+Distribusi Paket 2026 yang tersedia: BARANG 41, HONOR_PEGAWAI 12, JASA_LAINNYA 9, KONSUMSI 2, PEMELIHARAAN 2, SPPD 0. SPPD nyata tersedia pada data 2025; jangan fabrikasi SPPD 2026 untuk coverage.
 
 ---
 
 ## P0-02 — Document generator / template
 
-```text
-FUNCTIONAL GENERATOR          : PASS
-TEMPLATE UPLOAD HARDENING     : PASS
-INDIVIDUAL TEMPLATE DOWNLOAD  : TRUE SINGLE-SHEET / FUNCTIONAL PASS
-XLSX HTML PREVIEW             : CANONICAL EXCEL SHEET / FUNCTIONAL PASS
-PLACEHOLDER INSPECTOR         : FUNCTIONAL PASS
-MASTER TEMPLATE RECOMPOSITION : FUNCTIONAL PASS
-MASTER EXCEL/LIBREOFFICE QA   : RVR
-REAL-DATA GENERATED OUTPUT    : ACTIVE / OPERATOR QA
-OFFICIAL-TEMPLATE VISUAL QA   : RVR
-```
+Successful baseline sebelum current red gate membuktikan:
 
-Kontrak yang sudah dijaga:
-
+- individual template XLSX true single-sheet;
+- canonical XLSX HTML preview;
+- placeholder inspector;
+- master template recomposition;
 - preview/download tidak menerbitkan nomor;
-- template invalid tidak mengganti template aktif;
-- unresolved placeholder tidak boleh diam-diam lolos;
-- preview HTML XLSX memakai workbook Excel aktif yang sudah diisi oleh `SpjTemplateService` sebagai source;
-- preview memilih worksheet canonical dari `document_type` melalui `SpjDocumentTypeRegistry`, bukan selalu worksheet index `0`;
-- bila sheet canonical tidak ditemukan, preview hanya menerima fallback bila tepat satu worksheet non-teknis tersedia; source multi-sheet ambigu ditolak;
-- package preview memakai resolver worksheet canonical yang sama per template;
-- per-row **Download Template** XLSX menghasilkan tepat satu worksheet fisik untuk document type terpilih;
-- worksheet lain dibuang dari copy download pada level OOXML, bukan sekadar diberi status `hidden`/`veryHidden`;
-- source/master tersimpan tetap utuh setelah download individu;
-- **Cek Placeholder** melakukan lookup read-only melalui nomor Paket/SPJ, nomor dokumen turunan, atau No. Bukti dan memakai resolver nilai generator yang sama;
-- placeholder nominal pada generator, repeating row, preview/download, PDF, dan Cek Placeholder menghasilkan integer digit-only tanpa prefix `Rp` atau pemisah ribuan;
-- placeholder checker menjaga context School + Fiscal Year + Fund Source dan tidak menerbitkan nomor;
-- alur **Pembayaran Honor** menyediakan dua halaman: memilih transaksi `HONOR_PEGAWAI` secara manual, lalu menyusun/mengekspor laporan gabungan dengan referensi BPU dan kolom tanda tangan;
-- **Unduh Master Template Terbaru** merakit satu sheet canonical dari setiap template XLSX aktif pada fiscal year aktif;
-- update satu XLSX individu langsung menjadi source document type tersebut pada master download berikutnya tanpa memutasi master historis;
-- record template lain boleh tetap berasal dari salinan master multi-sheet hasil importer dan export hanya mengambil sheet canonical milik document type tersebut;
-- nama/urutan sheet master mengikuti `SpjDocumentTypeRegistry`;
-- master hasil rakitan wajib lolos `SpjTemplatePackageImporter::validatePackage()` sebelum dikirim;
-- master parsial ditolak bila satu atau lebih XLSX canonical aktif tidak tersedia;
-- DOCX tetap template individu dan tidak masuk master XLSX;
-- functional generation/re-import/preview-sheet contract tidak sama dengan visual verification dokumen resmi, browser aktual, atau workbook Office aktual.
+- source/master tersimpan tidak dimutasi saat individual download;
+- master parsial ditolak;
+- DOCX tetap individual.
 
-Focused regression `SpjTemplateHtmlPreviewTest` pada CI #469 membuktikan source multi-sheet dengan worksheet canonical di posisi kedua tetap merender worksheet canonical dan tidak merender sheet pertama. Regression juga membuktikan fallback hanya memilih satu worksheet non-teknis ketika nama canonical tidak tersedia.
+Source HEAD terbaru menambahkan optimasi validator XLSX agar daftar sheet dibaca lebih dahulu dan hanya sheet canonical yang dimuat `readDataOnly` untuk template individual; package importer juga memakai read-only load. Commit melaporkan penurunan waktu halaman template dari sekitar 33 detik menjadi sekitar 0,7 detik pada environment pengembang, tetapi angka ini **belum dipromosikan menjadi canonical runtime PASS** karena current HEAD code gate #476 merah dan browser/runtime independent verification belum dilakukan.
 
-Focused regression `DocumentTemplateIndividualDownloadTest` tetap membuktikan source multi-sheet menghasilkan output dengan `getSheetCount() === 1`, worksheet yang tersisa adalah sheet canonical terpilih, part worksheet lain benar-benar tidak ada di ZIP OOXML hasil download, dan source/master tetap utuh.
+Source HEAD juga menambahkan `SpjSpreadsheetPdfWriter` dan persistence report path. Full Unit/Feature suite untuk HEAD belum berjalan pada CI #476, sehingga output-sensitive change tersebut masih memerlukan green gate + Office/PDF runtime QA.
 
-`DocumentTemplateMasterExportTest` tetap membuktikan flow `import master -> update RINCIAN_BELANJA individu -> download master terbaru`: sheet Rincian memakai versi baru, sheet lain memakai versi aktif masing-masing, output lengkap mengikuti registry, dan paket lolos validator re-import. Source/master yang sudah tersimpan tidak ditulis balik ketika download berlangsung.
-
-`DocumentTemplatePlaceholderInspectorTest` membuktikan lookup nilai aktual placeholder, pencarian melalui nomor Paket/dokumen/No. Bukti, dan isolasi Fund Source.
-
-Panduan lifecycle khusus fitur ini: `docs/TEMPLATE_MASTER_WORKFLOW.md`.
-
-Fokus operator berikutnya untuk area template adalah membuka satu file **Download Template** individu dan `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice, lalu membandingkan preview HTML template XLSX dengan worksheet canonical pada source Excel nyata. Periksa tidak ada prompt repair, drawing/formula/defined-name yang relevan tetap layak, print area/page break/header/footer benar, serta hasil cetak sesuai kebutuhan. Sampai itu dilakukan, visual/document/browser runtime tetap RVR meskipun pemilihan worksheet functional sudah PASS.
-
-Untuk generated SPJ output, fokus operator tetap generate dokumen dari aplikasi menggunakan Paket nyata, kemudian memperbaiki bug yang benar-benar terlihat pada output. Tidak perlu menambah test baru hanya untuk memperbesar coverage; regression baru ditambahkan bila ada bug nyata yang perlu dikunci.
+Panduan lifecycle tetap: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.
 
 ---
 
-## P0-03 — Numbering, registry, lifecycle, correction & rollback
+## P0-03 — Numbering + registry + lifecycle
 
-```text
-FUNCTIONAL NUMBERING             : PASS
-CANONICAL NUMBERING REGISTRY     : PASS / ACTIVE SOURCE OF TRUTH
-FORMAT PAGE + NUMBERING PAGE     : REGISTRY-DRIVEN
-POLICY/GATE/ORDER/ALLOCATOR       : REGISTRY-DRIVEN
-FINALIZE/CANCEL/REPLACEMENT       : REGISTRY-DRIVEN
-READ-ONLY REAL-DATA PREFLIGHT     : PASS
-ISOLATED FIRST NUMBER             : PASS
-INDIVIDUAL CANCEL / RESERVE       : PASS
-ISOLATED TAIL ROLLBACK            : PASS
-FUNCTIONAL QUARTER ROLLBACK       : PASS
-ISOLATED QUARTER ROLLBACK RUNTIME : PENDING / OPTIONAL unless needed by bug or operator flow
-FUND-SOURCE SEQUENCE SCOPE        : PASS
-POST-NUMBERING EDIT RULE          : PASS
-```
-
-### Canonical numbering registry
-
-Source of truth:
+Canonical source of truth tetap:
 
 ```text
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Current numbered document definitions tetap sesuai aturan bisnis yang sudah disepakati:
+Successful baseline sebelumnya sudah membuktikan first numbering, cancel/reserved sequence, tail rollback, fund-source scoped sequence, quarter rollback regression, dan registry-based consumers. Current Livewire migration tidak boleh mengubah kontrak numbering tersebut.
 
-```text
-SPJ
-PESANAN
-BAP
-BAST
-SPK
-RAB
-SURAT_TUGAS_PERJALANAN_DINAS
-```
-
-Daftar tersebut **bukan lagi hardcoded pada consumer**. Consumer memperoleh kode, label, kategori applicable, channel, event-date rule, target field nomor, dan scope dari registry. Penambahan atau perubahan definisi numbering dilakukan pada registry canonical, lalu consumer yang relevan membaca metadata tersebut secara dinamis.
-
-Alias lama seperti `ORDER`, `SURAT_PESANAN`, `WORK_ORDER`, `SPK_PEMELIHARAAN`, dan `RAB_PEMELIHARAAN` dinormalisasi melalui registry sebelum masuk workflow canonical.
-
-SPJ utama berlaku untuk setiap Paket (`applicable_categories = ['*']`) agar kompatibel dengan paket legacy yang belum mempunyai kategori, sedangkan dokumen turunan tetap dibatasi oleh kategori/channel applicable.
-
-### Evidence real-data yang sudah PASS
-
-Read-only preflight:
-
-```text
-query_only               : ON
-baseline SHA-256         : UNCHANGED
-PREFLIGHT RESULT         : PASS
-number issued            : NONE
-```
-
-Isolated first numbering:
-
-```text
-BPU01
-0001/SPJ/SMPN.2/TW.II/2026   (format lama sebelum perubahan token {TW})
-sequence 1
-Paket NUMBERED
-baseline hash UNCHANGED
-```
-
-Individual cancel + reserve:
-
-```text
-BPU01 sequence 1 -> CANCELLED permanen
-sequence tetap 1
-BPU02 -> sequence 2
-baseline hash UNCHANGED
-```
-
-Tail rollback pada fresh isolated copy:
-
-```text
-initial          : 1,2,3
-rollback from    : 2
-after rollback   : sequence 1
-renumber         : sequence 2 dapat dipakai kembali
-baseline hash    : UNCHANGED
-```
-
-Quarter rollback dependency tetap FUNCTIONAL PASS melalui regression. Karena data nyata 2026 tidak mempunyai transaksi TW3/TW4, dependency lintas-triwulan tidak boleh diklaim sebagai real-data runtime coverage dan tidak boleh dipaksakan dengan data fiktif.
-
-### Format token triwulan
-
-Token numbering:
-
-```text
-{TW} -> I / II / III / IV
-```
-
-Aplikasi tidak menambahkan string `TW.` secara otomatis. Jika sekolah/operator membutuhkan prefix tersebut, pattern dapat ditulis manual:
-
-```text
-{SEQ}/SPJ/{SCHOOL}/TW.{TW}/{YEAR}
-```
-
-Nomor yang sudah pernah diterbitkan tidak diubah otomatis oleh perubahan format ini.
-
-Panduan domain lengkap: `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`.
+`SpjDocumentTypeRegistry` tetap registry template/placeholder/output dan bukan source sequence numbering.
 
 ---
 
 ## P0-04 — Authorization
 
-**FUNCTIONAL PASS.** VIEWER tetap read-only, OPERATOR mengikuti workflow operasional sesuai permission, dan ADMIN menangani lifecycle/maintenance/sensitive action. Authorization tidak menggantikan tenant/context isolation.
+Baseline HTTP authorization sebelumnya FUNCTIONAL PASS. **Livewire mutation authorization hardening sekarang menjadi open integration issue** karena sejumlah mutation action baru tidak mempunyai role guard action-level dan custom role middleware tidak terdaftar sebagai persistent Livewire middleware.
+
+Status saat ini:
+
+```text
+HTTP/ROUTE AUTH BASELINE       : PASS pada gate sebelumnya
+LIVEWIRE MUTATION BOUNDARY     : HARDENING REQUIRED
+NEGATIVE ROLE REGRESSION       : REQUIRED untuk mutation yang dipindahkan
+RUNTIME EXPLOITABILITY CLAIM   : NOT ASSERTED / RVR
+```
+
+Jangan menurunkan temuan ini menjadi sekadar cosmetic issue; mutation user, school provisioning, database maintenance, dan reset adalah action sensitif.
 
 ---
 
-## P0-05 — Safe synchronization / reconciliation
+## P0-05 — Safe sync + reconciliation
 
-```text
-FUNCTIONAL PASS
-REAL-DATA RECONCILIATION VERIFICATION : ACTIVE
-```
+Baseline contract tetap:
 
-Kontrak utama:
+- ARKAS/BKU source readonly;
+- operator SPJ overlay tidak dihapus oleh sync;
+- source missing/returning mempertahankan identity;
+- NUMBERED/FINAL tidak dimutasi diam-diam;
+- tenant boundary `School + Fiscal Year + Fund Source`.
 
-```text
-ARKAS/BKU = readonly source
-overlay operator = dipertahankan
-source missing = jangan hapus pekerjaan operator
-source returning = reuse identity yang sama
-NUMBERED/FINAL = tidak dimutasi diam-diam
-```
+Current Livewire filter/navigation work tidak boleh mengubah contract tersebut. Real-data reconciliation tetap operator-flow driven.
 
 ---
 
-## P0-06 — Tenant isolation
+## P0-06 — Tenant/context isolation
 
-**FUNCTIONAL PASS.** Boundary canonical:
+Canonical boundary:
 
 ```text
 School + Fiscal Year + Fund Source
 ```
 
-Sequence numbering/rollback juga mengikuti boundary tersebut.
+Read-only Livewire filter components yang diaudit tetap menggunakan active context atau query/service canonical. Phase 2 authorization hardening harus menjaga boundary ini dan tidak memindahkan scope logic ke Blade/Alpine.
 
 ---
 
-## P0-07 — School database maintenance
+## P0-07 — APP DATA / backup / reset / restore
 
-```text
-FUNCTIONAL MAINTENANCE : PASS
-INSTALLED-RUNTIME      : DEFERRED / RVR
-```
+Baseline service/functionality tetap tersedia. `DatabaseResetForm` Livewire sekarang memiliki active-school match + exact confirmation guard, tetapi role ADMIN action guard perlu ditambahkan sebelum status migration tersebut dianggap fully hardened.
+
+Installed Windows runtime tetap DEFERRED.
 
 ---
 
 ## P0-08 — Generic ARKAS Importer
 
-```text
-FUNCTIONAL HARDENING : PASS
-OPERATOR DATA TEST   : ACTIVE
-```
-
-Importer/sync tidak boleh menulis data fiktif untuk memaksa downstream SPJ PASS.
+Status baseline: **FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE** pada gate sebelumnya. Importer stateful tetap tidak menjadi target migrasi Livewire opportunistic.
 
 ---
 
-## Unified Employee Identity
+## Prioritas kerja aktif
 
-```text
-FUNCTIONAL IDENTITY CORE : PASS
-REAL-SCHOOL VERIFICATION : ACTIVE
-```
+Urutan langsung setelah audit ini:
 
-Identity matching tetap konservatif; normalized name ambigu tidak boleh menyebabkan silent merge. Participant manual tetap diperbolehkan dan provenance harus dipertahankan.
+1. **Livewire authorization hardening Phase 2** untuk mutation boundaries yang teridentifikasi;
+2. focused negative role/tenant regression untuk mutation tersebut;
+3. identifikasi dan tutup failure `SPJ Critical` pada current HEAD;
+4. jalankan kembali blocking gate sampai SPJ Critical + Unit + Feature benar-benar hijau;
+5. setelah integration gate hijau, kembali ke operator-flow/generated-document real-data QA sebagai prioritas produk utama;
+6. browser/operator QA desktop-laptop berdasarkan `GUI_RUNTIME_QA.md`;
+7. official-template/Excel/LibreOffice/PDF visual-output QA;
+8. mobile/tablet tetap RVR/non-blocker untuk target desktop-laptop.
 
----
-
-## Quarter Audit
-
-```text
-FUNCTIONAL PASS
-REAL-DATA READ-ONLY AUDIT : PASS untuk scope 2026/TW2 yang diuji
-```
-
-Audit tetap read-only dan bukan jalur auto-repair.
-
----
-
-## SiPLah
-
-```text
-FUNCTIONAL CORE          : PASS
-GENERATED-DOCUMENT E2E   : RVR
-OFFICIAL-TEMPLATE OUTPUT : RVR
-```
-
-SiPLah tetap channel/payment context, bukan `spj_category`.
-
----
-
-## Fokus kerja aktif
-
-Prioritas sekarang sengaja dipersempit ke penggunaan aplikasi nyata:
-
-1. buka satu hasil **Download Template** individu pada Microsoft Excel/LibreOffice dan pastikan file benar-benar satu worksheet, tidak meminta repair, dan fitur sheet terpilih tetap layak;
-2. buka dan inspeksi `MASTER-TEMPLATE-SPJ-TERBARU.xlsx` hasil aplikasi pada Microsoft Excel/LibreOffice untuk menutup visual/document RVR;
-3. preview template XLSX hasil import master dan pastikan HTML berasal dari worksheet canonical document type yang sama dengan source Excel, bukan sheet pertama workbook;
-4. gunakan **Cek Placeholder** pada Paket nyata saat memperbaiki template agar nilai placeholder dapat diverifikasi tanpa upload berulang;
-5. generate dokumen melalui aplikasi untuk Paket nyata BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, dan HONOR_PEGAWAI;
-6. perbaiki hanya bug nyata yang ditemukan pada data, nomor, tanggal, placeholder, layout, XLSX/PDF, atau lifecycle;
-7. tambahkan regression test hanya bila bug tersebut perlu dikunci agar tidak kembali;
-8. verifikasi JASA_LAINNYA multi-recipient dan PEMELIHARAAN bahan+upah pada generated output nyata;
-9. lanjutkan official-template visual/output QA;
-10. jalankan browser/operator QA desktop/laptop berdasarkan `GUI_RUNTIME_QA.md`;
-11. mobile/tablet minimum usability tetap RVR/non-blocker untuk target desktop-laptop;
-12. lanjutkan real-data reconciliation, employee identity, dan operational audit bila muncul pada operator flow.
-
-Tidak ada kebutuhan aktif untuk memperbanyak smoke test numbering selama tidak ditemukan bug baru. Canonical numbering registry tetap digate hijau oleh code gate terbaru #469.
+Jangan menambah area migrasi Livewire baru sebelum poin 1–4 selesai.
 
 ---
 
 ## Open verification / release blockers
 
-Belum boleh diberi status final sampai evidence tersedia untuk:
-
-- Download Template individu visual/runtime QA pada Excel/LibreOffice untuk workbook nyata;
-- Master Template Terbaru visual/runtime QA pada Excel/LibreOffice untuk workbook nyata;
-- preview HTML template XLSX pada browser aktual dibanding worksheet canonical source Excel nyata;
-- generated-document real-data per kategori yang masih aktif;
-- official-template visual/output RVR;
-- GUI-AUDIT-12 browser/operator runtime QA;
-- mobile/tablet runtime QA bila ingin menutup minimum usability;
-- installed-runtime checks yang masih DEFERRED.
-
-Quarter rollback real-data isolated runtime bukan blocker aktif bila tidak ada bug/operator requirement yang menuntutnya; kontrak functional-nya sudah PASS.
+- current branch HEAD code gate merah pada SPJ Critical;
+- Livewire mutation authorization hardening belum selesai;
+- full Unit + Feature suite belum dijalankan untuk HEAD `2e0f65c...` karena CI #476 berhenti lebih awal;
+- generated-document real-data per kategori masih RVR/active;
+- individual template/master template Office visual QA masih RVR;
+- preview HTML template nyata pada browser aktual masih RVR;
+- browser/operator desktop-laptop QA masih RVR;
+- official-template print/layout/output QA masih RVR;
+- installed-runtime checks masih DEFERRED;
+- mobile/tablet runtime QA tetap RVR/non-blocker untuk target desktop-laptop.
 
 ---
 
 ## Aturan evidence dan pengembangan
 
-1. Jangan mengubah source data hanya agar test/audit real-data PASS.
-2. Jangan memakai deterministic fixture sebagai bukti bahwa real-data verified.
+1. Jangan mengubah source data agar test/audit PASS.
+2. Jangan memakai deterministic fixture sebagai bukti real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Setiap source change setelah code gate hijau terakhir harus memperoleh CI hijau baru sebelum menjadi canonical gate HEAD.
-6. Jika business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md`, feature guide terkait, dan dokumen status.
-7. GUI source cleanup hanya boleh disebut source-level PASS; browser visual QA tetap RVR sampai diverifikasi runtime.
-8. Setelah kontrak inti PASS, gunakan pendekatan **operator flow -> temukan bug -> perbaiki -> regression bila perlu**, bukan menambah test tanpa kebutuhan nyata.
-9. Metadata numbering baru atau perubahan metadata numbering dilakukan melalui `SpjNumberingDocumentRegistry`; consumer tidak boleh membuat daftar/label/event-date/target numbering hardcoded sendiri.
+5. Setiap source change setelah successful code gate terakhir membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
+6. Source implementation tidak sama dengan authorization-hardened implementation.
+7. GUI source cleanup tidak sama dengan browser visual PASS.
+8. Bila business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md` dan feature guide terkait.
+9. Metadata numbering baru/berubah dimulai dari `SpjNumberingDocumentRegistry`.
+10. Setelah contract inti stabil, gunakan pendekatan `operator flow -> temukan bug nyata -> perbaiki -> regression bila perlu`.
