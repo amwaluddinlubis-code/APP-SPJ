@@ -109,7 +109,7 @@
 
                 <x-ui.form-section title="Penyimpanan Dokumen Global"
                     description="Semua dokumen SPJ yang diunduh akan disalin ke Tahun/Nomor Dokumen SPJ/Nama File. Path harus berupa folder absolut yang sudah ada dan dapat ditulisi aplikasi.">
-                    <form method="POST" action="{{ route('documents.storage.update') }}" class="space-y-3">
+                    <div class="hidden"><form method="POST" action="{{ route('documents.storage.update') }}" class="space-y-3">
                         @csrf @method('PUT')
                         <x-ui.field label="Path tersimpan" for="document_storage_path">
                             <x-ui.input id="document_storage_path" name="document_storage_path"
@@ -123,7 +123,8 @@
                             <p class="text-sm font-semibold text-amber-700">Belum diatur. Download dokumen akan meminta path terlebih dahulu.</p>
                         @endif
                         <x-ui.button type="submit">Simpan Path Dokumen</x-ui.button>
-                    </form>
+                    </form></div>
+                    <livewire:document-storage-settings />
                 </x-ui.form-section>
 
                 <div class="ui-form-actions"><x-ui.button type="submit">Simpan Perubahan Profil</x-ui.button></div>
@@ -166,6 +167,7 @@
                         </form>
                     </x-ui.form-section>
 
+                    @if (false)
                     <section
                         class="overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                         <div class="border-b border-[var(--ui-line)] px-5 py-4">
@@ -212,7 +214,9 @@
 
 
                     </div>
+                    @endif
                 </div>
             </details>
         </div>
+        <livewire:school-master />
 </x-layouts.tailwind-app>

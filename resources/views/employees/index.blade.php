@@ -1,5 +1,6 @@
 <x-layouts.tailwind-app title="Pegawai">
-    <div class="space-y-6">
+    <livewire:employee-directory />
+    <div class="hidden space-y-6">
         <x-page-header
             title="Pegawai"
             subtitle="Satu master pegawai untuk data ARKAS, Dapodik, dan input operator. Data hasil sinkronisasi tetap dapat diubah atau dihapus dari aplikasi."

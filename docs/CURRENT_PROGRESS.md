@@ -95,6 +95,12 @@ Aplikasi belum boleh disebut final release-ready hanya karena CI hijau. Generate
 
 ## GUI standardization
 
+### TALL settings expansion
+
+Status: **FUNCTIONAL SOURCE PASS / BROWSER RUNTIME RVR** (2026-09-14).
+
+Livewire kini dipakai pada Pengaturan Penyimpanan Dokumen, Pemilihan Tahun Anggaran, Pemilihan Sekolah, dan Master Pegawai sederhana. Komponen mengelola state, pencarian, filter, serta pilihan UI; validasi tenant, session context, provisioning database, sinkronisasi, dan persistence tetap mengikuti controller/service canonical. Regression layout tercakup dalam `tests/Feature/TallProfileMasterTest.php`.
+
 ```text
 GUI STANDARDIZATION CORE : ESTABLISHED
 SOURCE-LEVEL CLEANUP      : PASS untuk GUI-AUDIT-01 s.d. 13 source readiness
@@ -105,6 +111,16 @@ MOBILE/TABLET RUNTIME     : RVR / NON-BLOCKER untuk target desktop-laptop
 ```
 
 Milestone source yang sudah selesai mencakup shared `x-ui` primitives, semantic theme tokens, canonical icon registry, density/typography pass, route/page-marker generalization, responsive source guards, dan cleanup halaman utama yang sudah digate. Browser visual/runtime PASS tetap harus dibuktikan melalui `docs/GUI_RUNTIME_QA.md`; source readiness tidak boleh dipromosikan menjadi browser PASS.
+
+### Incremental TALL migration — Profil User dan Master Sekolah
+
+Status: **FUNCTIONAL PASS / BROWSER RUNTIME RVR** (2026-09-14).
+
+- `/pengaturan/user` sekarang memakai komponen `App\Livewire\UserManagement` untuk form tambah, pencarian, edit, dan hapus user;
+- bagian master sekolah pada `/pengaturan/sekolah` memakai `App\Livewire\SchoolMaster` untuk pencarian, daftar, dan tambah sekolah;
+- validasi role, perlindungan akun sendiri/admin terakhir, serta provisioning database sekolah tetap menggunakan kontrak backend yang sudah ada;
+- regression Livewire dan mount layout tercakup di `tests/Feature/TallProfileMasterTest.php`;
+- build frontend dan cache Blade sudah dijalankan; pemeriksaan browser/operator untuk dua halaman tersebut masih RVR.
 
 ---
 

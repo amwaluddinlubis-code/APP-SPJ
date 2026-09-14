@@ -15,6 +15,14 @@ Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 - Jangan membuat satu halaman menjadi satu card raksasa.
 - Perubahan visual tidak boleh mengubah lifecycle/validation/numbering secara implisit.
 
+Halaman pengaturan yang dimigrasikan ke pola TALL menggunakan Livewire untuk state, pencarian, filter, dan submit UI. Controller/service lama tetap menjadi pemilik validasi, session context, provisioning database, sinkronisasi, dan persistence.
+
+## 1.1 Ownership TALL pada halaman pengaturan
+
+Migrasi bertahap memakai pembagian berikut: Tailwind untuk layout dan visual, Alpine hanya untuk interaksi ringan pada baris form, Livewire untuk state/pencarian/aksi reactive, dan Laravel service/controller untuk validasi, otorisasi, persistence, serta provisioning database.
+
+Profil User dan Master Sekolah menjadi consumer pertama pola ini. Route lama tetap dipertahankan agar URL, middleware administrator, dan kontrak akses tidak berubah.
+
 ## 2. Layout global
 
 Urutan standar:

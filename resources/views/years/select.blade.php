@@ -63,7 +63,8 @@
         </section>
     @endif
 
-    <div class="mt-6 space-y-3">
+    <livewire:year-selector />
+    <div class="hidden mt-6 space-y-3">
         @forelse($years as $year)
             <form method="POST" action="{{ route('years.activate') }}"
                 class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">

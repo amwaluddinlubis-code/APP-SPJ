@@ -11,7 +11,8 @@
     </form>
   </div>
 
-  <div class="mt-6 space-y-3">
+  <livewire:school-selector />
+  <div class="hidden mt-6 space-y-3">
     @forelse($schools as $school)
       <form method="POST" action="{{ route('schools.activate') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
         @csrf

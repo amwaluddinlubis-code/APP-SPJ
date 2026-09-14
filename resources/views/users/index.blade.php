@@ -1,4 +1,8 @@
 <x-layouts.tailwind-app>
+    <livewire:user-management />
+</x-layouts.tailwind-app>
+{{-- Legacy markup moved to the Livewire component. --}}
+{{--
     <div class="space-y-6">
         <x-page-header
             title="Pengguna & Hak Akses"
@@ -112,4 +116,4 @@
             <p class="mt-1 leading-6">Akun saat ini tersimpan pada database utama lokal. Jika database utama tidak ikut dipindahkan, akun pada laptop ini tidak otomatis tersedia di laptop lain.</p>
         </section>
     </div>
-</x-layouts.tailwind-app>
+--}}

@@ -1,0 +1,159 @@
+/* Halaman login (/masuk): kartu selalu putih, hanya latar global yang mengikuti tema.
+   Scope ini dikecualikan dari palette aplikasi karena pre-login/branding,
+   mengikuti pengecualian public/auth pada CSS_USAGE_GUIDE. Aksen tema
+   (tombol Masuk, tautan lupa sandi, ring fokus) tetap memakai token tema. */
+
+main.auth-login-page section.auth-login-surface,
+.auth-login-card,
+.auth-login-card form {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+.auth-login-card {
+    --login-fg-strong: #0f172a;
+    --login-fg: #334155;
+    --login-fg-muted: #64748b;
+    --login-line: #d3dbe5;
+    --login-accent: #2563eb;
+    --login-accent-hover: #1d4ed8;
+    color-scheme: light;
+}
+
+main.auth-login-page .auth-login-card :is(h1, h2, h3, h4, h5, h6, p, li, label) {
+    color: var(--login-fg) !important;
+    opacity: 1 !important;
+}
+
+main.auth-login-page .auth-login-card :is(h1, h2, h3, h4, h5, h6) {
+    color: var(--login-fg-strong) !important;
+    -webkit-text-fill-color: var(--login-fg-strong) !important;
+}
+
+main.auth-login-page .auth-login-card p,
+main.auth-login-page .auth-login-card label {
+    -webkit-text-fill-color: var(--login-fg) !important;
+}
+
+.auth-login-brand {
+    padding-top: .25rem;
+}
+
+.auth-login-logo {
+    display: block;
+    width: 12.5rem;
+    height: 12.5rem;
+    object-fit: contain;
+}
+
+.auth-login-heading {
+    margin-top: 1.25rem;
+}
+
+.auth-login-icon {
+    color: var(--login-fg-muted);
+}
+
+main.auth-login-page .auth-login-password-toggle,
+main.auth-login-page .auth-login-forgot {
+    color: var(--login-accent) !important;
+    -webkit-text-fill-color: var(--login-accent) !important;
+    opacity: 1 !important;
+}
+
+main.auth-login-page .auth-login-password-toggle:hover,
+main.auth-login-page .auth-login-forgot:hover {
+    color: var(--login-accent-hover) !important;
+}
+
+.auth-login-remember {
+    color: var(--login-fg);
+}
+
+.auth-login-remember input {
+    accent-color: var(--login-accent);
+}
+
+.auth-login-card .ui-input {
+    min-height: 3.35rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    padding-left: 2.75rem;
+    box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.auth-login-card #login-password {
+    padding-right: 3rem;
+}
+
+.auth-login-card .ui-input:focus {
+    border-color: var(--login-accent) !important;
+    box-shadow: 0 0 0 3px rgb(37 99 235 / 0.16), inset 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.auth-login-card .ui-btn-primary {
+    min-height: 3.35rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border-color: var(--login-accent) !important;
+    background: var(--login-accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 5px 12px rgb(37 99 235 / 0.24);
+}
+
+.auth-login-card .ui-btn-primary:hover {
+    background: var(--login-accent-hover) !important;
+    color: #ffffff !important;
+}
+
+@media (max-width: 639px) {
+    .auth-login-card {
+        padding-inline: 0;
+    }
+
+    .auth-login-logo {
+        width: 10.5rem;
+        height: 10.5rem;
+    }
+
+    .auth-login-heading {
+        margin-top: 1rem;
+    }
+
+    .auth-login-card .ui-input,
+    .auth-login-card .ui-btn-primary {
+        min-height: 3.2rem;
+    }
+}
+
+/* Label x-ui.field dan label "Ingat saya" dikunci gelap agar terbaca di kartu putih. */
+.auth-login-card label {
+    color: var(--login-fg-strong);
+}
+
+/* Kontrol input dikunci terang; fokus tetap memakai aksen tema aktif. */
+.auth-login-card .ui-input {
+    background-color: #ffffff;
+    border-color: var(--login-line);
+    color: var(--login-fg-strong);
+}
+
+/* The global dark-control safety layer has a more specific selector. Keep
+   login controls white in every appearance, including dark profiles. */
+html[data-ui-appearance='dark'] main.auth-login-page .auth-login-card .ui-input {
+    background-color: #ffffff !important;
+    border-color: var(--login-line) !important;
+    color: var(--login-fg-strong) !important;
+    color-scheme: light;
+}
+
+.auth-login-card .ui-input::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+}
+
+.auth-login-card input[type='checkbox'] {
+    border-color: #cbd5e1;
+    background-color: #ffffff;
+}

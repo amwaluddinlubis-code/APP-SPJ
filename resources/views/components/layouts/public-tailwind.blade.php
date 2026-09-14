@@ -1,3 +1,4 @@
+@props(['title' => null, 'narrow' => false, 'cardClass' => null])
 <!doctype html>
 <html lang="id" class="h-full">
 
@@ -5,46 +6,41 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? config('app.name', 'SPJ BOSP Web') }}</title>
-    <script>
-        (() => {
-            const saved = localStorage.getItem('spj-theme');
-            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.dataset.theme = theme;
-            document.documentElement.classList.toggle('dark', saved ? saved === 'dark' : theme === 'dark');
-        })();
-    </script>
+    <x-theme-init />
     @vite('resources/css/app.css')
 </head>
 
-<body class="public-layout min-h-full bg-[var(--ui-surface-soft)] text-[var(--ui-fg)]">
+<body class="public-layout min-h-full text-[var(--ui-fg)]"
+    style="background: linear-gradient(165deg, color-mix(in srgb, var(--theme-accent-soft) 55%, var(--ui-surface-soft)) 0%, var(--ui-surface-soft) 58%, var(--ui-surface-soft) 100%);">
     <x-toast-notifications />
-    <main class="public-layout-main mx-auto flex min-h-screen max-w-3xl items-center p-4 sm:p-8">
+    <main
+        class="public-layout-main mx-auto flex min-h-screen items-center p-4 sm:p-8 {{ $narrow ? 'max-w-xl' : 'max-w-3xl' }} {{ str_contains((string) $cardClass, 'auth-login-surface') ? 'auth-login-page' : '' }}">
         <section
-            class="w-full overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-xl shadow-slate-200/40">
-            <div
-                class="flex items-center justify-between gap-3 bg-gradient-to-r from-slate-950 via-indigo-900 to-sky-800 px-5 py-4 text-white">
-                <div class="flex min-w-0 items-center gap-3">
-                    <select id="public-theme-select" data-theme-selector
-                        class="max-w-[9.5rem] rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white"
-                        aria-label="Tema tampilan"></select>
-                    <a href="{{ route('login') }}" class="truncate font-bold">SPJ BOSP Web</a>
+            class="w-full rounded-2xl border border-[var(--ui-line)] {{ $cardClass ?? 'bg-[var(--ui-surface-base)]' }} p-5 shadow-xl sm:p-7"
+            style="box-shadow: var(--profile-floating-shadow, 0 20px 45px rgb(15 23 42 / .12));">
+            @if ($errors->any())
+                <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><b>Data
+                        belum dapat diproses.</b>
+                    <ul class="mt-1 list-disc pl-5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-            </div>
-            <div class="p-5 sm:p-7">
-                @if ($errors->any())
-                    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><b>Data
-                            belum dapat diproses.</b>
-                        <ul class="mt-1 list-disc pl-5">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-                {{ $slot }}
-            </div>
+            @endif
+            {{ $slot }}
         </section>
     </main>
+    <div
+        class="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm shadow-lg">
+        <label for="public-theme-select" class="flex items-center text-[var(--ui-fg)]">
+            <span>Tema&nbsp;(</span>
+            <select id="public-theme-select" data-theme-selector aria-label="Tema tampilan"
+                class="max-w-[9.5rem] appearance-none bg-transparent font-medium outline-none"></select>
+            <span>)</span>
+        </label>
+        <x-ui.icon name="chevron-down" size="xs" />
+    </div>
     @vite('resources/js/app.js')
 </body>
 
