@@ -47,6 +47,7 @@
             <file>tests/Feature/SpjActiveContractsGuardTest.php</file>
             <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
             <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
+            <file>tests/Feature/LivewireMutationAuthorizationTest.php</file>
             <file>tests/Feature/SpjAutomaticNumberingPolicyTest.php</file>
             <file>tests/Feature/SpjCategoryLifecycleRegressionTest.php</file>
             <file>tests/Feature/SpjConsumptionParticipantUiTest.php</file>
