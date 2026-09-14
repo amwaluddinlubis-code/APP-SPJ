@@ -3,6 +3,8 @@
     $exportQuery = array_filter(['tab' => 'laporan', 'mode' => $mode, 'periode' => $periode]);
 @endphp
 <div>
+    <livewire:spj-periodic-report-center :key="'spj-periodic-report-center'" />
+
     <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
         <div class="grid items-stretch gap-4 xl:grid-cols-5">
             <section aria-label="Filter laporan" class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3 sm:p-4 xl:col-span-3">
