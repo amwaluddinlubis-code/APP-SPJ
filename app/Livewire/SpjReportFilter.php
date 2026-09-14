@@ -49,6 +49,10 @@ class SpjReportFilter extends Component
 
     public function render(): View
     {
+        if (request('jenis_laporan') === 'periode') {
+            return view('livewire.spj-periodic-report-page');
+        }
+
         [$packages, $summary] = app(SpjReportUseCase::class)
             ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15);
 
