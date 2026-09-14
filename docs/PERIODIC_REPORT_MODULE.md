@@ -1,16 +1,16 @@
 # Modul Laporan Periodik SPJ
 
-Status: **SOURCE IMPLEMENTED / TEMPLATE BINDING PENDING**  
+Status: **SOURCE IMPLEMENTED / PRINT & PDF AVAILABLE / RUNTIME QA PENDING**  
 Branch: `gui-standardization`
 
-Dokumen ini mendefinisikan kontrak modul laporan periodik. Audit, koreksi, dan binding workbook/template resmi dilakukan terpisah dan tidak menjadi prasyarat untuk kontrak periode, daftar laporan, atau query sumber data.
+Dokumen ini mendefinisikan kontrak modul **Laporan Periode**. Modul ini dipisahkan dari **Laporan SPJ** dan memiliki generator internal APP-SPJ sendiri. Template Paket SPJ tidak menjadi dependency untuk laporan periodik.
 
 ## Integrasi UI
 
-Modul laporan periodik dipisahkan penuh dari **Laporan SPJ**. Sidebar **SPJ & Laporan** memiliki dua entry berbeda:
+Sidebar **SPJ & Laporan** memiliki dua entry berbeda:
 
 - **Laporan SPJ** → workspace riwayat/ekspor paket SPJ existing pada `/spj?tab=laporan`;
-- **Laporan Periode** → parent menu khusus untuk modul laporan periodik pada route `/laporan-periode` (`spj.periodic-reports.index`).
+- **Laporan Periode** → parent menu khusus pada route `/laporan-periode` (`spj.periodic-reports.index`).
 
 Submenu **Laporan Periode**:
 
@@ -19,11 +19,16 @@ Submenu **Laporan Periode**:
 - Semester → `/laporan-periode?paket_laporan=semester`;
 - Tahunan → `/laporan-periode?paket_laporan=tahunan`.
 
-`Laporan Periode` tidak lagi memakai `SpjReportFilter`, `jenis_laporan`, atau surface internal tab Laporan SPJ. Halaman khusus `resources/views/periodic-reports/index.blade.php` langsung memasang `SpjPeriodicReportCenter`.
+Halaman khusus `resources/views/periodic-reports/index.blade.php` langsung memasang `SpjPeriodicReportCenter`. Pengguna memilih kelompok dan nomor periode. Setelah periode valid, setiap dokumen menyediakan aksi **Cetak** dan **PDF**.
 
-Markup sidebar dipisahkan ke partial `resources/views/components/layouts/partials/spj-report-navigation.blade.php`. Alpine hanya mengelola buka/tutup parent **Laporan Periode**, sedangkan scope laporan tetap dimiliki state URL/Livewire `SpjPeriodicReportCenter` melalui parameter `paket_laporan`.
+Route output:
 
-Pengguna memilih kelompok periode dan, bila diperlukan, nomor periode. Modul kemudian membaca transaksi dari `ActiveSpjContext`, sehingga batas sekolah aktif, tahun anggaran aktif, dan sumber dana aktif tetap berlaku.
+```text
+GET /laporan-periode/{scope}/{report}/cetak
+GET /laporan-periode/{scope}/{report}/pdf
+```
+
+Keduanya tetap berada di middleware `auth + active-school + active-year + spj-active-context`, sehingga tenant boundary aktif tetap berlaku.
 
 ## Kelompok laporan
 
@@ -86,16 +91,22 @@ Periode: Semester I–II.
 
 Periode: tahun anggaran aktif.
 
+Total registry: **39 slot laporan** pada empat paket periode.
+
 ## Arsitektur
 
-- `App\Services\SpjPeriodicReportRegistry` adalah kontrak canonical untuk empat kelompok dan 39 slot laporan.
-- `App\UseCases\Spj\SpjPeriodicReportUseCase` menangani boundary periode dan ringkasan sumber data transaksi.
-- `App\Livewire\SpjPeriodicReportCenter` menangani state filter periode pada UI.
-- `resources/views/periodic-reports/index.blade.php` adalah halaman khusus **Laporan Periode**.
-- `resources/views/livewire/spj-periodic-report-center.blade.php` merender pusat laporan dengan shared theme primitives.
-- `App\Livewire\SpjReportFilter` kembali khusus untuk Laporan SPJ existing dan tidak memiliki state/switch periodic report.
-- `resources/views/livewire/spj-report-filter.blade.php` tetap khusus untuk riwayat/ekspor Laporan SPJ.
-- `resources/views/components/layouts/partials/spj-report-navigation.blade.php` merender entry **Laporan SPJ** dan parent/submenu **Laporan Periode** sebagai navigasi terpisah.
+- `App\Services\SpjPeriodicReportRegistry` — kontrak canonical scope dan daftar 39 slot laporan.
+- `App\UseCases\Spj\SpjPeriodicReportUseCase` — boundary periode, transaksi, dan summary sumber data.
+- `App\Services\SpjPeriodicReportPrintService` — membangun payload dokumen cetak berdasarkan tipe laporan.
+- `App\Http\Controllers\PeriodicReportController` — endpoint pratinjau cetak dan PDF.
+- `App\Livewire\SpjPeriodicReportCenter` — state filter periode pada UI.
+- `resources/views/livewire/spj-periodic-report-center.blade.php` — daftar dokumen + aksi Cetak/PDF.
+- `resources/views/periodic-reports/print.blade.php` — surface browser print.
+- `resources/views/periodic-reports/pdf.blade.php` — surface DomPDF.
+- `resources/views/periodic-reports/partials/document.blade.php` — satu renderer dokumen untuk browser dan PDF.
+- `resources/views/periodic-reports/partials/document-styles.blade.php` — aturan A4 portrait/landscape dan print pagination.
+
+Business data tetap berada di use case/service; Blade hanya merender payload.
 
 ## Boundary periode
 
@@ -104,11 +115,11 @@ Periode: tahun anggaran aktif.
 - Semester: 6 bulan per semester.
 - Tahunan: 1 Januari sampai 31 Desember tahun anggaran aktif.
 
-Query transaksi tetap dibatasi oleh `Transaction::forSpjContext()`, sehingga `fiscal_year_id` dan `fund_source_id` aktif tidak boleh bocor ke konteks lain.
+Query transaksi tetap dibatasi oleh `Transaction::forSpjContext()`, sehingga `fiscal_year_id` dan `fund_source_id` aktif tidak boleh bocor ke konteks lain. Sekolah aktif tetap ditentukan oleh koneksi tenant yang disiapkan middleware/context.
 
-## Ringkasan sumber data
+## Sumber data dan formula dasar
 
-Sebelum template resmi diikat, modul sudah menyediakan ringkasan periode:
+Summary canonical periode:
 
 - jumlah transaksi;
 - nilai bruto;
@@ -121,34 +132,49 @@ Sebelum template resmi diikat, modul sudah menyediakan ringkasan periode:
 - PPh 4(2);
 - SSPD/Pajak Daerah.
 
-Ringkasan ini adalah sumber data operasional, **bukan pengganti formula resmi masing-masing formulir**.
+Renderer kemudian memakai keluarga data berikut:
 
-## Boundary template
+- **BKU** → seluruh transaksi periode;
+- **Buku Pembantu Kas** → transaksi dengan `payment_method = tunai`;
+- **Buku Pembantu Bank** → transaksi dengan `payment_method = transfer_bank` atau `siplah`;
+- **Buku Pembantu Pajak** → transaksi dengan `tax_total > 0`, dirinci per jenis pajak;
+- **K7A/K8** → rekap per kegiatan;
+- **K7, rekap belanja, BMD, Form 1C, rekap tahunan** → rekap per rekening;
+- **Lampiran SP2B / Lampiran BA Rekonsiliasi** → rincian transaksi;
+- **SPTJM/K7B/K7C/SPB/SP2B/SP2T/BA Rekonsiliasi** → dokumen pernyataan/berita acara dengan summary dan rekap rekening pendukung.
 
-Pada tahap ini modul tidak mengarang layout, rumus formulir, placeholder, atau export resmi untuk SPTJM/K7/SPB/SP2B/SP2T dan laporan lainnya. Template resmi akan diikat kemudian setelah template yang dipakai sekolah siap.
+Tidak ada saldo kas/bank fiktif yang dihitung bila source tidak menyediakannya. Laporan cetak secara eksplisit meminta operator mencocokkan saldo/bukti fisik/rekening koran sebelum penandatanganan.
 
-Karena itu UI boleh menyatakan sumber data tersedia, tetapi tidak boleh mengklaim dokumen resmi siap diunduh sebelum generator/template masing-masing laporan benar-benar dipasang dan diverifikasi.
+## Output cetak
 
-## Regression contract
+Browser print:
 
-`SpjPeriodicReportRegistryTest` mengunci:
+- A4 portrait untuk dokumen ringkas/rekap;
+- A4 landscape untuk ledger, pajak, dan lampiran transaksi;
+- header identitas sekolah;
+- tahun anggaran + sumber dana;
+- periode;
+- summary bruto/pajak/netto;
+- tabel detail sesuai keluarga laporan;
+- area tanda tangan Kepala Sekolah dan Bendahara BOSP dari `school_profiles`;
+- tombol `window.print()` pada pratinjau browser.
 
-- empat kelompok laporan;
-- nama laporan sesuai daftar canonical;
-- total 39 slot dokumen;
-- boundary periode 12/4/2/tahunan.
+PDF memakai `barryvdh/laravel-dompdf` dan renderer dokumen yang sama supaya browser print dan PDF tidak mempunyai dua formula data yang berbeda.
 
-`SpjPeriodicReportModuleUiTest` mengunci:
+## Boundary dengan Laporan SPJ
 
-- pusat laporan periodik berada pada halaman khusus `/laporan-periode` dan tidak berada di view riwayat Laporan SPJ;
-- template binding tetap dipisahkan dari kontrak sumber data;
-- UI menggunakan shared theme primitives dan tidak menambah CSS lokal.
+Perbaikan master/template Paket SPJ tetap menjadi pekerjaan terpisah. Perubahan template Surat Pesanan, Invoice, Kuitansi, BA, dan dokumen transaksi lain **tidak boleh** menjadi dependency Laporan Periode.
 
-`SpjReportSidebarNavigationTest` mengunci:
+Sebaliknya, layout Laporan Periode dimiliki aplikasi dan dapat dikembangkan di `SpjPeriodicReportPrintService` + view `periodic-reports/*` tanpa mengubah template Paket SPJ.
 
-- layout memakai partial sidebar laporan khusus;
-- `Laporan SPJ` tetap entry mandiri;
-- `Laporan Periode` menjadi parent mandiri;
-- submenu Bulanan, Triwulan, Semester, dan Tahunan tersedia;
-- link submenu mengarah ke route `spj.periodic-reports.index` dengan parameter `paket_laporan`;
-- state lama `jenis_laporan=periode` tidak dipakai lagi.
+## Verification
+
+Regression source yang relevan:
+
+- `SpjPeriodicReportRegistryTest` — empat kelompok, 39 slot, boundary periode;
+- `SpjPeriodicReportModuleUiTest` — dedicated page, generator internal, shared theme primitives;
+- `SpjPeriodicReportPrintableTest` — route print/PDF, action UI, shared renderer, coverage seluruh report key;
+- `SpjReportSidebarNavigationTest` — Laporan SPJ dan Laporan Periode terpisah;
+- `SpjReportLayoutTest` — filter/scope/report center contract.
+
+Status **PRINT & PDF AVAILABLE** berarti source path untuk cetak/PDF sudah tersedia. Browser operator QA, real-data visual output, pagination panjang, dan PDF viewer verification tetap **RVR** sampai diuji pada runtime aktual dan CI head terbaru hijau.
