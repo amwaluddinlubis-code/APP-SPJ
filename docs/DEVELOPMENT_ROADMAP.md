@@ -16,11 +16,11 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 # P0 — Core Release Safety
 
-## P0-00 — Current HEAD integration + Livewire authorization hardening
+## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: COMPLETE / CI #480 GREEN.**
+**Status: COMPLETE / CI #486 GREEN.**
 
-Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary, dan integration repair setelah #478 mengembalikan repository ke green code gate.
+Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
 Phase 2 commits:
 
@@ -32,7 +32,7 @@ fix: harden Livewire mutation authorization
 test: gate Livewire mutation authorization as critical
 ```
 
-Integration repair:
+Historical integration repair:
 
 ```text
 b61cdc621539cb6fc62dd17efc22da16a9c2a14c
@@ -40,6 +40,19 @@ test: close SPJ critical integration regressions
 
 887d0219142d634e6a85b6672d3bffb02b5b1584
 test: align description UI contract with service delegation
+```
+
+Dependency-platform repair:
+
+```text
+7b5615c4b98222f145a3ba0e18b409abb2b1e20d
+fix: constrain dependency resolution to PHP 8.3
+
+d3c786d841d431c4d78cf2441f9a1e358115afa6
+fix: keep dependency lock compatible with PHP 8.3
+
+ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+ci: enforce deterministic PHP 8.3 dependency gate
 ```
 
 Checklist P0-00:
@@ -55,27 +68,36 @@ Checklist P0-00:
 - [x] lifecycle SPJ, numbering, safe sync, dan tenant ownership tidak diubah;
 - [x] tutup dua regression SPJ Critical #478;
 - [x] tutup stale full-feature source-contract assertion yang baru terlihat di #479;
+- [x] migrasi Laravel 13 + pure TALL tetap melewati full deterministic gate;
+- [x] root Composer platform floor dikunci ke PHP 8.3;
+- [x] `composer.lock` kompatibel dengan PHP 8.3;
+- [x] Composer validate + locked platform check PASS;
+- [x] deterministic `composer install` PASS;
+- [x] Repository Pint PASS pada gate #486;
 - [x] SPJ Critical PASS;
 - [x] Full Unit PASS;
 - [x] Full Feature PASS;
 - [x] promote green code gate baru.
 
-Evidence CI #480:
+Evidence CI #486:
 
 ```text
-HEAD                 : 887d0219142d634e6a85b6672d3bffb02b5b1584
-RUN                  : #480 / 34839580942 / SUCCESS
-FRONTEND BUILD       : PASS
-BLADE COMPILE        : PASS
-SPJ CRITICAL         : 287 PASS / 2236 assertions
-FULL UNIT            : 60 PASS / 203 assertions
-FULL FEATURE         : 411 PASS / 2972 assertions
-REPOSITORY PINT      : ADVISORY / 5 pre-existing style issues
+HEAD                  : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
+RUN                   : #486 / 34853857969 / SUCCESS
+COMPOSER VALIDATE     : PASS
+LOCKED PLATFORM CHECK : PASS / PHP 8.3
+COMPOSER INSTALL      : PASS
+REPOSITORY PINT       : PASS
+FRONTEND BUILD        : PASS
+BLADE COMPILE         : PASS
+SPJ CRITICAL          : PASS
+FULL UNIT             : PASS
+FULL FEATURE          : PASS
 ```
 
-P0-00 integration gate bukan lagi blocker. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+P0-00 code/dependency integration gate bukan lagi blocker. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
-Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md`.
+Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
 ---
 
@@ -116,7 +138,7 @@ Functional coverage yang sudah hijau:
 - [x] update XLSX individu mengganti source document type berikutnya tanpa mutasi master historis;
 - [x] master parsial ditolak;
 - [x] canonical XLSX HTML preview memilih worksheet yang benar;
-- [x] current HEAD memperoleh green code gate #480;
+- [x] current canonical HEAD memperoleh green code gate #486;
 - [x] validator/template load terbaru tercakup full regression;
 - [x] PDF/report writer path tercakup full Unit/Feature gate.
 
@@ -171,7 +193,7 @@ Definition of Done Phase 2:
 - [x] ADMIN/OPERATOR/VIEWER regression sesuai matrix permission;
 - [x] tenant/context logic existing tidak dipindahkan ke UI;
 - [x] no privilege widening pada mutation Livewire yang diuji;
-- [x] overall repository code gate hijau #480.
+- [x] overall repository code gate hijau #486.
 
 Rule untuk migrasi berikutnya: route visibility/middleware GET tidak cukup sebagai bukti; mutation Livewire harus authorize pada request action melalui action guard, policy, atau persistent mechanism yang benar-benar berlaku.
 
@@ -222,7 +244,7 @@ Importer mapping → preview → sync tidak menjadi target migrasi Livewire oppo
 
 # P1 — Real Data, Output, dan Operational Quality
 
-**P1 sekarang menjadi fokus produk utama karena P0-00 integration gate sudah hijau.**
+**P1 sekarang menjadi fokus produk utama karena P0-00 code/dependency integration gate sudah hijau.**
 
 ## P1-01 — Generated-document real-data QA
 
@@ -312,7 +334,7 @@ Kerjakan setelah desktop operator flow stabil atau bila ada bug mobile yang meng
 
 Setelah P1 operator/runtime flow stabil:
 
-- [ ] selesaikan 5 Pint advisory lama pada maintenance window;
+- [ ] pertahankan repository-wide Pint clean pada source change berikutnya;
 - [ ] migrasikan consumer `<x-ui-icon>` lama secara bertahap;
 - [ ] cleanup compatibility CSS/JS setelah consumer legacy hilang;
 - [ ] field-level validation UX;
