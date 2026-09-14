@@ -8,6 +8,7 @@ use App\Services\SpjPeriodicReportRegistry;
 use App\Support\ActiveSpjContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class SpjPeriodicReportUseCase
 {
@@ -15,6 +16,53 @@ final class SpjPeriodicReportUseCase
         private readonly ActiveSpjContext $context,
         private readonly SpjPeriodicReportRegistry $registry,
     ) {}
+
+    /**
+     * Payload standar untuk renderer template laporan.
+     *
+     * @return array{report:array{key:string,label:string},summary:array<string,mixed>,transactions:Collection<int,Transaction>}|null
+     */
+    public function payload(string $scope, string $reportKey, ?int $period): ?array
+    {
+        $report = $this->registry->find($scope, $reportKey);
+
+        if ($report === null) {
+            return null;
+        }
+
+        $summary = $this->summary($scope, $period);
+
+        return [
+            'report' => $report,
+            'summary' => $summary,
+            'transactions' => $summary['ready'] ? $this->transactions($scope, $period) : collect(),
+        ];
+    }
+
+    /** @return Collection<int,Transaction> */
+    public function transactions(string $scope, ?int $period): Collection
+    {
+        if (! $this->registry->isScope($scope)) {
+            return collect();
+        }
+
+        if (! $this->registry->periodRequired($scope)) {
+            $period = null;
+        }
+
+        if (! $this->registry->isValidPeriod($scope, $period)) {
+            return collect();
+        }
+
+        $query = Transaction::query()
+            ->with('items')
+            ->forSpjContext($this->context);
+
+        return $this->applyPeriod($query, $scope, $period)
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+    }
 
     /**
      * Ringkasan sumber data untuk paket laporan periodik.
