@@ -91,11 +91,13 @@ Untuk transaksi SiPLah:
 - nomor Surat Pesanan internal bukan nomor marketplace;
 - internal purchase-order requirement yang tidak applicable tidak boleh menjadi blocker.
 
-Pemetaan generated-document pada Paket SPJ tetap dimulai dari kategori canonical `BARANG`, lalu difilter berdasarkan procurement channel:
+Pemetaan generated-document pada Paket SPJ tetap dimulai dari kategori canonical `BARANG`, lalu difilter oleh flag persisted `is_siplah` khusus untuk pemetaan paket:
 
-- `SPJ_COVER`, `SPJ_SPTJM`, `SPJ_CHECKLIST`, `SPJ_KUITANSI_A2`, dan dokumen umum/kategori lain tetap dapat masuk bila template aktif dan mapping kategorinya cocok;
-- `SPJ_SURAT_PESANAN`, `SPJ_BA_PEMERIKSAAN`, dan `SPJ_BAST_PEMBELIAN` dikeluarkan dari paket SiPLah secara default karena bukti pengadaan/penerimaan utamanya berasal dari marketplace/source evidence;
-- resolver channel memakai `payment_method` canonical sebagai sumber utama; `is_siplah` hanya menjadi fallback kompatibilitas ketika metode pembayaran belum berisi nilai canonical `tunai`, `transfer_bank`, atau `siplah`.
+- document type yang tidak mempunyai mapping `is_siplah` khusus dianggap shared dan tetap dapat masuk bila template aktif serta mapping kategorinya cocok;
+- `SPJ_COVER`, `SPJ_SPTJM`, `SPJ_CHECKLIST`, `SPJ_KUITANSI_A2`, dan dokumen umum/kategori lain tetap dapat masuk pada SiPLah maupun Non-SiPLah bila tidak diberi rule eksklusif;
+- `SPJ_SURAT_PESANAN`, `SPJ_BA_PEMERIKSAAN`, dan `SPJ_BAST_PEMBELIAN` dipetakan `is_siplah=false`, sehingga dikeluarkan dari paket ketika `is_siplah=true`;
+- struktur mapping menerima rule `is_siplah=true` bila di kemudian hari ada generated-document yang memang hanya berlaku untuk paket SiPLah;
+- pemetaan Paket tidak menginfer nilai `is_siplah` dari `payment_method`; sinkronisasi/normalisasi field tetap menjadi tanggung jawab boundary yang memiliki data tersebut.
 
 Untuk Non-SiPLah, Surat Pesanan internal, BA Pemeriksaan, dan BAST Pembelian tetap mengikuti mapping kategori dan document requirement aplikasi bila applicable.
 
