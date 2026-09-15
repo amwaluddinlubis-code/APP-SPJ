@@ -8,23 +8,24 @@ use Illuminate\Support\Collection;
 
 final class SpjPackageTemplateSelector
 {
-    /** @var array<int,string> */
-    private const SIPLAH_EXCLUDED_DOCUMENT_TYPES = [
-        'SPJ_SURAT_PESANAN',
-        'SPJ_BA_PEMERIKSAAN',
-        'SPJ_BAST_PEMBELIAN',
+    /**
+     * Document types listed here are exclusive to one is_siplah state.
+     * Unlisted document types are shared by SiPlah and Non-SiPlah packages.
+     *
+     * @var array<string,bool>
+     */
+    private const IS_SIPLAH_DOCUMENT_MAP = [
+        'SPJ_SURAT_PESANAN' => false,
+        'SPJ_BA_PEMERIKSAAN' => false,
+        'SPJ_BAST_PEMBELIAN' => false,
     ];
-
-    public function __construct(
-        private readonly SpjProcurementPolicyService $procurementPolicy,
-    ) {}
 
     /** @return Collection<int,DocumentTemplate> */
     public function forPackage(SpjPackage $package): Collection
     {
         $transaction = $package->transaction;
         $category = strtoupper((string) $transaction->spj_category);
-        $isSiplah = $this->procurementPolicy->isSiplah($transaction);
+        $isSiplah = (bool) $transaction->is_siplah;
 
         return DocumentTemplate::query()
             ->where([
@@ -34,7 +35,7 @@ final class SpjPackageTemplateSelector
             ->orderBy('document_type')
             ->get()
             ->filter(fn (DocumentTemplate $template): bool => $this->isMappedToCategory($template, $category)
-                && $this->isMappedToProcurementChannel($template, $isSiplah))
+                && $this->isMappedToSiplahFlag($template, $isSiplah))
             ->values();
     }
 
@@ -55,13 +56,14 @@ final class SpjPackageTemplateSelector
             || in_array($category, $categories, true);
     }
 
-    private function isMappedToProcurementChannel(DocumentTemplate $template, bool $isSiplah): bool
+    private function isMappedToSiplahFlag(DocumentTemplate $template, bool $isSiplah): bool
     {
-        return ! $isSiplah
-            || ! in_array(
-                strtoupper((string) $template->document_type),
-                self::SIPLAH_EXCLUDED_DOCUMENT_TYPES,
-                true,
-            );
+        $documentType = strtoupper(trim((string) $template->document_type));
+
+        if (! array_key_exists($documentType, self::IS_SIPLAH_DOCUMENT_MAP)) {
+            return true;
+        }
+
+        return self::IS_SIPLAH_DOCUMENT_MAP[$documentType] === $isSiplah;
     }
 }
