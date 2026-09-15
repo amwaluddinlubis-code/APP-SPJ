@@ -44,11 +44,14 @@
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
             @include('spj.partials.main-tabs')
 
-            {{-- Tab: Persiapan (filter AJAX via Livewire, tanpa reload) --}}
+            {{-- Tab: Persiapan (filter AJAX via Livewire, tanpa reload; hanya tab aktif yang dirender server) --}}
+            @if(($tab ?? 'persiapan') === 'persiapan')
             <div x-show="tab === 'persiapan'" x-transition>
                 <livewire:spj-preparation-filter />
             </div>
+            @endif
             {{-- Tab: Paket --}}
+            @if(($tab ?? 'persiapan') === 'paket')
             <div x-show="tab === 'paket'" x-transition>
                 @php
                     if (isset($package)) {
@@ -183,13 +186,17 @@
                     }
                 @endphp
             </div>
+            @endif
 
             {{-- Tab: Laporan (filter AJAX via Livewire, tanpa reload) --}}
+            @if(($tab ?? 'persiapan') === 'laporan')
             <div x-show="tab === 'laporan'" x-transition>
                 <livewire:spj-report-filter />
             </div>
+            @endif
 
             {{-- Tab: Monitoring --}}
+            @if(($tab ?? 'persiapan') === 'monitoring')
             <div x-show="tab === 'monitoring'" x-transition>
                 <div class="border-b border-amber-100 bg-amber-50/40 px-5 py-4 sm:px-6">
                     <div><h2 class="font-bold text-amber-900">Monitoring Dokumen Belum Lengkap</h2><p class="mt-1 text-base text-amber-800">Transaksi ber-rincian tapi paket belum siap atau belum bernomor · <span class="font-bold">{{ $pendingPaginator?->total() ?? 0 }} transaksi</span></p></div>
@@ -216,6 +223,7 @@
                 </div>
                 <livewire:spj-monitoring-list />
             </div>
+            @endif
         </section>
     </div>
 

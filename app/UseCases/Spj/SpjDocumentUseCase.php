@@ -6,6 +6,7 @@ use App\Models\DocumentTemplate;
 use App\Models\SpjPackage;
 use App\Services\SpjGeneratedDocumentValidator;
 use App\Services\SpjMaintenanceDocumentContextService;
+use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjSpreadsheetPdfConverter;
 use App\Services\SpjTemplateRenderPreflight;
@@ -20,7 +21,10 @@ use Throwable;
 
 class SpjDocumentUseCase
 {
-    public function __construct(private readonly ActiveSpjContext $context) {}
+    public function __construct(
+        private readonly ActiveSpjContext $context,
+        private readonly SpjPackageTemplateSelector $templateSelector,
+    ) {}
 
     public function download(string $packageId)
     {
@@ -38,7 +42,7 @@ class SpjDocumentUseCase
 
         $this->applyDocumentContext($package);
         $school = $this->context->school();
-        $activeTemplates = $this->activeTemplatesForPackage($package);
+        $activeTemplates = $this->spreadsheetTemplatesForPackage($package);
         $preflight->assertAllRenderable($activeTemplates, $package, $school);
         $response = $templates->downloadPackagePdf($activeTemplates, $package, $school);
 
@@ -54,7 +58,7 @@ class SpjDocumentUseCase
 
         $this->applyDocumentContext($package);
         $school = $this->context->school();
-        $activeTemplates = $this->activeTemplatesForPackage($package);
+        $activeTemplates = $this->spreadsheetTemplatesForPackage($package);
         app(SpjTemplateRenderPreflight::class)->assertAllRenderable($activeTemplates, $package, $school);
         $response = app(SpjTemplateService::class)->downloadPackageExcel($activeTemplates, $package, $school);
 
@@ -70,7 +74,7 @@ class SpjDocumentUseCase
 
         $validationIssues = app(SpjPackageValidationService::class)->validate($package);
         $this->applyDocumentContext($package);
-        $templates = $this->activeTemplatesForPackage($package);
+        $templates = $this->spreadsheetTemplatesForPackage($package);
         $school = $this->context->school();
         // Pratinjau adalah operasi baca ringan: jangan jalankan preflight
         // download (assertAllRenderable) di sini karena itu me-render ulang
@@ -239,14 +243,13 @@ class SpjDocumentUseCase
         }
 
         $this->applyDocumentContext($package);
-        $templates = $this->activeTemplatesForPackage($package);
+        $templates = $this->spreadsheetTemplatesForPackage($package);
         $school = $this->context->school();
-        $xlsxTemplates = $templates->filter(fn (DocumentTemplate $template): bool => strtolower((string) $template->format) === 'xlsx')->values();
-        if ($xlsxTemplates->isEmpty()) {
+        if ($templates->isEmpty()) {
             return redirect()->route('spj.preview-package', [$packageId])->with('error', 'Belum ada template Excel aktif untuk pratinjau PDF paket ini.');
         }
         try {
-            $contents = app(SpjTemplateService::class)->packagePreviewPdfBytes($xlsxTemplates, $package, $school);
+            $contents = app(SpjTemplateService::class)->packagePreviewPdfBytes($templates, $package, $school);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -260,17 +263,9 @@ class SpjDocumentUseCase
     }
 
     /** @return Collection<int, DocumentTemplate> */
-    private function activeTemplatesForPackage(SpjPackage $package): Collection
+    private function spreadsheetTemplatesForPackage(SpjPackage $package): Collection
     {
-        $category = strtoupper((string) $package->transaction->spj_category);
-
-        return DocumentTemplate::query()
-            ->where(['fiscal_year_id' => $package->transaction->fiscal_year_id, 'is_active' => true])
-            ->orderBy('document_type')
-            ->get()
-            ->filter(fn (DocumentTemplate $template): bool => empty($template->applicable_categories)
-                || in_array('SEMUA', $template->applicable_categories, true)
-                || in_array($category, $template->applicable_categories, true));
+        return $this->templateSelector->spreadsheetsForPackage($package);
     }
 
     private function applyDocumentContext(SpjPackage $package): void

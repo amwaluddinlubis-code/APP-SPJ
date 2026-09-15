@@ -51,22 +51,24 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     /** @param Collection<int, DocumentTemplate> $templates */
     public function packagePreviewPdfBytes(Collection $templates, SpjPackage $package, School $school): string
     {
-        $spreadsheet = $this->packageSpreadsheetForOutput($templates, $package, $school);
+        [$spreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($templates, $package, $school);
 
         try {
             return $this->spreadsheetPdfContents($spreadsheet, true);
         } finally {
             $spreadsheet->disconnectWorksheets();
+            $this->removeTemporaryFiles($temporaryFiles);
         }
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
     public function downloadPackageExcel(Collection $templates, SpjPackage $package, School $school)
     {
-        $spreadsheet = $this->packageSpreadsheetForOutput($templates, $package, $school);
+        [$spreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($templates, $package, $school);
         $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-xlsx-');
         if ($temporaryFile === false) {
             $spreadsheet->disconnectWorksheets();
+            $this->removeTemporaryFiles($temporaryFiles);
             throw new \RuntimeException('File sementara Excel tidak dapat dibuat.');
         }
 
@@ -83,13 +85,14 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             throw $exception;
         } finally {
             $spreadsheet->disconnectWorksheets();
+            $this->removeTemporaryFiles($temporaryFiles);
         }
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
     public function downloadPackagePdf(Collection $templates, SpjPackage $package, School $school)
     {
-        $spreadsheet = $this->packageSpreadsheetForOutput($templates, $package, $school);
+        [$spreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($templates, $package, $school);
 
         try {
             return $this->pdfResponse(
@@ -99,13 +102,73 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             );
         } finally {
             $spreadsheet->disconnectWorksheets();
+            $this->removeTemporaryFiles($temporaryFiles);
         }
     }
 
-    /** @param Collection<int, DocumentTemplate> $templates */
-    private function packageSpreadsheetForOutput(Collection $templates, SpjPackage $package, School $school): Spreadsheet
+    /**
+     * Berkas sementara per template dipertahankan hingga spreadsheet paket
+     * selesai dipakai karena gambar/drawing hasil merge masih merujuk ke
+     * arsip zip sumbernya. Caller wajib menghapus via finally.
+     *
+     * @return array{0:Spreadsheet,1:list<string>}
+     */
+    private function packageSpreadsheetForOutput(Collection $templates, SpjPackage $package, School $school): array
     {
+<<<<<<< HEAD
         return $this->canonicalPackageSpreadsheet($templates, $package, $school);
+=======
+        if ($templates->isEmpty()) {
+            throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
+        }
+
+        $packageSpreadsheet = null;
+        $temporaryFiles = [];
+
+        try {
+            foreach ($templates as $template) {
+                if (strtolower((string) $template->format) !== 'xlsx') {
+                    throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
+                }
+
+                $response = $this->download($template, $package, $school);
+                $path = $response->getFile()->getPathname();
+                $temporaryFiles[] = $path;
+
+                $single = IOFactory::load($path);
+
+                if (! $packageSpreadsheet instanceof Spreadsheet) {
+                    $packageSpreadsheet = $single;
+
+                    continue;
+                }
+
+                try {
+                    $sheetName = $single->getSheet(0)->getTitle();
+                    $copy = $single->duplicateWorksheetByTitle($sheetName);
+                    $packageSpreadsheet->addExternalSheet($copy);
+                    $copy->setTitle($sheetName);
+                } finally {
+                    $single->disconnectWorksheets();
+                }
+            }
+        } catch (\Throwable $exception) {
+            if ($packageSpreadsheet instanceof Spreadsheet) {
+                $packageSpreadsheet->disconnectWorksheets();
+            }
+            $this->removeTemporaryFiles($temporaryFiles);
+            throw $exception;
+        }
+
+        if (! $packageSpreadsheet instanceof Spreadsheet) {
+            $this->removeTemporaryFiles($temporaryFiles);
+            throw new \RuntimeException('Paket template tidak menghasilkan worksheet canonical.');
+        }
+
+        $packageSpreadsheet->setActiveSheetIndex(0);
+
+        return [$packageSpreadsheet, $temporaryFiles];
+>>>>>>> 506fc55 (feat: improve SPJ template generation workflow)
     }
 
     /**
@@ -150,6 +213,16 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             return (string) file_get_contents($temporaryFile);
         } finally {
             @unlink($temporaryFile);
+        }
+    }
+
+    /** @param list<string> $paths */
+    private function removeTemporaryFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            if (is_string($path) && $path !== '' && is_file($path)) {
+                @unlink($path);
+            }
         }
     }
 

@@ -9,6 +9,7 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjDocumentTypeRegistry;
+use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjTemplateRenderPreflight;
 use App\Services\SpjTemplateService;
 use App\Services\SpjUnresolvedPlaceholderGuard;
@@ -237,6 +238,53 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
         } finally {
             if (is_file($packagePath)) {
                 @unlink($packagePath);
+            }
+        }
+    }
+
+    public function test_package_output_selects_only_spreadsheet_templates_mapped_to_its_category(): void
+    {
+        $package = $this->package('HONOR_PEGAWAI', 6);
+        $school = $this->school();
+
+        $included = $this->xlsxTemplate([
+            'A1' => 'Rincian {{NOMOR_DOKUMEN}}',
+        ]);
+        $included->applicable_categories = ['HONOR_PEGAWAI'];
+        $included->save();
+
+        $excluded = $this->xlsxTemplate([
+            'A1' => 'Checklist {{NOMOR_DOKUMEN}}',
+        ], 'SPJ_CHECKLIST', 'TPL_CHECKLIST_SPJ');
+        $excluded->applicable_categories = ['BARANG'];
+        $excluded->save();
+
+        DocumentTemplate::query()->create([
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'SPJ_COVER',
+            'name' => 'Cover Word',
+            'format' => 'docx',
+            'file_path' => 'document-templates/cover-word.docx',
+            'applicable_categories' => ['HONOR_PEGAWAI'],
+            'is_active' => true,
+        ]);
+
+        $templates = app(SpjPackageTemplateSelector::class)->spreadsheetsForPackage($package);
+
+        $this->assertSame(['RINCIAN_BELANJA'], $templates->pluck('document_type')->all());
+
+        $response = app(SpjTemplateService::class)->downloadPackageExcel($templates, $package, $school);
+        $path = $response->getFile()->getPathname();
+
+        try {
+            $workbook = IOFactory::load($path);
+
+            $this->assertSame(['TPL_RINCIAN'], $workbook->getSheetNames());
+            $this->assertSame('Rincian 006/SPJ/2026', $workbook->getActiveSheet()->getCell('A1')->getValue());
+            $workbook->disconnectWorksheets();
+        } finally {
+            if (is_file($path)) {
+                @unlink($path);
             }
         }
     }

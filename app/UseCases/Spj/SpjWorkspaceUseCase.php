@@ -2,11 +2,11 @@
 
 namespace App\UseCases\Spj;
 
-use App\Models\DocumentTemplate;
 use App\Models\Employee;
 use App\Models\FiscalPeriodClosure;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
@@ -21,6 +21,7 @@ class SpjWorkspaceUseCase
     public function __construct(
         private readonly SpjWorkflowFilterService $workflowFilters,
         private readonly ActiveSpjContext $context,
+        private readonly SpjPackageTemplateSelector $templateSelector,
     ) {}
 
     public function handle(Request $request): View|RedirectResponse
@@ -130,21 +131,18 @@ class SpjWorkspaceUseCase
 
     private function tabPersiapan(Request $request): View
     {
-        $filters = $request->validate(static::preparationFilterRules());
-
-        $perPageRaw = $request->input('perPage', 15);
-        $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
-        $perPage = in_array($perPage, [15, 25, 50, 100, 10000]) ? $perPage : 15;
-
-        $data = $this->preparationData($filters, $perPage);
+        // Filter Livewire memiliki state/validasi sendiri; antrean + daftar
+        // dirender oleh <livewire:spj-preparation-filter />, sehingga query
+        // persiapan tidak dihitung di sini agar tidak dikerjakan dua kali.
+        $request->validate(static::preparationFilterRules());
 
         return view('spj.index', [
             'tab' => 'persiapan',
-            'transactions' => $data['transactions'],
+            'transactions' => null,
             ...$this->overviewMetrics(),
-            'spjTypes' => $data['spjTypes'],
-            'filters' => $filters,
-            'workQueueCounts' => $data['workQueueCounts'],
+            'spjTypes' => [],
+            'filters' => [],
+            'workQueueCounts' => [],
         ]);
     }
 
@@ -153,21 +151,22 @@ class SpjWorkspaceUseCase
         $packageId = $request->query('package_id');
         $packagePerPage = $request->integer('package_perPage', 15);
         $packagePerPage = in_array($packagePerPage, [10, 15, 25, 50, 100], true) ? $packagePerPage : 15;
-
         $packageList = $this->packageListData($packagePerPage);
 
         if (! $packageId) {
+            // Daftar paket dirender oleh <livewire:spj-package-list /> dengan
+            // paginasinya sendiri; tidak dihitung di sini agar tidak ganda.
             return view('spj.index', [
                 'tab' => 'paket',
                 'package' => null,
-                'packageList' => $packageList,
+                'packageList' => null,
                 'validationIssues' => [],
                 'templates' => collect(),
                 'transactions' => null,
                 ...$this->overviewMetrics(),
                 'spjTypes' => [],
                 'filters' => [],
-                'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
+                'periodClosures' => collect(),
                 'participantRoster' => collect(),
                 'consumptionOrderSources' => [],
             ]);
@@ -195,7 +194,6 @@ class SpjWorkspaceUseCase
         }
 
         $validator = app(SpjPackageValidationService::class);
-        $category = strtoupper((string) $package->transaction->spj_category);
         $participantRoster = $this->participantRoster();
         $consumptionOrderSources = SpjPackage::query()
             ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)->where('spj_category', 'KONSUMSI'))
@@ -213,8 +211,7 @@ class SpjWorkspaceUseCase
             ->values()
             ->all();
         $validationIssues = $validator->validate($package);
-        $templates = DocumentTemplate::query()->where(['fiscal_year_id' => $this->context->fiscalYearId(), 'is_active' => true])->orderBy('document_type')->get()
-            ->filter(fn (DocumentTemplate $template) => empty($template->applicable_categories) || in_array('SEMUA', $template->applicable_categories, true) || in_array($category, $template->applicable_categories, true));
+        $templates = $this->templateSelector->forPackage($package);
         $navigation = $this->packageNavigation($package);
 
         return view('spj.index', [

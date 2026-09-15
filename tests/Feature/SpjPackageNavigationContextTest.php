@@ -7,6 +7,7 @@ use App\Models\FundSource;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +60,7 @@ class SpjPackageNavigationContextTest extends TestCase
         $response = app(SpjWorkspaceUseCase::class)->handle($request);
 
         $this->assertInstanceOf(View::class, $response);
+        $this->assertInstanceOf(LengthAwarePaginator::class, $response->getData()['packageList']);
         $this->assertSame($expectedPrevious->id, $response->getData()['previousPackageId']);
         $this->assertSame($expectedNext->id, $response->getData()['nextPackageId']);
     }

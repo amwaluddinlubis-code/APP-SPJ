@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\Process\ExecutableFinder;
@@ -45,11 +46,21 @@ class SpjSpreadsheetPdfConverter
 
         $baseName = pathinfo($sourcePath, PATHINFO_FILENAME);
         $output = $directory.DIRECTORY_SEPARATOR.$baseName.'.pdf';
+        $profileDirectory = $directory.DIRECTORY_SEPARATOR.'profile';
+
+        if (! mkdir($profileDirectory, 0775, true) && ! is_dir($profileDirectory)) {
+            @rmdir($directory);
+
+            return null;
+        }
+
+        $profileUrl = 'file:///'.str_replace(' ', '%20', str_replace('\\', '/', $profileDirectory));
 
         try {
             $process = new Process([
                 $binary,
                 '--headless',
+                '-env:UserInstallation='.$profileUrl,
                 '--convert-to',
                 $this->exportFilter($sourcePath),
                 '--outdir',
@@ -70,6 +81,7 @@ class SpjSpreadsheetPdfConverter
             if (is_file($output)) {
                 @unlink($output);
             }
+            File::deleteDirectory($profileDirectory);
             @rmdir($directory);
         }
     }
@@ -108,7 +120,25 @@ class SpjSpreadsheetPdfConverter
             return (new ExecutableFinder)->find($configured);
         }
 
-        return (new ExecutableFinder)->find('soffice')
+        $binary = (new ExecutableFinder)->find('soffice')
             ?? (new ExecutableFinder)->find('libreoffice');
+
+        if ($binary !== null) {
+            return $binary;
+        }
+
+        foreach (array_unique(array_filter([
+            getenv('ProgramW6432') ?: null,
+            getenv('ProgramFiles') ?: null,
+            getenv('ProgramFiles(x86)') ?: null,
+        ])) as $programFiles) {
+            $candidate = rtrim($programFiles, '\\/').DIRECTORY_SEPARATOR.'LibreOffice'.DIRECTORY_SEPARATOR.'program'.DIRECTORY_SEPARATOR.'soffice.exe';
+
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }
