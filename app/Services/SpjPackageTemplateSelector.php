@@ -8,18 +8,6 @@ use Illuminate\Support\Collection;
 
 final class SpjPackageTemplateSelector
 {
-    /**
-     * Document types listed here are exclusive to one is_siplah state.
-     * Unlisted document types are shared by SiPlah and Non-SiPlah packages.
-     *
-     * @var array<string,bool>
-     */
-    private const IS_SIPLAH_DOCUMENT_MAP = [
-        'SPJ_SURAT_PESANAN' => false,
-        'SPJ_BA_PEMERIKSAAN' => false,
-        'SPJ_BAST_PEMBELIAN' => false,
-    ];
-
     /** @return Collection<int,DocumentTemplate> */
     public function forPackage(SpjPackage $package): Collection
     {
@@ -58,12 +46,7 @@ final class SpjPackageTemplateSelector
 
     private function isMappedToSiplahFlag(DocumentTemplate $template, bool $isSiplah): bool
     {
-        $documentType = strtoupper(trim((string) $template->document_type));
-
-        if (! array_key_exists($documentType, self::IS_SIPLAH_DOCUMENT_MAP)) {
-            return true;
-        }
-
-        return self::IS_SIPLAH_DOCUMENT_MAP[$documentType] === $isSiplah;
+        return $template->is_siplah === null
+            || (bool) $template->is_siplah === $isSiplah;
     }
 }
