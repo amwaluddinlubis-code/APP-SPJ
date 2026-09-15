@@ -65,6 +65,7 @@
             <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
             <file>tests/Feature/SpjPeriodicReportPrintableTest.php</file>
             <file>tests/Feature/SpjPreNumberingRegressionTest.php</file>
+            <file>tests/Feature/SpjPreviewExcelParityTest.php</file>
             <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
             <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
             <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
