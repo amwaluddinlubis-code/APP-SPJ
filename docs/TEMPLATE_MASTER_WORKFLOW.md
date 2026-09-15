@@ -85,7 +85,6 @@ Jika source memang sudah merupakan workbook satu-sheet, aplikasi dapat mengunduh
 ## 5. Preview HTML/PDF dari source Excel
 
 Preview untuk template XLSX harus berasal dari **workbook Excel aktif yang sama** dengan generator, setelah placeholder, repeating row, merged-anchor, dan KOP diproses. Preview tidak mempunyai template HTML/PDF kedua yang menjadi source dokumen.
-=======
 ### Pemilihan dokumen paket berdasarkan kategori
 
 Setiap operasi Paket SPJ memilih template dengan aturan yang sama:

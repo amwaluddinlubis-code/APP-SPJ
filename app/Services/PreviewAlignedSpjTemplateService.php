@@ -115,60 +115,7 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
      */
     private function packageSpreadsheetForOutput(Collection $templates, SpjPackage $package, School $school): array
     {
-<<<<<<< HEAD
-        return $this->canonicalPackageSpreadsheet($templates, $package, $school);
-=======
-        if ($templates->isEmpty()) {
-            throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
-        }
-
-        $packageSpreadsheet = null;
-        $temporaryFiles = [];
-
-        try {
-            foreach ($templates as $template) {
-                if (strtolower((string) $template->format) !== 'xlsx') {
-                    throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
-                }
-
-                $response = $this->download($template, $package, $school);
-                $path = $response->getFile()->getPathname();
-                $temporaryFiles[] = $path;
-
-                $single = IOFactory::load($path);
-
-                if (! $packageSpreadsheet instanceof Spreadsheet) {
-                    $packageSpreadsheet = $single;
-
-                    continue;
-                }
-
-                try {
-                    $sheetName = $single->getSheet(0)->getTitle();
-                    $copy = $single->duplicateWorksheetByTitle($sheetName);
-                    $packageSpreadsheet->addExternalSheet($copy);
-                    $copy->setTitle($sheetName);
-                } finally {
-                    $single->disconnectWorksheets();
-                }
-            }
-        } catch (\Throwable $exception) {
-            if ($packageSpreadsheet instanceof Spreadsheet) {
-                $packageSpreadsheet->disconnectWorksheets();
-            }
-            $this->removeTemporaryFiles($temporaryFiles);
-            throw $exception;
-        }
-
-        if (! $packageSpreadsheet instanceof Spreadsheet) {
-            $this->removeTemporaryFiles($temporaryFiles);
-            throw new \RuntimeException('Paket template tidak menghasilkan worksheet canonical.');
-        }
-
-        $packageSpreadsheet->setActiveSheetIndex(0);
-
-        return [$packageSpreadsheet, $temporaryFiles];
->>>>>>> 506fc55 (feat: improve SPJ template generation workflow)
+        return [$this->canonicalPackageSpreadsheet($templates, $package, $school), []];
     }
 
     /**

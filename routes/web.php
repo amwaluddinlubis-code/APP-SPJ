@@ -142,7 +142,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan-periode/{scope}/{report}/pdf', [PeriodicReportController::class, 'pdf'])->name('spj.periodic-reports.pdf');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
-        Route::post('/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
+        Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
         Route::get('/spj/paket/{packageId}/pratinjau-pdf', [SpjController::class, 'previewPackagePdf'])->name('spj.preview-package-pdf');
         Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');

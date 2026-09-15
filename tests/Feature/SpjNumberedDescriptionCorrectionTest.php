@@ -114,6 +114,10 @@ class SpjNumberedDescriptionCorrectionTest extends TestCase
         $this->post(route('spj.download', $package->id))
             ->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]))
             ->assertSessionHas('error');
+
+        $this->get(route('spj.download', $package->id))
+            ->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]))
+            ->assertSessionHas('error');
     }
 
     private function package(string $status, ?string $documentNumber): SpjPackage
