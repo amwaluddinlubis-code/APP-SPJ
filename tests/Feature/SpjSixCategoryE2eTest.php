@@ -160,10 +160,14 @@ class SpjSixCategoryE2eTest extends TestCase
 
         $preview = app(SpjDocumentUseCase::class)->previewPackage((string) $package->id);
         $this->assertInstanceOf(View::class, $preview);
-        $previewHtml = (string) ($preview->getData()['previewHtml'] ?? '');
-        $this->assertStringContainsString($category, $previewHtml);
-        $this->assertStringContainsString('SD Negeri E2E SPJ', $previewHtml);
-        $this->assertStringContainsString((string) $package->document_number, $previewHtml);
+        $this->assertTrue((bool) ($preview->getData()['previewPdfReady'] ?? false));
+        $this->assertNotSame('', trim((string) ($preview->getData()['previewPdfUrl'] ?? '')));
+        $this->assertNull($preview->getData()['previewHtml'] ?? null);
+
+        $previewPdf = app(SpjDocumentUseCase::class)->previewPackagePdf((string) $package->id);
+        $this->assertInstanceOf(Response::class, $previewPdf);
+        $this->assertSame('application/pdf', $previewPdf->headers->get('Content-Type'));
+        $this->assertStringStartsWith('%PDF-', (string) $previewPdf->getContent());
 
         $excel = app(SpjDocumentUseCase::class)->downloadPackageExcel((string) $package->id);
         $this->assertInstanceOf(BinaryFileResponse::class, $excel);
