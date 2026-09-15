@@ -252,8 +252,8 @@ final class SpjDocumentTypeRegistry
                 'applicable_categories' => ['BARANG', 'KONSUMSI'],
                 'required' => [
                     'NOMOR_BAST', 'TANGGAL_DOKUMEN', 'NAMA_PENYEDIA', 'UNTUK_PEMBAYARAN',
-                    'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH',
-                    'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                    'TANGGAL_PENYERAHAN', 'KECAMATAN', 'NAMA_KEPALA_SEKOLAH',
+                    'NIP_KEPALA_SEKOLAH', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
                 ],
                 'optional' => [
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA',

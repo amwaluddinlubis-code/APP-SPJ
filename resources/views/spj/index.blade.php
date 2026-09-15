@@ -90,7 +90,7 @@
                     @if(strtolower((string) $transaction->payment_method) === 'siplah' || $transaction->is_siplah)
                         <section class="mx-5 mt-5 rounded-xl border p-4 shadow-sm" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
                             <div class="flex flex-wrap items-center justify-between gap-2"><h2 class="text-base font-bold" style="color: var(--ui-fg)">Metode Pembelian: SiPLah</h2><x-ui.badge>Pembelian SiPLah</x-ui.badge></div>
-                            <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                            <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
                                 @foreach([
                                     'Penyedia' => $transaction->vendor_name,
                                     'Nomor Pesanan SiPLah' => $transaction->siplah_order_number,

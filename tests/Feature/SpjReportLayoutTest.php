@@ -84,4 +84,22 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('#spj-main-tabs .ui-tabs-list', $css);
         $this->assertStringContainsString('#spj-main-tabs .ui-tab-active', $css);
     }
+
+    public function test_siplah_goods_number_strip_uses_marketplace_order_reference(): void
+    {
+        $blade = file_get_contents(resource_path('views/spj/partials/package/categories/barang.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString('$isSiplah ? ($transaction->siplah_order_number', $blade);
+        $this->assertStringContainsString('siplahResponse.invoice_number', $blade);
+        $this->assertStringContainsString('$purchaseDetails?->order_number ?: $transaction->order_number', $blade);
+    }
+
+    public function test_siplah_metadata_uses_one_row_on_large_screens(): void
+    {
+        $blade = file_get_contents(resource_path('views/spj/index.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-5', $blade);
+    }
 }

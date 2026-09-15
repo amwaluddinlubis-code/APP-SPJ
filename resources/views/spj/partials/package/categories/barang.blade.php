@@ -1,6 +1,6 @@
 <fieldset
     data-spj-section="BARANG KONSUMSI"
-    data-auto-number-pesanan="{{ $purchaseDetails?->order_number ?: $transaction->order_number }}"
+    data-auto-number-pesanan="{{ $isSiplah ? ($transaction->siplah_order_number ?: (filled(data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number')) ? collect(explode('/', data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number')))->filter()->last() : null)) : ($purchaseDetails?->order_number ?: $transaction->order_number) }}"
     data-auto-number-bap="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}"
     data-auto-number-bast="{{ $purchaseDetails?->bast_number ?: $transaction->bast_number }}"
     @disabled(!in_array($selectedSpjType, ['BARANG', 'KONSUMSI'], true))

@@ -214,7 +214,7 @@ TEMPAT_PENYERAHAN
 
 Untuk template BAP, gunakan `NOMOR_BAP` dan `TANGGAL_BAP` sebagai nomor dan tanggal berita acara. `NAMA_SEKOLAH` digunakan untuk identitas satuan pendidikan. Validator BAP tidak lagi mewajibkan alias umum `NOMOR_DOKUMEN`, `TANGGAL_DOKUMEN`, atau `TEMPAT_PENYERAHAN`.
 
-Untuk template BAST, gunakan `NOMOR_BAST` sebagai nomor berita acara serah terima. Nilainya diambil dari data BAST barang.
+Untuk template BAST, gunakan `NOMOR_BAST` sebagai nomor berita acara serah terima, `KECAMATAN` sebagai lokasi administratif, serta `NAMA_PENGURUS_BARANG` dan `NIP_PENGURUS_BARANG` untuk penandatangan pengurus barang. Nilai nomor BAST diambil dari data BAST barang; validator BAST tidak mewajibkan `TEMPAT_PENYERAHAN` atau data bendahara BOSP.
 
 ### `NOMOR_PESANAN`
 

@@ -98,7 +98,13 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAST);
 
         $this->assertContains('NOMOR_BAST', $definition['required']);
+        $this->assertContains('KECAMATAN', $definition['required']);
+        $this->assertContains('NAMA_PENGURUS_BARANG', $definition['required']);
+        $this->assertContains('NIP_PENGURUS_BARANG', $definition['required']);
         $this->assertNotContains('NOMOR_DOKUMEN', $definition['required']);
+        $this->assertNotContains('TEMPAT_PENYERAHAN', $definition['required']);
+        $this->assertNotContains('NAMA_BENDAHARA_BOSP', $definition['required']);
+        $this->assertNotContains('NIP_BENDAHARA_BOSP', $definition['required']);
 
         $result = app(SpjTemplateValidator::class)->validateMarkers(
             SpjDocumentTypeRegistry::BAST,
