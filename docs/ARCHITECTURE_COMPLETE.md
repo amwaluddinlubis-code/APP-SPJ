@@ -29,11 +29,12 @@ Stack utama: PHP 8.3+, Laravel 13, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite
 
 ### Database utama
 
-Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, dan metadata global.
+Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, metadata global,
+serta preset mapping importer ARKAS yang berlaku lintas sekolah.
 
 ### Database tenant/sekolah
 
-Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, importer staging/profile/run, employee, serta data kerja sekolah.
+Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, importer staging/profile/run, employee, serta data kerja sekolah. Profile importer adalah konfigurasi runtime sekolah; preset mapping reusable dimiliki database utama agar sekolah baru menerima konfigurasi aplikasi terbaru.
 
 Boundary operasi tenant:
 

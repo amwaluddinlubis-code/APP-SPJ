@@ -73,7 +73,7 @@
                             class="dashboard-priority-action mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold shadow-sm transition">
                             <x-ui.icon name="work" class="h-4 w-4" />
                             <span>{{ $priority['action'] }}</span>
-                            <span aria-hidden="true">â†’</span>
+                            <span aria-hidden="true">→</span>
                         </a>
                     </div>
                 </div>
@@ -145,8 +145,8 @@
                                         {{ $nextDraftTransaction->payment_description ?: $nextDraftTransaction->description ?: 'Uraian belum tersedia' }}
                                     </p>
                                     <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">
-                                        {{ optional($nextDraftTransaction->transaction_date)->format('d/m/Y') }} Â·
-                                        {{ $nextDraftTransaction->items_count }} rincian Â· Rp
+                                        {{ optional($nextDraftTransaction->transaction_date)->format('d/m/Y') }} ·
+                                        {{ $nextDraftTransaction->items_count }} rincian · Rp
                                         {{ number_format((float) $nextDraftTransaction->gross_amount, 0, ',', '.') }}
                                     </p>
                                 </div>
@@ -154,7 +154,7 @@
                             </div>
                             <a href="{{ route('spj.checklist', $nextDraftTransaction->spjPackage->id) }}"
                                 class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--theme-content-accent)]"><x-ui.icon
-                                    name="work" class="h-4 w-4" /> Lanjutkan sampai siap dinomori â†’</a>
+                                    name="work" class="h-4 w-4" /> Lanjutkan sampai siap dinomori →</a>
                         </div>
                     @else
                         <x-ui.empty-state title="Tidak ada paket yang perlu dilengkapi"
@@ -182,15 +182,15 @@
                                 {{ $nextUnworkedTransaction->payment_description ?: $nextUnworkedTransaction->description ?: 'Uraian belum tersedia' }}
                             </p>
                             <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">
-                                {{ optional($nextUnworkedTransaction->transaction_date)->format('d/m/Y') }} Â·
-                                {{ $nextUnworkedTransaction->items_count }} rincian Â· Rp
+                                {{ optional($nextUnworkedTransaction->transaction_date)->format('d/m/Y') }} ·
+                                {{ $nextUnworkedTransaction->items_count }} rincian · Rp
                                 {{ number_format((float) $nextUnworkedTransaction->gross_amount, 0, ',', '.') }}</p>
                             <div
                                 class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1 text-[11px] font-bold text-[var(--ui-fg-muted)]">
                                 <x-ui.icon name="inbox" class="h-3.5 w-3.5" /> Belum Dikerjakan</div>
                             <a href="{{ route('transactions.show', $nextUnworkedTransaction->id) }}#modul-buat-spj"
                                 class="mt-4 flex items-center gap-2 text-sm font-bold text-[var(--theme-content-accent)]"><x-ui.icon
-                                    name="work" class="h-4 w-4" /> Mulai Siapkan SPJ â†’</a>
+                                    name="work" class="h-4 w-4" /> Mulai Siapkan SPJ →</a>
                         </div>
                     @else
                         <x-ui.empty-state title="Tidak ada transaksi Belum Dikerjakan"
@@ -235,13 +235,13 @@
                                     {{ $transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia' }}
                                 </p>
                                 <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }}
-                                    rincian Â· Rp {{ number_format((float) $transaction->gross_amount, 0, ',', '.') }}
+                                    rincian · Rp {{ number_format((float) $transaction->gross_amount, 0, ',', '.') }}
                                 </p>
                                 <p class="mt-2 text-xs font-semibold {{ $transaction->queue_state === 'ready' ? 'text-sky-800' : 'text-amber-800' }}">{{ $transaction->next_step }}</p>
                             </div>
                             <a href="{{ $transaction->next_step_url }}"
                                 class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-bold text-[var(--ui-fg)] transition hover:bg-[var(--ui-surface-soft)]"><x-ui.icon
-                                    name="work" class="h-4 w-4" /> Kerjakan â†’</a>
+                                    name="work" class="h-4 w-4" /> Kerjakan →</a>
                         </div>
                     @empty
                         <div class="px-5 py-10 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada transaksi yang
@@ -250,7 +250,7 @@
                 </div>
                 @if ($workQueueTotal > $workQueue->count())
                     <div class="border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 text-center">
-                        <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="text-sm font-bold text-[var(--theme-content-accent)]">Lihat seluruh antrean pekerjaan â†’</a>
+                        <a href="{{ route('spj.index', ['tab' => 'persiapan']) }}" class="text-sm font-bold text-[var(--theme-content-accent)]">Lihat seluruh antrean pekerjaan →</a>
                     </div>
                 @endif
             </article>

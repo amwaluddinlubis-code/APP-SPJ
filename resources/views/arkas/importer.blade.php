@@ -79,9 +79,9 @@
                             <input type="hidden" name="label" value="{{ $profile?->label ?: 'Referensi '.strtoupper($selectedTable) }}">
                             <input type="hidden" name="target_domain" value="{{ $effectiveTargetDomain }}">
                             <input type="hidden" name="sync_mode" value="upsert">
-                            <input type="hidden" name="source_key_column" value="{{ $profile?->source_key_column ?: '' }}">
-                            <input type="hidden" name="year_column" value="{{ $profile?->year_column ?: ($selectedTable === 'ref_kode' ? 'tahun' : '') }}">
-                            <input type="hidden" name="fund_source_column" value="{{ $profile?->fund_source_column ?: ($selectedTable === 'ref_kode' ? 'sumber_dana_id' : '') }}">
+                            <input type="hidden" name="source_key_column" value="{{ $effectiveSourceKeyColumn ?: '' }}">
+                            <input type="hidden" name="year_column" value="{{ $effectiveYearColumn ?: '' }}">
+                            <input type="hidden" name="fund_source_column" value="{{ $effectiveFundSourceColumn ?: '' }}">
                             @foreach($effectiveMapping as $column => $role)
                                 <input type="hidden" name="mapping[{{ $column }}]" value="{{ $role }}">
                             @endforeach
@@ -173,9 +173,9 @@
                             </div>
                             <div class="grid gap-4 sm:grid-cols-3">
                                 <x-ui.field label="Kolom kunci sumber" for="source-key-column"><x-ui.select id="source-key-column" name="source_key_column"><option value="">Otomatis</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('source_key_column', $effectiveSourceKeyColumn) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
-                                <x-ui.field label="Kolom tahun" for="year-column"><x-ui.select id="year-column" name="year_column"><option value="">Deteksi Bridge</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('year_column', $profile?->year_column) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
-                                <x-ui.field label="Kolom sumber dana" for="fund-column"><x-ui.select id="fund-column" name="fund_source_column"><option value="">Deteksi Bridge</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('fund_source_column', $profile?->fund_source_column) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
-                                <x-ui.field label="Kolom terakhir berubah" for="updated-column" hint="Wajib untuk mode incremental."><x-ui.select id="updated-column" name="source_updated_column"><option value="">Pilih jika tersedia</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('source_updated_column', $profile?->source_updated_column) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
+                                <x-ui.field label="Kolom tahun" for="year-column"><x-ui.select id="year-column" name="year_column"><option value="">Deteksi Bridge</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('year_column', $effectiveYearColumn) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
+                                <x-ui.field label="Kolom sumber dana" for="fund-column"><x-ui.select id="fund-column" name="fund_source_column"><option value="">Deteksi Bridge</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('fund_source_column', $effectiveFundSourceColumn) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
+                                <x-ui.field label="Kolom terakhir berubah" for="updated-column" hint="Wajib untuk mode incremental."><x-ui.select id="updated-column" name="source_updated_column"><option value="">Pilih jika tersedia</option>@foreach($columns as $column)<option value="{{ $column['name'] }}" @selected(old('source_updated_column', $effectiveSourceUpdatedColumn) === $column['name'])>{{ $column['name'] }}</option>@endforeach</x-ui.select></x-ui.field>
                             </div>
                             <div class="rounded-xl border p-3" style="border-color: var(--ui-line); background: var(--ui-surface-soft)">
                                 <p class="text-xs font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Peran kolom</p>

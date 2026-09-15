@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Services\ArkasDatabaseExplorer;
 use App\Services\ArkasDomainAdapter;
 use App\Services\ArkasGenericImportService;
+use App\Services\ArkasImportConfigurationService;
 use App\Services\ArkasImportGuard;
 use App\Services\ArkasReconciliationService;
 use App\Services\ArkasSourceKeyResolver;
@@ -28,7 +29,7 @@ class ArkasImporterController implements HasMiddleware
         return ['active-school', 'active-year'];
     }
 
-    public function __invoke(Request $request, ArkasDatabaseExplorer $explorer, ArkasSourceKeyResolver $sourceKeys): View
+    public function __invoke(Request $request, ArkasDatabaseExplorer $explorer, ArkasSourceKeyResolver $sourceKeys, ArkasImportConfigurationService $configurations): View
     {
         $source = ArkasSource::query()->where('school_id', session('active_school_id'))->first();
         $mode = in_array($request->query('mode'), ['simple', 'advanced'], true)
@@ -50,9 +51,17 @@ class ArkasImporterController implements HasMiddleware
         $profile = $selectedTable !== '' ? $profiles->firstWhere('source_table', $selectedTable) : null;
         $targetDomains = ArkasDomainAdapter::targetDomains();
         $preset = ArkasDomainAdapter::presetFor($selectedTable);
-        $effectiveTargetDomain = $profile?->target_domain ?: $preset['target_domain'];
-        $effectiveMapping = filled($profile?->mapping) ? $profile->mapping : $preset['mapping'];
-        $effectiveSourceKeyColumn = $profile?->source_key_column ?: $preset['source_key_column'];
+        $globalConfiguration = $configurations->get($selectedTable) ?? [];
+        $preset = array_replace($preset, array_intersect_key($globalConfiguration, $preset));
+        if (isset($globalConfiguration['mapping']) && is_array($globalConfiguration['mapping'])) {
+            $preset['mapping'] = array_replace($preset['mapping'], $globalConfiguration['mapping']);
+        }
+        $effectiveTargetDomain = $globalConfiguration['target_domain'] ?? $profile?->target_domain ?: $preset['target_domain'];
+        $effectiveMapping = $globalConfiguration['mapping'] ?? (filled($profile?->mapping) ? $profile->mapping : $preset['mapping']);
+        $effectiveSourceKeyColumn = $globalConfiguration['source_key_column'] ?? $profile?->source_key_column ?: $preset['source_key_column'];
+        $effectiveYearColumn = $globalConfiguration['year_column'] ?? $profile?->year_column ?: ($selectedTable === 'ref_kode' ? 'tahun' : '');
+        $effectiveFundSourceColumn = $globalConfiguration['fund_source_column'] ?? $profile?->fund_source_column ?: ($selectedTable === 'ref_kode' ? 'sumber_dana_id' : '');
+        $effectiveSourceUpdatedColumn = $globalConfiguration['source_updated_column'] ?? $profile?->source_updated_column ?: '';
         $currentStatus = null;
         if ($selectedTable !== '' && session('active_fiscal_year_id')) {
             $targetTable = ArkasDomainAdapter::targetTable($effectiveTargetDomain);
@@ -113,10 +122,10 @@ class ArkasImporterController implements HasMiddleware
             $error = 'Sumber database ARKAS untuk sekolah aktif belum dikonfigurasi.';
         }
 
-        return view('arkas.importer', compact('tables', 'columns', 'rows', 'selectedTable', 'limit', 'error', 'source', 'profiles', 'profile', 'targetDomains', 'preset', 'effectiveTargetDomain', 'effectiveMapping', 'effectiveSourceKeyColumn', 'currentStatus', 'recentRun', 'runHistory', 'previewDiff', 'reconciliation', 'schemaDrift', 'mode', 'activeYear'));
+        return view('arkas.importer', compact('tables', 'columns', 'rows', 'selectedTable', 'limit', 'error', 'source', 'profiles', 'profile', 'targetDomains', 'preset', 'effectiveTargetDomain', 'effectiveMapping', 'effectiveSourceKeyColumn', 'effectiveYearColumn', 'effectiveFundSourceColumn', 'effectiveSourceUpdatedColumn', 'currentStatus', 'recentRun', 'runHistory', 'previewDiff', 'reconciliation', 'schemaDrift', 'mode', 'activeYear'));
     }
 
-    public function store(Request $request, ArkasDatabaseExplorer $explorer, ArkasImportGuard $guard): RedirectResponse
+    public function store(Request $request, ArkasDatabaseExplorer $explorer, ArkasImportGuard $guard, ArkasImportConfigurationService $configurations): RedirectResponse
     {
         $data = $request->validate([
             'source_table' => ['required', 'string', 'max:120'],
@@ -146,6 +155,15 @@ class ArkasImporterController implements HasMiddleware
         if ($mappingErrors !== []) {
             return back()->withInput()->withErrors(['mapping' => array_values(array_unique($mappingErrors))]);
         }
+        $configurations->put($data['source_table'], [
+            'target_domain' => $data['target_domain'],
+            'source_key_column' => $data['source_key_column'] ?? null,
+            'year_column' => $data['year_column'] ?? null,
+            'fund_source_column' => $data['fund_source_column'] ?? null,
+            'source_updated_column' => $data['source_updated_column'] ?? null,
+            'sync_mode' => $data['sync_mode'],
+            'mapping' => $mapping,
+        ]);
         ArkasImportProfile::query()->updateOrCreate(
             ['source_table' => $data['source_table']],
             [...$data, 'is_enabled' => true, 'mapping' => $mapping, 'source_columns' => $sourceColumns],

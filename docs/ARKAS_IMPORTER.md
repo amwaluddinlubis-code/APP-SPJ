@@ -35,7 +35,8 @@ Checkpoint di atas berguna untuk audit implementasi fitur, tetapi tidak boleh di
 
 ```text
 Bridge ARKAS
-  -> arkas_import_profiles
+  -> app_settings (preset mapping global aplikasi)
+  -> arkas_import_profiles (profil runtime sekolah)
   -> arkas_import_rows (staging)
   -> preview rekonsiliasi
   -> ArkasDomainAdapter / snapshot raw
@@ -64,6 +65,14 @@ Mode sederhana adalah tampilan default. Perubahan mapping atau strategi sinkroni
 7. Setelah import referensi, jalankan **Sinkronisasi ARKAS/BKU** bila data RKAS/BKU atau nama kegiatan pada transaksi juga perlu diperbarui.
 
 Preview tidak menulis data. Sinkronisasi menulis staging dan domain target pada konteks tenant aktif (`School + Fiscal Year + Fund Source`). Jangan menjalankan Full Refresh kecuali memang ingin mengganti snapshot profile dan sudah memeriksa hasil preview.
+
+## Kepemilikan mapping
+
+Preset mapping Generic Importer disimpan terpusat pada database aplikasi dengan key
+`arkas.importer.mapping.{source_table}`. Profil runtime, staging, dan histori run tetap
+berada pada database sekolah. Dengan demikian perubahan mapping yang disimpan dari mode
+Lanjutan menjadi default untuk sekolah baru, sementara data staging/run tetap terisolasi
+per sekolah.
 
 ## Tenant boundary
 
