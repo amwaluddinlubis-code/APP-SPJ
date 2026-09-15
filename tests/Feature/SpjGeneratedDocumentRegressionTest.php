@@ -9,11 +9,11 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\PreviewAlignedSpjTemplateService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -71,6 +71,7 @@ class SpjGeneratedDocumentRegressionTest extends TestCase
 
     protected function tearDown(): void
     {
+        Model::preventLazyLoading(false);
         DB::purge('school');
         parent::tearDown();
     }
@@ -111,8 +112,7 @@ class SpjGeneratedDocumentRegressionTest extends TestCase
         $package->setRelation('transaction', $transaction);
 
         $template = $this->createConsumptionTemplate();
-        $service = new class extends PreviewAlignedSpjTemplateService
-        {
+        $service = new class extends PreviewAlignedSpjTemplateService {
             public function renderCanonical(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
             {
                 return $this->canonicalSpreadsheet($template, $package, $school);
@@ -162,6 +162,8 @@ class SpjGeneratedDocumentRegressionTest extends TestCase
             'net_amount' => 95000,
             'sort_order' => 1,
         ]);
+
+        Model::preventLazyLoading();
 
         $loaded = Transaction::query()
             ->with('serviceRecipients')
