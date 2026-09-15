@@ -6,7 +6,6 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -71,25 +70,23 @@ class SpjPreparationFilterTest extends TestCase
         $april = $this->transaction('BPU-APR', '2026-04-10');
         $this->transaction('BPU-FEB', '2026-02-10');
 
-        $view = app(SpjWorkspaceUseCase::class)->handle(Request::create('/spj', 'GET', [
-            'tab' => 'persiapan',
+        $data = app(SpjWorkspaceUseCase::class)->preparationData([
             'month' => 4,
             'quarter' => 1,
-        ]));
+        ], 15);
 
-        $ids = $view->getData()['transactions']->getCollection()->pluck('id')->all();
+        $ids = $data['transactions']->getCollection()->pluck('id')->all();
 
         $this->assertSame([$april->id], $ids);
     }
 
     private function filteredIds(string $state): array
     {
-        $view = app(SpjWorkspaceUseCase::class)->handle(Request::create('/spj', 'GET', [
-            'tab' => 'persiapan',
+        $data = app(SpjWorkspaceUseCase::class)->preparationData([
             'state' => $state,
-        ]));
+        ], 15);
 
-        return $view->getData()['transactions']->getCollection()->pluck('id')->all();
+        return $data['transactions']->getCollection()->pluck('id')->all();
     }
 
     private function transaction(
