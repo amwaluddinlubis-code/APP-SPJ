@@ -9,7 +9,6 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageTemplateSelector;
-use App\Services\SpjProcurementPolicyService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -158,7 +157,7 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         }
     }
 
-    public function test_canonical_payment_method_takes_precedence_over_stale_legacy_siplah_flag(): void
+    public function test_package_document_mapping_uses_is_siplah_flag_even_when_payment_method_is_non_siplah(): void
     {
         $this->seedPackageTemplates();
 
@@ -169,29 +168,33 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         ]);
         $package = SpjPackage::query()->create(['transaction_id' => $transaction->id]);
 
-        $this->assertFalse(app(SpjProcurementPolicyService::class)->isSiplah($transaction));
-        $this->assertContains(
-            'SPJ_SURAT_PESANAN',
-            app(SpjPackageTemplateSelector::class)->forPackage($package)->pluck('document_type'),
-        );
+        $selected = app(SpjPackageTemplateSelector::class)
+            ->forPackage($package)
+            ->pluck('document_type');
+
+        $this->assertNotContains('SPJ_SURAT_PESANAN', $selected);
+        $this->assertNotContains('SPJ_BA_PEMERIKSAAN', $selected);
+        $this->assertNotContains('SPJ_BAST_PEMBELIAN', $selected);
     }
 
-    public function test_legacy_siplah_flag_is_used_when_payment_method_is_not_canonical(): void
+    public function test_package_document_mapping_does_not_infer_is_siplah_from_payment_method(): void
     {
         $this->seedPackageTemplates();
 
         $transaction = $this->transaction([
-            'payment_method' => null,
-            'is_siplah' => true,
+            'payment_method' => 'siplah',
+            'is_siplah' => false,
             'spj_category' => 'BARANG',
         ]);
         $package = SpjPackage::query()->create(['transaction_id' => $transaction->id]);
 
-        $this->assertTrue(app(SpjProcurementPolicyService::class)->isSiplah($transaction));
-        $this->assertNotContains(
-            'SPJ_SURAT_PESANAN',
-            app(SpjPackageTemplateSelector::class)->forPackage($package)->pluck('document_type'),
-        );
+        $selected = app(SpjPackageTemplateSelector::class)
+            ->forPackage($package)
+            ->pluck('document_type');
+
+        $this->assertContains('SPJ_SURAT_PESANAN', $selected);
+        $this->assertContains('SPJ_BA_PEMERIKSAAN', $selected);
+        $this->assertContains('SPJ_BAST_PEMBELIAN', $selected);
     }
 
     private function seedPackageTemplates(): void
