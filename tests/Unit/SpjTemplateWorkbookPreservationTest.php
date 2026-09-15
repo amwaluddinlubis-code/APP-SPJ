@@ -2,12 +2,17 @@
 
 namespace Tests\Unit;
 
+use App\Models\DocumentTemplate;
+use App\Models\School;
+use App\Models\SpjPackage;
+use App\Models\Transaction;
+use App\Services\ExtendedSpjTemplateService;
 use App\Services\SpjRepeatingRowRenderer;
-use App\Services\SpjTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use Tests\TestCase;
 
 class SpjTemplateWorkbookPreservationTest extends TestCase
@@ -23,8 +28,8 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         $sheet->setTitle('TPL_COVER_SPJ');
         $sheet->setCellValue('A1', '{{NAMA_SEKOLAH}}');
         $sheet->getPageSetup()
-            ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
-            ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
+            ->setPaperSize(PageSetup::PAPERSIZE_A4)
+            ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
             ->setFitToWidth(1)
             ->setFitToHeight(0);
         $sheet->getPageMargins()
@@ -34,59 +39,75 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
             ->setLeft(0.7);
         $sheet->getPageSetup()->setPrintArea('A1:H40');
 
-        $sheet2 = $spreadsheet->createSheet();
-        $sheet2->setTitle('TPL_SECOND');
-        $sheet2->setCellValue('A1', 'UNCHANGED');
-        $sheet2->getPageSetup()
-            ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
-            ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_PORTRAIT);
+        $secondSheet = $spreadsheet->createSheet();
+        $secondSheet->setTitle('TPL_SECOND');
+        $secondSheet->setCellValue('A1', 'UNCHANGED');
 
-        $templatePath = Storage::disk('local')->path('templates/preservation-test.xlsx');
+        $templateRelativePath = 'templates/preservation-test.xlsx';
+        $templatePath = Storage::disk('local')->path($templateRelativePath);
         if (! is_dir(dirname($templatePath))) {
             mkdir(dirname($templatePath), 0755, true);
         }
         IOFactory::createWriter($spreadsheet, 'Xlsx')->save($templatePath);
         $spreadsheet->disconnectWorksheets();
 
-        $document = (object) [
-            'jenis_dokumen' => 'COVER_SPJ',
-            'document_number' => 'COVER-TEST',
-            'nomor_bukti' => 'BKU-TEST',
-            'transaction_document_id' => 1,
-            'foreign_id' => 'test',
-            'parent' => (object) [
-                'fiscal_year' => 2026,
-                'sumber_dana' => 'BOSP',
-                'school' => (object) [
-                    'nama_sekolah' => 'SD TEST',
-                    'alamat' => 'Jl. Test',
-                ],
-                'items' => collect(),
-                'taxes' => collect(),
-            ],
-        ];
+        $template = (new DocumentTemplate)->forceFill([
+            'document_type' => 'COVER_SPJ',
+            'format' => 'xlsx',
+            'file_path' => $templateRelativePath,
+        ]);
+        $transaction = new Transaction;
+        $transaction->setRelation('items', collect());
+        $transaction->setRelation('workers', collect());
+        $package = (new SpjPackage)->forceFill(['document_number' => 'COVER-TEST']);
+        $package->setRelation('transaction', $transaction);
+        $school = new School;
 
-        $outputPath = app(SpjTemplateService::class)->generateFromTemplate($templatePath, $document);
+        $service = new class extends ExtendedSpjTemplateService
+        {
+            public function placeholders(SpjPackage $package, School $school): array
+            {
+                return ['NAMA_SEKOLAH' => 'SD TEST'];
+            }
 
-        $generated = IOFactory::load(Storage::disk('local')->path($outputPath));
+            public function renderCanonical(
+                DocumentTemplate $template,
+                SpjPackage $package,
+                School $school,
+            ): Spreadsheet {
+                return $this->canonicalSpreadsheet($template, $package, $school);
+            }
+        };
 
-        $this->assertSame('TPL_COVER_SPJ', $generated->getActiveSheet()->getTitle());
-        $this->assertSame(
-            \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4,
-            $generated->getActiveSheet()->getPageSetup()->getPaperSize(),
-        );
-        $this->assertSame(
-            \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE,
-            $generated->getActiveSheet()->getPageSetup()->getOrientation(),
-        );
-        $this->assertSame(1, $generated->getActiveSheet()->getPageSetup()->getFitToWidth());
-        $this->assertSame(0, $generated->getActiveSheet()->getPageSetup()->getFitToHeight());
-        $this->assertSame('A1:H40', $generated->getActiveSheet()->getPageSetup()->getPrintArea());
-        $this->assertEqualsWithDelta(0.4, $generated->getActiveSheet()->getPageMargins()->getTop(), 0.0001);
-        $this->assertEqualsWithDelta(0.5, $generated->getActiveSheet()->getPageMargins()->getRight(), 0.0001);
-        $this->assertEqualsWithDelta(0.6, $generated->getActiveSheet()->getPageMargins()->getBottom(), 0.0001);
-        $this->assertEqualsWithDelta(0.7, $generated->getActiveSheet()->getPageMargins()->getLeft(), 0.0001);
-        $this->assertSame('UNCHANGED', $generated->getSheetByName('TPL_SECOND')?->getCell('A1')->getValue());
+        $rendered = $service->renderCanonical($template, $package, $school);
+        $outputPath = Storage::disk('local')->path('generated/preservation-output.xlsx');
+        if (! is_dir(dirname($outputPath))) {
+            mkdir(dirname($outputPath), 0755, true);
+        }
+        IOFactory::createWriter($rendered, 'Xlsx')->save($outputPath);
+        $rendered->disconnectWorksheets();
+
+        $generated = IOFactory::load($outputPath);
+
+        try {
+            $generatedSheet = $generated->getActiveSheet();
+
+            $this->assertSame(1, $generated->getSheetCount());
+            $this->assertSame('TPL_COVER_SPJ', $generatedSheet->getTitle());
+            $this->assertSame('SD TEST', $generatedSheet->getCell('A1')->getValue());
+            $this->assertSame(PageSetup::PAPERSIZE_A4, $generatedSheet->getPageSetup()->getPaperSize());
+            $this->assertSame(PageSetup::ORIENTATION_LANDSCAPE, $generatedSheet->getPageSetup()->getOrientation());
+            $this->assertSame(1, $generatedSheet->getPageSetup()->getFitToWidth());
+            $this->assertSame(0, $generatedSheet->getPageSetup()->getFitToHeight());
+            $this->assertSame('A1:H40', str_replace('$', '', $generatedSheet->getPageSetup()->getPrintArea()));
+            $this->assertEqualsWithDelta(0.4, $generatedSheet->getPageMargins()->getTop(), 0.0001);
+            $this->assertEqualsWithDelta(0.5, $generatedSheet->getPageMargins()->getRight(), 0.0001);
+            $this->assertEqualsWithDelta(0.6, $generatedSheet->getPageMargins()->getBottom(), 0.0001);
+            $this->assertEqualsWithDelta(0.7, $generatedSheet->getPageMargins()->getLeft(), 0.0001);
+            $this->assertNull($generated->getSheetByName('TPL_SECOND'));
+        } finally {
+            $generated->disconnectWorksheets();
+        }
     }
 
     public function test_repeating_row_renderer_uses_existing_template_rows_without_inserting_extra_rows(): void
@@ -100,14 +121,12 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
 
         app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
-            [
-                ['marker' => 'ITEM_NO', 'key' => 'no'],
-                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
-            ],
-            [
-                ['no' => 1, 'uraian' => 'ATK'],
-                ['no' => 2, 'uraian' => 'Kertas'],
-            ],
+            '{{ITEM_NO}}',
+            'ITEM_',
+            2,
+            fn (int $index): array => $index === 1
+                ? ['ITEM_NO' => 1, 'ITEM_URAIAN' => 'ATK']
+                : ['ITEM_NO' => 2, 'ITEM_URAIAN' => 'Kertas'],
         );
 
         $this->assertSame(11, $sheet->getHighestDataRow());
@@ -128,14 +147,12 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
 
         app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
-            [
-                ['marker' => 'ITEM_NO', 'key' => 'no'],
-                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
-            ],
-            [
-                ['no' => 1, 'uraian' => 'ATK'],
-                ['no' => 2, 'uraian' => 'Kertas'],
-                ['no' => 3, 'uraian' => 'Tinta'],
+            '{{ITEM_NO}}',
+            'ITEM_',
+            3,
+            fn (int $index): array => [
+                'ITEM_NO' => $index,
+                'ITEM_URAIAN' => ['ATK', 'Kertas', 'Tinta'][$index - 1],
             ],
         );
 
@@ -164,11 +181,10 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
 
         app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
-            [
-                ['marker' => 'ITEM_NO', 'key' => 'no'],
-                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
-            ],
-            [],
+            '{{ITEM_NO}}',
+            'ITEM_',
+            0,
+            fn (int $index): array => [],
         );
 
         $this->assertSame('', $sheet->getCell('A10')->getValue());

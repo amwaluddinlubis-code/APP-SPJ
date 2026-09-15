@@ -3,33 +3,45 @@
 namespace App\Services;
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\ReferenceHelper;
-use PhpOffice\PhpSpreadsheet\Style\Style;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
 
 class SpjRepeatingRowRenderer
 {
     /**
-     * @param  array<int, array{marker: string, key: string}>  $columns
-     * @param  array<int, array<string, mixed>>  $records
+     * Render a one-dimensional repeating-row block without rebuilding the
+     * worksheet. Existing template rows are consumed first; overflow rows are
+     * inserted only when the record count exceeds the template capacity.
+     *
+     * @param  callable(int): array<string, mixed>  $valuesForIndex
      */
-    public function render(Worksheet $sheet, array $columns, array $records): void
-    {
-        if ($columns === []) {
+    public function render(
+        Worksheet $sheet,
+        string $anchorMarker,
+        string $markerPrefix,
+        int $recordCount,
+        callable $valuesForIndex,
+    ): void {
+        $anchorMarker = trim($anchorMarker);
+        $markerPrefix = trim($markerPrefix);
+
+        if ($anchorMarker === '' || $markerPrefix === '') {
             return;
         }
 
-        $templateRows = $this->findTemplateRows($sheet, $columns);
+        $templateRows = $this->findTemplateRows($sheet, $anchorMarker);
 
         if ($templateRows === []) {
             return;
         }
 
-        if ($records === []) {
+        $recordCount = max(0, $recordCount);
+
+        if ($recordCount === 0) {
             foreach ($templateRows as $templateRow) {
-                $this->clearMarkersOnRow($sheet, $templateRow, $columns);
+                $this->clearMarkersOnRow($sheet, $templateRow, $markerPrefix);
             }
 
             return;
@@ -37,23 +49,23 @@ class SpjRepeatingRowRenderer
 
         $lastTemplateRow = max($templateRows);
         $rowAssignments = [];
-        $recordIndex = 0;
+        $recordIndex = 1;
 
         foreach ($templateRows as $templateRow) {
-            if ($recordIndex >= count($records)) {
-                $this->clearMarkersOnRow($sheet, $templateRow, $columns);
+            if ($recordIndex > $recordCount) {
+                $this->clearMarkersOnRow($sheet, $templateRow, $markerPrefix);
 
                 continue;
             }
 
             $rowAssignments[] = [
                 'row' => $templateRow,
-                'record' => $records[$recordIndex],
+                'record_index' => $recordIndex,
             ];
             $recordIndex++;
         }
 
-        $remainingCount = count($records) - $recordIndex;
+        $remainingCount = $recordCount - ($recordIndex - 1);
 
         if ($remainingCount > 0) {
             $sheet->insertNewRowBefore($lastTemplateRow + 1, $remainingCount);
@@ -63,124 +75,94 @@ class SpjRepeatingRowRenderer
                 $this->copyTemplateRow($sheet, $lastTemplateRow, $targetRow);
                 $rowAssignments[] = [
                     'row' => $targetRow,
-                    'record' => $records[$recordIndex],
+                    'record_index' => $recordIndex,
                 ];
                 $recordIndex++;
             }
         }
 
         foreach ($rowAssignments as $assignment) {
-            $this->fillRecordRow(
-                $sheet,
-                $assignment['row'],
-                $columns,
-                $assignment['record'],
-            );
+            $values = $valuesForIndex($assignment['record_index']);
+            if (! is_array($values)) {
+                throw new RuntimeException('Repeating-row resolver harus menghasilkan array nilai placeholder.');
+            }
+
+            $this->fillRecordRow($sheet, $assignment['row'], $markerPrefix, $values);
         }
     }
 
-    /**
-     * @param  array<int, array{marker: string, key: string}>  $columns
-     * @return array<int, int>
-     */
-    private function findTemplateRows(Worksheet $sheet, array $columns): array
+    /** @return array<int, int> */
+    private function findTemplateRows(Worksheet $sheet, string $anchorMarker): array
     {
-        $markers = array_values(array_unique(array_map(
-            static fn (array $column): string => trim((string) ($column['marker'] ?? '')),
-            $columns,
-        )));
-        $markers = array_values(array_filter($markers, static fn (string $marker): bool => $marker !== ''));
-
-        if ($markers === []) {
-            return [];
-        }
-
         $rows = [];
         $maxRow = $sheet->getHighestDataRow();
-        $highestDataColumn = $sheet->getHighestDataColumn();
-        $maxColumn = Coordinate::columnIndexFromString($highestDataColumn);
+        $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
 
         for ($row = 1; $row <= $maxRow; $row++) {
-            $found = false;
-
             for ($column = 1; $column <= $maxColumn; $column++) {
                 $value = (string) ($sheet->getCell([$column, $row])->getValue() ?? '');
 
-                foreach ($markers as $marker) {
-                    if (str_contains($value, '{{'.$marker.'}}')) {
-                        $rows[] = $row;
-                        $found = true;
+                if (str_contains($value, $anchorMarker)) {
+                    $rows[] = $row;
 
-                        break 2;
-                    }
+                    break;
                 }
-            }
-
-            if ($found) {
-                continue;
             }
         }
 
         return array_values(array_unique($rows));
     }
 
-    /**
-     * @param  array<int, array{marker: string, key: string}>  $columns
-     */
-    private function clearMarkersOnRow(Worksheet $sheet, int $row, array $columns): void
+    private function clearMarkersOnRow(Worksheet $sheet, int $row, string $markerPrefix): void
     {
         $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
+        $pattern = '/\{\{'.preg_quote($markerPrefix, '/').'[A-Za-z0-9_]+\}\}/u';
 
         for ($column = 1; $column <= $maxColumn; $column++) {
             $cell = $sheet->getCell([$column, $row]);
-            $value = (string) ($cell->getValue() ?? '');
-            $updated = $value;
+            $value = $cell->getValue();
 
-            foreach ($columns as $definition) {
-                $marker = trim((string) ($definition['marker'] ?? ''));
-
-                if ($marker === '') {
-                    continue;
-                }
-
-                $updated = str_replace('{{'.$marker.'}}', '', $updated);
+            if (! is_string($value)) {
+                continue;
             }
 
+            $updated = preg_replace($pattern, '', $value) ?? $value;
             if ($updated !== $value) {
                 $cell->setValue($updated);
             }
         }
     }
 
-    /**
-     * @param  array<int, array{marker: string, key: string}>  $columns
-     * @param  array<string, mixed>  $record
-     */
-    private function fillRecordRow(Worksheet $sheet, int $row, array $columns, array $record): void
+    /** @param array<string, mixed> $values */
+    private function fillRecordRow(Worksheet $sheet, int $row, string $markerPrefix, array $values): void
     {
         $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
+        $replacements = [];
+
+        foreach ($values as $marker => $replacement) {
+            $normalizedMarker = trim((string) $marker);
+            if ($normalizedMarker === '' || ! str_starts_with($normalizedMarker, $markerPrefix)) {
+                continue;
+            }
+
+            $replacements['{{'.$normalizedMarker.'}}'] = is_scalar($replacement) ? (string) $replacement : '';
+        }
+
+        if ($replacements === []) {
+            return;
+        }
 
         for ($column = 1; $column <= $maxColumn; $column++) {
             $cell = $sheet->getCell([$column, $row]);
-            $value = (string) ($cell->getValue() ?? '');
-            $updated = $value;
+            $value = $cell->getValue();
 
-            foreach ($columns as $definition) {
-                $marker = trim((string) ($definition['marker'] ?? ''));
-                $key = trim((string) ($definition['key'] ?? ''));
-
-                if ($marker === '' || $key === '') {
-                    continue;
-                }
-
-                $replacement = $record[$key] ?? '';
-                $replacement = is_scalar($replacement) ? (string) $replacement : '';
-
-                $updated = str_replace('{{'.$marker.'}}', $replacement, $updated);
+            if (! is_string($value)) {
+                continue;
             }
 
+            $updated = strtr($value, $replacements);
             if ($updated !== $value) {
-                $cell->setValueExplicit($updated, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $cell->setValueExplicit($updated, DataType::TYPE_STRING);
             }
         }
     }
@@ -200,17 +182,10 @@ class SpjRepeatingRowRenderer
                     $targetCell->getCoordinate(),
                 ),
             );
-
-            if ($sourceCell->hasStyle()) {
-                $targetCell->setXfIndex($sourceCell->getXfIndex());
-            } else {
-                $targetCell->setStyle(new Style);
-            }
+            $targetCell->setXfIndex($sourceCell->getXfIndex());
 
             if ($sourceCell->hasDataValidation()) {
                 $targetCell->setDataValidation(clone $sourceCell->getDataValidation());
-            } else {
-                $targetCell->setDataValidation(new DataValidation);
             }
         }
 
@@ -221,7 +196,7 @@ class SpjRepeatingRowRenderer
         $targetDimension->setCollapsed($sourceDimension->getCollapsed());
         $targetDimension->setOutlineLevel($sourceDimension->getOutlineLevel());
 
-        foreach ($sheet->getMergeCells() as $mergeRange) {
+        foreach (array_values($sheet->getMergeCells()) as $mergeRange) {
             [$start, $end] = explode(':', $mergeRange, 2);
             [$startColumn, $startRow] = Coordinate::indexesFromString($start);
             [$endColumn, $endRow] = Coordinate::indexesFromString($end);
