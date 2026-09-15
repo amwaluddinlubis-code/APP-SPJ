@@ -102,4 +102,70 @@ class SpjReportLayoutTest extends TestCase
         $this->assertIsString($blade);
         $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-5', $blade);
     }
+
+    public function test_spj_preparation_filters_and_reset_share_one_row(): void
+    {
+        $blade = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-5 lg:items-end', $blade);
+        $this->assertStringContainsString('icon="refresh"', $blade);
+        $this->assertStringContainsString('>Reset Filter</x-ui.button>', $blade);
+    }
+
+    public function test_spj_category_labels_are_title_case_in_display_surfaces(): void
+    {
+        $displayFiles = [
+            resource_path('views/livewire/spj-preparation-filter.blade.php'),
+            resource_path('views/spj/index.blade.php'),
+            resource_path('views/livewire/transactions-table.blade.php'),
+            resource_path('views/livewire/spj-package-list.blade.php'),
+            resource_path('views/spj/checklist.blade.php'),
+            resource_path('views/spj/numbering.blade.php'),
+            resource_path('views/livewire/reconciliation-list.blade.php'),
+        ];
+
+        foreach ($displayFiles as $file) {
+            $blade = file_get_contents($file);
+
+            $this->assertIsString($blade);
+            $this->assertStringContainsString("'BARANG' => 'Barang'", $blade);
+            $this->assertStringContainsString("'KONSUMSI' => 'Konsumsi'", $blade);
+            $this->assertStringContainsString("'PEMELIHARAAN' => 'Pemeliharaan'", $blade);
+            $this->assertStringContainsString("'JASA_LAINNYA' => 'Jasa Lainnya'", $blade);
+            $this->assertStringNotContainsString("default => str_replace('_', ' ', (string) \$value)", $blade);
+        }
+
+        $this->assertStringContainsString("'JENIS_SPJ' => \$spjCategoryLabel", file_get_contents(base_path('app/Services/SpjTemplateService.php')));
+        $this->assertStringContainsString('kategori <span class="font-bold">Honor Pegawai</span>', file_get_contents(resource_path('views/spj-reports/honor-select.blade.php')));
+        $this->assertStringContainsString('kategori <span class="font-bold">Jasa Lainnya</span>', file_get_contents(resource_path('views/spj-reports/service-recipient-select.blade.php')));
+    }
+
+    public function test_spj_package_tabs_use_flat_theme_indicator_and_transition_panels(): void
+    {
+        $blade = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));
+
+        $this->assertIsString($blade);
+        $this->assertIsString($css);
+        $this->assertStringContainsString('class="spj-standard-tab"', $blade);
+        $this->assertStringContainsString('x-transition:enter-start="opacity-0 translate-y-1"', $blade);
+        $this->assertStringContainsString('[data-package-tab]::after', $css);
+        $this->assertStringContainsString('background: var(--theme-content-accent, var(--ui-accent));', $css);
+        $this->assertStringContainsString('.ui-tab-active::after', file_get_contents(resource_path('css/ui-generalization.css')));
+    }
+
+    public function test_spj_monitoring_surfaces_use_theme_tokens(): void
+    {
+        $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $monitoring = file_get_contents(resource_path('views/livewire/spj-monitoring-list.blade.php'));
+
+        $this->assertIsString($index);
+        $this->assertIsString($monitoring);
+        $this->assertStringContainsString('bg-[var(--ui-surface-soft)]', $index);
+        $this->assertStringNotContainsString('bg-amber-50/40', $index);
+        $this->assertStringNotContainsString('bg-amber-50', $monitoring);
+        $this->assertStringNotContainsString('bg-rose-50', $monitoring);
+        $this->assertStringContainsString('spj-monitoring-table', $monitoring);
+    }
 }

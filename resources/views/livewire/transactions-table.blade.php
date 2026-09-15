@@ -2,7 +2,12 @@
     @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
     @php($spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
         'HONOR_PEGAWAI' => 'Honor Pegawai',
-        default => str_replace('_', ' ', (string) $value),
+        'JASA_LAINNYA' => 'Jasa Lainnya',
+        'BARANG' => 'Barang',
+        'KONSUMSI' => 'Konsumsi',
+        'PEMELIHARAAN' => 'Pemeliharaan',
+        'SPPD' => 'SPPD',
+        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
     })
 
     <x-page-header

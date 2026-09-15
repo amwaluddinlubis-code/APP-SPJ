@@ -1,5 +1,14 @@
 <x-layouts.tailwind-app>
     @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
+    @php($spjTypeLabel = fn ($value): string => match (strtoupper((string) $value)) {
+        'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
+        'JASA_LAINNYA' => 'Jasa Lainnya',
+        'BARANG' => 'Barang',
+        'KONSUMSI' => 'Konsumsi',
+        'PEMELIHARAAN' => 'Pemeliharaan',
+        'SPPD' => 'SPPD',
+        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
+    })
     @php($selectedClosure = $selectedSummary['closure'] ?? null)
 
     <div class="spj-semantic-workspace space-y-6">
@@ -151,7 +160,7 @@
                                                 <td class="px-2 py-2 text-center"><button type="button" @click="toggleReview({{ $package->id }})" :aria-expanded="expandedReviews.includes({{ $package->id }}).toString()" :title="expandedReviews.includes({{ $package->id }}) ? 'Sembunyikan isian' : 'Lihat semua isian'" class="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--ui-line)] text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)]"><span x-text="expandedReviews.includes({{ $package->id }}) ? '▾' : '▸'"></span></button></td>
                                                 <td class="whitespace-nowrap px-4 py-2"><p class="font-mono text-xs font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->no_bukti }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->transaction_date?->translatedFormat('d M Y') }}</p></td>
                                                 <td class="min-w-56 px-4 py-2"><p class="text-xs font-semibold leading-5 text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->description ?: 'Uraian belum tersedia' }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->effective_receipt_recipient_name ?: 'Penerima belum diisi' }}</p></td>
-                                                <td class="whitespace-nowrap px-4 py-2 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ?: '—' }} · {{ $package->transaction->payment_method ?: '—' }}</td>
+                                                <td class="whitespace-nowrap px-4 py-2 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ? $spjTypeLabel($package->transaction->spj_category) : '—' }} · {{ $package->transaction->payment_method ?: '—' }}</td>
                                                 <td class="px-4 py-2"><x-ui.status-badge :status="$package->status" size="xs" /></td>
                                                 <td class="whitespace-nowrap px-4 py-2 text-right text-xs font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->gross_amount) }}</td>
                                             </tr>

@@ -2,7 +2,12 @@
     $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
         'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-        default => str_replace('_', ' ', (string) $value),
+        'JASA_LAINNYA' => 'Jasa Lainnya',
+        'BARANG' => 'Barang',
+        'KONSUMSI' => 'Konsumsi',
+        'PEMELIHARAAN' => 'Pemeliharaan',
+        'SPPD' => 'SPPD',
+        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
     };
 @endphp
 <div>
@@ -33,7 +38,7 @@
                     bernomor</span><strong>{{ $workQueueCounts['numbered'] ?? 0 }}</strong></button>
         </nav>
         <div class="spj-filter-bar mt-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
                 <x-ui.field label="Bulan" for="spj-preparation-month"><x-ui.select id="spj-preparation-month"
                         wire:model.live="month">
                         <option value="">Semua bulan</option>
@@ -70,9 +75,8 @@
                         <option value="draft">Perlu dilengkapi</option>
                         <option value="numbered">Sudah bernomor</option>
                     </x-ui.select></x-ui.field>
+                <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters">Reset Filter</x-ui.button>
             </div>
-            <div class="mt-3 flex flex-wrap justify-end gap-2"><x-ui.button type="button" variant="secondary" wire:click="resetFilters">Reset
-                    filter</x-ui.button></div>
         </div>
     </div>
     <div class="overflow-x-auto">

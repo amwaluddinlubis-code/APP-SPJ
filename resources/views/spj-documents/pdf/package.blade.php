@@ -60,7 +60,7 @@
     @if($transaction->workers->isNotEmpty())
         <div class="page-break"></div>
         <div class="kop">@if($letterhead)<img src="{{ $letterhead }}" alt="Kop Surat">@else<h1>{{ strtoupper($school->name) }}</h1>@endif</div>
-        <h2>{{ in_array(strtoupper((string) $transaction->spj_category), ['JASA_HONORARIUM', 'HONOR_PEGAWAI'], true) ? 'LAMPIRAN PEMBAYARAN HONOR PEGAWAI' : 'LAMPIRAN PEMBAYARAN UPAH' }}</h2><p class="center muted">{{ $package->document_number }} · {{ $transaction->no_bukti }}</p>
+        <h2>{{ in_array(strtoupper((string) $transaction->spj_category), ['JASA_HONORARIUM', 'HONOR_PEGAWAI'], true) ? 'Lampiran Pembayaran Honor Pegawai' : 'Lampiran Pembayaran Upah' }}</h2><p class="center muted">{{ $package->document_number }} · {{ $transaction->no_bukti }}</p>
         <table><thead><tr><th class="center">No</th><th>Nama Pekerja</th><th>Uraian Pekerjaan</th><th class="center">Hari</th><th class="right">Tarif/Hari</th><th class="right">Jumlah</th><th class="center">Penerima Kuitansi</th></tr></thead><tbody>@foreach($transaction->workers as $index=>$worker)<tr><td class="center">{{ $index+1 }}</td><td>{{ $worker->name }}</td><td>{{ $worker->job_description }}</td><td class="center">{{ $worker->work_days }}</td><td class="right">{{ $rupiah($worker->daily_rate) }}</td><td class="right">{{ $rupiah($worker->amount) }}</td><td class="center">{{ $worker->is_receipt_recipient ? 'YA' : 'TIDAK' }}</td></tr>@endforeach<tr><th colspan="5" class="right">TOTAL UPAH</th><th class="right">{{ $rupiah($transaction->workers->sum('amount')) }}</th><th></th></tr></tbody></table>
     @endif
 

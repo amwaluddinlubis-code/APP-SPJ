@@ -10,7 +10,7 @@
         <x-ui.select id="category" name="category">
             <option value="">Semua Kategori</option>
             @foreach ($categories as $category)
-                <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>{{ $labels[$category] ?? str_replace('_', ' ', $category) }}</option>
+                <option value="{{ $category }}" @selected(($filters['category'] ?? '') === $category)>{{ $labels[$category] ?? ucwords(strtolower(str_replace('_', ' ', $category))) }}</option>
             @endforeach
         </x-ui.select>
     </x-ui.field>

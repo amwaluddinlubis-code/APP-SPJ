@@ -22,12 +22,11 @@ main[data-page="spj"] section:has(> #spj-main-tabs) {
     box-shadow: var(--profile-card-shadow) !important;
 }
 
-/* Navigasi tab utama sebagai satu segmented control yang menyatu:
-   satu kontainer abu-abu, tab aktif putih dengan shadow halus. */
+/* Navigasi tab utama memakai standar tab datar dengan indikator tema di bawah. */
 main[data-page="spj"] #spj-main-tabs {
     border-bottom: 1px solid var(--spj-border);
     background: var(--spj-surface);
-    padding: .8rem 1.25rem .9rem;
+    padding: .35rem 1.25rem 0;
 }
 
 main[data-page="spj"] #spj-main-tabs .ui-tabs {
@@ -38,27 +37,73 @@ main[data-page="spj"] #spj-main-tabs .ui-tabs {
 }
 
 main[data-page="spj"] #spj-main-tabs .ui-tabs-list {
-    display: inline-flex;
+    display: flex;
     max-width: 100%;
     min-width: 0;
     overflow-x: auto;
     align-items: center;
-    gap: .25rem;
-    border: 1px solid var(--spj-border);
-    border-radius: .9rem;
-    background: var(--spj-surface-soft);
-    padding: .3rem;
+    gap: .15rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
 }
 
 main[data-page="spj"] #spj-main-tabs .ui-tab {
-    border-color: transparent;
     white-space: nowrap;
 }
 
 main[data-page="spj"] #spj-main-tabs .ui-tab-active {
-    border-color: var(--spj-border);
-    background: var(--spj-surface);
-    box-shadow: 0 1px 4px rgb(15 23 42 / .10);
+    background: transparent;
+}
+
+/* Internal package tabs follow the same flat, animated standard. */
+main[data-page="spj"] [data-package-tab] {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.65rem;
+    align-items: center;
+    gap: .4rem;
+    border: 0;
+    border-radius: 0;
+    padding: .7rem .8rem .65rem;
+    color: var(--spj-text-muted);
+    white-space: nowrap;
+    font-size: .95rem;
+    font-weight: 800;
+    transition: color .2s ease, background-color .2s ease;
+}
+
+main[data-page="spj"] [data-package-tab]::after {
+    position: absolute;
+    right: .65rem;
+    bottom: -1px;
+    left: .65rem;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: var(--theme-content-accent, var(--ui-accent));
+    content: '';
+    opacity: 0;
+    transform: scaleX(.35);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+main[data-page="spj"] [data-package-tab]:hover {
+    background: color-mix(in srgb, var(--theme-accent-soft) 18%, transparent);
+    color: var(--spj-text);
+}
+
+main[data-page="spj"] [data-package-tab][data-active="true"] {
+    background: transparent;
+    color: var(--theme-content-accent, var(--ui-accent));
+}
+
+main[data-page="spj"] [data-package-tab][data-active="true"]::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+main[data-page="spj"] [data-panel] {
+    transition: opacity .2s ease, transform .2s ease;
 }
 
 /* Preparation filter */
@@ -139,6 +184,43 @@ main[data-page="spj"] div[class*="border-t"][class*="bg-slate-50"] {
     --spj-text-strong: var(--ui-fg-strong);
     --spj-text-muted: var(--ui-fg-muted);
     color: var(--spj-text);
+}
+
+/* Monitoring keeps semantic status colors while deriving every surface from the active theme. */
+main[data-page="spj"] .spj-monitoring-table thead {
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--spj-surface-soft)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main[data-page="spj"] .spj-monitoring-table,
+main[data-page="spj"] .spj-monitoring-table tbody {
+    border-color: var(--spj-border) !important;
+}
+
+main[data-page="spj"] .spj-monitoring-row:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+main[data-page="spj"] .spj-monitoring-row.is-cancelled {
+    background: color-mix(in srgb, var(--theme-accent-soft) 42%, var(--spj-surface)) !important;
+}
+
+main[data-page="spj"] .spj-monitoring-status.is-cancelled {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 28%, var(--spj-border));
+    background: color-mix(in srgb, var(--theme-accent-soft) 64%, var(--spj-surface));
+    color: var(--theme-content-accent);
+}
+
+main[data-page="spj"] .spj-monitoring-status.is-draft {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--spj-border));
+    background: color-mix(in srgb, var(--theme-accent-soft) 56%, var(--spj-surface));
+    color: var(--theme-content-accent);
+}
+
+main[data-page="spj"] .spj-monitoring-status.is-empty {
+    border-color: var(--spj-border);
+    background: var(--spj-surface-muted);
+    color: var(--spj-text-muted);
 }
 
 .spj-semantic-workspace :is(section, article, aside, details, form, div)[class*="bg-white"][class*="rounded-"],

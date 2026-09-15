@@ -2,7 +2,12 @@
     $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
         'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-        default => str_replace('_', ' ', (string) $value),
+        'JASA_LAINNYA' => 'Jasa Lainnya',
+        'BARANG' => 'Barang',
+        'KONSUMSI' => 'Konsumsi',
+        'PEMELIHARAAN' => 'Pemeliharaan',
+        'SPPD' => 'SPPD',
+        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
     };
     $listedPackages = $packageList ?? collect();
 @endphp

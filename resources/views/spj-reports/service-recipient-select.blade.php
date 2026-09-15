@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <x-page-header title="Pilih Transaksi Pembayaran Jasa Lainnya"
             subtitle="Pilih transaksi kategori Jasa Lainnya yang akan disusun menjadi daftar penerima pembayaran."
-            kicker="LAPORAN SPJ · JASA LAINNYA">
+            kicker="Laporan SPJ · Jasa Lainnya">
             <x-slot:actions><x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'laporan'])">Kembali ke Laporan SPJ</x-ui.button></x-slot:actions>
         </x-page-header>
 
@@ -11,7 +11,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4">
                 <div>
                 <h2 class="font-bold text-[var(--ui-fg-strong)]">Transaksi Jasa Lainnya</h2>
-                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Hanya transaksi dengan kategori <span class="font-mono font-bold">JASA_LAINNYA</span> dan rincian penerima jasa yang ditampilkan.</p>
+                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Hanya transaksi dengan kategori <span class="font-bold">Jasa Lainnya</span> dan rincian penerima jasa yang ditampilkan.</p>
                 </div>
                 <x-ui.button type="submit">Lanjutkan Susun Laporan</x-ui.button>
             </div>

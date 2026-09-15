@@ -160,7 +160,7 @@
                                 <label class="ui-choice-card text-xs">
                                     <input type="checkbox" name="applicable_categories[]" value="{{ $category }}"
                                         @checked(in_array($category, old('applicable_categories', []), true))>
-                                    <span>{{ $labels[$category] ?? str_replace('_', ' ', $category) }}</span>
+                                    <span>{{ $labels[$category] ?? ucwords(strtolower(str_replace('_', ' ', $category))) }}</span>
                                 </label>
                             @endforeach
                         </div>
@@ -362,7 +362,7 @@
                                                 <label class="ui-choice-card text-xs">
                                                     <input type="checkbox" name="applicable_categories[]"
                                                         value="{{ $category }}" @checked(in_array($category, $template->applicable_categories ?? [], true))>
-                                                    <span>{{ $labels[$category] ?? str_replace('_', ' ', $category) }}</span>
+                                                    <span>{{ $labels[$category] ?? ucwords(strtolower(str_replace('_', ' ', $category))) }}</span>
                                                 </label>
                                             @endforeach
                                         </div>

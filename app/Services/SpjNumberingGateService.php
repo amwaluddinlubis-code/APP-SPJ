@@ -87,7 +87,15 @@ class SpjNumberingGateService
             }
 
             if (! $this->numberingPolicy->isAutomaticDocumentEligible($package->transaction, $canonicalType)) {
-                $category = $this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category) ?: '-';
+                $category = match ($this->numberingPolicy->canonicalCategory((string) $package->transaction->spj_category)) {
+                    'BARANG' => 'Barang',
+                    'KONSUMSI' => 'Konsumsi',
+                    'PEMELIHARAAN' => 'Pemeliharaan',
+                    'SPPD' => 'SPPD',
+                    'HONOR_PEGAWAI' => 'Honor Pegawai',
+                    'JASA_LAINNYA' => 'Jasa Lainnya',
+                    default => ucwords(strtolower(str_replace('_', ' ', (string) $package->transaction->spj_category))) ?: '-',
+                };
                 $label = $this->numberingPolicy->automaticDocumentLabels()[$canonicalType] ?? $canonicalType;
 
                 return 'Penomoran '.$label.' tidak berlaku untuk kategori '.$category.'.';

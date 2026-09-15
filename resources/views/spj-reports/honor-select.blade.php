@@ -2,14 +2,14 @@
     <div class="space-y-6">
         <x-page-header title="Pilih Transaksi Pembayaran Honor"
             subtitle="Pilih sendiri transaksi kategori Honor Pegawai yang akan digabung dalam satu laporan penerimaan pembayaran honor."
-            kicker="LAPORAN SPJ · HONOR PEGAWAI">
+            kicker="Laporan SPJ · Honor Pegawai">
             <x-slot:actions><x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'laporan'])">Kembali ke Laporan SPJ</x-ui.button></x-slot:actions>
         </x-page-header>
 
         <form method="POST" action="{{ route('spj.honor-payments.compose') }}" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             @csrf
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4">
-                <div><h2 class="font-bold text-[var(--ui-fg-strong)]">Transaksi Honor Pegawai</h2><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Hanya transaksi dengan kategori <span class="font-mono font-bold">HONOR_PEGAWAI</span> dan rincian penerima honor yang ditampilkan.</p></div>
+                <div><h2 class="font-bold text-[var(--ui-fg-strong)]">Transaksi Honor Pegawai</h2><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Hanya transaksi dengan kategori <span class="font-bold">Honor Pegawai</span> dan rincian penerima honor yang ditampilkan.</p></div>
                 <x-ui.button type="submit">Lanjutkan Susun Laporan</x-ui.button>
             </div>
             @if ($errors->any())<div class="mx-5 mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{{ $errors->first() }}</div>@endif

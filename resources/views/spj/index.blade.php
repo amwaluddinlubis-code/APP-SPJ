@@ -3,7 +3,12 @@
         $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
         $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
             'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-            default => str_replace('_', ' ', (string) $value),
+            'JASA_LAINNYA' => 'Jasa Lainnya',
+            'BARANG' => 'Barang',
+            'KONSUMSI' => 'Konsumsi',
+            'PEMELIHARAAN' => 'Pemeliharaan',
+            'SPPD' => 'SPPD',
+            default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
         };
         $spjProgress = ($totalPackages ?? 0) > 0 ? min(100, (int) round((($numberedPackages ?? 0) / $totalPackages) * 100)) : 0;
         $packagesAwaitingNumber = max(0, ($totalPackages ?? 0) - ($numberedPackages ?? 0));
@@ -108,19 +113,19 @@
                     @include('spj.partials.package.documents')
                     <section class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow" x-data="{ packageTab: new URLSearchParams(window.location.search).get('package_tab') || 'rincian', selectPackageTab(name) { this.packageTab = name; const url = new URL(window.location.href); url.searchParams.set('package_tab', name); window.history.replaceState({}, '', url); } }">
                         <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)]">
-                            <nav class="flex gap-1 overflow-x-auto px-2 py-1 text-base" role="tablist" aria-label="Bagian Paket SPJ" @click="const button = $event.target.closest('[data-package-tab]'); if (button) selectPackageTab(button.dataset.packageTab)" @keydown="if ($event.key === 'ArrowRight' || $event.key === 'ArrowLeft') { const buttons = [...$el.querySelectorAll('[data-package-tab]')]; const current = buttons.indexOf($event.target); const next = $event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length; buttons[next].focus(); selectPackageTab(buttons[next].dataset.packageTab); }">
-                                <button type="button" role="tab" id="package-tab-rincian" aria-controls="package-panel-rincian" data-package-tab="rincian" :aria-selected="(packageTab === 'rincian').toString()" :data-active="packageTab === 'rincian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow"><x-ui.icon name="document" size="sm" /> Rincian <span class="ml-1 rounded-full bg-[var(--ui-surface-muted)] px-1.5 py-0.5 text-[11px]">{{ $transaction->items->count() }}</span></button>
-                                <button type="button" role="tab" id="package-tab-isian" aria-controls="package-panel-isian" data-package-tab="isian" :aria-selected="(packageTab === 'isian').toString()" :data-active="packageTab === 'isian'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow"><x-ui.icon name="edit" size="sm" /> Isian Manual</button>
-                                <button type="button" role="tab" id="package-tab-pajak" aria-controls="package-panel-pajak" data-package-tab="pajak" :aria-selected="(packageTab === 'pajak').toString()" :data-active="packageTab === 'pajak'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow"><x-ui.icon name="tax" size="sm" /> Rincian Pajak</button>
-                                <button type="button" role="tab" id="package-tab-penomoran" aria-controls="package-panel-penomoran" data-package-tab="penomoran" :aria-selected="(packageTab === 'penomoran').toString()" :data-active="packageTab === 'penomoran'" class="whitespace-nowrap rounded-md border border-transparent px-3 py-2 text-base font-bold text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg)] data-[active=true]:border-[var(--ui-line-strong)] data-[active=true]:bg-[var(--ui-surface-base)] data-[active=true]:text-[var(--theme-content-accent)] data-[active=true]:shadow"><x-ui.icon name="number" size="sm" /> Penomoran @if($hasActiveSpjNumber)<span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-700">OK</span>@elseif($package->status === 'CANCELLED')<span class="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] text-rose-700">Dibatalkan</span>@else<span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">Belum</span>@endif</button>
+                            <nav class="flex gap-1 overflow-x-auto border-b border-[var(--ui-line)] px-2 pt-1 text-base" role="tablist" aria-label="Bagian Paket SPJ" @click="const button = $event.target.closest('[data-package-tab]'); if (button) selectPackageTab(button.dataset.packageTab)" @keydown="if ($event.key === 'ArrowRight' || $event.key === 'ArrowLeft') { const buttons = [...$el.querySelectorAll('[data-package-tab]')]; const current = buttons.indexOf($event.target); const next = $event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length; buttons[next].focus(); selectPackageTab(buttons[next].dataset.packageTab); }">
+                                <button type="button" role="tab" id="package-tab-rincian" aria-controls="package-panel-rincian" data-package-tab="rincian" :aria-selected="(packageTab === 'rincian').toString()" :data-active="packageTab === 'rincian'" class="spj-standard-tab"><x-ui.icon name="document" size="sm" /> <span>Rincian</span> <span class="ml-1 rounded-full bg-[var(--ui-surface-muted)] px-1.5 py-0.5 text-[11px]">{{ $transaction->items->count() }}</span></button>
+                                <button type="button" role="tab" id="package-tab-isian" aria-controls="package-panel-isian" data-package-tab="isian" :aria-selected="(packageTab === 'isian').toString()" :data-active="packageTab === 'isian'" class="spj-standard-tab"><x-ui.icon name="edit" size="sm" /> <span>Isian Manual</span></button>
+                                <button type="button" role="tab" id="package-tab-pajak" aria-controls="package-panel-pajak" data-package-tab="pajak" :aria-selected="(packageTab === 'pajak').toString()" :data-active="packageTab === 'pajak'" class="spj-standard-tab"><x-ui.icon name="tax" size="sm" /> <span>Rincian Pajak</span></button>
+                                <button type="button" role="tab" id="package-tab-penomoran" aria-controls="package-panel-penomoran" data-package-tab="penomoran" :aria-selected="(packageTab === 'penomoran').toString()" :data-active="packageTab === 'penomoran'" class="spj-standard-tab"><x-ui.icon name="number" size="sm" /> <span>Penomoran</span> @if($hasActiveSpjNumber)<span class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] text-emerald-700">OK</span>@elseif($package->status === 'CANCELLED')<span class="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[11px] text-rose-700">Dibatalkan</span>@else<span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">Belum</span>@endif</button>
                             </nav>
                         </div>
 
-                        <div x-show="packageTab === 'rincian'" id="package-panel-rincian" role="tabpanel" aria-labelledby="package-tab-rincian" data-panel="rincian" class="tab-panel">
+                        <div x-show="packageTab === 'rincian'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-rincian" role="tabpanel" aria-labelledby="package-tab-rincian" data-panel="rincian" class="tab-panel">
                             @include('spj.partials.package.items-readonly')
                         </div>
 
-                        <div x-show="packageTab === 'isian'" id="package-panel-isian" role="tabpanel" aria-labelledby="package-tab-isian" data-panel="isian" class="tab-panel" x-data="{saving:false}">
+                        <div x-show="packageTab === 'isian'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-isian" role="tabpanel" aria-labelledby="package-tab-isian" data-panel="isian" class="tab-panel" x-data="{saving:false}">
                             <div class="border-b border-[var(--ui-line)] px-4 py-3">
                                 <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Isian Manual Paket SPJ</h2>
                                 <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Hanya isian kuning yang wajib. Bagian biru tampil sesuai kategori.</p>
@@ -170,11 +175,11 @@
                             </form>
                         </div>
 
-                        <div x-show="packageTab === 'pajak'" id="package-panel-pajak" role="tabpanel" aria-labelledby="package-tab-pajak" data-panel="pajak" class="tab-panel p-4">
+                        <div x-show="packageTab === 'pajak'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-pajak" role="tabpanel" aria-labelledby="package-tab-pajak" data-panel="pajak" class="tab-panel p-4">
                             @include('spj.partials.package.tax-reference')
                         </div>
 
-                        <div x-show="packageTab === 'penomoran'" id="package-panel-penomoran" role="tabpanel" aria-labelledby="package-tab-penomoran" data-panel="penomoran" class="tab-panel p-4">
+                        <div x-show="packageTab === 'penomoran'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-penomoran" role="tabpanel" aria-labelledby="package-tab-penomoran" data-panel="penomoran" class="tab-panel p-4">
                             @include('spj.partials.package.numbering')
                         </div>
                     </section>
@@ -198,8 +203,8 @@
             {{-- Tab: Monitoring --}}
             @if(($tab ?? 'persiapan') === 'monitoring')
             <div x-show="tab === 'monitoring'" x-transition>
-                <div class="border-b border-amber-100 bg-amber-50/40 px-5 py-4 sm:px-6">
-                    <div><h2 class="font-bold text-amber-900">Monitoring Dokumen Belum Lengkap</h2><p class="mt-1 text-base text-amber-800">Transaksi ber-rincian tapi paket belum siap atau belum bernomor · <span class="font-bold">{{ $pendingPaginator?->total() ?? 0 }} transaksi</span></p></div>
+                <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 sm:px-6">
+                    <div><h2 class="font-bold text-[var(--ui-fg-strong)]">Monitoring Dokumen Belum Lengkap</h2><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Transaksi ber-rincian tapi paket belum siap atau belum bernomor · <span class="font-bold text-[var(--theme-content-accent)]">{{ $pendingPaginator?->total() ?? 0 }} transaksi</span></p></div>
                     @if(auth()->user()?->isAdministrator())
                         <form method="POST" action="{{ route('spj.quarter-numbering') }}" class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-indigo-200 bg-[var(--ui-surface-base)] p-3" data-confirm="Rekonsiliasi nomor triwulan ini? Transaksi yang sudah memiliki nomor aktif akan dilewati dan slot nomor yang dibatalkan dapat dipakai dokumen berikutnya dalam domain serta periode yang sama.">
                             @csrf

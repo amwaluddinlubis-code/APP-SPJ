@@ -174,6 +174,15 @@ class SpjTemplateService
             : ((bool) $transaction->siplah_budget_mapping_rejected
                 ? 'Pemetaan anggaran ditolak'
                 : ((bool) $transaction->siplah_partially_mapped ? 'Pemetaan sebagian' : 'Pemetaan lengkap'));
+        $spjCategoryLabel = match (strtoupper((string) $transaction->spj_category)) {
+            'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
+            'JASA_LAINNYA' => 'Jasa Lainnya',
+            'BARANG' => 'Barang',
+            'KONSUMSI' => 'Konsumsi',
+            'PEMELIHARAAN' => 'Pemeliharaan',
+            'SPPD' => 'SPPD',
+            default => ucwords(strtolower(str_replace('_', ' ', (string) $transaction->spj_category))),
+        };
 
         $values = [
             'NOMOR_SPJ' => (string) $package->document_number,
@@ -269,7 +278,7 @@ class SpjTemplateService
             'TANGGAL_DOKUMEN' => $values['TANGGAL_TRANSAKSI'],
             'NOMOR_BUKTI' => $values['NO_BUKTI'],
             'SUMBER_DANA_PERIODE' => trim($values['SUMBER_DANA'].' / '.$values['TAHUN_ANGGARAN'].' / '.$values['TRIWULAN']),
-            'JENIS_SPJ' => (string) $transaction->spj_category,
+            'JENIS_SPJ' => $spjCategoryLabel,
             'POTONGAN_PAJAK' => $values['TOTAL_PAJAK'],
             'NAMA_SATUAN_PENDIDIKAN' => $values['NAMA_SEKOLAH'],
             'SUDAH_TERIMA_DARI' => 'Bendahara Dana BOSP '.$values['NAMA_SEKOLAH'],
