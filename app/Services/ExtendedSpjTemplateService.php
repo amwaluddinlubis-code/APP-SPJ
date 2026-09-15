@@ -107,9 +107,12 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     }
 
     /**
-     * XLSX package imports now preserve the complete master workbook. Render only
-     * the canonical worksheet for this document type and keep DOCX on the legacy
-     * parent implementation.
+     * XLSX package imports preserve the complete master workbook. Runtime output
+     * edits the canonical worksheet in that loaded workbook and then removes the
+     * unrelated worksheets instead of rebuilding the selected sheet in a fresh
+     * Spreadsheet. This keeps worksheet print/layout metadata owned by the
+     * template (page setup, margins, print area, dimensions, styles, merges,
+     * header/footer, drawings) attached to the original worksheet object.
      */
     public function download(DocumentTemplate $template, SpjPackage $package, School $school)
     {
@@ -235,13 +238,15 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
 
         $source = IOFactory::load($sourcePath);
+
         try {
             [$sheet, $sheetName] = $this->resolveCanonicalWorksheet($source, $template);
             $this->fillCanonicalWorksheet($sheet, $package, $school);
 
-            return $this->copyWorksheetToStandaloneWorkbook($source, $sheetName);
-        } finally {
+            return $this->retainOnlyCanonicalWorksheet($source, $sheetName);
+        } catch (\Throwable $exception) {
             $source->disconnectWorksheets();
+            throw $exception;
         }
     }
 
@@ -311,24 +316,25 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         );
     }
 
-    private function copyWorksheetToStandaloneWorkbook(Spreadsheet $source, string $sheetName): Spreadsheet
+    private function retainOnlyCanonicalWorksheet(Spreadsheet $source, string $sheetName): Spreadsheet
     {
-        if (! $source->getSheetByName($sheetName)) {
+        $canonical = $source->getSheetByName($sheetName);
+        if (! $canonical instanceof Worksheet) {
             throw new \RuntimeException('Sheet canonical '.$sheetName.' tidak tersedia untuk dirender.');
         }
 
-        // PhpSpreadsheet requires a copied worksheet to be attached to its source
-        // workbook before addExternalSheet() can safely transfer styles/resources.
-        $copy = $source->duplicateWorksheetByTitle($sheetName);
+        for ($index = $source->getSheetCount() - 1; $index >= 0; $index--) {
+            if ($source->getSheet($index) === $canonical) {
+                continue;
+            }
 
-        $standalone = new Spreadsheet;
-        $standalone->addExternalSheet($copy);
-        $standalone->setActiveSheetIndex(1);
-        $standalone->removeSheetByIndex(0);
-        $standalone->getSheet(0)->setTitle($sheetName);
-        $standalone->setActiveSheetIndex(0);
+            $source->removeSheetByIndex($index);
+        }
 
-        return $standalone;
+        $canonical->setTitle($sheetName);
+        $source->setActiveSheetIndex(0);
+
+        return $source;
     }
 
     private function fillCanonicalWorksheet(Worksheet $sheet, SpjPackage $package, School $school): void
@@ -343,6 +349,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             array_values($values),
         );
 
+        $this->resolveMergedPlaceholderAnchors($sheet, $replacements);
+
         foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
             $cell = $sheet->getCell($coordinate);
             if (is_string($cell->getValue())) {
@@ -350,6 +358,63 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             }
         }
         $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
+    }
+
+    /** @param array<string,string> $replacements */
+    private function resolveMergedPlaceholderAnchors(Worksheet $sheet, array $replacements): void
+    {
+        foreach (array_values($sheet->getMergeCells()) as $range) {
+            [[$startColumn, $startRow], [$endColumn, $endRow]] = Coordinate::rangeBoundaries($range);
+            $anchor = Coordinate::stringFromColumnIndex($startColumn).$startRow;
+            $placeholderCells = [];
+            $resolvedValues = [];
+
+            for ($row = $startRow; $row <= $endRow; $row++) {
+                for ($column = $startColumn; $column <= $endColumn; $column++) {
+                    $coordinate = Coordinate::stringFromColumnIndex($column).$row;
+                    $value = $sheet->getCell($coordinate)->getValue();
+                    if (! is_string($value) || ! preg_match('/^\s*\{\{[A-Za-z0-9_]+\}\}\s*$/u', $value)) {
+                        continue;
+                    }
+
+                    $rendered = trim(strtr($value, $replacements));
+                    $placeholderCells[$coordinate] = $rendered;
+                    if ($rendered !== '') {
+                        $resolvedValues[$rendered] = true;
+                    }
+                }
+            }
+
+            if ($placeholderCells === []) {
+                continue;
+            }
+
+            if (count($resolvedValues) > 1) {
+                throw new \RuntimeException(
+                    'Placeholder pada merged range '.$sheet->getTitle().'!'.$range
+                    .' menghasilkan nilai berbeda. Perbaiki kontrak placeholder tanpa mengubah merge template.'
+                );
+            }
+
+            $resolved = array_key_first($resolvedValues) ?? '';
+            $anchorValue = $sheet->getCell($anchor)->getValue();
+            $anchorOwnsPlaceholder = array_key_exists($anchor, $placeholderCells);
+            $anchorIsEmpty = $anchorValue === null || trim((string) $anchorValue) === '';
+
+            if (! $anchorOwnsPlaceholder && ! $anchorIsEmpty) {
+                throw new \RuntimeException(
+                    'Merged range '.$sheet->getTitle().'!'.$range
+                    .' menyimpan placeholder di luar anchor sementara anchor memiliki konten lain.'
+                );
+            }
+
+            $sheet->getCell($anchor)->setValue($resolved);
+            foreach (array_keys($placeholderCells) as $coordinate) {
+                if ($coordinate !== $anchor) {
+                    $sheet->getCell($coordinate)->setValue('');
+                }
+            }
+        }
     }
 
     private function itemValuesExtended(SpjPackage $package, int $index): array
