@@ -52,7 +52,7 @@ final class DocumentTemplateLibraryService
         string $templateId,
         bool $isActive,
         array $applicableCategories,
-        ?bool $isSiplah,
+        ?bool $isSiplah = null,
     ): bool {
         $template = $this->findInActiveYear($templateId);
         if (! $template) {
