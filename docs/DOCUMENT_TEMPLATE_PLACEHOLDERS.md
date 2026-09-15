@@ -212,6 +212,8 @@ TANGGAL_PENYERAHAN
 TEMPAT_PENYERAHAN
 ```
 
+Untuk template BAP, gunakan `NOMOR_BAP` dan `TANGGAL_BAP` sebagai nomor dan tanggal berita acara. `NAMA_SEKOLAH` digunakan untuk identitas satuan pendidikan. Validator BAP tidak lagi mewajibkan alias umum `NOMOR_DOKUMEN`, `TANGGAL_DOKUMEN`, atau `TEMPAT_PENYERAHAN`.
+
 ### `NOMOR_PESANAN`
 
 `NOMOR_PESANAN` adalah **Nomor Surat Pesanan SPJ internal**.

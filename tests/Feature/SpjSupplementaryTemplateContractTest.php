@@ -83,8 +83,24 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertSame('TPL_BA_PEMERIKSAAN_PENERIMAAN', $definition['sheet']);
         $this->assertContains('NAMA_PENGURUS_BARANG', $definition['required']);
         $this->assertContains('NIP_PENGURUS_BARANG', $definition['required']);
+        $this->assertContains('NOMOR_BAP', $definition['required']);
+        $this->assertContains('TANGGAL_BAP', $definition['required']);
+        $this->assertContains('NAMA_SEKOLAH', $definition['required']);
+        $this->assertNotContains('NOMOR_DOKUMEN', $definition['required']);
+        $this->assertNotContains('TANGGAL_DOKUMEN', $definition['required']);
+        $this->assertNotContains('TEMPAT_PENYERAHAN', $definition['required']);
         $this->assertNotContains('NAMA_BENDAHARA_BOSP', $definition['required']);
         $this->assertNotContains('NIP_BENDAHARA_BOSP', $definition['required']);
+    }
+
+    public function test_bap_placeholders_are_known_by_template_validator(): void
+    {
+        $result = app(SpjTemplateValidator::class)->validateMarkers(
+            SpjDocumentTypeRegistry::BAP,
+            ['NOMOR_BAP', 'TANGGAL_BAP', 'NAMA_SEKOLAH'],
+        );
+
+        $this->assertNotContains('UNKNOWN_PLACEHOLDER', collect($result['errors'])->pluck('code')->all());
     }
 
     public function test_revised_master_contracts_match_rab_spk_and_consumption_sheets(): void
