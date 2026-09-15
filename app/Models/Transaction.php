@@ -161,7 +161,10 @@ class Transaction extends Model
 
     public function serviceRecipients(): HasMany
     {
-        return $this->hasMany(SpjServiceRecipient::class)->orderBy('sort_order')->orderBy('id');
+        return $this->hasMany(SpjServiceRecipient::class)
+            ->chaperone()
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function spjPackage(): HasOne
