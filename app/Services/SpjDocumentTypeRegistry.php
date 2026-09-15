@@ -251,7 +251,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['BARANG', 'KONSUMSI'],
                 'required' => [
-                    'NOMOR_DOKUMEN', 'TANGGAL_DOKUMEN', 'NAMA_PENYEDIA', 'UNTUK_PEMBAYARAN',
+                    'NOMOR_BAST', 'TANGGAL_DOKUMEN', 'NAMA_PENYEDIA', 'UNTUK_PEMBAYARAN',
                     'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH',
                     'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],

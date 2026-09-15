@@ -9,6 +9,7 @@ use App\Support\ActiveSpjContext;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class TransactionDetailWorkspace extends Component
@@ -49,15 +50,22 @@ class TransactionDetailWorkspace extends Component
         }
         if ($transaction->spjPackage?->status === 'FINAL') {
             $this->addError('form', 'Uraian SPJ tidak dapat diubah karena paket sudah FINAL.');
+            $this->dispatch('app-notify', type: 'error', message: 'Uraian SPJ tidak dapat diubah karena paket sudah FINAL.');
 
             return;
         }
 
-        $data = $this->validate([
-            'paymentDescription' => ['nullable', 'string', 'max:4000'],
-            'itemDescriptions' => ['array'],
-            'itemDescriptions.*' => ['required', 'string', 'max:4000'],
-        ]);
+        try {
+            $data = $this->validate([
+                'paymentDescription' => ['nullable', 'string', 'max:4000'],
+                'itemDescriptions' => ['array'],
+                'itemDescriptions.*' => ['required', 'string', 'max:4000'],
+            ]);
+        } catch (ValidationException $exception) {
+            $this->dispatch('app-notify', type: 'error', message: $exception->validator->errors()->first());
+
+            throw $exception;
+        }
         $itemIds = $transaction->items->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
         foreach (array_keys($data['itemDescriptions'] ?? []) as $itemId) {
@@ -77,6 +85,7 @@ class TransactionDetailWorkspace extends Component
 
         $this->loadTransaction();
         session()->flash('success', 'Uraian SPJ berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran.');
+        $this->dispatch('app-notify', type: 'success', message: 'Koreksi uraian berhasil disimpan.');
     }
 
     public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context): void

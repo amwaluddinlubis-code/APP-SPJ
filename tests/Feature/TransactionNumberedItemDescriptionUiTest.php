@@ -14,6 +14,7 @@ class TransactionNumberedItemDescriptionUiTest extends TestCase
         $this->assertStringContainsString("\$transaction->spjPackage->status === 'NUMBERED'", $blade);
         $this->assertStringContainsString('@disabled(! $spjDescriptionsEditable)', $blade);
         $this->assertStringContainsString('Koreksi uraian tetap diperbolehkan', $blade);
+        $this->assertStringNotContainsString('window.confirm', $blade);
         $this->assertStringContainsString('Nomor SPJ, status paket, tanggal transaksi, nilai bruto, pajak, netto, dan urutan penomoran tidak berubah.', $blade);
     }
 
@@ -26,5 +27,11 @@ class TransactionNumberedItemDescriptionUiTest extends TestCase
         $this->assertStringContainsString("\$descriptions->updatePaymentDescription(\$transaction, \$data['payment_description'] ?? null)", $controller);
         $this->assertStringContainsString("'item_description' => trim(\$itemData['item_description'])", $controller);
         $this->assertStringContainsString('berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran', $controller);
+
+        $livewire = file_get_contents(app_path('Livewire/TransactionDetailWorkspace.php'));
+
+        $this->assertIsString($livewire);
+        $this->assertStringContainsString("type: 'success', message: 'Koreksi uraian berhasil disimpan.'", $livewire);
+        $this->assertStringContainsString("type: 'error', message: \$exception->validator->errors()->first()", $livewire);
     }
 }

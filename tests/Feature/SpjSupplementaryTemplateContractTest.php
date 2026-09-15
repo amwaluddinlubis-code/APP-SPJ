@@ -93,6 +93,21 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertNotContains('NIP_BENDAHARA_BOSP', $definition['required']);
     }
 
+    public function test_bast_uses_document_specific_number_placeholder(): void
+    {
+        $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAST);
+
+        $this->assertContains('NOMOR_BAST', $definition['required']);
+        $this->assertNotContains('NOMOR_DOKUMEN', $definition['required']);
+
+        $result = app(SpjTemplateValidator::class)->validateMarkers(
+            SpjDocumentTypeRegistry::BAST,
+            ['NOMOR_BAST'],
+        );
+
+        $this->assertNotContains('UNKNOWN_PLACEHOLDER', collect($result['errors'])->pluck('code')->all());
+    }
+
     public function test_bap_placeholders_are_known_by_template_validator(): void
     {
         $result = app(SpjTemplateValidator::class)->validateMarkers(
