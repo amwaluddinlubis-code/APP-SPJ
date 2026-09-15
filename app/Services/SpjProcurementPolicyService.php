@@ -18,7 +18,7 @@ class SpjProcurementPolicyService
      */
     public function forTransaction(Transaction $transaction): array
     {
-        $isSiplah = (bool) $transaction->is_siplah || strtolower((string) $transaction->payment_method) === 'siplah';
+        $isSiplah = $this->isSiplah($transaction);
 
         if ($isSiplah) {
             return [
@@ -76,6 +76,10 @@ class SpjProcurementPolicyService
 
     public function isSiplah(Transaction $transaction): bool
     {
-        return $this->forTransaction($transaction)['channel'] === 'SIPLAH';
+        $paymentMethod = strtolower(trim((string) $transaction->payment_method));
+
+        return $paymentMethod === 'siplah'
+            || (! in_array($paymentMethod, ['transfer_bank', 'siplah', 'tunai'], true)
+                && (bool) $transaction->is_siplah);
     }
 }

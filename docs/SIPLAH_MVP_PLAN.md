@@ -2,7 +2,7 @@
 
 Status: **FUNCTIONAL CORE PASS / GENERATED-DOCUMENT E2E + OFFICIAL-TEMPLATE OUTPUT RVR**
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-16**
 
 > Nama file ini dipertahankan untuk kompatibilitas dokumentasi lama. Isi dokumen tidak lagi menggambarkan SiPLah sebagai MVP yang baru dibangun.
 
@@ -91,7 +91,13 @@ Untuk transaksi SiPLah:
 - nomor Surat Pesanan internal bukan nomor marketplace;
 - internal purchase-order requirement yang tidak applicable tidak boleh menjadi blocker.
 
-Untuk Non-SiPLah, Surat Pesanan internal tetap mengikuti document requirement dan numbering aplikasi bila applicable.
+Pemetaan generated-document pada Paket SPJ tetap dimulai dari kategori canonical `BARANG`, lalu difilter berdasarkan procurement channel:
+
+- `SPJ_COVER`, `SPJ_SPTJM`, `SPJ_CHECKLIST`, `SPJ_KUITANSI_A2`, dan dokumen umum/kategori lain tetap dapat masuk bila template aktif dan mapping kategorinya cocok;
+- `SPJ_SURAT_PESANAN`, `SPJ_BA_PEMERIKSAAN`, dan `SPJ_BAST_PEMBELIAN` dikeluarkan dari paket SiPLah secara default karena bukti pengadaan/penerimaan utamanya berasal dari marketplace/source evidence;
+- resolver channel memakai `payment_method` canonical sebagai sumber utama; `is_siplah` hanya menjadi fallback kompatibilitas ketika metode pembayaran belum berisi nilai canonical `tunai`, `transfer_bank`, atau `siplah`.
+
+Untuk Non-SiPLah, Surat Pesanan internal, BA Pemeriksaan, dan BAST Pembelian tetap mengikuti mapping kategori dan document requirement aplikasi bila applicable.
 
 ## 5. Placeholder SiPLah
 
