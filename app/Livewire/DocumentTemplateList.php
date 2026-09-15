@@ -38,8 +38,19 @@ class DocumentTemplateList extends Component
         $this->resetPage();
     }
 
+    public function reloadList(): void
+    {
+        $this->mappingCategories = [];
+        $this->mappingScopes = [];
+        $this->mappingActive = [];
+
+        $this->dispatch('app-notify', type: 'success', message: 'Daftar template dimuat ulang.');
+    }
+
     public function saveMapping(string $templateId): void
     {
+        $this->authorizeAdministrator();
+
         $categories = SpjDocumentTypeRegistry::categories();
         $validated = validator([
             'is_active' => (bool) ($this->mappingActive[$templateId] ?? false),
@@ -99,5 +110,10 @@ class DocumentTemplateList extends Component
                 ])->values()->all(),
             'documentTypes' => SpjDocumentTypeRegistry::options(),
         ]);
+    }
+
+    private function authorizeAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isAdministrator(), 403);
     }
 }
