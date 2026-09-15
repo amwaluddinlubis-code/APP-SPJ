@@ -26,7 +26,7 @@
 
     <div class="space-y-6">
         <x-page-header title="Template Dokumen Word dan Excel"
-            subtitle="Unggah, atur, validasi, dan tentukan kategori SPJ yang menggunakan setiap template dokumen."
+            subtitle="Unggah, atur, validasi, serta tentukan kategori SPJ dan channel SiPlah yang menggunakan setiap template dokumen."
             kicker="PENGATURAN TEMPLATE DOKUMEN">
             <x-slot:actions>
                 @include('document-templates.partials.page-actions')
@@ -168,6 +168,16 @@
                             Jika tidak ada kategori yang dipilih, template tersedia untuk semua kategori SPJ.
                         </p>
                     </fieldset>
+
+                    <x-ui.field label="Channel Paket SPJ" for="siplah_scope"
+                        hint="Pemetaan ini membaca field is_siplah transaksi. Semua channel berarti template berlaku untuk SiPlah dan Non-SiPlah."
+                        :error="$templateErrors->first('siplah_scope')">
+                        <x-ui.select id="siplah_scope" name="siplah_scope">
+                            <option value="all" @selected(old('siplah_scope', 'all') === 'all')>Semua channel</option>
+                            <option value="siplah" @selected(old('siplah_scope') === 'siplah')>SiPlah saja</option>
+                            <option value="non_siplah" @selected(old('siplah_scope') === 'non_siplah')>Non-SiPlah saja</option>
+                        </x-ui.select>
+                    </x-ui.field>
 
                     <div class="ui-form-actions">
                         <x-ui.button type="submit">Validasi & Simpan Template</x-ui.button>
@@ -325,6 +335,9 @@
                                     : (!empty($templateValidation['warnings'] ?? [])
                                         ? 'WARNING'
                                         : 'VALID');
+                                $siplahScopeLabel = $template->is_siplah === null
+                                    ? 'Semua channel'
+                                    : ($template->is_siplah ? 'SiPlah' : 'Non-SiPlah');
                             @endphp
                             <tr
                                 class="odd:bg-[var(--ui-surface-base)] even:bg-[var(--ui-surface-soft)] hover:bg-[var(--ui-table-row-hover)]">
@@ -339,6 +352,8 @@
                                         @endif
                                         <span
                                             class="text-[10px] font-bold {{ $tableValidationStatus === 'ERROR' ? 'text-rose-700' : ($tableValidationStatus === 'WARNING' ? 'text-amber-700' : 'text-emerald-700') }}">{{ $tableValidationStatus }}</span>
+                                        <span
+                                            class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--ui-fg)]">{{ $siplahScopeLabel }}</span>
                                     </div>
                                     @if (!$isCanonical && $canonicalType)
                                         <p class="mt-1 text-[11px] text-amber-700">Alias lama untuk <span
@@ -365,6 +380,20 @@
                                                     <span>{{ $labels[$category] ?? ucwords(strtolower(str_replace('_', ' ', $category))) }}</span>
                                                 </label>
                                             @endforeach
+                                        </div>
+                                        <div class="mt-3 border-t border-[var(--ui-line)] pt-3">
+                                            <label for="siplah-scope-{{ $template->id }}"
+                                                class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                                                Channel Paket SPJ
+                                            </label>
+                                            <x-ui.select id="siplah-scope-{{ $template->id }}" name="siplah_scope">
+                                                <option value="all" @selected($template->is_siplah === null)>Semua channel</option>
+                                                <option value="siplah" @selected($template->is_siplah === true)>SiPlah saja</option>
+                                                <option value="non_siplah" @selected($template->is_siplah === false)>Non-SiPlah saja</option>
+                                            </x-ui.select>
+                                            <p class="mt-1 text-[11px] text-[var(--ui-fg-muted)]">
+                                                SiPlah/Non-SiPlah dipilih dari field <span class="font-mono">is_siplah</span> transaksi.
+                                            </p>
                                         </div>
                                     </form>
                                     @if (empty($template->applicable_categories))
