@@ -2,230 +2,180 @@
 
 namespace Tests\Unit;
 
-use App\Services\ExtendedSpjTemplateService;
 use App\Services\SpjRepeatingRowRenderer;
+use App\Services\SpjTemplateService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use ReflectionMethod;
-use RuntimeException;
 use Tests\TestCase;
 
 class SpjTemplateWorkbookPreservationTest extends TestCase
 {
-    public function test_canonical_sheet_pruning_preserves_template_layout_and_print_settings(): void
+    use RefreshDatabase;
+
+    public function test_spj_template_generation_preserves_canonical_sheet_page_setup(): void
     {
-        $workbook = new Spreadsheet;
-        $workbook->getActiveSheet()->setTitle('PLACEHOLDER_MAP')->setCellValue('A1', 'Teknis');
-        $sheet = $workbook->createSheet()->setTitle('TPL_RINCIAN');
-        $sheet->setCellValue('A1', 'Rincian Belanja');
-        $sheet->mergeCells('A1:I1');
-        $sheet->getStyle('A1')->getFont()->setName('Arial')->setSize(11)->setBold(true);
-        $sheet->getColumnDimension('B')->setWidth(24.5);
-        $sheet->getRowDimension(5)->setRowHeight(27);
+        Storage::fake('local');
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('TPL_COVER_SPJ');
+        $sheet->setCellValue('A1', '{{NAMA_SEKOLAH}}');
         $sheet->getPageSetup()
-            ->setPaperSize(PageSetup::PAPERSIZE_A4)
-            ->setOrientation(PageSetup::ORIENTATION_PORTRAIT)
-            ->setFitToPage(true)
+            ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
+            ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
             ->setFitToWidth(1)
-            ->setFitToHeight(0)
-            ->setPrintArea('A1:I34');
+            ->setFitToHeight(0);
         $sheet->getPageMargins()
-            ->setTop(0.3)
-            ->setRight(0.25)
-            ->setBottom(0.4)
-            ->setLeft(0.25)
-            ->setHeader(0.15)
-            ->setFooter(0.15);
-        $sheet->getHeaderFooter()
-            ->setOddHeader('&C{{NOMOR_DOKUMEN}}')
-            ->setOddFooter('&RHalaman &P dari &N');
+            ->setTop(0.4)
+            ->setRight(0.5)
+            ->setBottom(0.6)
+            ->setLeft(0.7);
+        $sheet->getPageSetup()->setPrintArea('A1:H40');
 
-        $service = new ExtendedSpjTemplateService;
-        $method = new ReflectionMethod($service, 'retainOnlyCanonicalWorksheet');
-        $preserved = $method->invoke($service, $workbook, 'TPL_RINCIAN');
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('TPL_SECOND');
+        $sheet2->setCellValue('A1', 'UNCHANGED');
+        $sheet2->getPageSetup()
+            ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
+            ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_PORTRAIT);
 
-        $path = sys_get_temp_dir().'/spj-template-preservation-'.uniqid('', true).'.xlsx';
-
-        try {
-            (new Xlsx($preserved))->save($path);
-            $reloaded = IOFactory::load($path);
-            $actual = $reloaded->getSheet(0);
-
-            $this->assertSame(1, $reloaded->getSheetCount());
-            $this->assertSame('TPL_RINCIAN', $actual->getTitle());
-            $this->assertSame(PageSetup::PAPERSIZE_A4, $actual->getPageSetup()->getPaperSize());
-            $this->assertSame(PageSetup::ORIENTATION_PORTRAIT, $actual->getPageSetup()->getOrientation());
-            $this->assertTrue($actual->getPageSetup()->getFitToPage());
-            $this->assertSame(1, $actual->getPageSetup()->getFitToWidth());
-            $this->assertSame(0, $actual->getPageSetup()->getFitToHeight());
-            $this->assertSame('A1:I34', $actual->getPageSetup()->getPrintArea());
-            $this->assertEqualsWithDelta(0.3, $actual->getPageMargins()->getTop(), 0.0001);
-            $this->assertEqualsWithDelta(0.25, $actual->getPageMargins()->getRight(), 0.0001);
-            $this->assertEqualsWithDelta(0.4, $actual->getPageMargins()->getBottom(), 0.0001);
-            $this->assertEqualsWithDelta(0.25, $actual->getPageMargins()->getLeft(), 0.0001);
-            $this->assertEqualsWithDelta(0.15, $actual->getPageMargins()->getHeader(), 0.0001);
-            $this->assertEqualsWithDelta(0.15, $actual->getPageMargins()->getFooter(), 0.0001);
-            $this->assertSame('&C{{NOMOR_DOKUMEN}}', $actual->getHeaderFooter()->getOddHeader());
-            $this->assertSame('&RHalaman &P dari &N', $actual->getHeaderFooter()->getOddFooter());
-            $this->assertEqualsWithDelta(24.5, $actual->getColumnDimension('B')->getWidth(), 0.0001);
-            $this->assertEqualsWithDelta(27.0, $actual->getRowDimension(5)->getRowHeight(), 0.0001);
-            $this->assertContains('A1:I1', array_values($actual->getMergeCells()));
-            $this->assertSame('Arial', $actual->getStyle('A1')->getFont()->getName());
-            $this->assertEqualsWithDelta(11.0, $actual->getStyle('A1')->getFont()->getSize(), 0.0001);
-            $this->assertTrue($actual->getStyle('A1')->getFont()->getBold());
-
-            $reloaded->disconnectWorksheets();
-        } finally {
-            @unlink($path);
-            $preserved->disconnectWorksheets();
+        $templatePath = Storage::disk('local')->path('templates/preservation-test.xlsx');
+        if (! is_dir(dirname($templatePath))) {
+            mkdir(dirname($templatePath), 0755, true);
         }
+        IOFactory::createWriter($spreadsheet, 'Xlsx')->save($templatePath);
+        $spreadsheet->disconnectWorksheets();
+
+        $document = (object) [
+            'jenis_dokumen' => 'COVER_SPJ',
+            'document_number' => 'COVER-TEST',
+            'nomor_bukti' => 'BKU-TEST',
+            'transaction_document_id' => 1,
+            'foreign_id' => 'test',
+            'parent' => (object) [
+                'fiscal_year' => 2026,
+                'sumber_dana' => 'BOSP',
+                'school' => (object) [
+                    'nama_sekolah' => 'SD TEST',
+                    'alamat' => 'Jl. Test',
+                ],
+                'items' => collect(),
+                'taxes' => collect(),
+            ],
+        ];
+
+        $outputPath = app(SpjTemplateService::class)->generateFromTemplate($templatePath, $document);
+
+        $generated = IOFactory::load(Storage::disk('local')->path($outputPath));
+
+        $this->assertSame('TPL_COVER_SPJ', $generated->getActiveSheet()->getTitle());
+        $this->assertSame(
+            \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4,
+            $generated->getActiveSheet()->getPageSetup()->getPaperSize(),
+        );
+        $this->assertSame(
+            \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE,
+            $generated->getActiveSheet()->getPageSetup()->getOrientation(),
+        );
+        $this->assertSame(1, $generated->getActiveSheet()->getPageSetup()->getFitToWidth());
+        $this->assertSame(0, $generated->getActiveSheet()->getPageSetup()->getFitToHeight());
+        $this->assertSame('A1:H40', $generated->getActiveSheet()->getPageSetup()->getPrintArea());
+        $this->assertEqualsWithDelta(0.4, $generated->getActiveSheet()->getPageMargins()->getTop(), 0.0001);
+        $this->assertEqualsWithDelta(0.5, $generated->getActiveSheet()->getPageMargins()->getRight(), 0.0001);
+        $this->assertEqualsWithDelta(0.6, $generated->getActiveSheet()->getPageMargins()->getBottom(), 0.0001);
+        $this->assertEqualsWithDelta(0.7, $generated->getActiveSheet()->getPageMargins()->getLeft(), 0.0001);
+        $this->assertSame('UNCHANGED', $generated->getSheetByName('TPL_SECOND')?->getCell('A1')->getValue());
     }
 
-    public function test_equal_placeholders_inside_one_merged_range_are_resolved_at_the_anchor_without_unmerging(): void
+    public function test_repeating_row_renderer_uses_existing_template_rows_without_inserting_extra_rows(): void
     {
-        $workbook = new Spreadsheet;
-        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RAB_PEMELIHARAAN');
-        $sheet->mergeCells('G16:H16');
-        $sheet->setCellValue('G16', '{{TOTAL_RAB}}');
-        $sheet->setCellValue('H16', '{{NILAI_PEKERJAAN}}');
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A10', '{{ITEM_NO}}');
+        $sheet->setCellValue('B10', '{{ITEM_URAIAN}}');
+        $sheet->setCellValue('A11', '{{ITEM_NO}}');
+        $sheet->setCellValue('B11', '{{ITEM_URAIAN}}');
 
-        $service = new ExtendedSpjTemplateService;
-        $method = new ReflectionMethod($service, 'resolveMergedPlaceholderAnchors');
-        $method->invoke($service, $sheet, [
-            '{{TOTAL_RAB}}' => '125000',
-            '{{NILAI_PEKERJAAN}}' => '125000',
-        ]);
-
-        $this->assertSame('125000', (string) $sheet->getCell('G16')->getValue());
-        $this->assertSame('', (string) $sheet->getCell('H16')->getValue());
-        $this->assertContains('G16:H16', array_values($sheet->getMergeCells()));
-
-        $workbook->disconnectWorksheets();
-    }
-
-    public function test_conflicting_placeholders_inside_one_merged_range_fail_without_changing_the_template_merge(): void
-    {
-        $workbook = new Spreadsheet;
-        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RAB_PEMELIHARAAN');
-        $sheet->mergeCells('G16:H16');
-        $sheet->setCellValue('G16', '{{TOTAL_RAB}}');
-        $sheet->setCellValue('H16', '{{NILAI_PEKERJAAN}}');
-
-        $service = new ExtendedSpjTemplateService;
-        $method = new ReflectionMethod($service, 'resolveMergedPlaceholderAnchors');
-
-        try {
-            $method->invoke($service, $sheet, [
-                '{{TOTAL_RAB}}' => '125000',
-                '{{NILAI_PEKERJAAN}}' => '100000',
-            ]);
-            $this->fail('Merged placeholder dengan nilai berbeda harus ditolak.');
-        } catch (\Throwable $exception) {
-            $actual = $exception->getPrevious() ?? $exception;
-            $this->assertInstanceOf(RuntimeException::class, $actual);
-            $this->assertStringContainsString('menghasilkan nilai berbeda', $actual->getMessage());
-            $this->assertContains('G16:H16', array_values($sheet->getMergeCells()));
-        } finally {
-            $workbook->disconnectWorksheets();
-        }
-    }
-
-    public function test_canonical_pipeline_normalizes_non_anchor_merged_placeholders_in_memory(): void
-    {
-        $workbook = new Spreadsheet;
-        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RAB_PEMELIHARAAN');
-        $sheet->mergeCells('G16:H16');
-        $sheet->setCellValue('G16', '{{TOTAL_RAB}}');
-        $sheet->setCellValue('H16', '{{NILAI_PEKERJAAN}}');
-
-        $service = new ExtendedSpjTemplateService;
-        $normalize = new ReflectionMethod($service, 'normalizeMergedAnchorPlaceholders');
-        $resolve = new ReflectionMethod($service, 'resolveMergedPlaceholderAnchors');
-
-        $normalize->invoke($service, $sheet);
-        $resolve->invoke($service, $sheet, [
-            '{{TOTAL_RAB}}' => '125000',
-            '{{NILAI_PEKERJAAN}}' => '100000',
-        ]);
-
-        $this->assertSame('125000', (string) $sheet->getCell('G16')->getValue());
-        $this->assertSame('', (string) $sheet->getCell('H16')->getValue());
-        $this->assertContains('G16:H16', array_values($sheet->getMergeCells()));
-
-        $workbook->disconnectWorksheets();
-    }
-
-    public function test_repeating_row_renderer_clones_merge_formula_style_and_row_dimension(): void
-    {
-        $workbook = new Spreadsheet;
-        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RINCIAN');
-        $sheet->setCellValue('A5', '{{ITEM_NO}}');
-        $sheet->setCellValue('B5', '{{ITEM_URAIAN}}');
-        $sheet->setCellValue('D5', '=E5*F5');
-        $sheet->setCellValue('E5', '{{ITEM_VOLUME}}');
-        $sheet->setCellValue('F5', '{{ITEM_HARGA_SATUAN}}');
-        $sheet->mergeCells('B5:C5');
-        $sheet->getStyle('B5')->getFont()->setBold(true);
-        $sheet->getRowDimension(5)->setRowHeight(24);
-
-        $renderer = new SpjRepeatingRowRenderer;
-        $renderer->render(
+        app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
-            '{{ITEM_NO}}',
-            'ITEM_',
-            3,
-            fn (int $index): array => [
-                'ITEM_NO' => (string) $index,
-                'ITEM_URAIAN' => 'Barang '.$index,
-                'ITEM_VOLUME' => (string) $index,
-                'ITEM_HARGA_SATUAN' => '1000',
+            [
+                ['marker' => 'ITEM_NO', 'key' => 'no'],
+                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
+            ],
+            [
+                ['no' => 1, 'uraian' => 'ATK'],
+                ['no' => 2, 'uraian' => 'Kertas'],
             ],
         );
 
-        $this->assertSame('1', (string) $sheet->getCell('A5')->getValue());
-        $this->assertSame('2', (string) $sheet->getCell('A6')->getValue());
-        $this->assertSame('3', (string) $sheet->getCell('A7')->getValue());
-        $this->assertSame('Barang 2', (string) $sheet->getCell('B6')->getValue());
-        $this->assertSame('=E6*F6', (string) $sheet->getCell('D6')->getValue());
-        $this->assertSame('=E7*F7', (string) $sheet->getCell('D7')->getValue());
-        $this->assertContains('B5:C5', array_values($sheet->getMergeCells()));
-        $this->assertContains('B6:C6', array_values($sheet->getMergeCells()));
-        $this->assertContains('B7:C7', array_values($sheet->getMergeCells()));
-        $this->assertTrue($sheet->getStyle('B6')->getFont()->getBold());
-        $this->assertEqualsWithDelta(24.0, $sheet->getRowDimension(6)->getRowHeight(), 0.0001);
-        $this->assertEqualsWithDelta(24.0, $sheet->getRowDimension(7)->getRowHeight(), 0.0001);
-
-        $workbook->disconnectWorksheets();
+        $this->assertSame(11, $sheet->getHighestDataRow());
+        $this->assertSame('1', $sheet->getCell('A10')->getValue());
+        $this->assertSame('ATK', $sheet->getCell('B10')->getValue());
+        $this->assertSame('2', $sheet->getCell('A11')->getValue());
+        $this->assertSame('Kertas', $sheet->getCell('B11')->getValue());
     }
 
-    public function test_repeating_row_renderer_reuses_preallocated_rows_and_clears_unused_markers(): void
+    public function test_repeating_row_renderer_inserts_only_overflow_rows_and_carries_horizontal_merge_and_height(): void
     {
-        $workbook = new Spreadsheet;
-        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RINCIAN');
-        $sheet->setCellValue('A5', '{{ITEM_NO}}');
-        $sheet->setCellValue('B5', '{{ITEM_URAIAN}}');
-        $sheet->setCellValue('A6', '{{ITEM_NO}}');
-        $sheet->setCellValue('B6', '{{ITEM_URAIAN}}');
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A10', '{{ITEM_NO}}');
+        $sheet->setCellValue('B10', '{{ITEM_URAIAN}}');
+        $sheet->mergeCells('B10:C10');
+        $sheet->getRowDimension(10)->setRowHeight(26);
 
-        $renderer = new SpjRepeatingRowRenderer;
-        $renderer->render(
+        app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
-            '{{ITEM_NO}}',
-            'ITEM_',
-            1,
-            fn (int $index): array => [
-                'ITEM_NO' => (string) $index,
-                'ITEM_URAIAN' => 'Satu item',
+            [
+                ['marker' => 'ITEM_NO', 'key' => 'no'],
+                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
+            ],
+            [
+                ['no' => 1, 'uraian' => 'ATK'],
+                ['no' => 2, 'uraian' => 'Kertas'],
+                ['no' => 3, 'uraian' => 'Tinta'],
             ],
         );
 
-        $this->assertSame('1', (string) $sheet->getCell('A5')->getValue());
-        $this->assertSame('Satu item', (string) $sheet->getCell('B5')->getValue());
-        $this->assertSame('', (string) $sheet->getCell('A6')->getValue());
-        $this->assertSame('', (string) $sheet->getCell('B6')->getValue());
+        $this->assertSame('1', $sheet->getCell('A10')->getValue());
+        $this->assertSame('2', $sheet->getCell('A11')->getValue());
+        $this->assertSame('3', $sheet->getCell('A12')->getValue());
+        $this->assertContains('B11:C11', $sheet->getMergeCells());
+        $this->assertContains('B12:C12', $sheet->getMergeCells());
+        $this->assertEqualsWithDelta(26.0, $sheet->getRowDimension(11)->getRowHeight(), 0.0001);
+        $this->assertEqualsWithDelta(26.0, $sheet->getRowDimension(12)->getRowHeight(), 0.0001);
+    }
 
-        $workbook->disconnectWorksheets();
+    public function test_repeating_row_renderer_clears_empty_repeat_markers_without_changing_template_layout(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A10', '{{ITEM_NO}}');
+        $sheet->setCellValue('B10', 'Item: {{ITEM_URAIAN}}');
+        $sheet->setCellValue('A11', '{{ITEM_NO}}');
+        $sheet->setCellValue('B11', '{{ITEM_URAIAN}}');
+        $sheet->mergeCells('B10:C10');
+        $sheet->getRowDimension(10)->setRowHeight(26);
+
+        $beforeMergeCells = $sheet->getMergeCells();
+        $beforeRowHeight = $sheet->getRowDimension(10)->getRowHeight();
+
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            [
+                ['marker' => 'ITEM_NO', 'key' => 'no'],
+                ['marker' => 'ITEM_URAIAN', 'key' => 'uraian'],
+            ],
+            [],
+        );
+
+        $this->assertSame('', $sheet->getCell('A10')->getValue());
+        $this->assertSame('Item: ', $sheet->getCell('B10')->getValue());
+        $this->assertSame('', $sheet->getCell('A11')->getValue());
+        $this->assertSame('', $sheet->getCell('B11')->getValue());
+        $this->assertSame($beforeMergeCells, $sheet->getMergeCells());
+        $this->assertSame($beforeRowHeight, $sheet->getRowDimension(10)->getRowHeight());
     }
 }

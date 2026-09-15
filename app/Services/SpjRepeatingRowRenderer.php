@@ -3,185 +3,264 @@
 namespace App\Services;
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\ReferenceHelper;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Cell\ReferenceHelper;
+use PhpOffice\PhpSpreadsheet\Style\Style;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use RuntimeException;
 
-final class SpjRepeatingRowRenderer
+class SpjRepeatingRowRenderer
 {
     /**
-     * @param  callable(int): array<string, string>  $valuesForIndex
+     * @param  array<int, array{marker: string, key: string}>  $columns
+     * @param  array<int, array<string, mixed>>  $records
      */
-    public function render(
-        Worksheet $sheet,
-        string $anchorPlaceholder,
-        string $placeholderPrefix,
-        int $recordCount,
-        callable $valuesForIndex,
-    ): void {
-        $templateRows = $this->templateRows($sheet, $anchorPlaceholder);
-        if ($templateRows === [] || $recordCount < 1) {
+    public function render(Worksheet $sheet, array $columns, array $records): void
+    {
+        if ($columns === []) {
             return;
         }
 
-        sort($templateRows);
-        $sourceRow = $templateRows[0];
-        $highestColumn = $sheet->getHighestColumn();
-        $lastColumn = Coordinate::columnIndexFromString($highestColumn);
-        $horizontalMerges = $this->horizontalMergeColumns($sheet, $sourceRow);
+        $templateRows = $this->findTemplateRows($sheet, $columns);
 
-        if ($recordCount > count($templateRows)) {
-            $extraRows = $recordCount - count($templateRows);
-            $insertAt = max($templateRows) + 1;
-            $sheet->insertNewRowBefore($insertAt, $extraRows);
+        if ($templateRows === []) {
+            return;
+        }
 
-            for ($offset = 0; $offset < $extraRows; $offset++) {
-                $targetRow = $insertAt + $offset;
-                $this->cloneTemplateRow(
-                    $sheet,
-                    $sourceRow,
-                    $targetRow,
-                    $lastColumn,
-                    $horizontalMerges,
-                );
-                $templateRows[] = $targetRow;
+        if ($records === []) {
+            foreach ($templateRows as $templateRow) {
+                $this->clearMarkersOnRow($sheet, $templateRow, $columns);
+            }
+
+            return;
+        }
+
+        $lastTemplateRow = max($templateRows);
+        $rowAssignments = [];
+        $recordIndex = 0;
+
+        foreach ($templateRows as $templateRow) {
+            if ($recordIndex >= count($records)) {
+                $this->clearMarkersOnRow($sheet, $templateRow, $columns);
+
+                continue;
+            }
+
+            $rowAssignments[] = [
+                'row' => $templateRow,
+                'record' => $records[$recordIndex],
+            ];
+            $recordIndex++;
+        }
+
+        $remainingCount = count($records) - $recordIndex;
+
+        if ($remainingCount > 0) {
+            $sheet->insertNewRowBefore($lastTemplateRow + 1, $remainingCount);
+
+            for ($offset = 1; $offset <= $remainingCount; $offset++) {
+                $targetRow = $lastTemplateRow + $offset;
+                $this->copyTemplateRow($sheet, $lastTemplateRow, $targetRow);
+                $rowAssignments[] = [
+                    'row' => $targetRow,
+                    'record' => $records[$recordIndex],
+                ];
+                $recordIndex++;
             }
         }
 
-        sort($templateRows);
-
-        for ($index = 0; $index < $recordCount; $index++) {
-            $replacements = [];
-            foreach ($valuesForIndex($index + 1) as $key => $value) {
-                $replacements['{{'.$key.'}}'] = $value;
-            }
-
-            $this->replaceRowPlaceholders(
+        foreach ($rowAssignments as $assignment) {
+            $this->fillRecordRow(
                 $sheet,
-                $templateRows[$index],
-                $lastColumn,
-                $replacements,
+                $assignment['row'],
+                $columns,
+                $assignment['record'],
             );
-        }
-
-        foreach (array_slice($templateRows, $recordCount) as $unusedRow) {
-            $this->clearUnusedPlaceholders($sheet, $unusedRow, $lastColumn, $placeholderPrefix);
         }
     }
 
-    /** @return array<int, int> */
-    private function templateRows(Worksheet $sheet, string $anchorPlaceholder): array
+    /**
+     * @param  array<int, array{marker: string, key: string}>  $columns
+     * @return array<int, int>
+     */
+    private function findTemplateRows(Worksheet $sheet, array $columns): array
     {
-        $rows = [];
+        $markers = array_values(array_unique(array_map(
+            static fn (array $column): string => trim((string) ($column['marker'] ?? '')),
+            $columns,
+        )));
+        $markers = array_values(array_filter($markers, static fn (string $marker): bool => $marker !== ''));
 
-        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
-            $value = $sheet->getCell($coordinate)->getValue();
-            if (is_string($value) && str_contains($value, $anchorPlaceholder)) {
-                $rows[] = $sheet->getCell($coordinate)->getRow();
+        if ($markers === []) {
+            return [];
+        }
+
+        $rows = [];
+        $maxRow = $sheet->getHighestDataRow();
+        $highestDataColumn = $sheet->getHighestDataColumn();
+        $maxColumn = Coordinate::columnIndexFromString($highestDataColumn);
+
+        for ($row = 1; $row <= $maxRow; $row++) {
+            $found = false;
+
+            for ($column = 1; $column <= $maxColumn; $column++) {
+                $value = (string) ($sheet->getCell([$column, $row])->getValue() ?? '');
+
+                foreach ($markers as $marker) {
+                    if (str_contains($value, '{{'.$marker.'}}')) {
+                        $rows[] = $row;
+                        $found = true;
+
+                        break 2;
+                    }
+                }
+            }
+
+            if ($found) {
+                continue;
             }
         }
 
         return array_values(array_unique($rows));
     }
 
-    /** @return array<int, array{0:int,1:int}> */
-    private function horizontalMergeColumns(Worksheet $sheet, int $sourceRow): array
+    /**
+     * @param  array<int, array{marker: string, key: string}>  $columns
+     */
+    private function clearMarkersOnRow(Worksheet $sheet, int $row, array $columns): void
     {
-        $ranges = [];
+        $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
 
-        foreach (array_values($sheet->getMergeCells()) as $range) {
-            [[$startColumn, $startRow], [$endColumn, $endRow]] = Coordinate::rangeBoundaries($range);
-            if ($startRow === $sourceRow && $endRow === $sourceRow) {
-                $ranges[] = [$startColumn, $endColumn];
+        for ($column = 1; $column <= $maxColumn; $column++) {
+            $cell = $sheet->getCell([$column, $row]);
+            $value = (string) ($cell->getValue() ?? '');
+            $updated = $value;
+
+            foreach ($columns as $definition) {
+                $marker = trim((string) ($definition['marker'] ?? ''));
+
+                if ($marker === '') {
+                    continue;
+                }
+
+                $updated = str_replace('{{'.$marker.'}}', '', $updated);
+            }
+
+            if ($updated !== $value) {
+                $cell->setValue($updated);
             }
         }
-
-        return $ranges;
     }
 
     /**
-     * @param  array<int, array{0:int,1:int}>  $horizontalMerges
+     * @param  array<int, array{marker: string, key: string}>  $columns
+     * @param  array<string, mixed>  $record
      */
-    private function cloneTemplateRow(
-        Worksheet $sheet,
-        int $sourceRow,
-        int $targetRow,
-        int $lastColumn,
-        array $horizontalMerges,
-    ): void {
-        $sourceDimension = $sheet->getRowDimension($sourceRow);
-        $targetDimension = $sheet->getRowDimension($targetRow);
-        $targetDimension
-            ->setRowHeight($sourceDimension->getRowHeight())
-            ->setVisible($sourceDimension->getVisible())
-            ->setOutlineLevel($sourceDimension->getOutlineLevel())
-            ->setCollapsed($sourceDimension->getCollapsed())
-            ->setZeroHeight($sourceDimension->getZeroHeight());
+    private function fillRecordRow(Worksheet $sheet, int $row, array $columns, array $record): void
+    {
+        $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
 
-        for ($column = 1; $column <= $lastColumn; $column++) {
-            $columnName = Coordinate::stringFromColumnIndex($column);
-            $sourceCoordinate = $columnName.$sourceRow;
-            $targetCoordinate = $columnName.$targetRow;
-            $sourceCell = $sheet->getCell($sourceCoordinate);
-            $value = $sourceCell->getValue();
+        for ($column = 1; $column <= $maxColumn; $column++) {
+            $cell = $sheet->getCell([$column, $row]);
+            $value = (string) ($cell->getValue() ?? '');
+            $updated = $value;
 
-            if (is_string($value) && str_starts_with($value, '=')) {
-                $value = ReferenceHelper::getInstance()->updateFormulaReferences(
-                    $value,
-                    'A1',
-                    0,
-                    $targetRow - $sourceRow,
-                    $sheet->getTitle(),
-                );
+            foreach ($columns as $definition) {
+                $marker = trim((string) ($definition['marker'] ?? ''));
+                $key = trim((string) ($definition['key'] ?? ''));
+
+                if ($marker === '' || $key === '') {
+                    continue;
+                }
+
+                $replacement = $record[$key] ?? '';
+                $replacement = is_scalar($replacement) ? (string) $replacement : '';
+
+                $updated = str_replace('{{'.$marker.'}}', $replacement, $updated);
             }
 
-            $sheet->getCell($targetCoordinate)->setValue($value);
-            $sheet->duplicateStyle($sheet->getStyle($sourceCoordinate), $targetCoordinate);
+            if ($updated !== $value) {
+                $cell->setValueExplicit($updated, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            }
+        }
+    }
+
+    private function copyTemplateRow(Worksheet $sheet, int $sourceRow, int $targetRow): void
+    {
+        $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+
+        for ($column = 1; $column <= $maxColumn; $column++) {
+            $sourceCell = $sheet->getCell([$column, $sourceRow]);
+            $targetCell = $sheet->getCell([$column, $targetRow]);
+
+            $targetCell->setValue(
+                $this->translateFormulaForCopiedRow(
+                    $sourceCell->getValue(),
+                    $sourceCell->getCoordinate(),
+                    $targetCell->getCoordinate(),
+                ),
+            );
+
+            if ($sourceCell->hasStyle()) {
+                $targetCell->setXfIndex($sourceCell->getXfIndex());
+            } else {
+                $targetCell->setStyle(new Style);
+            }
 
             if ($sourceCell->hasDataValidation()) {
-                $sheet->setDataValidation($targetCoordinate, clone $sourceCell->getDataValidation());
+                $targetCell->setDataValidation(clone $sourceCell->getDataValidation());
+            } else {
+                $targetCell->setDataValidation(new DataValidation);
             }
         }
 
-        foreach ($horizontalMerges as [$startColumn, $endColumn]) {
-            $range = Coordinate::stringFromColumnIndex($startColumn).$targetRow
-                .':'.Coordinate::stringFromColumnIndex($endColumn).$targetRow;
+        $sourceDimension = $sheet->getRowDimension($sourceRow);
+        $targetDimension = $sheet->getRowDimension($targetRow);
+        $targetDimension->setRowHeight($sourceDimension->getRowHeight());
+        $targetDimension->setVisible($sourceDimension->getVisible());
+        $targetDimension->setCollapsed($sourceDimension->getCollapsed());
+        $targetDimension->setOutlineLevel($sourceDimension->getOutlineLevel());
 
-            if (! isset($sheet->getMergeCells()[$range])) {
-                $sheet->mergeCells($range);
+        foreach ($sheet->getMergeCells() as $mergeRange) {
+            [$start, $end] = explode(':', $mergeRange, 2);
+            [$startColumn, $startRow] = Coordinate::indexesFromString($start);
+            [$endColumn, $endRow] = Coordinate::indexesFromString($end);
+
+            if ($startRow !== $sourceRow || $endRow !== $sourceRow) {
+                continue;
+            }
+
+            $targetRange = sprintf(
+                '%s%d:%s%d',
+                Coordinate::stringFromColumnIndex($startColumn),
+                $targetRow,
+                Coordinate::stringFromColumnIndex($endColumn),
+                $targetRow,
+            );
+
+            if (! in_array($targetRange, $sheet->getMergeCells(), true)) {
+                $sheet->mergeCells($targetRange);
             }
         }
     }
 
-    /** @param array<string, string> $replacements */
-    private function replaceRowPlaceholders(
-        Worksheet $sheet,
-        int $row,
-        int $lastColumn,
-        array $replacements,
-    ): void {
-        for ($column = 1; $column <= $lastColumn; $column++) {
-            $coordinate = Coordinate::stringFromColumnIndex($column).$row;
-            $value = $sheet->getCell($coordinate)->getValue();
-            if (is_string($value)) {
-                $sheet->getCell($coordinate)->setValue(strtr($value, $replacements));
-            }
+    private function translateFormulaForCopiedRow(mixed $value, string $sourceCoordinate, string $targetCoordinate): mixed
+    {
+        if (! is_string($value) || ! str_starts_with($value, '=')) {
+            return $value;
         }
-    }
 
-    private function clearUnusedPlaceholders(
-        Worksheet $sheet,
-        int $row,
-        int $lastColumn,
-        string $placeholderPrefix,
-    ): void {
-        $needle = '{{'.$placeholderPrefix;
-
-        for ($column = 1; $column <= $lastColumn; $column++) {
-            $coordinate = Coordinate::stringFromColumnIndex($column).$row;
-            $value = $sheet->getCell($coordinate)->getValue();
-            if (is_string($value) && str_contains($value, $needle)) {
-                $sheet->getCell($coordinate)->setValue('');
-            }
+        try {
+            return ReferenceHelper::getInstance()->updateFormulaReferences(
+                $value,
+                'A1',
+                0,
+                0,
+                $targetCoordinate,
+                $sourceCoordinate,
+            );
+        } catch (RuntimeException) {
+            return $value;
         }
     }
 }
