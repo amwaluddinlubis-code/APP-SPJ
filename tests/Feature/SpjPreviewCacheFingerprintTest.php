@@ -8,9 +8,7 @@ use App\Models\FundSource;
 use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
-use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjTemplateService;
-use App\Support\ActiveSpjContext;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -109,21 +107,15 @@ class SpjPreviewCacheFingerprintTest extends TestCase
         $transaction = $this->transaction();
         $recipient = $this->serviceRecipient($transaction);
         $package = $this->package($transaction, 'SPJ-CACHE-RENDER');
-        $templates = collect([$this->template(101)]);
+        $this->persistedTemplate();
 
-        $this->mock(SpjPackageTemplateSelector::class, function (MockInterface $mock) use ($templates): void {
-            $mock->shouldReceive('spreadsheetsForPackage')->times(3)->andReturn($templates);
-        });
         $this->mock(SpjTemplateService::class, function (MockInterface $mock): void {
             $mock->shouldReceive('packagePreviewPdfBytes')
                 ->twice()
                 ->andReturn('%PDF-1.4 cache regression');
         });
 
-        $useCase = new SpjDocumentUseCase(
-            app(ActiveSpjContext::class),
-            app(SpjPackageTemplateSelector::class),
-        );
+        $useCase = app(SpjDocumentUseCase::class);
 
         $first = $useCase->previewPackagePdf((string) $package->id);
         $second = $useCase->previewPackagePdf((string) $package->id);
@@ -185,6 +177,19 @@ class SpjPreviewCacheFingerprintTest extends TestCase
             'name' => 'Template Cache',
             'format' => 'xlsx',
             'file_path' => 'document-templates/cache.xlsx',
+            'is_active' => true,
+        ]);
+    }
+
+    private function persistedTemplate(): DocumentTemplate
+    {
+        return DocumentTemplate::query()->create([
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'KUITANSI',
+            'name' => 'Template Cache Aktif',
+            'format' => 'xlsx',
+            'file_path' => 'document-templates/cache-active.xlsx',
+            'applicable_categories' => ['JASA_LAINNYA'],
             'is_active' => true,
         ]);
     }
