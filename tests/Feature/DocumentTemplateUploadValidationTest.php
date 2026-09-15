@@ -31,6 +31,11 @@ class DocumentTemplateUploadValidationTest extends TestCase
             '--path' => 'database/migrations/school/2026_09_01_000000_create_complete_spj_tenant_tables.php',
             '--force' => true,
         ]);
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/school/2026_09_16_230000_add_is_siplah_mapping_to_document_templates.php',
+            '--force' => true,
+        ]);
 
         DB::connection('school')->table('fund_sources')->insert([
             'id' => 1,
@@ -93,13 +98,14 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $this->assertSame(1, DocumentTemplate::query()->count());
     }
 
-    public function test_valid_upload_is_saved_even_when_sheet_name_only_produces_warning(): void
+    public function test_valid_upload_persists_siplah_scope_even_when_sheet_name_only_produces_warning(): void
     {
         $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
         $request = Request::create('/pengaturan/template-dokumen', 'POST', [
             'document_type' => 'RINCIAN_BELANJA',
             'name' => 'Template Valid',
             'applicable_categories' => ['BARANG'],
+            'siplah_scope' => 'siplah',
         ], [], [
             'template' => new UploadedFile($path, 'template.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
         ]);
@@ -111,6 +117,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $template = DocumentTemplate::query()->sole();
         $this->assertSame('RINCIAN_BELANJA', $template->document_type);
         $this->assertSame(['BARANG'], $template->applicable_categories);
+        $this->assertTrue($template->is_siplah);
         Storage::assertExists($template->file_path);
     }
 
@@ -148,6 +155,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
 
         $template = DocumentTemplate::query()->sole();
         $this->assertSame('xlsx', $template->format);
+        $this->assertNull($template->is_siplah);
         Storage::disk('local')->assertExists($template->file_path);
     }
 
@@ -185,6 +193,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
             'format' => 'xlsx',
             'file_path' => $oldPath,
             'applicable_categories' => [],
+            'is_siplah' => false,
             'is_active' => true,
         ]);
 
@@ -193,6 +202,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
             'document_type' => 'RINCIAN_BELANJA',
             'name' => 'Template Baru',
             'applicable_categories' => ['BARANG'],
+            'siplah_scope' => 'all',
         ], [], [
             'template' => new UploadedFile($path, 'template.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
         ]);
@@ -204,6 +214,7 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $this->assertSame('Template Baru', $existing->name);
         $this->assertNotSame($oldPath, $existing->file_path);
         $this->assertSame(['BARANG'], $existing->applicable_categories);
+        $this->assertNull($existing->is_siplah);
         Storage::assertExists($existing->file_path);
         Storage::assertMissing($oldPath);
         $this->assertSame(1, DocumentTemplate::query()->count());
