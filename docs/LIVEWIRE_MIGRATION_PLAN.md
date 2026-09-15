@@ -203,7 +203,7 @@ Integration gate sudah hijau, tetapi migrasi Livewire baru bukan prioritas otoma
 Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat read-only:
 
 1. Rekonsiliasi — search/filter read-only — **IMPLEMENTED 2026-09-14** (`ReconciliationList`, uncommitted working tree saat dicatat).
-2. Template Dokumen — filter katalog; upload/update tetap canonical controller/service flow kecuali didesain ulang secara khusus.
+2. Template Dokumen — panel Template yang Tersedia sudah memakai `DocumentTemplateList` untuk filter, pagination, dan pemetaan reaktif; upload dan penghapusan tetap melalui controller/service canonical.
 3. Laporan Audit — pagination/read-only filter.
 
 Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:

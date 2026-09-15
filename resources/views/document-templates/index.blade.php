@@ -309,6 +309,8 @@
                 </div>
             </div>
             <div x-show="open">
+                <livewire:document-template-list :status="$filters['status'] ?? 'all'" :category="$filters['category'] ?? ''" />
+                @if (false)
                 @include('document-templates.partials.template-filters')
 
                 <div class="overflow-x-auto">
@@ -438,6 +440,7 @@
                 </div>
                 @if ($templates->hasPages())
                     <x-ui.server-pagination :paginator="$templates" noun="template" />
+                @endif
                 @endif
             </div>
         </section>

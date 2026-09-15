@@ -85,7 +85,11 @@ class DocumentTemplateSiplahMappingTest extends TestCase
         $source = file_get_contents(resource_path('views/document-templates/index.blade.php'));
 
         $this->assertIsString($source);
-        $this->assertStringContainsString('name="siplah_scope"', $source);
+        $this->assertStringContainsString('<livewire:document-template-list', $source);
+        $component = file_get_contents(resource_path('views/livewire/document-template-list.blade.php'));
+        $this->assertIsString($component);
+        $this->assertStringContainsString('wire:model="mappingScopes.', $component);
+        $this->assertStringContainsString('wire:click="saveMapping(', $component);
         $this->assertStringContainsString('Semua channel', $source);
         $this->assertStringContainsString('SiPlah saja', $source);
         $this->assertStringContainsString('Non-SiPlah saja', $source);
