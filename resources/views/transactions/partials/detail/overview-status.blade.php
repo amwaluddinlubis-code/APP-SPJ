@@ -36,7 +36,7 @@
                     Lengkapi Uraian Item
                 </a>
             @else
-                <div x-show="itemDescriptionsDirty" x-cloak class="flex flex-col items-start gap-2 lg:items-end">
+                <div x-show="spjDescriptionsDirty" x-cloak class="flex flex-col items-start gap-2 lg:items-end">
                     <p class="max-w-sm text-xs text-amber-700 lg:text-right">
                         Ada perubahan uraian item yang belum tersimpan. Simpan perubahan sebelum melihat Paket SPJ.
                     </p>
@@ -45,7 +45,7 @@
                     </a>
                 </div>
 
-                <div x-show="!itemDescriptionsDirty" class="flex flex-col items-start gap-2 lg:items-end">
+                <div x-show="!spjDescriptionsDirty" class="flex flex-col items-start gap-2 lg:items-end">
                     @if ($transaction->spjPackage)
                         <a href="{{ route('transactions.prepare-spj', $transaction->id) }}"
                             class="ui-btn ui-btn-primary px-4 py-2 text-sm">
