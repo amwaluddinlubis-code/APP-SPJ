@@ -8,10 +8,15 @@ use App\Models\FundSource;
 use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\SpjPackageTemplateSelector;
+use App\Services\SpjTemplateService;
+use App\Support\ActiveSpjContext;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Mockery\MockInterface;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -29,7 +34,9 @@ class SpjPreviewCacheFingerprintTest extends TestCase
 
         config()->set('database.connections.school.database', ':memory:');
         config()->set('database.connections.school.journal_mode', null);
+        config()->set('cache.default', 'array');
         DB::purge('school');
+        Cache::flush();
 
         Artisan::call('migrate', [
             '--database' => 'school',
@@ -73,6 +80,7 @@ class SpjPreviewCacheFingerprintTest extends TestCase
 
     protected function tearDown(): void
     {
+        Cache::flush();
         DB::purge('school');
         parent::tearDown();
     }
@@ -80,36 +88,9 @@ class SpjPreviewCacheFingerprintTest extends TestCase
     public function test_fingerprint_is_stable_for_same_render_state_and_changes_with_service_recipient(): void
     {
         $transaction = $this->transaction();
-        $recipient = $transaction->serviceRecipients()->create([
-            'name' => 'Penerima Cache A',
-            'service_type' => 'Pelatihan',
-            'service_description' => 'Jasa cache',
-            'quantity' => 1,
-            'unit' => 'kegiatan',
-            'rental_days' => 1,
-            'daily_rate' => 100000,
-            'amount' => 100000,
-            'tax_amount' => 5000,
-            'net_amount' => 95000,
-            'sort_order' => 1,
-        ]);
-        $package = $transaction->spjPackage()->create([
-            'document_number' => 'SPJ-CACHE-001',
-            'quarter_code' => 'TW1',
-            'semester_code' => 'S1',
-            'status' => 'READY',
-        ]);
-
-        $template = (new DocumentTemplate)->forceFill([
-            'id' => 99,
-            'fiscal_year_id' => $this->year->id,
-            'document_type' => 'KUITANSI',
-            'name' => 'Template Cache',
-            'format' => 'xlsx',
-            'file_path' => 'document-templates/cache.xlsx',
-            'is_active' => true,
-        ]);
-        $templates = collect([$template]);
+        $recipient = $this->serviceRecipient($transaction);
+        $package = $this->package($transaction, 'SPJ-CACHE-001');
+        $templates = collect([$this->template(99)]);
 
         $first = $this->fingerprint($package->fresh('transaction'), $templates);
         $same = $this->fingerprint($package->fresh('transaction'), $templates);
@@ -123,24 +104,46 @@ class SpjPreviewCacheFingerprintTest extends TestCase
         $this->assertNotSame($first, $changed);
     }
 
+    public function test_preview_package_cache_hits_then_invalidates_when_recipient_changes(): void
+    {
+        $transaction = $this->transaction();
+        $recipient = $this->serviceRecipient($transaction);
+        $package = $this->package($transaction, 'SPJ-CACHE-RENDER');
+        $templates = collect([$this->template(101)]);
+
+        $this->mock(SpjPackageTemplateSelector::class, function (MockInterface $mock) use ($templates): void {
+            $mock->shouldReceive('spreadsheetsForPackage')->times(3)->andReturn($templates);
+        });
+        $this->mock(SpjTemplateService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('packagePreviewPdfBytes')
+                ->twice()
+                ->andReturn('%PDF-1.4 cache regression');
+        });
+
+        $useCase = new SpjDocumentUseCase(
+            app(ActiveSpjContext::class),
+            app(SpjPackageTemplateSelector::class),
+        );
+
+        $first = $useCase->previewPackagePdf((string) $package->id);
+        $second = $useCase->previewPackagePdf((string) $package->id);
+
+        $this->assertSame(200, $first->getStatusCode());
+        $this->assertSame(200, $second->getStatusCode());
+        $this->assertSame($first->getContent(), $second->getContent());
+
+        $recipient->update(['name' => 'Penerima Cache Sesudah Perubahan']);
+
+        $third = $useCase->previewPackagePdf((string) $package->id);
+
+        $this->assertSame(200, $third->getStatusCode());
+    }
+
     public function test_fingerprint_changes_when_school_profile_changes(): void
     {
         $transaction = $this->transaction();
-        $package = $transaction->spjPackage()->create([
-            'document_number' => 'SPJ-CACHE-002',
-            'quarter_code' => 'TW1',
-            'semester_code' => 'S1',
-            'status' => 'READY',
-        ]);
-        $templates = collect([(new DocumentTemplate)->forceFill([
-            'id' => 100,
-            'fiscal_year_id' => $this->year->id,
-            'document_type' => 'KUITANSI',
-            'name' => 'Template Cache',
-            'format' => 'xlsx',
-            'file_path' => 'document-templates/cache.xlsx',
-            'is_active' => true,
-        ])]);
+        $package = $this->package($transaction, 'SPJ-CACHE-002');
+        $templates = collect([$this->template(100)]);
 
         $before = $this->fingerprint($package->fresh('transaction'), $templates);
 
@@ -161,6 +164,46 @@ class SpjPreviewCacheFingerprintTest extends TestCase
         $method = new ReflectionMethod(SpjDocumentUseCase::class, 'packagePreviewCacheKey');
 
         return $method->invoke(app(SpjDocumentUseCase::class), $package, $templates);
+    }
+
+    private function package(Transaction $transaction, string $number): SpjPackage
+    {
+        return $transaction->spjPackage()->create([
+            'document_number' => $number,
+            'quarter_code' => 'TW1',
+            'semester_code' => 'S1',
+            'status' => 'READY',
+        ]);
+    }
+
+    private function template(int $id): DocumentTemplate
+    {
+        return (new DocumentTemplate)->forceFill([
+            'id' => $id,
+            'fiscal_year_id' => $this->year->id,
+            'document_type' => 'KUITANSI',
+            'name' => 'Template Cache',
+            'format' => 'xlsx',
+            'file_path' => 'document-templates/cache.xlsx',
+            'is_active' => true,
+        ]);
+    }
+
+    private function serviceRecipient(Transaction $transaction)
+    {
+        return $transaction->serviceRecipients()->create([
+            'name' => 'Penerima Cache A',
+            'service_type' => 'Pelatihan',
+            'service_description' => 'Jasa cache',
+            'quantity' => 1,
+            'unit' => 'kegiatan',
+            'rental_days' => 1,
+            'daily_rate' => 100000,
+            'amount' => 100000,
+            'tax_amount' => 5000,
+            'net_amount' => 95000,
+            'sort_order' => 1,
+        ]);
     }
 
     private function transaction(): Transaction
