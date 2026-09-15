@@ -278,20 +278,74 @@ class SpjDocumentUseCase
     private function packagePreviewCacheKey(SpjPackage $package, Collection $templates): string
     {
         $transaction = $package->transaction;
+        $transaction->loadMissing([
+            'items',
+            'goods',
+            'workOrder',
+            'workers',
+            'participants.item',
+            'travels',
+            'honors',
+            'serviceRecipients',
+            'payments',
+            'goodsReceipts',
+            'fiscalYear',
+        ]);
+
         $revision = [
             'school_id' => $this->context->schoolId(),
             'fiscal_year_id' => $this->context->fiscalYearId(),
             'fund_source_id' => $this->context->fundSourceId(),
-            'package' => $package->toArray(),
-            'transaction' => $transaction->toArray(),
-            'templates' => $templates->map(fn (DocumentTemplate $template): array => $template->toArray())->all(),
-            'school_profile_updated_at' => DB::connection('school')
+            'package' => $this->stableAttributes($package),
+            'transaction' => $this->stableAttributes($transaction),
+            'fiscal_year' => $transaction->fiscalYear ? $this->stableAttributes($transaction->fiscalYear) : null,
+            'items' => $this->stableModels($transaction->items),
+            'goods' => $this->stableModels($transaction->goods),
+            'work_order' => $transaction->workOrder ? $this->stableAttributes($transaction->workOrder) : null,
+            'workers' => $this->stableModels($transaction->workers),
+            'participants' => $transaction->participants
+                ->sortBy(fn ($participant): string => sprintf('%010d:%010d', (int) ($participant->sort_order ?? 0), (int) $participant->getKey()))
+                ->values()
+                ->map(fn ($participant): array => [
+                    'attributes' => $this->stableAttributes($participant),
+                    'item' => $participant->item ? $this->stableAttributes($participant->item) : null,
+                ])
+                ->all(),
+            'travels' => $this->stableModels($transaction->travels),
+            'honors' => $this->stableModels($transaction->honors),
+            'service_recipients' => $this->stableModels($transaction->serviceRecipients),
+            'payments' => $this->stableModels($transaction->payments),
+            'goods_receipts' => $this->stableModels($transaction->goodsReceipts),
+            'templates' => $templates
+                ->sortBy(fn (DocumentTemplate $template): string => sprintf('%010d:%s', (int) $template->getKey(), (string) $template->document_type))
+                ->values()
+                ->map(fn (DocumentTemplate $template): array => $this->stableAttributes($template))
+                ->all(),
+            'school' => $this->stableAttributes($this->context->school()),
+            'school_profile' => DB::connection('school')
                 ->table('school_profiles')
                 ->where('fiscal_year_id', $transaction->fiscal_year_id)
-                ->value('updated_at'),
+                ->first(),
         ];
 
         return 'spj:preview-package-pdf:'.hash('sha256', serialize($revision));
+    }
+
+    private function stableAttributes(object $model): array
+    {
+        $attributes = $model->getAttributes();
+        ksort($attributes);
+
+        return $attributes;
+    }
+
+    private function stableModels(Collection $models): array
+    {
+        return $models
+            ->sortBy(fn ($model): string => sprintf('%010d:%010d', (int) ($model->sort_order ?? 0), (int) $model->getKey()))
+            ->values()
+            ->map(fn ($model): array => $this->stableAttributes($model))
+            ->all();
     }
 
     private function applyDocumentContext(SpjPackage $package): void
