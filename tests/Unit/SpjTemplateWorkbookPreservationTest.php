@@ -29,7 +29,7 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
             ->setFitToPage(true)
             ->setFitToWidth(1)
             ->setFitToHeight(0)
-            ->setPrintArea('$A$1:$I$34');
+            ->setPrintArea('A1:I34');
         $sheet->getPageMargins()
             ->setTop(0.3)
             ->setRight(0.25)
@@ -59,7 +59,7 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
             $this->assertTrue($actual->getPageSetup()->getFitToPage());
             $this->assertSame(1, $actual->getPageSetup()->getFitToWidth());
             $this->assertSame(0, $actual->getPageSetup()->getFitToHeight());
-            $this->assertSame('$A$1:$I$34', $actual->getPageSetup()->getPrintArea());
+            $this->assertSame('A1:I34', $actual->getPageSetup()->getPrintArea());
             $this->assertEqualsWithDelta(0.3, $actual->getPageMargins()->getTop(), 0.0001);
             $this->assertEqualsWithDelta(0.25, $actual->getPageMargins()->getRight(), 0.0001);
             $this->assertEqualsWithDelta(0.4, $actual->getPageMargins()->getBottom(), 0.0001);
@@ -97,8 +97,8 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
             '{{NILAI_PEKERJAAN}}' => '125000',
         ]);
 
-        $this->assertSame('125000', $sheet->getCell('G16')->getValue());
-        $this->assertSame('', $sheet->getCell('H16')->getValue());
+        $this->assertSame('125000', (string) $sheet->getCell('G16')->getValue());
+        $this->assertSame('', (string) $sheet->getCell('H16')->getValue());
         $this->assertContains('G16:H16', array_values($sheet->getMergeCells()));
 
         $workbook->disconnectWorksheets();
