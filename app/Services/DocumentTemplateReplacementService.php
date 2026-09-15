@@ -28,6 +28,7 @@ class DocumentTemplateReplacementService
         UploadedFile $uploaded,
         string $extension,
         array $applicableCategories = [],
+        ?bool $isSiplah = null,
     ): DocumentTemplate {
         $newPath = $uploaded->storeAs(
             'document-templates/'.$fiscalYearId,
@@ -46,6 +47,7 @@ class DocumentTemplateReplacementService
                 $name,
                 $extension,
                 $applicableCategories,
+                $isSiplah,
                 $newPath,
             ): array {
                 $existing = DocumentTemplate::query()
@@ -61,6 +63,7 @@ class DocumentTemplateReplacementService
                     'name' => $name,
                     'file_path' => $newPath,
                     'applicable_categories' => $applicableCategories,
+                    'is_siplah' => $isSiplah,
                     'is_active' => true,
                 ];
 
