@@ -6,7 +6,7 @@ use App\Http\Middleware\EnsureActiveFiscalYear;
 use App\Http\Middleware\EnsureActiveSchool;
 use App\Models\FiscalYear;
 use App\Models\School;
-use App\Services\ExtendedSpjTemplateService;
+use App\Services\PreviewAlignedSpjTemplateService;
 use App\Services\SchoolDatabaseManager;
 use App\Services\SpjTemplateService;
 use App\UseCases\Spj\ExtendedSpjReportUseCase;
@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(SpjTemplateService::class, ExtendedSpjTemplateService::class);
+        $this->app->bind(SpjTemplateService::class, PreviewAlignedSpjTemplateService::class);
         $this->app->bind(SpjReportUseCase::class, ExtendedSpjReportUseCase::class);
     }
 
