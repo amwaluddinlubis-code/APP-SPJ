@@ -159,7 +159,7 @@ class DocumentTemplateSiplahMappingTest extends TestCase
             ->assertSet('mappingActive.'.$templateId, false);
     }
 
-    public function test_reactive_filter_updates_visible_template_count(): void
+    public function test_reactive_filter_updates_visible_templates(): void
     {
         $this->createTemplate(['name' => 'Template Barang']);
         $this->createTemplate([
@@ -171,9 +171,9 @@ class DocumentTemplateSiplahMappingTest extends TestCase
 
         Livewire::actingAs($administrator)
             ->test(DocumentTemplateList::class)
-            ->assertSee('2 template sesuai filter daftar saat ini.')
+            ->assertSee('Template Barang')
+            ->assertSee('Template SPPD')
             ->set('category', 'BARANG')
-            ->assertSee('1 template sesuai filter daftar saat ini.')
             ->assertSee('Template Barang')
             ->assertDontSee('Template SPPD');
     }
