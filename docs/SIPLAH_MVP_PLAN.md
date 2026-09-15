@@ -26,6 +26,7 @@ Contoh canonical:
 ```text
 spj_category   = BARANG
 payment_method = siplah
+is_siplah      = true
 ```
 
 Tidak ada kategori `SIPLAH`, lifecycle khusus SiPLah, atau numbering khusus SiPLah.
@@ -42,6 +43,7 @@ Regression aktif membuktikan:
 - BARANG SiPLah tidak dipaksa memenuhi internal purchase-order requirement yang tidak applicable;
 - incomplete metadata SiPLah tidak menambahkan READY blocker yang tidak mempunyai dasar aturan;
 - policy dokumen marketplace mempunyai regression khusus;
+- pemetaan template Paket berdasarkan `is_siplah` mempunyai regression khusus;
 - preview/download tetap tidak boleh menerbitkan nomor secara diam-diam.
 
 Bukti regression utama:
@@ -49,9 +51,10 @@ Bukti regression utama:
 ```text
 tests/Feature/SiplahPurchaseMvpTest.php
 tests/Feature/SiplahMarketplaceDocumentPolicyTest.php
+tests/Feature/DocumentTemplateSiplahMappingTest.php
 ```
 
-Keduanya merupakan bagian dari source/test yang sudah tercakup pada functional gate branch aktif.
+Ketiganya merupakan bagian dari source/test yang tercakup pada functional gate branch aktif.
 
 ## 3. Field dan ownership
 
@@ -59,6 +62,7 @@ Field utama yang digunakan antara lain:
 
 ```text
 payment_method
+is_siplah
 siplah_order_number
 vendor_name
 vendor_owner
@@ -91,15 +95,19 @@ Untuk transaksi SiPLah:
 - nomor Surat Pesanan internal bukan nomor marketplace;
 - internal purchase-order requirement yang tidak applicable tidak boleh menjadi blocker.
 
-Pemetaan generated-document pada Paket SPJ tetap dimulai dari kategori canonical `BARANG`, lalu difilter oleh flag persisted `is_siplah` khusus untuk pemetaan paket:
+Pemetaan generated-document pada Paket SPJ tetap dimulai dari kategori canonical `BARANG`, lalu difilter oleh flag persisted `is_siplah` transaksi dan mapping `document_templates.is_siplah`:
 
-- document type yang tidak mempunyai mapping `is_siplah` khusus dianggap shared dan tetap dapat masuk bila template aktif serta mapping kategorinya cocok;
-- `SPJ_COVER`, `SPJ_SPTJM`, `SPJ_CHECKLIST`, `SPJ_KUITANSI_A2`, dan dokumen umum/kategori lain tetap dapat masuk pada SiPLah maupun Non-SiPLah bila tidak diberi rule eksklusif;
-- `SPJ_SURAT_PESANAN`, `SPJ_BA_PEMERIKSAAN`, dan `SPJ_BAST_PEMBELIAN` dipetakan `is_siplah=false`, sehingga dikeluarkan dari paket ketika `is_siplah=true`;
-- struktur mapping menerima rule `is_siplah=true` bila di kemudian hari ada generated-document yang memang hanya berlaku untuk paket SiPLah;
+- `document_templates.is_siplah = NULL` berarti template berlaku pada SiPLah dan Non-SiPLah;
+- `document_templates.is_siplah = true` berarti template hanya berlaku pada Paket SiPLah;
+- `document_templates.is_siplah = false` berarti template hanya berlaku pada Paket Non-SiPLah;
+- template tetap harus aktif dan mapping kategorinya harus cocok;
+- `SPJ_COVER`, `SPJ_CHECKLIST`, `KUITANSI_A2`, dan dokumen lain dapat tetap shared dengan nilai `NULL`;
+- `SURAT_PESANAN`, `BAP`, dan `BAST` memiliki default `is_siplah=false`, sehingga tidak masuk Paket ketika transaksi mempunyai `is_siplah=true`;
 - pemetaan Paket tidak menginfer nilai `is_siplah` dari `payment_method`; sinkronisasi/normalisasi field tetap menjadi tanggung jawab boundary yang memiliki data tersebut.
 
-Untuk Non-SiPLah, Surat Pesanan internal, BA Pemeriksaan, dan BAST Pembelian tetap mengikuti mapping kategori dan document requirement aplikasi bila applicable.
+Untuk Non-SiPLah, Surat Pesanan internal, BA Pemeriksaan, dan BAST tetap mengikuti mapping kategori dan document requirement aplikasi bila applicable.
+
+Import workbook master memberi default Non-SiPlah pada `SURAT_PESANAN`, `BAP`, dan `BAST` yang baru dibuat. Jika import mengganti template yang sudah ada, mapping `is_siplah` yang telah diatur operator dipertahankan.
 
 ## 5. Placeholder SiPLah
 
@@ -138,6 +146,27 @@ Kategori SPJ | ○ SiPLah  ○ Non SiPLah
 Kontrol tersebut bukan domain field baru. Kedua radio adalah satu group dan mutually-exclusive, hanya ditampilkan pada kategori BARANG, dan bersifat UI-only: hanya show/hide section pengadaan (SiPLah vs internal), nilainya tidak disimpan dan tidak pernah menulis `payment_method`. Status awal radio diturunkan dari `payment_method`/`is_siplah`. Bila source authoritative mengunci transaksi sebagai SiPLah, UI biasa tidak boleh membaliknya tanpa rule yang sah; Non SiPLah dapat disabled.
 
 SiPLah dilarang di luar BARANG: KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, dan HONOR_PEGAWAI tidak mengenal channel SiPLah; `payment_method = siplah` pada kategori tersebut adalah data tidak valid.
+
+### Pengaturan → Template Dokumen
+
+Setiap template mempunyai pemetaan **Channel Paket SPJ** yang dapat diatur saat upload/ganti satu template maupun pada tabel **Template yang Tersedia**:
+
+```text
+Semua channel   -> document_templates.is_siplah = NULL
+SiPlah saja     -> document_templates.is_siplah = true
+Non-SiPlah saja -> document_templates.is_siplah = false
+```
+
+Pilihan ini berdampingan dengan mapping kategori SPJ dan status aktif. Selector Paket menggunakan kombinasi:
+
+```text
+is_active
++ applicable_categories
++ document_templates.is_siplah
++ transaction.is_siplah
+```
+
+Dengan demikian pemetaan SiPlah bukan lagi hard-code di selector dan dapat dikelola dari halaman pengaturan template tanpa membuat kategori `SIPLAH` baru.
 
 ## 7. Pekerjaan yang masih RVR / aktif
 
