@@ -59,6 +59,7 @@ class SpjReportLayoutTest extends TestCase
         $this->assertIsString($report);
         $this->assertSame(1, substr_count($partial, 'id="template-preview-modal"'));
         $this->assertSame(1, substr_count($partial, 'id="template-preview-frame"'));
+        $this->assertStringContainsString('class="h-full min-h-[760px] w-full border-0 bg-transparent"', $partial);
         $this->assertStringContainsString("@include('spj.partials.preview-modal')", $index);
         $this->assertStringNotContainsString('id="template-preview-modal"', $index);
         $this->assertStringContainsString('data-template-preview', $report);

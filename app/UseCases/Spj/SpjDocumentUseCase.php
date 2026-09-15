@@ -14,6 +14,8 @@ use App\Services\SpjTemplateService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -249,7 +251,11 @@ class SpjDocumentUseCase
             return redirect()->route('spj.preview-package', [$packageId])->with('error', 'Belum ada template Excel aktif untuk pratinjau PDF paket ini.');
         }
         try {
-            $contents = app(SpjTemplateService::class)->packagePreviewPdfBytes($templates, $package, $school);
+            $contents = Cache::remember(
+                $this->packagePreviewCacheKey($package, $templates),
+                now()->addMinutes(10),
+                fn (): string => app(SpjTemplateService::class)->packagePreviewPdfBytes($templates, $package, $school),
+            );
         } catch (Throwable $exception) {
             report($exception);
 
@@ -266,6 +272,26 @@ class SpjDocumentUseCase
     private function spreadsheetTemplatesForPackage(SpjPackage $package): Collection
     {
         return $this->templateSelector->spreadsheetsForPackage($package);
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    private function packagePreviewCacheKey(SpjPackage $package, Collection $templates): string
+    {
+        $transaction = $package->transaction;
+        $revision = [
+            'school_id' => $this->context->schoolId(),
+            'fiscal_year_id' => $this->context->fiscalYearId(),
+            'fund_source_id' => $this->context->fundSourceId(),
+            'package' => $package->toArray(),
+            'transaction' => $transaction->toArray(),
+            'templates' => $templates->map(fn (DocumentTemplate $template): array => $template->toArray())->all(),
+            'school_profile_updated_at' => DB::connection('school')
+                ->table('school_profiles')
+                ->where('fiscal_year_id', $transaction->fiscal_year_id)
+                ->value('updated_at'),
+        ];
+
+        return 'spj:preview-package-pdf:'.hash('sha256', serialize($revision));
     }
 
     private function applyDocumentContext(SpjPackage $package): void

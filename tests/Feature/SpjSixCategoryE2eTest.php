@@ -169,6 +169,10 @@ class SpjSixCategoryE2eTest extends TestCase
         $this->assertSame('application/pdf', $previewPdf->headers->get('Content-Type'));
         $this->assertStringStartsWith('%PDF-', (string) $previewPdf->getContent());
 
+        $cachedPreviewPdf = app(SpjDocumentUseCase::class)->previewPackagePdf((string) $package->id);
+        $this->assertInstanceOf(Response::class, $cachedPreviewPdf);
+        $this->assertSame($previewPdf->getContent(), $cachedPreviewPdf->getContent());
+
         $excel = app(SpjDocumentUseCase::class)->downloadPackageExcel((string) $package->id);
         $this->assertInstanceOf(BinaryFileResponse::class, $excel);
         $excelPath = $excel->getFile()->getPathname();
