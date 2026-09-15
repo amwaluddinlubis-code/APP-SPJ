@@ -8,9 +8,37 @@ use App\Models\SpjPackage;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
 {
+    private const CONSUMPTION_ROW_PLACEHOLDERS = [
+        'KONSUMSI_NO',
+        'KONSUMSI_NAMA',
+        'KONSUMSI_IDENTITAS',
+        'KONSUMSI_PORSI',
+        'KONSUMSI_HARGA_PORSI',
+        'KONSUMSI_JUMLAH',
+    ];
+
+    private bool $renderingCanonicalSpreadsheet = false;
+
+    /** @return array<string,string> */
+    public function placeholders(SpjPackage $package, School $school): array
+    {
+        $values = parent::placeholders($package, $school);
+
+        if (! $this->renderingCanonicalSpreadsheet) {
+            return $values;
+        }
+
+        foreach (self::CONSUMPTION_ROW_PLACEHOLDERS as $placeholder) {
+            unset($values[$placeholder]);
+        }
+
+        return $values;
+    }
+
     public function download(DocumentTemplate $template, SpjPackage $package, School $school)
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
@@ -107,9 +135,9 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     }
 
     /**
-     * Berkas sementara per template dipertahankan hingga spreadsheet paket
-     * selesai dipakai karena gambar/drawing hasil merge masih merujuk ke
-     * arsip zip sumbernya. Caller wajib menghapus via finally.
+     * Package output is built directly from the canonical in-memory workbooks.
+     * The second tuple element is retained for compatibility with the cleanup
+     * flow used by preview/download callers.
      *
      * @return array{0:Spreadsheet,1:list<string>}
      */
@@ -129,6 +157,62 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     private function prepareMergedAnchorTemplate(DocumentTemplate $template): array
     {
         return [$template, null];
+    }
+
+    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    {
+        $this->renderingCanonicalSpreadsheet = true;
+
+        try {
+            $spreadsheet = parent::canonicalSpreadsheet($template, $package, $school);
+        } finally {
+            $this->renderingCanonicalSpreadsheet = false;
+        }
+
+        try {
+            $this->fillExcelConsumptionRows($spreadsheet->getSheet(0), $package);
+
+            return $spreadsheet;
+        } catch (\Throwable $exception) {
+            $spreadsheet->disconnectWorksheets();
+            throw $exception;
+        }
+    }
+
+    private function fillExcelConsumptionRows(Worksheet $sheet, SpjPackage $package): void
+    {
+        $participants = $package->transaction->participants;
+
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            '{{KONSUMSI_NO}}',
+            'KONSUMSI_',
+            $participants->count(),
+            fn (int $index): array => $this->consumptionRowValues($package, $index),
+        );
+    }
+
+    /** @return array<string,string> */
+    private function consumptionRowValues(SpjPackage $package, int $index): array
+    {
+        $participant = $package->transaction->participants[$index - 1];
+        $portions = (float) $participant->portions;
+        $price = (float) ($participant->item?->unit_price ?? 0);
+        $amount = $portions * $price;
+        $identity = collect([
+            trim((string) $participant->position),
+            filled($participant->nip) ? 'NIP '.trim((string) $participant->nip) : null,
+            filled($participant->nuptk) ? 'NUPTK '.trim((string) $participant->nuptk) : null,
+        ])->filter()->implode(' / ');
+
+        return [
+            'KONSUMSI_NO' => (string) $index,
+            'KONSUMSI_NAMA' => trim((string) $participant->name) ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE,
+            'KONSUMSI_IDENTITAS' => $identity ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE,
+            'KONSUMSI_PORSI' => app(SpjPlaceholderValueFormatter::class)->number($portions),
+            'KONSUMSI_HARGA_PORSI' => app(SpjPlaceholderValueFormatter::class)->amount($price),
+            'KONSUMSI_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($amount),
+        ];
     }
 
     private function spreadsheetPdfContents(Spreadsheet $spreadsheet, bool $allSheets): string
