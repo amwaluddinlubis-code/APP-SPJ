@@ -314,7 +314,7 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
         foreach (SpjDocumentTypeRegistry::categories() as $index => $category) {
             $values = $service->placeholders($this->package($category, 10 + $index), $school);
 
-            $this->assertSame($category, $values['JENIS_SPJ']);
+            $this->assertSame($this->categoryLabel($category), $values['JENIS_SPJ']);
             $this->assertSame('SD Negeri Generator Uji', $values['NAMA_SEKOLAH']);
             $this->assertNotSame('', trim($values['NOMOR_DOKUMEN']));
             $this->assertNotSame('', trim($values['NOMOR_BUKTI']));
@@ -330,6 +330,19 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
             $this->assertSame('Kepala Sekolah Uji', $values['NAMA_KEPALA_SEKOLAH']);
             $this->assertSame('Bendahara Uji', $values['NAMA_BENDAHARA_BOSP']);
         }
+    }
+
+    private function categoryLabel(string $category): string
+    {
+        return match ($category) {
+            'BARANG' => 'Barang',
+            'KONSUMSI' => 'Konsumsi',
+            'PEMELIHARAAN' => 'Pemeliharaan',
+            'JASA_LAINNYA' => 'Jasa Lainnya',
+            'SPPD' => 'SPPD',
+            'HONOR_PEGAWAI' => 'Honor Pegawai',
+            default => $category,
+        };
     }
 
     private function package(string $category, int $suffix): SpjPackage
@@ -358,6 +371,7 @@ class SpjDocumentGeneratorHardeningTest extends TestCase
             'spj_category' => $category,
             'source_key' => hash('sha256', 'GENERATOR-'.$category.'-'.$suffix),
         ]);
+
         $transaction->items()->create([
             'source_item_id' => 'ITEM-'.$suffix,
             'description' => 'Barang generator uji',
