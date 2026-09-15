@@ -1,6 +1,18 @@
+@php
+    $paymentMethod = strtolower(trim((string) $transaction->payment_method));
+    $isSiplah = $paymentMethod === 'siplah'
+        || (! in_array($paymentMethod, ['transfer_bank', 'siplah', 'tunai'], true) && (bool) $transaction->is_siplah);
+    $siplahInvoice = data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number');
+    $siplahOrder = $transaction->siplah_order_number
+        ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null);
+    $autoOrderNumber = $isSiplah
+        ? $siplahOrder
+        : ($purchaseDetails?->order_number ?: $transaction->order_number);
+@endphp
+
 <fieldset
     data-spj-section="BARANG KONSUMSI"
-    data-auto-number-pesanan="{{ $isSiplah ? ($transaction->siplah_order_number ?: (filled(data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number')) ? collect(explode('/', data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number')))->filter()->last() : null)) : ($purchaseDetails?->order_number ?: $transaction->order_number) }}"
+    data-auto-number-pesanan="{{ $autoOrderNumber }}"
     data-auto-number-bap="{{ $purchaseDetails?->bap_number ?: $transaction->bap_number }}"
     data-auto-number-bast="{{ $purchaseDetails?->bast_number ?: $transaction->bast_number }}"
     @disabled(!in_array($selectedSpjType, ['BARANG', 'KONSUMSI'], true))
@@ -22,8 +34,6 @@
         <x-ui.field label="Nomor invoice"><x-ui.input name="invoice_number" :value="old('invoice_number', $transaction->invoice_number)" class="!py-1.5 !text-sm" /></x-ui.field>
         <x-ui.field label="Tanggal invoice"><x-ui.input type="date" name="invoice_date" :value="old('invoice_date', $transaction->invoice_date?->format('Y-m-d'))" :max="$transactionDateLimit" class="!py-1.5 !text-sm" /></x-ui.field>
         <x-ui.field label="No pesanan">
-            @php($siplahInvoice = data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number'))
-            @php($siplahOrder = $transaction->siplah_order_number ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null))
             <x-ui.input name="siplah_order_number" :value="old('siplah_order_number', $siplahOrder)" class="!py-1.5 !text-sm" />
         </x-ui.field>
         <x-ui.field label="Status invoice"><x-ui.input name="invoice_status" :value="old('invoice_status', $transaction->invoice_status)" class="!py-1.5 !text-sm" /></x-ui.field>
