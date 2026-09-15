@@ -48,8 +48,12 @@ final class DocumentTemplateLibraryService
     }
 
     /** @param array<int,string> $applicableCategories */
-    public function updateMapping(string $templateId, bool $isActive, array $applicableCategories): bool
-    {
+    public function updateMapping(
+        string $templateId,
+        bool $isActive,
+        array $applicableCategories,
+        ?bool $isSiplah,
+    ): bool {
         $template = $this->findInActiveYear($templateId);
         if (! $template) {
             return false;
@@ -58,6 +62,7 @@ final class DocumentTemplateLibraryService
         $template->update([
             'is_active' => $isActive,
             'applicable_categories' => $applicableCategories,
+            'is_siplah' => $isSiplah,
         ]);
 
         return true;
