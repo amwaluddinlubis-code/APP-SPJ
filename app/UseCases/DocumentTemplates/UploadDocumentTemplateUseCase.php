@@ -27,6 +27,7 @@ final class UploadDocumentTemplateUseCase
         string $name,
         UploadedFile $uploaded,
         array $applicableCategories = [],
+        ?bool $isSiplah = null,
     ): array {
         $documentType = strtoupper($documentType);
         $extension = strtolower($uploaded->getClientOriginalExtension());
@@ -65,6 +66,7 @@ final class UploadDocumentTemplateUseCase
             $uploaded,
             $extension,
             $applicableCategories,
+            $isSiplah,
         );
 
         return [
