@@ -107,7 +107,7 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         $this->assertNotContains('invoice', $blockingKeys);
     }
 
-    public function test_siplah_package_excludes_internal_procurement_templates_but_keeps_a2_and_shared_documents(): void
+    public function test_siplah_package_excludes_non_siplah_templates_but_keeps_shared_documents(): void
     {
         $this->seedPackageTemplates();
 
@@ -124,13 +124,13 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
 
         $this->assertCount(2, $selected);
         $this->assertContains('SPJ_COVER', $selected);
-        $this->assertContains('SPJ_KUITANSI_A2', $selected);
-        $this->assertNotContains('SPJ_SURAT_PESANAN', $selected);
-        $this->assertNotContains('SPJ_BA_PEMERIKSAAN', $selected);
-        $this->assertNotContains('SPJ_BAST_PEMBELIAN', $selected);
+        $this->assertContains('KUITANSI_A2', $selected);
+        $this->assertNotContains('SURAT_PESANAN', $selected);
+        $this->assertNotContains('BAP', $selected);
+        $this->assertNotContains('BAST', $selected);
     }
 
-    public function test_non_siplah_package_keeps_internal_procurement_templates(): void
+    public function test_non_siplah_package_keeps_non_siplah_and_shared_templates(): void
     {
         $this->seedPackageTemplates();
 
@@ -148,13 +148,46 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
         $this->assertCount(5, $selected);
         foreach ([
             'SPJ_COVER',
-            'SPJ_KUITANSI_A2',
-            'SPJ_SURAT_PESANAN',
-            'SPJ_BA_PEMERIKSAAN',
-            'SPJ_BAST_PEMBELIAN',
+            'KUITANSI_A2',
+            'SURAT_PESANAN',
+            'BAP',
+            'BAST',
         ] as $documentType) {
             $this->assertContains($documentType, $selected);
         }
+    }
+
+    public function test_template_can_be_mapped_only_to_siplah_packages(): void
+    {
+        $this->seedPackageTemplates();
+        DocumentTemplate::query()
+            ->where('document_type', 'SPJ_COVER')
+            ->update(['is_siplah' => true]);
+
+        $siplahTransaction = $this->transaction([
+            'no_bukti' => 'BKU-SIPLAH',
+            'payment_method' => 'siplah',
+            'is_siplah' => true,
+            'spj_category' => 'BARANG',
+        ]);
+        $nonSiplahTransaction = $this->transaction([
+            'no_bukti' => 'BKU-NON-SIPLAH',
+            'payment_method' => 'tunai',
+            'is_siplah' => false,
+            'spj_category' => 'BARANG',
+        ]);
+
+        $siplahPackage = SpjPackage::query()->create(['transaction_id' => $siplahTransaction->id]);
+        $nonSiplahPackage = SpjPackage::query()->create(['transaction_id' => $nonSiplahTransaction->id]);
+
+        $this->assertContains(
+            'SPJ_COVER',
+            app(SpjPackageTemplateSelector::class)->forPackage($siplahPackage)->pluck('document_type'),
+        );
+        $this->assertNotContains(
+            'SPJ_COVER',
+            app(SpjPackageTemplateSelector::class)->forPackage($nonSiplahPackage)->pluck('document_type'),
+        );
     }
 
     public function test_package_document_mapping_uses_is_siplah_flag_even_when_payment_method_is_non_siplah(): void
@@ -172,9 +205,9 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
             ->forPackage($package)
             ->pluck('document_type');
 
-        $this->assertNotContains('SPJ_SURAT_PESANAN', $selected);
-        $this->assertNotContains('SPJ_BA_PEMERIKSAAN', $selected);
-        $this->assertNotContains('SPJ_BAST_PEMBELIAN', $selected);
+        $this->assertNotContains('SURAT_PESANAN', $selected);
+        $this->assertNotContains('BAP', $selected);
+        $this->assertNotContains('BAST', $selected);
     }
 
     public function test_package_document_mapping_does_not_infer_is_siplah_from_payment_method(): void
@@ -192,20 +225,20 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
             ->forPackage($package)
             ->pluck('document_type');
 
-        $this->assertContains('SPJ_SURAT_PESANAN', $selected);
-        $this->assertContains('SPJ_BA_PEMERIKSAAN', $selected);
-        $this->assertContains('SPJ_BAST_PEMBELIAN', $selected);
+        $this->assertContains('SURAT_PESANAN', $selected);
+        $this->assertContains('BAP', $selected);
+        $this->assertContains('BAST', $selected);
     }
 
     private function seedPackageTemplates(): void
     {
         foreach ([
-            'SPJ_COVER' => ['SEMUA'],
-            'SPJ_KUITANSI_A2' => ['BARANG'],
-            'SPJ_SURAT_PESANAN' => ['BARANG'],
-            'SPJ_BA_PEMERIKSAAN' => ['BARANG'],
-            'SPJ_BAST_PEMBELIAN' => ['BARANG'],
-        ] as $documentType => $categories) {
+            'SPJ_COVER' => [['SEMUA'], null],
+            'KUITANSI_A2' => [['BARANG'], null],
+            'SURAT_PESANAN' => [['BARANG'], false],
+            'BAP' => [['BARANG'], false],
+            'BAST' => [['BARANG'], false],
+        ] as $documentType => [$categories, $isSiplah]) {
             DocumentTemplate::query()->create([
                 'fiscal_year_id' => 1,
                 'document_type' => $documentType,
@@ -213,6 +246,7 @@ class SiplahMarketplaceDocumentPolicyTest extends TestCase
                 'format' => 'xlsx',
                 'file_path' => strtolower($documentType).'.xlsx',
                 'applicable_categories' => $categories,
+                'is_siplah' => $isSiplah,
                 'is_active' => true,
             ]);
         }
