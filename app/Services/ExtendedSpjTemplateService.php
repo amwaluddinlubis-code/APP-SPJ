@@ -230,7 +230,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    private function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
     {
         $sourcePath = $this->templateSourcePathExtended($template);
         if (! is_file($sourcePath)) {
@@ -251,7 +251,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
-    private function canonicalPackageSpreadsheet(Collection $templates, SpjPackage $package, School $school): Spreadsheet
+    protected function canonicalPackageSpreadsheet(Collection $templates, SpjPackage $package, School $school): Spreadsheet
     {
         if ($templates->isEmpty()) {
             throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
@@ -340,6 +340,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     private function fillCanonicalWorksheet(Worksheet $sheet, SpjPackage $package, School $school): void
     {
         $values = $this->placeholders($package, $school);
+        $this->normalizeMergedAnchorPlaceholders($sheet);
         $this->fillExcelItemsExtended($sheet, $package);
         $this->fillExcelWorkersExtended($sheet, $package);
         $this->fillExcelLetterhead($sheet, $school);
@@ -358,6 +359,35 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             }
         }
         $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
+    }
+
+    private function normalizeMergedAnchorPlaceholders(Worksheet $sheet): void
+    {
+        foreach (array_values($sheet->getMergeCells()) as $range) {
+            [[$startColumn, $startRow], [$endColumn, $endRow]] = Coordinate::rangeBoundaries($range);
+            $anchor = Coordinate::stringFromColumnIndex($startColumn).$startRow;
+            $anchorValue = $sheet->getCell($anchor)->getValue();
+
+            if (! is_string($anchorValue)
+                || ! preg_match('/^\s*\{\{[A-Za-z0-9_]+\}\}\s*$/u', $anchorValue)) {
+                continue;
+            }
+
+            for ($row = $startRow; $row <= $endRow; $row++) {
+                for ($column = $startColumn; $column <= $endColumn; $column++) {
+                    $coordinate = Coordinate::stringFromColumnIndex($column).$row;
+                    if ($coordinate === $anchor) {
+                        continue;
+                    }
+
+                    $value = $sheet->getCell($coordinate)->getValue();
+                    if (is_string($value)
+                        && preg_match('/^\s*\{\{[A-Za-z0-9_]+\}\}\s*$/u', $value)) {
+                        $sheet->getCell($coordinate)->setValue('');
+                    }
+                }
+            }
+        }
     }
 
     /** @param array<string,string> $replacements */
@@ -435,58 +465,15 @@ class ExtendedSpjTemplateService extends SpjTemplateService
 
     private function fillExcelItemsExtended(Worksheet $sheet, SpjPackage $package): void
     {
-        $rows = [];
-        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
-            if (str_contains((string) $sheet->getCell($coordinate)->getValue(), '{{ITEM_NO}}')) {
-                $rows[] = $sheet->getCell($coordinate)->getRow();
-            }
-        }
-
-        $rows = array_values(array_unique($rows));
         $items = $package->transaction->items;
-        if ($rows === [] || $items->isEmpty()) {
-            return;
-        }
 
-        $row = $rows[0];
-        $highestColumn = $sheet->getHighestColumn();
-        $lastColumn = Coordinate::columnIndexFromString($highestColumn);
-        $original = [];
-        for ($column = 1; $column <= $lastColumn; $column++) {
-            $original[$column] = $sheet->getCell(Coordinate::stringFromColumnIndex($column).$row)->getValue();
-        }
-
-        if ($items->count() > count($rows)) {
-            $extra = $items->count() - count($rows);
-            $insertAt = max($rows) + 1;
-            $sheet->insertNewRowBefore($insertAt, $extra);
-            for ($copyRow = $insertAt; $copyRow < $insertAt + $extra; $copyRow++) {
-                $sheet->duplicateStyle($sheet->getStyle($row), 'A'.$copyRow.':'.$highestColumn.$copyRow);
-                $sheet->getRowDimension($copyRow)->setRowHeight($sheet->getRowDimension($row)->getRowHeight());
-                $rows[] = $copyRow;
-            }
-        }
-
-        sort($rows);
-        foreach ($items as $index => $item) {
-            $replacements = [];
-            foreach ($this->itemValuesExtended($package, $index + 1) as $key => $value) {
-                $replacements['{{'.$key.'}}'] = $value;
-            }
-            foreach ($original as $column => $value) {
-                if (is_string($value)) {
-                    $sheet->getCell(Coordinate::stringFromColumnIndex($column).$rows[$index])->setValue(strtr($value, $replacements));
-                }
-            }
-        }
-
-        foreach (array_slice($rows, $items->count()) as $emptyRow) {
-            foreach ($original as $column => $value) {
-                if (is_string($value) && str_contains($value, '{{ITEM_')) {
-                    $sheet->getCell(Coordinate::stringFromColumnIndex($column).$emptyRow)->setValue('');
-                }
-            }
-        }
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            '{{ITEM_NO}}',
+            'ITEM_',
+            $items->count(),
+            fn (int $index): array => $this->itemValuesExtended($package, $index),
+        );
     }
 
     private function workerValuesExtended(SpjPackage $package, int $index): array
@@ -506,45 +493,15 @@ class ExtendedSpjTemplateService extends SpjTemplateService
 
     private function fillExcelWorkersExtended(Worksheet $sheet, SpjPackage $package): void
     {
-        $row = null;
-        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
-            if (str_contains((string) $sheet->getCell($coordinate)->getValue(), '{{UPAH_NO}}')) {
-                $row = $sheet->getCell($coordinate)->getRow();
-                break;
-            }
-        }
-
         $workers = $package->transaction->workers;
-        if (! $row || $workers->isEmpty()) {
-            return;
-        }
 
-        $highestColumn = $sheet->getHighestColumn();
-        $lastColumn = Coordinate::columnIndexFromString($highestColumn);
-        $original = [];
-        for ($column = 1; $column <= $lastColumn; $column++) {
-            $original[$column] = $sheet->getCell(Coordinate::stringFromColumnIndex($column).$row)->getValue();
-        }
-
-        if ($workers->count() > 1) {
-            $sheet->insertNewRowBefore($row + 1, $workers->count() - 1);
-            for ($copyRow = $row + 1; $copyRow < $row + $workers->count(); $copyRow++) {
-                $sheet->duplicateStyle($sheet->getStyle($row), 'A'.$copyRow.':'.$highestColumn.$copyRow);
-                $sheet->getRowDimension($copyRow)->setRowHeight($sheet->getRowDimension($row)->getRowHeight());
-            }
-        }
-
-        foreach ($workers as $index => $worker) {
-            $replacements = [];
-            foreach ($this->workerValuesExtended($package, $index + 1) as $key => $value) {
-                $replacements['{{'.$key.'}}'] = $value;
-            }
-            foreach ($original as $column => $value) {
-                if (is_string($value)) {
-                    $sheet->getCell(Coordinate::stringFromColumnIndex($column).($row + $index))->setValue(strtr($value, $replacements));
-                }
-            }
-        }
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            '{{UPAH_NO}}',
+            'UPAH_',
+            $workers->count(),
+            fn (int $index): array => $this->workerValuesExtended($package, $index),
+        );
     }
 
     private function spreadsheetPdfContentsExtended(Spreadsheet $spreadsheet, bool $allSheets): string

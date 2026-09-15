@@ -1,8 +1,8 @@
 # Master Template Dokumen — Workflow Canonical
 
-Terakhir diverifikasi: **2026-09-12** pada branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-15** pada branch `gui-standardization`.
 
-Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **preview HTML dari Excel**, **Cek Placeholder**, dan **Unduh Master Template Terbaru**. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
+Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **preview HTML/PDF dari Excel**, **Cek Placeholder**, **Unduh Master Template Terbaru**, dan pipeline render runtime yang menjaga fidelity workbook. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
 
 ## 1. Prinsip sumber kebenaran
 
@@ -82,9 +82,9 @@ Pruning dilakukan langsung pada paket OOXML agar worksheet terpilih tidak perlu 
 
 Jika source memang sudah merupakan workbook satu-sheet, aplikasi dapat mengunduh source tersebut langsung tanpa membuat copy sementara yang tidak diperlukan.
 
-## 5. Preview HTML dari source Excel
+## 5. Preview HTML/PDF dari source Excel
 
-Preview HTML untuk template XLSX harus berasal dari **workbook Excel aktif yang sama** dengan generator, setelah placeholder/repeating row/kop diproses. Preview tidak mempunyai template HTML kedua yang menjadi source dokumen.
+Preview untuk template XLSX harus berasal dari **workbook Excel aktif yang sama** dengan generator, setelah placeholder, repeating row, merged-anchor, dan KOP diproses. Preview tidak mempunyai template HTML/PDF kedua yang menjadi source dokumen.
 
 Untuk source workbook multi-sheet hasil import master, pemilihan worksheet preview mengikuti `SpjDocumentTypeRegistry`:
 
@@ -93,7 +93,7 @@ document_type aktif
 → canonical document type
 → nama worksheet canonical registry
 → cari worksheet tersebut pada workbook Excel
-→ render worksheet canonical menjadi HTML
+→ render worksheet canonical
 ```
 
 Kontrak wajib:
@@ -103,9 +103,45 @@ Kontrak wajib:
 - sheet teknis seperti `PLACEHOLDER_MAP` tidak boleh dipilih sebagai fallback dokumen;
 - bila nama canonical tidak ditemukan tetapi hanya ada tepat satu worksheet non-teknis, worksheet tersebut boleh dipakai sebagai fallback kompatibilitas template individu/legacy;
 - bila source multi-sheet ambigu dan sheet canonical tidak ditemukan, preview harus gagal dengan pesan yang jelas daripada menampilkan worksheet yang salah;
-- preview paket memakai resolver worksheet canonical yang sama untuk setiap template XLSX di dalam paket.
+- preview paket memakai resolver worksheet canonical yang sama untuk setiap template XLSX di dalam paket;
+- preview PDF, download PDF, dan download Excel harus memakai workbook canonical yang sama setelah pengisian data.
 
 Kontrak ini sengaja dibedakan dari **Download Template** pada halaman pengaturan: download individu menghasilkan workbook satu-sheet fisik, sedangkan preview runtime boleh membaca source workbook multi-sheet tersimpan tetapi hanya merender worksheet canonical milik `document_type` yang sedang dipreview.
+
+### 5.1 Pipeline render in-memory
+
+Runtime XLSX memakai prinsip **load sekali, mutasi in-memory, save artifact akhir**. Normalisasi merged-cell tidak lagi membuat XLSX perantara sebelum generator utama.
+
+Flow canonical:
+
+```text
+source/master aktif
+→ IOFactory::load()
+→ resolve worksheet canonical
+→ normalisasi placeholder merged-cell pada worksheet in-memory
+→ ekspansi repeating rows
+→ isi scalar/KOP/header-footer
+→ prune worksheet lain untuk output individual
+→ save artifact akhir
+→ Excel / Preview PDF / Download PDF
+```
+
+Excel hanya menampilkan nilai pada cell anchor (kiri-atas) sebuah merged range. Jika source menyimpan placeholder tambahan pada cell non-anchor sementara anchor juga merupakan placeholder, anchor adalah sumber kebenaran visual. Placeholder non-anchor dibersihkan **pada object worksheet in-memory**, bukan dengan menulis ulang master template.
+
+### 5.2 Repeating row engine
+
+Placeholder `ITEM_*` dan `UPAH_*` memakai `SpjRepeatingRowRenderer`. Renderer mencari row template berdasarkan placeholder anchor, memakai row yang sudah dipre-alokasikan terlebih dahulu, lalu hanya menambah row jika jumlah record melebihi kapasitas template.
+
+Untuk row tambahan, engine menyalin struktur row template yang relevan, termasuk:
+
+- cell value/template marker;
+- style per cell;
+- row height/visibility/outline/collapsed/zero-height;
+- horizontal merged range pada row template;
+- formula dengan penyesuaian relative row reference;
+- data validation pada cell template.
+
+Engine tidak melakukan ekspansi kolom 2D generik. Template SPJ tetap template-layout-driven; penambahan baris hanya dilakukan pada block yang mempunyai anchor repeating row resmi.
 
 ## 6. Cek Placeholder tanpa upload ulang
 
@@ -175,6 +211,9 @@ Komponen utama:
 
 ```text
 app/Services/SpjTemplateService.php
+app/Services/ExtendedSpjTemplateService.php
+app/Services/PreviewAlignedSpjTemplateService.php
+app/Services/SpjRepeatingRowRenderer.php
 app/Services/DocumentTemplateMasterExportService.php
 app/Services/DocumentTemplateReplacementService.php
 app/Services/SpjTemplatePackageImporter.php
@@ -193,6 +232,17 @@ document-templates.master.download
 ```
 
 ## 11. Regression contract
+
+`tests/Unit/SpjTemplateWorkbookPreservationTest.php` mengunci behavior berikut:
+
+1. pruning worksheet canonical mempertahankan page setup, print area, margin, dimensions, merge, font/style, dan header/footer yang diuji;
+2. merged placeholder yang setara dapat di-resolve pada anchor tanpa membongkar merge;
+3. conflict langsung pada resolver tetap ditolak bila normalisasi anchor tidak dijalankan;
+4. pipeline canonical membersihkan placeholder non-anchor in-memory sebelum resolution sehingga anchor menjadi sumber kebenaran visual;
+5. repeating row renderer menggandakan merge horizontal, formula relative, style, dan row dimension;
+6. repeating row renderer memakai row template preallocated lebih dulu dan membersihkan marker yang tidak terpakai.
+
+`tests/Feature/SpjPreviewExcelParityTest.php` mengunci bahwa preview XLSX dan download paket Excel menggunakan workbook canonical yang sama untuk sheet, print area, orientation, margin, dan nilai placeholder yang diuji.
 
 `tests/Unit/SpjTemplateHtmlPreviewTest.php` mengunci behavior berikut:
 
@@ -222,7 +272,7 @@ document-templates.master.download
 
 ## 12. Batas evidence
 
-Functional regression/CI membuktikan pemilihan worksheet canonical untuk preview HTML, struktur source, workbook hasil single-download dapat dibaca ulang, worksheet lain benar-benar tidak ada pada OOXML hasil download, dan kontrak master dapat di-reimport. Evidence tersebut **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice, browser HTML terhadap seluruh fitur Excel, atau hasil cetak**.
+Functional regression/CI membuktikan pemilihan worksheet canonical, struktur source, workbook hasil single-download dapat dibaca ulang, dan kontrak yang diuji secara deterministik. Evidence tersebut **tidak otomatis membuktikan visual fidelity di Microsoft Excel/LibreOffice, browser terhadap seluruh fitur Excel, atau hasil cetak**.
 
 HTML preview memakai renderer PhpSpreadsheet. Formula/drawing/print-layout yang bergantung pada implementasi Office dapat berbeda dari Microsoft Excel. Preview dipakai sebagai representasi workbook canonical, bukan bukti pixel-perfect terhadap Excel.
 

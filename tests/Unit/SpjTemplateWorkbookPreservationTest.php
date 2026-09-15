@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\ExtendedSpjTemplateService;
+use App\Services\SpjRepeatingRowRenderer;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
@@ -129,5 +130,102 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         } finally {
             $workbook->disconnectWorksheets();
         }
+    }
+
+    public function test_canonical_pipeline_normalizes_non_anchor_merged_placeholders_in_memory(): void
+    {
+        $workbook = new Spreadsheet;
+        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RAB_PEMELIHARAAN');
+        $sheet->mergeCells('G16:H16');
+        $sheet->setCellValue('G16', '{{TOTAL_RAB}}');
+        $sheet->setCellValue('H16', '{{NILAI_PEKERJAAN}}');
+
+        $service = new ExtendedSpjTemplateService;
+        $normalize = new ReflectionMethod($service, 'normalizeMergedAnchorPlaceholders');
+        $resolve = new ReflectionMethod($service, 'resolveMergedPlaceholderAnchors');
+
+        $normalize->invoke($service, $sheet);
+        $resolve->invoke($service, $sheet, [
+            '{{TOTAL_RAB}}' => '125000',
+            '{{NILAI_PEKERJAAN}}' => '100000',
+        ]);
+
+        $this->assertSame('125000', (string) $sheet->getCell('G16')->getValue());
+        $this->assertSame('', (string) $sheet->getCell('H16')->getValue());
+        $this->assertContains('G16:H16', array_values($sheet->getMergeCells()));
+
+        $workbook->disconnectWorksheets();
+    }
+
+    public function test_repeating_row_renderer_clones_merge_formula_style_and_row_dimension(): void
+    {
+        $workbook = new Spreadsheet;
+        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RINCIAN');
+        $sheet->setCellValue('A5', '{{ITEM_NO}}');
+        $sheet->setCellValue('B5', '{{ITEM_URAIAN}}');
+        $sheet->setCellValue('D5', '=E5*F5');
+        $sheet->setCellValue('E5', '{{ITEM_VOLUME}}');
+        $sheet->setCellValue('F5', '{{ITEM_HARGA_SATUAN}}');
+        $sheet->mergeCells('B5:C5');
+        $sheet->getStyle('B5')->getFont()->setBold(true);
+        $sheet->getRowDimension(5)->setRowHeight(24);
+
+        $renderer = new SpjRepeatingRowRenderer;
+        $renderer->render(
+            $sheet,
+            '{{ITEM_NO}}',
+            'ITEM_',
+            3,
+            fn (int $index): array => [
+                'ITEM_NO' => (string) $index,
+                'ITEM_URAIAN' => 'Barang '.$index,
+                'ITEM_VOLUME' => (string) $index,
+                'ITEM_HARGA_SATUAN' => '1000',
+            ],
+        );
+
+        $this->assertSame('1', (string) $sheet->getCell('A5')->getValue());
+        $this->assertSame('2', (string) $sheet->getCell('A6')->getValue());
+        $this->assertSame('3', (string) $sheet->getCell('A7')->getValue());
+        $this->assertSame('Barang 2', (string) $sheet->getCell('B6')->getValue());
+        $this->assertSame('=E6*F6', (string) $sheet->getCell('D6')->getValue());
+        $this->assertSame('=E7*F7', (string) $sheet->getCell('D7')->getValue());
+        $this->assertContains('B5:C5', array_values($sheet->getMergeCells()));
+        $this->assertContains('B6:C6', array_values($sheet->getMergeCells()));
+        $this->assertContains('B7:C7', array_values($sheet->getMergeCells()));
+        $this->assertTrue($sheet->getStyle('B6')->getFont()->getBold());
+        $this->assertEqualsWithDelta(24.0, $sheet->getRowDimension(6)->getRowHeight(), 0.0001);
+        $this->assertEqualsWithDelta(24.0, $sheet->getRowDimension(7)->getRowHeight(), 0.0001);
+
+        $workbook->disconnectWorksheets();
+    }
+
+    public function test_repeating_row_renderer_reuses_preallocated_rows_and_clears_unused_markers(): void
+    {
+        $workbook = new Spreadsheet;
+        $sheet = $workbook->getActiveSheet()->setTitle('TPL_RINCIAN');
+        $sheet->setCellValue('A5', '{{ITEM_NO}}');
+        $sheet->setCellValue('B5', '{{ITEM_URAIAN}}');
+        $sheet->setCellValue('A6', '{{ITEM_NO}}');
+        $sheet->setCellValue('B6', '{{ITEM_URAIAN}}');
+
+        $renderer = new SpjRepeatingRowRenderer;
+        $renderer->render(
+            $sheet,
+            '{{ITEM_NO}}',
+            'ITEM_',
+            1,
+            fn (int $index): array => [
+                'ITEM_NO' => (string) $index,
+                'ITEM_URAIAN' => 'Satu item',
+            ],
+        );
+
+        $this->assertSame('1', (string) $sheet->getCell('A5')->getValue());
+        $this->assertSame('Satu item', (string) $sheet->getCell('B5')->getValue());
+        $this->assertSame('', (string) $sheet->getCell('A6')->getValue());
+        $this->assertSame('', (string) $sheet->getCell('B6')->getValue());
+
+        $workbook->disconnectWorksheets();
     }
 }

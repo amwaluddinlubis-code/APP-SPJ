@@ -6,8 +6,6 @@ use App\Models\DocumentTemplate;
 use App\Models\School;
 use App\Models\SpjPackage;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
@@ -19,15 +17,9 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             return parent::download($template, $package, $school);
         }
 
-        [$preparedTemplate, $temporarySource] = $this->prepareMergedAnchorTemplate($template);
+        [$preparedTemplate] = $this->prepareMergedAnchorTemplate($template);
 
-        try {
-            return parent::download($preparedTemplate, $package, $school);
-        } finally {
-            if ($temporarySource !== null) {
-                @unlink($temporarySource);
-            }
-        }
+        return parent::download($preparedTemplate, $package, $school);
     }
 
     public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school): ?string
@@ -113,131 +105,20 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     /** @param Collection<int, DocumentTemplate> $templates */
     private function packageSpreadsheetForOutput(Collection $templates, SpjPackage $package, School $school): Spreadsheet
     {
-        if ($templates->isEmpty()) {
-            throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
-        }
-
-        $packageSpreadsheet = null;
-
-        foreach ($templates as $template) {
-            if (strtolower((string) $template->format) !== 'xlsx') {
-                throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
-            }
-
-            $response = $this->download($template, $package, $school);
-            $path = $response->getFile()->getPathname();
-
-            try {
-                $single = IOFactory::load($path);
-            } finally {
-                @unlink($path);
-            }
-
-            if (! $packageSpreadsheet instanceof Spreadsheet) {
-                $packageSpreadsheet = $single;
-
-                continue;
-            }
-
-            try {
-                $sheetName = $single->getSheet(0)->getTitle();
-                $copy = $single->duplicateWorksheetByTitle($sheetName);
-                $packageSpreadsheet->addExternalSheet($copy);
-                $copy->setTitle($sheetName);
-            } finally {
-                $single->disconnectWorksheets();
-            }
-        }
-
-        if (! $packageSpreadsheet instanceof Spreadsheet) {
-            throw new \RuntimeException('Paket template tidak menghasilkan worksheet canonical.');
-        }
-
-        $packageSpreadsheet->setActiveSheetIndex(0);
-
-        return $packageSpreadsheet;
+        return $this->canonicalPackageSpreadsheet($templates, $package, $school);
     }
 
     /**
-     * Excel hanya menampilkan nilai pada sel anchor (kiri-atas) sebuah merged range.
-     * Jika template menyimpan placeholder tambahan di sel non-anchor, anchor adalah
-     * sumber kebenaran visual. Normalisasi dilakukan pada salinan sementara saja;
-     * master template yang tersimpan tidak pernah dimutasi.
+     * Compatibility hook retained for the preview pipeline. Merged-cell anchor
+     * normalization now happens in-memory inside ExtendedSpjTemplateService,
+     * after the canonical worksheet is loaded and before any repeating row is
+     * expanded. No intermediate XLSX rewrite is needed anymore.
      *
-     * @return array{0:DocumentTemplate,1:?string}
+     * @return array{0:DocumentTemplate,1:null}
      */
     private function prepareMergedAnchorTemplate(DocumentTemplate $template): array
     {
-        $relativePath = ltrim((string) $template->file_path, '/\\');
-        $disk = Storage::disk('local');
-        $sourcePath = $disk->exists($relativePath)
-            ? $disk->path($relativePath)
-            : storage_path('app/'.$relativePath);
-
-        if (! is_file($sourcePath)) {
-            return [$template, null];
-        }
-
-        $spreadsheet = IOFactory::load($sourcePath);
-        $changed = false;
-
-        try {
-            $canonical = SpjDocumentTypeRegistry::canonical((string) $template->document_type);
-            $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
-            $expectedSheet = trim((string) ($definition['sheet'] ?? ''));
-            $sheet = $expectedSheet !== '' ? $spreadsheet->getSheetByName($expectedSheet) : null;
-
-            if ($sheet === null && $spreadsheet->getSheetCount() === 1) {
-                $sheet = $spreadsheet->getSheet(0);
-            }
-
-            if ($sheet === null) {
-                return [$template, null];
-            }
-
-            foreach (array_values($sheet->getMergeCells()) as $range) {
-                [[$startColumn, $startRow], [$endColumn, $endRow]] = Coordinate::rangeBoundaries($range);
-                $anchor = Coordinate::stringFromColumnIndex($startColumn).$startRow;
-                $anchorValue = $sheet->getCell($anchor)->getValue();
-
-                if (! is_string($anchorValue)
-                    || ! preg_match('/^\s*\{\{[A-Za-z0-9_]+\}\}\s*$/u', $anchorValue)) {
-                    continue;
-                }
-
-                for ($row = $startRow; $row <= $endRow; $row++) {
-                    for ($column = $startColumn; $column <= $endColumn; $column++) {
-                        $coordinate = Coordinate::stringFromColumnIndex($column).$row;
-                        if ($coordinate === $anchor) {
-                            continue;
-                        }
-
-                        $value = $sheet->getCell($coordinate)->getValue();
-                        if (is_string($value)
-                            && preg_match('/^\s*\{\{[A-Za-z0-9_]+\}\}\s*$/u', $value)) {
-                            $sheet->getCell($coordinate)->setValue('');
-                            $changed = true;
-                        }
-                    }
-                }
-            }
-
-            if (! $changed) {
-                return [$template, null];
-            }
-
-            $disk->makeDirectory('generated-documents');
-            $temporaryRelativePath = 'generated-documents/template-anchor-'.uniqid('', true).'.xlsx';
-            $temporaryPath = $disk->path($temporaryRelativePath);
-            IOFactory::createWriter($spreadsheet, 'Xlsx')->save($temporaryPath);
-
-            $preparedTemplate = clone $template;
-            $preparedTemplate->setAttribute('file_path', $temporaryRelativePath);
-
-            return [$preparedTemplate, $temporaryPath];
-        } finally {
-            $spreadsheet->disconnectWorksheets();
-        }
+        return [$template, null];
     }
 
     private function spreadsheetPdfContents(Spreadsheet $spreadsheet, bool $allSheets): string
