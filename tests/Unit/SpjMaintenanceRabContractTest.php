@@ -25,6 +25,7 @@ class SpjMaintenanceRabContractTest extends TestCase
         }
 
         $this->assertContains('ITEM_NO', $definition['repeat_required']);
-        $this->assertContains('UPAH_NO', $definition['repeat_required']);
+        $this->assertNotContains('UPAH_NO', $definition['repeat_required']);
+        $this->assertContains('UPAH_PENERIMA_KUITANSI', $definition['repeat_optional']);
     }
 }
