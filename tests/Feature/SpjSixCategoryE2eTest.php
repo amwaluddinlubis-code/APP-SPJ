@@ -181,7 +181,7 @@ class SpjSixCategoryE2eTest extends TestCase
             $workbook = IOFactory::load($excelPath);
             $sheet = $workbook->getSheetByName('TPL_RINCIAN');
             $this->assertNotNull($sheet);
-            $this->assertSame($category, $sheet->getCell('A1')->getValue());
+            $this->assertSame($this->categoryLabel($category), $sheet->getCell('A1')->getValue());
             $this->assertSame('SD Negeri E2E SPJ', $sheet->getCell('A2')->getValue());
             $this->assertSame($package->document_number, $sheet->getCell('A3')->getValue());
             $this->assertSame(1000, $sheet->getCell('A4')->getValue());
@@ -228,6 +228,19 @@ class SpjSixCategoryE2eTest extends TestCase
         return collect(SpjScenarioFactory::CATEGORIES)
             ->mapWithKeys(fn (string $category): array => [$category => [$category]])
             ->all();
+    }
+
+    private function categoryLabel(string $category): string
+    {
+        return match ($category) {
+            'BARANG' => 'Barang',
+            'KONSUMSI' => 'Konsumsi',
+            'PEMELIHARAAN' => 'Pemeliharaan',
+            'JASA_LAINNYA' => 'Jasa Lainnya',
+            'SPPD' => 'SPPD',
+            'HONOR_PEGAWAI' => 'Honor Pegawai',
+            default => $category,
+        };
     }
 
     private function createTransaction(string $category): Transaction
