@@ -221,7 +221,7 @@ class SpjDocumentUseCase
         } catch (Throwable $exception) {
             report($exception);
 
-            return redirect()->route('spj.preview-template', [$packageId, $templateId])->with('error', 'Pratinjau PDF gagal dibuat: '.$exception->getMessage());
+            return response('Pratinjau PDF gagal dibuat: '.$exception->getMessage(), 500);
         }
         if ($contents === null) {
             return redirect()->route('spj.preview-template', [$packageId, $templateId])->with('error', 'Pratinjau PDF membutuhkan LibreOffice di server. Unduh dokumen asli lalu cetak dari aplikasi Office.');
@@ -259,7 +259,7 @@ class SpjDocumentUseCase
         } catch (Throwable $exception) {
             report($exception);
 
-            return redirect()->route('spj.preview-package', [$packageId])->with('error', 'Pratinjau PDF paket gagal dibuat: '.$exception->getMessage());
+            return response('Pratinjau PDF paket gagal dibuat: '.$exception->getMessage(), 500);
         }
 
         // Download/preview adalah operasi baca. Lifecycle Paket hanya boleh berubah

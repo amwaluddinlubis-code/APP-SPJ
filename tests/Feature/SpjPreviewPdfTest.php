@@ -93,4 +93,14 @@ class SpjPreviewPdfTest extends TestCase
         $previewPackageBlock = substr($source, $start, $end - $start);
         $this->assertStringNotContainsString('SpjTemplateRenderPreflight', $previewPackageBlock);
     }
+
+    public function test_pdf_preview_failures_return_an_error_instead_of_redirecting_back_into_the_preview_page(): void
+    {
+        $source = file_get_contents(app_path('UseCases/Spj/SpjDocumentUseCase.php'));
+
+        $this->assertIsString($source);
+        $this->assertStringContainsString("return response('Pratinjau PDF gagal dibuat: '.\$exception->getMessage(), 500);", $source);
+        $this->assertStringContainsString("return response('Pratinjau PDF paket gagal dibuat: '.\$exception->getMessage(), 500);", $source);
+        $this->assertStringNotContainsString("redirect()->route('spj.preview-package', [\$packageId])->with('error', 'Pratinjau PDF paket gagal dibuat", $source);
+    }
 }

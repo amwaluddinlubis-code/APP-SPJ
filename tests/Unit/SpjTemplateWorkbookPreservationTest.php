@@ -115,6 +115,29 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         }
     }
 
+    public function test_repeating_rows_can_copy_inserted_template_rows_without_lost_coordinates(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', '{{ITEM_NO}}');
+        $sheet->setCellValue('B1', '{{ITEM_URAIAN}}');
+
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            '{{ITEM_NO}}',
+            'ITEM_',
+            3,
+            fn (int $index): array => [
+                'ITEM_NO' => $index,
+                'ITEM_URAIAN' => 'Item '.$index,
+            ],
+        );
+
+        $this->assertSame('1', (string) $sheet->getCell('A1')->getValue());
+        $this->assertSame('Item 2', $sheet->getCell('B2')->getValue());
+        $this->assertSame('Item 3', $sheet->getCell('B3')->getValue());
+    }
+
     public function test_repeating_row_renderer_uses_existing_template_rows_without_inserting_extra_rows(): void
     {
         $spreadsheet = new Spreadsheet;

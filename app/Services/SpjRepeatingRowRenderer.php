@@ -172,14 +172,16 @@ class SpjRepeatingRowRenderer
         $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestColumn());
 
         for ($column = 1; $column <= $maxColumn; $column++) {
-            $sourceCell = $sheet->getCell([$column, $sourceRow]);
-            $targetCell = $sheet->getCell([$column, $targetRow]);
+            $sourceCoordinate = Coordinate::stringFromColumnIndex($column).$sourceRow;
+            $targetCoordinate = Coordinate::stringFromColumnIndex($column).$targetRow;
+            $sourceCell = $sheet->getCell($sourceCoordinate);
+            $targetCell = $sheet->getCell($targetCoordinate);
 
             $targetCell->setValue(
                 $this->translateFormulaForCopiedRow(
                     $sourceCell->getValue(),
-                    $sourceCell->getCoordinate(),
-                    $targetCell->getCoordinate(),
+                    $sourceCoordinate,
+                    $targetCoordinate,
                 ),
             );
             $targetCell->setXfIndex($sourceCell->getXfIndex());
