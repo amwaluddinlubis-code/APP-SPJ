@@ -400,6 +400,8 @@ Jika source hanya memberi pajak/net agregat, alokasi per penerima boleh dilakuka
 
 Core reconciliation multi-penerima sudah menjadi bagian dari behavior aplikasi; QA output dokumen multi-penerima tetap harus menjaga identitas dan nilai tiap penerima.
 
+Pada tab **Laporan** > **Ekspor**, operator dapat mengunduh daftar penerima pembayaran Jasa Lainnya dalam format PDF atau Excel. Daftar mengikuti filter bulan, triwulan, atau semester yang sedang dipilih dan menampilkan penerima, jenis/uraian jasa, kuantitas, bruto, pajak, serta nilai dibayarkan.
+
 ---
 
 ## 21. SiPLah

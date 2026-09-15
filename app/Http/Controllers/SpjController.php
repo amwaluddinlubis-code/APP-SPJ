@@ -154,6 +154,21 @@ class SpjController extends Controller
         return $useCase->exportHonorPayments($request, $format);
     }
 
+    public function exportServiceRecipients(Request $request, string $format, SpjReportUseCase $useCase)
+    {
+        return $useCase->exportServiceRecipients($request, $format);
+    }
+
+    public function selectServiceRecipients(Request $request, SpjReportUseCase $useCase): View
+    {
+        return $useCase->selectServiceRecipients($request);
+    }
+
+    public function composeServiceRecipients(Request $request, SpjReportUseCase $useCase): View
+    {
+        return $useCase->composeServiceRecipients($request);
+    }
+
     public function selectHonorPayments(Request $request, SpjReportUseCase $useCase)
     {
         return $useCase->selectHonorPayments($request);

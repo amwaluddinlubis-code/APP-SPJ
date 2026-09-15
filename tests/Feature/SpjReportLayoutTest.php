@@ -20,6 +20,16 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('wire:click="setMode(', $blade);
         $this->assertStringContainsString('wire:model.live="periode"', $blade);
         $this->assertStringContainsString('wire:model.live="perPage"', $blade);
+        $this->assertStringContainsString("'bulan' => ['month' => \$periode]", $blade);
+        $this->assertStringContainsString("route('spj.honor-payments.select', \$exportQuery)", $blade);
+        $this->assertStringContainsString("route('spj.service-recipients.select', \$exportQuery)", $blade);
+        $this->assertStringContainsString('Susun Laporan', $blade);
+        $this->assertStringContainsString('Honor Pegawai', $blade);
+        $this->assertStringContainsString('Jasa Lainnya', $blade);
+        $this->assertStringNotContainsString('Pratinjau PDF', $blade);
+        $this->assertStringNotContainsString('Unduh Excel', $blade);
+        $this->assertStringNotContainsString('Daftar Honor PDF', $blade);
+        $this->assertStringNotContainsString('Daftar Penerima Jasa PDF', $blade);
     }
 
     public function test_periodic_report_center_lists_period_scopes_and_source_summary(): void

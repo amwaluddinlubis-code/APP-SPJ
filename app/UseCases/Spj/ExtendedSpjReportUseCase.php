@@ -4,6 +4,7 @@ namespace App\UseCases\Spj;
 
 use App\Models\FiscalYear;
 use App\Models\SpjHonor;
+use App\Models\SpjServiceRecipient;
 use App\Models\Transaction;
 use App\Services\DocumentStoragePathService;
 use App\Services\RoutineHonorRegisterService;
@@ -165,5 +166,138 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         (new Xlsx($book))->save($path);
 
         return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.xlsx', (int) $year->year);
+    }
+
+    public function exportServiceRecipients(Request $request, string $format)
+    {
+        abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
+
+        $year = FiscalYear::query()->findOrFail($this->activeContext->fiscalYearId());
+        $school = $this->activeContext->school();
+        $recipients = SpjServiceRecipient::query()
+            ->with('transaction.spjPackage')
+            ->whereHas('transaction', function ($query) use ($request): void {
+                $query->forSpjContext($this->activeContext)->where('spj_category', 'JASA_LAINNYA');
+                if ($request->filled('transaction_ids')) {
+                    $query->whereIn('id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
+                }
+                if ($request->filled('month')) {
+                    $query->whereMonth('transaction_date', $request->integer('month'));
+                }
+                if ($request->filled('quarter')) {
+                    $quarter = $request->integer('quarter');
+                    $query->whereMonth('transaction_date', '>=', (($quarter - 1) * 3) + 1)
+                        ->whereMonth('transaction_date', '<=', $quarter * 3);
+                }
+                if ($request->filled('semester')) {
+                    $semester = $request->integer('semester');
+                    $query->whereMonth('transaction_date', '>=', $semester === 1 ? 1 : 7)
+                        ->whereMonth('transaction_date', '<=', $semester === 1 ? 6 : 12);
+                }
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+        $summary = [
+            'gross' => $recipients->sum(fn (SpjServiceRecipient $recipient): float => (float) $recipient->amount),
+            'tax' => $recipients->sum(fn (SpjServiceRecipient $recipient): float => (float) $recipient->tax_amount),
+            'net' => $recipients->sum(fn (SpjServiceRecipient $recipient): float => (float) $recipient->net_amount),
+        ];
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('spj-reports.service-recipient-payments', compact('recipients', 'summary', 'year', 'school'))->setPaper('a4', 'landscape');
+            app(DocumentStoragePathService::class)->archiveReportPdf($pdf->output(), 'DAFTAR-PEMBAYARAN-JASA-'.$year->year.'.pdf', (int) $year->year);
+
+            return $pdf->stream('DAFTAR-PEMBAYARAN-JASA-'.$year->year.'.pdf');
+        }
+
+        $book = new Spreadsheet;
+        $sheet = $book->getActiveSheet()->setTitle('Pembayaran Jasa');
+        $sheet->fromArray(['No', 'No Bukti', 'Nomor SPJ', 'Tanggal', 'Penerima Jasa', 'Jenis Jasa', 'Uraian', 'Jumlah', 'Satuan', 'Hari', 'Tarif/Hari', 'Bruto', 'Pajak', 'Dibayarkan', 'Tanda Tangan'], null, 'A1');
+        foreach ($recipients as $index => $recipient) {
+            $transaction = $recipient->transaction;
+            $sheet->fromArray([[
+                $index + 1,
+                $transaction->no_bukti,
+                $transaction->spjPackage?->document_number,
+                $transaction->transaction_date?->format('d-m-Y'),
+                $recipient->name,
+                $recipient->service_type,
+                $recipient->service_description,
+                (float) $recipient->quantity,
+                $recipient->unit,
+                (float) $recipient->rental_days,
+                (float) $recipient->daily_rate,
+                (float) $recipient->amount,
+                (float) $recipient->tax_amount,
+                (float) $recipient->net_amount,
+                ($index + 1).'. __________________',
+            ]], null, 'A'.($index + 2));
+        }
+        $totalRow = $recipients->count() + 2;
+        $sheet->fromArray([['', '', '', '', '', '', '', '', '', '', 'TOTAL', $summary['gross'], $summary['tax'], $summary['net'], '']], null, 'A'.$totalRow);
+        foreach (['K', 'L', 'M', 'N'] as $column) {
+            $sheet->getStyle($column.'2:'.$column.$totalRow)->getNumberFormat()->setFormatCode('#,##0');
+        }
+        foreach (range('A', 'O') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        $path = storage_path('app/generated-documents/daftar-pembayaran-jasa-'.uniqid().'.xlsx');
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0775, true);
+        }
+        (new Xlsx($book))->save($path);
+
+        return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PEMBAYARAN-JASA-'.$year->year.'.xlsx', (int) $year->year);
+    }
+
+    public function selectServiceRecipients(Request $request): View
+    {
+        $transactions = Transaction::query()
+            ->with(['serviceRecipients', 'spjPackage'])
+            ->forSpjContext($this->activeContext)
+            ->where('spj_category', 'JASA_LAINNYA')
+            ->has('serviceRecipients')
+            ->when($request->filled('month'), fn ($query) => $query->whereMonth('transaction_date', $request->integer('month')))
+            ->when($request->filled('quarter'), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [(($request->integer('quarter') - 1) * 3) + 1, $request->integer('quarter') * 3]))
+            ->when($request->filled('semester'), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [$request->integer('semester') === 1 ? 1 : 7, $request->integer('semester') === 1 ? 6 : 12]))
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        return view('spj-reports.service-recipient-select', compact('transactions'));
+    }
+
+    public function composeServiceRecipients(Request $request): View
+    {
+        $data = $request->validate([
+            'transaction_ids' => ['required', 'array', 'min:1'],
+            'transaction_ids.*' => ['integer', 'distinct'],
+        ]);
+        $transactions = Transaction::query()
+            ->with(['serviceRecipients', 'spjPackage'])
+            ->forSpjContext($this->activeContext)
+            ->where('spj_category', 'JASA_LAINNYA')
+            ->whereKey($data['transaction_ids'])
+            ->has('serviceRecipients')
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+        abort_if($transactions->count() !== count($data['transaction_ids']), 422, 'Sebagian transaksi jasa tidak berada pada konteks aktif atau tidak memiliki penerima jasa.');
+        $recipients = $transactions->flatMap(function (Transaction $transaction) {
+            return $transaction->serviceRecipients->each(
+                fn (SpjServiceRecipient $recipient): SpjServiceRecipient => $recipient->setRelation('transaction', $transaction),
+            );
+        })->values();
+
+        return view('spj-reports.service-recipient-compose', [
+            'transactions' => $transactions,
+            'recipients' => $recipients,
+            'summary' => [
+                'gross' => $recipients->sum('amount'),
+                'tax' => $recipients->sum('tax_amount'),
+                'net' => $recipients->sum('net_amount'),
+            ],
+        ]);
     }
 }

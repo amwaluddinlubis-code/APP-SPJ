@@ -1,6 +1,12 @@
 @php
     $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-    $exportQuery = array_filter(['tab' => 'laporan', 'mode' => $mode, 'periode' => $periode]);
+    $periodQuery = match ($mode) {
+        'bulan' => ['month' => $periode],
+        'triwulan' => ['quarter' => $periode],
+        'semester' => ['semester' => $periode],
+        default => [],
+    };
+    $exportQuery = array_filter(['tab' => 'laporan', ...$periodQuery]);
 @endphp
 <div>
     <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
@@ -40,11 +46,9 @@
                                 @endif
                             </x-ui.select>
                             <x-ui.action-menu label="Ekspor">
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.select') }}">Susun Laporan Honor Terpilih</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.export', array_merge($exportQuery, ['format' => 'pdf'])) }}" target="_blank">Pratinjau PDF</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.export', array_merge($exportQuery, ['format' => 'xlsx'])) }}">Unduh Excel</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.export', array_merge($exportQuery, ['format' => 'pdf'])) }}" target="_blank">Daftar Honor PDF</a>
-                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.export', array_merge($exportQuery, ['format' => 'xlsx'])) }}">Daftar Honor Excel</a>
+                                <div class="ui-action-menu-label">Susun Laporan</div>
+                                <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.select', $exportQuery) }}">Honor Pegawai</a>
+                                <a class="ui-action-menu-item" href="{{ route('spj.service-recipients.select', $exportQuery) }}">Jasa Lainnya</a>
                             </x-ui.action-menu>
                         </div>
                     </div>
