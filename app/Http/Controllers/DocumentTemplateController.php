@@ -104,6 +104,7 @@ class DocumentTemplateController extends Controller
             'template' => ['required', 'file', 'extensions:docx,xlsx', 'max:10240'],
             'applicable_categories' => ['nullable', 'array'],
             'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
+            'siplah_scope' => ['nullable', 'string', 'in:all,siplah,non_siplah'],
         ], [
             'template.required' => 'Pilih file template DOCX atau XLSX yang akan diunggah.',
             'template.uploaded' => 'Upload file template gagal. Periksa ukuran file dan batas upload PHP pada komputer ini.',
@@ -117,6 +118,7 @@ class DocumentTemplateController extends Controller
                 (string) $data['name'],
                 $request->file('template'),
                 $data['applicable_categories'] ?? [],
+                $this->siplahScopeToBoolean($data['siplah_scope'] ?? 'all'),
             );
         } catch (ValidationException $exception) {
             $exception->errorBag = 'templateUpload';
@@ -171,7 +173,7 @@ class DocumentTemplateController extends Controller
         return $response;
     }
 
-    /** Memperbarui status aktif dan kategori yang memakai suatu template. */
+    /** Memperbarui status aktif, kategori, dan channel pengadaan yang memakai suatu template. */
     public function updateMapping(Request $request, string $templateId): RedirectResponse
     {
         $categories = SpjDocumentTypeRegistry::categories();
@@ -179,12 +181,14 @@ class DocumentTemplateController extends Controller
             'is_active' => ['nullable', 'boolean'],
             'applicable_categories' => ['nullable', 'array'],
             'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
+            'siplah_scope' => ['nullable', 'string', 'in:all,siplah,non_siplah'],
         ]);
 
         if (! $this->library->updateMapping(
             $templateId,
             (bool) ($data['is_active'] ?? false),
             $data['applicable_categories'] ?? [],
+            $this->siplahScopeToBoolean($data['siplah_scope'] ?? 'all'),
         )) {
             return back()->with('error', 'Template tidak ditemukan.');
         }
@@ -269,6 +273,15 @@ class DocumentTemplateController extends Controller
             'post_max_size' => $postLimit,
             'effective_max_upload' => $effectiveBytes > 0 ? $this->humanBytes($effectiveBytes) : 'tidak diketahui',
         ];
+    }
+
+    private function siplahScopeToBoolean(?string $scope): ?bool
+    {
+        return match ($scope) {
+            'siplah' => true,
+            'non_siplah' => false,
+            default => null,
+        };
     }
 
     private function ensurePostBodyWithinLimit(Request $request, string $field, string $errorBag): void
