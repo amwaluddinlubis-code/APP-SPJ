@@ -175,6 +175,9 @@ final class SpjTemplatePackageImporter
                             'name' => (string) $definition['label'],
                             'file_path' => $newPaths[$documentType],
                             'applicable_categories' => $definition['applicable_categories'] ?? [],
+                            'is_siplah' => $current
+                                ? $current->is_siplah
+                                : $this->defaultIsSiplahScope($documentType),
                             'is_active' => true,
                         ]
                     );
@@ -198,6 +201,15 @@ final class SpjTemplatePackageImporter
             'imported' => count($definitions),
             'replaced' => $existing->count(),
         ];
+    }
+
+    private function defaultIsSiplahScope(string $documentType): ?bool
+    {
+        return in_array($documentType, [
+            SpjDocumentTypeRegistry::SURAT_PESANAN,
+            SpjDocumentTypeRegistry::BAP,
+            SpjDocumentTypeRegistry::BAST,
+        ], true) ? false : null;
     }
 
     private function copyValidatedMasterWorkbook(string $sourcePath, string $destinationPath): void
