@@ -63,7 +63,7 @@ class EmployeeDirectoryLivewireTest extends TestCase
         $this->assertStringContainsString('md:hidden', $blade);
         $this->assertStringContainsString('Daftar pegawai', $blade);
         $this->assertStringContainsString("route('employees.edit'", $blade);
-        $this->assertStringContainsString('$employees->links()', $blade);
+        $this->assertStringContainsString('<x-ui.server-pagination', $blade);
     }
 
     public function test_employees_page_renders_livewire_directory(): void
