@@ -1,4 +1,4 @@
-<section data-spj-refresh="validation" class="mx-5 mt-5 overflow-hidden rounded-xl border {{ $validationIssues ? 'border-amber-200' : 'border-emerald-200' }} bg-[var(--ui-surface-base)] shadow">
+<section data-spj-refresh="validation" class="overflow-hidden border-b border-[var(--ui-line)] pb-1">
                         <div class="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Validasi Sebelum Cetak</h2><p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">{{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi sebelum PDF dibuat.' : 'Semua data wajib lengkap. Paket siap diunduh sebagai PDF.' }}</p></div>
                             @if($validationIssues)

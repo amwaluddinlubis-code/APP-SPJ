@@ -101,4 +101,34 @@ class SpjMainTabsRenderingTest extends TestCase
                 ->assertSee($marker, false);
         }
     }
+
+    public function test_package_readiness_sections_are_composed_inside_the_rincian_panel(): void
+    {
+        $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $validation = file_get_contents(resource_path('views/spj/partials/package/validation.blade.php'));
+        $documents = file_get_contents(resource_path('views/spj/partials/package/documents.blade.php'));
+
+        $this->assertIsString($index);
+        $this->assertIsString($validation);
+        $this->assertIsString($documents);
+        $this->assertStringContainsString("@include('spj.partials.package.validation')", $index);
+        $this->assertStringContainsString("@include('spj.partials.package.documents')", $index);
+        $this->assertStringContainsString('id="package-panel-rincian"', $index);
+        $this->assertStringContainsString('class="overflow-hidden border-b border-[var(--ui-line)] pb-1"', $validation);
+        $this->assertStringContainsString('class="overflow-hidden pt-1"', $documents);
+        $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $validation);
+        $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $documents);
+    }
+
+    public function test_package_summary_uses_one_neutral_surface_with_theme_accent_for_key_value(): void
+    {
+        $summary = file_get_contents(resource_path('views/spj/partials/package/transaction-summary.blade.php'));
+
+        $this->assertIsString($summary);
+        $this->assertStringContainsString('background: var(--ui-surface-soft)', $summary);
+        $this->assertStringContainsString('background: var(--ui-surface-base)', $summary);
+        $this->assertStringContainsString('var(--theme-content-accent)', $summary);
+        $this->assertStringNotContainsString('linear-gradient', $summary);
+        $this->assertStringNotContainsString('var(--text-comfort-on-dark)', $summary);
+    }
 }

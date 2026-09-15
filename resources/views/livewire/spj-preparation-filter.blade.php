@@ -158,8 +158,8 @@
                 <option value="50">50 baris</option>
                 <option value="100">100 baris</option>
             </x-ui.select>
-            <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">• {{ number_format($transactions?->total() ?? 0, 0, ',', '.') }} data</span>
+            <span style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ $transactions?->firstItem() ?? 0 }}–{{ $transactions?->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ number_format($transactions?->total() ?? 0, 0, ',', '.') }}</span> transaksi</span>
         </div>
-        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
+        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" :compact="true" />
     </div>
 </div>

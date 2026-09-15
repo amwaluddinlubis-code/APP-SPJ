@@ -1,4 +1,4 @@
-<section data-spj-refresh="documents" class="mx-5 mt-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+<section data-spj-refresh="documents" class="overflow-hidden pt-1">
                         <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3.5" style="border-color: var(--ui-line)">
                             <div><h2 class="text-base font-bold" style="color: var(--ui-fg)">Dokumen &amp; Template</h2><p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">PDF paket disusun dari template aktif yang sesuai dengan kategori transaksi.</p></div>
                             @unless($validationIssues || $package->status === 'CANCELLED')

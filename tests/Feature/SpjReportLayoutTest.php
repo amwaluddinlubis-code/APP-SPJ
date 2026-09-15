@@ -90,7 +90,7 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/spj/partials/package/categories/barang.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString("\$paymentMethod = strtolower(trim((string) \$transaction->payment_method));", $blade);
+        $this->assertStringContainsString('$paymentMethod = strtolower(trim((string) $transaction->payment_method));', $blade);
         $this->assertStringContainsString("\$isSiplah = \$paymentMethod === 'siplah'", $blade);
         $this->assertStringContainsString('$siplahOrder = $transaction->siplah_order_number', $blade);
         $this->assertStringContainsString('siplahResponse.invoice_number', $blade);
@@ -172,5 +172,18 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringNotContainsString('bg-amber-50', $monitoring);
         $this->assertStringNotContainsString('bg-rose-50', $monitoring);
         $this->assertStringContainsString('spj-monitoring-table', $monitoring);
+    }
+
+    public function test_preparation_and_package_lists_render_one_pagination_summary_each(): void
+    {
+        $preparation = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
+        $packages = file_get_contents(resource_path('views/livewire/spj-package-list.blade.php'));
+
+        $this->assertIsString($preparation);
+        $this->assertIsString($packages);
+        $this->assertSame(1, substr_count($preparation, 'Menampilkan'));
+        $this->assertSame(1, substr_count($packages, 'Menampilkan'));
+        $this->assertStringContainsString(':compact="true"', $preparation);
+        $this->assertStringContainsString(':compact="true"', $packages);
     }
 }

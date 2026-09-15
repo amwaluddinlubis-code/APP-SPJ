@@ -47,10 +47,10 @@
                 <option value="50">50 baris</option>
                 <option value="100">100 baris</option>
             </x-ui.select>
-            <span class="hidden xl:inline">• {{ number_format($packageList->total(), 0, ',', '.') }} data</span>
+            <span>Menampilkan <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ $packageList->firstItem() ?? 0 }}–{{ $packageList->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ number_format($packageList->total(), 0, ',', '.') }}</span> paket</span>
         </div>
         @if($packageList->hasPages())
-            <x-ui.server-pagination :paginator="$packageList" noun="paket" />
+            <x-ui.server-pagination :paginator="$packageList" noun="paket" :compact="true" />
         @endif
     </div>
 </div>
