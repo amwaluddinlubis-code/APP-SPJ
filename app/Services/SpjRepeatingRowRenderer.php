@@ -175,19 +175,24 @@ class SpjRepeatingRowRenderer
             $sourceCoordinate = Coordinate::stringFromColumnIndex($column).$sourceRow;
             $targetCoordinate = Coordinate::stringFromColumnIndex($column).$targetRow;
             $sourceCell = $sheet->getCell($sourceCoordinate);
+            $sourceValue = $sourceCell->getValue();
+            $sourceXfIndex = $sourceCell->getXfIndex();
+            $sourceDataValidation = $sourceCell->hasDataValidation()
+                ? clone $sourceCell->getDataValidation()
+                : null;
             $targetCell = $sheet->getCell($targetCoordinate);
 
             $targetCell->setValue(
                 $this->translateFormulaForCopiedRow(
-                    $sourceCell->getValue(),
+                    $sourceValue,
                     $sourceCoordinate,
                     $targetCoordinate,
                 ),
             );
-            $targetCell->setXfIndex($sourceCell->getXfIndex());
+            $targetCell->setXfIndex($sourceXfIndex);
 
-            if ($sourceCell->hasDataValidation()) {
-                $targetCell->setDataValidation(clone $sourceCell->getDataValidation());
+            if ($sourceDataValidation !== null) {
+                $targetCell->setDataValidation($sourceDataValidation);
             }
         }
 

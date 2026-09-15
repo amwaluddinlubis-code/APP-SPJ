@@ -92,7 +92,7 @@
                     <td class="px-4 py-3 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->net_amount) }}</td>
                     <td class="px-4 py-3 text-right">
                         <x-ui.action-menu label="Tindakan">
-                            <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
+                            <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
                             @if (! $isCancelled)
                                 <form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form>
                                 <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>

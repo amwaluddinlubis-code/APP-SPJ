@@ -250,7 +250,7 @@
                 }
                 if (!button || !frame) return;
                 if (title) title.textContent = button.dataset.templateName || 'Pratinjau Template';
-                frame.src = button.dataset.templatePreview;
+                frame.src = button.dataset.templatePreviewPdf || button.dataset.templatePreview;
                 modal.classList.remove('hidden'); modal.classList.add('flex');
             };
             document.addEventListener('click', (event) => {

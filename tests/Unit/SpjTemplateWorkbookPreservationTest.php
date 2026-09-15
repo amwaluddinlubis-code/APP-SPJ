@@ -11,6 +11,7 @@ use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjRepeatingRowRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
@@ -172,6 +173,9 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         $sheet->setCellValue('B10', '{{ITEM_URAIAN}}');
         $sheet->mergeCells('B10:C10');
         $sheet->getRowDimension(10)->setRowHeight(26);
+        $validation = new DataValidation;
+        $validation->setType(DataValidation::TYPE_LIST)->setFormula1('"ATK,Kertas,Tinta"');
+        $sheet->getCell('A10')->setDataValidation($validation);
 
         app(SpjRepeatingRowRenderer::class)->render(
             $sheet,
@@ -187,6 +191,8 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         $this->assertSame('1', $sheet->getCell('A10')->getValue());
         $this->assertSame('2', $sheet->getCell('A11')->getValue());
         $this->assertSame('3', $sheet->getCell('A12')->getValue());
+        $this->assertTrue($sheet->getCell('A11')->hasDataValidation());
+        $this->assertTrue($sheet->getCell('A12')->hasDataValidation());
         $this->assertContains('B11:C11', $sheet->getMergeCells());
         $this->assertContains('B12:C12', $sheet->getMergeCells());
         $this->assertEqualsWithDelta(26.0, $sheet->getRowDimension(11)->getRowHeight(), 0.0001);

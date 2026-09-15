@@ -1,6 +1,7 @@
 {{-- Modal pratinjau dokumen generik (dipakai workspace paket + tabel laporan).
      Satu-satunya instance modal di halaman SPJ; tombol pemicu memakai atribut
-     data-template-preview (URL), data-template-name (judul), dan
+     data-template-preview (URL fallback), data-template-preview-pdf (URL PDF),
+     data-template-name (judul), dan
      data-close-template-preview. Handler JS terdelegasi penuh di document
      pada resources/views/spj/index.blade.php. --}}
 <div id="template-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="template-preview-title">
