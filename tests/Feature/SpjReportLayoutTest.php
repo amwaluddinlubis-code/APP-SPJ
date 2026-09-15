@@ -90,9 +90,14 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/spj/partials/package/categories/barang.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('$isSiplah ? ($transaction->siplah_order_number', $blade);
+        $this->assertStringContainsString("\$paymentMethod = strtolower(trim((string) \$transaction->payment_method));", $blade);
+        $this->assertStringContainsString("\$isSiplah = \$paymentMethod === 'siplah'", $blade);
+        $this->assertStringContainsString('$siplahOrder = $transaction->siplah_order_number', $blade);
         $this->assertStringContainsString('siplahResponse.invoice_number', $blade);
+        $this->assertStringContainsString('$autoOrderNumber = $isSiplah', $blade);
+        $this->assertStringContainsString('? $siplahOrder', $blade);
         $this->assertStringContainsString('$purchaseDetails?->order_number ?: $transaction->order_number', $blade);
+        $this->assertStringContainsString('data-auto-number-pesanan="{{ $autoOrderNumber }}"', $blade);
     }
 
     public function test_siplah_metadata_uses_one_row_on_large_screens(): void
