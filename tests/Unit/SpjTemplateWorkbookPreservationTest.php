@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\ExtendedSpjTemplateService;
+use App\Services\SpjDocumentTypeRegistry;
 use App\Services\SpjRepeatingRowRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -23,9 +24,13 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
     {
         Storage::fake('local');
 
+        $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::SPJ_COVER);
+        $this->assertNotNull($definition);
+        $canonicalSheet = (string) $definition['sheet'];
+
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('TPL_COVER_SPJ');
+        $sheet->setTitle($canonicalSheet);
         $sheet->setCellValue('A1', '{{NAMA_SEKOLAH}}');
         $sheet->getPageSetup()
             ->setPaperSize(PageSetup::PAPERSIZE_A4)
@@ -52,7 +57,7 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         $spreadsheet->disconnectWorksheets();
 
         $template = (new DocumentTemplate)->forceFill([
-            'document_type' => 'COVER_SPJ',
+            'document_type' => SpjDocumentTypeRegistry::SPJ_COVER,
             'format' => 'xlsx',
             'file_path' => $templateRelativePath,
         ]);
@@ -93,7 +98,7 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
             $generatedSheet = $generated->getActiveSheet();
 
             $this->assertSame(1, $generated->getSheetCount());
-            $this->assertSame('TPL_COVER_SPJ', $generatedSheet->getTitle());
+            $this->assertSame($canonicalSheet, $generatedSheet->getTitle());
             $this->assertSame('SD TEST', $generatedSheet->getCell('A1')->getValue());
             $this->assertSame(PageSetup::PAPERSIZE_A4, $generatedSheet->getPageSetup()->getPaperSize());
             $this->assertSame(PageSetup::ORIENTATION_LANDSCAPE, $generatedSheet->getPageSetup()->getOrientation());
