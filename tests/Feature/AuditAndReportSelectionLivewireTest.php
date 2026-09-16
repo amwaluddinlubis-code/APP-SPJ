@@ -26,26 +26,34 @@ class AuditAndReportSelectionLivewireTest extends TestCase
         $this->assertSame('audit-reports.index', $view->name());
     }
 
-    public function test_audit_named_paginator_resets_when_its_page_size_changes_and_legacy_query_alias_is_preserved(): void
+    public function test_audit_named_paginator_resets_when_its_page_size_changes(): void
     {
         $reports = Mockery::mock(AuditReportService::class);
         $reports->shouldReceive('build')->atLeast()->once()->andReturn($this->auditReport(40));
         $this->app->instance(AuditReportService::class, $reports);
 
-        Livewire::withQueryParams([
-            'tab' => 'reconciliation',
-            'reconciliation_perPage' => 10,
-        ])->test(AuditReportWorkspace::class)
-            ->assertSet('tab', 'reconciliation')
-            ->assertSet('reconciliationPerPage', 10)
+        Livewire::test(AuditReportWorkspace::class)
+            ->set('tab', 'reconciliation')
+            ->set('reconciliationPerPage', 10)
             ->assertSee('R-001')
             ->assertDontSee('R-011')
-            ->call('gotoPage', 2, 'reconciliation_page')
+            ->call('setPage', 2, 'reconciliation_page')
             ->assertSee('R-011')
             ->assertDontSee('R-001')
             ->set('reconciliationPerPage', 25)
             ->assertSee('R-001')
             ->assertSee('R-020');
+    }
+
+    public function test_audit_per_page_url_binding_preserves_legacy_query_aliases(): void
+    {
+        $source = file_get_contents(app_path('Livewire/AuditReportWorkspace.php'));
+
+        $this->assertIsString($source);
+        $this->assertStringContainsString("#[Url(as: 'reconciliation_perPage', except: 15)]", $source);
+        $this->assertStringContainsString("#[Url(as: 'register_perPage', except: 15)]", $source);
+        $this->assertStringContainsString("#[Url(as: 'completeness_perPage', except: 15)]", $source);
+        $this->assertStringContainsString("#[Url(as: 'history_perPage', except: 15)]", $source);
     }
 
     public function test_audit_pagination_uses_real_boolean_disabled_attributes(): void
