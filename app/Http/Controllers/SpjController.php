@@ -17,6 +17,7 @@ use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SpjController extends Controller
@@ -105,7 +106,9 @@ class SpjController extends Controller
             return $categoryUseCase->switchCategory($packageId, $request);
         }
 
-        return $useCase->handle($packageId, $request);
+        return DB::connection('school')->transaction(
+            fn (): RedirectResponse => $useCase->handle($packageId, $request)
+        );
     }
 
     public function download(string $packageId, SpjDocumentUseCase $useCase)
