@@ -17,19 +17,24 @@ class AuditReportWorkspace extends Component
     #[Url(except: 'overview')]
     public string $tab = 'overview';
 
+    #[Url(as: 'reconciliation_perPage', except: 15)]
     public int $reconciliationPerPage = 15;
 
+    #[Url(as: 'register_perPage', except: 15)]
     public int $registerPerPage = 15;
 
+    #[Url(as: 'completeness_perPage', except: 15)]
     public int $completenessPerPage = 15;
 
+    #[Url(as: 'history_perPage', except: 15)]
     public int $historyPerPage = 15;
 
     public function mount(): void
     {
         $this->tab = in_array(request('tab'), $this->tabs(), true) ? (string) request('tab') : 'overview';
-        foreach (['reconciliationPerPage', 'registerPerPage', 'completenessPerPage', 'historyPerPage'] as $property) {
-            $this->{$property} = $this->normalizePerPage(request($property, 15));
+
+        foreach ($this->perPageParameters() as $property => $queryParameter) {
+            $this->{$property} = $this->normalizePerPage(request($queryParameter, $this->{$property}));
         }
     }
 
@@ -42,8 +47,10 @@ class AuditReportWorkspace extends Component
 
     public function updating($property): void
     {
-        if (str_ends_with((string) $property, 'PerPage')) {
-            $this->resetPage();
+        $pageName = $this->pageNameForPerPageProperty((string) $property);
+
+        if ($pageName !== null) {
+            $this->resetPage($pageName);
         }
     }
 
@@ -64,6 +71,28 @@ class AuditReportWorkspace extends Component
     private function tabs(): array
     {
         return ['overview', 'reconciliation', 'register', 'tax', 'completeness', 'history'];
+    }
+
+    /** @return array<string,string> */
+    private function perPageParameters(): array
+    {
+        return [
+            'reconciliationPerPage' => 'reconciliation_perPage',
+            'registerPerPage' => 'register_perPage',
+            'completenessPerPage' => 'completeness_perPage',
+            'historyPerPage' => 'history_perPage',
+        ];
+    }
+
+    private function pageNameForPerPageProperty(string $property): ?string
+    {
+        return match ($property) {
+            'reconciliationPerPage' => 'reconciliation_page',
+            'registerPerPage' => 'register_page',
+            'completenessPerPage' => 'completeness_page',
+            'historyPerPage' => 'history_page',
+            default => null,
+        };
     }
 
     private function normalizePerPage(mixed $value): int

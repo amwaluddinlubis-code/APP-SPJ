@@ -21,6 +21,10 @@ use Illuminate\View\View;
 
 class SpjController extends Controller
 {
+    private const HONOR_REPORT_SELECTION_SESSION_KEY = 'spj_report_selection.honor';
+
+    private const SERVICE_REPORT_SELECTION_SESSION_KEY = 'spj_report_selection.service';
+
     public function index(Request $request, SpjWorkspaceUseCase $useCase): View|RedirectResponse
     {
         return $useCase->handle($request);
@@ -166,6 +170,8 @@ class SpjController extends Controller
 
     public function composeServiceRecipients(Request $request, SpjReportUseCase $useCase): View
     {
+        $this->hydrateReportSelection($request, self::SERVICE_REPORT_SELECTION_SESSION_KEY);
+
         return $useCase->composeServiceRecipients($request);
     }
 
@@ -176,6 +182,21 @@ class SpjController extends Controller
 
     public function composeHonorPayments(Request $request, SpjReportUseCase $useCase)
     {
+        $this->hydrateReportSelection($request, self::HONOR_REPORT_SELECTION_SESSION_KEY);
+
         return $useCase->composeHonorPayments($request);
+    }
+
+    private function hydrateReportSelection(Request $request, string $sessionKey): void
+    {
+        if ($request->has('transaction_ids')) {
+            $request->session()->forget($sessionKey);
+
+            return;
+        }
+
+        $request->merge([
+            'transaction_ids' => $request->session()->pull($sessionKey, []),
+        ]);
     }
 }

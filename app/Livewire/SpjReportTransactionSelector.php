@@ -11,6 +11,10 @@ use Livewire\Component;
 
 class SpjReportTransactionSelector extends Component
 {
+    private const HONOR_SELECTION_SESSION_KEY = 'spj_report_selection.honor';
+
+    private const SERVICE_SELECTION_SESSION_KEY = 'spj_report_selection.service';
+
     public string $category = 'HONOR_PEGAWAI';
 
     #[Url(except: null)]
@@ -62,7 +66,9 @@ class SpjReportTransactionSelector extends Component
             ? 'spj.honor-payments.compose'
             : 'spj.service-recipients.compose';
 
-        return redirect()->route($route, ['transaction_ids' => $this->selected]);
+        session()->put($this->selectionSessionKey(), array_values(array_map('intval', $this->selected)));
+
+        return redirect()->route($route);
     }
 
     public function render(): View
@@ -81,5 +87,12 @@ class SpjReportTransactionSelector extends Component
             'quarter' => $this->quarter,
             'semester' => $this->semester,
         ]);
+    }
+
+    private function selectionSessionKey(): string
+    {
+        return $this->category === 'HONOR_PEGAWAI'
+            ? self::HONOR_SELECTION_SESSION_KEY
+            : self::SERVICE_SELECTION_SESSION_KEY;
     }
 }

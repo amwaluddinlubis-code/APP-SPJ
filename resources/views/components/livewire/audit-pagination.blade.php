@@ -5,8 +5,8 @@
         <x-ui.select wire:model.live="{{ $perPage }}" class="!min-h-8 !w-auto !py-1 text-xs"><option value="10">10</option><option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></x-ui.select>
     </div>
     <div class="flex items-center gap-2">
-        <x-ui.button type="button" variant="secondary" class="!min-h-8 !px-2 !py-1 text-xs" wire:click="previousPage('{{ $pageName }}')" disabled="{{ $paginator->onFirstPage() ? 'disabled' : null }}">Sebelumnya</x-ui.button>
+        <x-ui.button type="button" variant="secondary" class="!min-h-8 !px-2 !py-1 text-xs" wire:click="previousPage('{{ $pageName }}')" @disabled($paginator->onFirstPage())>Sebelumnya</x-ui.button>
         <span class="text-xs text-[var(--ui-fg-muted)]">{{ $paginator->currentPage() }} / {{ $paginator->lastPage() }}</span>
-        <x-ui.button type="button" variant="secondary" class="!min-h-8 !px-2 !py-1 text-xs" wire:click="nextPage('{{ $pageName }}')" disabled="{{ $paginator->hasMorePages() ? null : 'disabled' }}">Berikutnya</x-ui.button>
+        <x-ui.button type="button" variant="secondary" class="!min-h-8 !px-2 !py-1 text-xs" wire:click="nextPage('{{ $pageName }}')" @disabled(! $paginator->hasMorePages())>Berikutnya</x-ui.button>
     </div>
 </div>

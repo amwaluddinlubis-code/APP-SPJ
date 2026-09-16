@@ -6,9 +6,6 @@ use App\Models\School;
 use App\Services\AuditReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -19,16 +16,9 @@ class AuditReportController extends Controller
 {
     public function __construct(private AuditReportService $reports) {}
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        $report = $this->reports->build();
-        $report['reconciliationRows'] = $this->paginate($report['reconciliationRows'], $request, 'reconciliation_page', $this->pageSize($request, 'reconciliation_perPage'), 'reconciliation');
-        $report['register'] = $this->paginate($report['register'], $request, 'register_page', $this->pageSize($request, 'register_perPage'), 'register');
-        $report['completenessRows'] = $this->paginate($report['completenessRows'], $request, 'completeness_page', $this->pageSize($request, 'completeness_perPage'), 'completeness');
-        $report['syncRuns'] = $this->paginate($report['syncRuns'], $request, 'history_page', $this->pageSize($request, 'history_perPage'), 'history');
-        $report['auditLogs'] = collect($report['auditLogs']);
-
-        return view('audit-reports.index', $report);
+        return view('audit-reports.index');
     }
 
     public function export(string $format): Response|BinaryFileResponse
@@ -108,29 +98,5 @@ class AuditReportController extends Controller
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
         $sheet->freezePane('A2');
-    }
-
-    /** @param Collection<int,mixed> $items */
-    private function paginate(Collection $items, Request $request, string $pageName, int $perPage, string $tab): LengthAwarePaginator
-    {
-        $page = max(1, $request->integer($pageName, 1));
-
-        return (new LengthAwarePaginator(
-            $items->forPage($page, $perPage)->values(),
-            $items->count(),
-            $perPage,
-            $page,
-            [
-                'path' => $request->url(),
-                'pageName' => $pageName,
-            ],
-        ))->appends([...$request->query(), 'tab' => $tab]);
-    }
-
-    private function pageSize(Request $request, string $name): int
-    {
-        $size = $request->integer($name, 15);
-
-        return in_array($size, [10, 15, 25, 50, 100], true) ? $size : 15;
     }
 }
