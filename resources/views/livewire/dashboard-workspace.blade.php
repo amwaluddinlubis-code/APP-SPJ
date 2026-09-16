@@ -152,9 +152,15 @@
                                 </div>
                                 <x-ui.status-badge status="DRAFT" size="xs" />
                             </div>
-                            <a href="{{ route('spj.checklist', $nextDraftTransaction->spjPackage->id) }}"
-                                class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--theme-content-accent)]"><x-ui.icon
-                                    name="work" class="h-4 w-4" /> Lanjutkan sampai siap dinomori →</a>
+                            @if ($nextDraftCanMarkReady)
+                                <x-ui.button type="button" wire:click="markReady({{ $nextDraftTransaction->spjPackage->id }})"
+                                    wire:loading.attr="disabled" wire:target="markReady({{ $nextDraftTransaction->spjPackage->id }})"
+                                    icon="number" class="mt-4">Tandai Siap Dinomori</x-ui.button>
+                            @else
+                                <a href="{{ route('spj.checklist', $nextDraftTransaction->spjPackage->id) }}"
+                                    class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--theme-content-accent)]"><x-ui.icon
+                                        name="work" class="h-4 w-4" /> Lanjutkan sampai siap dinomori →</a>
+                            @endif
                         </div>
                     @else
                         <x-ui.empty-state title="Tidak ada paket yang perlu dilengkapi"

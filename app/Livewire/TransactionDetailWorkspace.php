@@ -164,7 +164,10 @@ class TransactionDetailWorkspace extends Component
     private function loadTransaction(): void
     {
         $transaction = $this->transaction();
-        $this->paymentDescription = (string) ($transaction->payment_description ?: $transaction->description ?: '');
+        $siplahDescription = $transaction->is_siplah
+            ? app(SpjDescriptionService::class)->siplahPaymentDescription($transaction)
+            : null;
+        $this->paymentDescription = (string) ($transaction->payment_description ?: $siplahDescription ?: $transaction->description ?: '');
         $this->itemDescriptions = $transaction->items->mapWithKeys(fn ($item): array => [(int) $item->id => (string) ($item->item_description ?: $item->description ?: '')])->all();
         $report = app(SpjSourceReconciliationService::class)->forTransaction($transaction);
         $this->sourceEventId = $report['latest']?->id ? (int) $report['latest']->id : null;

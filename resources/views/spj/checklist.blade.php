@@ -29,9 +29,6 @@
             kicker="Checklist Paket SPJ"
         >
             <x-slot:actions>
-                @if($canMarkReady)
-                    <form method="POST" action="{{ route('spj.ready', $package->id) }}">@csrf<x-ui.button type="submit">Tandai siap diproses →</x-ui.button></form>
-                @endif
                 <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
             </x-slot:actions>
 

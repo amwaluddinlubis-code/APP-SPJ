@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
 use App\Models\Transaction;
+use App\Services\SpjDescriptionService;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjProcurementPolicyService;
@@ -190,6 +191,25 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertSame('Pemetaan lengkap', $values['SIPLAH_STATUS_MAPPING']);
         $this->assertSame('017/SP/BOS/IX/2026', $values['NOMOR_PESANAN']);
         $this->assertNotSame($values['SIPLAH_NOMOR_PESANAN'], $values['NOMOR_PESANAN']);
+    }
+
+    public function test_siplah_payment_description_template_is_available_for_detail_correction(): void
+    {
+        $transaction = $this->transaction([
+            'is_siplah' => true,
+            'siplah_metadata' => [
+                'siplahResponse' => [
+                    'marketplace_displayname' => 'SIPLah',
+                    'merchant' => 'SIPLah Toko Ladang',
+                    'invoice_number' => 'INV-001',
+                ],
+            ],
+        ]);
+
+        $this->assertSame(
+            'Pembelian barang di Merchant SIPLah Toko Ladang melalui SIPLah berdasarkan invoice INV-001',
+            app(SpjDescriptionService::class)->siplahPaymentDescription($transaction),
+        );
     }
 
     public function test_incomplete_siplah_metadata_does_not_add_ready_blockers(): void

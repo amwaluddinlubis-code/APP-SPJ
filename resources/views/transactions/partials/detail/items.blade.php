@@ -22,11 +22,12 @@
                 ? $metadataItem['siplah_item_name']
                 : null;
         };
+        $isNumberedPackage = $transaction->spjPackage?->status === 'NUMBERED';
         $spjDescriptionsEditable = ! $transaction->spjPackage
             || $transaction->spjPackage->isEditable()
-            || $transaction->spjPackage->status === 'NUMBERED';
+            || $isNumberedPackage;
     @endphp
-    @if($transaction->spjPackage?->status === 'NUMBERED')
+    @if($isNumberedPackage)
         <div class="px-5 pt-4">
             <x-ui.alert type="info" title="Koreksi uraian tetap diperbolehkan">
                 Uraian pembayaran dan nama/uraian barang atau jasa masih dapat diperbaiki. Nomor SPJ, status paket, tanggal transaksi, nilai bruto, pajak, netto, dan urutan penomoran tidak berubah.
@@ -35,6 +36,7 @@
     @endif
     <form wire:submit="saveDescriptions" @submit="spjDescriptionsDirty = false">
         <fieldset @disabled(! $spjDescriptionsEditable) class="disabled:cursor-not-allowed disabled:opacity-60">
+            @if($isNumberedPackage)
             <div class="border-b border-[var(--ui-line)] px-5 py-5">
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
                     <x-ui.field label="Uraian pembayaran untuk SPJ" hint="Boleh dikoreksi oleh operator. Dipakai untuk kuitansi dan dokumen SPJ; tidak mengubah data sumber ARKAS/BKU.">
@@ -54,6 +56,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-[var(--ui-line)] text-base">
                     <thead class="bg-[var(--ui-surface-soft)]">

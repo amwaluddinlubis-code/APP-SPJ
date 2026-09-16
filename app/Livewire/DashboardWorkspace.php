@@ -3,12 +3,22 @@
 namespace App\Livewire;
 
 use App\Services\ProductivityDashboardDataService;
+use App\UseCases\Spj\SpjPackageLifecycleUseCase;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DashboardWorkspace extends Component
 {
-    public function render(ProductivityDashboardDataService $dashboardData): View
+    public function markReady(string $packageId, SpjPackageLifecycleUseCase $lifecycle): void
+    {
+        $result = $lifecycle->markReadyResult($packageId);
+        $type = $result['success'] ? 'success' : 'error';
+
+        session()->flash($type, $result['message']);
+        $this->dispatch('app-notify', type: $type, message: $result['message']);
+    }
+
+    public function render(ProductivityDashboardDataService $dashboardData, SpjPackageLifecycleUseCase $lifecycle): View
     {
         $data = $dashboardData->getData();
         $summary = $data['summary'];
@@ -36,6 +46,9 @@ class DashboardWorkspace extends Component
             ],
             'nextUnworkedTransaction' => $nextUnworkedTransaction,
             'nextDraftTransaction' => $nextDraftTransaction,
+            'nextDraftCanMarkReady' => $nextDraftTransaction?->spjPackage
+                ? $lifecycle->canMarkReady((string) $nextDraftTransaction->spjPackage->id)
+                : false,
             'priority' => [
                 'eyebrow' => $data['startHere']['priority'],
                 'title' => $data['startHere']['title'],

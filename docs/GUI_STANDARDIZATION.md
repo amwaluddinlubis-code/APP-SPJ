@@ -196,6 +196,10 @@ Header Transaksi
 
 `item_description` adalah satu-satunya field item yang editable. `description`, quantity, unit, unit price, amount readonly.
 
+Koreksi `payment_description` beserta keterangan sumber ARKAS/BKU di sampingnya hanya ditampilkan pada Detail Transaksi ketika Paket SPJ berstatus `NUMBERED`; sebelum itu, uraian pembayaran dikelola dari workspace Paket SPJ.
+
+Paket DRAFT yang seluruh validasinya sudah lolos dapat ditandai `READY` langsung melalui komponen Livewire di Dashboard; operator tidak perlu membuka halaman Checklist hanya untuk melakukan penandaan tersebut.
+
 Rincian pajak PPN/PPh/SSPD tidak perlu menjadi panel besar di Detail Transaksi. Detail lengkap tersedia pada Paket SPJ → **Rincian Pajak**.
 
 ## 9. Filter workflow

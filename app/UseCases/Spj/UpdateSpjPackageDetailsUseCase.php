@@ -396,22 +396,11 @@ class UpdateSpjPackageDetailsUseCase
         }
 
         $response = data_get($transaction->siplah_metadata, 'siplahResponse', []);
-        $items = collect(data_get($response, 'items', []));
-        if ($items->isEmpty()) {
-            $items = collect(data_get($response, 'transaction_items', []));
-        }
-
-        $marketplace = trim((string) data_get($response, 'marketplace_displayname'));
         $merchant = trim((string) data_get($response, 'merchant'));
         $merchantNpwp = trim((string) data_get($response, 'merchant_npwp'));
         $invoice = trim((string) data_get($response, 'invoice_number'));
         $orderNumber = $transaction->siplah_order_number ?: $this->siplahOrderNumber($invoice);
-        $itemNames = $items->map(fn (mixed $item): string => trim((string) data_get($item, 'siplah_item_name')))
-            ->filter()
-            ->values();
-        $description = $marketplace !== ''
-            ? 'Pembelian barang di Merchant '.$merchant.' melalui '.$marketplace.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '')
-            : ($itemNames->isNotEmpty() ? 'Pembelian barang: '.$itemNames->take(3)->implode(', ') : 'Pembelian barang melalui SiPLah');
+        $description = $this->descriptions->siplahPaymentDescription($transaction);
 
         return array_filter([
             'payment_reference' => blank($request->input('payment_reference')) ? $orderNumber : null,

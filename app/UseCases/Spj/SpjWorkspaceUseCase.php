@@ -191,22 +191,27 @@ class SpjWorkspaceUseCase
         }
 
         $validator = app(SpjPackageValidationService::class);
-        $participantRoster = $this->participantRoster();
-        $consumptionOrderSources = SpjPackage::query()
-            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)->where('spj_category', 'KONSUMSI'))
-            ->where('id', '!=', $package->id)
-            ->with('transaction.participants')
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get()
-            ->map(fn (SpjPackage $row) => [
-                'id' => $row->id,
-                'label' => ($row->transaction->no_bukti ?: 'Tanpa bukti').' · '.($row->transaction->transaction_date?->translatedFormat('d M Y') ?: '-').' · '.$row->transaction->participants->count().' peserta',
-                'names' => $row->transaction->participants->map(fn ($participant) => $participant->name)->filter()->values()->all(),
-            ])
-            ->filter(fn (array $row) => $row['names'] !== [])
-            ->values()
-            ->all();
+        $participantRoster = collect();
+        $consumptionOrderSources = [];
+
+        if (strtoupper((string) $package->transaction->spj_category) === 'KONSUMSI') {
+            $participantRoster = $this->participantRoster();
+            $consumptionOrderSources = SpjPackage::query()
+                ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context)->where('spj_category', 'KONSUMSI'))
+                ->where('id', '!=', $package->id)
+                ->with('transaction.participants')
+                ->orderByDesc('id')
+                ->limit(5)
+                ->get()
+                ->map(fn (SpjPackage $row) => [
+                    'id' => $row->id,
+                    'label' => ($row->transaction->no_bukti ?: 'Tanpa bukti').' · '.($row->transaction->transaction_date?->translatedFormat('d M Y') ?: '-').' · '.$row->transaction->participants->count().' peserta',
+                    'names' => $row->transaction->participants->map(fn ($participant) => $participant->name)->filter()->values()->all(),
+                ])
+                ->filter(fn (array $row) => $row['names'] !== [])
+                ->values()
+                ->all();
+        }
         $validationIssues = $validator->validate($package);
         $templates = $this->templateSelector->forPackage($package);
         $navigation = $this->packageNavigation($package);

@@ -11,11 +11,22 @@ class TransactionNumberedItemDescriptionUiTest extends TestCase
         $blade = file_get_contents(resource_path('views/transactions/partials/detail/items.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString("\$transaction->spjPackage->status === 'NUMBERED'", $blade);
+        $this->assertStringContainsString("\$isNumberedPackage = \$transaction->spjPackage?->status === 'NUMBERED';", $blade);
         $this->assertStringContainsString('@disabled(! $spjDescriptionsEditable)', $blade);
         $this->assertStringContainsString('Koreksi uraian tetap diperbolehkan', $blade);
         $this->assertStringNotContainsString('window.confirm', $blade);
         $this->assertStringContainsString('Nomor SPJ, status paket, tanggal transaksi, nilai bruto, pajak, netto, dan urutan penomoran tidak berubah.', $blade);
+    }
+
+    public function test_payment_correction_and_source_description_are_rendered_only_for_numbered_package(): void
+    {
+        $blade = file_get_contents(resource_path('views/transactions/partials/detail/items.blade.php'));
+
+        $this->assertIsString($blade);
+        $this->assertStringContainsString('$isNumberedPackage = $transaction->spjPackage?->status === \'NUMBERED\';', $blade);
+        $this->assertStringContainsString('@if($isNumberedPackage)', $blade);
+        $this->assertStringContainsString('name="payment_description"', $blade);
+        $this->assertStringContainsString('Uraian sumber ARKAS/BKU', $blade);
     }
 
     public function test_spj_description_endpoint_keeps_final_guard_and_numbering_safe_message(): void
