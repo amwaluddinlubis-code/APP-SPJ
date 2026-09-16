@@ -149,9 +149,6 @@ class SpjWorkspaceUseCase
     private function tabPaket(Request $request): View|RedirectResponse
     {
         $packageId = $request->query('package_id');
-        $packagePerPage = $request->integer('package_perPage', 15);
-        $packagePerPage = in_array($packagePerPage, [10, 15, 25, 50, 100], true) ? $packagePerPage : 15;
-        $packageList = $this->packageListData($packagePerPage);
 
         if (! $packageId) {
             // Daftar paket dirender oleh <livewire:spj-package-list /> dengan
@@ -217,7 +214,7 @@ class SpjWorkspaceUseCase
         return view('spj.index', [
             'tab' => 'paket',
             'package' => $package,
-            'packageList' => $packageList,
+            'packageList' => null,
             'validationIssues' => $validationIssues,
             'templates' => $templates,
             'transactions' => null,
