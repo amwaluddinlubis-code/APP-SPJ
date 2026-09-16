@@ -207,6 +207,13 @@ class SpjWorkspaceUseCase
                     'id' => $row->id,
                     'label' => ($row->transaction->no_bukti ?: 'Tanpa bukti').' · '.($row->transaction->transaction_date?->translatedFormat('d M Y') ?: '-').' · '.$row->transaction->participants->count().' peserta',
                     'names' => $row->transaction->participants->map(fn ($participant) => $participant->name)->filter()->values()->all(),
+                    'participants' => $row->transaction->participants->map(fn ($participant) => [
+                        'name' => $participant->name,
+                        'position' => $participant->position,
+                        'nip' => $participant->nip,
+                        'nuptk' => $participant->nuptk,
+                        'portions' => $participant->portions ?: 1,
+                    ])->values()->all(),
                 ])
                 ->filter(fn (array $row) => $row['names'] !== [])
                 ->values()

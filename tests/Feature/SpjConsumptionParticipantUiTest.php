@@ -11,6 +11,9 @@ class SpjConsumptionParticipantUiTest extends TestCase
         $view = file_get_contents(resource_path('views/spj/partials/package/categories/konsumsi.blade.php'));
         $service = file_get_contents(app_path('Services/SpjTransactionDetailsService.php'));
 
+        $this->assertStringContainsString('copyParticipants()', $view);
+        $this->assertStringContainsString('Salin peserta', $view);
+        $this->assertStringContainsString("'participants' => \$row->transaction->participants", file_get_contents(app_path('UseCases/Spj/SpjWorkspaceUseCase.php')));
         $this->assertStringContainsString('draggable="true"', $view);
         $this->assertStringContainsString('@dragstart.stop="startDrag(index, $event)"', $view);
         $this->assertStringContainsString('@drop.prevent="dropAt(index)"', $view);

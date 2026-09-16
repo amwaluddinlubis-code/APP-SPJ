@@ -44,6 +44,7 @@ class SpjAuthorizationContextHardeningTest extends TestCase
             'spj.assign-number',
             'spj.documents.assign-number',
             'spj.documents.finalize',
+            'spj.bulk-finalize',
             'spj.documents.cancel',
             'spj.documents.replace',
             'spj.payments.store',

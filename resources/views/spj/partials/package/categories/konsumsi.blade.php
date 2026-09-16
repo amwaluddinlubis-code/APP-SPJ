@@ -105,6 +105,14 @@
             const source = this.orderSources.find(item => String(item.id) === String(this.copySourceId));
             if (source) this.applyNameOrder(source.names);
         },
+        copyParticipants() {
+            const source = this.orderSources.find(item => String(item.id) === String(this.copySourceId));
+            if (!source?.participants?.length) return;
+            this.rows = source.participants.map(row => ({...row, _key: this.nextKey('copied')}));
+            this.primaryIndex = this.rows.length ? 0 : null;
+            this.syncParticipantCount();
+            this.page = 1;
+        },
         matchingIndexes() {
             const needle = this.query.trim().toLowerCase();
             return this.rows.map((row,index) => ({row,index})).filter(({row}) => !needle || Object.values(row || {}).some(value => String(value ?? '').toLowerCase().includes(needle))).map(({index}) => index);
@@ -127,21 +135,20 @@
         </div>
     </div>
 
-    <div class="mt-2 flex flex-wrap items-center gap-2">
-        <span class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Susun cepat:</span>
-        <button type="button" @click="sortByName()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold">A–Z</button>
-        <button type="button" @click="sortByRoster()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold">Ikut roster</button>
-        <button type="button" @click="saveOrder()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold">Simpan urutan</button>
-        <button type="button" x-show="savedOrder.length > 0" @click="applySavedOrder()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold">Pakai tersimpan (<span x-text="savedOrder.length"></span>)</button>
-        <div x-show="orderSources.length > 0" class="flex flex-wrap items-center gap-2">
-            <select x-model="copySourceId" class="h-8 rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 py-0 text-xs" aria-label="Salin urutan dari paket konsumsi lain">
-                <option value="">Salin dari paket…</option>
-                <template x-for="source in orderSources" :key="source.id">
-                    <option :value="source.id" x-text="source.label"></option>
-                </template>
-            </select>
-            <button type="button" @click="copyFromPackage()" :disabled="!copySourceId" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold disabled:opacity-35">Salin urutan</button>
-        </div>
+    <div class="mt-2 grid grid-cols-2 items-center gap-2 sm:grid-cols-4 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
+        <span class="col-span-2 text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)] lg:col-span-2">Susun cepat:</span>
+        <button type="button" @click="sortByName()" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold lg:col-span-1">A–Z</button>
+        <button type="button" @click="sortByRoster()" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold lg:col-span-2">Ikut roster</button>
+        <button type="button" @click="saveOrder()" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold lg:col-span-2">Simpan urutan</button>
+        <button type="button" x-show="savedOrder.length > 0" @click="applySavedOrder()" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold lg:col-span-2">Pakai tersimpan (<span x-text="savedOrder.length"></span>)</button>
+        <select x-show="orderSources.length > 0" x-model="copySourceId" class="col-span-2 h-8 min-w-0 max-w-full rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 py-0 text-xs sm:col-span-2 lg:col-span-3" aria-label="Salin dari paket konsumsi lain">
+            <option value="">Salin dari paket…</option>
+            <template x-for="source in orderSources" :key="source.id">
+                <option :value="source.id" x-text="source.label"></option>
+            </template>
+        </select>
+        <button type="button" x-show="orderSources.length > 0" @click="copyFromPackage()" :disabled="!copySourceId" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold disabled:opacity-35 lg:col-span-2">Salin urutan</button>
+        <button type="button" x-show="orderSources.length > 0" @click="copyParticipants()" :disabled="!copySourceId" class="ui-btn ui-btn-secondary min-w-0 !min-h-8 px-2.5 py-1 text-xs font-bold disabled:opacity-35 lg:col-span-2">Salin peserta</button>
     </div>
 
     <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">

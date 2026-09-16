@@ -200,6 +200,10 @@ Koreksi `payment_description` beserta keterangan sumber ARKAS/BKU di sampingnya 
 
 Paket DRAFT yang seluruh validasinya sudah lolos dapat ditandai `READY` langsung melalui komponen Livewire di Dashboard; operator tidak perlu membuka halaman Checklist hanya untuk melakukan penandaan tersebut.
 
+Administrator dapat menjalankan `Bulk Final SPJ` dari tab Monitoring untuk memfinalkan seluruh paket `NUMBERED` pada triwulan dan sumber dana aktif. Proses ini membuat snapshot dan dibatalkan seluruhnya jika salah satu paket tidak dapat difinalkan.
+
+Jika penutupan triwulan dicoba saat masih ada paket belum `FINAL`, aplikasi menampilkan notifikasi `warning` dan tetap mempertahankan triwulan pada status sebelumnya.
+
 Rincian pajak PPN/PPh/SSPD tidak perlu menjadi panel besar di Detail Transaksi. Detail lengkap tersedia pada Paket SPJ → **Rincian Pajak**.
 
 ## 9. Filter workflow

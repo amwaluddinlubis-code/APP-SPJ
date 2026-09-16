@@ -171,7 +171,19 @@
 @include('spj.partials.package.categories.konsumsi')
 @include('spj.partials.package.categories.pemeliharaan')
                                 @include('spj.partials.package.categories.jasa-lainnya')
-                                <div class="flex justify-end pt-1"><x-ui.button type="submit" x-bind:disabled="saving" class="px-4 py-1.5 text-base"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></x-ui.button></div>
+                                <div class="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+                                    @if($previousPackageId ?? null)
+                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId])" title="Buka paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center">← Prev</x-ui.button>
+                                    @else
+                                        <x-ui.button variant="secondary" disabled title="Tidak ada paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">← Prev</x-ui.button>
+                                    @endif
+                                    <x-ui.button type="submit" x-bind:disabled="saving" class="justify-center px-4 py-1.5 text-base"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></x-ui.button>
+                                    @if($nextPackageId ?? null)
+                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $nextPackageId])" title="Buka paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center">Next →</x-ui.button>
+                                    @else
+                                        <x-ui.button variant="secondary" disabled title="Tidak ada paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">Next →</x-ui.button>
+                                    @endif
+                                </div>
                     </div>
                     </fieldset>
                             </form>
@@ -208,6 +220,12 @@
                 <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 sm:px-6">
                     <div><h2 class="font-bold text-[var(--ui-fg-strong)]">Monitoring Dokumen Belum Lengkap</h2><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Transaksi ber-rincian tapi paket belum siap atau belum bernomor · <span class="font-bold text-[var(--theme-content-accent)]">{{ $pendingPaginator?->total() ?? 0 }} transaksi</span></p></div>
                     @if(auth()->user()?->isAdministrator())
+                        <form method="POST" action="{{ route('spj.bulk-finalize') }}" class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-emerald-200 bg-[var(--ui-surface-base)] p-3" data-confirm="Finalkan semua paket NUMBERED pada triwulan terpilih? Proses ini membuat snapshot dan mengunci paket.">
+                            @csrf
+                            <x-ui.field label="Bulk Final SPJ"><x-ui.select name="quarter">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field>
+                            <x-ui.button type="submit" variant="success">Finalkan paket NUMBERED</x-ui.button>
+                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Hanya paket NUMBERED pada triwulan dan sumber dana aktif yang diproses. Jika ada paket gagal, seluruh batch dibatalkan.</p>
+                        </form>
                         <form method="POST" action="{{ route('spj.quarter-numbering') }}" class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-indigo-200 bg-[var(--ui-surface-base)] p-3" data-confirm="Rekonsiliasi nomor triwulan ini? Transaksi yang sudah memiliki nomor aktif akan dilewati dan slot nomor yang dibatalkan dapat dipakai dokumen berikutnya dalam domain serta periode yang sama.">
                             @csrf
                             <x-ui.field label="Triwulan siap dinomori"><x-ui.select name="quarter">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\UseCases\Spj\SpjBulkFinalizeUseCase;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjDocumentUseCase;
 use App\UseCases\Spj\SpjFiscalPeriodUseCase;
@@ -64,6 +65,11 @@ class SpjController extends Controller
     public function finalizeDocument(string $documentId, SpjDocumentLifecycleUseCase $useCase): RedirectResponse
     {
         return $useCase->finalizeDocument($documentId);
+    }
+
+    public function bulkFinalize(Request $request, SpjBulkFinalizeUseCase $useCase): RedirectResponse
+    {
+        return $useCase->handle($request);
     }
 
     public function cancelDocument(Request $request, string $documentId, SpjDocumentLifecycleUseCase $useCase): RedirectResponse

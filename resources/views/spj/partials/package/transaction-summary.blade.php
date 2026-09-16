@@ -8,25 +8,6 @@
             <span aria-hidden="true">☷</span><span>Semua Paket</span>
         </a>
 
-        @if($previousPackageId ?? null)
-            <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId]) }}" title="Buka Paket SPJ sebelumnya pada tahun anggaran dan sumber dana aktif" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
-                <span aria-hidden="true">←</span><span>Paket Sebelumnya</span>
-            </a>
-        @else
-            <button type="button" data-package-nav-missing="previous" aria-disabled="true" title="Tidak ada Paket SPJ sebelumnya pada tahun anggaran dan sumber dana aktif" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 opacity-55 transition hover:opacity-80">
-                <span aria-hidden="true">←</span><span>Paket Sebelumnya</span>
-            </button>
-        @endif
-
-        @if($nextPackageId ?? null)
-            <a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $nextPackageId]) }}" title="Buka Paket SPJ setelahnya pada tahun anggaran dan sumber dana aktif" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
-                <span>Paket Setelahnya</span><span aria-hidden="true">→</span>
-            </a>
-        @else
-            <button type="button" data-package-nav-missing="next" aria-disabled="true" title="Tidak ada Paket SPJ setelahnya pada tahun anggaran dan sumber dana aktif" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 opacity-55 transition hover:opacity-80">
-                <span>Paket Setelahnya</span><span aria-hidden="true">→</span>
-            </button>
-        @endif
     </div>
 
     <a href="{{ route('transactions.show', $transaction->id) }}" title="Buka Detail Transaksi" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">

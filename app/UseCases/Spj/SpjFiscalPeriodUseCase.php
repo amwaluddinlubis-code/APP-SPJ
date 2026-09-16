@@ -19,7 +19,14 @@ class SpjFiscalPeriodUseCase
     {
         $data = $request->validate(['quarter' => ['required', 'integer', 'between:1,4']]);
         $period = $this->periods->period($this->context->fiscalYearId(), (int) $data['quarter']);
-        $this->periods->close($period, (int) $this->context->fundSourceId(), $this->context->actorId());
+
+        try {
+            $this->periods->close($period, (int) $this->context->fundSourceId(), $this->context->actorId());
+        } catch (\RuntimeException $exception) {
+            $flashType = str_contains($exception->getMessage(), 'belum FINAL') ? 'warning' : 'error';
+
+            return back()->with($flashType, $exception->getMessage());
+        }
 
         return back()->with('success', 'Triwulan '.$data['quarter'].' berhasil ditutup.');
     }
