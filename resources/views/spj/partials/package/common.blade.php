@@ -28,12 +28,10 @@
         <div class="min-w-0">
             <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran <span
                     class="text-rose-600">*</span></label>
-            @php($siplahMarketplace = data_get($transaction->siplah_metadata, 'siplahResponse.marketplace_displayname'))
             @php($siplahInvoice = data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number'))
-            @php($siplahMerchant = data_get($transaction->siplah_metadata, 'siplahResponse.merchant'))
-            @php($paymentDescriptionDefault = $siplahMarketplace ? 'Pembelian barang di Merchant ' . $siplahMerchant . ' melalui ' . $siplahMarketplace . ($siplahInvoice ? ' berdasarkan invoice ' . $siplahInvoice : '') : 'Pembelian barang melalui SiPLah')
+            @php($paymentDescriptionDefault = $transaction->is_siplah ? app(\App\Services\SpjDescriptionService::class)->siplahPaymentDescription($transaction) : null)
             <x-ui.textarea name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm"
-                required>{{ old('payment_description', $transaction->payment_description ?: ($transaction->is_siplah ? $paymentDescriptionDefault : null)) }}</x-ui.textarea>
+                required>{{ old('payment_description', $transaction->payment_description ?: $paymentDescriptionDefault) }}</x-ui.textarea>
         </div>
 
         <div class="grid min-w-0 gap-2 sm:grid-cols-2">
