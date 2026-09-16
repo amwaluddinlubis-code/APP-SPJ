@@ -1,5 +1,5 @@
 <x-layouts.public-tailwind title="Masuk · SPJ BOSP" narrow cardClass="auth-login-surface">
-    <div class="auth-login-card mx-auto w-full max-w-md px-1 py-1 sm:px-2">
+    <div class="auth-login-card mx-auto w-full max-w-sm px-1 py-1 sm:px-2">
         <div data-login-logo class="auth-login-brand text-center">
             <div class="auth-login-logo-circle mx-auto">
                 {{-- Simpan file logo lengkap pada public/images/logo-app-spj.png agar tampil di sini. --}}
@@ -14,8 +14,9 @@
             </div>
         </div>
         <div class="auth-login-heading text-center">
-            <h1 class="text-2xl font-bold text-[var(--login-fg-strong)]" style="color: #0f172a !important;">Masuk ke SPJ BOSP</h1>
-            <p class="mt-2 text-sm leading-6 text-[var(--login-fg-muted)]" style="color: #475569 !important;">Gunakan akun sekolah yang telah terdaftar.</p>
+            <p class="auth-login-kicker">Client Area</p>
+            <h1 class="mt-2 text-2xl font-bold text-[var(--login-fg-strong)]">Masuk ke SPJ BOSP</h1>
+            <p class="mt-2 text-sm leading-6 text-[var(--login-fg-muted)]">Gunakan akun sekolah yang telah terdaftar.</p>
         </div>
 
         <form method="POST" action="{{ route('login.store') }}" class="auth-login-form mt-7 space-y-5">
@@ -58,7 +59,7 @@
                 </label>
                 {{-- Belum ada route reset kata sandi; tautan otomatis aktif bila route password.request tersedia. --}}
                 <a href="{{ Route::has('password.request') ? route('password.request') : '#' }}"
-                    class="auth-login-forgot text-sm font-medium hover:underline" style="color: #2563eb !important;">Lupa kata sandi?</a>
+                    class="auth-login-forgot text-sm font-medium hover:underline">Lupa kata sandi?</a>
             </div>
 
             <x-ui.button type="submit" class="auth-login-submit w-full">Masuk</x-ui.button>

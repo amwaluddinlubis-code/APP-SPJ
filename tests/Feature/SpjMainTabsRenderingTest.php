@@ -94,7 +94,7 @@ class SpjMainTabsRenderingTest extends TestCase
             'persiapan' => 'Antrean persiapan SPJ',
             'paket' => 'Daftar Paket SPJ',
             'laporan' => 'Ringkasan laporan',
-            'monitoring' => 'Monitoring Dokumen Belum Lengkap',
+            'monitoring' => 'Monitoring dan penutupan periode',
         ] as $tab => $marker) {
             $this->get(route('spj.index', ['tab' => $tab]))
                 ->assertOk()

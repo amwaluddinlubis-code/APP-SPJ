@@ -13,30 +13,7 @@ use App\Models\Transaction;
  */
 class SpjDescriptionService
 {
-    public function siplahPaymentDescription(Transaction $transaction): ?string
-    {
-        $response = data_get($transaction->siplah_metadata, 'siplahResponse', []);
-        $marketplace = trim((string) data_get($response, 'marketplace_displayname'));
-        $merchant = trim((string) data_get($response, 'merchant'));
-        $invoice = trim((string) data_get($response, 'invoice_number'));
 
-        if ($marketplace !== '') {
-            return 'Pembelian barang di Merchant '.$merchant.' melalui '.$marketplace.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '');
-        }
-
-        $items = collect(data_get($response, 'items', []));
-        if ($items->isEmpty()) {
-            $items = collect(data_get($response, 'transaction_items', []));
-        }
-
-        $itemNames = $items->map(fn (mixed $item): string => trim((string) data_get($item, 'siplah_item_name')))
-            ->filter()
-            ->values();
-
-        return $itemNames->isNotEmpty()
-            ? 'Pembelian barang: '.$itemNames->take(3)->implode(', ')
-            : 'Pembelian barang melalui SiPLah';
-    }
 
     public function updatePaymentDescription(Transaction $transaction, ?string $description): void
     {
