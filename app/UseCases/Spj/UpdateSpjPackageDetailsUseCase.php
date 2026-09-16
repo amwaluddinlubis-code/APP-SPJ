@@ -410,7 +410,7 @@ class UpdateSpjPackageDetailsUseCase
             ->filter()
             ->values();
         $description = $marketplace !== ''
-            ? 'Pembelian barang melalui '.$marketplace.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '')
+            ? 'Pembelian barang di Merchant '.$merchant.' melalui '.$marketplace.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '')
             : ($itemNames->isNotEmpty() ? 'Pembelian barang: '.$itemNames->take(3)->implode(', ') : 'Pembelian barang melalui SiPLah');
 
         return array_filter([
