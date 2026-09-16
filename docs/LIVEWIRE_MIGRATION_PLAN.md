@@ -204,7 +204,8 @@ Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat re
 
 1. Rekonsiliasi — search/filter read-only — **IMPLEMENTED 2026-09-14** (`ReconciliationList`, uncommitted working tree saat dicatat).
 2. Template Dokumen — panel Template yang Tersedia sudah memakai `DocumentTemplateList` untuk filter, pagination, dan pemetaan reaktif; upload dan penghapusan tetap melalui controller/service canonical.
-3. Laporan Audit — pagination/read-only filter.
+3. Laporan Audit — workspace tab, pagination, dan jumlah baris sudah memakai `AuditReportWorkspace`; export tetap melalui controller canonical.
+4. Pemilihan laporan Honor/Jasa — pemilihan transaksi dan filter periode sudah memakai `SpjReportTransactionSelector`; penyusunan/export tetap melalui use case/controller canonical.
 
 Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:
 

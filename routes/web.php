@@ -151,10 +151,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh', [SpjController::class, 'downloadTemplate'])->name('spj.download-template');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh-pdf', [SpjController::class, 'downloadTemplatePdf'])->name('spj.download-template-pdf');
         Route::get('/spj/laporan/honor/pilih', [SpjController::class, 'selectHonorPayments'])->name('spj.honor-payments.select');
-        Route::post('/spj/laporan/honor/susun', [SpjController::class, 'composeHonorPayments'])->name('spj.honor-payments.compose');
+        Route::match(['GET', 'POST'], '/spj/laporan/honor/susun', [SpjController::class, 'composeHonorPayments'])->name('spj.honor-payments.compose');
         Route::get('/spj/laporan/honor/{format}', [SpjController::class, 'exportHonorPayments'])->name('spj.honor-payments.export');
         Route::get('/spj/laporan/jasa/pilih', [SpjController::class, 'selectServiceRecipients'])->name('spj.service-recipients.select');
-        Route::post('/spj/laporan/jasa/susun', [SpjController::class, 'composeServiceRecipients'])->name('spj.service-recipients.compose');
+        Route::match(['GET', 'POST'], '/spj/laporan/jasa/susun', [SpjController::class, 'composeServiceRecipients'])->name('spj.service-recipients.compose');
         Route::get('/spj/laporan/jasa/{format}', [SpjController::class, 'exportServiceRecipients'])->name('spj.service-recipients.export');
         Route::get('/spj/unduh/{format}', [SpjController::class, 'export'])->name('spj.export');
         Route::get('/laporan-audit', [AuditReportController::class, 'index'])->name('audit-reports.index');

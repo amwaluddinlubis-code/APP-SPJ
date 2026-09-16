@@ -8,7 +8,7 @@ class AuditReportThemePrimitiveUiTest extends TestCase
 {
     public function test_audit_report_uses_theme_primitives_instead_of_local_style_overrides(): void
     {
-        $blade = file_get_contents(resource_path('views/audit-reports/index.blade.php'));
+        $blade = file_get_contents(resource_path('views/livewire/audit-report-workspace.blade.php'));
 
         $this->assertIsString($blade);
         $this->assertStringNotContainsString('<style>', $blade);
@@ -22,7 +22,7 @@ class AuditReportThemePrimitiveUiTest extends TestCase
 
     public function test_all_audit_report_data_tables_use_the_shared_table_primitive(): void
     {
-        $blade = file_get_contents(resource_path('views/audit-reports/index.blade.php'));
+        $blade = file_get_contents(resource_path('views/livewire/audit-report-workspace.blade.php'));
 
         $this->assertIsString($blade);
         $this->assertSame(5, substr_count($blade, '<x-ui.table'));

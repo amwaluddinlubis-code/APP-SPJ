@@ -12,6 +12,7 @@ use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -25,19 +26,27 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         parent::__construct($activeContext);
     }
 
-    public function selectHonorPayments(Request $request): View
+    /** @return Collection<int,Transaction> */
+    public function selectionTransactions(string $category, array $filters = []): Collection
     {
-        $transactions = Transaction::query()
-            ->with(['honors', 'spjPackage'])
+        $relation = $category === 'HONOR_PEGAWAI' ? 'honors' : 'serviceRecipients';
+
+        return Transaction::query()
+            ->with([$relation, 'spjPackage'])
             ->forSpjContext($this->activeContext)
-            ->where('spj_category', 'HONOR_PEGAWAI')
-            ->has('honors')
-            ->when($request->filled('month'), fn ($query) => $query->whereMonth('transaction_date', $request->integer('month')))
-            ->when($request->filled('quarter'), fn ($query) => $query->whereBetween(DB::raw('CAST(strftime(\'%m\', transaction_date) AS INTEGER)'), [(($request->integer('quarter') - 1) * 3) + 1, $request->integer('quarter') * 3]))
-            ->when($request->filled('semester'), fn ($query) => $query->whereBetween(DB::raw('CAST(strftime(\'%m\', transaction_date) AS INTEGER)'), [$request->integer('semester') === 1 ? 1 : 7, $request->integer('semester') === 1 ? 6 : 12]))
+            ->where('spj_category', $category)
+            ->has($relation)
+            ->when(! empty($filters['month']), fn ($query) => $query->whereMonth('transaction_date', (int) $filters['month']))
+            ->when(! empty($filters['quarter']), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [(((int) $filters['quarter'] - 1) * 3) + 1, (int) $filters['quarter'] * 3]))
+            ->when(! empty($filters['semester']), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [(int) $filters['semester'] === 1 ? 1 : 7, (int) $filters['semester'] === 1 ? 6 : 12]))
             ->orderBy('transaction_date')
             ->orderBy('id')
             ->get();
+    }
+
+    public function selectHonorPayments(Request $request): View
+    {
+        $transactions = $this->selectionTransactions('HONOR_PEGAWAI', $request->all());
 
         return view('spj-reports.honor-select', compact('transactions'));
     }
@@ -253,17 +262,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
 
     public function selectServiceRecipients(Request $request): View
     {
-        $transactions = Transaction::query()
-            ->with(['serviceRecipients', 'spjPackage'])
-            ->forSpjContext($this->activeContext)
-            ->where('spj_category', 'JASA_LAINNYA')
-            ->has('serviceRecipients')
-            ->when($request->filled('month'), fn ($query) => $query->whereMonth('transaction_date', $request->integer('month')))
-            ->when($request->filled('quarter'), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [(($request->integer('quarter') - 1) * 3) + 1, $request->integer('quarter') * 3]))
-            ->when($request->filled('semester'), fn ($query) => $query->whereBetween(DB::raw("CAST(strftime('%m', transaction_date) AS INTEGER)"), [$request->integer('semester') === 1 ? 1 : 7, $request->integer('semester') === 1 ? 6 : 12]))
-            ->orderBy('transaction_date')
-            ->orderBy('id')
-            ->get();
+        $transactions = $this->selectionTransactions('JASA_LAINNYA', $request->all());
 
         return view('spj-reports.service-recipient-select', compact('transactions'));
     }
