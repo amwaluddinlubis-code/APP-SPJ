@@ -12,7 +12,10 @@ use Throwable;
 
 final class SpjTemplatePackageImporter
 {
-    public function __construct(private readonly SpjTemplateValidator $validator) {}
+    public function __construct(
+        private readonly SpjTemplateValidator $validator,
+        private readonly DocumentTemplateStoragePathService $storagePaths,
+    ) {}
 
     /**
      * Memeriksa workbook master terhadap seluruh kontrak document type canonical.
@@ -127,7 +130,7 @@ final class SpjTemplatePackageImporter
         }
 
         $disk = Storage::disk('local');
-        $directory = 'document-templates/'.$fiscalYearId.'/package';
+        $directory = $this->storagePaths->directory($fiscalYearId, 'package');
         $disk->makeDirectory($directory);
 
         $newPaths = [];

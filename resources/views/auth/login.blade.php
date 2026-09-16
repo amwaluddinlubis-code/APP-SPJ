@@ -1,15 +1,16 @@
 <x-layouts.public-tailwind title="Masuk · SPJ BOSP" narrow cardClass="auth-login-surface">
-    <div class="auth-login-card mx-auto w-full max-w-md px-1 py-1 sm:px-2"
-        style="background: #ffffff !important;">
+    <div class="auth-login-card mx-auto w-full max-w-md px-1 py-1 sm:px-2">
         <div data-login-logo class="auth-login-brand text-center">
-            {{-- Simpan file logo lengkap pada public/images/logo-app-spj.png agar tampil di sini. --}}
-            <img src="{{ asset('images/logo-app-spj.png') }}" alt="Logo aplikasi SPJ BOSP"
-                class="auth-login-logo mx-auto h-auto w-auto object-contain"
-                onerror="this.remove();document.querySelector('[data-login-logo-fallback]').classList.remove('hidden');">
-            <div data-login-logo-fallback class="hidden">
-                <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-black text-white"
-                    style="background: var(--theme-action-bg, var(--theme-accent));">SPJ</span>
-                <p class="mt-3 text-2xl font-black tracking-tight text-[var(--login-fg-strong)]">SPJ BOSP</p>
+            <div class="auth-login-logo-circle mx-auto">
+                {{-- Simpan file logo lengkap pada public/images/logo-app-spj.png agar tampil di sini. --}}
+                <img src="{{ asset('images/logo-app-spj.png') }}" alt="Logo aplikasi SPJ BOSP"
+                    class="auth-login-logo h-auto w-auto object-contain"
+                    onerror="this.remove();document.querySelector('[data-login-logo-fallback]').classList.remove('hidden');">
+                <div data-login-logo-fallback class="hidden">
+                    <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-black text-white"
+                        style="background: var(--theme-action-bg, var(--theme-accent));">SPJ</span>
+                    <p class="mt-3 text-2xl font-black tracking-tight text-[var(--login-fg-strong)]">SPJ BOSP</p>
+                </div>
             </div>
         </div>
         <div class="auth-login-heading text-center">

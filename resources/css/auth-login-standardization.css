@@ -10,6 +10,23 @@ main.auth-login-page section.auth-login-surface,
     background-color: #ffffff !important;
 }
 
+main.auth-login-page > section.auth-login-surface {
+    padding: .875rem !important;
+}
+
+html[data-ui-appearance='light'] body.public-layout:has(main.auth-login-page) {
+    background: #f8fafc !important;
+}
+
+html[data-ui-appearance='light'] main.auth-login-page {
+    background: transparent !important;
+}
+
+html[data-ui-appearance='light'] main.auth-login-page .page-header-main {
+    background: #ffffff !important;
+    background-image: none !important;
+}
+
 .auth-login-card {
     --login-fg-strong: #0f172a;
     --login-fg: #334155;
@@ -39,10 +56,24 @@ main.auth-login-page .auth-login-card label {
     padding-top: .25rem;
 }
 
+.auth-login-logo-circle {
+    display: flex;
+    box-sizing: border-box;
+    width: 8rem;
+    height: 8rem;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: .75rem;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 22%, var(--login-line));
+    border-radius: 9999px;
+    background: #ffffff !important;
+}
+
 .auth-login-logo {
     display: block;
-    width: 12.5rem;
-    height: 12.5rem;
+    width: 5rem;
+    height: 5rem;
     object-fit: contain;
 }
 
@@ -113,8 +144,13 @@ main.auth-login-page .auth-login-forgot:hover {
     }
 
     .auth-login-logo {
-        width: 10.5rem;
-        height: 10.5rem;
+        width: 5rem;
+        height: 5rem;
+    }
+
+    .auth-login-logo-circle {
+        width: 7rem;
+        height: 7rem;
     }
 
     .auth-login-heading {
@@ -124,6 +160,12 @@ main.auth-login-page .auth-login-forgot:hover {
     .auth-login-card .ui-input,
     .auth-login-card .ui-btn-primary {
         min-height: 3.2rem;
+    }
+}
+
+@media (min-width: 640px) {
+    main.auth-login-page > section.auth-login-surface {
+        padding: 1.225rem !important;
     }
 }
 
@@ -146,6 +188,21 @@ html[data-ui-appearance='dark'] main.auth-login-page .auth-login-card .ui-input 
     border-color: var(--login-line) !important;
     color: var(--login-fg-strong) !important;
     color-scheme: light;
+}
+
+html[data-ui-appearance='dark'] main.auth-login-page :is(section.auth-login-surface, .auth-login-card, .auth-login-card form) {
+    background: color-mix(in srgb, var(--ui-surface-base) 95%, #ffffff 5%) !important;
+    background-color: color-mix(in srgb, var(--ui-surface-base) 95%, #ffffff 5%) !important;
+}
+
+html[data-ui-appearance='dark'] main.auth-login-page .auth-login-card :is(h1, h2, h3, h4, h5, h6, p, li, label) {
+    color: #e7eef6 !important;
+    -webkit-text-fill-color: #e7eef6 !important;
+}
+
+html[data-ui-appearance='dark'] main.auth-login-page .auth-login-card :is(h1, h2, h3, h4, h5, h6) {
+    color: #f1f5f9 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
 }
 
 .auth-login-card .ui-input::placeholder {

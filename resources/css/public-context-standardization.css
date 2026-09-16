@@ -1,5 +1,70 @@
-/* Context selection pages use the same calm white light-theme panel as login.
-   Dark themes retain their themed surface through the base public layout. */
+/* Context selection pages use a quiet, single-card onboarding surface. */
+main.context-selector-page,
+main.context-selector-page .context-elegance,
+main.context-selector-page .context-elegance :is(h1, h2, h3, p, label, span, a, button, input, select) {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+main.context-selector-page header > p:first-child {
+    display: block !important;
+    width: fit-content;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #475569 !important;
+    font-size: .75rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+/* Remove the legacy step-pill treatment if an older cached fragment still
+   carries the compatibility class during a live reload. */
+main.context-selector-page :is(.context-eyebrow, .context-eyebrow-dot) {
+    display: inline !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #475569 !important;
+    box-shadow: none !important;
+    font-size: .75rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+html[data-ui-appearance='light'] body.context-selector-body {
+    background: #f8fafc !important;
+}
+
+html[data-ui-appearance='dark'] body.context-selector-body {
+    background: var(--ui-page-bg, #020617) !important;
+}
+
+main.context-selector-page {
+    background: transparent;
+}
+
+main.context-selector-page > section.context-selector-surface {
+    border-color: transparent !important;
+    background: var(--ui-surface-base) !important;
+    box-shadow: 0 8px 24px rgb(15 23 42 / .06) !important;
+}
+
+html:is([data-theme='arkas_dark'], [data-theme='arkas_dark_v2']) main.context-selector-page > section.context-selector-surface {
+    background: color-mix(in srgb, var(--ui-surface-base) 95%, #ffffff 5%) !important;
+}
+
+main.context-selector-page > section.context-selector-surface > div {
+    background: transparent !important;
+}
+
 html[data-ui-appearance='light'] main.context-selector-page > section.context-selector-surface {
     background: #ffffff !important;
     background-color: #ffffff !important;
@@ -46,4 +111,222 @@ html[data-ui-appearance='light'] main.context-selector-page .ui-btn-primary:hove
 
 html[data-ui-appearance='light'] main.context-selector-page .ui-btn svg {
     color: currentColor !important;
+}
+
+/* Elegant context-selection dressing — presentation only, strictly scoped.
+   Business rules, lifecycle, validation, and Livewire state are untouched.
+   All surfaces/foregrounds resolve through theme tokens + color-mix. */
+main.context-selector-page .context-elegance {
+    --context-glow: color-mix(in srgb, var(--theme-accent-soft) 55%, transparent);
+}
+
+main.context-selector-page .context-brand-tile {
+    background: linear-gradient(140deg, var(--theme-accent-strong, var(--theme-accent)) 0%, var(--theme-accent) 62%, color-mix(in srgb, var(--theme-accent) 72%, var(--theme-content-accent)) 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 22px -10px var(--context-glow);
+}
+
+main.context-selector-page .context-brand-tile.is-soft {
+    background: var(--theme-accent-soft);
+    color: var(--theme-content-accent);
+    box-shadow: none;
+}
+
+main.context-selector-page .context-eyebrow {
+    background: var(--theme-accent);
+    color: #ffffff;
+}
+
+main.context-selector-page .context-eyebrow-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, #ffffff 85%, transparent);
+}
+
+main.context-selector-page .context-steps-line {
+    height: 1px;
+    flex: 1 1 auto;
+    min-width: 2rem;
+    background: var(--ui-line);
+}
+
+main.context-selector-page .context-steps-line.is-done {
+    background: var(--theme-accent);
+}
+
+main.context-selector-page .context-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--ui-line-strong);
+    color: var(--ui-fg-muted);
+    background: var(--ui-surface-soft);
+}
+
+main.context-selector-page .context-step-num.is-active {
+    border-color: var(--theme-accent);
+    background: var(--theme-accent);
+    color: #ffffff;
+}
+
+main.context-selector-page .context-step-num.is-done {
+    border-color: transparent;
+    background: var(--theme-accent-soft);
+    color: var(--theme-content-accent);
+}
+
+main.context-selector-page .context-step-label {
+    color: var(--ui-fg-muted);
+}
+
+main.context-selector-page .context-step-label.is-active,
+main.context-selector-page .context-step-label.is-done {
+    color: var(--theme-content-accent);
+}
+
+main.context-selector-page .school-card:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, var(--ui-surface-soft));
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    transform: translateY(-1px);
+}
+
+main.context-selector-page .school-card:focus-within {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    outline-offset: 2px;
+}
+
+main.context-selector-page .monogram {
+    background: var(--theme-accent-soft);
+    color: var(--theme-content-accent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, var(--ui-line));
+}
+
+main.context-selector-page .school-db-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: var(--theme-accent);
+}
+
+main.context-selector-page .context-search {
+    border-radius: var(--profile-control-radius, 0.75rem);
+    background: var(--ui-surface-muted) !important;
+    color: var(--ui-fg-strong) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+main.context-selector-page .context-dropdown-trigger {
+    display: flex;
+    min-height: var(--profile-control-height, 2.75rem);
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    border: 1px solid var(--ui-component-border-strong, var(--ui-line-strong));
+    border-radius: var(--profile-control-radius, .75rem);
+    background: var(--ui-component-surface, var(--ui-surface-base));
+    padding: .5rem .75rem;
+    color: var(--ui-component-text-strong, var(--ui-fg-strong));
+    text-align: left;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+main.context-selector-page .context-dropdown-trigger:hover,
+main.context-selector-page .context-dropdown-trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--theme-accent) 64%, var(--ui-line-strong));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    outline: none;
+}
+
+main.context-selector-page .context-dropdown-trigger:disabled {
+    cursor: not-allowed;
+    background: var(--ui-component-surface-soft, var(--ui-surface-soft));
+    color: var(--ui-component-text-muted, var(--ui-fg-muted));
+}
+
+main.context-selector-page .context-dropdown-menu {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + .35rem);
+    left: 0;
+    max-height: 13rem;
+    width: 100%;
+    overflow-y: auto;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: var(--profile-control-radius, .75rem);
+    background: var(--ui-surface-base);
+    padding: .3rem;
+    box-shadow: 0 12px 24px rgb(15 23 42 / .14);
+}
+
+main.context-selector-page .context-dropdown-option {
+    display: block;
+    width: 100%;
+    border-radius: calc(var(--profile-control-radius, .75rem) - .2rem);
+    padding: .65rem .75rem;
+    color: var(--ui-fg-strong);
+    text-align: left;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+main.context-selector-page .context-dropdown-option:hover,
+main.context-selector-page .context-dropdown-option:focus-visible,
+main.context-selector-page .context-dropdown-option[aria-selected='true'] {
+    background: color-mix(in srgb, var(--theme-accent) 10%, var(--ui-surface-soft));
+    color: var(--theme-content-accent);
+    outline: none;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page .context-search {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+html[data-ui-appearance='light'] main.context-selector-page :is(.text-slate-500, .text-slate-400) {
+    color: #475569 !important;
+}
+
+html[data-ui-appearance='dark'] main.context-selector-page :is(.text-slate-500, .text-slate-400) {
+    color: #94a3b8 !important;
+}
+
+.public-theme-toggle {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--ui-line);
+    border-radius: 9999px;
+    background: var(--ui-surface-base);
+    color: var(--ui-fg-strong);
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.public-theme-toggle:hover {
+    background: var(--ui-surface-soft);
+    color: var(--theme-content-accent);
+    transform: translateY(-1px);
+}
+
+.public-theme-toggle:focus-visible {
+    outline: 2px solid var(--theme-content-accent);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main.context-selector-page .school-card,
+    main.context-selector-page .context-step-label {
+        transition: none;
+    }
+
+    main.context-selector-page .school-card:hover {
+        transform: none;
+    }
 }

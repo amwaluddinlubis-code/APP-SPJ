@@ -92,6 +92,8 @@ Semantic success/warning/danger tetap boleh memakai semantic color. Kode baru ti
 
 Tema tersimpan diterapkan sinkron di `<head>` melalui `x-theme-init` sebelum first paint agar tidak terjadi flash tema lain saat pindah halaman. Peta profil di partial tersebut disalin dari `resources/js/theme-profiles.js`; parity keduanya dikunci `ThemeEarlyInitTest` — profil baru wajib ditambahkan di kedua tempat.
 
+Pada halaman publik `/masuk`, `/pilih-sekolah`, dan `/pilih-tahun`, pemilihan profil digantikan satu tombol ikon aksesibel. Toggle tersebut hanya memakai dua profil onboarding: **ARKAS Light** dan **ARKAS Dark V2**. Selector profil lengkap tetap tersedia pada layout authenticated.
+
 ### Skala typography canonical
 
 Gunakan token typography berikut untuk primitive dan halaman baru:

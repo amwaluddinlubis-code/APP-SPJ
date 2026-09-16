@@ -22,7 +22,10 @@ class LoginPageUiTest extends TestCase
         $response->assertSee('Lupa kata sandi?', false);
         $response->assertSee('logo-app-spj.png', false);
         $response->assertSee('auth-login-card', false);
-        $response->assertSee('data-theme-selector', false);
+        $response->assertSee('data-theme-toggle', false);
+        $response->assertSee('data-theme-icon="sun"', false);
+        $response->assertSee('data-theme-icon="moon"', false);
+        $response->assertDontSee('data-theme-selector', false);
         $response->assertDontSee('AKSES APLIKASI', false);
     }
 }

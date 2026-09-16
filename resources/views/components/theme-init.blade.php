@@ -35,5 +35,9 @@
         root.style.setProperty('--theme-accent-soft', profile[11]);
         root.style.setProperty('--theme-sidebar', profile[12]);
         root.style.setProperty('--theme-sidebar-deep', profile[13]);
+        if (name === 'arkas_dark_v2') {
+            root.style.setProperty('--theme-accent', '#0f4fc4');
+            root.style.setProperty('--theme-accent-strong', '#0b3f9d');
+        }
     })();
 </script>

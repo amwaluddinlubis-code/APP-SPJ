@@ -30,7 +30,7 @@ export const themeProfiles = Object.freeze({
     amber: profile({ label: 'Amber Warm', appearance: 'light', personality: 'warm', density: 'comfortable', radius: 'large', shadow: 'soft', header: 'soft', sidebar: 'solid', table: 'soft', controls: 'rounded', palette: { accent: '#f59e0b', accentStrong: '#d97706', accentSoft: '#fef3c7', sidebar: '#78350f', sidebarDeep: '#451a03' } }),
     arkas_light: profile({ label: 'ARKAS Light', appearance: 'light', personality: 'operational', density: 'comfortable', radius: 'large', shadow: 'soft', header: 'gradient', sidebar: 'gradient', table: 'soft', controls: 'rounded', palette: { accent: '#1f63e9', accentStrong: '#284393', accentSoft: '#eaf2ff', sidebar: '#284393', sidebarDeep: '#1e3578' } }),
     arkas_dark: profile({ label: 'ARKAS Dark', appearance: 'dark', personality: 'professional', density: 'comfortable', radius: 'large', shadow: 'subtle', header: 'deep', sidebar: 'gradient', table: 'quiet', controls: 'rounded', palette: { accent: '#22c7d6', accentStrong: '#67d6e5', accentSoft: '#123542', sidebar: '#0b3a55', sidebarDeep: '#06243a' } }),
-    arkas_dark_v2: profile({ label: 'ARKAS Dark V2', appearance: 'dark', personality: 'professional', density: 'comfortable', radius: 'large', shadow: 'subtle', header: 'deep', sidebar: 'gradient', table: 'quiet', controls: 'rounded', palette: { accent: '#1769e8', accentStrong: '#1f63e9', accentSoft: '#132340', sidebar: '#152b63', sidebarDeep: '#091b46' } }),
+    arkas_dark_v2: profile({ label: 'ARKAS Dark V2', appearance: 'dark', personality: 'professional', density: 'comfortable', radius: 'large', shadow: 'subtle', header: 'deep', sidebar: 'gradient', table: 'quiet', controls: 'rounded', palette: { accent: '#0f4fc4', accentStrong: '#0b3f9d', accentSoft: '#132340', sidebar: '#152b63', sidebarDeep: '#091b46' } }),
 });
 
 export const resolveThemeProfile = (theme) => themeProfiles[theme] ?? themeProfiles.light;
@@ -67,6 +67,8 @@ export const applyThemeProfile = (theme, root = document.documentElement) => {
         detail: { theme: selectedTheme, profile: selected },
     }));
 
+    syncThemeToggles(selectedTheme);
+
     return selected;
 };
 
@@ -82,10 +84,31 @@ export const renderThemeSelector = (select, selectedTheme) => {
     select.replaceChildren(...options);
 };
 
+const publicThemeForAppearance = (appearance) => appearance === 'dark' ? 'arkas_dark_v2' : 'arkas_light';
+
+const syncThemeToggles = (selectedTheme) => {
+    const isDark = resolveThemeProfile(selectedTheme).appearance === 'dark';
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) return;
+
+        const nextAppearance = isDark ? 'light' : 'dark';
+        const label = nextAppearance === 'dark' ? 'Gunakan tema gelap' : 'Gunakan tema terang';
+
+        button.setAttribute('aria-label', label);
+        button.setAttribute('title', label);
+        button.querySelector('[data-theme-icon="sun"]')?.classList.toggle('hidden', !isDark);
+        button.querySelector('[data-theme-icon="moon"]')?.classList.toggle('hidden', isDark);
+    });
+};
+
 export const initializeThemeProfiles = () => {
     const root = document.documentElement;
     const storedTheme = localStorage.getItem('spj-theme') || root.dataset.theme || 'light';
-    const selectedTheme = themeProfiles[storedTheme] ? storedTheme : 'light';
+    const publicContext = document.querySelector('[data-theme-toggle]') !== null;
+    const selectedTheme = publicContext
+        ? publicThemeForAppearance(resolveThemeProfile(storedTheme).appearance)
+        : (themeProfiles[storedTheme] ? storedTheme : 'light');
 
     applyThemeProfile(selectedTheme, root);
 
@@ -98,6 +121,17 @@ export const initializeThemeProfiles = () => {
 
         select.dataset.profileInitialized = 'true';
         select.addEventListener('change', () => applyThemeProfile(select.value, root));
+    });
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        if (!(button instanceof HTMLButtonElement)) return;
+        if (button.dataset.themeToggleInitialized === 'true') return;
+
+        button.dataset.themeToggleInitialized = 'true';
+        button.addEventListener('click', () => {
+            const current = resolveThemeProfile(root.dataset.theme || 'arkas_light');
+            applyThemeProfile(publicThemeForAppearance(current.appearance === 'dark' ? 'light' : 'dark'), root);
+        });
     });
 };
 

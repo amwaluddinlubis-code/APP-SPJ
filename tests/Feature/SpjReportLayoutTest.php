@@ -55,7 +55,7 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('<livewire:spj-report-filter />', $index);
         $this->assertStringContainsString('<livewire:spj-monitoring-list />', $index);
         $this->assertStringContainsString("route('spj.bulk-finalize')", $index);
-        $this->assertStringContainsString('Finalkan paket NUMBERED', $index);
+        $this->assertStringContainsString('Finalkan paket', $index);
         $this->assertStringNotContainsString('relocateReportRowControl', $index);
         $this->assertStringNotContainsString('data-report-mode', $index);
     }

@@ -1,11 +1,53 @@
 <x-layouts.public-tailwind title="Pilih Tahun dan Sumber Dana">
-    <div class="flex flex-col gap-8">
-        <header class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-4"><div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--theme-accent-soft)] text-[var(--theme-content-accent)]"><x-ui.icon name="calendar" size="lg" /></div><div><p class="text-xs font-bold uppercase tracking-[.16em] text-[var(--theme-content-accent)]">Langkah 2 dari 2</p><h1 class="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ui-fg-strong)] sm:text-3xl">Pilih tahun &amp; sumber dana</h1><p class="mt-2 max-w-xl text-sm leading-6 text-[var(--ui-fg-muted)]">Pilih konteks pembukuan yang akan menjadi ruang kerja Anda hari ini.</p></div></div><div class="flex flex-wrap gap-2 sm:justify-end"><x-ui.button :href="route('schools.select')" variant="secondary" icon="arrow-left">Ganti sekolah</x-ui.button><form method="POST" action="{{ route('logout') }}">@csrf<x-ui.button type="submit" variant="secondary" icon="logout">Keluar</x-ui.button></form></div></header>
-        <div class="flex items-center gap-3 border-y border-[var(--ui-line)] py-4 text-xs font-bold"><a href="{{ route('schools.select') }}" class="flex items-center gap-2 text-[var(--theme-content-accent)]"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--theme-accent-soft)]"><x-ui.icon name="check" size="xs" /></span>Sekolah</a><span class="h-px flex-1 bg-[var(--theme-accent)]"></span><span class="flex items-center gap-2 text-[var(--theme-content-accent)]"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--theme-accent)] text-white">2</span>Tahun &amp; dana</span></div>
-        <section class="rounded-2xl border border-[var(--theme-accent)] bg-[var(--theme-accent-soft)] p-4 sm:p-5"><div class="flex items-start gap-3"><x-ui.icon name="school" class="mt-0.5 shrink-0 text-[var(--theme-content-accent)]" /><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Sekolah aktif</p><p class="mt-1 truncate font-bold text-[var(--ui-fg-strong)]">{{ $school->name }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">NPSN {{ $school->npsn }}</p></div></div></section>
-        @unless ($hasFundSourceContext)<div class="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><x-ui.icon name="warning" class="mt-0.5 shrink-0" /><p>Database sekolah belum siap untuk konteks sumber dana. Buka <a href="{{ route('database-manager.index') }}" class="font-bold underline">Manajemen Database</a> lalu jalankan migrasi pada sekolah aktif.</p></div>@endunless
+    <div class="context-elegance flex flex-col gap-7 sm:gap-8">
+        <header>
+            <p class="text-xs font-medium text-slate-500">Langkah 2 dari 2</p>
+            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Tentukan Konteks Kerja Anda</h2>
+            <p class="mt-2 text-xs leading-6 text-slate-500"></p>
+        </header>
+        <section aria-label="Sekolah aktif" class="flex items-center gap-3 border-b border-slate-100 pb-5">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600"
+                aria-hidden="true"><x-ui.icon name="school" size="sm" /></div>
+            <div class="min-w-0 flex-1">
+                <p class="truncate text-lg font-semibold text-slate-900">{{ $school->name }}</p>
+                <p class="mt-0.5 text-sm text-slate-500">NPSN {{ $school->npsn }}</p>
+            </div>
+            <a href="{{ route('schools.select') }}"
+                class="shrink-0 text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-slate-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">Ubah
+                Sekolah</a>
+        </section>
+        @unless ($hasFundSourceContext)
+            <div
+                class="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                <x-ui.icon name="warning" class="mt-0.5 shrink-0" />
+                <p>Database sekolah belum siap untuk konteks sumber dana. Buka <a
+                        href="{{ route('database-manager.index') }}"
+                        class="font-bold underline underline-offset-2">Manajemen Database</a> lalu jalankan migrasi pada
+                    sekolah aktif.</p>
+            </div>
+        @endunless
         @unless ($arkasSource)
-            <x-ui.form-section title="Hubungkan ARKAS terlebih dahulu" description="Simpan lokasi sumber ARKAS agar tahun anggaran dan sumber dana dapat disinkronkan."><form method="POST" action="{{ route('arkas.settings.store') }}" class="grid gap-4 sm:grid-cols-2">@csrf<input type="hidden" name="school_id" value="{{ $school->id }}"><input type="hidden" name="return_to" value="{{ route('years.select') }}"><x-ui.field label="Lokasi database ARKAS" for="year-arkas-database" hint="Gunakan file database ARKAS sekolah, bukan database SPJ lokal." :error="$errors->first('database_path')" required><x-ui.input id="year-arkas-database" name="database_path" :value="old('database_path')" placeholder="D:\Folder ARKAS\database_arkas.db" class="font-mono" required /></x-ui.field><x-ui.field label="Lokasi ARKASBridge.exe" for="year-arkas-bridge" hint="Engine untuk membaca database ARKAS." :error="$errors->first('bridge_path')" required><x-ui.input id="year-arkas-bridge" name="bridge_path" :value="old('bridge_path', $defaultBridgePath)" class="font-mono" required /></x-ui.field><x-ui.field label="Kata sandi database ARKAS" for="year-arkas-password" hint="Wajib diisi saat konfigurasi pertama." :error="$errors->first('database_password')"><x-ui.input id="year-arkas-password" type="password" name="database_password" autocomplete="new-password" placeholder="Masukkan kata sandi database" /></x-ui.field><div class="flex items-end sm:justify-end"><x-ui.button type="submit" icon="save" class="w-full justify-center sm:w-auto">Simpan pengaturan ARKAS</x-ui.button></div></form></x-ui.form-section>
+            <x-ui.form-section title="Hubungkan ARKAS terlebih dahulu"
+                description="Simpan lokasi sumber ARKAS agar tahun anggaran dan sumber dana dapat disinkronkan.">
+                <form method="POST" action="{{ route('arkas.settings.store') }}" class="grid gap-4 sm:grid-cols-2">
+                    @csrf<input type="hidden" name="school_id" value="{{ $school->id }}"><input type="hidden"
+                        name="return_to" value="{{ route('years.select') }}">
+                    <x-ui.field label="Lokasi database ARKAS" for="year-arkas-database"
+                        hint="Gunakan file database ARKAS sekolah, bukan database SPJ lokal." :error="$errors->first('database_path')"
+                        required><x-ui.input id="year-arkas-database" name="database_path" :value="old('database_path')"
+                            placeholder="D:\Folder ARKAS\database_arkas.db" class="font-mono" required /></x-ui.field>
+                    <x-ui.field label="Lokasi ARKASBridge.exe" for="year-arkas-bridge"
+                        hint="Engine untuk membaca database ARKAS." :error="$errors->first('bridge_path')" required><x-ui.input
+                            id="year-arkas-bridge" name="bridge_path" :value="old('bridge_path', $defaultBridgePath)" class="font-mono"
+                            required /></x-ui.field>
+                    <x-ui.field label="Kata sandi database ARKAS" for="year-arkas-password"
+                        hint="Wajib diisi saat konfigurasi pertama." :error="$errors->first('database_password')"><x-ui.input id="year-arkas-password"
+                            type="password" name="database_password" autocomplete="new-password"
+                            placeholder="Masukkan kata sandi database" /></x-ui.field>
+                    <div class="flex items-end sm:justify-end"><x-ui.button type="submit" icon="save"
+                            class="w-full justify-center sm:w-auto">Simpan pengaturan ARKAS</x-ui.button></div>
+                </form>
+            </x-ui.form-section>
         @endunless
         <livewire:year-selector :has-fund-source-context="$hasFundSourceContext" />
     </div>

@@ -8,6 +8,14 @@ Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu templ
 
 Master XLSX yang pernah di-upload **bukan file mutable yang terus ditimpa**. Source of truth runtime adalah record `DocumentTemplate` aktif untuk fiscal year aktif.
 
+File template baru disimpan pada disk `local` dengan namespace sekolah berdasarkan `School.npsn`:
+
+```text
+document-templates/{npsn}/{fiscal_year_id}/...
+```
+
+Path lama tetap dapat dibaca untuk kompatibilitas template yang sudah tersimpan sebelum pemisahan namespace.
+
 Untuk setiap document type canonical, aplikasi dapat mempunyai template aktif per format:
 
 ```text

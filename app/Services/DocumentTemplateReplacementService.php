@@ -12,6 +12,8 @@ use Throwable;
 
 class DocumentTemplateReplacementService
 {
+    public function __construct(private readonly DocumentTemplateStoragePathService $storagePaths) {}
+
     /**
      * Persist a validated template without exposing the active record to a missing file.
      *
@@ -31,7 +33,7 @@ class DocumentTemplateReplacementService
         ?bool $isSiplah = null,
     ): DocumentTemplate {
         $newPath = $uploaded->storeAs(
-            'document-templates/'.$fiscalYearId,
+            $this->storagePaths->directory($fiscalYearId),
             'tpl_'.Str::uuid()->toString().'.'.$extension,
             'local',
         );
