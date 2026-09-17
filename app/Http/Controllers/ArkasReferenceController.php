@@ -133,9 +133,14 @@ class ArkasReferenceController extends Controller
 
         return $raw->filter(function (array $row) use ($year): bool {
             $expiredDate = $row['EXPIRED_DATE'] ?? null;
+            $accountCode = (string) ($row['KODE_REKENING'] ?? '');
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
                 && ($expiredDate === null || trim((string) $expiredDate) === '')
+                && (str_starts_with($accountCode, '5.1.02.')
+                    || str_starts_with($accountCode, '5.2.02.')
+                    || str_starts_with($accountCode, '5.2.04.')
+                    || str_starts_with($accountCode, '5.2.05.'))
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
         })->map(function (array $row) use ($usage, $accountNames): array {
             $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
