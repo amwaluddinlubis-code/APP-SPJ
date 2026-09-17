@@ -89,7 +89,10 @@ Tab Acuan Barang digerakkan oleh master `ref_acuan_barang`, sehingga tetap
 tersedia sebelum operator mengisi `rapbs`. Baris master aktif tahun berjalan
 di-inner-join secara logis ke `ref_rekening.kode_rekening`. Kode rekening utama
 diambil dari `ref_acuan_barang.kode_rekening`; jika kosong, `id_barang` dipakai
-sebagai kode rekening hanya bila diawali prefix rekening belanja yang diizinkan.
+sebagai identitas kelompok rekening hanya bila diawali prefix rekening belanja
+yang diizinkan. Jika tidak ada pasangan kode persis, UI menampilkan kandidat
+rekening aktif dalam kelompok tersebut dan menandainya sebagai kelompok (`*`),
+bukan mengarang satu kode rekening tertentu.
 `rapbs` bukan sumber daftar referensi dan hanya dipakai untuk menampilkan jumlah
 pemakaian bila sudah ada input operator.
 

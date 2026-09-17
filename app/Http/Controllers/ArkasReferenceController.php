@@ -129,28 +129,40 @@ class ArkasReferenceController extends Controller
 
         $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
         $allowedAccounts = ['5.1.02.', '5.2.02.', '5.2.04.', '5.2.05.'];
+        $accountGroups = $accounts->groupBy(function (array $row) use ($allowedAccounts): string {
+            foreach ($allowedAccounts as $prefix) {
+                if (str_starts_with($row['code'].'.', $prefix)) {
+                    return $prefix;
+                }
+            }
+
+            return '';
+        })->map(fn (Collection $rows): Collection => $rows->pluck('name')->filter()->unique()->values());
         $usage = $rapbs->filter(fn (array $row): bool => trim((string) ($row['ID_BARANG'] ?? '')) !== '')
             ->countBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
 
-        return $raw->filter(function (array $row) use ($year, $accountNames, $allowedAccounts): bool {
+        return $raw->filter(function (array $row) use ($year, $accountNames, $accountGroups, $allowedAccounts): bool {
             $expiredDate = $row['EXPIRED_DATE'] ?? null;
             $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
+            $accountPrefix = $this->accountPrefix($accountCode, $allowedAccounts);
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
                 && ($expiredDate === null || trim((string) $expiredDate) === '')
                 && $accountCode !== ''
-                && isset($accountNames[$accountCode])
+                && (isset($accountNames[$accountCode]) || $accountGroups->get($accountPrefix, collect())->isNotEmpty())
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
-        })->map(function (array $row) use ($usage, $allowedAccounts, $accountNames): array {
+        })->map(function (array $row) use ($usage, $allowedAccounts, $accountNames, $accountGroups): array {
             $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
             $itemId = trim((string) ($row['ID_BARANG'] ?? ''));
+            $accountPrefix = $this->accountPrefix($accountCode, $allowedAccounts);
+            $accountName = $accountNames[$accountCode] ?? $accountGroups->get($accountPrefix, collect())->implode(' / ');
 
             return [
                 'code' => $itemId,
                 'name' => trim((string) ($row['NAMA_BARANG'] ?? '')),
                 'unit' => trim((string) ($row['SATUAN'] ?? '')),
-                'account_code' => $accountCode,
-                'account_name' => (string) ($accountNames[$accountCode] ?? ''),
+                'account_code' => isset($accountNames[$accountCode]) ? $accountCode : $accountPrefix.'*',
+                'account_name' => (string) $accountName,
                 'price' => (float) ($row['HARGA_BARANG'] ?? 0),
                 'min_price' => (float) ($row['BATAS_BAWAH'] ?? 0),
                 'max_price' => (float) ($row['BATAS_ATAS'] ?? 0),
@@ -172,6 +184,18 @@ class ArkasReferenceController extends Controller
         $itemId = trim((string) ($row['ID_BARANG'] ?? ''), '.');
 
         return collect($allowedAccounts)->contains(fn (string $prefix): bool => str_starts_with($itemId.'.', $prefix)) ? $itemId : '';
+    }
+
+    /** @param list<string> $allowedAccounts */
+    private function accountPrefix(string $accountCode, array $allowedAccounts): string
+    {
+        foreach ($allowedAccounts as $prefix) {
+            if (str_starts_with($accountCode.'.', $prefix)) {
+                return $prefix;
+            }
+        }
+
+        return '';
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
