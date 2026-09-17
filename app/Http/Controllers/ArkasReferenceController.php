@@ -133,7 +133,7 @@ class ArkasReferenceController extends Controller
 
         return $raw->filter(function (array $row) use ($year): bool {
             $expiredDate = $row['EXPIRED_DATE'] ?? null;
-            $accountCode = (string) ($row['KODE_REKENING'] ?? '');
+            $accountCode = $this->acuanAccountCode($row);
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
                 && ($expiredDate === null || trim((string) $expiredDate) === '')
@@ -143,7 +143,7 @@ class ArkasReferenceController extends Controller
                     || str_starts_with($accountCode, '5.2.05.'))
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
         })->map(function (array $row) use ($usage, $accountNames): array {
-            $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
+            $accountCode = $this->acuanAccountCode($row);
             $usageCount = (int) ($usage[(string) ($row['ID_BARANG'] ?? '')] ?? 0);
 
             return [
@@ -160,6 +160,14 @@ class ArkasReferenceController extends Controller
                 'usage_count' => $usageCount,
             ];
         })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
+    }
+
+    /** @param array<string, mixed> $row */
+    private function acuanAccountCode(array $row): string
+    {
+        $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
+
+        return $accountCode !== '' ? $accountCode : trim((string) ($row['ID_BARANG'] ?? ''), '.');
     }
 
     /** @return Collection<int, array<string, mixed>>|null */

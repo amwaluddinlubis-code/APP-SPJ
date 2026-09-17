@@ -93,7 +93,9 @@ barang tetap dibaca dari master acuan barang; tabel sumber tidak diubah. Daftar
 ini difokuskan pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
 `5.2.05.*`. Relasi rekening bersifat left join: acuan tetap ditampilkan walau
 master `ref_rekening` belum memiliki pasangan; nama rekening dikosongkan bila
-pasangannya tidak ada.
+pasangannya tidak ada. Kode rekening efektif memakai `kode_rekening`; bila
+kolom itu kosong, `id_barang` dipakai sebagai fallback hanya bila diawali
+prefix rekening belanja yang diizinkan.
 
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
