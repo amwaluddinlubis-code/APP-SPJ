@@ -90,16 +90,14 @@ tersedia sebelum operator mengisi `rapbs`. Baris master aktif tahun berjalan
 di-inner-join secara logis ke `ref_rekening.kode_rekening`. Kode rekening utama
 diambil dari `ref_acuan_barang.kode_rekening`; jika kosong, `id_barang` dipakai
 sebagai identitas kelompok rekening hanya bila diawali prefix rekening belanja
-yang diizinkan. Jika tidak ada pasangan kode persis, UI menampilkan kandidat
-rekening aktif dalam kelompok tersebut dan menandainya sebagai kelompok (`*`),
-bukan mengarang satu kode rekening tertentu.
+yang diizinkan. Jika tidak ada pasangan kode persis, UI menampilkan `Belum Ada
+Rekening` dan tidak mengarang satu kode rekening tertentu.
 `rapbs` bukan sumber daftar referensi dan hanya dipakai untuk menampilkan jumlah
 pemakaian bila sudah ada input operator.
 
 Untuk menjaga halaman tetap ringan dan fokus membantu pengisian RKAS, tab ini
 tidak memuat baris ketika belum ada kata kunci pencarian. Setelah dicari, setiap
-barang ditampilkan satu baris dan kandidat rekening kelompok ditampilkan pada
-baris penuh di bawahnya dalam grid.
+barang ditampilkan satu baris dengan status rekening yang ringkas.
 
 Relasi dibatasi pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
 `5.2.05.*`. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan

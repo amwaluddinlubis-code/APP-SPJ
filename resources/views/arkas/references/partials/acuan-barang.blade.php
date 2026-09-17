@@ -27,22 +27,6 @@
                 <td>{{ $row['spending_code'] ?: '—' }}</td>
                 <td class="text-center font-semibold">{{ number_format($row['usage_count'], 0, ',', '.') }}</td>
             </tr>
-            @if (count($row['account_candidates'] ?? []) > 0 && str_ends_with($row['account_code'], '*'))
-                <tr>
-                    <td colspan="10" class="border-t-0 bg-[var(--ui-surface-muted)] px-6 py-3">
-                        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">
-                            Kandidat rekening untuk {{ $row['account_code'] }}
-                        </div>
-                        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            @foreach ($row['account_candidates'] as $candidate)
-                                <div class="rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm text-[var(--ui-fg)]">
-                                    {{ $candidate }}
-                                </div>
-                            @endforeach
-                        </div>
-                    </td>
-                </tr>
-            @endif
         @empty
             <tr><td colspan="10" class="empty-cell"><p class="font-semibold text-[var(--ui-fg-strong)]">Cari acuan barang ARKAS.</p><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Masukkan nama atau kata kunci barang untuk menampilkan barang dan rekening yang sesuai.</p></td></tr>
         @endforelse
