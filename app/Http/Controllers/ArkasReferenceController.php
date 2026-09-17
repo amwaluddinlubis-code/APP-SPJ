@@ -108,7 +108,7 @@ class ArkasReferenceController extends Controller
 
                     return $row['code'] !== ''
                         && $sourceYear === (string) ($year?->year ?? '')
-                        && $expiredDate === null;
+                        && ($expiredDate === null || trim((string) $expiredDate) === '');
                 })
                 ->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         }
