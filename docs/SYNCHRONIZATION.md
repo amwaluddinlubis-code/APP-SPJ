@@ -81,6 +81,10 @@ Filter Program dan Subprogram pada GUI lama juga dibentuk dari pasangan raw
 sehingga pilihan hanya menampilkan kode yang benar-benar tersedia di RKAS
 aktif. Urutan pilihan mengikuti kode numerik terkecil.
 
+Referensi Rekening memakai master raw `ref_rekening` secara terpisah dengan
+aturan `tahun = tahun aktif` dan `expired_date IS NULL`; daftar ini tidak
+dibatasi hanya pada rekening yang kebetulan sudah dipakai oleh baris `rapbs`.
+
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
 memilih `is_revisi` terbesar untuk tahun dan sumber dana aktif. `last_update`

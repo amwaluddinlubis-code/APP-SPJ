@@ -2,7 +2,7 @@
     <thead>
         <tr>
             <th class="w-16 text-center">No</th>
-            <th>Kode</th>
+            <th>Kode Rekening</th>
             <th>Rekening</th>
         </tr>
     </thead>

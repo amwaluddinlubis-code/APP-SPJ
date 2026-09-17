@@ -35,7 +35,7 @@ class ArkasReferenceController extends Controller
         })->filter()->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         $programs = $this->hierarchyRows($activities, $names, 1);
         $subprograms = $this->hierarchyRows($activities, $names, 2);
-        $accounts = $this->accountRows($rapbs);
+        $accounts = $this->accountRows($rapbs, $year);
         $datasets = compact('programs', 'subprograms', 'activities', 'accounts');
         $type = (string) $request->query('type', 'programs');
         if (! isset($datasets[$type])) {
@@ -90,9 +90,8 @@ class ArkasReferenceController extends Controller
     }
 
     /** @param Collection<int, array<string, mixed>> $rapbs */
-    private function accountRows(Collection $rapbs): Collection
+    private function accountRows(Collection $rapbs, ?FiscalYear $year): Collection
     {
-        $activeCodes = $rapbs->map(fn (array $row): string => trim((string) ($row['KODE_REKENING'] ?? ''), '.'))->filter()->unique()->flip();
         $raw = $this->rawRows('ref_rekening');
         if ($raw?->isNotEmpty()) {
             return $raw->map(function (array $row): array {
@@ -100,11 +99,19 @@ class ArkasReferenceController extends Controller
 
                 return [
                     'code' => $code,
-                    'name' => trim((string) ($row['NAMA_REKENING'] ?? $row['URAIAN_REKENING'] ?? $row['URAIAN'] ?? $row['NAMA'] ?? $row['DESCRIPTION'] ?? 'Rekening')),
+                    'name' => trim((string) ($row['REKENING'] ?? $row['NAMA_REKENING'] ?? $row['URAIAN_REKENING'] ?? $row['URAIAN'] ?? $row['NAMA'] ?? $row['DESCRIPTION'] ?? 'Rekening')),
                 ];
             })
-                ->filter(fn (array $row): bool => $row['code'] !== '' && ($activeCodes->isEmpty() || $activeCodes->has($row['code'])))
-                ->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
+                ->filter(function (array $row, int $index) use ($raw, $year): bool {
+                    $source = $raw->get($index, []);
+                    $sourceYear = (string) ($source['TAHUN'] ?? $source['YEAR'] ?? '');
+                    $expiredDate = $source['EXPIRED_DATE'] ?? $source['EXPIRED_AT'] ?? null;
+
+                    return $row['code'] !== ''
+                        && $sourceYear === (string) ($year?->year ?? '')
+                        && $expiredDate === null;
+                })
+                ->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         }
 
         return $rapbs->map(fn (array $row): array => ['code' => trim((string) ($row['KODE_REKENING'] ?? ''), '.'), 'name' => 'Rekening ARKAS'])
