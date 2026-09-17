@@ -39,6 +39,7 @@
         >
             <x-slot:actions>
                 <x-ui.button variant="secondary" :href="route('transactions.index')">Lihat transaksi</x-ui.button>
+                <x-ui.button variant="secondary" icon="database" :href="route('spj.fresh-transactions.index')">Transaksi Fresh</x-ui.button>
                 <x-ui.button type="button" data-tab="monitoring">Periksa kendala</x-ui.button>
             </x-slot:actions>
 

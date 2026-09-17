@@ -49,6 +49,11 @@
         $page = 'Pekerjaan SPJ';
         $pageUrl = route('spj.index');
         $detail = 'Penomoran SPJ';
+    } elseif (request()->routeIs('spj.fresh-transactions.*')) {
+        $group = 'Dokumen & Laporan';
+        $page = 'Pekerjaan SPJ';
+        $pageUrl = route('spj.index');
+        $detail = 'Transaksi Fresh';
     } elseif (request()->routeIs('spj.*')) {
         $group = 'Dokumen & Laporan';
         $page = request('tab') === 'laporan' ? 'Laporan SPJ' : 'Pekerjaan SPJ';

@@ -376,6 +376,10 @@ yang tanggalnya berada pada tahun aktif, menyimpan link ke
 Sinkronisasi GUI raw mirror juga menjalankan projection ini setelah snapshot selesai.
 Paket SPJ tidak dibuat otomatis; paket dibuat saat operator memulai pekerjaan.
 
+Daftar hasil awal dapat dilihat pada route **SPJ → Transaksi Fresh**
+(`spj.fresh-transactions.index`). Halaman ini hanya membaca indeks fresh dan
+payload raw mirror pada konteks sekolah, tahun, dan sumber dana aktif.
+
 Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 
 - Bridge-side incremental delta fetch agar Incremental tidak menarik snapshot penuh;
