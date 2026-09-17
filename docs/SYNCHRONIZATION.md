@@ -76,10 +76,10 @@ GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
 `id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan
 kegiatan berasal dari `rapbs.id_ref_kode` ke `ref_kode.id_ref_kode`.
 
-Filter Program dan Subprogram pada GUI lama juga dibentuk dari pasangan raw
-`anggaran` versi aktif dan `rapbs` pada konteks tahun/sumber dana tersebut,
-sehingga pilihan hanya menampilkan kode yang benar-benar tersedia di RKAS
-aktif. Urutan pilihan mengikuti kode numerik terkecil.
+Filter Program, Subprogram, dan Kegiatan pada GUI lama dibentuk dari seluruh
+baris raw `ref_kode` pada konteks tahun dan sumber dana aktif, bukan hanya kode
+yang kebetulan sudah dipakai pada `rapbs`. Urutan pilihan mengikuti kode
+numerik terkecil.
 
 Referensi Rekening memakai master raw `ref_rekening` secara terpisah dengan
 aturan `tahun = tahun aktif` dan `expired_date IS NULL`; daftar ini tidak

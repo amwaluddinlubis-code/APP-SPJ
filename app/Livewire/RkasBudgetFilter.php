@@ -324,20 +324,12 @@ class RkasBudgetFilter extends Component
     /** @return Collection<int, string>|null */
     protected function rawActivityCodes(): ?Collection
     {
-        $budgetIds = $this->rawApprovedBudgetIds();
-        $rows = $this->rawMirrorRows('rapbs');
-        $references = $this->rawMirrorRows('ref_kode')?->keyBy(fn (array $row): string => (string) ($row['ID_REF_KODE'] ?? ''));
-        if ($budgetIds === null || $rows === null || $references === null) {
+        $references = $this->rawContextReferenceRows();
+        if ($references === null) {
             return null;
         }
 
-        return $rows
-            ->filter(fn (array $row): bool => isset($budgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]) && (string) ($row['SOFT_DELETE'] ?? '0') !== '1')
-            ->map(function (array $row) use ($references): string {
-                $reference = $references->get((string) ($row['ID_REF_KODE'] ?? ''), []);
-
-                return trim((string) ($reference['ID_KODE'] ?? $row['KODE_KEGIATAN'] ?? ''), '.');
-            })
+        return $references->map(fn (array $row): string => trim((string) ($row['ID_KODE'] ?? ''), '.'))
             ->filter()
             ->unique()
             ->sort(fn (string $left, string $right): int => strnatcasecmp($left, $right))
@@ -377,7 +369,7 @@ class RkasBudgetFilter extends Component
     /** @return array<string, string> */
     protected function rawReferenceNames(): array
     {
-        $rows = $this->rawMirrorRows('ref_kode');
+        $rows = $this->rawContextReferenceRows();
         if ($rows === null) {
             return [];
         }
@@ -388,6 +380,27 @@ class RkasBudgetFilter extends Component
 
             return $code !== '' && $name !== '' ? [$code => $name] : [];
         })->all();
+    }
+
+    /** @return Collection<int, array<string, mixed>>|null */
+    protected function rawContextReferenceRows(): ?Collection
+    {
+        $yearId = $this->fiscalYearId();
+        $fundSourceId = $this->effectiveFundSourceId();
+        $rows = $this->rawMirrorRows('ref_kode');
+        if ($yearId === null || $fundSourceId === null || $rows === null) {
+            return null;
+        }
+
+        $year = FiscalYear::query()->find($yearId);
+
+        return $rows->filter(function (array $row) use ($year, $fundSourceId): bool {
+            $sourceYear = (string) ($row['TAHUN'] ?? $row['TAHUN_ANGGARAN'] ?? '');
+            $sourceFund = (string) ($row['SUMBER_DANA_ID'] ?? $row['ID_REF_SUMBER_DANA'] ?? $row['ID_SUMBER_DANA'] ?? '');
+
+            return $sourceYear === (string) ($year?->year ?? '')
+                && ($sourceFund === '' || (int) $sourceFund === $fundSourceId);
+        })->values();
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
@@ -467,8 +480,9 @@ class RkasBudgetFilter extends Component
 
         if (($codes = $this->rawActivityCodes()) !== null) {
             $names = $this->referenceNames();
-            $codes = $codes->filter(fn (string $code): bool => ($this->sub !== '' && self::isWithin($code, $this->sub))
-                || ($this->sub === '' && $this->program !== '' && self::isWithin($code, $this->program)));
+            $codes = $codes->filter(fn (string $code): bool => substr_count($code, '.') >= 2
+                && (($this->sub !== '' && self::isWithin($code, $this->sub))
+                || ($this->sub === '' && $this->program !== '' && self::isWithin($code, $this->program))));
 
             return $codes->map(fn (string $code): array => [
                 'kode' => $code,

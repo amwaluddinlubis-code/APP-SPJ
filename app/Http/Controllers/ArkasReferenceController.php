@@ -19,19 +19,18 @@ class ArkasReferenceController extends Controller
         $year = FiscalYear::query()->find($yearId);
         $budgetIds = $this->approvedBudgetIds($year, $fundSourceId);
         $rapbs = $this->rawRows('rapbs')?->filter(fn (array $row): bool => isset($budgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]) && (string) ($row['SOFT_DELETE'] ?? '0') !== '1') ?? collect();
-        $referenceRows = $this->rawRows('ref_kode') ?? collect();
+        $referenceRows = $this->contextReferenceRows($year, $fundSourceId) ?? collect();
         $names = $referenceRows->mapWithKeys(function (array $row): array {
             $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
             $name = trim((string) ($row['URAIAN_KODE'] ?? ''));
 
             return $code !== '' && $name !== '' ? [$code => $name] : [];
         });
-        $refById = $referenceRows->keyBy(fn (array $row): string => (string) ($row['ID_REF_KODE'] ?? ''));
-        $activities = $rapbs->map(function (array $row) use ($refById): ?array {
-            $reference = $refById->get((string) ($row['ID_REF_KODE'] ?? ''), []);
-            $code = trim((string) ($reference['ID_KODE'] ?? $row['KODE_KEGIATAN'] ?? ''), '.');
+        $activities = $referenceRows->map(function (array $row): ?array {
+            $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
+            $name = trim((string) ($row['URAIAN_KODE'] ?? 'Kegiatan belum diisi'));
 
-            return $code === '' ? null : ['code' => $code, 'name' => (string) ($reference['URAIAN_KODE'] ?? 'Kegiatan belum diisi')];
+            return $code !== '' && substr_count($code, '.') >= 2 ? ['code' => $code, 'name' => $name] : null;
         })->filter()->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         $programs = $this->hierarchyRows($activities, $names, 1);
         $subprograms = $this->hierarchyRows($activities, $names, 2);
@@ -136,5 +135,22 @@ class ArkasReferenceController extends Controller
 
             return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
         })->filter(fn (array $row): bool => $row !== [])->values();
+    }
+
+    /** @return Collection<int, array<string, mixed>>|null */
+    private function contextReferenceRows(?FiscalYear $year, int $fundSourceId): ?Collection
+    {
+        $rows = $this->rawRows('ref_kode');
+        if ($rows === null) {
+            return null;
+        }
+
+        return $rows->filter(function (array $row) use ($year, $fundSourceId): bool {
+            $sourceYear = (string) ($row['TAHUN'] ?? $row['TAHUN_ANGGARAN'] ?? '');
+            $sourceFund = (string) ($row['SUMBER_DANA_ID'] ?? $row['ID_REF_SUMBER_DANA'] ?? $row['ID_SUMBER_DANA'] ?? '');
+
+            return $sourceYear === (string) ($year?->year ?? '')
+                && ($sourceFund === '' || (int) $sourceFund === $fundSourceId);
+        })->values();
     }
 }
