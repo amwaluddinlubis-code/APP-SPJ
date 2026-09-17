@@ -35,13 +35,14 @@ class ArkasReferenceController extends Controller
         $programs = $this->hierarchyRows($activities, $names, 1);
         $subprograms = $this->hierarchyRows($activities, $names, 2);
         $accounts = $this->accountRows($rapbs, $year);
-        $datasets = compact('programs', 'subprograms', 'activities', 'accounts');
+        $acuanBarang = $this->acuanBarangRows($year, $rapbs, $accounts);
+        $datasets = compact('programs', 'subprograms', 'activities', 'accounts', 'acuanBarang');
         $type = (string) $request->query('type', 'programs');
         if (! isset($datasets[$type])) {
             $type = 'programs';
         }
         $search = trim((string) $request->query('q', ''));
-        $rows = $datasets[$type]->when($search !== '', fn (Collection $items): Collection => $items->filter(fn (array $row): bool => str_contains(mb_strtolower($row['code'].' '.$row['name']), mb_strtolower($search))))->values();
+        $rows = $datasets[$type]->when($search !== '', fn (Collection $items): Collection => $items->filter(fn (array $row): bool => str_contains(mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row))), mb_strtolower($search))))->values();
         $perPage = in_array((int) $request->query('perPage', 25), [25, 50, 100], true) ? (int) $request->query('perPage', 25) : 25;
         $page = max(1, (int) $request->query('page', 1));
         $paginator = new LengthAwarePaginator($rows->forPage($page, $perPage)->values(), $rows->count(), $perPage, $page, ['path' => $request->url(), 'query' => $request->query()]);
@@ -116,6 +117,44 @@ class ArkasReferenceController extends Controller
         return $rapbs->map(fn (array $row): array => ['code' => trim((string) ($row['KODE_REKENING'] ?? ''), '.'), 'name' => 'Rekening ARKAS'])
             ->filter(fn (array $row): bool => $row['code'] !== '')
             ->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
+    }
+
+    /** @param Collection<int, array<string, mixed>> $rapbs */
+    private function acuanBarangRows(?FiscalYear $year, Collection $rapbs, Collection $accounts): Collection
+    {
+        $raw = $this->rawRows('ref_acuan_barang');
+        if ($raw === null || $year === null) {
+            return collect();
+        }
+
+        $usage = $rapbs->filter(fn (array $row): bool => trim((string) ($row['ID_BARANG'] ?? '')) !== '')
+            ->countBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
+        $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
+
+        return $raw->filter(function (array $row) use ($year): bool {
+            $expiredDate = $row['EXPIRED_DATE'] ?? null;
+
+            return (string) ($row['TAHUN'] ?? '') === (string) $year->year
+                && ($expiredDate === null || trim((string) $expiredDate) === '')
+                && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
+        })->map(function (array $row) use ($usage, $accountNames): array {
+            $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
+            $usageCount = (int) ($usage[(string) ($row['ID_BARANG'] ?? '')] ?? 0);
+
+            return [
+                'code' => (string) $row['ID_BARANG'],
+                'name' => trim((string) ($row['NAMA_BARANG'] ?? '')),
+                'unit' => trim((string) ($row['SATUAN'] ?? '')),
+                'account_code' => $accountCode,
+                'account_name' => (string) ($accountNames[$accountCode] ?? ''),
+                'price' => (float) ($row['HARGA_BARANG'] ?? 0),
+                'min_price' => (float) ($row['BATAS_BAWAH'] ?? 0),
+                'max_price' => (float) ($row['BATAS_ATAS'] ?? 0),
+                'spending_code' => (string) ($row['KODE_BELANJA'] ?? ''),
+                'block_id' => (string) ($row['BLOK_ID'] ?? ''),
+                'usage_count' => $usageCount,
+            ];
+        })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
     }
 
     /** @return Collection<int, array<string, mixed>>|null */

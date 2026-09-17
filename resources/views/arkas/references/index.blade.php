@@ -5,6 +5,7 @@
             'subprograms' => 'Sub Program',
             'activities' => 'Kegiatan',
             'accounts' => 'Rekening',
+            'acuanBarang' => 'Acuan Barang',
         ];
     @endphp
 
@@ -42,7 +43,11 @@
                 </form>
             </div>
 
-            @include('arkas.references.partials.table', ['rows' => $rows, 'type' => $type])
+            @if ($type === 'acuanBarang')
+                @include('arkas.references.partials.acuan-barang', ['rows' => $rows])
+            @else
+                @include('arkas.references.partials.table', ['rows' => $rows, 'type' => $type])
+            @endif
         </section>
     </div>
 </x-layouts.tailwind-app>
