@@ -57,6 +57,7 @@ class ArkasReferenceController extends Controller
             'counts' => array_map(fn (Collection $items): int => $items->count(), $datasets),
             'type' => $type,
             'search' => $search,
+            'perPage' => $perPage,
             'contextLabel' => $fundName.' - '.($year?->year ?? '—'),
         ]);
     }

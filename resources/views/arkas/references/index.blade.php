@@ -39,6 +39,14 @@
                 <form method="get" class="flex items-center gap-2">
                     <input type="hidden" name="type" value="{{ $type }}">
                     <x-ui.input name="q" value="{{ $search }}" placeholder="Cari kode atau nama..." aria-label="Cari referensi" />
+                    <label class="flex items-center gap-2 whitespace-nowrap text-sm text-[var(--ui-fg-muted)]">
+                        <span>Baris</span>
+                        <x-ui.select name="perPage" aria-label="Baris per halaman" onchange="this.form.submit()">
+                            @foreach ([25, 50, 100] as $option)
+                                <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </label>
                     <x-ui.button type="submit" variant="secondary">Cari</x-ui.button>
                 </form>
             </div>
