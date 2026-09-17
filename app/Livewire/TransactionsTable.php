@@ -223,7 +223,7 @@ class TransactionsTable extends Component
             ->where('tax_table.status', 'ACTIVE')
             ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
             ->whereRaw("NULLIF(TRIM(CAST(json_extract(tax_raw.payload, '$.volume') AS TEXT)), '') IS NULL")
-            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), 0) = 1)")
+            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
             ->whereRaw("lower(trim(COALESCE(json_extract(tax_raw.payload, '$.uraian'), ''))) NOT LIKE 'setor %'")
             ->whereExists(function (QueryBuilder $parent) use ($db): void {
                 $parent->select($db->raw('1'))
