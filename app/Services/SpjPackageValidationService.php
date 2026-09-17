@@ -204,6 +204,7 @@ class SpjPackageValidationService
     {
         $sourceRapbsIds = DB::connection('school')->table('arkas_bku_rows')
             ->where('fiscal_year_id', $transaction->fiscal_year_id)
+            ->where('fund_source_id', $transaction->fund_source_id)
             ->when(filled($transaction->id_kas_umum), fn ($query) => $query->where('source_kas_id', $transaction->id_kas_umum))
             ->when(blank($transaction->id_kas_umum), fn ($query) => $query->where('no_bukti', $transaction->no_bukti))
             ->pluck('payload')

@@ -32,13 +32,14 @@ class ArkasActivityHierarchyResolver
             return $resolved;
         }
 
-        $cacheKey = (string) $transaction->fiscal_year_id.'|'.$sourceKasId.'|'.(string) $transaction->activity_code;
+        $cacheKey = (string) $transaction->fiscal_year_id.'|'.(string) $transaction->fund_source_id.'|'.$sourceKasId.'|'.(string) $transaction->activity_code;
         if (array_key_exists($cacheKey, $this->cache)) {
             return $this->cache[$cacheKey];
         }
 
         $bkuRow = DB::connection('school')->table('arkas_bku_rows')
             ->where('fiscal_year_id', $transaction->fiscal_year_id)
+            ->where('fund_source_id', $transaction->fund_source_id)
             ->where('source_kas_id', $sourceKasId)
             ->first(['payload']);
         $bkuPayload = $this->decodePayload($bkuRow->payload ?? null);
@@ -50,6 +51,7 @@ class ArkasActivityHierarchyResolver
 
         $rkasRow = DB::connection('school')->table('arkas_rkas_items')
             ->where('fiscal_year_id', $transaction->fiscal_year_id)
+            ->where('fund_source_id', $transaction->fund_source_id)
             ->where('source_rapbs_id', $sourceRapbsId)
             ->first(['payload']);
         $rkasPayload = $this->decodePayload($rkasRow->payload ?? null);

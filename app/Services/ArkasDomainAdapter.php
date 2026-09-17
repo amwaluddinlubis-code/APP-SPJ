@@ -114,7 +114,7 @@ class ArkasDomainAdapter
             if ($key === null) {
                 continue;
             }
-            $db->table('arkas_rkas_items')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_rapbs_id' => $key], [
+            $db->table('arkas_rkas_items')->updateOrInsert(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_rapbs_id' => $key], [
                 'fund_source_id' => (int) ($this->get($record, $profile, 'fund_source', ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?: $year->fund_source_id),
                 'activity_code' => $this->get($record, $profile, 'code', ['KODE_KEGIATAN', 'kode_kegiatan']),
                 'activity_name' => $this->get($record, $profile, 'name', ['NAMA_KEGIATAN', 'nama_kegiatan']),
@@ -166,7 +166,7 @@ class ArkasDomainAdapter
             if ($key === null) {
                 continue;
             }
-            $db->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'source_kas_id' => $key], [
+            $db->table('arkas_bku_rows')->updateOrInsert(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_kas_id' => $key], [
                 'source_rapbs_period_id' => $this->get($record, $profile, 'rapbs_period', ['ID_RAPBS_PERIODE', 'id_rapbs_periode']),
                 'fund_source_id' => (int) ($this->get($record, $profile, 'fund_source', ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?: $year->fund_source_id),
                 'parent_kas_id' => $this->get($record, $profile, 'parent', ['PARENT_ID_KAS_UMUM', 'parent_id_kas_umum']), 'category' => $this->get($record, $profile, 'category', ['KATEGORI_BKU', 'kategori_bku']),

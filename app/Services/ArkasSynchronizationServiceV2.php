@@ -75,7 +75,7 @@ class ArkasSynchronizationServiceV2
 
         foreach ($records as $record) {
             DB::connection('school')->table('arkas_rkas_items')->updateOrInsert(
-                ['fiscal_year_id' => $year->id, 'source_rapbs_id' => $record['ID_RAPBS']],
+                ['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_rapbs_id' => $record['ID_RAPBS']],
                 ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'activity_code' => $record['KODE_KEGIATAN'] ?? null, 'activity_name' => $record['NAMA_KEGIATAN'] ?? null,
                     'account_code' => $record['KODE_REKENING'] ?? null, 'description' => $record['URAIAN'] ?? null,
@@ -214,12 +214,16 @@ class ArkasSynchronizationServiceV2
 
         $belanja = [];
         $taxesByParent = [];
-        $rkas = DB::connection('school')->table('arkas_rkas_items')->where('fiscal_year_id', $year->id)->get()->keyBy('source_rapbs_id');
+        $rkas = DB::connection('school')->table('arkas_rkas_items')
+            ->where('fiscal_year_id', $year->id)
+            ->where('fund_source_id', $year->fund_source_id)
+            ->get()
+            ->keyBy('source_rapbs_id');
         $accountReferences = DB::connection('school')->table('account_references')
             ->where('fiscal_year_id', $year->id)->get()->keyBy('account_code');
         foreach ($records as $record) {
             DB::connection('school')->table('arkas_bku_rows')->updateOrInsert(
-                ['fiscal_year_id' => $year->id, 'source_kas_id' => $record['ID_KAS_UMUM']],
+                ['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_kas_id' => $record['ID_KAS_UMUM']],
                 ['source_rapbs_period_id' => $record['ID_RAPBS_PERIODE'] ?? null,
                     'fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
                     'parent_kas_id' => $record['PARENT_ID_KAS_UMUM'] ?? null, 'category' => $record['KATEGORI_BKU'] ?? null,
@@ -328,11 +332,11 @@ class ArkasSynchronizationServiceV2
             unset($hashPayload['source_created_at'], $hashPayload['source_last_updated_at'], $hashPayload['rkas_date']);
             $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
             $existing = DB::connection('school')->table('transactions')
-                ->where('fiscal_year_id', $year->id)->where('source_key', $sourceKey)->first();
+                ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('source_key', $sourceKey)->first();
             $existing ??= DB::connection('school')->table('transactions')
-                ->where('fiscal_year_id', $year->id)->where('id_kas_umum', $first['ID_KAS_UMUM'])->first();
+                ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('id_kas_umum', $first['ID_KAS_UMUM'])->first();
             $existing ??= DB::connection('school')->table('transactions')
-                ->where(['fiscal_year_id' => $year->id, 'no_bukti' => $noBukti])->first();
+                ->where(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'no_bukti' => $noBukti])->first();
             $hasPackage = $existing && DB::connection('school')->table('spj_packages')->where('transaction_id', $existing->id)->exists();
             $data['source_hash'] = $sourceHash;
             $isOrderingMetadataOnlyHash = $existing && $existing->source_hash === $hashWithOrderingMetadata;

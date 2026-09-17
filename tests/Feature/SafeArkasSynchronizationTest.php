@@ -195,6 +195,32 @@ class SafeArkasSynchronizationTest extends TestCase
         $this->assertSame('65000.00', $item->siplah_unit_price);
     }
 
+    public function test_rkas_bku_and_transaction_identities_are_scoped_by_fund_source(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP-1', 'name' => 'BOSP 1']);
+        FundSource::query()->create(['id' => 2, 'code' => 'BOSP-2', 'name' => 'BOSP 2']);
+        $yearOne = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $yearTwo = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 2]);
+        $service = new ArkasSynchronizationServiceV2(Mockery::mock(ArkasBridgeClient::class));
+        $saveRkas = new ReflectionMethod($service, 'saveRkas');
+        $saveBku = new ReflectionMethod($service, 'saveBkuAndTransactions');
+        $rkasRecord = [
+            'ID_RAPBS' => 'RAPBS-SAME', 'ID_REF_SUMBER_DANA' => 1,
+            'KODE_KEGIATAN' => '01', 'NAMA_KEGIATAN' => 'Kegiatan',
+            'KODE_REKENING' => '5.1.02.01', 'URAIAN' => 'Barang', 'JUMLAH' => 100000,
+        ];
+
+        $saveRkas->invoke($service, $yearOne, [$rkasRecord]);
+        $saveRkas->invoke($service, $yearTwo, [array_replace($rkasRecord, ['ID_REF_SUMBER_DANA' => 2])]);
+        $saveBku->invoke($service, $yearOne, [$this->sourceRecord(100000)], $this->createSyncRun($yearOne));
+        $saveBku->invoke($service, $yearTwo, [array_replace($this->sourceRecord(100000), ['ID_REF_SUMBER_DANA' => 2])], $this->createSyncRun($yearTwo));
+
+        $this->assertSame(2, DB::connection('school')->table('arkas_rkas_items')->where('source_rapbs_id', 'RAPBS-SAME')->count());
+        $this->assertSame(2, DB::connection('school')->table('arkas_bku_rows')->where('source_kas_id', 'KAS-001')->count());
+        $this->assertSame(2, Transaction::query()->where('no_bukti', 'BKU-001')->count());
+        $this->assertSame([1, 2], Transaction::query()->orderBy('fund_source_id')->pluck('fund_source_id')->all());
+    }
+
     private function createSyncRun(FiscalYear $year): int
     {
         return DB::connection('school')->table('sync_runs')->insertGetId([
