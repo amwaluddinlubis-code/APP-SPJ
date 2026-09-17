@@ -471,8 +471,8 @@ class RkasBudgetController extends Controller
                     $payload = array_change_key_case($payload, CASE_UPPER);
                     $budgetKey = (string) ($payload['ID_ANGGARAN'] ?? '');
                     $rapbsKey = $periodToRapbs[(string) ($payload['ID_RAPBS_PERIODE'] ?? '')] ?? '';
-                    if (isset($allowedBudgets[$budgetKey]) && $rapbsKey !== '' && str_starts_with((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), (string) $year->year) && str_starts_with((string) ($payload['NO_BUKTI'] ?? ''), 'BP') && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
-                        $realizationByRapbs[$rapbsKey] = ($realizationByRapbs[$rapbsKey] ?? 0) + (float) ($payload['SALDO'] ?? 0);
+                    if (isset($allowedBudgets[$budgetKey]) && $rapbsKey !== '' && str_starts_with((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), (string) $year->year) && in_array((string) ($payload['ID_REF_BKU'] ?? ''), ['4', '15'], true) && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
+                        $realizationByRapbs[$rapbsKey] = ($realizationByRapbs[$rapbsKey] ?? 0) + abs((float) ($payload['SALDO'] ?? 0));
                     }
                 }
             }
