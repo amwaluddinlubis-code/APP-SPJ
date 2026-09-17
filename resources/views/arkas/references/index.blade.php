@@ -25,10 +25,15 @@
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] p-4 sm:p-5">
-                <nav class="flex flex-wrap gap-2" aria-label="Jenis referensi ARKAS">
-                    @foreach ($tabs as $key => $label)
-                        <a href="{{ route('arkas.references', ['type' => $key, 'q' => $search]) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold transition {{ $type === $key ? 'border-[var(--theme-content-accent)] bg-[var(--theme-content-accent)] text-white' : 'border-[var(--ui-line)] text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]' }}">{{ $label }}</a>
-                    @endforeach
+                <nav class="ui-tabs w-full" aria-label="Jenis referensi ARKAS">
+                    <div class="ui-tabs-list" role="tablist">
+                        @foreach ($tabs as $key => $label)
+                            <a href="{{ route('arkas.references', ['type' => $key, 'q' => $search]) }}" role="tab" aria-selected="{{ $type === $key ? 'true' : 'false' }}" class="ui-tab {{ $type === $key ? 'ui-tab-active' : '' }}">
+                                <x-ui.icon :name="match ($key) { 'programs' => 'budget', 'subprograms' => 'queue', 'activities' => 'work', default => 'number' }" size="sm" />
+                                <span>{{ $label }}</span>
+                            </a>
+                        @endforeach
+                    </div>
                 </nav>
                 <form method="get" class="flex items-center gap-2">
                     <input type="hidden" name="type" value="{{ $type }}">

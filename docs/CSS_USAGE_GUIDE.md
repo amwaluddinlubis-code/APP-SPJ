@@ -172,6 +172,29 @@ Icon dekoratif di dalam tombol berlabel dibiarkan tanpa `label`. Icon standalone
 </section>
 ```
 
+### Tab navigasi
+
+Gunakan primitive global berikut untuk seluruh navigasi tab baru:
+
+```blade
+<div class="ui-tabs">
+    <nav class="ui-tabs-list" role="tablist" aria-label="Jenis data">
+        <a class="ui-tab ui-tab-active" role="tab" aria-selected="true" href="...">
+            <x-ui.icon name="database" size="sm" />
+            <span>Data</span>
+        </a>
+    </nav>
+</div>
+```
+
+Kontrak tab:
+
+- bar tab menggunakan lebar penuh container dan tab desktop membagi ruang secara seimbang;
+- setiap tab memakai ikon sebelum label, dengan border lingkaran dari `currentColor`;
+- perpindahan state aktif memiliki transisi/animasi dan wajib menghormati `prefers-reduced-motion`;
+- tab aktif tetap datar, tanpa tampilan tombol atau background khusus, dan hanya memakai garis bawah dari token tema;
+- jangan menambahkan warna palette, border, radius, atau animasi lokal jika primitive global sudah mencukupi.
+
 ---
 
 ## 5. Hierarki teks
