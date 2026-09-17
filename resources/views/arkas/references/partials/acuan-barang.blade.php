@@ -21,26 +21,30 @@
                 <td class="max-w-sm text-[var(--ui-fg)]">{{ $row['name'] ?: '—' }}</td>
                 <td>{{ $row['unit'] ?: '—' }}</td>
                 <td class="font-mono text-xs text-[var(--theme-content-accent)]">{{ $row['account_code'] ?: '—' }}</td>
-                <td class="min-w-64">
-                    <div>{{ $row['account_name'] ?: '—' }}</div>
-                    @if (count($row['account_candidates'] ?? []) > 0 && str_ends_with($row['account_code'], '*'))
-                        <details class="mt-1 text-xs">
-                            <summary class="cursor-pointer text-[var(--theme-content-accent)]">Lihat kandidat rekening</summary>
-                            <div class="mt-1 max-h-36 overflow-y-auto rounded border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] p-2 text-[var(--ui-fg-muted)]">
-                                @foreach ($row['account_candidates'] as $candidate)
-                                    <div>{{ $candidate }}</div>
-                                @endforeach
-                            </div>
-                        </details>
-                    @endif
-                </td>
+                <td class="min-w-64">{{ $row['account_name'] ?: '—' }}</td>
                 <td class="whitespace-nowrap text-right">Rp {{ number_format($row['price'], 0, ',', '.') }}</td>
                 <td class="whitespace-nowrap text-right">Rp {{ number_format($row['min_price'], 0, ',', '.') }} – Rp {{ number_format($row['max_price'], 0, ',', '.') }}</td>
                 <td>{{ $row['spending_code'] ?: '—' }}</td>
                 <td class="text-center font-semibold">{{ number_format($row['usage_count'], 0, ',', '.') }}</td>
             </tr>
+            @if (count($row['account_candidates'] ?? []) > 0 && str_ends_with($row['account_code'], '*'))
+                <tr>
+                    <td colspan="10" class="border-t-0 bg-[var(--ui-surface-muted)] px-6 py-3">
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                            Kandidat rekening untuk {{ $row['account_code'] }}
+                        </div>
+                        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            @foreach ($row['account_candidates'] as $candidate)
+                                <div class="rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm text-[var(--ui-fg)]">
+                                    {{ $candidate }}
+                                </div>
+                            @endforeach
+                        </div>
+                    </td>
+                </tr>
+            @endif
         @empty
-            <tr><td colspan="10" class="empty-cell"><p class="font-semibold text-[var(--ui-fg-strong)]">Belum ada acuan barang.</p><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Jalankan sinkronisasi raw ARKAS untuk mengisi referensi tahun aktif.</p></td></tr>
+            <tr><td colspan="10" class="empty-cell"><p class="font-semibold text-[var(--ui-fg-strong)]">Cari acuan barang ARKAS.</p><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Masukkan nama atau kata kunci barang untuk menampilkan barang dan rekening yang sesuai.</p></td></tr>
         @endforelse
     </tbody>
 </x-ui.table>

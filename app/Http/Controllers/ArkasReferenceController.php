@@ -43,6 +43,9 @@ class ArkasReferenceController extends Controller
         }
         $search = trim((string) $request->query('q', ''));
         $rows = $datasets[$type]->when($search !== '', fn (Collection $items): Collection => $items->filter(fn (array $row): bool => $this->matchesSearch($row, $search)))->values();
+        if ($type === 'acuanBarang' && $search === '') {
+            $rows = collect();
+        }
         $perPage = in_array((int) $request->query('perPage', 25), [25, 50, 100], true) ? (int) $request->query('perPage', 25) : 25;
         $page = max(1, (int) $request->query('page', 1));
         $paginator = new LengthAwarePaginator($rows->forPage($page, $perPage)->values(), $rows->count(), $perPage, $page, ['path' => $request->url(), 'query' => $request->query()]);

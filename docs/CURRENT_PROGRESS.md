@@ -338,7 +338,7 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] GUI transaksi lama menggunakan indeks fresh dan pembacaan payload raw;
 - [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
-- [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening`, beserta satuan, rentang harga, klasifikasi belanja, dan jumlah pemakaian pada RKAS bila sudah ada;
+- [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan kandidat rekening pada baris penuh berbentuk grid;
 - [x] selector konteks topbar menampilkan pasangan sumber dana dan tahun anggaran;
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
