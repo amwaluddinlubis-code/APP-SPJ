@@ -25,7 +25,7 @@ class EnsureSpjActiveContext
         if ($transactionId !== null) {
             abort_unless(
                 Transaction::query()
-                    ->whereKey($transactionId)
+                    ->forSourceIdentifier((string) $transactionId)
                     ->where('fiscal_year_id', $yearId)
                     ->where('fund_source_id', $fundSourceId)
                     ->exists(),

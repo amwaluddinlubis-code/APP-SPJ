@@ -149,8 +149,8 @@
                             <button
                                 type="button"
                                 data-transaction-action-trigger
-                                data-detail-url="{{ route('transactions.show', $transaction) }}"
-                                data-package-url="{{ route('transactions.prepare-spj', $transaction->id) }}"
+                                data-detail-url="{{ route('transactions.show', $transaction->source_key) }}"
+                                data-package-url="{{ route('transactions.prepare-spj', $transaction->source_key) }}"
                                 class="transaction-action-button transaction-action-edit"
                                 title="Tampilkan aksi transaksi"
                                 aria-haspopup="dialog"
@@ -217,8 +217,8 @@
                                         <button
                                             type="button"
                                             data-transaction-action-trigger
-                                            data-detail-url="{{ route('transactions.show', $transaction) }}"
-                                            data-package-url="{{ route('transactions.prepare-spj', $transaction->id) }}"
+                                            data-detail-url="{{ route('transactions.show', $transaction->source_key) }}"
+                                            data-package-url="{{ route('transactions.prepare-spj', $transaction->source_key) }}"
                                             class="transaction-action-button transaction-action-edit"
                                             title="Tampilkan aksi transaksi"
                                             aria-haspopup="dialog"

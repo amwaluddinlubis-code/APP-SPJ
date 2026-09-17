@@ -296,6 +296,11 @@ mengikuti snapshot transaksi.
 
 Canonical transaction adapter bertugas menjaga identitas source dan mapping domain.
 
+Daftar Transaksi membaca indeks `spj_fresh_transactions` dan payload raw. Link
+Detail/Paket membawa `source_key`, lalu resolver transaksi mencocokkannya ke
+`transactions.id_kas_umum` sebelum membuka workspace lama yang memiliki overlay
+operator dan lifecycle SPJ. ID internal kedua tabel tidak diasumsikan sama.
+
 Kontrak utama:
 
 ```text

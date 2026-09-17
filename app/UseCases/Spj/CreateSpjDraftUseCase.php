@@ -25,7 +25,8 @@ class CreateSpjDraftUseCase
                 'items:id,transaction_id,item_description',
             ])
             ->withCount('items')
-            ->find($transactionId);
+            ->forSourceIdentifier($transactionId)
+            ->first();
 
         if (! $transaction || ! $this->context->matchesTransaction($transaction)) {
             return redirect()

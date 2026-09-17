@@ -87,6 +87,13 @@ class Transaction extends Model
 
     ];
 
+    public function scopeForSourceIdentifier(Builder $query, string $identifier): Builder
+    {
+        return $query->where(fn (Builder $query): Builder => $query
+            ->where('id_kas_umum', $identifier)
+            ->orWhereKey($identifier));
+    }
+
     public function scopeForSpjContext(Builder $query, ActiveSpjContext $context): Builder
     {
         return $query
