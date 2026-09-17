@@ -168,22 +168,25 @@ final class SpjTemplatePackageImporter
                         $oldPaths[] = (string) $current->file_path;
                     }
 
-                    DocumentTemplate::query()->updateOrCreate(
-                        [
-                            'fiscal_year_id' => $fiscalYearId,
-                            'document_type' => $documentType,
-                            'format' => 'xlsx',
-                        ],
-                        [
+                    if ($current) {
+                        $current->fill([
                             'name' => (string) $definition['label'],
                             'file_path' => $newPaths[$documentType],
-                            'applicable_categories' => $definition['applicable_categories'] ?? [],
-                            'is_siplah' => $current
-                                ? $current->is_siplah
-                                : $this->defaultIsSiplahScope($documentType),
-                            'is_active' => true,
-                        ]
-                    );
+                        ])->save();
+
+                        continue;
+                    }
+
+                    DocumentTemplate::query()->create([
+                        'fiscal_year_id' => $fiscalYearId,
+                        'document_type' => $documentType,
+                        'format' => 'xlsx',
+                        'name' => (string) $definition['label'],
+                        'file_path' => $newPaths[$documentType],
+                        'applicable_categories' => $definition['applicable_categories'] ?? [],
+                        'is_siplah' => $this->defaultIsSiplahScope($documentType),
+                        'is_active' => true,
+                    ]);
                 }
             });
         } catch (Throwable $exception) {

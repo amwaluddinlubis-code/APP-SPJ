@@ -132,12 +132,10 @@
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <x-ui.field label="Jenis Dokumen" for="document_type" :error="$templateErrors->first('document_type')" required>
-                            <x-ui.select id="document_type" name="document_type" required>
-                                @foreach ($documentTypes as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('document_type') === $value)>
-                                        {{ $label }}</option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-ui.searchable-select id="document_type" name="document_type"
+                                :options="collect($documentTypes)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()"
+                                :value="old('document_type')" placeholder="Pilih jenis dokumen"
+                                search-placeholder="Cari jenis dokumen..." required />
                         </x-ui.field>
 
                         <x-ui.field label="Nama Template" for="template_name" :error="$templateErrors->first('name')" required>
@@ -172,11 +170,13 @@
                     <x-ui.field label="Channel Paket SPJ" for="siplah_scope"
                         hint="Pemetaan ini membaca field is_siplah transaksi. Semua channel berarti template berlaku untuk SiPlah dan Non-SiPlah."
                         :error="$templateErrors->first('siplah_scope')">
-                        <x-ui.select id="siplah_scope" name="siplah_scope">
-                            <option value="all" @selected(old('siplah_scope', 'all') === 'all')>Semua channel</option>
-                            <option value="siplah" @selected(old('siplah_scope') === 'siplah')>SiPlah saja</option>
-                            <option value="non_siplah" @selected(old('siplah_scope') === 'non_siplah')>Non-SiPlah saja</option>
-                        </x-ui.select>
+                        <x-ui.searchable-select id="siplah_scope" name="siplah_scope"
+                            :options="[
+                                ['value' => 'all', 'label' => 'Semua channel'],
+                                ['value' => 'siplah', 'label' => 'SiPlah saja'],
+                                ['value' => 'non_siplah', 'label' => 'Non-SiPlah saja'],
+                            ]" :value="old('siplah_scope', 'all')" placeholder="Semua channel"
+                            search-placeholder="Cari channel..." />
                     </x-ui.field>
 
                     <div class="ui-form-actions">
@@ -388,11 +388,13 @@
                                                 class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                                                 Channel Paket SPJ
                                             </label>
-                                            <x-ui.select id="siplah-scope-{{ $template->id }}" name="siplah_scope">
-                                                <option value="all" @selected($template->is_siplah === null)>Semua channel</option>
-                                                <option value="siplah" @selected($template->is_siplah === true)>SiPlah saja</option>
-                                                <option value="non_siplah" @selected($template->is_siplah === false)>Non-SiPlah saja</option>
-                                            </x-ui.select>
+                                            <x-ui.searchable-select id="siplah-scope-{{ $template->id }}" name="siplah_scope"
+                                                :options="[
+                                                    ['value' => 'all', 'label' => 'Semua channel'],
+                                                    ['value' => 'siplah', 'label' => 'SiPlah saja'],
+                                                    ['value' => 'non_siplah', 'label' => 'Non-SiPlah saja'],
+                                                ]" :value="$template->is_siplah === null ? 'all' : ($template->is_siplah ? 'siplah' : 'non_siplah')"
+                                                placeholder="Semua channel" search-placeholder="Cari channel..." />
                                             <p class="mt-1 text-[11px] text-[var(--ui-fg-muted)]">
                                                 SiPlah/Non-SiPlah dipilih dari field <span class="font-mono">is_siplah</span> transaksi.
                                             </p>

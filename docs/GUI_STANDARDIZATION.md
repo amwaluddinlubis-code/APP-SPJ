@@ -235,6 +235,8 @@ Toolbar canonical:
 - semua action memiliki icon/hover/title yang jelas;
 - previous/next hanya bernavigasi dalam sekolah+tahun+sumber dana aktif yang sama;
 - bila previous/next tidak ada, tombol tetap terlihat dalam disabled/muted state dan klik memberikan warning operator.
+- Daftar pada tab Paket menyediakan filter Livewire reaktif untuk pencarian nomor bukti/uraian/penerima, status paket, dan kategori SPJ. Perubahan filter mengembalikan pagination ke halaman pertama.
+- Single-select yang membutuhkan pencarian menggunakan dropdown searchable canonical; multi-select tetap memakai kontrol khususnya.
 
 Summary canonical:
 

@@ -160,6 +160,10 @@ Icon dekoratif di dalam tombol berlabel dibiarkan tanpa `label`. Icon standalone
 <input readonly class="ui-input ui-input-readonly">
 ```
 
+Untuk single-select yang membutuhkan pencarian, gunakan komponen Blade
+`<x-ui.searchable-select>` agar trigger, pencarian, opsi, keyboard focus, dan
+tema tetap konsisten. Komponen ini bukan pengganti kontrol multi-select.
+
 ### Panel/card
 
 ```html

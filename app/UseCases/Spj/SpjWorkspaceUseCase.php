@@ -117,11 +117,30 @@ class SpjWorkspaceUseCase
         ];
     }
 
-    public function packageListData(int $perPage): LengthAwarePaginator
+    /**
+     * @param  array{search?:string,status?:string,category?:string}  $filters
+     */
+    public function packageListData(int $perPage, array $filters = []): LengthAwarePaginator
     {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = strtoupper(trim((string) ($filters['status'] ?? '')));
+        $category = strtoupper(trim((string) ($filters['category'] ?? '')));
+
         return SpjPackage::query()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
-            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
+            ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+            ->whereHas('transaction', function ($query) use ($search, $category): void {
+                $query->forSpjContext($this->context)
+                    ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('spj_category', $category))
+                    ->when($search !== '', function ($transactionQuery) use ($search): void {
+                        $transactionQuery->where(function ($searchQuery) use ($search): void {
+                            $searchQuery->where('no_bukti', 'like', '%'.$search.'%')
+                                ->orWhere('payment_description', 'like', '%'.$search.'%')
+                                ->orWhere('description', 'like', '%'.$search.'%')
+                                ->orWhere('recipient_name', 'like', '%'.$search.'%');
+                        });
+                    });
+            })
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')

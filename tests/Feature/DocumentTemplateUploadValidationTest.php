@@ -192,9 +192,9 @@ class DocumentTemplateUploadValidationTest extends TestCase
             'name' => 'Template Lama',
             'format' => 'xlsx',
             'file_path' => $oldPath,
-            'applicable_categories' => [],
+            'applicable_categories' => ['JASA_LAINNYA'],
             'is_siplah' => false,
-            'is_active' => true,
+            'is_active' => false,
         ]);
 
         $path = $this->makeWorkbook('Rincian Belanja', $this->validMarkers(), repeatRow: 6);
@@ -213,8 +213,9 @@ class DocumentTemplateUploadValidationTest extends TestCase
         $existing->refresh();
         $this->assertSame('Template Baru', $existing->name);
         $this->assertNotSame($oldPath, $existing->file_path);
-        $this->assertSame(['BARANG'], $existing->applicable_categories);
-        $this->assertNull($existing->is_siplah);
+        $this->assertSame(['JASA_LAINNYA'], $existing->applicable_categories);
+        $this->assertFalse($existing->is_siplah);
+        $this->assertFalse($existing->is_active);
         Storage::assertExists($existing->file_path);
         Storage::assertMissing($oldPath);
         $this->assertSame(1, DocumentTemplate::query()->count());

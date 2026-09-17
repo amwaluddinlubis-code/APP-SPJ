@@ -57,9 +57,13 @@
             :style="window.innerWidth >= 1024 ? { width: collapsed ? '5.25rem' : '17rem' } : {}">
             <div class="mb-8 flex items-center justify-between gap-2">
                 <a href="{{ route('dashboard') }}"
-                    class="app-sidebar-brand flex min-w-0 items-center gap-3 text-lg font-bold"><span
-                        class="app-sidebar-brand-mark grid h-10 w-10 shrink-0 place-items-center">SPJ</span><span
-                        x-show="!collapsed || open" x-transition.opacity class="truncate">SPJ BOSP Web</span></a>
+                    class="app-sidebar-brand flex min-w-0 items-center gap-3 rounded-xl bg-white p-1.5 pr-3 text-lg font-bold shadow-sm"><span
+                        class="app-sidebar-brand-mark grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white p-1"
+                        style="background-color: #fff !important;"><img src="{{ asset('images/logo-app-spj.png') }}" alt=""
+                            class="h-full w-full bg-white object-contain"></span><span
+                        x-show="!collapsed || open" x-transition.opacity class="app-sidebar-brand-wordmark truncate"><span
+                            class="app-sidebar-brand-spj">SPJ</span> <span class="app-sidebar-brand-bos">BOS</span><span
+                            class="app-sidebar-brand-p">P</span></span></a>
                 <button type="button" @click="open=false" class="app-sidebar-close inline-flex p-2 lg:hidden"
                     aria-label="Tutup navigasi"><x-ui.icon name="x" size="sm" /></button>
             </div>

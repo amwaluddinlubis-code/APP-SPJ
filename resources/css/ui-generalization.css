@@ -531,7 +531,7 @@
 .ui-tab {
     position: relative;
     display: inline-flex;
-    min-height: 2.4rem;
+    min-height: 3.1rem;
     align-items: center;
     gap: .4rem;
     border: 0;
@@ -540,7 +540,7 @@
     color: var(--ui-fg-muted);
     font-size: .82rem;
     font-weight: 800;
-    transition: color .2s ease, background-color .2s ease;
+    transition: color .2s ease, background-color .2s ease, transform .2s ease;
 }
 
 .ui-tab::after {
@@ -560,6 +560,10 @@
 .ui-tab:hover {
     background: color-mix(in srgb, var(--ui-accent-soft) 18%, transparent);
     color: var(--ui-fg);
+}
+
+.ui-tab:active {
+    transform: translateY(1px);
 }
 
 .ui-tab-active {

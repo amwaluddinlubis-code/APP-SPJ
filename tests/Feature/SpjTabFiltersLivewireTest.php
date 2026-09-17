@@ -100,6 +100,24 @@ class SpjTabFiltersLivewireTest extends TestCase
             ->assertDontSee('BKU-003');
     }
 
+    public function test_package_list_filters_by_status_category_and_search_without_reload(): void
+    {
+        $this->seedWorkspace();
+
+        Livewire::test(SpjPackageList::class)
+            ->set('status', 'NUMBERED')
+            ->assertSee('BKU-003')
+            ->assertDontSee('BKU-002')
+            ->set('status', '')
+            ->set('category', 'JASA_LAINNYA')
+            ->assertSee('BKU-002')
+            ->assertDontSee('BKU-003')
+            ->set('category', '')
+            ->set('search', 'BKU-003')
+            ->assertSee('BKU-003')
+            ->assertDontSee('BKU-002');
+    }
+
     public function test_monitoring_list_shows_pending_without_reload(): void
     {
         $this->seedWorkspace();

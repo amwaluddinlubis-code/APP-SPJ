@@ -2,19 +2,19 @@
     <div class="border-b border-[var(--ui-line)] px-5 py-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:items-end">
             <x-ui.field label="Status" for="document-template-status">
-                <x-ui.select id="document-template-status" wire:model.live="status">
-                    <option value="all">Semua status</option>
-                    <option value="active">Aktif</option>
-                    <option value="inactive">Tidak aktif</option>
-                </x-ui.select>
+                <x-ui.searchable-select id="document-template-status" wire-model="status"
+                    :options="[
+                        ['value' => 'all', 'label' => 'Semua status'],
+                        ['value' => 'active', 'label' => 'Aktif'],
+                        ['value' => 'inactive', 'label' => 'Tidak aktif'],
+                    ]" placeholder="Semua status" search-placeholder="Cari status..." />
             </x-ui.field>
             <x-ui.field label="Kategori SPJ" for="document-template-category">
-                <x-ui.select id="document-template-category" wire:model.live="category">
-                    <option value="">Semua kategori</option>
-                    @foreach ($categories as $item)
-                        <option value="{{ $item }}">{{ ucwords(strtolower(str_replace('_', ' ', $item))) }}</option>
-                    @endforeach
-                </x-ui.select>
+                <x-ui.searchable-select id="document-template-category" wire-model="category"
+                    :options="array_merge(
+                        [['value' => '', 'label' => 'Semua kategori']],
+                        $categoryOptions,
+                    )" placeholder="Semua kategori" search-placeholder="Cari kategori..." />
             </x-ui.field>
             <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="reloadList"
                 wire:loading.attr="disabled" wire:target="reloadList">Muat Ulang Daftar</x-ui.button>
@@ -107,12 +107,14 @@
                                 <div>
                                     <label for="siplah-scope-{{ $templateId }}"
                                         class="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Channel Paket SPJ</label>
-                                    <x-ui.select id="siplah-scope-{{ $templateId }}" wire:model="mappingScopes.{{ $templateId }}"
-                                        class="!min-h-9 !py-1.5 text-xs">
-                                        <option value="all">Semua channel</option>
-                                        <option value="siplah">SiPlah saja</option>
-                                        <option value="non_siplah">Non-SiPlah saja</option>
-                                    </x-ui.select>
+                                    <x-ui.searchable-select id="siplah-scope-{{ $templateId }}"
+                                        wire-model="mappingScopes.{{ $templateId }}"
+                                        :options="[
+                                            ['value' => 'all', 'label' => 'Semua channel'],
+                                            ['value' => 'siplah', 'label' => 'SiPlah saja'],
+                                            ['value' => 'non_siplah', 'label' => 'Non-SiPlah saja'],
+                                        ]" placeholder="Semua channel" search-placeholder="Cari channel..."
+                                        class="!min-h-9 !py-1.5 text-xs" />
                                 </div>
                             </div>
                             <p class="mt-1 text-[10px] text-[var(--ui-fg-muted)]">SiPlah/Non-SiPlah dipilih dari field <span class="font-mono">is_siplah</span> transaksi.</p>

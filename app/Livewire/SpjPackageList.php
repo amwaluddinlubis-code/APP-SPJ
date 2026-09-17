@@ -15,6 +15,15 @@ class SpjPackageList extends Component
     #[Url(as: 'package_perPage', except: 15)]
     public int $perPage = 15;
 
+    #[Url(as: 'package_q', except: '')]
+    public string $search = '';
+
+    #[Url(as: 'package_status', except: '')]
+    public string $status = '';
+
+    #[Url(as: 'package_category', except: '')]
+    public string $category = '';
+
     public function mount(): void
     {
         $perPage = request()->integer('package_perPage', 15);
@@ -23,15 +32,25 @@ class SpjPackageList extends Component
 
     public function updating($property): void
     {
-        if ($property === 'perPage') {
+        if (in_array($property, ['perPage', 'search', 'status', 'category'], true)) {
             $this->resetPage('package_page');
         }
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['search', 'status', 'category']);
+        $this->resetPage('package_page');
     }
 
     public function render(): View
     {
         return view('livewire.spj-package-list', [
-            'packageList' => app(SpjWorkspaceUseCase::class)->packageListData($this->perPage),
+            'packageList' => app(SpjWorkspaceUseCase::class)->packageListData($this->perPage, [
+                'search' => $this->search,
+                'status' => $this->status,
+                'category' => $this->category,
+            ]),
         ]);
     }
 }

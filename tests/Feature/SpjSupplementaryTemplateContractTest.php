@@ -93,6 +93,25 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertNotContains('NIP_BENDAHARA_BOSP', $definition['required']);
     }
 
+    public function test_surat_pesanan_does_not_require_delivery_location(): void
+    {
+        $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::SURAT_PESANAN);
+
+        $this->assertNotContains('TEMPAT_PENYERAHAN', $definition['required']);
+
+        $result = app(SpjTemplateValidator::class)->validateMarkers(
+            SpjDocumentTypeRegistry::SURAT_PESANAN,
+            array_merge($definition['required'], $definition['repeat_required']),
+        );
+
+        $missingRequired = collect($result['errors'])
+            ->where('code', 'MISSING_REQUIRED')
+            ->flatMap(fn (array $error): array => $error['markers'] ?? [])
+            ->all();
+
+        $this->assertNotContains('TEMPAT_PENYERAHAN', $missingRequired);
+    }
+
     public function test_bast_uses_document_specific_number_placeholder(): void
     {
         $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAST);

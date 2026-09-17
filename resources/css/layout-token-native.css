@@ -46,6 +46,9 @@
 
 .app-sidebar-brand {
     color: var(--app-sidebar-text-strong) !important;
+    padding: .375rem .75rem .375rem .375rem;
+    background: #ffffff !important;
+    box-shadow: 0 5px 14px rgb(15 23 42 / .12);
 }
 
 .app-sidebar-brand-mark {
@@ -53,6 +56,27 @@
     background: color-mix(in srgb, var(--theme-accent) 84%, var(--theme-sidebar)) !important;
     color: #f8fafc !important;
     box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+}
+
+.app-sidebar-brand-wordmark {
+    color: #1f2937 !important;
+    font-size: .8rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.025em;
+    white-space: nowrap;
+}
+
+.app-sidebar-brand-spj {
+    color: #1f63e9 !important;
+}
+
+.app-sidebar-brand-bos {
+    color: #dc2626 !important;
+}
+
+.app-sidebar-brand-p {
+    color: #eab308 !important;
 }
 
 .app-sidebar .app-nav {

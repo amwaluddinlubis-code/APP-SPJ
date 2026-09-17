@@ -85,7 +85,8 @@ class DocumentTemplateSiplahMappingTest extends TestCase
         $this->assertStringContainsString('<livewire:document-template-list', $source);
         $component = file_get_contents(resource_path('views/livewire/document-template-list.blade.php'));
         $this->assertIsString($component);
-        $this->assertStringContainsString('wire:model="mappingScopes.', $component);
+        $this->assertStringContainsString('wire-model="mappingScopes.', $component);
+        $this->assertStringContainsString('<x-ui.searchable-select', $component);
         $this->assertStringContainsString('wire:click="saveMapping(', $component);
         $this->assertStringContainsString('wire:click="reloadList"', $component);
         $this->assertStringContainsString('template sesuai filter daftar saat ini', $component);

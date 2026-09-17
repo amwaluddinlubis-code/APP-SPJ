@@ -210,7 +210,7 @@ final class SpjDocumentTypeRegistry
                 'applicable_categories' => ['BARANG', 'KONSUMSI', 'JASA_LAINNYA'],
                 'required' => [
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA',
-                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'NILAI_BRUTO', 'TEMPAT_PENYERAHAN',
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'NILAI_BRUTO',
                     'TANGGAL_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [

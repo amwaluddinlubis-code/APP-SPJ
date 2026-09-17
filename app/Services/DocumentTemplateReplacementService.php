@@ -61,17 +61,12 @@ class DocumentTemplateReplacementService
                     ->lockForUpdate()
                     ->first();
 
-                $values = [
-                    'name' => $name,
-                    'file_path' => $newPath,
-                    'applicable_categories' => $applicableCategories,
-                    'is_siplah' => $isSiplah,
-                    'is_active' => true,
-                ];
-
                 if ($existing) {
                     $oldPath = $existing->file_path;
-                    $existing->fill($values)->save();
+                    $existing->fill([
+                        'name' => $name,
+                        'file_path' => $newPath,
+                    ])->save();
 
                     return [$existing, $oldPath];
                 }
@@ -80,7 +75,11 @@ class DocumentTemplateReplacementService
                     'fiscal_year_id' => $fiscalYearId,
                     'document_type' => $documentType,
                     'format' => $extension,
-                    ...$values,
+                    'name' => $name,
+                    'file_path' => $newPath,
+                    'applicable_categories' => $applicableCategories,
+                    'is_siplah' => $isSiplah,
+                    'is_active' => true,
                 ]);
 
                 return [$template, null];

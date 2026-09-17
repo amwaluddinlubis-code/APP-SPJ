@@ -42,6 +42,7 @@ main[data-page="spj"] #spj-main-tabs .ui-tabs-list {
     min-width: 0;
     overflow-x: auto;
     align-items: center;
+    min-height: 3.1rem;
     gap: .15rem;
     border: 0;
     background: transparent;
@@ -60,7 +61,7 @@ main[data-page="spj"] #spj-main-tabs .ui-tab-active {
 main[data-page="spj"] [data-package-tab] {
     position: relative;
     display: inline-flex;
-    min-height: 2.65rem;
+    min-height: 3.1rem;
     align-items: center;
     gap: .4rem;
     border: 0;
@@ -70,7 +71,7 @@ main[data-page="spj"] [data-package-tab] {
     white-space: nowrap;
     font-size: .95rem;
     font-weight: 800;
-    transition: color .2s ease, background-color .2s ease;
+    transition: color .2s ease, background-color .2s ease, transform .2s ease;
 }
 
 main[data-page="spj"] [data-package-tab]::after {
@@ -90,6 +91,10 @@ main[data-page="spj"] [data-package-tab]::after {
 main[data-page="spj"] [data-package-tab]:hover {
     background: color-mix(in srgb, var(--theme-accent-soft) 18%, transparent);
     color: var(--spj-text);
+}
+
+main[data-page="spj"] [data-package-tab]:active {
+    transform: translateY(1px);
 }
 
 main[data-page="spj"] [data-package-tab][data-active="true"] {

@@ -107,6 +107,18 @@ html[data-theme='arkas_dark_v2'] .app-nav-active {
     color: var(--theme-action-fg) !important;
 }
 
+html[data-theme='arkas_light'] .app-sidebar-brand-mark,
+html[data-theme='arkas_dark'] .app-sidebar-brand-mark,
+html[data-theme='arkas_dark_v2'] .app-sidebar-brand-mark {
+    border: 0;
+    border-radius: 9999px !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #1f2937 !important;
+    box-shadow: none;
+}
+
 html[data-theme='arkas_light'] :is(.ui-btn-primary,.btn-primary,.theme-btn),
 html[data-theme='arkas_dark'] :is(.ui-btn-primary,.btn-primary,.theme-btn),
 html[data-theme='arkas_dark_v2'] :is(.ui-btn-primary,.btn-primary,.theme-btn) {

@@ -155,6 +155,111 @@
     box-shadow: none;
 }
 
+/* Searchable single-select dropdowns share the canonical control geometry and
+   theme tokens while adding a filterable option panel. */
+.ui-searchable-select-trigger {
+    display: flex;
+    width: 100%;
+    min-height: var(--profile-control-height);
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    border: 1px solid var(--ui-component-border-strong);
+    border-radius: var(--profile-control-radius);
+    background: var(--ui-component-surface);
+    color: var(--ui-component-text-strong);
+    padding: .5rem .75rem;
+    font-size: var(--ui-font-body);
+    text-align: left;
+    box-shadow: 0 1px 2px rgb(15 23 42 / .035);
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.ui-searchable-select-trigger:hover,
+.ui-searchable-select-trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--theme-accent) 64%, var(--ui-component-border-strong));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+}
+
+.ui-searchable-select-menu {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + .35rem);
+    right: 0;
+    left: 0;
+    overflow: hidden;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: var(--profile-control-radius);
+    background: var(--ui-surface-base);
+    padding: .4rem;
+    box-shadow: var(--profile-floating-shadow, 0 12px 24px rgb(15 23 42 / .14));
+}
+
+.ui-searchable-select-search-wrap {
+    position: relative;
+    margin-bottom: .35rem;
+}
+
+.ui-searchable-select-search-icon {
+    position: absolute;
+    top: 50%;
+    left: .65rem;
+    color: var(--ui-fg-muted);
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+.ui-searchable-select-search {
+    width: 100%;
+    min-height: 2.25rem;
+    border: 1px solid var(--ui-line);
+    border-radius: calc(var(--profile-control-radius) - .2rem);
+    background: var(--ui-surface-soft);
+    color: var(--ui-fg-strong);
+    padding: .4rem .65rem .4rem 2.1rem;
+    font-size: var(--ui-font-caption);
+    outline: none;
+}
+
+.ui-searchable-select-search:focus {
+    border-color: var(--theme-focus-ring, var(--theme-accent));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+}
+
+.ui-searchable-select-options {
+    max-height: 13rem;
+    overflow-y: auto;
+}
+
+.ui-searchable-select-option {
+    display: flex;
+    width: 100%;
+    min-height: 2.35rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    border-radius: calc(var(--profile-control-radius) - .2rem);
+    color: var(--ui-fg);
+    padding: .45rem .65rem;
+    font-size: var(--ui-font-caption);
+    text-align: left;
+}
+
+.ui-searchable-select-option:hover,
+.ui-searchable-select-option:focus-visible,
+.ui-searchable-select-option[aria-selected='true'] {
+    background: var(--ui-surface-soft);
+    color: var(--theme-content-accent);
+    outline: none;
+}
+
+.ui-searchable-select-empty {
+    padding: .6rem .65rem;
+    color: var(--ui-fg-muted);
+    font-size: var(--ui-font-caption);
+}
+
 /* Page header structural contract */
 .page-header-shell {
     overflow: hidden;
