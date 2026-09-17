@@ -127,39 +127,26 @@ class ArkasReferenceController extends Controller
             return collect();
         }
 
-        $acuanByItem = $raw->filter(function (array $row) use ($year): bool {
+        $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
+        $allowedAccounts = ['5.1.02.', '5.2.02.', '5.2.04.', '5.2.05.'];
+        $usage = $rapbs->filter(fn (array $row): bool => trim((string) ($row['ID_BARANG'] ?? '')) !== '')
+            ->countBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
+
+        return $raw->filter(function (array $row) use ($year, $accountNames, $allowedAccounts): bool {
             $expiredDate = $row['EXPIRED_DATE'] ?? null;
+            $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
                 && ($expiredDate === null || trim((string) $expiredDate) === '')
+                && $accountCode !== ''
+                && isset($accountNames[$accountCode])
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
-        })->keyBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
-        $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
-        $allowedAccounts = ['5.1.02.', '5.2.02.', '5.2.04.', '5.2.05.'];
-        $relations = $rapbs->map(function (array $row) use ($acuanByItem, $accountNames, $allowedAccounts): ?array {
+        })->map(function (array $row) use ($usage, $allowedAccounts, $accountNames): array {
+            $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
             $itemId = trim((string) ($row['ID_BARANG'] ?? ''));
-            $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
-            $acuan = $acuanByItem->get($itemId);
-            $hasAllowedAccount = collect($allowedAccounts)->contains(fn (string $prefix): bool => str_starts_with($accountCode.'.', $prefix));
-
-            if ($itemId === '' || $accountCode === '' || ! $hasAllowedAccount || ! is_array($acuan) || ! isset($accountNames[$accountCode])) {
-                return null;
-            }
 
             return [
-                'item_id' => $itemId,
-                'account_code' => $accountCode,
-                'acuan' => $acuan,
-            ];
-        })->filter()->groupBy(fn (array $row): string => $row['account_code'].'|'.$row['item_id']);
-
-        return $relations->map(function (Collection $relationRows) use ($accountNames): array {
-            $relation = $relationRows->first();
-            $row = $relation['acuan'];
-            $accountCode = $relation['account_code'];
-
-            return [
-                'code' => $relation['item_id'],
+                'code' => $itemId,
                 'name' => trim((string) ($row['NAMA_BARANG'] ?? '')),
                 'unit' => trim((string) ($row['SATUAN'] ?? '')),
                 'account_code' => $accountCode,
@@ -169,9 +156,22 @@ class ArkasReferenceController extends Controller
                 'max_price' => (float) ($row['BATAS_ATAS'] ?? 0),
                 'spending_code' => (string) ($row['KODE_BELANJA'] ?? ''),
                 'block_id' => (string) ($row['BLOK_ID'] ?? ''),
-                'usage_count' => $relationRows->count(),
+                'usage_count' => (int) ($usage[$itemId] ?? 0),
             ];
         })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
+    }
+
+    /** @param array<string, mixed> $row @param list<string> $allowedAccounts */
+    private function acuanAccountCode(array $row, array $allowedAccounts): string
+    {
+        $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
+        if ($accountCode !== '' && collect($allowedAccounts)->contains(fn (string $prefix): bool => str_starts_with($accountCode.'.', $prefix))) {
+            return $accountCode;
+        }
+
+        $itemId = trim((string) ($row['ID_BARANG'] ?? ''), '.');
+
+        return collect($allowedAccounts)->contains(fn (string $prefix): bool => str_starts_with($itemId.'.', $prefix)) ? $itemId : '';
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
