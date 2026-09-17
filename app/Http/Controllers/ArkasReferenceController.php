@@ -92,14 +92,22 @@ class ArkasReferenceController extends Controller
     /** @param Collection<int, array<string, mixed>> $rapbs */
     private function accountRows(Collection $rapbs): Collection
     {
+        $activeCodes = $rapbs->map(fn (array $row): string => trim((string) ($row['KODE_REKENING'] ?? ''), '.'))->filter()->unique()->flip();
         $raw = $this->rawRows('ref_rekening');
         if ($raw?->isNotEmpty()) {
-            return $raw->map(fn (array $row): array => ['code' => (string) ($row['KODE_REKENING'] ?? ''), 'name' => (string) ($row['NAMA_REKENING'] ?? $row['URAIAN_REKENING'] ?? 'Rekening')])
-                ->filter(fn (array $row): bool => $row['code'] !== '')
+            return $raw->map(function (array $row): array {
+                $code = trim((string) ($row['KODE_REKENING'] ?? $row['KODE'] ?? $row['ID_REKENING'] ?? ''), '.');
+
+                return [
+                    'code' => $code,
+                    'name' => trim((string) ($row['NAMA_REKENING'] ?? $row['URAIAN_REKENING'] ?? $row['URAIAN'] ?? $row['NAMA'] ?? $row['DESCRIPTION'] ?? 'Rekening')),
+                ];
+            })
+                ->filter(fn (array $row): bool => $row['code'] !== '' && ($activeCodes->isEmpty() || $activeCodes->has($row['code'])))
                 ->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         }
 
-        return $rapbs->map(fn (array $row): array => ['code' => (string) ($row['KODE_REKENING'] ?? ''), 'name' => (string) ($row['URAIAN'] ?? 'Rekening')])
+        return $rapbs->map(fn (array $row): array => ['code' => trim((string) ($row['KODE_REKENING'] ?? ''), '.'), 'name' => 'Rekening ARKAS'])
             ->filter(fn (array $row): bool => $row['code'] !== '')
             ->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
     }

@@ -3,7 +3,7 @@
         <tr>
             <th class="w-16 text-center">No</th>
             <th>Kode</th>
-            <th>Nama / Uraian</th>
+            <th>Rekening</th>
         </tr>
     </thead>
     <tbody>
