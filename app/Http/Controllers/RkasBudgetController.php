@@ -567,6 +567,19 @@ class RkasBudgetController extends Controller
         $activityFilter = trim((string) $request->query('kegiatan', $request->query('activity')));
         $within = static fn (string $code, string $parent): bool => $code === $parent || str_starts_with($code, $parent.'.');
         $items = $items->filter(fn (object $item): bool => ($programFilter === '' || $within($item->activity_code, $programFilter)) && ($subprogramFilter === '' || $within($item->activity_code, $subprogramFilter)) && ($activityFilter === '' || $item->activity_code === $activityFilter))->values();
+        $items = $items->sort(function (object $left, object $right): int {
+            $activityOrder = strnatcasecmp((string) $left->activity_code, (string) $right->activity_code);
+            if ($activityOrder !== 0) {
+                return $activityOrder;
+            }
+
+            $accountOrder = strnatcasecmp((string) $left->account_code, (string) $right->account_code);
+            if ($accountOrder !== 0) {
+                return $accountOrder;
+            }
+
+            return strnatcasecmp((string) $left->description, (string) $right->description);
+        })->values();
 
         $hierarchyTree = [];
         foreach ($items as $item) {
