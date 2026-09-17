@@ -36,6 +36,13 @@ serta preset mapping importer ARKAS yang berlaku lintas sekolah.
 
 Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, importer staging/profile/run, employee, serta data kerja sekolah. Profile importer adalah konfigurasi runtime sekolah; preset mapping reusable dimiliki database utama agar sekolah baru menerima konfigurasi aplikasi terbaru.
 
+Implementasi fresh SPJ menggunakan namespace `spj_fresh_*` yang terpisah dari tabel
+legacy. `spj_fresh_transactions` dan `spj_fresh_transaction_items` hanya menyimpan
+konteks tenant, identity row raw ARKAS, dan overlay operator; fakta ARKAS dibaca dari
+`arkas_raw_mirror_rows`. Package dan dokumen fresh memiliki lifecycle sendiri.
+Tidak ada dual-write ke tabel legacy dan tidak ada duplikasi ownership untuk field
+source yang sudah tersedia di raw mirror.
+
 Boundary operasi tenant:
 
 ```text

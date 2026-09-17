@@ -335,6 +335,9 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] command sinkronisasi seluruh tabel;
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
+Fondasi schema fresh SPJ juga sudah ditambahkan secara terpisah melalui namespace
+`spj_fresh_*`; integrasi use case dan GUI ke schema tersebut belum dilakukan.
+
 **Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
