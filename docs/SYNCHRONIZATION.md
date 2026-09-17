@@ -97,7 +97,8 @@ pemakaian bila sudah ada input operator.
 
 Untuk menjaga halaman tetap ringan dan fokus membantu pengisian RKAS, tab ini
 tidak memuat baris ketika belum ada kata kunci pencarian. Setelah dicari, setiap
-barang ditampilkan satu baris dengan status rekening yang ringkas.
+barang ditampilkan satu baris dengan status rekening yang ringkas. Nama barang
+yang sama disatukan pada tampilan agar hasil pencarian tidak berulang.
 
 Relasi dibatasi pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
 `5.2.05.*`. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan

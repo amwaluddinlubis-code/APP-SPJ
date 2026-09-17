@@ -29,7 +29,7 @@
                 <nav class="ui-tabs w-full" aria-label="Jenis referensi ARKAS">
                     <div class="ui-tabs-list" role="tablist">
                         @foreach ($tabs as $key => $label)
-                            <a href="{{ route('arkas.references', ['type' => $key, 'q' => $search]) }}" role="tab" aria-selected="{{ $type === $key ? 'true' : 'false' }}" class="ui-tab {{ $type === $key ? 'ui-tab-active' : '' }}">
+                            <a href="{{ route('arkas.references', ['type' => $key]) }}" role="tab" aria-selected="{{ $type === $key ? 'true' : 'false' }}" class="ui-tab {{ $type === $key ? 'ui-tab-active' : '' }}">
                                 <x-ui.icon :name="match ($key) { 'programs' => 'budget', 'subprograms' => 'queue', 'activities' => 'work', default => 'number' }" size="sm" />
                                 <span>{{ $label }}</span>
                             </a>

@@ -7,6 +7,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /** Read-only ARKAS references used by budgeting and report preparation. */
@@ -173,7 +174,7 @@ class ArkasReferenceController extends Controller
                 'block_id' => (string) ($row['BLOK_ID'] ?? ''),
                 'usage_count' => (int) ($usage[$itemId] ?? 0),
             ];
-        })->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
+        })->unique(fn (array $row): string => mb_strtolower((string) preg_replace('/\s+/', ' ', trim($row['name']))))->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
     }
 
     /** @param array<string, mixed> $row @param list<string> $allowedAccounts */
@@ -213,11 +214,15 @@ class ArkasReferenceController extends Controller
             return null;
         }
 
-        return $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirror->id)->get()->map(function (object $row): array {
-            $payload = json_decode((string) $row->payload, true);
+        $cacheKey = 'arkas-raw-rows:'.$mirror->id.':'.(string) $mirror->updated_at;
 
-            return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
-        })->filter(fn (array $row): bool => $row !== [])->values();
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($db, $mirror): Collection {
+            return $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirror->id)->get()->map(function (object $row): array {
+                $payload = json_decode((string) $row->payload, true);
+
+                return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
+            })->filter(fn (array $row): bool => $row !== [])->values();
+        });
     }
 
     /** @param array<string, mixed> $row */
