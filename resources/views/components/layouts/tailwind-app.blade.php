@@ -154,7 +154,7 @@
                 <div>
                     <button type="button" @click="toggleGroup('data')" :aria-expanded="groups.data.toString()"
                         aria-controls="nav-data"
-                        class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}"
+                        class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.references', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}"
                         title="Data & Integrasi"><x-ui.icon name="database" /><span x-show="!collapsed || open"
                             class="nav-label flex-1">Data & Integrasi</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
@@ -164,6 +164,9 @@
                         <a class="app-nav {{ request()->routeIs('synced-data.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('synced-data.index') }}"><x-ui.icon name="database" /><span
                                 class="nav-label">Data Hasil Sinkron</span></a>
+                        <a class="app-nav {{ request()->routeIs('arkas.references') ? 'app-nav-active' : '' }}"
+                            href="{{ route('arkas.references') }}"><x-ui.icon name="queue" /><span
+                                class="nav-label">Referensi ARKAS</span></a>
                         @if (auth()->user()->isAdministrator())
                             <a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('dapodik.index') }}"><x-ui.icon name="sync" /><span

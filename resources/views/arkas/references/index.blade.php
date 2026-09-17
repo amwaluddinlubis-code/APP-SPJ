@@ -1,0 +1,57 @@
+<x-layouts.tailwind-app>
+    @php
+        $tabs = [
+            'programs' => 'Program',
+            'subprograms' => 'Sub Program',
+            'activities' => 'Kegiatan',
+            'accounts' => 'Rekening',
+        ];
+    @endphp
+
+    <div class="space-y-6">
+        <x-page-header title="Referensi ARKAS" subtitle="Referensi yang digunakan Penganggaran dan penyusunan laporan." kicker="Data Baca-saja" icon="database">
+            <x-slot:actions>
+                <span class="ui-btn ui-btn-secondary px-3 py-2 text-base">{{ $contextLabel }}</span>
+            </x-slot:actions>
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+                @foreach ($tabs as $key => $label)
+                    <div class="px-5 py-3.5">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $label }}</p>
+                        <p class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">{{ number_format($counts[$key], 0, ',', '.') }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </x-page-header>
+
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] p-4 sm:p-5">
+                <nav class="flex flex-wrap gap-2" aria-label="Jenis referensi ARKAS">
+                    @foreach ($tabs as $key => $label)
+                        <a href="{{ route('arkas.references', ['type' => $key, 'q' => $search]) }}" class="rounded-lg border px-3 py-2 text-sm font-semibold transition {{ $type === $key ? 'border-[var(--theme-content-accent)] bg-[var(--theme-content-accent)] text-white' : 'border-[var(--ui-line)] text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]' }}">{{ $label }}</a>
+                    @endforeach
+                </nav>
+                <form method="get" class="flex items-center gap-2">
+                    <input type="hidden" name="type" value="{{ $type }}">
+                    <x-ui.input name="q" value="{{ $search }}" placeholder="Cari kode atau nama..." aria-label="Cari referensi" />
+                    <x-ui.button type="submit" variant="secondary">Cari</x-ui.button>
+                </form>
+            </div>
+
+            <x-ui.table min-width="720px" pagination="server">
+                <thead><tr><th class="w-16 text-center">No</th><th>Kode</th><th>Nama / Uraian</th></tr></thead>
+                <tbody>
+                    @forelse ($rows as $index => $row)
+                        <tr>
+                            <td class="text-center text-xs text-[var(--ui-fg-muted)]">{{ $rows->firstItem() + $index }}</td>
+                            <td class="font-mono text-sm font-semibold text-[var(--theme-content-accent)]">{{ $row['code'] }}</td>
+                            <td class="text-[var(--ui-fg)]">{{ $row['name'] }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="3" class="empty-cell"><p class="font-semibold text-[var(--ui-fg-strong)]">Belum ada referensi.</p><p class="mt-1 text-base text-[var(--ui-fg-muted)]">Jalankan sinkronisasi raw ARKAS untuk mengisi referensi.</p></td></tr>
+                    @endforelse
+                </tbody>
+            </x-ui.table>
+            <x-ui.server-pagination :paginator="$rows" noun="referensi" />
+        </section>
+    </div>
+</x-layouts.tailwind-app>

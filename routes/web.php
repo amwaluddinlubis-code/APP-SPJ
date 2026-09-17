@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArkasImporterController;
+use App\Http\Controllers\ArkasReferenceController;
 use App\Http\Controllers\ArkasSourceController;
 use App\Http\Controllers\ArkasSyncController;
 use App\Http\Controllers\AsistenController;
@@ -193,5 +194,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');
         Route::get('/data-sinkron/{type}', [SyncedDataController::class, 'index'])->name('synced-data.show');
+        Route::get('/referensi-arkas', ArkasReferenceController::class)->name('arkas.references');
     });
 });
