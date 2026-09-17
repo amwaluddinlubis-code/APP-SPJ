@@ -173,7 +173,7 @@ class ArkasReferenceController extends Controller
                 'block_id' => (string) ($row['BLOK_ID'] ?? ''),
                 'usage_count' => (int) ($usage[$itemId] ?? 0),
             ];
-        })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
+        })->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
     }
 
     /** @param array<string, mixed> $row @param list<string> $allowedAccounts */

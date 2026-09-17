@@ -102,8 +102,9 @@ barang ditampilkan satu baris dengan status rekening yang ringkas.
 Relasi dibatasi pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
 `5.2.05.*`. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan
 klasifikasi barang tetap dibaca dari master acuan barang; tabel sumber tidak
-diubah. Jumlah pemakaian dihitung dari banyaknya baris `rapbs` untuk barang yang
-sama.
+diubah. UI menampilkan harga maksimal dari master dan jumlah pemakaian dihitung
+dari banyaknya baris `rapbs` untuk barang yang sama. Baris duplikat master
+disatukan berdasarkan `id_barang` hanya pada tampilan.
 
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
