@@ -76,6 +76,12 @@ GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
 `id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan
 kegiatan berasal dari `rapbs.id_ref_kode` ke `ref_kode.id_ref_kode`.
 
+Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
+`anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
+memilih `is_revisi` terbesar untuk tahun dan sumber dana aktif. `last_update`
+terbaru dipakai sebagai tie-breaker bila terdapat lebih dari satu record pada
+revisi terakhir.
+
 ```text
 ArkasImporterController
 → ArkasDatabaseExplorer / Bridge

@@ -409,7 +409,7 @@ class RkasBudgetController extends Controller
             return null;
         }
 
-        $allowedBudgets = [];
+        $budgetRows = [];
         foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $budgetTable->id)->get() as $row) {
             $payload = json_decode((string) $row->payload, true);
             if (! is_array($payload)) {
@@ -418,12 +418,22 @@ class RkasBudgetController extends Controller
             $payload = array_change_key_case($payload, CASE_UPPER);
             if ((string) ($payload['TAHUN_ANGGARAN'] ?? '') === (string) $year->year
                 && (int) ($payload['ID_REF_SUMBER_DANA'] ?? 0) === $fundSourceId
+                && (string) ($payload['IS_APPROVE'] ?? '0') === '1'
+                && (string) ($payload['IS_AKTIF'] ?? '0') === '1'
                 && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
-                $allowedBudgets[(string) ($payload['ID_ANGGARAN'] ?? '')] = true;
+                $budgetRows[] = $payload;
             }
         }
-        if ($allowedBudgets === []) {
+        if ($budgetRows === []) {
             return null;
+        }
+        $latestRevision = max(array_map(fn (array $row): int => (int) ($row['IS_REVISI'] ?? 0), $budgetRows));
+        $latestBudgets = array_values(array_filter($budgetRows, fn (array $row): bool => (int) ($row['IS_REVISI'] ?? 0) === $latestRevision));
+        $latestUpdate = max(array_map(fn (array $row): string => (string) ($row['LAST_UPDATE'] ?? ''), $latestBudgets));
+        $latestBudgets = array_values(array_filter($latestBudgets, fn (array $row): bool => (string) ($row['LAST_UPDATE'] ?? '') === $latestUpdate));
+        $allowedBudgets = [];
+        foreach ($latestBudgets as $budget) {
+            $allowedBudgets[(string) ($budget['ID_ANGGARAN'] ?? '')] = true;
         }
 
         $referenceTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'ref_kode')->where('status', 'ACTIVE')->first();
