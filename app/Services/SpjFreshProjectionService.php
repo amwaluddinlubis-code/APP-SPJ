@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ArkasSource;
 use App\Models\FiscalYear;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
 final class SpjFreshProjectionService
@@ -27,14 +28,21 @@ final class SpjFreshProjectionService
         $itemCount = 0;
         $skipped = 0;
         $yearValue = (string) $year->year;
+        $budgetIds = $this->approvedBudgetIds($db, $source, $yearValue, $fundSourceId);
+
+        if ($budgetIds === []) {
+            return ['transactions' => 0, 'items' => 0, 'skipped' => 0];
+        }
 
         $db->table('arkas_raw_mirror_rows')
             ->where('mirror_table_id', $mirrorTable->id)
             ->orderBy('id')
-            ->chunkById(500, function ($rows) use ($db, $year, $fundSourceId, $source, $yearValue, &$transactionCount, &$itemCount, &$skipped): void {
+            ->chunkById(500, function ($rows) use ($db, $year, $fundSourceId, $source, $yearValue, $budgetIds, &$transactionCount, &$itemCount, &$skipped): void {
                 foreach ($rows as $row) {
                     $payload = json_decode((string) $row->payload, true);
-                    if (! is_array($payload) || ! $this->belongsToFiscalYear($payload, $yearValue)) {
+                    if (! is_array($payload)
+                        || ! $this->belongsToFiscalYear($payload, $yearValue)
+                        || ! isset($budgetIds[(string) ($payload['id_anggaran'] ?? '')])) {
                         $skipped++;
 
                         continue;
@@ -94,11 +102,12 @@ final class SpjFreshProjectionService
             ->where('source_id', $source->id)
             ->where('source_table', 'kas_umum')
             ->where('source_status', '!=', 'SOURCE_MISSING')
-            ->whereNotExists(function ($query) use ($db, $mirrorTable): void {
+            ->whereNotExists(function ($query) use ($db, $mirrorTable, $budgetIds): void {
                 $query->select($db->raw('1'))
                     ->from('arkas_raw_mirror_rows as current_raw')
                     ->whereColumn('current_raw.source_key', 'spj_fresh_transactions.source_key')
-                    ->where('current_raw.mirror_table_id', $mirrorTable->id);
+                    ->where('current_raw.mirror_table_id', $mirrorTable->id)
+                    ->whereIn($db->raw("json_extract(current_raw.payload, '$.id_anggaran')"), array_keys($budgetIds));
             })
             ->update([
                 'source_status' => 'SOURCE_MISSING',
@@ -124,6 +133,39 @@ final class SpjFreshProjectionService
             ]);
 
         return ['transactions' => $transactionCount, 'items' => $itemCount, 'skipped' => $skipped];
+    }
+
+    /** @return array<string, bool> */
+    private function approvedBudgetIds(Connection $db, ArkasSource $source, string $year, int $fundSourceId): array
+    {
+        $mirrorTableId = $db->table('arkas_raw_mirror_tables')
+            ->where('source_id', $source->id)
+            ->where('source_table', 'anggaran')
+            ->where('status', 'ACTIVE')
+            ->value('id');
+        if ($mirrorTableId === null) {
+            return [];
+        }
+
+        $rows = $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirrorTableId)->get()->map(
+            fn (object $row): array => json_decode((string) $row->payload, true) ?: []
+        )->filter(fn (array $row): bool => (string) ($row['tahun_anggaran'] ?? '') === $year
+            && (int) ($row['id_ref_sumber_dana'] ?? 0) === $fundSourceId
+            && (string) ($row['is_approve'] ?? '0') === '1'
+            && (string) ($row['is_aktif'] ?? '0') === '1'
+            && (string) ($row['soft_delete'] ?? '0') !== '1');
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $revision = (int) $rows->max(fn (array $row): int => (int) ($row['is_revisi'] ?? 0));
+        $latest = $rows->filter(fn (array $row): bool => (int) ($row['is_revisi'] ?? 0) === $revision);
+        $lastUpdate = (string) $latest->max(fn (array $row): string => (string) ($row['last_update'] ?? ''));
+
+        return $latest->filter(fn (array $row): bool => (string) ($row['last_update'] ?? '') === $lastUpdate)
+            ->mapWithKeys(fn (array $row): array => [(string) ($row['id_anggaran'] ?? '') => true])
+            ->filter(fn (bool $value, string $key): bool => $key !== '')
+            ->all();
     }
 
     /** @param array<string, mixed> $payload */

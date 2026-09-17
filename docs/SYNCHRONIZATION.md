@@ -307,6 +307,11 @@ baris, overlay operator, Paket SPJ, nomor dokumen, maupun data audit. Jika sourc
 muncul kembali pada snapshot berikutnya, projection mengaktifkan kembali status
 sumber dan mengosongkan `source_missing_since`.
 
+Projection transaksi hanya menerima `kas_umum` yang `id_anggaran`-nya berada
+di snapshot `anggaran` aktif untuk tahun dan sumber dana yang sama. Snapshot
+anggaran dipilih dengan `is_approve = 1`, `is_aktif = 1`, `soft_delete = 0`,
+revisi terbesar, dan `last_update` terbaru.
+
 Kontrak utama:
 
 ```text
