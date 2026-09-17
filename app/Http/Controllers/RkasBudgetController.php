@@ -27,6 +27,9 @@ class RkasBudgetController extends Controller
         $db = DB::connection('school');
         $search = trim((string) $request->query('q'));
         $fundSourceId = (int) session('active_fund_source_id');
+        if ($rawData = $this->rawBudgetData($db, $yearId, $fundSourceId, $request)) {
+            return $rawData;
+        }
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
         $stagedActivityNames = $db->table('arkas_import_rows as rows')
             ->join('arkas_import_profiles as profiles', 'profiles.id', '=', 'rows.profile_id')
@@ -373,6 +376,125 @@ class RkasBudgetController extends Controller
         }
 
         return compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel');
+    }
+
+    /**
+     * Read RKAS directly from the generic raw mirror when the legacy projection
+     * is absent. This keeps ARKAS as the source of truth and never writes to
+     * arkas_rkas_items or other legacy tables.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function rawBudgetData(object $db, int $yearId, int $fundSourceId, Request $request): ?array
+    {
+        if (! $db->getSchemaBuilder()->hasTable('arkas_raw_mirror_tables')) {
+            return null;
+        }
+
+        $year = FiscalYear::query()->find($yearId);
+        if (! $year) {
+            return null;
+        }
+
+        $tables = $db->table('arkas_raw_mirror_tables')
+            ->where('status', 'ACTIVE')
+            ->where(function ($query): void {
+                $query->whereRaw("lower(source_table) like '%rapbs%'")
+                    ->orWhereRaw("lower(source_table) like '%rkas%'");
+            })
+            ->where('row_count', '>', 0)
+            ->get();
+        if ($tables->isEmpty()) {
+            return null;
+        }
+
+        $items = collect();
+        foreach ($tables as $table) {
+            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $table->id)->get() as $row) {
+                $payload = json_decode((string) $row->payload, true);
+                if (! is_array($payload)) {
+                    continue;
+                }
+                $payload = array_change_key_case($payload, CASE_UPPER);
+                if (! $this->rawBelongsToContext($payload, (int) $year->year, $fundSourceId)) {
+                    continue;
+                }
+                $sourceId = (string) ($payload['ID_RAPBS'] ?? $payload['ID_RKAS'] ?? $row->source_key);
+                $item = (object) [
+                    'source_rapbs_id' => $sourceId,
+                    'activity_code' => trim((string) ($payload['KODE_KEGIATAN'] ?? $payload['ID_KODE'] ?? ''), '.'),
+                    'activity_name' => (string) ($payload['NAMA_KEGIATAN'] ?? $payload['URAIAN_KEGIATAN'] ?? ''),
+                    'account_code' => (string) ($payload['KODE_REKENING'] ?? ''),
+                    'description' => (string) ($payload['URAIAN'] ?? $payload['DESKRIPSI'] ?? ''),
+                    'volume' => (float) ($payload['VOLUME_TOTAL'] ?? $payload['VOLUME'] ?? 0),
+                    'unit' => (string) ($payload['SATUAN'] ?? '—'),
+                    'unit_price' => (float) ($payload['HARGA_SATUAN'] ?? $payload['HARGA'] ?? 0),
+                    'display_amount' => (float) ($payload['JUMLAH'] ?? $payload['NILAI'] ?? $payload['TOTAL'] ?? 0),
+                    'realization' => 0.0,
+                    'bku_count' => 0,
+                ];
+                $items->push($item);
+            }
+        }
+        if ($items->isEmpty()) {
+            return null;
+        }
+
+        $search = trim((string) $request->query('q'));
+        if ($search !== '') {
+            $items = $items->filter(function (object $item) use ($search): bool {
+                return str_contains(strtolower(implode(' ', [(string) $item->activity_code, (string) $item->activity_name, (string) $item->account_code, (string) $item->description])), strtolower($search));
+            })->values();
+        }
+
+        $programFilter = trim((string) $request->query('program'));
+        $subprogramFilter = trim((string) $request->query('sub', $request->query('subprogram')));
+        $activityFilter = trim((string) $request->query('kegiatan', $request->query('activity')));
+        $within = static fn (string $code, string $parent): bool => $code === $parent || str_starts_with($code, $parent.'.');
+        $items = $items->filter(fn (object $item): bool => ($programFilter === '' || $within($item->activity_code, $programFilter)) && ($subprogramFilter === '' || $within($item->activity_code, $subprogramFilter)) && ($activityFilter === '' || $item->activity_code === $activityFilter))->values();
+
+        $hierarchyTree = [];
+        foreach ($items as $item) {
+            $parts = $item->activity_code !== '' ? explode('.', $item->activity_code) : [];
+            $program = $parts[0] ?? 'tanpa-program';
+            $subprogram = count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : $program;
+            $activity = $item->activity_code !== '' ? $item->activity_code : 'tanpa-kegiatan';
+            $hierarchyTree[$program] ??= ['code' => $program, 'name' => 'Program '.$program, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'subs' => []];
+            $hierarchyTree[$program]['subs'][$subprogram] ??= ['code' => $subprogram, 'name' => 'Subprogram '.$subprogram, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'activities' => []];
+            $hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity] ??= ['code' => $activity, 'name' => $item->activity_name ?: 'Kegiatan belum diisi', 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'items' => []];
+            $item->variance = $item->display_amount - $item->realization;
+            foreach ([&$hierarchyTree[$program], &$hierarchyTree[$program]['subs'][$subprogram], &$hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity]] as &$node) {
+                $node['amount'] += $item->display_amount;
+                $node['realization'] += $item->realization;
+                $node['remaining'] += $item->variance;
+            }
+            $hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity]['items'][] = $item;
+        }
+        $hierarchyTree = array_values(array_map(function (array $program): array {
+            $program['subs'] = array_values(array_map(function (array $sub): array {
+                $sub['activities'] = array_values($sub['activities']);
+
+                return $sub;
+            }, $program['subs']));
+
+            return $program;
+        }, $hierarchyTree));
+        $budget = (float) $items->sum('display_amount');
+        $realization = (float) $items->sum('realization');
+        $treeTotals = ['amount' => $budget, 'realization' => $realization, 'remaining' => $budget - $realization, 'items' => $items->count()];
+        $fiscalYearNumber = (int) $year->year;
+        $fundName = (string) ($db->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: $year->fund_source ?: 'Sumber Dana');
+
+        return ['hierarchyTree' => $hierarchyTree, 'treeTotals' => $treeTotals, 'filterContext' => 'pada Tahun anggaran '.$fiscalYearNumber, 'search' => $search, 'budget' => $budget, 'spent' => $realization, 'remaining' => $budget - $realization, 'overBudget' => max(0, $realization - $budget), 'underBudget' => max(0, $budget - $realization), 'activityCount' => $items->pluck('activity_code')->filter()->unique()->count(), 'scope' => 'year', 'scopeValue' => 0, 'periodLabel' => 'Tahun anggaran '.$fiscalYearNumber, 'programFilter' => $programFilter, 'subprogramFilter' => $subprogramFilter, 'activityFilter' => $activityFilter, 'contextLabel' => $fundName.' - '.$fiscalYearNumber];
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function rawBelongsToContext(array $payload, int $year, int $fundSourceId): bool
+    {
+        $date = (string) ($payload['TANGGAL'] ?? $payload['TAHUN'] ?? $payload['YEAR'] ?? '');
+        $fund = (string) ($payload['ID_REF_SUMBER_DANA'] ?? $payload['FUND_SOURCE_ID'] ?? $payload['ID_SUMBER_DANA'] ?? '');
+
+        return ($date === '' || str_contains($date, (string) $year)) && ($fund === '' || (int) $fund === $fundSourceId);
     }
 
     /**

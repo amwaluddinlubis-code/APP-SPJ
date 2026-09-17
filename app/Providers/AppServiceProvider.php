@@ -67,12 +67,6 @@ class AppServiceProvider extends ServiceProvider
                         ->with('fundSource')
                         ->whereNotNull('fund_source_id')
                         ->where('is_active', true)
-                        ->whereExists(function ($query): void {
-                            $query->selectRaw('1')
-                                ->from('arkas_rkas_items')
-                                ->whereColumn('arkas_rkas_items.fiscal_year_id', 'fiscal_years.id')
-                                ->whereColumn('arkas_rkas_items.fund_source_id', 'fiscal_years.fund_source_id');
-                        })
                         ->whereNotExists(function ($query): void {
                             $query->selectRaw('1')
                                 ->from('fiscal_years as duplicate_years')

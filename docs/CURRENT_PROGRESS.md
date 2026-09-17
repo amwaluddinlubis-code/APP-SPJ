@@ -336,6 +336,8 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] tombol GUI administrator yang mengantrikan mirror dengan konteks sekolah–tahun–sumber dana;
 - [x] projection awal `kas_umum` ke indeks transaksi/item fresh berbasis link raw mirror;
 - [x] GUI transaksi lama menggunakan indeks fresh dan pembacaan payload raw;
+- [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
+- [x] selector konteks topbar menampilkan pasangan sumber dana dan tahun anggaran;
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
 Fondasi schema fresh SPJ juga sudah ditambahkan secara terpisah melalui namespace

@@ -104,6 +104,14 @@ Mode Lanjutan hanya digunakan bila preset tidak cocok atau tabel custom memerluk
 
 Setelah raw mirror selesai, operator atau administrator membuka menu transaksi lama untuk melihat indeks transaksi pada konteks aktif. Tampilan dan filter lama tetap dipakai, sedangkan tanggal, nomor bukti, uraian, dan rekening dibaca dari payload raw ARKAS melalui tabel fresh aplikasi. Halaman ini tidak membuat Paket SPJ secara otomatis dan tidak mengubah tabel ARKAS lama.
 
+### Konteks topbar dan penganggaran
+
+Topbar menampilkan pilihan gabungan **Sumber Dana - Tahun Anggaran**, misalnya
+`BOSP Reguler - 2026`. Pilihan ini mempertahankan konteks sekolah, tahun, dan
+sumber dana saat berpindah halaman. GUI Penganggaran RKAS membaca data anggaran
+dari raw mirror ARKAS secara read-only ketika proyeksi normalisasi lama belum
+tersedia.
+
 ---
 
 ## 4. Jalur audit real-data sebelum mutation

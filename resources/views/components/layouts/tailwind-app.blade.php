@@ -279,7 +279,7 @@
                                     class="app-topbar-select app-fiscal-year-select px-3 py-2 text-xs font-bold">
                                     @foreach ($headerYears as $year)
                                         <option value="{{ $year->id }}" @selected($activeFiscalYearId === $year->id)>
-                                            {{ $year->year }} · {{ $year->fundSource?->name ?? $year->fund_source }}
+                                            {{ $year->fundSource?->name ?? $year->fund_source }} - {{ $year->year }}
                                         </option>
                                     @endforeach
                                 </select></form>
