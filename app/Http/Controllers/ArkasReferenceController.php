@@ -155,7 +155,8 @@ class ArkasReferenceController extends Controller
             $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
             $itemId = trim((string) ($row['ID_BARANG'] ?? ''));
             $accountPrefix = $this->accountPrefix($accountCode, $allowedAccounts);
-            $accountName = $accountNames[$accountCode] ?? $accountGroups->get($accountPrefix, collect())->implode(' / ');
+            $accountCandidates = $accountGroups->get($accountPrefix, collect())->values()->all();
+            $accountName = $accountNames[$accountCode] ?? count($accountCandidates).' kandidat rekening pada kelompok ini';
 
             return [
                 'code' => $itemId,
@@ -163,6 +164,7 @@ class ArkasReferenceController extends Controller
                 'unit' => trim((string) ($row['SATUAN'] ?? '')),
                 'account_code' => isset($accountNames[$accountCode]) ? $accountCode : $accountPrefix.'*',
                 'account_name' => (string) $accountName,
+                'account_candidates' => $accountCandidates,
                 'price' => (float) ($row['HARGA_BARANG'] ?? 0),
                 'min_price' => (float) ($row['BATAS_BAWAH'] ?? 0),
                 'max_price' => (float) ($row['BATAS_ATAS'] ?? 0),

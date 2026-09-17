@@ -21,7 +21,19 @@
                 <td class="max-w-sm text-[var(--ui-fg)]">{{ $row['name'] ?: '—' }}</td>
                 <td>{{ $row['unit'] ?: '—' }}</td>
                 <td class="font-mono text-xs text-[var(--theme-content-accent)]">{{ $row['account_code'] ?: '—' }}</td>
-                <td>{{ $row['account_name'] ?: '—' }}</td>
+                <td class="min-w-64">
+                    <div>{{ $row['account_name'] ?: '—' }}</div>
+                    @if (count($row['account_candidates'] ?? []) > 0 && str_ends_with($row['account_code'], '*'))
+                        <details class="mt-1 text-xs">
+                            <summary class="cursor-pointer text-[var(--theme-content-accent)]">Lihat kandidat rekening</summary>
+                            <div class="mt-1 max-h-36 overflow-y-auto rounded border border-[var(--ui-line)] bg-[var(--ui-surface-muted)] p-2 text-[var(--ui-fg-muted)]">
+                                @foreach ($row['account_candidates'] as $candidate)
+                                    <div>{{ $candidate }}</div>
+                                @endforeach
+                            </div>
+                        </details>
+                    @endif
+                </td>
                 <td class="whitespace-nowrap text-right">Rp {{ number_format($row['price'], 0, ',', '.') }}</td>
                 <td class="whitespace-nowrap text-right">Rp {{ number_format($row['min_price'], 0, ',', '.') }} – Rp {{ number_format($row['max_price'], 0, ',', '.') }}</td>
                 <td>{{ $row['spending_code'] ?: '—' }}</td>
