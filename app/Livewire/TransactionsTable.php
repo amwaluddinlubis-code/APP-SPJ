@@ -217,6 +217,16 @@ class TransactionsTable extends Component
     private function filteredTaxTotal(): float
     {
         $db = DB::connection('school');
+        $parentIds = $this->rawSpendingQuery()
+            ->pluck(DB::raw("json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_umum')"))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($parentIds === []) {
+            return 0.0;
+        }
+
         $query = $db->table('arkas_raw_mirror_rows as tax_raw')
             ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
             ->where('tax_table.source_table', 'kas_umum')
@@ -224,22 +234,9 @@ class TransactionsTable extends Component
             ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
             ->whereRaw("NULLIF(TRIM(CAST(json_extract(tax_raw.payload, '$.volume') AS TEXT)), '') IS NULL")
             ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
-            ->whereRaw("lower(trim(COALESCE(json_extract(tax_raw.payload, '$.uraian'), ''))) NOT LIKE 'setor %'")
-            ->whereExists(function (QueryBuilder $parent) use ($db): void {
-                $parent->select($db->raw('1'))
-                    ->from('arkas_raw_mirror_rows as parent_raw')
-                    ->join('arkas_raw_mirror_tables as parent_table', 'parent_table.id', '=', 'parent_raw.mirror_table_id')
-                    ->where('parent_table.source_table', 'kas_umum')
-                    ->where('parent_table.status', 'ACTIVE')
-                    ->whereRaw("COALESCE(json_extract(parent_raw.payload, '$.soft_delete'), '0') != '1'")
-                    ->whereRaw("substr(json_extract(parent_raw.payload, '$.tanggal_transaksi'), 1, 4) = ?", [(string) $this->activeYear()->year])
-                    ->whereRaw("CAST(json_extract(parent_raw.payload, '$.id_kas_umum') AS TEXT) = CAST(json_extract(tax_raw.payload, '$.parent_id_kas_umum') AS TEXT)")
-                    ->whereRaw("NULLIF(TRIM(CAST(json_extract(parent_raw.payload, '$.volume') AS TEXT)), '') IS NOT NULL");
+            ->whereIn(DB::raw("json_extract(tax_raw.payload, '$.parent_id_kas_umum')"), $parentIds);
 
-                $this->applyPeriodToRawQuery($parent, 'parent_raw.payload');
-            });
-
-        return (float) $query->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
+        return (float) $query->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)")) / 2;
     }
 
     private function rawSpendingQuery(): QueryBuilder
