@@ -340,6 +340,7 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
 - [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan kandidat rekening pada baris penuh berbentuk grid;
 - [x] selector konteks topbar menampilkan pasangan sumber dana dan tahun anggaran;
+- [x] error 500 memiliki halaman fallback dark yang mandiri dan pencarian referensi aman terhadap field array;
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
 Fondasi schema fresh SPJ juga sudah ditambahkan secara terpisah melalui namespace

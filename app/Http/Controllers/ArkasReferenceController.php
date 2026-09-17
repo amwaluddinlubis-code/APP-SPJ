@@ -225,7 +225,7 @@ class ArkasReferenceController extends Controller
     /** @param array<string, mixed> $row */
     private function matchesSearch(array $row, string $search): bool
     {
-        $text = mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row)));
+        $text = mb_strtolower(implode(' ', collect($row)->flatten()->map(static fn (mixed $value): string => (string) $value)->all()));
         $term = mb_strtolower(trim($search));
 
         return $term !== '' && preg_match('/(?<![\pL\pN])'.preg_quote($term, '/').'(?![\pL\pN])/u', $text) === 1;
