@@ -8,7 +8,9 @@ use App\Services\SpjWorkflowFilterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -66,9 +68,15 @@ class TransactionsTable extends Component
 
     public function getFilteredStatsProperty(): object
     {
-        return (clone $this->filteredQuery())
-            ->selectRaw("COUNT(*) as count, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.jumlah'), json_extract(arkas_raw_mirror_rows.payload, '$.nilai'), json_extract(arkas_raw_mirror_rows.payload, '$.nominal'), json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL)), 0) as gross, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.total_pajak'), json_extract(arkas_raw_mirror_rows.payload, '$.pajak'), 0) AS REAL)), 0) as tax, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.jumlah'), json_extract(arkas_raw_mirror_rows.payload, '$.nilai'), json_extract(arkas_raw_mirror_rows.payload, '$.nominal'), json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL) - CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.total_pajak'), json_extract(arkas_raw_mirror_rows.payload, '$.pajak'), 0) AS REAL)), 0) as net")
+        $gross = $this->rawSpendingQuery()
+            ->selectRaw("COUNT(*) as count, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL)), 0) as gross")
             ->first();
+        $tax = $this->filteredTaxTotal();
+
+        $gross->tax = $tax;
+        $gross->net = (float) $gross->gross - $tax;
+
+        return $gross;
     }
 
     public function getStatusesProperty(): Collection
@@ -157,13 +165,16 @@ class TransactionsTable extends Component
             ->select('spj_fresh_transactions.*')
             ->join('arkas_raw_mirror_rows', 'arkas_raw_mirror_rows.id', '=', 'spj_fresh_transactions.raw_mirror_row_id')
             ->where('spj_fresh_transactions.fiscal_year_id', session('active_fiscal_year_id'))
-            ->where('spj_fresh_transactions.fund_source_id', session('active_fund_source_id'));
+            ->where('spj_fresh_transactions.fund_source_id', session('active_fund_source_id'))
+            ->where('spj_fresh_transactions.source_status', 'ACTIVE');
     }
 
     private function filteredQuery(): Builder
     {
         $activeYear = $this->activeYear();
         $query = clone $this->baseQuery();
+
+        $this->applySpendingRowConstraint($query);
 
         if ($this->month) {
             $query->whereRaw("CAST(strftime('%m', json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi')) AS INTEGER) = ?", [$this->month]);
@@ -201,6 +212,82 @@ class TransactionsTable extends Component
         }
 
         return $query;
+    }
+
+    private function filteredTaxTotal(): float
+    {
+        $db = DB::connection('school');
+        $query = $db->table('arkas_raw_mirror_rows as tax_raw')
+            ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
+            ->where('tax_table.source_table', 'kas_umum')
+            ->where('tax_table.status', 'ACTIVE')
+            ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
+            ->whereRaw("NULLIF(TRIM(CAST(json_extract(tax_raw.payload, '$.volume') AS TEXT)), '') IS NULL")
+            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), 0) = 1 OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), 0) = 1)")
+            ->whereRaw("lower(trim(COALESCE(json_extract(tax_raw.payload, '$.uraian'), ''))) NOT LIKE 'setor %'")
+            ->whereExists(function (QueryBuilder $parent) use ($db): void {
+                $parent->select($db->raw('1'))
+                    ->from('arkas_raw_mirror_rows as parent_raw')
+                    ->join('arkas_raw_mirror_tables as parent_table', 'parent_table.id', '=', 'parent_raw.mirror_table_id')
+                    ->where('parent_table.source_table', 'kas_umum')
+                    ->where('parent_table.status', 'ACTIVE')
+                    ->whereRaw("COALESCE(json_extract(parent_raw.payload, '$.soft_delete'), '0') != '1'")
+                    ->whereRaw("substr(json_extract(parent_raw.payload, '$.tanggal_transaksi'), 1, 4) = ?", [(string) $this->activeYear()->year])
+                    ->whereRaw("CAST(json_extract(parent_raw.payload, '$.id_kas_umum') AS TEXT) = CAST(json_extract(tax_raw.payload, '$.parent_id_kas_umum') AS TEXT)")
+                    ->whereRaw("NULLIF(TRIM(CAST(json_extract(parent_raw.payload, '$.volume') AS TEXT)), '') IS NOT NULL");
+
+                $this->applyPeriodToRawQuery($parent, 'parent_raw.payload');
+            });
+
+        return (float) $query->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
+    }
+
+    private function rawSpendingQuery(): QueryBuilder
+    {
+        $query = DB::connection('school')->table('arkas_raw_mirror_rows')
+            ->join('arkas_raw_mirror_tables', 'arkas_raw_mirror_tables.id', '=', 'arkas_raw_mirror_rows.mirror_table_id')
+            ->where('arkas_raw_mirror_tables.source_table', 'kas_umum')
+            ->where('arkas_raw_mirror_tables.status', 'ACTIVE')
+            ->whereRaw("COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.soft_delete'), '0') != '1'")
+            ->whereRaw("substr(json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi'), 1, 4) = ?", [(string) $this->activeYear()->year]);
+        $this->applySpendingRowConstraint($query);
+        $this->applyPeriodToRawQuery($query, 'arkas_raw_mirror_rows.payload');
+
+        if (trim($this->q) !== '') {
+            $search = trim($this->q);
+            $query->where(function (QueryBuilder $query) use ($search): void {
+                $query->whereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.uraian') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.kode_rekening') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.penerima') like ?", ["%{$search}%"]);
+            });
+        }
+
+        return $query;
+    }
+
+    private function applySpendingRowConstraint(Builder|QueryBuilder $query): void
+    {
+        $query->whereRaw("NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.volume') AS TEXT)), '') IS NOT NULL");
+    }
+
+    private function applyPeriodToRawQuery(QueryBuilder $query, string $payloadColumn): void
+    {
+        $activeYear = $this->activeYear();
+
+        if ($this->month) {
+            $query->whereRaw("CAST(strftime('%m', json_extract($payloadColumn, '$.tanggal_transaksi')) AS INTEGER) = ?", [$this->month]);
+        } elseif ($this->quarter) {
+            $query->whereRaw("date(json_extract($payloadColumn, '$.tanggal_transaksi')) between ? and ?", [
+                now()->setYear($activeYear->year)->setMonth(($this->quarter - 1) * 3 + 1)->startOfMonth()->toDateString(),
+                now()->setYear($activeYear->year)->setMonth($this->quarter * 3)->endOfMonth()->toDateString(),
+            ]);
+        } elseif ($this->semester) {
+            $query->whereRaw("date(json_extract($payloadColumn, '$.tanggal_transaksi')) between ? and ?", [
+                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 1 : 7)->startOfMonth()->toDateString(),
+                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 6 : 12)->endOfMonth()->toDateString(),
+            ]);
+        }
     }
 
     private function activeYear(): FiscalYear

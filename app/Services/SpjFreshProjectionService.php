@@ -28,21 +28,13 @@ final class SpjFreshProjectionService
         $itemCount = 0;
         $skipped = 0;
         $yearValue = (string) $year->year;
-        $budgetIds = $this->approvedBudgetIds($db, $source, $yearValue, $fundSourceId);
-
-        if ($budgetIds === []) {
-            return ['transactions' => 0, 'items' => 0, 'skipped' => 0];
-        }
-
         $db->table('arkas_raw_mirror_rows')
             ->where('mirror_table_id', $mirrorTable->id)
             ->orderBy('id')
-            ->chunkById(500, function ($rows) use ($db, $year, $fundSourceId, $source, $yearValue, $budgetIds, &$transactionCount, &$itemCount, &$skipped): void {
+            ->chunkById(500, function ($rows) use ($db, $year, $fundSourceId, $source, $yearValue, &$transactionCount, &$itemCount, &$skipped): void {
                 foreach ($rows as $row) {
                     $payload = json_decode((string) $row->payload, true);
-                    if (! is_array($payload)
-                        || ! $this->belongsToFiscalYear($payload, $yearValue)
-                        || ! isset($budgetIds[(string) ($payload['id_anggaran'] ?? '')])) {
+                    if (! is_array($payload) || ! $this->belongsToFiscalYear($payload, $yearValue)) {
                         $skipped++;
 
                         continue;
@@ -102,30 +94,13 @@ final class SpjFreshProjectionService
             ->where('source_id', $source->id)
             ->where('source_table', 'kas_umum')
             ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
-            ->whereNotExists(function ($query) use ($db, $mirrorTable, $budgetIds): void {
+            ->whereNotExists(function ($query) use ($db, $mirrorTable, $yearValue): void {
                 $query->select($db->raw('1'))
                     ->from('arkas_raw_mirror_rows as current_raw')
                     ->whereColumn('current_raw.source_key', 'spj_fresh_transactions.source_key')
                     ->where('current_raw.mirror_table_id', $mirrorTable->id)
-                    ->whereIn($db->raw("json_extract(current_raw.payload, '$.id_anggaran')"), array_keys($budgetIds));
+                    ->whereRaw("substr(json_extract(current_raw.payload, '$.tanggal_transaksi'), 1, 4) = ?", [$yearValue]);
             })
-            ->update([
-                'source_status' => 'SOURCE_MISSING',
-                'source_missing_since' => $db->raw('COALESCE(source_missing_since, CURRENT_TIMESTAMP)'),
-                'updated_at' => now(),
-            ]);
-
-        $db->table('spj_fresh_transaction_items')
-            ->whereIn('spj_fresh_transaction_id', function ($query) use ($year, $fundSourceId, $source): void {
-                $query->select('id')
-                    ->from('spj_fresh_transactions')
-                    ->where('fiscal_year_id', $year->id)
-                    ->where('fund_source_id', $fundSourceId)
-                    ->where('source_id', $source->id)
-                    ->where('source_table', 'kas_umum')
-                    ->where('source_status', 'SOURCE_MISSING');
-            })
-            ->where('source_status', '!=', 'SOURCE_MISSING')
             ->update([
                 'source_status' => 'SOURCE_MISSING',
                 'source_missing_since' => $db->raw('COALESCE(source_missing_since, CURRENT_TIMESTAMP)'),
