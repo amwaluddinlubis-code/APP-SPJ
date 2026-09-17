@@ -42,7 +42,7 @@ class ArkasReferenceController extends Controller
             $type = 'programs';
         }
         $search = trim((string) $request->query('q', ''));
-        $rows = $datasets[$type]->when($search !== '', fn (Collection $items): Collection => $items->filter(fn (array $row): bool => str_contains(mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row))), mb_strtolower($search))))->values();
+        $rows = $datasets[$type]->when($search !== '', fn (Collection $items): Collection => $items->filter(fn (array $row): bool => $this->matchesSearch($row, $search)))->values();
         $perPage = in_array((int) $request->query('perPage', 25), [25, 50, 100], true) ? (int) $request->query('perPage', 25) : 25;
         $page = max(1, (int) $request->query('page', 1));
         $paginator = new LengthAwarePaginator($rows->forPage($page, $perPage)->values(), $rows->count(), $perPage, $page, ['path' => $request->url(), 'query' => $request->query()]);
@@ -179,6 +179,15 @@ class ArkasReferenceController extends Controller
 
             return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
         })->filter(fn (array $row): bool => $row !== [])->values();
+    }
+
+    /** @param array<string, mixed> $row */
+    private function matchesSearch(array $row, string $search): bool
+    {
+        $text = mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row)));
+        $term = mb_strtolower(trim($search));
+
+        return $term !== '' && preg_match('/(?<![\pL\pN])'.preg_quote($term, '/').'(?![\pL\pN])/u', $text) === 1;
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
