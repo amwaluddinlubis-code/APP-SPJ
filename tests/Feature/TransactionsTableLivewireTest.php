@@ -7,7 +7,7 @@ use App\Http\Middleware\EnsureActiveSchool;
 use App\Livewire\TransactionsTable;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
-use App\Models\Transaction;
+use App\Models\SpjFreshTransaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -39,23 +39,29 @@ class TransactionsTableLivewireTest extends TestCase
     {
         $this->prepareSchoolConnection();
 
-        $fundSource = FundSource::on('school')->create(['code' => 'BOS', 'name' => 'BOS Reguler']);
+        $fundSource = FundSource::on('school')->create(['id' => 1, 'code' => 'BOS', 'name' => 'BOS Reguler']);
         $year = FiscalYear::on('school')->create([
             'year' => 2026,
             'fund_source' => 'BOS Reguler',
             'fund_source_id' => $fundSource->id,
             'is_active' => true,
         ]);
-        Transaction::query()->create([
+        $mirrorTableId = DB::connection('school')->table('arkas_raw_mirror_tables')->insertGetId([
+            'source_id' => 1, 'source_table' => 'kas_umum', 'schema' => '{}', 'schema_hash' => str_repeat('a', 64),
+            'row_count' => 1, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::connection('school')->table('arkas_raw_mirror_rows')->insert([
+            'mirror_table_id' => $mirrorTableId, 'source_key' => 'BKU-001', 'ordinal' => 0,
+            'payload' => json_encode(['no_bukti' => 'BKU-001', 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Uraian dari ARKAS', 'jumlah' => 100000]),
+            'payload_hash' => str_repeat('b', 64), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        SpjFreshTransaction::query()->create([
             'fiscal_year_id' => $year->id,
             'fund_source_id' => $fundSource->id,
-            'no_bukti' => 'BKU-001',
-            'transaction_date' => '2026-01-10',
-            'description' => 'Uraian dari ARKAS',
-            'gross_amount' => 100000,
-            'tax_total' => 0,
-            'net_amount' => 100000,
-            'is_siplah' => false,
+            'source_id' => 1,
+            'source_table' => 'kas_umum',
+            'source_key' => 'BKU-001',
+            'raw_mirror_row_id' => 1,
             'status' => 'DITETAPKAN',
         ]);
 
@@ -80,23 +86,30 @@ class TransactionsTableLivewireTest extends TestCase
     {
         $this->prepareSchoolConnection();
 
-        $fundSource = FundSource::on('school')->create(['code' => 'BOS', 'name' => 'BOS Reguler']);
+        $fundSource = FundSource::on('school')->create(['id' => 1, 'code' => 'BOS', 'name' => 'BOS Reguler']);
         $year = FiscalYear::on('school')->create([
             'year' => 2026,
             'fund_source' => 'BOS Reguler',
             'fund_source_id' => $fundSource->id,
             'is_active' => true,
         ]);
+        $mirrorTableId = DB::connection('school')->table('arkas_raw_mirror_tables')->insertGetId([
+            'source_id' => 1, 'source_table' => 'kas_umum', 'schema' => '{}', 'schema_hash' => str_repeat('a', 64),
+            'row_count' => 31, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now(),
+        ]);
         foreach (range(1, 31) as $number) {
-            Transaction::query()->create([
+            $rawRowId = DB::connection('school')->table('arkas_raw_mirror_rows')->insertGetId([
+                'mirror_table_id' => $mirrorTableId, 'source_key' => sprintf('BKU-%03d', $number), 'ordinal' => $number,
+                'payload' => json_encode(['no_bukti' => sprintf('BKU-%03d', $number), 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Transaksi '.$number, 'jumlah' => 100000]),
+                'payload_hash' => str_repeat((string) (($number % 8) + 1), 64), 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            SpjFreshTransaction::query()->create([
                 'fiscal_year_id' => $year->id,
                 'fund_source_id' => $fundSource->id,
-                'no_bukti' => sprintf('BKU-%03d', $number),
-                'transaction_date' => '2026-01-10',
-                'description' => 'Transaksi '.$number,
-                'gross_amount' => 100000,
-                'tax_total' => 0,
-                'net_amount' => 100000,
+                'source_id' => 1,
+                'source_table' => 'kas_umum',
+                'source_key' => sprintf('BKU-%03d', $number),
+                'raw_mirror_row_id' => $rawRowId,
                 'status' => 'DITETAPKAN',
             ]);
         }
@@ -191,6 +204,62 @@ class TransactionsTableLivewireTest extends TestCase
             $table->foreignId('transaction_item_id');
             $table->string('order_number')->nullable();
             $table->date('order_date')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::connection('school')->create('arkas_raw_mirror_tables', function ($table): void {
+            $table->id();
+            $table->unsignedBigInteger('source_id');
+            $table->string('source_table');
+            $table->json('schema');
+            $table->string('schema_hash');
+            $table->unsignedBigInteger('row_count')->default(0);
+            $table->string('status')->default('ACTIVE');
+            $table->timestamps();
+        });
+        Schema::connection('school')->create('arkas_raw_mirror_rows', function ($table): void {
+            $table->id();
+            $table->unsignedBigInteger('mirror_table_id');
+            $table->string('source_key');
+            $table->unsignedInteger('ordinal')->default(0);
+            $table->json('payload');
+            $table->string('payload_hash');
+            $table->timestamps();
+        });
+        Schema::connection('school')->create('spj_fresh_transactions', function ($table): void {
+            $table->id();
+            $table->foreignId('fiscal_year_id');
+            $table->unsignedBigInteger('fund_source_id');
+            $table->unsignedBigInteger('source_id');
+            $table->string('source_table');
+            $table->string('source_key');
+            $table->unsignedBigInteger('raw_mirror_row_id')->nullable();
+            $table->string('spj_category')->nullable();
+            $table->text('payment_description')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('payment_reference')->nullable();
+            $table->string('receipt_recipient_name')->nullable();
+            $table->string('source_status')->default('ACTIVE');
+            $table->boolean('requires_reconciliation')->default(false);
+            $table->timestamp('source_missing_since')->nullable();
+            $table->timestamps();
+        });
+        Schema::connection('school')->create('spj_fresh_transaction_items', function ($table): void {
+            $table->id();
+            $table->foreignId('spj_fresh_transaction_id');
+            $table->string('source_table');
+            $table->string('source_key');
+            $table->unsignedBigInteger('raw_mirror_row_id')->nullable();
+            $table->text('item_description')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->timestamps();
+        });
+        Schema::connection('school')->create('spj_fresh_packages', function ($table): void {
+            $table->id();
+            $table->foreignId('spj_fresh_transaction_id');
+            $table->string('status')->default('DRAFT');
+            $table->string('document_number')->nullable();
+            $table->timestamp('finalized_at')->nullable();
             $table->timestamps();
         });
     }

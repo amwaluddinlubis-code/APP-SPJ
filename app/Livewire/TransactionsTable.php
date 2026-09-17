@@ -3,13 +3,12 @@
 namespace App\Livewire;
 
 use App\Models\FiscalYear;
-use App\Models\Transaction;
+use App\Models\SpjFreshTransaction;
 use App\Services\SpjWorkflowFilterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -68,28 +67,28 @@ class TransactionsTable extends Component
     public function getFilteredStatsProperty(): object
     {
         return (clone $this->filteredQuery())
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(gross_amount), 0) as gross, COALESCE(SUM(tax_total), 0) as tax, COALESCE(SUM(net_amount), 0) as net')
+            ->selectRaw("COUNT(*) as count, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.jumlah'), json_extract(arkas_raw_mirror_rows.payload, '$.nilai'), json_extract(arkas_raw_mirror_rows.payload, '$.nominal'), json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL)), 0) as gross, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.total_pajak'), json_extract(arkas_raw_mirror_rows.payload, '$.pajak'), 0) AS REAL)), 0) as tax, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.jumlah'), json_extract(arkas_raw_mirror_rows.payload, '$.nilai'), json_extract(arkas_raw_mirror_rows.payload, '$.nominal'), json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL) - CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.total_pajak'), json_extract(arkas_raw_mirror_rows.payload, '$.pajak'), 0) AS REAL)), 0) as net")
             ->first();
     }
 
     public function getStatusesProperty(): Collection
     {
-        return $this->workflowFilters()->labels();
+        return app(SpjWorkflowFilterService::class)->labels();
     }
 
     public function getTransactionsProperty(): LengthAwarePaginator
     {
         $query = $this->filteredQuery()
-            ->with('spjPackage:id,transaction_id,document_number,status,finalized_at')
+            ->with('spjPackage', 'rawMirrorRow')
             ->withCount('items');
 
         $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
 
         $paginator = $query
-            ->orderByRaw("CASE WHEN source_status = 'SOURCE_MISSING' OR requires_reconciliation = 1 THEN 0 ELSE 1 END")
-            ->orderByRaw("COALESCE((SELECT CASE status WHEN 'DRAFT' THEN 0 WHEN 'READY' THEN 2 WHEN 'NUMBERED' THEN 3 WHEN 'FINAL' THEN 4 ELSE 5 END FROM spj_packages WHERE spj_packages.transaction_id = transactions.id LIMIT 1), 1)")
-            ->orderBy('transaction_date')
+            ->orderByRaw("CASE WHEN source_status = 'DELETED' OR requires_reconciliation = 1 THEN 0 ELSE 1 END")
+            ->orderByRaw("COALESCE((SELECT CASE status WHEN 'DRAFT' THEN 0 WHEN 'READY' THEN 2 WHEN 'NUMBERED' THEN 3 WHEN 'FINAL' THEN 4 ELSE 5 END FROM spj_fresh_packages WHERE spj_fresh_packages.spj_fresh_transaction_id = spj_fresh_transactions.id LIMIT 1), 1)")
+            ->orderByRaw("json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi')")
             ->orderBy('id')
             ->paginate($perPage);
 
@@ -113,8 +112,11 @@ class TransactionsTable extends Component
     }
 
     /** @return array{status:string,label:string} */
-    public function workStatusFor(Transaction $transaction): array
+    public function workStatusFor(SpjFreshTransaction $transaction): array
     {
+        if ($transaction->source_status === 'DELETED') {
+            return ['status' => 'SOURCE_MISSING', 'label' => 'Perlu Perhatian'];
+        }
         if ($transaction->source_status === 'SOURCE_MISSING') {
             return ['status' => 'SOURCE_MISSING', 'label' => 'Perlu Perhatian'];
         }
@@ -151,7 +153,11 @@ class TransactionsTable extends Component
 
     private function baseQuery(): Builder
     {
-        return Transaction::query()->activeContext();
+        return SpjFreshTransaction::query()
+            ->select('spj_fresh_transactions.*')
+            ->join('arkas_raw_mirror_rows', 'arkas_raw_mirror_rows.id', '=', 'spj_fresh_transactions.raw_mirror_row_id')
+            ->where('spj_fresh_transactions.fiscal_year_id', session('active_fiscal_year_id'))
+            ->where('spj_fresh_transactions.fund_source_id', session('active_fund_source_id'));
     }
 
     private function filteredQuery(): Builder
@@ -160,36 +166,37 @@ class TransactionsTable extends Component
         $query = clone $this->baseQuery();
 
         if ($this->month) {
-            $query->whereMonth('transaction_date', $this->month);
+            $query->whereRaw("CAST(strftime('%m', json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi')) AS INTEGER) = ?", [$this->month]);
         } elseif ($this->quarter) {
-            $query->whereBetween('transaction_date', [
-                now()->setYear($activeYear->year)->setMonth(($this->quarter - 1) * 3 + 1)->startOfMonth(),
-                now()->setYear($activeYear->year)->setMonth($this->quarter * 3)->endOfMonth(),
+            $query->whereRaw("date(json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi')) between ? and ?", [
+                now()->setYear($activeYear->year)->setMonth(($this->quarter - 1) * 3 + 1)->startOfMonth()->toDateString(),
+                now()->setYear($activeYear->year)->setMonth($this->quarter * 3)->endOfMonth()->toDateString(),
             ]);
         } elseif ($this->semester) {
-            $query->whereBetween('transaction_date', [
-                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 1 : 7)->startOfMonth(),
-                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 6 : 12)->endOfMonth(),
+            $query->whereRaw("date(json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi')) between ? and ?", [
+                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 1 : 7)->startOfMonth()->toDateString(),
+                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 6 : 12)->endOfMonth()->toDateString(),
             ]);
         }
 
         if (trim($this->q) !== '') {
             $search = trim($this->q);
             $query->where(function (Builder $query) use ($search): void {
-                $query->where('no_bukti', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('payment_description', 'like', "%{$search}%")
-                    ->orWhere('recipient_name', 'like', "%{$search}%")
-                    ->orWhere('receipt_recipient_name', 'like', "%{$search}%")
-                    ->orWhere('activity_code', 'like', "%{$search}%")
-                    ->orWhere('account_code', 'like', "%{$search}%");
+                $query->where('spj_fresh_transactions.source_key', 'like', "%{$search}%")
+                    ->orWhere('spj_fresh_transactions.payment_description', 'like', "%{$search}%")
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.uraian') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.kode_rekening') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.nama_penerima') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.penerima') like ?", ["%{$search}%"])
+                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.kode_kegiatan') like ?", ["%{$search}%"]);
             });
         }
 
         if ($this->status !== '') {
-            $state = $this->workflowFilters()->stateForLabel($this->status);
-            if ($state) {
-                $this->workflowFilters()->apply($query, $state);
+            $state = app(SpjWorkflowFilterService::class)->stateForLabel($this->status);
+            if ($state !== null) {
+                app(SpjWorkflowFilterService::class)->apply($query, $state);
             }
         }
 
@@ -198,20 +205,10 @@ class TransactionsTable extends Component
 
     private function activeYear(): FiscalYear
     {
-        return Cache::remember($this->cacheKey('active-year'), 300, fn () => FiscalYear::query()->findOrFail(session('active_fiscal_year_id')));
+        return FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
     }
 
-    private function cacheKey(string $reference): string
-    {
-        return implode(':', ['school', session('active_school_id'), 'year', session('active_fiscal_year_id'), $reference]);
-    }
-
-    private function workflowFilters(): SpjWorkflowFilterService
-    {
-        return app(SpjWorkflowFilterService::class);
-    }
-
-    public function paymentMethodFor(Transaction $transaction): string
+    public function paymentMethodFor(SpjFreshTransaction $transaction): string
     {
         $current = strtolower((string) $transaction->payment_method);
 

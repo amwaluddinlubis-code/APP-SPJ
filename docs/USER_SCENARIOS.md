@@ -100,9 +100,9 @@ Pilih tabel ref_kode
 
 Mode Lanjutan hanya digunakan bila preset tidak cocok atau tabel custom memerlukan mapping manual. Importer membaca database ARKAS melalui Bridge, bukan file template Excel. Preview bersifat read-only; sinkronisasi dibatasi pada konteks sekolah+tahun+sumber dana aktif dan tidak boleh mengarang referensi yang tidak tersedia di sumber.
 
-### Daftar transaksi fresh
+### Daftar transaksi dari raw mirror
 
-Setelah raw mirror selesai, operator atau administrator dapat membuka **SPJ → Transaksi Fresh** untuk melihat indeks transaksi pada konteks aktif. Tanggal, nomor bukti, uraian, dan rekening dibaca dari payload raw ARKAS; status dan overlay operator berasal dari tabel fresh aplikasi. Halaman ini tidak membuat Paket SPJ secara otomatis dan tidak mengubah daftar transaksi legacy.
+Setelah raw mirror selesai, operator atau administrator membuka menu transaksi lama untuk melihat indeks transaksi pada konteks aktif. Tampilan dan filter lama tetap dipakai, sedangkan tanggal, nomor bukti, uraian, dan rekening dibaca dari payload raw ARKAS melalui tabel fresh aplikasi. Halaman ini tidak membuat Paket SPJ secara otomatis dan tidak mengubah tabel ARKAS lama.
 
 ---
 

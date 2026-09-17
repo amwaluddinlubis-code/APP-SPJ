@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Livewire\TransactionsTable;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
-use App\Models\Transaction;
+use App\Models\SpjFreshPackage;
+use App\Models\SpjFreshTransaction;
+use App\Models\SpjFreshTransactionItem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -13,6 +15,8 @@ use Tests\TestCase;
 
 class TransactionsWorkflowFilterTest extends TestCase
 {
+    private int $mirrorTableId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +32,10 @@ class TransactionsWorkflowFilterTest extends TestCase
 
         FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
         FiscalYear::query()->create(['id' => 1, 'year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $this->mirrorTableId = DB::connection('school')->table('arkas_raw_mirror_tables')->insertGetId([
+            'source_id' => 1, 'source_table' => 'kas_umum', 'schema' => '{}', 'schema_hash' => str_repeat('a', 64),
+            'row_count' => 0, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now(),
+        ]);
 
         session([
             'active_fiscal_year_id' => 1,
@@ -71,30 +79,35 @@ class TransactionsWorkflowFilterTest extends TestCase
         ?string $packageStatus = null,
         ?string $documentNumber = null,
         string $sourceStatus = 'ACTIVE',
-    ): Transaction {
-        $transaction = Transaction::query()->create([
+    ): SpjFreshTransaction {
+        $rawRowId = DB::connection('school')->table('arkas_raw_mirror_rows')->insertGetId([
+            'mirror_table_id' => $this->mirrorTableId, 'source_key' => $noBukti, 'ordinal' => 0,
+            'payload' => json_encode(['no_bukti' => $noBukti, 'tanggal_transaksi' => $date, 'uraian' => 'Barang uji', 'jumlah' => 100000]),
+            'payload_hash' => hash('sha256', $noBukti), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $transaction = SpjFreshTransaction::query()->create([
             'fiscal_year_id' => 1,
             'fund_source_id' => 1,
-            'no_bukti' => $noBukti,
-            'transaction_date' => $date,
-            'gross_amount' => 100000,
-            'net_amount' => 100000,
+            'source_id' => 1,
+            'source_table' => 'kas_umum',
+            'source_key' => $noBukti,
+            'raw_mirror_row_id' => $rawRowId,
             'spj_category' => 'BARANG',
             'source_status' => $sourceStatus,
             'requires_reconciliation' => false,
         ]);
 
-        $transaction->items()->create([
-            'description' => 'Barang uji',
+        SpjFreshTransactionItem::query()->create([
+            'spj_fresh_transaction_id' => $transaction->id,
+            'source_table' => 'kas_umum',
+            'source_key' => $noBukti,
+            'raw_mirror_row_id' => $rawRowId,
             'item_description' => 'Barang uji',
-            'quantity' => 1,
-            'unit' => 'buah',
-            'unit_price' => 100000,
-            'amount' => 100000,
         ]);
 
         if ($packageStatus) {
-            $transaction->spjPackage()->create([
+            SpjFreshPackage::query()->create([
+                'spj_fresh_transaction_id' => $transaction->id,
                 'quarter_code' => 'TW-1',
                 'semester_code' => 'SEM-I',
                 'status' => $packageStatus,

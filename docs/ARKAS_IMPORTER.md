@@ -376,9 +376,17 @@ yang tanggalnya berada pada tahun aktif, menyimpan link ke
 Sinkronisasi GUI raw mirror juga menjalankan projection ini setelah snapshot selesai.
 Paket SPJ tidak dibuat otomatis; paket dibuat saat operator memulai pekerjaan.
 
+Catatan GUI: operator memakai GUI daftar transaksi lama pada menu **Keuangan →
+Transaksi**. GUI tersebut sekarang membaca indeks fresh dan payload raw mirror;
+halaman terpisah untuk transaksi fresh tidak diperlukan.
+
 Daftar hasil awal dapat dilihat pada route **SPJ → Transaksi Fresh**
 (`spj.fresh-transactions.index`). Halaman ini hanya membaca indeks fresh dan
 payload raw mirror pada konteks sekolah, tahun, dan sumber dana aktif.
+
+Paragraf route terpisah di atas dipertahankan sebagai catatan historis. Implementasi
+aktif memakai GUI transaksi lama (`transactions.index`), sehingga operator tidak
+perlu berpindah ke halaman baru.
 
 Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 

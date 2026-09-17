@@ -24,7 +24,6 @@ use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
 use App\Http\Controllers\SourceReconciliationController;
 use App\Http\Controllers\SpjController;
-use App\Http\Controllers\SpjFreshTransactionController;
 use App\Http\Controllers\SpjNumberingCorrectionController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
 use App\Http\Controllers\SpjPackageChecklistController;
@@ -142,7 +141,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
-        Route::get('/spj/transaksi-fresh', [SpjFreshTransactionController::class, 'index'])->name('spj.fresh-transactions.index');
         Route::view('/laporan-periode', 'periodic-reports.index')->name('spj.periodic-reports.index');
         Route::get('/laporan-periode/{scope}/{report}/cetak', [PeriodicReportController::class, 'show'])->name('spj.periodic-reports.print');
         Route::get('/laporan-periode/{scope}/{report}/pdf', [PeriodicReportController::class, 'pdf'])->name('spj.periodic-reports.pdf');
