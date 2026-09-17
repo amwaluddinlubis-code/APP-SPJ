@@ -179,6 +179,19 @@ Fiscal Year + Fund Source
 
 dan tetap berada di bawah sekolah tenant aktif.
 
+### Scope anggaran pada GUI lama
+
+GUI Penganggaran tetap memakai tampilan lama, tetapi ketika raw mirror tersedia
+ia membaca `rapbs` dan `rapbs_periode` secara read-only. Total tahunan memakai
+`rapbs.JUMLAH`; filter bulan, triwulan, dan semester menjumlahkan
+`rapbs_periode.JUMLAH` pada periode yang sama. Realisasi hanya mengambil
+`kas_umum` yang terhubung melalui `ID_RAPBS_PERIODE` dan berada pada scope
+tersebut, sehingga `sisa = anggaran scope - realisasi scope`.
+
+Validasi terhadap laporan RKAS per triwulan SMP Negeri 2 Ranto Baek tahun 2026
+menunjukkan total tahunan Rp276.390.000 dan empat triwulan masing-masing
+Rp69.097.500.
+
 Boundary operasional penuh:
 
 ```text

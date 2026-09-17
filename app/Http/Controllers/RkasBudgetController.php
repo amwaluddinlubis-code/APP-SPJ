@@ -427,6 +427,19 @@ class RkasBudgetController extends Controller
         if ($budgetRows === []) {
             return null;
         }
+        $modeAliases = ['semua' => 'year', 'bulan' => 'month', 'triwulan' => 'quarter', 'semester' => 'semester'];
+        $requestedMode = (string) $request->query('mode', '');
+        $scope = isset($modeAliases[$requestedMode]) ? $modeAliases[$requestedMode] : (string) $request->query('scope', 'year');
+        $scopeValue = (int) $request->query('periode', $request->query('scope_value', 0));
+        if (! in_array($scope, ['month', 'quarter', 'semester', 'year'], true)) {
+            $scope = 'year';
+        }
+        if (($scope === 'month' && ($scopeValue < 1 || $scopeValue > 12))
+            || ($scope === 'quarter' && ($scopeValue < 1 || $scopeValue > 4))
+            || ($scope === 'semester' && ($scopeValue < 1 || $scopeValue > 2))) {
+            $scope = 'year';
+            $scopeValue = 0;
+        }
         $latestRevision = max(array_map(fn (array $row): int => (int) ($row['IS_REVISI'] ?? 0), $budgetRows));
         $latestBudgets = array_values(array_filter($budgetRows, fn (array $row): bool => (int) ($row['IS_REVISI'] ?? 0) === $latestRevision));
         $latestUpdate = max(array_map(fn (array $row): string => (string) ($row['LAST_UPDATE'] ?? ''), $latestBudgets));
@@ -452,12 +465,35 @@ class RkasBudgetController extends Controller
 
         $periodTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'rapbs_periode')->where('status', 'ACTIVE')->first();
         $periodToRapbs = [];
+        $periodCoordinates = [];
+        $periodAmountsByRapbs = [];
         if ($periodTable !== null) {
             foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $periodTable->id)->get() as $row) {
                 $payload = json_decode((string) $row->payload, true);
                 if (is_array($payload)) {
                     $payload = array_change_key_case($payload, CASE_UPPER);
-                    $periodToRapbs[(string) ($payload['ID_RAPBS_PERIODE'] ?? '')] = (string) ($payload['ID_RAPBS'] ?? '');
+                    $periodId = (string) ($payload['ID_PERIODE'] ?? '');
+                    $periodRapbsId = (string) ($payload['ID_RAPBS'] ?? '');
+                    $periodRapbsKey = (string) ($payload['ID_RAPBS_PERIODE'] ?? '');
+                    $month = (int) ($payload['BULAN'] ?? 0);
+                    if ($month < 1 || $month > 12) {
+                        $numericPeriodId = (int) $periodId;
+                        $month = $numericPeriodId >= 81 && $numericPeriodId <= 92 ? $numericPeriodId - 80 : 0;
+                    }
+                    $quarter = $month > 0 ? (int) ceil($month / 3) : ((int) $periodId >= 1 && (int) $periodId <= 4 ? (int) $periodId : 0);
+                    $semester = $month > 0 ? (int) ceil($month / 6) : ($quarter > 0 ? (int) ceil($quarter / 2) : 0);
+                    if ($periodRapbsKey !== '') {
+                        $periodToRapbs[$periodRapbsKey] = $periodRapbsId;
+                        $periodCoordinates[$periodRapbsKey] = [$month, $quarter, $semester];
+                    }
+                    if ($periodRapbsId !== '' && $periodRapbsKey !== '') {
+                        $periodAmountsByRapbs[$periodRapbsId][] = [
+                            'amount' => (float) ($payload['JUMLAH'] ?? 0),
+                            'month' => $month,
+                            'quarter' => $quarter,
+                            'semester' => $semester,
+                        ];
+                    }
                 }
             }
         }
@@ -470,9 +506,16 @@ class RkasBudgetController extends Controller
                 if (is_array($payload)) {
                     $payload = array_change_key_case($payload, CASE_UPPER);
                     $budgetKey = (string) ($payload['ID_ANGGARAN'] ?? '');
-                    $rapbsKey = $periodToRapbs[(string) ($payload['ID_RAPBS_PERIODE'] ?? '')] ?? '';
-                    if (isset($allowedBudgets[$budgetKey]) && $rapbsKey !== '' && str_starts_with((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), (string) $year->year) && in_array((string) ($payload['ID_REF_BKU'] ?? ''), ['4', '15'], true) && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
-                        $realizationByRapbs[$rapbsKey] = ($realizationByRapbs[$rapbsKey] ?? 0) + abs((float) ($payload['SALDO'] ?? 0));
+                    $periodKey = (string) ($payload['ID_RAPBS_PERIODE'] ?? '');
+                    $rapbsKey = $periodToRapbs[$periodKey] ?? '';
+                    $coordinates = $periodCoordinates[$periodKey] ?? [0, 0, 0];
+                    $matchesScope = $scope === 'year'
+                        || ($scope === 'month' && $coordinates[0] === $scopeValue)
+                        || ($scope === 'quarter' && $coordinates[1] === $scopeValue)
+                        || ($scope === 'semester' && $coordinates[2] === $scopeValue);
+                    if (isset($allowedBudgets[$budgetKey]) && $rapbsKey !== '' && $matchesScope && str_starts_with((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), (string) $year->year) && in_array((string) ($payload['ID_REF_BKU'] ?? ''), ['4', '15'], true) && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
+                        $amount = $payload['SALDO'] ?? $payload['JUMLAH'] ?? $payload['NILAI'] ?? 0;
+                        $realizationByRapbs[$rapbsKey] = ($realizationByRapbs[$rapbsKey] ?? 0) + abs((float) $amount);
                     }
                 }
             }
@@ -502,7 +545,7 @@ class RkasBudgetController extends Controller
                 'volume' => (float) ($payload['VOLUME'] ?? 0),
                 'unit' => (string) ($payload['SATUAN'] ?? '—'),
                 'unit_price' => (float) ($payload['HARGA_SATUAN'] ?? 0),
-                'display_amount' => (float) ($payload['JUMLAH'] ?? 0),
+                'display_amount' => $this->rawScopedAmount($payload, $periodAmountsByRapbs, $scope, $scopeValue),
                 'realization' => (float) ($realizationByRapbs[$sourceId] ?? 0),
                 'bku_count' => 0,
             ];
@@ -557,7 +600,40 @@ class RkasBudgetController extends Controller
         $fiscalYearNumber = (int) $year->year;
         $fundName = (string) ($db->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: $year->fund_source ?: 'Sumber Dana');
 
-        return ['hierarchyTree' => $hierarchyTree, 'treeTotals' => $treeTotals, 'filterContext' => 'pada Tahun anggaran '.$fiscalYearNumber, 'search' => $search, 'budget' => $budget, 'spent' => $realization, 'remaining' => $budget - $realization, 'overBudget' => max(0, $realization - $budget), 'underBudget' => max(0, $budget - $realization), 'activityCount' => $items->pluck('activity_code')->filter()->unique()->count(), 'scope' => 'year', 'scopeValue' => 0, 'periodLabel' => 'Tahun anggaran '.$fiscalYearNumber, 'programFilter' => $programFilter, 'subprogramFilter' => $subprogramFilter, 'activityFilter' => $activityFilter, 'contextLabel' => $fundName.' - '.$fiscalYearNumber];
+        $periodLabel = match ($scope) {
+            'month' => Carbon::create($fiscalYearNumber, $scopeValue, 1)->translatedFormat('F Y'),
+            'quarter' => 'Triwulan '.$scopeValue.' · '.$fiscalYearNumber,
+            'semester' => 'Semester '.$scopeValue.' · '.$fiscalYearNumber,
+            default => 'Tahun anggaran '.$fiscalYearNumber,
+        };
+
+        return ['hierarchyTree' => $hierarchyTree, 'treeTotals' => $treeTotals, 'filterContext' => 'pada '.$periodLabel, 'search' => $search, 'budget' => $budget, 'spent' => $realization, 'remaining' => $budget - $realization, 'overBudget' => max(0, $realization - $budget), 'underBudget' => max(0, $budget - $realization), 'activityCount' => $items->pluck('activity_code')->filter()->unique()->count(), 'scope' => $scope, 'scopeValue' => $scopeValue, 'periodLabel' => $periodLabel, 'programFilter' => $programFilter, 'subprogramFilter' => $subprogramFilter, 'activityFilter' => $activityFilter, 'contextLabel' => $fundName.' - '.$fiscalYearNumber];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, array<int, array{amount:float,month:int,quarter:int,semester:int}>>  $periodAmountsByRapbs
+     */
+    private function rawScopedAmount(array $payload, array $periodAmountsByRapbs, string $scope, int $scopeValue): float
+    {
+        if ($scope === 'year') {
+            return (float) ($payload['JUMLAH'] ?? 0);
+        }
+
+        $amount = 0.0;
+        foreach ($periodAmountsByRapbs[(string) ($payload['ID_RAPBS'] ?? '')] ?? [] as $period) {
+            $matches = match ($scope) {
+                'month' => $period['month'] === $scopeValue,
+                'quarter' => $period['quarter'] === $scopeValue,
+                'semester' => $period['semester'] === $scopeValue,
+                default => true,
+            };
+            if ($matches) {
+                $amount += $period['amount'];
+            }
+        }
+
+        return $amount;
     }
 
     /** @param array<string, mixed> $payload */
