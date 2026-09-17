@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SynchronizeArkasImport;
+use App\Jobs\SynchronizeArkasRawMirror;
 use App\Models\ArkasImportProfile;
 use App\Models\ArkasSource;
 use App\Models\BackgroundOperation;
@@ -182,6 +183,25 @@ class ArkasImporterController implements HasMiddleware
         } catch (\Throwable $exception) {
             return redirect()->route('arkas.importer', ['table' => $profile->source_table])->with('error', 'Preview rekonsiliasi gagal: '.$exception->getMessage());
         }
+    }
+
+    public function rawMirror(Request $request): RedirectResponse
+    {
+        $school = School::query()->findOrFail(session('active_school_id'));
+        $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
+        $source = ArkasSource::query()->where('school_id', $school->id)->firstOrFail();
+        $operation = BackgroundOperation::query()->create([
+            'school_id' => $school->id,
+            'fiscal_year_id' => $year->id,
+            'requested_by' => $request->user()?->id,
+            'type' => 'ARKAS_RAW_MIRROR',
+            'status' => 'QUEUED',
+            'progress' => 0,
+            'message' => 'Raw mirror ARKAS masuk antrean.',
+        ]);
+        SynchronizeArkasRawMirror::dispatch($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id)->onQueue('operations');
+
+        return redirect()->route('arkas.importer')->with('success', 'Sinkronisasi seluruh database ARKAS masuk antrean.');
     }
 
     public function sync(

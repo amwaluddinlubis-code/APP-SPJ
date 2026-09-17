@@ -58,10 +58,16 @@ Tujuan:
 
 Entry point terpisah yang profile-driven:
 
-Untuk kebutuhan mirror mentah seluruh database, gunakan jalur `arkas:sync-raw-mirror`.
+Untuk kebutuhan mirror mentah seluruh database, administrator dapat memakai tombol
+**Sinkronkan Semua ARKAS** pada halaman importer atau jalur CLI
+`arkas:sync-raw-mirror`. Keduanya menggunakan raw mirror yang sama.
 Jalur ini menemukan semua tabel melalui Bridge, menyimpan schema dan payload tanpa
 mapping domain, mempertahankan snapshot ketika tabel menjadi stale, dan tidak boleh
 menulis data ke tabel domain/operator SPJ.
+
+Jalur GUI menjalankan job queue dengan konteks `School + Fiscal Year + Fund Source`.
+Database ARKAS dibaca saja; tabel `rkas` lama dan tabel fresh SPJ tidak diubah oleh
+proses mirror.
 
 ```text
 ArkasImporterController

@@ -44,6 +44,7 @@ class ArkasImporterTenantBoundaryTest extends TestCase
         foreach ([
             'arkas.importer',
             'arkas.importer.mapping.store',
+            'arkas.importer.raw-mirror',
             'arkas.importer.preview',
             'arkas.importer.sync',
         ] as $routeName) {
@@ -201,6 +202,7 @@ class ArkasImporterTenantBoundaryTest extends TestCase
         foreach ([
             ['GET', route('arkas.importer')],
             ['POST', route('arkas.importer.mapping.store')],
+            ['POST', route('arkas.importer.raw-mirror')],
             ['POST', route('arkas.importer.preview', 1)],
             ['POST', route('arkas.importer.sync', 1)],
         ] as [$method, $uri]) {

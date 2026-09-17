@@ -72,6 +72,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
         Route::get('/pengaturan/arkas/importer', ArkasImporterController::class)->name('arkas.importer');
+        Route::post('/pengaturan/arkas/importer/raw-mirror', [ArkasImporterController::class, 'rawMirror'])
+            ->middleware('administrator')
+            ->name('arkas.importer.raw-mirror');
         Route::post('/pengaturan/arkas/importer/mapping', [ArkasImporterController::class, 'store'])->name('arkas.importer.mapping.store');
         Route::post('/pengaturan/arkas/importer/{profileId}/preview', [ArkasImporterController::class, 'preview'])->name('arkas.importer.preview');
         Route::post('/pengaturan/arkas/importer/{profileId}/sync', [ArkasImporterController::class, 'sync'])->name('arkas.importer.sync');

@@ -22,6 +22,18 @@
             </div>
         </section>
 
+        @if(auth()->user()?->isAdministrator())
+            <x-ui.form-section title="Mirror Seluruh Database ARKAS" description="Simpan seluruh tabel berisi dari database ARKAS sebagai raw mirror readonly tanpa mapping ke tabel legacy.">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <p class="max-w-3xl text-sm" style="color: var(--ui-fg-muted)">Konteks pekerjaan: sekolah aktif, tahun {{ $activeYear?->year ?: 'belum dipilih' }}, dan sumber dana {{ $activeYear?->fundSource?->name ?: ($activeYear?->fund_source ?: 'belum dipilih') }}. Data raw menjadi referensi; tabel SPJ legacy dan overlay operator tidak diubah.</p>
+                    <form method="POST" action="{{ route('arkas.importer.raw-mirror') }}">
+                        @csrf
+                        <x-ui.button type="submit" icon="refresh">Sinkronkan Semua ARKAS</x-ui.button>
+                    </form>
+                </div>
+            </x-ui.form-section>
+        @endif
+
         <section class="grid gap-6 lg:grid-cols-[18rem_1fr]">
             <x-ui.form-section title="Pilih Tabel" description="Daftar dibaca langsung dari database ARKAS aktif.">
                 <form method="GET" action="{{ route('arkas.importer') }}" class="space-y-4">

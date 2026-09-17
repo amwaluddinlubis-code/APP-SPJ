@@ -356,6 +356,13 @@ ARKASBridge ke tabel `arkas_raw_mirror_tables` dan `arkas_raw_mirror_rows` pada
 database sekolah. Payload disimpan tanpa mapping domain, bersama schema hash,
 payload hash, source identity, dan status `ACTIVE`, `EMPTY`, atau `STALE`.
 
+Administrator juga dapat memulainya dari **Pengaturan → Sinkronisasi Data ARKAS**
+melalui tombol **Sinkronkan Semua ARKAS**. Tombol membuat background operation dan
+menjalankan job pada queue `operations`; job membawa `school_id`, `fiscal_year_id`,
+dan `fund_source_id` sehingga konteks sesi tidak hilang ketika diproses worker.
+Tahun dan sumber dana dipakai sebagai konteks pekerjaan, sedangkan raw mirror tetap
+menyimpan fakta source berdasarkan identitas database ARKAS.
+
 Raw mirror tidak menulis ulang tabel domain SPJ. Tabel yang tidak lagi ditemukan
 ditandai `STALE` agar snapshot historis tidak hilang. Jalankan dengan
 `--school-id` dan `--source-id`; proses ini bersifat read-only terhadap database
@@ -364,7 +371,7 @@ ARKAS.
 Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 
 - Bridge-side incremental delta fetch agar Incremental tidak menarik snapshot penuh;
-- binary ARKASBridge perlu dibuild ulang setelah dukungan `--offset` ditambahkan agar paging tabel besar aktif pada runtime.
+- binary ARKASBridge sudah dibuild dengan dukungan `--offset`; verifikasi database ARKAS nyata dan ukuran tabel besar tetap diperlukan.
 
 ## Regression checklist P0-08
 
