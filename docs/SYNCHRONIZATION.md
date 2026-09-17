@@ -85,17 +85,20 @@ Referensi Rekening memakai master raw `ref_rekening` secara terpisah dengan
 aturan `tahun = tahun aktif` dan `expired_date IS NULL`; daftar ini tidak
 dibatasi hanya pada rekening yang kebetulan sudah dipakai oleh baris `rapbs`.
 
-Tab Acuan Barang memakai `ref_acuan_barang` dengan aturan tahun aktif dan
-`expired_date` kosong/null. `kode_rekening` diperkaya dari `ref_rekening`,
-sedangkan pemakaian dihitung melalui `rapbs.id_barang` pada snapshot anggaran
-aktif. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan klasifikasi
-barang tetap dibaca dari master acuan barang; tabel sumber tidak diubah. Daftar
-ini difokuskan pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
-`5.2.05.*`. Relasi rekening bersifat left join: acuan tetap ditampilkan walau
-master `ref_rekening` belum memiliki pasangan; nama rekening dikosongkan bila
-pasangannya tidak ada. Kode rekening efektif memakai `kode_rekening`; bila
-kolom itu kosong, `id_barang` dipakai sebagai fallback hanya bila diawali
-prefix rekening belanja yang diizinkan.
+Tab Acuan Barang menggunakan `rapbs` sebagai tabel penghubung pada snapshot
+anggaran aktif. Hanya baris dengan `rapbs.kode_rekening` dan `rapbs.id_barang`
+yang dipakai, lalu relasinya adalah `rapbs.kode_rekening` ke
+`ref_rekening.kode_rekening` dan `rapbs.id_barang` ke `ref_acuan_barang.id_barang`.
+Keduanya harus memiliki pasangan yang aktif pada tahun berjalan. Dengan aturan
+ini, `rapbs.kode_rekening` menjadi kode rekening canonical untuk tampilan,
+termasuk ketika `ref_acuan_barang.kode_rekening` kosong; kode dari `id_barang`
+tidak dipakai sebagai pengganti kode rekening.
+
+Relasi dibatasi pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
+`5.2.05.*`. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan
+klasifikasi barang tetap dibaca dari master acuan barang; tabel sumber tidak
+diubah. Jumlah pemakaian dihitung dari banyaknya baris `rapbs` untuk pasangan
+rekening dan barang yang sama.
 
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian

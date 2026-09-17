@@ -127,27 +127,39 @@ class ArkasReferenceController extends Controller
             return collect();
         }
 
-        $usage = $rapbs->filter(fn (array $row): bool => trim((string) ($row['ID_BARANG'] ?? '')) !== '')
-            ->countBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
-        $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
-
-        return $raw->filter(function (array $row) use ($year): bool {
+        $acuanByItem = $raw->filter(function (array $row) use ($year): bool {
             $expiredDate = $row['EXPIRED_DATE'] ?? null;
-            $accountCode = $this->acuanAccountCode($row);
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
                 && ($expiredDate === null || trim((string) $expiredDate) === '')
-                && (str_starts_with($accountCode, '5.1.02.')
-                    || str_starts_with($accountCode, '5.2.02.')
-                    || str_starts_with($accountCode, '5.2.04.')
-                    || str_starts_with($accountCode, '5.2.05.'))
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
-        })->map(function (array $row) use ($usage, $accountNames): array {
-            $accountCode = $this->acuanAccountCode($row);
-            $usageCount = (int) ($usage[(string) ($row['ID_BARANG'] ?? '')] ?? 0);
+        })->keyBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
+        $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
+        $allowedAccounts = ['5.1.02.', '5.2.02.', '5.2.04.', '5.2.05.'];
+        $relations = $rapbs->map(function (array $row) use ($acuanByItem, $accountNames, $allowedAccounts): ?array {
+            $itemId = trim((string) ($row['ID_BARANG'] ?? ''));
+            $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
+            $acuan = $acuanByItem->get($itemId);
+            $hasAllowedAccount = collect($allowedAccounts)->contains(fn (string $prefix): bool => str_starts_with($accountCode.'.', $prefix));
+
+            if ($itemId === '' || $accountCode === '' || ! $hasAllowedAccount || ! is_array($acuan) || ! isset($accountNames[$accountCode])) {
+                return null;
+            }
 
             return [
-                'code' => (string) $row['ID_BARANG'],
+                'item_id' => $itemId,
+                'account_code' => $accountCode,
+                'acuan' => $acuan,
+            ];
+        })->filter()->groupBy(fn (array $row): string => $row['account_code'].'|'.$row['item_id']);
+
+        return $relations->map(function (Collection $relationRows) use ($accountNames): array {
+            $relation = $relationRows->first();
+            $row = $relation['acuan'];
+            $accountCode = $relation['account_code'];
+
+            return [
+                'code' => $relation['item_id'],
                 'name' => trim((string) ($row['NAMA_BARANG'] ?? '')),
                 'unit' => trim((string) ($row['SATUAN'] ?? '')),
                 'account_code' => $accountCode,
@@ -157,17 +169,9 @@ class ArkasReferenceController extends Controller
                 'max_price' => (float) ($row['BATAS_ATAS'] ?? 0),
                 'spending_code' => (string) ($row['KODE_BELANJA'] ?? ''),
                 'block_id' => (string) ($row['BLOK_ID'] ?? ''),
-                'usage_count' => $usageCount,
+                'usage_count' => $relationRows->count(),
             ];
         })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
-    }
-
-    /** @param array<string, mixed> $row */
-    private function acuanAccountCode(array $row): string
-    {
-        $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
-
-        return $accountCode !== '' ? $accountCode : trim((string) ($row['ID_BARANG'] ?? ''), '.');
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
