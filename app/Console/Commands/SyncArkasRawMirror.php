@@ -36,7 +36,7 @@ class SyncArkasRawMirror extends Command
             return self::FAILURE;
         }
 
-        $databases->activate($school);
+        $databases->ensureMigrated($school);
         $this->info('Menyinkronkan seluruh tabel ARKAS ke raw mirror...');
         $result = $mirror->synchronize($source, $limit);
         $this->table(['Metrik', 'Jumlah'], [

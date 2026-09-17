@@ -37,7 +37,7 @@ class SynchronizeArkasRawMirror implements ShouldQueue
         $operation->update(['status' => 'RUNNING', 'progress' => 5, 'started_at' => now(), 'message' => 'Menyiapkan konteks raw mirror ARKAS.']);
 
         $school = School::query()->findOrFail($this->schoolId);
-        $databases->activate($school);
+        $databases->ensureMigrated($school);
         $year = FiscalYear::query()->whereKey($this->fiscalYearId)->where('fund_source_id', $this->fundSourceId)->firstOrFail();
         $source = ArkasSource::query()->where('school_id', $school->id)->findOrFail($this->sourceId);
         $operation->update(['progress' => 10, 'message' => 'Menyinkronkan seluruh tabel ARKAS ke raw mirror.']);
