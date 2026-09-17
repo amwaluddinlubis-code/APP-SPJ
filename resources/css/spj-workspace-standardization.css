@@ -40,7 +40,8 @@ main[data-page="spj"] #spj-main-tabs .ui-tabs-list {
     display: flex;
     max-width: 100%;
     min-width: 0;
-    overflow-x: auto;
+    overflow-x: visible;
+    flex-wrap: wrap;
     align-items: center;
     gap: .15rem;
     border: 0;

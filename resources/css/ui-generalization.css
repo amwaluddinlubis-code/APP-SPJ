@@ -516,7 +516,7 @@
 
 /* Standard tabs: flat navigation with a theme-colored active underline. */
 .ui-tabs {
-    overflow-x: auto;
+    overflow-x: hidden;
     border-bottom: 1px solid var(--ui-line);
     background: var(--ui-surface-base);
     padding: 0 .25rem;
@@ -526,6 +526,7 @@
     display: flex;
     width: 100%;
     min-width: 100%;
+    flex-wrap: wrap;
     gap: .25rem;
 }
 
@@ -533,7 +534,7 @@
     position: relative;
     display: inline-flex;
     flex: 1 1 0;
-    min-height: 2.4rem;
+    min-height: 3.1rem;
     align-items: center;
     justify-content: center;
     gap: .4rem;
@@ -603,12 +604,13 @@
 
 @media (max-width: 639px) {
     .ui-tabs-list {
-        min-width: max-content;
+        min-width: 100%;
     }
 
     .ui-tab {
-        flex: 0 0 auto;
-        min-width: 8.5rem;
+        flex: 1 1 calc(50% - .25rem);
+        min-width: 0;
+        padding-inline: .55rem;
     }
 }
 

@@ -190,6 +190,7 @@ Gunakan primitive global berikut untuk seluruh navigasi tab baru:
 Kontrak tab:
 
 - bar tab menggunakan lebar penuh container dan tab desktop membagi ruang secara seimbang;
+- tab tidak menggunakan horizontal scroll; pada ruang sempit tab membungkus ke baris berikutnya dengan tinggi yang tetap nyaman;
 - setiap tab memakai ikon sebelum label, dengan border lingkaran dari `currentColor`;
 - perpindahan state aktif memiliki transisi/animasi dan wajib menghormati `prefers-reduced-motion`;
 - tab aktif tetap datar, tanpa tampilan tombol atau background khusus, dan hanya memakai garis bawah dari token tema;
