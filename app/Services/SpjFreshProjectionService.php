@@ -88,6 +88,41 @@ final class SpjFreshProjectionService
                 }
             }, 'id');
 
+        $db->table('spj_fresh_transactions')
+            ->where('fiscal_year_id', $year->id)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_id', $source->id)
+            ->where('source_table', 'kas_umum')
+            ->where('source_status', '!=', 'SOURCE_MISSING')
+            ->whereNotExists(function ($query) use ($db, $mirrorTable): void {
+                $query->select($db->raw('1'))
+                    ->from('arkas_raw_mirror_rows as current_raw')
+                    ->whereColumn('current_raw.source_key', 'spj_fresh_transactions.source_key')
+                    ->where('current_raw.mirror_table_id', $mirrorTable->id);
+            })
+            ->update([
+                'source_status' => 'SOURCE_MISSING',
+                'source_missing_since' => $db->raw('COALESCE(source_missing_since, CURRENT_TIMESTAMP)'),
+                'updated_at' => now(),
+            ]);
+
+        $db->table('spj_fresh_transaction_items')
+            ->whereIn('spj_fresh_transaction_id', function ($query) use ($year, $fundSourceId, $source): void {
+                $query->select('id')
+                    ->from('spj_fresh_transactions')
+                    ->where('fiscal_year_id', $year->id)
+                    ->where('fund_source_id', $fundSourceId)
+                    ->where('source_id', $source->id)
+                    ->where('source_table', 'kas_umum')
+                    ->where('source_status', 'SOURCE_MISSING');
+            })
+            ->where('source_status', '!=', 'SOURCE_MISSING')
+            ->update([
+                'source_status' => 'SOURCE_MISSING',
+                'source_missing_since' => $db->raw('COALESCE(source_missing_since, CURRENT_TIMESTAMP)'),
+                'updated_at' => now(),
+            ]);
+
         return ['transactions' => $transactionCount, 'items' => $itemCount, 'skipped' => $skipped];
     }
 

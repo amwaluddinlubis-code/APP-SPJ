@@ -301,6 +301,12 @@ Detail/Paket membawa `source_key`, lalu resolver transaksi mencocokkannya ke
 `transactions.id_kas_umum` sebelum membuka workspace lama yang memiliki overlay
 operator dan lifecycle SPJ. ID internal kedua tabel tidak diasumsikan sama.
 
+Setelah projection, source yang tidak lagi ada pada snapshot `kas_umum` ditandai
+`SOURCE_MISSING` pada indeks fresh dan item fresh. Proses ini tidak menghapus
+baris, overlay operator, Paket SPJ, nomor dokumen, maupun data audit. Jika source
+muncul kembali pada snapshot berikutnya, projection mengaktifkan kembali status
+sumber dan mengosongkan `source_missing_since`.
+
 Kontrak utama:
 
 ```text
