@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\FiscalYear;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -266,6 +267,10 @@ class RkasBudgetFilter extends Component
             ->mapWithKeys(fn ($name, $code): array => [trim((string) $code, '.') => (string) $name])
             ->all();
 
+        foreach ($this->rawReferenceNames() as $code => $name) {
+            $names[$code] = $name;
+        }
+
         try {
             $hierarchy = $db->table('activity_hierarchy_references')
                 ->where('fiscal_year_id', $fiscalYearId)
@@ -300,6 +305,10 @@ class RkasBudgetFilter extends Component
             return collect();
         }
 
+        if (($rawCodes = $this->rawActivityCodes()) !== null) {
+            return $rawCodes;
+        }
+
         return DB::connection('school')->table('arkas_rkas_items')
             ->where('fiscal_year_id', $fiscalYearId)
             ->where('fund_source_id', $fundSourceId)
@@ -309,6 +318,104 @@ class RkasBudgetFilter extends Component
             ->pluck('activity_code')
             ->map(fn ($code): string => trim((string) $code, '.'))
             ->filter()
+            ->values();
+    }
+
+    /** @return Collection<int, string>|null */
+    protected function rawActivityCodes(): ?Collection
+    {
+        $budgetIds = $this->rawApprovedBudgetIds();
+        $rows = $this->rawMirrorRows('rapbs');
+        $references = $this->rawMirrorRows('ref_kode')?->keyBy(fn (array $row): string => (string) ($row['ID_REF_KODE'] ?? ''));
+        if ($budgetIds === null || $rows === null || $references === null) {
+            return null;
+        }
+
+        return $rows
+            ->filter(fn (array $row): bool => isset($budgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]) && (string) ($row['SOFT_DELETE'] ?? '0') !== '1')
+            ->map(function (array $row) use ($references): string {
+                $reference = $references->get((string) ($row['ID_REF_KODE'] ?? ''), []);
+
+                return trim((string) ($reference['ID_KODE'] ?? $row['KODE_KEGIATAN'] ?? ''), '.');
+            })
+            ->filter()
+            ->unique()
+            ->sort(fn (string $left, string $right): int => strnatcasecmp($left, $right))
+            ->values();
+    }
+
+    /** @return array<string, bool>|null */
+    protected function rawApprovedBudgetIds(): ?array
+    {
+        $yearId = $this->fiscalYearId();
+        $fundSourceId = $this->effectiveFundSourceId();
+        $rows = $this->rawMirrorRows('anggaran');
+        if ($yearId === null || $fundSourceId === null || $rows === null) {
+            return null;
+        }
+
+        $year = FiscalYear::query()->find($yearId);
+        $budgets = $rows->filter(fn (array $row): bool => (string) ($row['TAHUN_ANGGARAN'] ?? '') === (string) ($year?->year ?? '')
+            && (int) ($row['ID_REF_SUMBER_DANA'] ?? 0) === $fundSourceId
+            && (string) ($row['IS_APPROVE'] ?? '0') === '1'
+            && (string) ($row['IS_AKTIF'] ?? '0') === '1'
+            && (string) ($row['SOFT_DELETE'] ?? '0') !== '1');
+        if ($budgets->isEmpty()) {
+            return [];
+        }
+
+        $revision = (int) $budgets->max(fn (array $row): int => (int) ($row['IS_REVISI'] ?? 0));
+        $latest = $budgets->filter(fn (array $row): bool => (int) ($row['IS_REVISI'] ?? 0) === $revision);
+        $lastUpdate = (string) $latest->max(fn (array $row): string => (string) ($row['LAST_UPDATE'] ?? ''));
+
+        return $latest
+            ->filter(fn (array $row): bool => (string) ($row['LAST_UPDATE'] ?? '') === $lastUpdate)
+            ->mapWithKeys(fn (array $row): array => [(string) ($row['ID_ANGGARAN'] ?? '') => true])
+            ->all();
+    }
+
+    /** @return array<string, string> */
+    protected function rawReferenceNames(): array
+    {
+        $rows = $this->rawMirrorRows('ref_kode');
+        if ($rows === null) {
+            return [];
+        }
+
+        return $rows->mapWithKeys(function (array $row): array {
+            $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
+            $name = trim((string) ($row['URAIAN_KODE'] ?? ''));
+
+            return $code !== '' && $name !== '' ? [$code => $name] : [];
+        })->all();
+    }
+
+    /** @return Collection<int, array<string, mixed>>|null */
+    protected function rawMirrorRows(string $sourceTable): ?Collection
+    {
+        $db = DB::connection('school');
+        if (! $db->getSchemaBuilder()->hasTable('arkas_raw_mirror_tables')) {
+            return null;
+        }
+
+        $mirrorTable = $db->table('arkas_raw_mirror_tables')
+            ->where('source_table', $sourceTable)
+            ->where('status', 'ACTIVE')
+            ->where('row_count', '>', 0)
+            ->first();
+        if ($mirrorTable === null) {
+            return null;
+        }
+
+        return $db->table('arkas_raw_mirror_rows')
+            ->where('mirror_table_id', $mirrorTable->id)
+            ->get()
+            ->map(function (object $row): array {
+                $payload = json_decode((string) $row->payload, true);
+
+                return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
+            })
+            ->filter(fn (array $row): bool => $row !== [])
             ->values();
     }
 
@@ -356,6 +463,17 @@ class RkasBudgetFilter extends Component
 
         if ($fiscalYearId === null || $fundSourceId === null) {
             return collect();
+        }
+
+        if (($codes = $this->rawActivityCodes()) !== null) {
+            $names = $this->referenceNames();
+            $codes = $codes->filter(fn (string $code): bool => ($this->sub !== '' && self::isWithin($code, $this->sub))
+                || ($this->sub === '' && $this->program !== '' && self::isWithin($code, $this->program)));
+
+            return $codes->map(fn (string $code): array => [
+                'kode' => $code,
+                'nama' => $names[$code] ?? 'Kegiatan belum diisi',
+            ])->values();
         }
 
         $query = DB::connection('school')->table('arkas_rkas_items')

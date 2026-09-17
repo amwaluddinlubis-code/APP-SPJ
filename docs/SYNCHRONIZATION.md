@@ -76,6 +76,11 @@ GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
 `id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan
 kegiatan berasal dari `rapbs.id_ref_kode` ke `ref_kode.id_ref_kode`.
 
+Filter Program dan Subprogram pada GUI lama juga dibentuk dari pasangan raw
+`anggaran` versi aktif dan `rapbs` pada konteks tahun/sumber dana tersebut,
+sehingga pilihan hanya menampilkan kode yang benar-benar tersedia di RKAS
+aktif. Urutan pilihan mengikuti kode numerik terkecil.
+
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
 memilih `is_revisi` terbesar untuk tahun dan sumber dana aktif. `last_update`
