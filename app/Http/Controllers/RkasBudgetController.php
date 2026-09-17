@@ -396,45 +396,107 @@ class RkasBudgetController extends Controller
             return null;
         }
 
-        $tables = $db->table('arkas_raw_mirror_tables')
+        $rawTable = $db->table('arkas_raw_mirror_tables')
+            ->where('source_table', 'rapbs')
             ->where('status', 'ACTIVE')
-            ->where(function ($query): void {
-                $query->whereRaw("lower(source_table) like '%rapbs%'")
-                    ->orWhereRaw("lower(source_table) like '%rkas%'");
-            })
             ->where('row_count', '>', 0)
-            ->get();
-        if ($tables->isEmpty()) {
+            ->first();
+        $budgetTable = $db->table('arkas_raw_mirror_tables')
+            ->where('source_table', 'anggaran')
+            ->where('status', 'ACTIVE')
+            ->first();
+        if ($rawTable === null || $budgetTable === null) {
             return null;
         }
 
-        $items = collect();
-        foreach ($tables as $table) {
-            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $table->id)->get() as $row) {
-                $payload = json_decode((string) $row->payload, true);
-                if (! is_array($payload)) {
-                    continue;
-                }
-                $payload = array_change_key_case($payload, CASE_UPPER);
-                if (! $this->rawBelongsToContext($payload, (int) $year->year, $fundSourceId)) {
-                    continue;
-                }
-                $sourceId = (string) ($payload['ID_RAPBS'] ?? $payload['ID_RKAS'] ?? $row->source_key);
-                $item = (object) [
-                    'source_rapbs_id' => $sourceId,
-                    'activity_code' => trim((string) ($payload['KODE_KEGIATAN'] ?? $payload['ID_KODE'] ?? ''), '.'),
-                    'activity_name' => (string) ($payload['NAMA_KEGIATAN'] ?? $payload['URAIAN_KEGIATAN'] ?? ''),
-                    'account_code' => (string) ($payload['KODE_REKENING'] ?? ''),
-                    'description' => (string) ($payload['URAIAN'] ?? $payload['DESKRIPSI'] ?? ''),
-                    'volume' => (float) ($payload['VOLUME_TOTAL'] ?? $payload['VOLUME'] ?? 0),
-                    'unit' => (string) ($payload['SATUAN'] ?? '—'),
-                    'unit_price' => (float) ($payload['HARGA_SATUAN'] ?? $payload['HARGA'] ?? 0),
-                    'display_amount' => (float) ($payload['JUMLAH'] ?? $payload['NILAI'] ?? $payload['TOTAL'] ?? 0),
-                    'realization' => 0.0,
-                    'bku_count' => 0,
-                ];
-                $items->push($item);
+        $allowedBudgets = [];
+        foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $budgetTable->id)->get() as $row) {
+            $payload = json_decode((string) $row->payload, true);
+            if (! is_array($payload)) {
+                continue;
             }
+            $payload = array_change_key_case($payload, CASE_UPPER);
+            if ((string) ($payload['TAHUN_ANGGARAN'] ?? '') === (string) $year->year
+                && (int) ($payload['ID_REF_SUMBER_DANA'] ?? 0) === $fundSourceId
+                && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
+                $allowedBudgets[(string) ($payload['ID_ANGGARAN'] ?? '')] = true;
+            }
+        }
+        if ($allowedBudgets === []) {
+            return null;
+        }
+
+        $referenceTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'ref_kode')->where('status', 'ACTIVE')->first();
+        $references = [];
+        $referenceNames = [];
+        if ($referenceTable !== null) {
+            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $referenceTable->id)->get() as $row) {
+                $payload = json_decode((string) $row->payload, true);
+                if (is_array($payload)) {
+                    $payload = array_change_key_case($payload, CASE_UPPER);
+                    $references[(string) ($payload['ID_REF_KODE'] ?? '')] = $payload;
+                    $referenceNames[trim((string) ($payload['ID_KODE'] ?? ''), '.')] = (string) ($payload['URAIAN_KODE'] ?? '');
+                }
+            }
+        }
+
+        $periodTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'rapbs_periode')->where('status', 'ACTIVE')->first();
+        $periodToRapbs = [];
+        if ($periodTable !== null) {
+            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $periodTable->id)->get() as $row) {
+                $payload = json_decode((string) $row->payload, true);
+                if (is_array($payload)) {
+                    $payload = array_change_key_case($payload, CASE_UPPER);
+                    $periodToRapbs[(string) ($payload['ID_RAPBS_PERIODE'] ?? '')] = (string) ($payload['ID_RAPBS'] ?? '');
+                }
+            }
+        }
+
+        $realizationByRapbs = [];
+        $bkuTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'kas_umum')->where('status', 'ACTIVE')->first();
+        if ($bkuTable !== null) {
+            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $bkuTable->id)->get() as $row) {
+                $payload = json_decode((string) $row->payload, true);
+                if (is_array($payload)) {
+                    $payload = array_change_key_case($payload, CASE_UPPER);
+                    $budgetKey = (string) ($payload['ID_ANGGARAN'] ?? '');
+                    $rapbsKey = $periodToRapbs[(string) ($payload['ID_RAPBS_PERIODE'] ?? '')] ?? '';
+                    if (isset($allowedBudgets[$budgetKey]) && $rapbsKey !== '' && str_starts_with((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), (string) $year->year) && str_starts_with((string) ($payload['NO_BUKTI'] ?? ''), 'BP') && (string) ($payload['SOFT_DELETE'] ?? '0') !== '1') {
+                        $realizationByRapbs[$rapbsKey] = ($realizationByRapbs[$rapbsKey] ?? 0) + (float) ($payload['SALDO'] ?? 0);
+                    }
+                }
+            }
+        }
+
+        $items = collect();
+        foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $rawTable->id)->get() as $row) {
+            $payload = json_decode((string) $row->payload, true);
+            if (! is_array($payload)) {
+                continue;
+            }
+            $payload = array_change_key_case($payload, CASE_UPPER);
+            $payload = array_change_key_case($payload, CASE_UPPER);
+            if (! isset($allowedBudgets[(string) ($payload['ID_ANGGARAN'] ?? '')]) || (string) ($payload['SOFT_DELETE'] ?? '0') === '1') {
+                continue;
+            }
+            $reference = $references[(string) ($payload['ID_REF_KODE'] ?? '')] ?? [];
+            $activityCode = trim((string) ($reference['ID_KODE'] ?? $payload['KODE_KEGIATAN'] ?? ''), '.');
+            $activityName = (string) ($reference['URAIAN_KODE'] ?? '');
+            $sourceId = (string) ($payload['ID_RAPBS'] ?? $row->source_key);
+            $item = (object) [
+                'source_rapbs_id' => $sourceId,
+                'activity_code' => $activityCode,
+                'activity_name' => $activityName,
+                'account_code' => (string) ($payload['KODE_REKENING'] ?? ''),
+                'description' => (string) ($payload['URAIAN_TEXT'] ?? $payload['URAIAN'] ?? ''),
+                'volume' => (float) ($payload['VOLUME'] ?? 0),
+                'unit' => (string) ($payload['SATUAN'] ?? '—'),
+                'unit_price' => (float) ($payload['HARGA_SATUAN'] ?? 0),
+                'display_amount' => (float) ($payload['JUMLAH'] ?? 0),
+                'realization' => (float) ($realizationByRapbs[$sourceId] ?? 0),
+                'bku_count' => 0,
+            ];
+            $items->push($item);
         }
         if ($items->isEmpty()) {
             return null;
@@ -459,8 +521,8 @@ class RkasBudgetController extends Controller
             $program = $parts[0] ?? 'tanpa-program';
             $subprogram = count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : $program;
             $activity = $item->activity_code !== '' ? $item->activity_code : 'tanpa-kegiatan';
-            $hierarchyTree[$program] ??= ['code' => $program, 'name' => 'Program '.$program, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'subs' => []];
-            $hierarchyTree[$program]['subs'][$subprogram] ??= ['code' => $subprogram, 'name' => 'Subprogram '.$subprogram, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'activities' => []];
+            $hierarchyTree[$program] ??= ['code' => $program, 'name' => $referenceNames[$program] ?? 'Program '.$program, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'subs' => []];
+            $hierarchyTree[$program]['subs'][$subprogram] ??= ['code' => $subprogram, 'name' => $referenceNames[$subprogram] ?? 'Subprogram '.$subprogram, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'activities' => []];
             $hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity] ??= ['code' => $activity, 'name' => $item->activity_name ?: 'Kegiatan belum diisi', 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'items' => []];
             $item->variance = $item->display_amount - $item->realization;
             foreach ([&$hierarchyTree[$program], &$hierarchyTree[$program]['subs'][$subprogram], &$hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity]] as &$node) {

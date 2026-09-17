@@ -71,6 +71,11 @@ proses mirror. Setelah snapshot selesai, job membentuk indeks transaksi/item fre
 dari `kas_umum` melalui foreign key ke raw mirror; fakta source tetap dibaca dari
 payload raw dan paket SPJ tidak dibuat otomatis.
 
+GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
+`anggaran.id_anggaran`, kemudian membatasi `tahun_anggaran` dan
+`id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan
+kegiatan berasal dari `rapbs.id_ref_kode` ke `ref_kode.id_ref_kode`.
+
 ```text
 ArkasImporterController
 → ArkasDatabaseExplorer / Bridge
