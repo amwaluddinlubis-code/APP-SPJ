@@ -42,6 +42,7 @@ final class SpjFreshProjectionService
                     $payload = json_decode((string) $row->payload, true);
                     if (! is_array($payload)
                         || ! $this->belongsToFiscalYear($payload, $yearValue)
+                        || blank($payload['volume'] ?? null)
                         || ! isset($budgetIds[(string) ($payload['id_anggaran'] ?? '')])) {
                         $skipped++;
 
@@ -101,12 +102,41 @@ final class SpjFreshProjectionService
             ->where('fund_source_id', $fundSourceId)
             ->where('source_id', $source->id)
             ->where('source_table', 'kas_umum')
-            ->where('source_status', '!=', 'SOURCE_MISSING')
+            ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
+            ->whereExists(function ($query) use ($db, $mirrorTable): void {
+                $query->select($db->raw('1'))
+                    ->from('arkas_raw_mirror_rows as source_raw')
+                    ->whereColumn('source_raw.source_key', 'spj_fresh_transactions.source_key')
+                    ->where('source_raw.mirror_table_id', $mirrorTable->id);
+            })
+            ->whereNotExists(function ($query) use ($db, $mirrorTable, $budgetIds): void {
+                $query->select($db->raw('1'))
+                    ->from('arkas_raw_mirror_rows as eligible_raw')
+                    ->whereColumn('eligible_raw.source_key', 'spj_fresh_transactions.source_key')
+                    ->where('eligible_raw.mirror_table_id', $mirrorTable->id)
+                    ->whereNotNull($db->raw("json_extract(eligible_raw.payload, '$.volume')"))
+                    ->where($db->raw("json_extract(eligible_raw.payload, '$.volume')"), '!=', '')
+                    ->whereIn($db->raw("json_extract(eligible_raw.payload, '$.id_anggaran')"), array_keys($budgetIds));
+            })
+            ->update([
+                'source_status' => 'EXCLUDED',
+                'source_missing_since' => null,
+                'updated_at' => now(),
+            ]);
+
+        $db->table('spj_fresh_transactions')
+            ->where('fiscal_year_id', $year->id)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_id', $source->id)
+            ->where('source_table', 'kas_umum')
+            ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
             ->whereNotExists(function ($query) use ($db, $mirrorTable, $budgetIds): void {
                 $query->select($db->raw('1'))
                     ->from('arkas_raw_mirror_rows as current_raw')
                     ->whereColumn('current_raw.source_key', 'spj_fresh_transactions.source_key')
                     ->where('current_raw.mirror_table_id', $mirrorTable->id)
+                    ->whereNotNull($db->raw("json_extract(current_raw.payload, '$.volume')"))
+                    ->where($db->raw("json_extract(current_raw.payload, '$.volume')"), '!=', '')
                     ->whereIn($db->raw("json_extract(current_raw.payload, '$.id_anggaran')"), array_keys($budgetIds));
             })
             ->update([
