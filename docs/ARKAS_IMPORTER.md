@@ -349,10 +349,22 @@ Tabel tanpa adapter domain dapat disimpan sebagai raw snapshot bila source-key c
 
 ## Scale/performance lanjutan
 
+### Raw mirror generik
+
+Command `arkas:sync-raw-mirror` menyinkronkan seluruh tabel yang ditemukan oleh
+ARKASBridge ke tabel `arkas_raw_mirror_tables` dan `arkas_raw_mirror_rows` pada
+database sekolah. Payload disimpan tanpa mapping domain, bersama schema hash,
+payload hash, source identity, dan status `ACTIVE`, `EMPTY`, atau `STALE`.
+
+Raw mirror tidak menulis ulang tabel domain SPJ. Tabel yang tidak lagi ditemukan
+ditandai `STALE` agar snapshot historis tidak hilang. Jalankan dengan
+`--school-id` dan `--source-id`; proses ini bersifat read-only terhadap database
+ARKAS.
+
 Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 
 - Bridge-side incremental delta fetch agar Incremental tidak menarik snapshot penuh;
-- fetch limit Bridge saat ini `100000`, sehingga sumber yang lebih besar perlu strategi paging/explicit overflow detection agar tidak berisiko truncation diam-diam.
+- binary ARKASBridge perlu dibuild ulang setelah dukungan `--offset` ditambahkan agar paging tabel besar aktif pada runtime.
 
 ## Regression checklist P0-08
 

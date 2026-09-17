@@ -58,6 +58,11 @@ Tujuan:
 
 Entry point terpisah yang profile-driven:
 
+Untuk kebutuhan mirror mentah seluruh database, gunakan jalur `arkas:sync-raw-mirror`.
+Jalur ini menemukan semua tabel melalui Bridge, menyimpan schema dan payload tanpa
+mapping domain, mempertahankan snapshot ketika tabel menjadi stale, dan tidak boleh
+menulis data ke tabel domain/operator SPJ.
+
 ```text
 ArkasImporterController
 → ArkasDatabaseExplorer / Bridge

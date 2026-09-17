@@ -32,6 +32,7 @@ internal static class Program
             parsed.TryGetValue("table", out var table);
             parsed.TryGetValue("fund-source", out var fundSource);
             parsed.TryGetValue("limit", out var limitText);
+            parsed.TryGetValue("offset", out var offsetText);
 
             dbPath = Path.GetFullPath(dbPath);
             if (!File.Exists(dbPath))
@@ -92,7 +93,11 @@ internal static class Program
                         {
                             limit = 10000;
                         }
-                        WriteRows(connection, table.Trim(), year, fundSource, limit);
+                        if (!int.TryParse(offsetText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var offset))
+                        {
+                            offset = 0;
+                        }
+                        WriteRows(connection, table.Trim(), year, fundSource, limit, offset);
                         break;
                     case "profile":
                         if (string.IsNullOrWhiteSpace(year))
@@ -552,7 +557,7 @@ ORDER BY name;";
         }
     }
 
-    private static void WriteRows(SqliteConnection con, string table, string? year, string? fundSource, int limit)
+    private static void WriteRows(SqliteConnection con, string table, string? year, string? fundSource, int limit, int offset)
     {
         Dictionary<string, string> columns = ReadTableColumns(con, table);
         if (columns.Count == 0)
@@ -563,6 +568,10 @@ ORDER BY name;";
         if (limit < 1 || limit > 100000)
         {
             throw new InvalidOperationException("Parameter limit harus berada di antara 1 dan 100000.");
+        }
+        if (offset < 0)
+        {
+            throw new InvalidOperationException("Parameter offset tidak boleh negatif.");
         }
 
         Console.WriteLine("SCHEMA|" + table + "|1");
@@ -586,7 +595,8 @@ ORDER BY name;";
 
         string where = predicates.Count > 0 ? " WHERE " + string.Join(" AND ", predicates) : "";
         cmd.CommandText = "SELECT " + string.Join(", ", columns.Keys.Select(QuoteIdentifier))
-            + " FROM " + QuoteIdentifier(table) + where + " LIMIT " + limit.ToString(CultureInfo.InvariantCulture) + ";";
+            + " FROM " + QuoteIdentifier(table) + where + " LIMIT " + limit.ToString(CultureInfo.InvariantCulture)
+            + " OFFSET " + offset.ToString(CultureInfo.InvariantCulture) + ";";
 
         using var reader = cmd.ExecuteReader();
         while (reader.Read())

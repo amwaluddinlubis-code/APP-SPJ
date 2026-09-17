@@ -328,6 +328,13 @@ Livewire Phase 2 hanya menambah role enforcement dan tidak memindahkan scope log
 
 ## P0-08 — Generic ARKAS Importer
 
+Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
+
+- [x] metadata schema/tabel dan snapshot payload raw terpisah dari domain SPJ;
+- [x] penandaan tabel `STALE` tanpa penghapusan snapshot;
+- [x] command sinkronisasi seluruh tabel;
+- [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
+
 **Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
