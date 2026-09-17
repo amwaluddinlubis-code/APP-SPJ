@@ -10,6 +10,7 @@ Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
 - Data ARKAS/BKU harus terlihat sebagai readonly source; data operator SPJ terlihat editable.
 - Detail Transaksi dan Paket SPJ tidak boleh menyediakan input ganda untuk field yang sama.
 - Komponen sejenis memakai primitive yang sama.
+- Konten tab yang berat atau berbeda workflow dirakit melalui partial Blade yang dipanggil hanya untuk tab aktif; view induk hanya memegang navigasi dan shell.
 - Tailwind terutama untuk layout/spacing/responsive; warna non-semantik mengikuti token theme.
 - Alpine/JS hanya menangani interaksi UI; business rule tetap backend.
 - Jangan membuat satu halaman menjadi satu card raksasa.
