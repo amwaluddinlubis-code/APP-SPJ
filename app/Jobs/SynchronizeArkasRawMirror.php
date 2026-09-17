@@ -8,6 +8,7 @@ use App\Models\FiscalYear;
 use App\Models\School;
 use App\Services\ArkasRawMirrorService;
 use App\Services\SchoolDatabaseManager;
+use App\Services\SpjFreshProjectionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -31,7 +32,7 @@ class SynchronizeArkasRawMirror implements ShouldQueue
         public int $sourceId,
     ) {}
 
-    public function handle(SchoolDatabaseManager $databases, ArkasRawMirrorService $mirror): void
+    public function handle(SchoolDatabaseManager $databases, ArkasRawMirrorService $mirror, SpjFreshProjectionService $projector): void
     {
         $operation = BackgroundOperation::query()->findOrFail($this->operationId);
         $operation->update(['status' => 'RUNNING', 'progress' => 5, 'started_at' => now(), 'message' => 'Menyiapkan konteks raw mirror ARKAS.']);
@@ -43,10 +44,11 @@ class SynchronizeArkasRawMirror implements ShouldQueue
         $operation->update(['progress' => 10, 'message' => 'Menyinkronkan seluruh tabel ARKAS ke raw mirror.']);
 
         $result = $mirror->synchronize($source);
+        $projection = $projector->project($year, $this->fundSourceId, $source);
         $operation->update([
             'status' => 'COMPLETED',
             'progress' => 100,
-            'result' => $result + ['fiscal_year_id' => $year->id, 'fund_source_id' => $this->fundSourceId],
+            'result' => $result + ['fiscal_year_id' => $year->id, 'fund_source_id' => $this->fundSourceId, 'fresh_projection' => $projection],
             'message' => 'Raw mirror ARKAS selesai disinkronkan.',
             'finished_at' => now(),
         ]);

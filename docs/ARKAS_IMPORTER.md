@@ -368,6 +368,14 @@ ditandai `STALE` agar snapshot historis tidak hilang. Jalankan dengan
 `--school-id` dan `--source-id`; proses ini bersifat read-only terhadap database
 ARKAS.
 
+Setelah raw mirror tersedia, indeks transaksi fresh dapat dibentuk dengan
+`spj:project-fresh-transactions` menggunakan `fiscal_year_id`, `fund_source_id`,
+`school_id`, dan `source_id`. Projection tahap pertama memakai baris `kas_umum`
+yang tanggalnya berada pada tahun aktif, menyimpan link ke
+`arkas_raw_mirror_rows`, dan tidak menyalin fakta source ke tabel legacy.
+Sinkronisasi GUI raw mirror juga menjalankan projection ini setelah snapshot selesai.
+Paket SPJ tidak dibuat otomatis; paket dibuat saat operator memulai pekerjaan.
+
 Dua hal berikut masih perlu dievaluasi pada data besar, tetapi bukan blocker correctness operator-test yang sudah diregresikan:
 
 - Bridge-side incremental delta fetch agar Incremental tidak menarik snapshot penuh;

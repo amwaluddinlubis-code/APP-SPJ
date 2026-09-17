@@ -334,11 +334,12 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] penandaan tabel `STALE` tanpa penghapusan snapshot;
 - [x] command sinkronisasi seluruh tabel;
 - [x] tombol GUI administrator yang mengantrikan mirror dengan konteks sekolah–tahun–sumber dana;
+- [x] projection awal `kas_umum` ke indeks transaksi/item fresh berbasis link raw mirror;
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
 Fondasi schema fresh SPJ juga sudah ditambahkan secara terpisah melalui namespace
-`spj_fresh_*`; integrasi use case pembentukan transaksi dari raw mirror ke schema
-tersebut belum dilakukan.
+`spj_fresh_*`; projection awal transaksi/item sudah tersedia, sedangkan integrasi
+workspace GUI, overlay operator, dan pembentukan paket masih belum dilakukan.
 
 **Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 

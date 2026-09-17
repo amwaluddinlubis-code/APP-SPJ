@@ -67,7 +67,9 @@ menulis data ke tabel domain/operator SPJ.
 
 Jalur GUI menjalankan job queue dengan konteks `School + Fiscal Year + Fund Source`.
 Database ARKAS dibaca saja; tabel `rkas` lama dan tabel fresh SPJ tidak diubah oleh
-proses mirror.
+proses mirror. Setelah snapshot selesai, job membentuk indeks transaksi/item fresh
+dari `kas_umum` melalui foreign key ke raw mirror; fakta source tetap dibaca dari
+payload raw dan paket SPJ tidak dibuat otomatis.
 
 ```text
 ArkasImporterController
