@@ -338,7 +338,7 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] GUI transaksi lama menggunakan indeks fresh dan pembacaan payload raw, dengan resolusi link berbasis `source_key` ke overlay domain;
 - [x] projection transaksi fresh menandai source yang hilang tanpa menghapus overlay operator atau Paket SPJ;
 - [x] projection transaksi fresh membatasi `kas_umum` melalui snapshot `anggaran` aktif pada tahun dan sumber dana yang sama;
-- [x] projection transaksi fresh mengecualikan baris `kas_umum` tanpa `volume` dari total belanja tanpa menghapus data indeks;
+- [x] nilai bruto transaksi fresh mengikuti `kas_umum.saldo` pada seluruh baris dalam konteks anggaran aktif;
 - [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
 - [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan status `Belum Ada Rekening` bila pasangan tidak tersedia;

@@ -312,10 +312,9 @@ di snapshot `anggaran` aktif untuk tahun dan sumber dana yang sama. Snapshot
 anggaran dipilih dengan `is_approve = 1`, `is_aktif = 1`, `soft_delete = 0`,
 revisi terbesar, dan `last_update` terbaru.
 
-Pada snapshot ARKAS ini, baris belanja diidentifikasi dengan `volume` yang
-terisi; baris tanpa `volume` tidak diproyeksikan sebagai transaksi belanja.
-Baris non-belanja yang sudah pernah masuk indeks ditandai `EXCLUDED`, bukan
-dihapus, dan tidak ikut daftar maupun total transaksi.
+Nilai bruto transaksi mengikuti `kas_umum.saldo` pada seluruh baris transaksi
+yang masuk snapshot konteks. `saldo` adalah nilai yang dikirim ARKAS untuk baris
+tersebut; pemisahan pajak dan arus kas tidak ditebak dari `volume` saja.
 
 Kontrak utama:
 
