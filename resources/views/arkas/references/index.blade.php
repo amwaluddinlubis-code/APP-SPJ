@@ -36,19 +36,23 @@
                         @endforeach
                     </div>
                 </nav>
-                <form method="get" class="flex items-center gap-2">
-                    <input type="hidden" name="type" value="{{ $type }}">
-                    <x-ui.input name="q" value="{{ $search }}" placeholder="Cari kode atau nama..." aria-label="Cari referensi" />
-                    <label class="flex items-center gap-2 whitespace-nowrap text-sm text-[var(--ui-fg-muted)]">
-                        <span>Baris</span>
-                        <x-ui.select name="perPage" aria-label="Baris per halaman" onchange="this.form.submit()">
-                            @foreach ([25, 50, 100] as $option)
-                                <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }}</option>
-                            @endforeach
-                        </x-ui.select>
-                    </label>
-                    <x-ui.button type="submit" variant="secondary">Cari</x-ui.button>
-                </form>
+                <div class="flex w-full justify-end">
+                    <form method="get" class="flex w-full flex-wrap items-center justify-end gap-4 sm:w-auto">
+                        <input type="hidden" name="type" value="{{ $type }}">
+                        <div class="flex w-full sm:w-auto">
+                            <x-ui.input name="q" value="{{ $search }}" placeholder="Cari kode atau nama..." aria-label="Cari referensi" class="w-full rounded-r-none sm:w-80 lg:w-96" />
+                            <x-ui.button type="submit" variant="secondary" class="rounded-l-none">Cari</x-ui.button>
+                        </div>
+                        <label class="flex items-center gap-2 whitespace-nowrap text-sm text-[var(--ui-fg-muted)]">
+                            <span>Baris per halaman</span>
+                            <x-ui.select name="perPage" aria-label="Baris per halaman" onchange="this.form.submit()">
+                                @foreach ([25, 50, 100] as $option)
+                                    <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </label>
+                    </form>
+                </div>
             </div>
 
             @if ($type === 'acuanBarang')
