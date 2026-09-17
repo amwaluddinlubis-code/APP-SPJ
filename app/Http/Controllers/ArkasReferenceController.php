@@ -142,13 +142,9 @@ class ArkasReferenceController extends Controller
                     || str_starts_with($accountCode, '5.2.04.')
                     || str_starts_with($accountCode, '5.2.05.'))
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
-        })->map(function (array $row) use ($usage, $accountNames): ?array {
+        })->map(function (array $row) use ($usage, $accountNames): array {
             $accountCode = trim((string) ($row['KODE_REKENING'] ?? ''), '.');
             $usageCount = (int) ($usage[(string) ($row['ID_BARANG'] ?? '')] ?? 0);
-
-            if (! isset($accountNames[$accountCode])) {
-                return null;
-            }
 
             return [
                 'code' => (string) $row['ID_BARANG'],
@@ -163,7 +159,7 @@ class ArkasReferenceController extends Controller
                 'block_id' => (string) ($row['BLOK_ID'] ?? ''),
                 'usage_count' => $usageCount,
             ];
-        })->filter()->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
+        })->sort(fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']))->values();
     }
 
     /** @return Collection<int, array<string, mixed>>|null */

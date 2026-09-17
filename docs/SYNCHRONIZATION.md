@@ -91,8 +91,9 @@ sedangkan pemakaian dihitung melalui `rapbs.id_barang` pada snapshot anggaran
 aktif. Satuan, harga referensi, batas bawah/atas, `kode_belanja`, dan klasifikasi
 barang tetap dibaca dari master acuan barang; tabel sumber tidak diubah. Daftar
 ini difokuskan pada rekening belanja `5.1.02.*`, `5.2.02.*`, `5.2.04.*`, dan
-`5.2.05.*`, dengan relasi rekening bersifat inner join sehingga hanya pasangan
-`kode_rekening` yang tersedia pada master `ref_rekening` aktif yang ditampilkan.
+`5.2.05.*`. Relasi rekening bersifat left join: acuan tetap ditampilkan walau
+master `ref_rekening` belum memiliki pasangan; nama rekening dikosongkan bila
+pasangannya tidak ada.
 
 Pemilihan snapshot anggaran tidak menjumlahkan seluruh riwayat. Sistem membatasi
 `anggaran` pada `is_approve = 1`, `is_aktif = 1`, dan `soft_delete = 0`, kemudian
