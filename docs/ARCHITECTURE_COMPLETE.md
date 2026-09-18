@@ -27,6 +27,20 @@ Stack utama: PHP 8.3+, Laravel 13, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite
 
 ## 2. Multi-database
 
+### V2-A2 transition boundary
+
+Tenant discovery dan source identity preflight selesai secara read-only. Central
+registry masih memiliki satu sekolah (`10260756`), sementara tenant kedua
+`10208183` ditemukan sebagai physical orphan yang belum memiliki central
+registry/source identity. V2-B harus menggunakan additive bridge dan tidak boleh
+menebak path dari NPSN atau mengubah package/document identity legacy.
+
+Stable ARKAS row identity berasal dari declared primary key atau composite
+primary key dengan ordinal serialization. `arkas_raw_mirror_rows.id` tidak
+canonical. Rows classified `UNSTABLE_FALLBACK` tidak boleh menjadi critical
+foreign-key target. Detail evidence dan proposal schema ada pada
+`V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
+
 ### Database utama
 
 Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, metadata global,

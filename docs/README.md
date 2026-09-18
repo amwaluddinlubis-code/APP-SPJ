@@ -64,6 +64,10 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk number
 
 `OVERLAY_MIGRATION_RUNBOOK.md` adalah runbook operasi aktif untuk migrasi overlay operator dari ekspor database lama ke schema fresh SPJ.
 
+`V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md` adalah evidence preflight
+aktif untuk discovery tenant, physical path mapping, legacy/source classification,
+identity 56 tabel raw mirror, dan additive V2-B proposal.
+
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |

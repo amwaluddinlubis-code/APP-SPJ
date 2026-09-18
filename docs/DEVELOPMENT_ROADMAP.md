@@ -274,6 +274,21 @@ Koreksi raw-mirror yang didorong audit database nyata:
 - [x] NUMBERED/FINAL tidak auto-remap atau mengubah nomor/snapshot pada membership change;
 - [ ] desain safe-sync/performance lanjutan untuk kasus ambiguous membership dan Bridge paging (Langkah 10);
 
+### V2-A2 — Tenant discovery dan source identity preflight
+
+Status: **READ-ONLY PREFLIGHT COMPLETE / V2-B REAL-TENANT EXECUTION BLOCKED**.
+
+- [x] tenant kedua `10208183` ditemukan pada `D:\lrvProject\spj-bosp-data`;
+- [x] mismatch central NPSN `10260756` vs path `10260786` diklasifikasikan sebagai `DATABASE_REGISTRY_MISMATCH`;
+- [x] 291 legacy transaction V2-A dipetakan ke full raw `kas_umum`;
+- [x] 56 raw mirror table identities diklasifikasikan;
+- [x] stable identity registry contract dan additive V2-B schema proposal dikunci;
+- [ ] register/audit source ARKAS tenant `10208183` tanpa menyentuh original tenant;
+- [ ] execute V2-B migration pada isolated/test database;
+- [ ] promote V2-B ke real tenants;
+
+Evidence canonical: `docs/V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
+
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 
 ---

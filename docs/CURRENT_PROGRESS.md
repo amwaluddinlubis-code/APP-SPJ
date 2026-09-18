@@ -262,6 +262,27 @@ status package lifecycle real-data tetap RVR.
 
 P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
+### Database Architecture V2-A2 — Tenant discovery & source identity preflight
+
+Status: **READ-ONLY PREFLIGHT COMPLETE / V2-B REAL-TENANT EXECUTION BLOCKED**.
+
+Tenant kedua `10208183` ditemukan pada `D:\lrvProject\spj-bosp-data\school-databases`,
+tetapi belum terdaftar pada central `schools`/`school_databases` dan belum
+memiliki full raw mirror audit. Tenant V2-A `10260756` memiliki path runtime
+registry `...\10260786\spj.sqlite`; mismatch tersebut diklasifikasikan sebagai
+`DATABASE_REGISTRY_MISMATCH`, bukan diperbaiki pada tahap ini.
+
+Read-only mapping V2-A: 291 transactions → 269 `EXACT`, 22 `DETERMINISTIC`,
+0 partial/missing/ambiguous/legacy-only; seluruh 699 item source identity
+ditemukan. 66 Paket `NUMBERED` termasuk 22 deterministic mappings dan 115
+dokumen `NUMBERED`; tidak ada Paket `FINAL` pada tenant yang diaudit.
+
+Raw mirror 56 tabel: 38 single-PK, 13 composite-PK, 1 deterministic fallback,
+4 unstable fallback. Registry identity contract dan additive V2-B schema sudah
+ditulis pada `docs/V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
+Tidak ada original tenant yang dimutasi. V2-B real-tenant execution tetap
+blocked sampai source identity tenant `10208183` tersedia dan diaudit.
+
 ---
 
 ## Livewire / TALL migration — Phase 1 + Phase 2
