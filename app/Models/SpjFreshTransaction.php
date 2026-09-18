@@ -77,7 +77,25 @@ class SpjFreshTransaction extends Model
 
     public function getRecipientNameAttribute(): ?string
     {
-        return $this->sourceValue(['nama_penerima', 'penerima', 'recipient_name']);
+        $recipient = $this->sourceValue(['nama_penerima', 'penerima', 'recipient_name']);
+        if (filled($recipient)) {
+            return $recipient;
+        }
+
+        $notaSourceKey = $this->sourceValue(['id_kas_nota']);
+        if (blank($notaSourceKey)) {
+            return null;
+        }
+
+        $recipient = DB::connection('school')
+            ->table('arkas_raw_mirror_rows as nota_raw')
+            ->join('arkas_raw_mirror_tables as nota_table', 'nota_table.id', '=', 'nota_raw.mirror_table_id')
+            ->where('nota_table.source_table', 'kas_umum_nota')
+            ->where('nota_table.status', 'ACTIVE')
+            ->whereRaw("json_extract(nota_raw.payload, '$.id_kas_nota') = ?", [$notaSourceKey])
+            ->value(DB::raw("json_extract(nota_raw.payload, '$.nama_toko')"));
+
+        return filled($recipient) ? (string) $recipient : null;
     }
 
     public function getEffectiveReceiptRecipientNameAttribute(): ?string
