@@ -27,13 +27,15 @@ class ArkasDatabaseExplorer
             ->filter(fn (string $line): bool => str_starts_with($line, 'COLUMN|'))
             ->map(function (string $line): array {
                 $parts = array_pad(explode('|', $line), 7, '');
+                $primaryOrder = max(0, (int) $parts[6]);
 
                 return [
                     'position' => $parts[1],
                     'name' => $parts[2],
                     'type' => $parts[3],
                     'nullable' => $parts[4] === '0' ? 'Tidak' : 'Ya',
-                    'primary' => $parts[6] === '1' ? 'Ya' : '—',
+                    'primary' => $primaryOrder > 0 ? 'Ya' : '—',
+                    'primary_order' => (string) $primaryOrder,
                 ];
             })
             ->values()
