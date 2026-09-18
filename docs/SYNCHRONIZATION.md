@@ -334,9 +334,15 @@ transaksi dan berasal dari source ARKAS yang sama. Baris Pajak Belanja Setor
 
 Audit read-only database 2026 memvalidasi formula ini terhadap APP-SPJ lama:
 66 transaksi / 139 item BELANJA menghasilkan bruto Rp138.195.000, pajak
-Rp7.677.946, dan netto Rp130.517.054. Statistik agregat/filter halaman transaksi
-tetap merupakan hardening terpisah dan harus mengambil scope dataset fresh yang
-sama sebelum dinyatakan konsisten.
+Rp7.677.946, dan netto Rp130.517.054.
+
+Statistik halaman Transaksi memakai `filteredQuery()` yang sama dengan daftar
+transaksi. Count, bruto, pajak, dan netto karena itu mengikuti boundary
+`Fiscal Year + Fund Source`, periode, pencarian, dan workflow status yang sama.
+Ringkasan tidak lagi menghitung row raw `kas_umum` secara terpisah. Nilai bruto
+dan pajak statistik memakai accessor grouped transaction, sehingga satu bukti
+multi-item tetap dihitung sebagai satu transaksi dan row pajak/setoran tidak
+menambah transaction count.
 
 Kontrak utama:
 
