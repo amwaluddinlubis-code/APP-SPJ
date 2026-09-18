@@ -236,15 +236,17 @@ class TransactionDetailWorkspace extends Component
         $transaction->net_amount = (float) $transaction->gross_amount - (float) $transaction->tax_total;
         $items = $fresh->items->map(function ($freshItem) use ($fresh): TransactionItem {
             $itemPayload = $freshItem->rawMirrorRow?->payload ?? [];
+            $periodPayload = $this->freshPeriodPayload($itemPayload['id_rapbs_periode'] ?? null);
             $item = new TransactionItem;
             $item->forceFill([
                 'id' => $freshItem->id,
                 'transaction_id' => $fresh->id,
                 'description' => $itemPayload['uraian'] ?? '',
                 'item_description' => $freshItem->item_description,
-                'quantity' => $itemPayload['volume'] ?? 1,
-                'unit' => $itemPayload['satuan'] ?? null,
-                'amount' => $itemPayload['saldo'] ?? 0,
+                'quantity' => $periodPayload['volume'] ?? $itemPayload['volume'] ?? 1,
+                'unit' => $periodPayload['satuan'] ?? $itemPayload['satuan'] ?? null,
+                'unit_price' => $periodPayload['harga_satuan'] ?? null,
+                'amount' => $periodPayload['jumlah'] ?? $itemPayload['saldo'] ?? 0,
             ]);
 
             return $item;
@@ -255,6 +257,25 @@ class TransactionDetailWorkspace extends Component
         }
 
         return $transaction;
+    }
+
+    /** @return array<string, mixed> */
+    private function freshPeriodPayload(?string $periodId): array
+    {
+        if (blank($periodId)) {
+            return [];
+        }
+
+        $payload = DB::connection('school')->table('arkas_raw_mirror_rows as period_raw')
+            ->join('arkas_raw_mirror_tables as period_table', 'period_table.id', '=', 'period_raw.mirror_table_id')
+            ->where('period_table.source_table', 'rapbs_periode')
+            ->where('period_table.status', 'ACTIVE')
+            ->whereRaw("json_extract(period_raw.payload, '$.id_rapbs_periode') = ?", [$periodId])
+            ->value('period_raw.payload');
+
+        $decoded = is_string($payload) ? json_decode($payload, true) : [];
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     private function freshTaxTotal(SpjFreshTransaction $transaction): float
