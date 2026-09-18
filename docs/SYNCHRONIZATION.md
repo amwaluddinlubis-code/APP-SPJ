@@ -307,9 +307,11 @@ sebagai SHA-256 dari daftar `ID_KAS_UMUM` item yang diurutkan, sama dengan ident
 canonical transaction sync lama, sedangkan `source_key` item adalah
 `ID_KAS_UMUM` itu sendiri.
 
-Jalur workspace/overlay lama tidak boleh mengasumsikan `source_key` transaksi fresh
-sama dengan satu `ID_KAS_UMUM`. Compatibility resolver untuk grouped source key
-merupakan tahap integrasi terpisah sebelum flow operator fresh dinyatakan siap.
+Compatibility ke workspace/overlay lama memakai grouped `source_key` yang sama.
+`Transaction::forSourceIdentifier()` menerima `source_key` legacy selain
+`id_kas_umum`/ID lokal, sehingga link dari indeks fresh dapat kembali ke transaksi
+lama yang sudah memiliki `item_description`, `payment_description`, Paket SPJ,
+nomor dokumen, dan lifecycle tanpa membuat overlay baru.
 
 Setelah projection, transaksi source yang tidak lagi terbentuk dari snapshot
 `kas_umum` ditandai `SOURCE_MISSING` pada indeks fresh. Proses ini tidak menghapus
@@ -324,9 +326,17 @@ revisi terbesar, dan `last_update` terbaru. Hanya row BELANJA
 (`id_ref_bku` 4/15/24/35 atau kategori bridge `BELANJA`) yang menjadi item
 transaksi; row pajak dan arus lain tidak dibuat sebagai transaksi tersendiri.
 
-Agregasi bruto/pajak/netto lintas seluruh item grouped transaction tetap menjadi
-hardening lanjutan. Sampai tahap itu ditutup oleh focused regression, accessor/UI
-tidak boleh dianggap sudah merepresentasikan total grouped transaction secara penuh.
+Nilai grouped transaction diturunkan dari seluruh item source. Bruto menjumlahkan
+`kas_umum.saldo` seluruh item BELANJA. Pajak menjumlahkan baris Pajak Belanja
+Terima (`id_ref_bku` 10/30) yang `parent_id_kas_umum`-nya termasuk seluruh item
+transaksi dan berasal dari source ARKAS yang sama. Baris Pajak Belanja Setor
+(`id_ref_bku` 11/31) tidak dihitung kembali. Netto = bruto - pajak.
+
+Audit read-only database 2026 memvalidasi formula ini terhadap APP-SPJ lama:
+66 transaksi / 139 item BELANJA menghasilkan bruto Rp138.195.000, pajak
+Rp7.677.946, dan netto Rp130.517.054. Statistik agregat/filter halaman transaksi
+tetap merupakan hardening terpisah dan harus mengambil scope dataset fresh yang
+sama sebelum dinyatakan konsisten.
 
 Kontrak utama:
 
