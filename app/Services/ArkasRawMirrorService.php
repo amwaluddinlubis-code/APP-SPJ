@@ -27,12 +27,14 @@ final class ArkasRawMirrorService
         foreach ($tables as $tableName) {
             $seenTables[] = $tableName;
             $columns = $this->explorer->inspect($source, $tableName, 1)['columns'];
+            $primaryKeyColumns = $this->primaryKeyColumns($columns);
             $records = $this->fetchAllRows($source, $tableName, $limit);
             $schema = array_values(array_map(static fn (array $column): array => [
                 'name' => $column['name'],
                 'type' => $column['type'],
                 'nullable' => $column['nullable'],
                 'primary' => $column['primary'],
+                'primary_order' => $column['primary_order'] ?? '0',
             ], $columns));
             $schemaJson = json_encode($schema, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
             $now = now();
@@ -62,13 +64,15 @@ final class ArkasRawMirrorService
                 $db->table('arkas_raw_mirror_tables')->where('id', $mirrorTableId)->update($attributes);
             }
 
-            $db->transaction(function () use ($db, $mirrorTableId, $records, $now): void {
+            $db->transaction(function () use ($db, $mirrorTableId, $records, $primaryKeyColumns, $now): void {
                 $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirrorTableId)->delete();
                 $seen = [];
                 $batch = [];
                 foreach ($records as $record) {
                     $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE);
-                    $sourceKey = $this->sourceKeys->resolve($record);
+                    $sourceKey = $primaryKeyColumns === []
+                        ? $this->sourceKeys->resolve($record)
+                        : $this->sourceKeys->resolveFromColumns($record, $primaryKeyColumns);
                     $ordinal = $seen[$sourceKey] ?? 0;
                     $seen[$sourceKey] = $ordinal + 1;
                     $batch[] = [
@@ -100,6 +104,31 @@ final class ArkasRawMirrorService
         $stale = $staleQuery->update(['status' => 'STALE', 'updated_at' => now()]);
 
         return ['tables' => count($tables), 'non_empty' => $nonEmpty, 'rows' => $rowCount, 'stale' => $stale];
+    }
+
+    /**
+     * @param array<int, array<string, string>> $columns
+     * @return array<int, string>
+     */
+    private function primaryKeyColumns(array $columns): array
+    {
+        $primaryColumns = array_values(array_filter(
+            $columns,
+            static fn (array $column): bool => (int) ($column['primary_order'] ?? 0) > 0
+                || ($column['primary'] ?? '—') === 'Ya',
+        ));
+
+        usort($primaryColumns, static function (array $left, array $right): int {
+            $leftOrder = (int) ($left['primary_order'] ?? ((int) ($left['position'] ?? 0) + 1));
+            $rightOrder = (int) ($right['primary_order'] ?? ((int) ($right['position'] ?? 0) + 1));
+
+            return $leftOrder <=> $rightOrder;
+        });
+
+        return array_values(array_map(
+            static fn (array $column): string => (string) $column['name'],
+            $primaryColumns,
+        ));
     }
 
     /** @return array<int, array<string, mixed>> */
