@@ -186,6 +186,48 @@ sekarang mencatat `OperationalAuditService` setelah write/resolve berhasil;
 penolakan authorization, FINAL, invalid reconciliation, atau fresh-only overlay
 tidak membuat audit mutation palsu.
 
+### Overlay & package continuity verification — 2026-09-19
+
+Regression continuity menutup jalur `source_key` grouped → legacy overlay →
+item operator → Paket SPJ. Suite continuity baru menghasilkan **21 test / 137
+assertions PASS** (21 deprecated notices), sedangkan suite gabungan projection,
+compatibility, workspace, reconciliation, ownership, dan sync menghasilkan
+**67 test / 546 assertions PASS** (67 deprecated notices).
+
+Yang dikunci oleh regression:
+
+- `SHA256(sorted(ID_KAS_UMUM))` tetap menjadi identity transaksi dan
+  `ID_KAS_UMUM` tetap menjadi identity item;
+- `payment_description`, `spj_category`, `receipt_recipient_name`,
+  `payment_method`, dan `item_description` tidak ditimpa sync;
+- reorder raw item mempertahankan uraian berdasarkan `source_item_id`, bukan
+  ordinal;
+- Paket DRAFT, NUMBERED, dan FINAL mempertahankan ID, status, nomor, timestamp,
+  serta snapshot; projection/sync tidak membuat Paket baru;
+- source disappear/return mempertahankan transaksi, item, overlay, dan Paket;
+- repeated projection tetap idempotent, dan membership change
+  `KAS-001/KAS-002` → `KAS-001/KAS-002/KAS-003` pada `NO_BUKTI` unik memakai
+  transaction legacy yang sama tanpa duplicate Paket.
+
+Read-only tenant audit pada `10260756` / database `10260786`:
+
+```text
+2025 fund 1  : legacy 104 tx / 268 item; fresh ACTIVE 104 tx / 268 item
+2025 fund 12 : legacy 17 tx / 24 item; fresh ACTIVE 17 tx / 24 item
+2026 fund 1  : legacy 0 tx / 0 item; fresh ACTIVE 66 tx / 139 item
+fresh 2026 history: 12 DELETED, 97 SOURCE_MISSING
+packages/documents pada tiga context: 0 / 0
+integrity: PASS; foreign-key violations: 0; financial mismatches: 0
+```
+
+`spj:audit-quarter` dijalankan read-only untuk seluruh kuartal 2025/2026 pada
+fund 1 dan fund 12. Tidak ditemukan critical anomaly atau financial mismatch;
+warning yang ada berupa kelengkapan data lama, terutama blank
+`item_description`. Membership change aman pada fixture `NO_BUKTI` unik, tetapi
+fallback compatibility berbasis `NO_BUKTI` belum menjadi kebijakan reconciliation
+untuk kasus ambigu; itu tetap gap safe-sync Langkah 9 dan tidak boleh otomatis
+memindahkan Paket NUMBERED/FINAL.
+
 P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---

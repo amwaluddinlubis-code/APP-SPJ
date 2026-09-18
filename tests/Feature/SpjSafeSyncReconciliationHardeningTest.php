@@ -42,6 +42,7 @@ class SpjSafeSyncReconciliationHardeningTest extends TestCase
         $transaction->update([
             'payment_description' => 'Pembayaran manual',
             'receipt_recipient_name' => 'Penerima manual',
+            'payment_method' => 'tunai',
             'vendor_name' => 'Vendor manual',
             'vendor_owner' => 'Pemilik manual',
             'vendor_npwp' => '99.999.999.9-999.999',
@@ -58,12 +59,129 @@ class SpjSafeSyncReconciliationHardeningTest extends TestCase
         $this->assertSame($sourceHash, $transaction->source_hash);
         $this->assertSame('Pembayaran manual', $transaction->payment_description);
         $this->assertSame('Penerima manual', $transaction->receipt_recipient_name);
+        $this->assertSame('tunai', $transaction->payment_method);
         $this->assertSame('Vendor manual', $transaction->vendor_name);
         $this->assertSame('Pemilik manual', $transaction->vendor_owner);
         $this->assertSame('99.999.999.9-999.999', $transaction->vendor_npwp);
         $this->assertSame('BARANG', $transaction->spj_category);
         $this->assertSame('Uraian dokumen manual', $transaction->items->first()->item_description);
         $this->assertSame(0, DB::connection('school')->table('transaction_source_events')->count());
+    }
+
+    public function test_reordered_source_items_keep_operator_descriptions_by_source_identity(): void
+    {
+        [$year, $sync] = $this->context();
+        $records = [
+            $this->sourceRecord(id: 'KAS-001', proof: 'BKU-GROUP', amount: 100000),
+            $this->sourceRecord(id: 'KAS-002', proof: 'BKU-GROUP', amount: 200000),
+        ];
+        $sync($records);
+
+        $transaction = Transaction::query()->with('items')->firstOrFail();
+        $transaction->update(['payment_description' => 'Overlay grup']);
+        $transaction->items->firstWhere('source_item_id', 'KAS-001')->update(['item_description' => 'Deskripsi operator A']);
+        $transaction->items->firstWhere('source_item_id', 'KAS-002')->update(['item_description' => 'Deskripsi operator B']);
+        $transactionId = $transaction->id;
+        $sourceKey = $transaction->source_key;
+
+        $sync(array_reverse($records));
+        $transaction->refresh()->load('items');
+
+        $this->assertSame($transactionId, $transaction->id);
+        $this->assertSame($sourceKey, $transaction->source_key);
+        $this->assertSame('Overlay grup', $transaction->payment_description);
+        $this->assertSame('Deskripsi operator A', $transaction->items->firstWhere('source_item_id', 'KAS-001')->item_description);
+        $this->assertSame('Deskripsi operator B', $transaction->items->firstWhere('source_item_id', 'KAS-002')->item_description);
+        $this->assertCount(1, DB::connection('school')->table('transactions')->where('source_key', $sourceKey)->get());
+    }
+
+    public function test_projection_sync_preserves_draft_numbered_and_final_packages(): void
+    {
+        [$year, $sync] = $this->context();
+        $statuses = ['DRAFT', 'NUMBERED', 'FINAL'];
+        $packages = [];
+
+        foreach ($statuses as $index => $status) {
+            $proof = 'BKU-STATUS-'.($index + 1);
+            $sync($this->sourceRecord(id: 'KAS-STATUS-'.($index + 1), proof: $proof));
+            $transaction = Transaction::query()->where('no_bukti', $proof)->firstOrFail();
+            $attributes = ['status' => $status, 'quarter_code' => 'TW1', 'document_number' => sprintf('%03d/SPJ/2026', $index + 1)];
+            if ($status !== 'DRAFT') {
+                $attributes['numbered_at'] = now()->subMinutes(2);
+            }
+            if ($status === 'FINAL') {
+                $attributes['finalized_at'] = now()->subMinute();
+                $attributes['finalized_by'] = 1;
+                $attributes['snapshot'] = ['locked' => 'continuity-'.$status];
+            }
+            $packages[$transaction->id] = $transaction->spjPackage()->create($attributes);
+        }
+
+        $sync([
+            $this->sourceRecord(id: 'KAS-STATUS-1', proof: 'BKU-STATUS-1', amount: 110000),
+            $this->sourceRecord(id: 'KAS-STATUS-2', proof: 'BKU-STATUS-2', amount: 120000),
+            $this->sourceRecord(id: 'KAS-STATUS-3', proof: 'BKU-STATUS-3', amount: 130000),
+        ]);
+
+        foreach ($packages as $transactionId => $package) {
+            $transaction = Transaction::query()->with('spjPackage')->findOrFail($transactionId);
+            $package->refresh();
+            $this->assertSame($package->id, $transaction->spjPackage?->id);
+            $this->assertSame($package->status, $transaction->spjPackage?->status);
+            $this->assertSame($package->document_number, $transaction->spjPackage?->document_number);
+            $this->assertSame($package->numbered_at?->toDateTimeString(), $transaction->spjPackage?->numbered_at?->toDateTimeString());
+            $this->assertSame($package->finalized_at?->toDateTimeString(), $transaction->spjPackage?->finalized_at?->toDateTimeString());
+            $this->assertSame($package->snapshot, $transaction->spjPackage?->snapshot);
+        }
+
+        $this->assertSame(3, DB::connection('school')->table('transactions')->count());
+        $this->assertSame(3, DB::connection('school')->table('spj_packages')->count());
+    }
+
+    public function test_source_membership_change_reuses_legacy_transaction_and_preserves_package(): void
+    {
+        [$year, $sync] = $this->context();
+        $sync([
+            $this->sourceRecord(id: 'KAS-001', proof: 'BKU-MEMBERSHIP', amount: 100000),
+            $this->sourceRecord(id: 'KAS-002', proof: 'BKU-MEMBERSHIP', amount: 200000),
+        ]);
+
+        $transaction = Transaction::query()->with('items')->where('no_bukti', 'BKU-MEMBERSHIP')->firstOrFail();
+        $transaction->update([
+            'payment_description' => 'Overlay membership',
+            'spj_category' => 'BARANG',
+            'receipt_recipient_name' => 'Penerima membership',
+        ]);
+        $transaction->items->firstWhere('source_item_id', 'KAS-001')->update(['item_description' => 'Item lama A']);
+        $transaction->items->firstWhere('source_item_id', 'KAS-002')->update(['item_description' => 'Item lama B']);
+        $package = $transaction->spjPackage()->create([
+            'status' => 'NUMBERED',
+            'document_number' => '005/SPJ/2026',
+            'numbered_at' => now()->subMinute(),
+        ]);
+        $transactionId = $transaction->id;
+        $oldSourceKey = $transaction->source_key;
+
+        $sync([
+            $this->sourceRecord(id: 'KAS-001', proof: 'BKU-MEMBERSHIP', amount: 100000),
+            $this->sourceRecord(id: 'KAS-002', proof: 'BKU-MEMBERSHIP', amount: 200000),
+            $this->sourceRecord(id: 'KAS-003', proof: 'BKU-MEMBERSHIP', amount: 300000),
+        ]);
+
+        $transaction->refresh()->load(['items', 'spjPackage']);
+        $this->assertNotSame($oldSourceKey, $transaction->source_key);
+        $this->assertSame($transactionId, $transaction->id);
+        $this->assertSame($package->id, $transaction->spjPackage?->id);
+        $this->assertSame('NUMBERED', $transaction->spjPackage?->status);
+        $this->assertSame('005/SPJ/2026', $transaction->spjPackage?->document_number);
+        $this->assertSame('Overlay membership', $transaction->payment_description);
+        $this->assertSame('BARANG', $transaction->spj_category);
+        $this->assertSame('Penerima membership', $transaction->receipt_recipient_name);
+        $this->assertSame('Item lama A', $transaction->items->firstWhere('source_item_id', 'KAS-001')->item_description);
+        $this->assertSame('Item lama B', $transaction->items->firstWhere('source_item_id', 'KAS-002')->item_description);
+        $this->assertSame('ACTIVE', $transaction->source_status);
+        $this->assertSame(1, DB::connection('school')->table('transactions')->where('no_bukti', 'BKU-MEMBERSHIP')->count());
+        $this->assertSame(1, DB::connection('school')->table('spj_packages')->where('transaction_id', $transactionId)->count());
     }
 
     public function test_source_and_item_changes_create_diff_without_overwriting_manual_overlay(): void
@@ -232,13 +350,13 @@ class SpjSafeSyncReconciliationHardeningTest extends TestCase
     }
 
     /** @return array<string,mixed> */
-    private function sourceRecord(int $amount = 100000, int $volume = 1): array
+    private function sourceRecord(int $amount = 100000, int $volume = 1, string $id = 'KAS-001', string $proof = 'BKU-001'): array
     {
         return [
-            'ID_KAS_UMUM' => 'KAS-001',
+            'ID_KAS_UMUM' => $id,
             'ID_REF_SUMBER_DANA' => 1,
             'KATEGORI_BKU' => 'BELANJA',
-            'NO_BUKTI' => 'BKU-001',
+            'NO_BUKTI' => $proof,
             'TANGGAL_TRANSAKSI' => '2026-08-31',
             'JUMLAH' => $amount,
             'VOLUME' => $volume,

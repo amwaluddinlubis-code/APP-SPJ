@@ -329,6 +329,20 @@ Compatibility ke workspace/overlay lama memakai grouped `source_key` yang sama.
 lama yang sudah memiliki `item_description`, `payment_description`, Paket SPJ,
 nomor dokumen, dan lifecycle tanpa membuat overlay baru.
 
+Regression continuity menegaskan projection fresh tidak membuat atau mengganti
+Paket legacy. Sync legacy melakukan upsert transaksi berdasarkan grouped
+`source_key`, mempertahankan field operator dan package relation; item di-upsert
+berdasarkan `source_item_id = ID_KAS_UMUM`, sehingga reorder row tidak mengubah
+`item_description`. Projection berulang hanya memperbarui indeks fresh yang sama.
+
+Jika membership item berubah, grouped `source_key` memang berubah. Compatibility
+sync saat ini masih dapat menemukan transaction lama melalui `NO_BUKTI` sebagai
+fallback dan memperbarui identity grouped tersebut; regression hanya membuktikan
+kasus `NO_BUKTI` unik. `NO_BUKTI` bukan canonical identity dan kasus ambigu belum
+boleh dipetakan otomatis, terutama bila Paket sudah NUMBERED/FINAL. Kebijakan
+reconciliation serta safe-sync atomicity untuk kasus tersebut adalah pekerjaan
+Langkah 9.
+
 Setelah projection, transaksi source yang tidak lagi terbentuk dari snapshot
 `kas_umum` ditandai `SOURCE_MISSING` pada indeks fresh. Proses ini tidak menghapus
 baris, overlay operator, Paket SPJ, nomor dokumen, maupun data audit. Jika source

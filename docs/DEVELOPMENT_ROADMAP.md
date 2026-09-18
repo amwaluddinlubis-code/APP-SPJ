@@ -248,7 +248,7 @@ test tambahan aktif tanpa bug/boundary baru.
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / COMPATIBILITY VERIFIED FOR 2025 / 2026 LEGACY BASELINE ABSENT / RUNTIME REGRESSION PENDING.**
+**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / OVERLAY-PACKAGE CONTINUITY REGRESSION PASS / SAFE-SYNC ATOMICITY NEXT.**
 
 Koreksi raw-mirror yang didorong audit database nyata:
 
@@ -263,6 +263,12 @@ Koreksi raw-mirror yang didorong audit database nyata:
 - [x] regression multi-year/fund-source untuk 2025+2026, isolation, dan idempotensi;
 - [x] migration/integrity verification tenant: fresh migration applied, SQLite integrity `ok`, foreign-key violations 0;
 - [x] audit read-only 2025 seluruh scope bertransaksi dan 2026 seluruh kuartal: critical 0, financial mismatches 0;
+- [x] overlay continuity: payment/item/operator fields dan grouped identity tetap tersambung setelah sync/projection;
+- [x] package continuity DRAFT/NUMBERED/FINAL, nomor, timestamp, snapshot, source disappear/return;
+- [x] item mapping tetap berdasarkan `ID_KAS_UMUM` saat urutan raw source berubah;
+- [x] repeated projection tidak menambah fresh transaction/item atau Paket legacy;
+- [x] membership-change regression mengungkap fallback unik berbasis `NO_BUKTI` dan mempertahankan transaction/package lama;
+- [ ] desain reconciliation/atomicity untuk membership-change ambigu dan safe-sync penuh (Langkah 9);
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 
