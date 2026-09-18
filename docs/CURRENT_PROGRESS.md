@@ -536,6 +536,14 @@ PBS/setoran dua kali.
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
 
+## V2-B isolated schema implementation — 2026-09-19
+
+Additive V2-B schema PASS pada clone isolated/test saja. Guard, stable source identity
+registry lifecycle, overlay tables, legacy bridge, composite identity ordering, and
+immutability regression tersedia di `docs/V2_B_ISOLATED_SCHEMA_IMPLEMENTATION.md`.
+Real tenant migration, cleanup legacy, central registry mutation, dan source ARKAS mutation
+tetap BLOCKED sampai V2-A2 tenant discovery/source identity review selesai.
+
 ---
 
 ## Prioritas kerja aktif

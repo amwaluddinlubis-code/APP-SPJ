@@ -6,6 +6,7 @@ return [
     'fiscal_year_mode' => env('SPJ_FISCAL_YEAR_MODE', 'single-year'),
     'backup_retention' => (int) env('SPJ_BACKUP_RETENTION', 30),
     'data_path' => env('SPJ_DATA_PATH', storage_path('app')),
+    'v2_b_isolated_manifest' => null,
     'database_manager_sensitive_columns' => [
         'password',
         'token',
