@@ -342,8 +342,9 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] compatibility grouped `source_key` ke transaksi/overlay lama ditutup melalui `Transaction::forSourceIdentifier()`, sehingga overlay dan Paket lama tetap memakai identity transaksi yang sama;
 - [x] bruto fresh menjumlahkan seluruh item grouped; pajak hanya mengambil Pajak Belanja Terima (`id_ref_bku` 10/30) untuk seluruh parent item pada source yang sama; netto = bruto - pajak;
 - [x] regression source ditambahkan pada `SpjFreshTransactionCompatibilityTest` untuk overlay/Paket grouped source key serta gross/tax/net multi-item;
-- [ ] focused Laravel regression/CI untuk koreksi raw identity + projection/compatibility belum memiliki evidence runtime pada head ini;
-- [ ] statistik ringkasan/filter halaman transaksi masih perlu diselaraskan ke dataset fresh yang sama;
+- [x] statistik count/gross/tax/net halaman transaksi memakai `filteredQuery()` yang sama dengan tabel, sehingga fund source, periode, pencarian, dan workflow status memakai dataset fresh yang sama;
+- [x] regression `TransactionsWorkflowFilterTest` mengunci summary terhadap fund-source isolation, triwulan, status, dan pencarian;
+- [ ] focused Laravel regression/CI untuk koreksi raw identity + projection/compatibility/statistik belum memiliki evidence runtime pada head ini;
 - [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
 - [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan status `Belum Ada Rekening` bila pasangan tidak tersedia;
