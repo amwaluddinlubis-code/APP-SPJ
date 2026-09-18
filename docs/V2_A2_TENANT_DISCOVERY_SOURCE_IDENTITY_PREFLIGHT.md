@@ -1,8 +1,8 @@
 # V2-A2 — Tenant Discovery & Source Identity Preflight
 
-Status: **COMPLETE / READ-ONLY PREFLIGHT**  
-Baseline: `c4c7ce5bfa4c7d5e280fe6876f4a22c79b86aaf3`  
-Branch: `arkas-raw-mirror`  
+Status: **COMPLETE / READ-ONLY PREFLIGHT**
+Baseline: `c4c7ce5bfa4c7d5e280fe6876f4a22c79b86aaf3`
+Branch: `arkas-raw-mirror`
 Date: **2026-09-19**
 
 Tidak ada tenant asli yang dimutasi. Tidak ada migration, repair, rename, move,
