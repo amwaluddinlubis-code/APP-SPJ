@@ -51,8 +51,8 @@ class TransactionsTableLivewireTest extends TestCase
             'row_count' => 1, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::connection('school')->table('arkas_raw_mirror_rows')->insert([
-            'mirror_table_id' => $mirrorTableId, 'source_key' => 'BKU-001', 'ordinal' => 0,
-            'payload' => json_encode(['no_bukti' => 'BKU-001', 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Uraian dari ARKAS', 'jumlah' => 100000]),
+            'mirror_table_id' => $mirrorTableId, 'source_key' => 'BPU-001', 'ordinal' => 0,
+            'payload' => json_encode(['no_bukti' => 'BPU-001', 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Uraian dari ARKAS', 'jumlah' => 100000]),
             'payload_hash' => str_repeat('b', 64), 'created_at' => now(), 'updated_at' => now(),
         ]);
         SpjFreshTransaction::query()->create([
@@ -60,7 +60,7 @@ class TransactionsTableLivewireTest extends TestCase
             'fund_source_id' => $fundSource->id,
             'source_id' => 1,
             'source_table' => 'kas_umum',
-            'source_key' => 'BKU-001',
+            'source_key' => 'BPU-001',
             'raw_mirror_row_id' => 1,
             'status' => 'DITETAPKAN',
         ]);
@@ -73,7 +73,7 @@ class TransactionsTableLivewireTest extends TestCase
             ]);
 
         Livewire::test(TransactionsTable::class)
-            ->assertSee('BKU-001')
+            ->assertSee('BPU-001')
             ->assertSee('Paket SPJ')
             ->assertSee('Detail');
 
@@ -99,8 +99,8 @@ class TransactionsTableLivewireTest extends TestCase
         ]);
         foreach (range(1, 31) as $number) {
             $rawRowId = DB::connection('school')->table('arkas_raw_mirror_rows')->insertGetId([
-                'mirror_table_id' => $mirrorTableId, 'source_key' => sprintf('BKU-%03d', $number), 'ordinal' => $number,
-                'payload' => json_encode(['no_bukti' => sprintf('BKU-%03d', $number), 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Transaksi '.$number, 'jumlah' => 100000]),
+                'mirror_table_id' => $mirrorTableId, 'source_key' => sprintf('BPU-%03d', $number), 'ordinal' => $number,
+            'payload' => json_encode(['no_bukti' => sprintf('BPU-%03d', $number), 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Transaksi '.$number, 'jumlah' => 100000]),
                 'payload_hash' => str_repeat((string) (($number % 8) + 1), 64), 'created_at' => now(), 'updated_at' => now(),
             ]);
             SpjFreshTransaction::query()->create([
@@ -108,7 +108,7 @@ class TransactionsTableLivewireTest extends TestCase
                 'fund_source_id' => $fundSource->id,
                 'source_id' => 1,
                 'source_table' => 'kas_umum',
-                'source_key' => sprintf('BKU-%03d', $number),
+                'source_key' => sprintf('BPU-%03d', $number),
                 'raw_mirror_row_id' => $rawRowId,
                 'status' => 'DITETAPKAN',
             ]);
@@ -123,14 +123,14 @@ class TransactionsTableLivewireTest extends TestCase
 
         Livewire::withQueryParams(['page' => 2])
             ->test(TransactionsTable::class)
-            ->assertSee('BKU-016')
-            ->assertSee('BKU-030')
-            ->assertDontSee('BKU-001');
+            ->assertSee('BPU-016')
+            ->assertSee('BPU-030')
+            ->assertDontSee('BPU-001');
 
         Livewire::withQueryParams(['perPage' => 100])
             ->test(TransactionsTable::class)
-            ->assertSee('BKU-001')
-            ->assertSee('BKU-031');
+            ->assertSee('BPU-001')
+            ->assertSee('BPU-031');
     }
 
     private function prepareSchoolConnection(): void

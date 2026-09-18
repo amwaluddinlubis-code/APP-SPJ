@@ -273,6 +273,11 @@ class TransactionsTable extends Component
 
     private function applySpendingRowConstraint(Builder|QueryBuilder $query): void
     {
+        $query->whereRaw("(
+            upper(trim(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT))) LIKE 'BPU%'
+            OR upper(trim(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT))) LIKE 'BNU%'
+        )");
+
         // Volume is not consistently populated by ARKAS for BKU rows. Prefer
         // the account code while retaining volume for older source payloads.
         $query->whereRaw("(
