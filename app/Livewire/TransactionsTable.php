@@ -218,7 +218,8 @@ class TransactionsTable extends Component
     {
         $db = DB::connection('school');
         $parentIds = $this->rawSpendingQuery()
-            ->pluck(DB::raw("json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_umum')"))
+            ->selectRaw("json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_umum') as parent_source_id")
+            ->pluck('parent_source_id')
             ->filter()
             ->values()
             ->all();
