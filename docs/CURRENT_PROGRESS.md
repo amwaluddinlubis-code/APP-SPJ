@@ -334,11 +334,14 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] penandaan tabel `STALE` tanpa penghapusan snapshot;
 - [x] command sinkronisasi seluruh tabel;
 - [x] tombol GUI administrator yang mengantrikan mirror dengan konteks sekolah–tahun–sumber dana;
-- [x] projection awal `kas_umum` ke indeks transaksi/item fresh berbasis link raw mirror;
-- [x] GUI transaksi lama menggunakan indeks fresh dan pembacaan payload raw, dengan resolusi link berbasis `source_key` ke overlay domain;
-- [x] projection transaksi fresh menandai source yang hilang tanpa menghapus overlay operator atau Paket SPJ;
-- [x] projection transaksi fresh membatasi `kas_umum` melalui snapshot `anggaran` aktif pada tahun dan sumber dana yang sama;
-- [x] nilai bruto transaksi fresh mengikuti `kas_umum.saldo` pada seluruh baris dalam konteks anggaran aktif;
+- [x] raw mirror memakai primary key tabel ARKAS sebagai identity row; composite primary key mempertahankan seluruh komponen sesuai ordinal PK;
+- [x] projection `kas_umum` membentuk satu transaksi per `NO_BUKTI` dengan item per `ID_KAS_UMUM`;
+- [x] `source_key` transaksi fresh mengikuti kontrak legacy `SHA256(sorted(ID_KAS_UMUM))`, sedangkan item memakai `ID_KAS_UMUM`;
+- [x] projection transaksi fresh menandai source yang hilang tanpa menghapus overlay operator atau Paket SPJ dan mengosongkan `source_missing_since` ketika source kembali;
+- [x] projection transaksi fresh membatasi `kas_umum` melalui snapshot `anggaran` aktif pada tahun dan sumber dana yang sama serta hanya memproyeksikan row BELANJA;
+- [ ] compatibility resolver grouped `source_key` ke workspace/overlay lama belum ditutup;
+- [ ] agregasi bruto/pajak/netto grouped transaction pada accessor/UI belum ditutup;
+- [ ] focused Laravel regression/CI untuk koreksi raw identity + projection belum memiliki evidence runtime pada head ini;
 - [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
 - [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan status `Belum Ada Rekening` bila pasangan tidak tersedia;
@@ -354,7 +357,13 @@ Migrasi overlay operator reusable kini tersedia melalui `spj:migrate-overlay`.
 Perintah memiliki mode dry-run, membuat backup tenant sebelum execute, menyimpan
 report unmatched/ambiguous, dan tidak menulis database ARKAS/raw mirror.
 
-**Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
+Audit read-only terhadap database ARKAS asli dan APP-SPJ lama mengonfirmasi kontrak:
+2025 memiliki 104 transaksi dari 268 item BELANJA, sedangkan 2026 memiliki 66
+transaksi dari 139 item BELANJA. Pada `kas_umum`, `ID_KAS_UMUM` unik per row dan
+global fallback lama menghasilkan collision, sehingga koreksi identity menggunakan
+primary key tabel diterapkan sebelum projection grouped.
+
+**Status: SOURCE CORRECTION IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
 
