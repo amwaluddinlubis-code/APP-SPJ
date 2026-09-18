@@ -62,6 +62,8 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk numbering/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Untuk penutupan GUI, baca `GUI_STANDARDIZATION.md` lalu `GUI_RUNTIME_QA.md`.
 
+`OVERLAY_MIGRATION_RUNBOOK.md` adalah runbook operasi aktif untuk migrasi overlay operator dari ekspor database lama ke schema fresh SPJ.
+
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |

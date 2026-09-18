@@ -347,8 +347,12 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [ ] build dan real-data verification ARKASBridge paging pada database ARKAS nyata.
 
 Fondasi schema fresh SPJ juga sudah ditambahkan secara terpisah melalui namespace
-`spj_fresh_*`; projection awal transaksi/item sudah tersedia, sedangkan integrasi
-workspace GUI, overlay operator, dan pembentukan paket masih belum dilakukan.
+`spj_fresh_*`; projection awal transaksi/item, integrasi overlay operator, dan
+pembentukan paket fresh sudah tersedia untuk tenant yang telah diproyeksikan.
+
+Migrasi overlay operator reusable kini tersedia melalui `spj:migrate-overlay`.
+Perintah memiliki mode dry-run, membuat backup tenant sebelum execute, menyimpan
+report unmatched/ambiguous, dan tidak menulis database ARKAS/raw mirror.
 
 **Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 
