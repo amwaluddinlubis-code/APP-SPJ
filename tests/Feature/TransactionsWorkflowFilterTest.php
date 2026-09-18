@@ -31,6 +31,7 @@ class TransactionsWorkflowFilterTest extends TestCase
         ]);
 
         FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        FundSource::query()->create(['id' => 2, 'code' => 'BOSK', 'name' => 'BOS Kinerja']);
         FiscalYear::query()->create(['id' => 1, 'year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
         $this->mirrorTableId = DB::connection('school')->table('arkas_raw_mirror_tables')->insertGetId([
             'source_id' => 1, 'source_table' => 'kas_umum', 'schema' => '{}', 'schema_hash' => str_repeat('a', 64),
@@ -64,6 +65,45 @@ class TransactionsWorkflowFilterTest extends TestCase
         $this->assertFilteredIds('Perlu Perhatian', [$attention->id]);
     }
 
+    public function test_summary_stats_follow_the_same_fresh_filters_as_transaction_table(): void
+    {
+        $draft = $this->transaction('BPU-101', '2026-01-11', 'DRAFT', amount: 100000, tax: 10000);
+        $ready = $this->transaction('BPU-102', '2026-04-12', 'READY', amount: 200000, tax: 20000);
+        $this->transaction('BPU-999', '2026-01-20', 'READY', amount: 900000, tax: 90000, fundSourceId: 2);
+
+        $component = Livewire::test(TransactionsTable::class)
+            ->assertViewHas('filteredStats', fn (object $stats): bool => (int) $stats->count === 2
+                && (float) $stats->gross === 300000.0
+                && (float) $stats->tax === 30000.0
+                && (float) $stats->net === 270000.0);
+
+        $component
+            ->set('quarter', 1)
+            ->assertViewHas('transactions', fn ($transactions): bool => $transactions->getCollection()->pluck('id')->all() === [$draft->id])
+            ->assertViewHas('filteredStats', fn (object $stats): bool => (int) $stats->count === 1
+                && (float) $stats->gross === 100000.0
+                && (float) $stats->tax === 10000.0
+                && (float) $stats->net === 90000.0);
+
+        $component
+            ->set('quarter', null)
+            ->set('status', 'Siap Dinomori')
+            ->assertViewHas('transactions', fn ($transactions): bool => $transactions->getCollection()->pluck('id')->all() === [$ready->id])
+            ->assertViewHas('filteredStats', fn (object $stats): bool => (int) $stats->count === 1
+                && (float) $stats->gross === 200000.0
+                && (float) $stats->tax === 20000.0
+                && (float) $stats->net === 180000.0);
+
+        $component
+            ->set('status', '')
+            ->set('q', 'BPU-102')
+            ->assertViewHas('transactions', fn ($transactions): bool => $transactions->getCollection()->pluck('id')->all() === [$ready->id])
+            ->assertViewHas('filteredStats', fn (object $stats): bool => (int) $stats->count === 1
+                && (float) $stats->gross === 200000.0
+                && (float) $stats->tax === 20000.0
+                && (float) $stats->net === 180000.0);
+    }
+
     private function assertFilteredIds(string $status, array $expectedIds): void
     {
         Livewire::test(TransactionsTable::class)
@@ -79,18 +119,33 @@ class TransactionsWorkflowFilterTest extends TestCase
         ?string $packageStatus = null,
         ?string $documentNumber = null,
         string $sourceStatus = 'ACTIVE',
+        float $amount = 100000,
+        float $tax = 0,
+        int $fundSourceId = 1,
     ): SpjFreshTransaction {
+        $sourceItemId = 'KAS-'.$noBukti;
+        $payload = [
+            'id_kas_umum' => $sourceItemId,
+            'id_ref_bku' => 4,
+            'no_bukti' => $noBukti,
+            'tanggal_transaksi' => $date,
+            'uraian' => 'Barang uji',
+            'kode_rekening' => '5.1.02',
+            'saldo' => $amount,
+            'soft_delete' => 0,
+        ];
+        $encodedPayload = json_encode($payload, JSON_THROW_ON_ERROR);
         $rawRowId = DB::connection('school')->table('arkas_raw_mirror_rows')->insertGetId([
-            'mirror_table_id' => $this->mirrorTableId, 'source_key' => $noBukti, 'ordinal' => 0,
-            'payload' => json_encode(['no_bukti' => $noBukti, 'tanggal_transaksi' => $date, 'uraian' => 'Barang uji', 'jumlah' => 100000]),
-            'payload_hash' => hash('sha256', $noBukti), 'created_at' => now(), 'updated_at' => now(),
+            'mirror_table_id' => $this->mirrorTableId, 'source_key' => $sourceItemId, 'ordinal' => 0,
+            'payload' => $encodedPayload,
+            'payload_hash' => hash('sha256', $encodedPayload), 'created_at' => now(), 'updated_at' => now(),
         ]);
         $transaction = SpjFreshTransaction::query()->create([
             'fiscal_year_id' => 1,
-            'fund_source_id' => 1,
+            'fund_source_id' => $fundSourceId,
             'source_id' => 1,
             'source_table' => 'kas_umum',
-            'source_key' => $noBukti,
+            'source_key' => hash('sha256', $sourceItemId),
             'raw_mirror_row_id' => $rawRowId,
             'spj_category' => 'BARANG',
             'source_status' => $sourceStatus,
@@ -100,10 +155,31 @@ class TransactionsWorkflowFilterTest extends TestCase
         SpjFreshTransactionItem::query()->create([
             'spj_fresh_transaction_id' => $transaction->id,
             'source_table' => 'kas_umum',
-            'source_key' => $noBukti,
+            'source_key' => $sourceItemId,
             'raw_mirror_row_id' => $rawRowId,
             'item_description' => 'Barang uji',
         ]);
+
+        if ($tax > 0) {
+            $taxPayload = [
+                'id_kas_umum' => 'PBT-'.$sourceItemId,
+                'parent_id_kas_umum' => $sourceItemId,
+                'id_ref_bku' => 10,
+                'saldo' => $tax,
+                'is_ppn' => 1,
+                'soft_delete' => 0,
+            ];
+            $encodedTax = json_encode($taxPayload, JSON_THROW_ON_ERROR);
+            DB::connection('school')->table('arkas_raw_mirror_rows')->insert([
+                'mirror_table_id' => $this->mirrorTableId,
+                'source_key' => 'PBT-'.$sourceItemId,
+                'ordinal' => 0,
+                'payload' => $encodedTax,
+                'payload_hash' => hash('sha256', $encodedTax),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         if ($packageStatus) {
             SpjFreshPackage::query()->create([
