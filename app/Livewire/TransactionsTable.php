@@ -87,7 +87,7 @@ class TransactionsTable extends Component
     public function getTransactionsProperty(): LengthAwarePaginator
     {
         $query = $this->filteredQuery()
-            ->with('spjPackage', 'rawMirrorRow')
+            ->with('spjPackage', 'rawMirrorRow', 'items.rawMirrorRow')
             ->withCount('items')
             ->addSelect([
                 'source_items_count' => DB::connection('school')->table('arkas_raw_mirror_rows as related_raw')
