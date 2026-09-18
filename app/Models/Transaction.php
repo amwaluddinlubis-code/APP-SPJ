@@ -91,6 +91,7 @@ class Transaction extends Model
     {
         return $query->where(fn (Builder $query): Builder => $query
             ->where('id_kas_umum', $identifier)
+            ->orWhere('source_key', $identifier)
             ->orWhereKey($identifier));
     }
 
