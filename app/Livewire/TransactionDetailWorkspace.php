@@ -34,7 +34,7 @@ class TransactionDetailWorkspace extends Component
     {
         $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first()
             ?: $this->transactionFromFresh($transactionId);
-        if (! $transaction || ! $context->matchesTransaction($transaction)) {
+        if (! $transaction || ($transaction->exists && ! $context->matchesTransaction($transaction))) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -207,8 +207,6 @@ class TransactionDetailWorkspace extends Component
     {
         $fresh = SpjFreshTransaction::query()
             ->with(['rawMirrorRow', 'items.rawMirrorRow'])
-            ->where('fiscal_year_id', session('active_fiscal_year_id'))
-            ->where('fund_source_id', session('active_fund_source_id'))
             ->where('source_table', 'kas_umum')
             ->where('source_key', $sourceKey)
             ->first();

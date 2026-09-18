@@ -60,8 +60,7 @@ class TransactionController extends Controller
         $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first();
         if ($transaction === null) {
             $fresh = SpjFreshTransaction::query()
-                ->where('fiscal_year_id', $context->fiscalYearId())
-                ->where('fund_source_id', $context->fundSourceId())
+                ->where('source_table', 'kas_umum')
                 ->where('source_key', $transactionId)
                 ->first();
             if ($fresh !== null) {
