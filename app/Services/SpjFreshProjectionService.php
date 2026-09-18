@@ -66,6 +66,8 @@ final class SpjFreshProjectionService
         $yearValue = (string) $year->year;
         $approvedBudgetIds = $this->approvedBudgetIds($db, $source, $yearValue, $fundSourceId);
         if ($approvedBudgetIds === []) {
+            $this->markContextSourceMissing($db, $year, $fundSourceId, $source);
+
             return ['transactions' => 0, 'items' => 0, 'skipped' => 0];
         }
 
@@ -168,6 +170,19 @@ final class SpjFreshProjectionService
             }
         }
 
+        $this->markUnprojectedTransactionsSourceMissing($db, $year, $fundSourceId, $source, $projectedTransactionKeys);
+
+        return ['transactions' => $transactionCount, 'items' => $itemCount, 'skipped' => $skipped];
+    }
+
+    /** @param array<string, bool> $projectedTransactionKeys */
+    private function markUnprojectedTransactionsSourceMissing(
+        Connection $db,
+        FiscalYear $year,
+        int $fundSourceId,
+        ArkasSource $source,
+        array $projectedTransactionKeys,
+    ): void {
         $existingTransactions = $db->table('spj_fresh_transactions')
             ->where('fiscal_year_id', $year->id)
             ->where('fund_source_id', $fundSourceId)
@@ -189,8 +204,11 @@ final class SpjFreshProjectionService
                     'updated_at' => now(),
                 ]);
         }
+    }
 
-        return ['transactions' => $transactionCount, 'items' => $itemCount, 'skipped' => $skipped];
+    private function markContextSourceMissing(Connection $db, FiscalYear $year, int $fundSourceId, ArkasSource $source): void
+    {
+        $this->markUnprojectedTransactionsSourceMissing($db, $year, $fundSourceId, $source, []);
     }
 
     /** @return array<string, bool> */

@@ -268,7 +268,11 @@ Koreksi raw-mirror yang didorong audit database nyata:
 - [x] item mapping tetap berdasarkan `ID_KAS_UMUM` saat urutan raw source berubah;
 - [x] repeated projection tidak menambah fresh transaction/item atau Paket legacy;
 - [x] membership-change regression mengungkap fallback unik berbasis `NO_BUKTI` dan mempertahankan transaction/package lama;
-- [ ] desain reconciliation/atomicity untuk membership-change ambigu dan safe-sync penuh (Langkah 9);
+- [x] safe-sync atomic per raw source table; failure mempertahankan snapshot lama dan menghentikan projection lanjutan;
+- [x] approved budget hilang/kembali memproses fresh `SOURCE_MISSING`/`ACTIVE` tanpa delete atau duplicate;
+- [x] membership change konservatif: old legacy transaction/package dipertahankan, event `SOURCE_ITEM_CHANGED` dicatat, dan event identik tidak diulang;
+- [x] NUMBERED/FINAL tidak auto-remap atau mengubah nomor/snapshot pada membership change;
+- [ ] desain safe-sync/performance lanjutan untuk kasus ambiguous membership dan Bridge paging (Langkah 10);
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 

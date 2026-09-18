@@ -138,7 +138,7 @@ class SpjSafeSyncReconciliationHardeningTest extends TestCase
         $this->assertSame(3, DB::connection('school')->table('spj_packages')->count());
     }
 
-    public function test_source_membership_change_reuses_legacy_transaction_and_preserves_package(): void
+    public function test_source_membership_change_preserves_legacy_transaction_and_requires_reconciliation(): void
     {
         [$year, $sync] = $this->context();
         $sync([
@@ -169,19 +169,36 @@ class SpjSafeSyncReconciliationHardeningTest extends TestCase
         ]);
 
         $transaction->refresh()->load(['items', 'spjPackage']);
-        $this->assertNotSame($oldSourceKey, $transaction->source_key);
+        $this->assertSame($oldSourceKey, $transaction->source_key);
         $this->assertSame($transactionId, $transaction->id);
         $this->assertSame($package->id, $transaction->spjPackage?->id);
         $this->assertSame('NUMBERED', $transaction->spjPackage?->status);
         $this->assertSame('005/SPJ/2026', $transaction->spjPackage?->document_number);
+        $this->assertSame('SOURCE_MISSING', $transaction->source_status);
+        $this->assertTrue((bool) $transaction->requires_reconciliation);
         $this->assertSame('Overlay membership', $transaction->payment_description);
         $this->assertSame('BARANG', $transaction->spj_category);
         $this->assertSame('Penerima membership', $transaction->receipt_recipient_name);
         $this->assertSame('Item lama A', $transaction->items->firstWhere('source_item_id', 'KAS-001')->item_description);
         $this->assertSame('Item lama B', $transaction->items->firstWhere('source_item_id', 'KAS-002')->item_description);
-        $this->assertSame('ACTIVE', $transaction->source_status);
         $this->assertSame(1, DB::connection('school')->table('transactions')->where('no_bukti', 'BKU-MEMBERSHIP')->count());
         $this->assertSame(1, DB::connection('school')->table('spj_packages')->where('transaction_id', $transactionId)->count());
+        $event = DB::connection('school')->table('transaction_source_events')
+            ->where('transaction_id', $transactionId)
+            ->where('event_type', 'SOURCE_ITEM_CHANGED')
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($event);
+        $this->assertSame(['KAS-001', 'KAS-002'], json_decode($event->before_snapshot, true)['source_item_ids']);
+        $this->assertSame(['KAS-001', 'KAS-002', 'KAS-003'], json_decode($event->after_snapshot, true)['source_item_ids']);
+
+        $eventCount = DB::connection('school')->table('transaction_source_events')->where('transaction_id', $transactionId)->count();
+        $sync([
+            $this->sourceRecord(id: 'KAS-001', proof: 'BKU-MEMBERSHIP', amount: 100000),
+            $this->sourceRecord(id: 'KAS-002', proof: 'BKU-MEMBERSHIP', amount: 200000),
+            $this->sourceRecord(id: 'KAS-003', proof: 'BKU-MEMBERSHIP', amount: 300000),
+        ]);
+        $this->assertSame($eventCount, DB::connection('school')->table('transaction_source_events')->where('transaction_id', $transactionId)->count());
     }
 
     public function test_source_and_item_changes_create_diff_without_overwriting_manual_overlay(): void

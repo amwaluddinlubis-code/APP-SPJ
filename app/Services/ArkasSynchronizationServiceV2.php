@@ -8,6 +8,7 @@ use App\Models\School;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Full-refresh importer. It prunes stale ARKAS rows so historical revisions
@@ -333,10 +334,83 @@ class ArkasSynchronizationServiceV2
             $sourceHash = hash('sha256', json_encode($hashPayload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
             $existing = DB::connection('school')->table('transactions')
                 ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('source_key', $sourceKey)->first();
-            $existing ??= DB::connection('school')->table('transactions')
-                ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('id_kas_umum', $first['ID_KAS_UMUM'])->first();
-            $existing ??= DB::connection('school')->table('transactions')
-                ->where(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'no_bukti' => $noBukti])->first();
+            $membershipCandidates = collect();
+            if ($existing === null) {
+                $membershipCandidates = DB::connection('school')->table('transactions')
+                    ->where('fiscal_year_id', $year->id)
+                    ->where('fund_source_id', $year->fund_source_id)
+                    ->where('no_bukti', $noBukti)
+                    ->where(function ($query) use ($sourceKey): void {
+                        $query->whereNull('source_key')->orWhere('source_key', '<>', $sourceKey);
+                    })
+                    ->get(['id', 'source_key', 'source_hash']);
+
+                $legacyWithoutCanonicalKey = DB::connection('school')->table('transactions')
+                    ->where('fiscal_year_id', $year->id)
+                    ->where('fund_source_id', $year->fund_source_id)
+                    ->where(function ($query): void {
+                        $query->whereNull('source_key')->orWhere('source_key', '');
+                    })
+                    ->where('id_kas_umum', $first['ID_KAS_UMUM'])
+                    ->get();
+                if ($legacyWithoutCanonicalKey->count() === 1) {
+                    $existing = $legacyWithoutCanonicalKey->first();
+                    $membershipCandidates = collect();
+                }
+            }
+            if ($existing === null && $membershipCandidates->isNotEmpty()) {
+                foreach ($membershipCandidates as $candidate) {
+                    DB::connection('school')->table('transactions')
+                        ->where('id', $candidate->id)
+                        ->update(['requires_reconciliation' => true, 'updated_at' => now()]);
+
+                    if (! Schema::connection('school')->hasTable('transaction_source_events')) {
+                        continue;
+                    }
+
+                    $membershipEventExists = DB::connection('school')->table('transaction_source_events')
+                        ->where('transaction_id', $candidate->id)
+                        ->where('event_type', 'SOURCE_ITEM_CHANGED')
+                        ->get(['after_snapshot'])
+                        ->contains(function (object $event) use ($sourceKey): bool {
+                            $snapshot = json_decode((string) $event->after_snapshot, true);
+
+                            return is_array($snapshot) && ($snapshot['source_key'] ?? null) === $sourceKey;
+                        });
+                    if ($membershipEventExists) {
+                        continue;
+                    }
+
+                    $beforeItemIds = DB::connection('school')->table('transaction_items')
+                        ->where('transaction_id', $candidate->id)
+                        ->whereNotNull('source_item_id')
+                        ->pluck('source_item_id')
+                        ->map(static fn ($id): string => (string) $id)
+                        ->sort()
+                        ->values()
+                        ->all();
+                    $beforeSnapshot = [
+                        'source_key' => $candidate->source_key,
+                        'source_item_ids' => $beforeItemIds,
+                    ];
+                    $afterSnapshot = [
+                        'source_key' => $sourceKey,
+                        'source_item_ids' => collect($sourceItemIds)->sort()->values()->all(),
+                    ];
+                    DB::connection('school')->table('transaction_source_events')->insert([
+                        'transaction_id' => $candidate->id,
+                        'sync_run_id' => $runId,
+                        'event_type' => 'SOURCE_ITEM_CHANGED',
+                        'before_hash' => hash('sha256', json_encode($beforeSnapshot, JSON_THROW_ON_ERROR)),
+                        'after_hash' => hash('sha256', json_encode($afterSnapshot, JSON_THROW_ON_ERROR)),
+                        'before_snapshot' => json_encode($beforeSnapshot, JSON_THROW_ON_ERROR),
+                        'after_snapshot' => json_encode($afterSnapshot, JSON_THROW_ON_ERROR),
+                        'created_at' => now(),
+                    ]);
+                }
+
+                continue;
+            }
             $hasPackage = $existing && DB::connection('school')->table('spj_packages')->where('transaction_id', $existing->id)->exists();
             $data['source_hash'] = $sourceHash;
             $isOrderingMetadataOnlyHash = $existing && $existing->source_hash === $hashWithOrderingMetadata;

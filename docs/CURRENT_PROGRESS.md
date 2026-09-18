@@ -206,8 +206,10 @@ Yang dikunci oleh regression:
   serta snapshot; projection/sync tidak membuat Paket baru;
 - source disappear/return mempertahankan transaksi, item, overlay, dan Paket;
 - repeated projection tetap idempotent, dan membership change
-  `KAS-001/KAS-002` → `KAS-001/KAS-002/KAS-003` pada `NO_BUKTI` unik memakai
-  transaction legacy yang sama tanpa duplicate Paket.
+  `KAS-001/KAS-002` → `KAS-001/KAS-002/KAS-003` pada `NO_BUKTI` unik tidak
+  memindahkan Paket: legacy transaction lama dipertahankan sebagai
+  `SOURCE_MISSING` dengan reconciliation event, sedangkan source baru tetap
+  menjadi representasi fresh.
 
 Read-only tenant audit pada `10260756` / database `10260786`:
 
@@ -224,9 +226,39 @@ integrity: PASS; foreign-key violations: 0; financial mismatches: 0
 fund 1 dan fund 12. Tidak ditemukan critical anomaly atau financial mismatch;
 warning yang ada berupa kelengkapan data lama, terutama blank
 `item_description`. Membership change aman pada fixture `NO_BUKTI` unik, tetapi
-fallback compatibility berbasis `NO_BUKTI` belum menjadi kebijakan reconciliation
-untuk kasus ambigu; itu tetap gap safe-sync Langkah 9 dan tidak boleh otomatis
-memindahkan Paket NUMBERED/FINAL.
+fallback compatibility berbasis `NO_BUKTI` tidak lagi dipakai untuk mengganti
+canonical identity. Implementasi kini mempertahankan transaction lama dan
+menolak pemindahan Paket NUMBERED/FINAL.
+
+### Safe-sync atomicity & membership reconciliation — 2026-09-19
+
+Refresh raw mirror sekarang mempunyai transaction per source table yang mencakup
+update metadata dan penggantian row. Jika fetch/encode/insert gagal, snapshot
+lama dan metadata `ACTIVE` tetap utuh; projection tidak dipanggil karena job dan
+command hanya melanjutkan setelah `synchronize()` berhasil.
+
+Projection tidak lagi early-return tanpa menandai state ketika approved budget
+context kosong. Existing fresh transaction menjadi `SOURCE_MISSING` dengan
+`source_missing_since` idempotent, lalu kembali `ACTIVE` dan timestamp dikosongkan
+ketika budget/source kembali. Tidak ada delete overlay/package pada jalur ini.
+
+Membership change menggunakan policy konservatif: canonical source key baru tidak
+meng-update legacy transaction lama. Transaction lama tetap menyimpan overlay dan
+Paket, ditandai perlu rekonsiliasi, dan menerima event `SOURCE_ITEM_CHANGED`
+dengan daftar item sebelum/sesudah. Sync berulang tidak menggandakan event yang
+sama. Source baru tersedia melalui fresh projection; auto-remap Paket atau nomor
+NUMBERED/FINAL tidak dilakukan.
+
+Evidence 2026-09-19: focused Langkah 9 suite lulus 15 test / 132 assertions
+(15 deprecated); related synchronization/workspace gate lulus 75 test / 640
+assertions (75 deprecated); canonical `spj:verify --strict-style --skip-build`
+lulus 16 test / 2.558 assertions (308 deprecated). Pint lulus dan `git diff
+--check` bersih. Audit tenant read-only NPSN 10260756 memakai `query_only=ON`:
+integritas PASS, foreign-key violations 0, 2025 fund 1 memiliki 104
+transaksi legacy/fresh dan 268 item legacy/fresh, 2025 fund 12 17/17
+transaksi dan 24/24 item; 2026 fund 1 belum memiliki baseline legacy dan
+memiliki 175 fresh historis, 66 ACTIVE. Paket tenant yang diaudit 0, sehingga
+status package lifecycle real-data tetap RVR.
 
 P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 

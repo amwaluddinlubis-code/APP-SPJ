@@ -129,6 +129,83 @@ class SpjFreshProjectionContractTest extends TestCase
         );
     }
 
+    public function test_missing_approved_budget_marks_existing_projection_missing_and_return_reactivates_it(): void
+    {
+        $this->prepareSchoolConnection();
+        $source = new ArkasSource;
+        $source->id = 7;
+        $year = new FiscalYear;
+        $year->id = 11;
+        $year->year = 2026;
+
+        $budgetTableId = $this->insertMirrorTable($source->id, 'anggaran');
+        $this->insertRawRow($budgetTableId, 'ANG-001', [
+            'id_anggaran' => 'ANG-001',
+            'tahun_anggaran' => '2026',
+            'id_ref_sumber_dana' => 1,
+            'is_approve' => 1,
+            'is_aktif' => 1,
+            'soft_delete' => 0,
+            'is_revisi' => 0,
+            'last_update' => '2026-01-01 08:00:00',
+        ]);
+        $kasTableId = $this->insertMirrorTable($source->id, 'kas_umum');
+        $this->insertRawRow($kasTableId, 'KAS-001', [
+            'id_kas_umum' => 'KAS-001',
+            'id_ref_bku' => 4,
+            'id_anggaran' => 'ANG-001',
+            'tanggal_transaksi' => '2026-02-03',
+            'no_bukti' => 'BPU-001',
+            'saldo' => 100000,
+            'soft_delete' => 0,
+        ]);
+
+        app(SpjFreshProjectionService::class)->project($year, 1, $source);
+        $transaction = DB::connection('school')->table('spj_fresh_transactions')->sole();
+
+        DB::connection('school')->table('arkas_raw_mirror_rows')
+            ->where('mirror_table_id', $budgetTableId)
+            ->update(['payload' => json_encode([
+                'id_anggaran' => 'ANG-001',
+                'tahun_anggaran' => '2026',
+                'id_ref_sumber_dana' => 1,
+                'is_approve' => 0,
+                'is_aktif' => 0,
+                'soft_delete' => 0,
+                'is_revisi' => 0,
+                'last_update' => '2026-01-01 08:00:00',
+            ], JSON_THROW_ON_ERROR)]);
+
+        app(SpjFreshProjectionService::class)->project($year, 1, $source);
+        $transaction = DB::connection('school')->table('spj_fresh_transactions')->find($transaction->id);
+        $this->assertSame('SOURCE_MISSING', $transaction->source_status);
+        $this->assertNotNull($transaction->source_missing_since);
+        $firstMissingSince = $transaction->source_missing_since;
+        $this->assertSame(1, DB::connection('school')->table('spj_fresh_transactions')->count());
+
+        app(SpjFreshProjectionService::class)->project($year, 1, $source);
+        $this->assertSame($firstMissingSince, DB::connection('school')->table('spj_fresh_transactions')->find($transaction->id)->source_missing_since);
+
+        DB::connection('school')->table('arkas_raw_mirror_rows')
+            ->where('mirror_table_id', $budgetTableId)
+            ->update(['payload' => json_encode([
+                'id_anggaran' => 'ANG-001',
+                'tahun_anggaran' => '2026',
+                'id_ref_sumber_dana' => 1,
+                'is_approve' => 1,
+                'is_aktif' => 1,
+                'soft_delete' => 0,
+                'is_revisi' => 0,
+                'last_update' => '2026-01-01 08:00:00',
+            ], JSON_THROW_ON_ERROR)]);
+
+        app(SpjFreshProjectionService::class)->project($year, 1, $source);
+        $returned = DB::connection('school')->table('spj_fresh_transactions')->find($transaction->id);
+        $this->assertSame('ACTIVE', $returned->source_status);
+        $this->assertNull($returned->source_missing_since);
+        $this->assertSame(1, DB::connection('school')->table('spj_fresh_transactions')->count());
+    }
+
     public function test_raw_mirror_catch_up_projects_all_years_and_fund_sources_idempotently(): void
     {
         $this->prepareSchoolConnection();

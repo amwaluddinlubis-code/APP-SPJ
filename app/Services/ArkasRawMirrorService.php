@@ -53,18 +53,19 @@ final class ArkasRawMirrorService
                 'updated_at' => $now,
             ];
             $mirrorTableId = $mirrorTable?->id;
-            if ($mirrorTableId === null) {
-                $mirrorTableId = $db->table('arkas_raw_mirror_tables')->insertGetId([
-                    'source_id' => $source->id,
-                    'source_table' => $tableName,
-                    ...$attributes,
-                    'created_at' => $now,
-                ]);
-            } else {
-                $db->table('arkas_raw_mirror_tables')->where('id', $mirrorTableId)->update($attributes);
-            }
 
-            $db->transaction(function () use ($db, $mirrorTableId, $records, $primaryKeyColumns, $now): void {
+            $db->transaction(function () use (&$mirrorTableId, $db, $source, $tableName, $attributes, $records, $primaryKeyColumns, $now): void {
+                if ($mirrorTableId === null) {
+                    $mirrorTableId = $db->table('arkas_raw_mirror_tables')->insertGetId([
+                        'source_id' => $source->id,
+                        'source_table' => $tableName,
+                        ...$attributes,
+                        'created_at' => $now,
+                    ]);
+                } else {
+                    $db->table('arkas_raw_mirror_tables')->where('id', $mirrorTableId)->update($attributes);
+                }
+
                 $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirrorTableId)->delete();
                 $seen = [];
                 $batch = [];

@@ -336,12 +336,18 @@ berdasarkan `source_item_id = ID_KAS_UMUM`, sehingga reorder row tidak mengubah
 `item_description`. Projection berulang hanya memperbarui indeks fresh yang sama.
 
 Jika membership item berubah, grouped `source_key` memang berubah. Compatibility
-sync saat ini masih dapat menemukan transaction lama melalui `NO_BUKTI` sebagai
-fallback dan memperbarui identity grouped tersebut; regression hanya membuktikan
-kasus `NO_BUKTI` unik. `NO_BUKTI` bukan canonical identity dan kasus ambigu belum
-boleh dipetakan otomatis, terutama bila Paket sudah NUMBERED/FINAL. Kebijakan
-reconciliation serta safe-sync atomicity untuk kasus tersebut adalah pekerjaan
-Langkah 9.
+sync tidak lagi memperbarui identity grouped lama melalui `NO_BUKTI`. Karena
+`NO_BUKTI` context-tenant memiliki unique constraint, membership change
+konservatif mempertahankan transaction lama, menandainya `SOURCE_MISSING`,
+mencatat `SOURCE_ITEM_CHANGED` dengan daftar item sebelum/sesudah, dan membiarkan
+group baru direpresentasikan oleh fresh projection. Paket NUMBERED/FINAL tidak
+dipindahkan dan nomor tidak berubah; event identik tidak dibuat ulang pada sync
+berikutnya. `NO_BUKTI` tetap bukan canonical identity, sehingga kasus legacy
+ambigu di luar constraint harus berhenti untuk manual reconciliation.
+
+Refresh raw mirror memakai transaction per source table untuk metadata dan row
+replacement sekaligus. Projection hanya dipanggil setelah seluruh mirror sync
+berhasil; kegagalan satu tabel mempertahankan snapshot lama yang usable.
 
 Setelah projection, transaksi source yang tidak lagi terbentuk dari snapshot
 `kas_umum` ditandai `SOURCE_MISSING` pada indeks fresh. Proses ini tidak menghapus
