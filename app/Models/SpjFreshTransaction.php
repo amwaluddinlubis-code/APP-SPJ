@@ -165,7 +165,7 @@ class SpjFreshTransaction extends Model
             ->where('tax_table.status', 'ACTIVE')
             ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
             ->whereRaw("CAST(COALESCE(json_extract(tax_raw.payload, '$.id_ref_bku'), 0) AS INTEGER) IN (10, 30)")
-            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
+            ->whereRaw("(CAST(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), 0) AS INTEGER) = 1)")
             ->whereIn(DB::raw("json_extract(tax_raw.payload, '$.parent_id_kas_umum')"), $parentIds)
             ->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
     }
