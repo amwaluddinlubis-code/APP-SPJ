@@ -63,7 +63,11 @@ Untuk kebutuhan mirror mentah seluruh database, administrator dapat memakai tomb
 `arkas:sync-raw-mirror`. Keduanya menggunakan raw mirror yang sama.
 Jalur ini menemukan semua tabel melalui Bridge, menyimpan schema dan payload tanpa
 mapping domain, mempertahankan snapshot ketika tabel menjadi stale, dan tidak boleh
-menulis data ke tabel domain/operator SPJ.
+menulis data ke tabel domain/operator SPJ. Identity row raw mirror mengikuti primary
+key SQLite yang dilaporkan Bridge. Primary key tunggal memakai nilai key asli; composite
+primary key memakai seluruh komponen sesuai ordinal PK untuk membentuk identity
+deterministic. Resolver fallback hanya dipakai bila tabel memang tidak mempunyai
+primary key yang dapat digunakan.
 
 Jalur GUI menjalankan job queue dengan konteks `School + Fiscal Year + Fund Source`.
 Database ARKAS dibaca saja; tabel `rkas` lama dan tabel fresh SPJ tidak diubah oleh
@@ -296,13 +300,19 @@ mengikuti snapshot transaksi.
 
 Canonical transaction adapter bertugas menjaga identitas source dan mapping domain.
 
-Daftar Transaksi membaca indeks `spj_fresh_transactions` dan payload raw. Link
-Detail/Paket membawa `source_key`, lalu resolver transaksi mencocokkannya ke
-`transactions.id_kas_umum` sebelum membuka workspace lama yang memiliki overlay
-operator dan lifecycle SPJ. ID internal kedua tabel tidak diasumsikan sama.
+Daftar Transaksi membaca indeks `spj_fresh_transactions` dan payload raw. Satu
+transaksi fresh mewakili satu kelompok BELANJA dengan `NO_BUKTI` yang sama; setiap
+`ID_KAS_UMUM` tetap menjadi item fresh terpisah. `source_key` transaksi dibentuk
+sebagai SHA-256 dari daftar `ID_KAS_UMUM` item yang diurutkan, sama dengan identity
+canonical transaction sync lama, sedangkan `source_key` item adalah
+`ID_KAS_UMUM` itu sendiri.
 
-Setelah projection, source yang tidak lagi ada pada snapshot `kas_umum` ditandai
-`SOURCE_MISSING` pada indeks fresh dan item fresh. Proses ini tidak menghapus
+Jalur workspace/overlay lama tidak boleh mengasumsikan `source_key` transaksi fresh
+sama dengan satu `ID_KAS_UMUM`. Compatibility resolver untuk grouped source key
+merupakan tahap integrasi terpisah sebelum flow operator fresh dinyatakan siap.
+
+Setelah projection, transaksi source yang tidak lagi terbentuk dari snapshot
+`kas_umum` ditandai `SOURCE_MISSING` pada indeks fresh. Proses ini tidak menghapus
 baris, overlay operator, Paket SPJ, nomor dokumen, maupun data audit. Jika source
 muncul kembali pada snapshot berikutnya, projection mengaktifkan kembali status
 sumber dan mengosongkan `source_missing_since`.
@@ -310,11 +320,13 @@ sumber dan mengosongkan `source_missing_since`.
 Projection transaksi hanya menerima `kas_umum` yang `id_anggaran`-nya berada
 di snapshot `anggaran` aktif untuk tahun dan sumber dana yang sama. Snapshot
 anggaran dipilih dengan `is_approve = 1`, `is_aktif = 1`, `soft_delete = 0`,
-revisi terbesar, dan `last_update` terbaru.
+revisi terbesar, dan `last_update` terbaru. Hanya row BELANJA
+(`id_ref_bku` 4/15/24/35 atau kategori bridge `BELANJA`) yang menjadi item
+transaksi; row pajak dan arus lain tidak dibuat sebagai transaksi tersendiri.
 
-Nilai bruto transaksi mengikuti `kas_umum.saldo` pada seluruh baris transaksi
-yang masuk snapshot konteks. `saldo` adalah nilai yang dikirim ARKAS untuk baris
-tersebut; pemisahan pajak dan arus kas tidak ditebak dari `volume` saja.
+Agregasi bruto/pajak/netto lintas seluruh item grouped transaction tetap menjadi
+hardening lanjutan. Sampai tahap itu ditutup oleh focused regression, accessor/UI
+tidak boleh dianggap sudah merepresentasikan total grouped transaction secara penuh.
 
 Kontrak utama:
 
