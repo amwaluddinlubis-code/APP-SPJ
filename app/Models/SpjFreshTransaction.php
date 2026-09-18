@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SpjFreshTransaction extends Model
 {
@@ -66,7 +67,12 @@ class SpjFreshTransaction extends Model
 
     public function getActivityCodeAttribute(): ?string
     {
-        return $this->sourceValue(['kode_kegiatan', 'activity_code']);
+        $activityCode = $this->sourceValue(['kode_kegiatan', 'activity_code']);
+        if (filled($activityCode)) {
+            return $activityCode;
+        }
+
+        return $this->rkasValue('activity_code');
     }
 
     public function getRecipientNameAttribute(): ?string
@@ -77,6 +83,30 @@ class SpjFreshTransaction extends Model
     public function getEffectiveReceiptRecipientNameAttribute(): ?string
     {
         return $this->receipt_recipient_name ?: $this->recipient_name;
+    }
+
+    private function rkasValue(string $column): ?string
+    {
+        $periodSourceKey = $this->sourceValue(['id_rapbs_periode']);
+        if (blank($periodSourceKey)) {
+            return null;
+        }
+
+        $rkasSourceKey = DB::connection('school')
+            ->table('arkas_rkas_periods')
+            ->where('source_rapbs_period_id', $periodSourceKey)
+            ->value('source_rapbs_id');
+
+        if (blank($rkasSourceKey)) {
+            return null;
+        }
+
+        $value = DB::connection('school')
+            ->table('arkas_rkas_items')
+            ->where('source_rapbs_id', $rkasSourceKey)
+            ->value($column);
+
+        return filled($value) ? (string) $value : null;
     }
 
     public function getTransactionDateAttribute(): ?Carbon

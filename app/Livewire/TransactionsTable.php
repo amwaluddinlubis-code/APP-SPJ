@@ -88,7 +88,14 @@ class TransactionsTable extends Component
     {
         $query = $this->filteredQuery()
             ->with('spjPackage', 'rawMirrorRow')
-            ->withCount('items');
+            ->withCount('items')
+            ->addSelect([
+                'source_items_count' => DB::connection('school')->table('arkas_raw_mirror_rows as related_raw')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('related_raw.mirror_table_id', 'arkas_raw_mirror_rows.mirror_table_id')
+                    ->whereRaw("json_extract(related_raw.payload, '$.id_kas_nota') = json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_nota')")
+                    ->whereRaw("NULLIF(TRIM(CAST(json_extract(related_raw.payload, '$.kode_rekening') AS TEXT)), '') IS NOT NULL"),
+            ]);
 
         $perPage = $this->perPage === 'all' ? 100 : (int) $this->perPage;
         $perPage = in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
