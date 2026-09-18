@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\SpjFreshTransaction;
 use App\Models\Transaction;
+use App\Models\TransactionItem;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
@@ -31,7 +32,8 @@ class TransactionDetailWorkspace extends Component
 
     public function mount(string $transactionId, ActiveSpjContext $context): void
     {
-        $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first();
+        $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first()
+            ?: $this->transactionFromFresh($transactionId);
         if (! $transaction || ! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
 
@@ -53,6 +55,11 @@ class TransactionDetailWorkspace extends Component
         if ($transaction->spjPackage?->status === 'FINAL') {
             $this->addError('form', 'Uraian SPJ tidak dapat diubah karena paket sudah FINAL.');
             $this->dispatch('app-notify', type: 'error', message: 'Uraian SPJ tidak dapat diubah karena paket sudah FINAL.');
+
+            return;
+        }
+        if (! $transaction->exists) {
+            $this->addError('form', 'Transaksi fresh ARKAS belum memiliki overlay SPJ yang dapat diedit.');
 
             return;
         }
@@ -160,7 +167,10 @@ class TransactionDetailWorkspace extends Component
     {
         $transaction = Transaction::query()->with([
             'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
-        ])->forSourceIdentifier($this->transactionId)->firstOrFail();
+        ])->forSourceIdentifier($this->transactionId)->first();
+        if ($transaction === null) {
+            return $this->transactionFromFresh($this->transactionId);
+        }
         $fresh = SpjFreshTransaction::query()
             ->with('rawMirrorRow')
             ->where('fiscal_year_id', session('active_fiscal_year_id'))
@@ -188,6 +198,62 @@ class TransactionDetailWorkspace extends Component
                 'source_key' => $fresh->source_key,
                 'id_kas_umum' => $payload['id_kas_umum'] ?? $transaction->id_kas_umum,
             ]);
+        }
+
+        return $transaction;
+    }
+
+    private function transactionFromFresh(string $sourceKey): ?Transaction
+    {
+        $fresh = SpjFreshTransaction::query()
+            ->with(['rawMirrorRow', 'items.rawMirrorRow'])
+            ->where('fiscal_year_id', session('active_fiscal_year_id'))
+            ->where('fund_source_id', session('active_fund_source_id'))
+            ->where('source_table', 'kas_umum')
+            ->where('source_key', $sourceKey)
+            ->first();
+        if ($fresh === null) {
+            return null;
+        }
+
+        $payload = $fresh->rawMirrorRow?->payload ?? [];
+        $transaction = new Transaction;
+        $transaction->forceFill([
+            'id' => $fresh->id,
+            'fiscal_year_id' => $fresh->fiscal_year_id,
+            'fund_source_id' => $fresh->fund_source_id,
+            'source_key' => $fresh->source_key,
+            'id_kas_umum' => $payload['id_kas_umum'] ?? $fresh->source_key,
+            'no_bukti' => $fresh->no_bukti,
+            'transaction_date' => $fresh->transaction_date?->toDateString(),
+            'description' => $fresh->description,
+            'account_code' => $fresh->account_code,
+            'activity_code' => $fresh->activity_code,
+            'recipient_name' => $fresh->recipient_name,
+            'gross_amount' => $fresh->gross_amount,
+            'tax_total' => $this->freshTaxTotal($fresh),
+            'source_status' => $fresh->source_status,
+            'requires_reconciliation' => $fresh->requires_reconciliation,
+        ]);
+        $transaction->net_amount = (float) $transaction->gross_amount - (float) $transaction->tax_total;
+        $items = $fresh->items->map(function ($freshItem) use ($fresh): TransactionItem {
+            $itemPayload = $freshItem->rawMirrorRow?->payload ?? [];
+            $item = new TransactionItem;
+            $item->forceFill([
+                'id' => $freshItem->id,
+                'transaction_id' => $fresh->id,
+                'description' => $itemPayload['uraian'] ?? '',
+                'item_description' => $freshItem->item_description,
+                'quantity' => $itemPayload['volume'] ?? 1,
+                'unit' => $itemPayload['satuan'] ?? null,
+                'amount' => $itemPayload['saldo'] ?? 0,
+            ]);
+
+            return $item;
+        });
+        $transaction->setRelation('items', $items);
+        foreach (['goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage', 'payments'] as $relation) {
+            $transaction->setRelation($relation, in_array($relation, ['workOrder', 'spjPackage'], true) ? null : collect());
         }
 
         return $transaction;

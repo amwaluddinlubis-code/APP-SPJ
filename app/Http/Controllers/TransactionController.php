@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SpjFreshTransaction;
 use App\Models\Transaction;
 use App\Services\SpjDescriptionService;
 use App\Support\ActiveSpjContext;
@@ -57,6 +58,16 @@ class TransactionController extends Controller
     public function show(string $transactionId, ActiveSpjContext $context): View|RedirectResponse
     {
         $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first();
+        if ($transaction === null) {
+            $fresh = SpjFreshTransaction::query()
+                ->where('fiscal_year_id', $context->fiscalYearId())
+                ->where('fund_source_id', $context->fundSourceId())
+                ->where('source_key', $transactionId)
+                ->first();
+            if ($fresh !== null) {
+                return view('transactions.show', ['transactionId' => $transactionId]);
+            }
+        }
         if (! $transaction || ! $context->matchesTransaction($transaction)) {
             return redirect()->route('transactions.index')->with(
                 'error',
