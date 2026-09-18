@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\SpjFreshTransaction;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
@@ -43,7 +44,7 @@ class TransactionDetailWorkspace extends Component
         $this->loadTransaction();
     }
 
-    public function saveDescriptions(SpjDescriptionService $descriptions, ActiveSpjContext $context): void
+    public function saveDescriptions(SpjDescriptionService $descriptions, OperationalAuditService $audit, ActiveSpjContext $context): void
     {
         $this->authorizeOperatorOrAdministrator();
         $transaction = $this->transaction($context);
@@ -92,12 +93,20 @@ class TransactionDetailWorkspace extends Component
             ]);
         }
 
+        $audit->record(
+            (int) $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'DESCRIPTION_UPDATED',
+            'Uraian pembayaran/item diperbarui pada fund source '.$context->fundSourceId().'.',
+        );
+
         $this->loadTransaction();
         session()->flash('success', 'Uraian SPJ berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran.');
         $this->dispatch('app-notify', type: 'success', message: 'Koreksi uraian berhasil disimpan.');
     }
 
-    public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context): void
+    public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, OperationalAuditService $audit, ActiveSpjContext $context): void
     {
         $this->authorizeOperatorOrAdministrator();
         if ($requestedResolution !== null) {
@@ -128,6 +137,14 @@ class TransactionDetailWorkspace extends Component
 
             return;
         }
+
+        $audit->record(
+            (int) $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'SOURCE_RECONCILIATION_RESOLVED',
+            'Rekonsiliasi sumber '.$result['resolution'].' diselesaikan pada fund source '.$context->fundSourceId().'.',
+        );
 
         $this->loadTransaction();
         $this->resolution = '';

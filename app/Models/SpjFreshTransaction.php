@@ -124,6 +124,8 @@ class SpjFreshTransaction extends Model
         $rkasSourceKey = DB::connection('school')
             ->table('arkas_rkas_periods')
             ->where('source_rapbs_period_id', $periodSourceKey)
+            ->where('fiscal_year_id', $this->fiscal_year_id)
+            ->where('fund_source_id', $this->fund_source_id)
             ->value('source_rapbs_id');
 
         if (blank($rkasSourceKey)) {
@@ -132,6 +134,8 @@ class SpjFreshTransaction extends Model
 
         $value = DB::connection('school')
             ->table('arkas_rkas_items')
+            ->where('fiscal_year_id', $this->fiscal_year_id)
+            ->where('fund_source_id', $this->fund_source_id)
             ->where('source_rapbs_id', $rkasSourceKey)
             ->value($column);
 

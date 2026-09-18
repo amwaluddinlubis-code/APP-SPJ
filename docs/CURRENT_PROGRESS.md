@@ -171,6 +171,21 @@ anomalies **0**. Warning yang tersisa adalah data lama yang belum lengkap:
 2025 fund 1 **75 warning**, 2025 fund 12 **16 warning**, dan 2026 **0 warning**;
 terutama blank `item_description`, bukan mismatch projection/nominal.
 
+### Context isolation completion — 2026-09-19
+
+`SpjFreshTransaction::rkasValue()` sekarang mengikat lookup period dan RKAS ke
+`fiscal_year_id` serta `fund_source_id` milik transaksi fresh. Regression
+`TransactionDetailWorkspaceAuthorizationTest` menjadi **8 test / 29 assertions
+PASS**, mencakup source key sama lintas fund source, collision RKAS
+`source_rapbs_id`, positive ADMIN/OPERATOR, VIEWER 403, reconciliation valid,
+NUMBERED carve-out, FINAL lock, dan operational audit log.
+
+Regression suite terkait yang dijalankan setelah perubahan: **40 test / 227
+assertions PASS** (40 deprecated notices). Mutation description dan resolution
+sekarang mencatat `OperationalAuditService` setelah write/resolve berhasil;
+penolakan authorization, FINAL, invalid reconciliation, atau fresh-only overlay
+tidak membuat audit mutation palsu.
+
 P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---

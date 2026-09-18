@@ -304,6 +304,12 @@ anggaran berbeda tidak boleh dicampur. `SpjTemplateService` membaca view ini unt
 placeholder Program/Sub Program, sedangkan `KODE_KEGIATAN` dan `NAMA_KEGIATAN` tetap
 mengikuti snapshot transaksi.
 
+Fallback RKAS pada transaksi fresh mengikuti boundary penuh transaksi, bukan hanya
+identity source. Lookup `arkas_rkas_periods` dan `arkas_rkas_items` wajib mengikat
+`fiscal_year_id` serta `fund_source_id` transaksi. `source_rapbs_id` atau
+`source_rapbs_period_id` yang kebetulan sama di fund source lain tidak boleh
+mengubah activity code, activity name, atau nilai referensi context aktif.
+
 ---
 
 ## 7. Sinkronisasi transaksi RKAS/BKU
@@ -360,6 +366,11 @@ Boundary workspace mengikuti aturan yang sama: fresh/legacy lookup harus memakai
 `ActiveSpjContext` untuk tahun dan sumber dana; mutation Livewire pada detail
 harus mengulang guard OPERATOR/ADMIN. Jangan mengandalkan middleware halaman GET
 atau `session()` yang tidak diikat ke query fresh.
+
+Mutation detail yang berhasil juga meninggalkan operational audit untuk perubahan
+uraian dan penyelesaian reconciliation. Penolakan role, FINAL lock, invalid
+reconciliation, dan fresh-only transaction tanpa overlay tidak dicatat sebagai
+mutasi berhasil.
 
 Statistik halaman Transaksi memakai `filteredQuery()` yang sama dengan daftar
 transaksi. Count, bruto, pajak, dan netto karena itu mengikuti boundary

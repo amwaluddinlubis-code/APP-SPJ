@@ -83,6 +83,11 @@ Checklist P0-00:
 - [x] regression cross-year fresh lookup dan negative VIEWER mutation;
 - [x] compatibility verification 2025 dan fresh-data verification 2026 pada tenant nyata;
 - [x] audit read-only seluruh kuartal scope 2025/2026 tanpa critical atau financial mismatch.
+- [x] RKAS fallback fresh di-scope oleh fiscal year + fund source;
+- [x] cross-fund source-key dan cross-context RKAS collision regression;
+- [x] positive ADMIN/OPERATOR dan negative VIEWER untuk detail mutation/reconciliation;
+- [x] NUMBERED carve-out dan FINAL lock regression pada Livewire detail;
+- [x] detail mutation berhasil mencatat operational audit setelah perubahan valid.
 
 Evidence CI #486:
 
@@ -219,7 +224,7 @@ Kerjakan hanya ketika ditemukan mismatch source/overlay nyata:
 
 ## P0-06 — Tenant/context isolation
 
-**Status: FUNCTIONAL PASS.**
+**Status: FUNCTIONAL PASS / CONTEXT ISOLATION REGRESSION PASS.**
 
 Boundary canonical:
 
@@ -227,7 +232,9 @@ Boundary canonical:
 School + Fiscal Year + Fund Source
 ```
 
-Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/boundary baru.
+Phase 2 Livewire menjaga boundary ini. Fresh RKAS fallback juga tidak memakai
+`source_rapbs_id` global; query mengikat tahun dan sumber dana transaksi. Tidak ada
+test tambahan aktif tanpa bug/boundary baru.
 
 ---
 

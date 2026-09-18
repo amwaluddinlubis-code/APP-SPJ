@@ -1,10 +1,10 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-14** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-19** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `arkas-raw-mirror`.
 
 Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
 
-Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/assertion agar tidak menjadi stale ketika code gate bergerak.
+Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/assertion agar tidak menjadi stale ketika code gate bergerak. Detail context-isolation regression dan evidence test tetap berada di `CURRENT_PROGRESS.md`.
 
 ## 1. Ringkasan
 
@@ -188,7 +188,9 @@ Pembagian tanggung jawab:
 
 Service reusable mencakup transaction details, package validation, document requirements, procurement policy, canonical numbering registry, numbering policy/gate/order/allocator, ARKAS synchronization, employee identity, tenant database maintenance, template/generator, dan operational audit.
 
-Business validation tetap backend.
+Business validation tetap backend. Detail Transaksi juga mengulang role authorization
+dan tenant context pada action Livewire, lalu mencatat mutation valid melalui
+`OperationalAuditService`; route GET/middleware halaman bukan satu-satunya boundary.
 
 ## 8. Sinkronisasi ARKAS
 
