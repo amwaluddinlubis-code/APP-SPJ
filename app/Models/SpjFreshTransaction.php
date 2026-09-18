@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -90,6 +91,7 @@ class SpjFreshTransaction extends Model
         $recipient = DB::connection('school')
             ->table('arkas_raw_mirror_rows as nota_raw')
             ->join('arkas_raw_mirror_tables as nota_table', 'nota_table.id', '=', 'nota_raw.mirror_table_id')
+            ->where('nota_table.source_id', $this->source_id)
             ->where('nota_table.source_table', 'kas_umum_nota')
             ->where('nota_table.status', 'ACTIVE')
             ->whereRaw("json_extract(nota_raw.payload, '$.id_kas_nota') = ?", [$notaSourceKey])
@@ -136,12 +138,77 @@ class SpjFreshTransaction extends Model
 
     public function getGrossAmountAttribute(): float
     {
-        return (float) ($this->sourceValue(['jumlah', 'nilai', 'nominal', 'saldo']) ?: 0);
+        $items = $this->sourceItems();
+        if ($items->isEmpty()) {
+            return (float) ($this->sourceValue(['saldo', 'jumlah', 'nilai', 'nominal']) ?: 0);
+        }
+
+        return (float) $items->sum(function (SpjFreshTransactionItem $item): float {
+            $payload = $item->rawMirrorRow?->payload ?? [];
+
+            return (float) ($payload['saldo'] ?? $payload['jumlah'] ?? $payload['nilai'] ?? $payload['nominal'] ?? 0);
+        });
     }
 
     public function getTaxTotalAttribute(): float
     {
-        return (float) ($this->sourceValue(['total_pajak', 'pajak', 'tax_total']) ?: 0);
+        $parentIds = $this->sourceItemIds();
+        if ($parentIds === [] || blank($this->source_id)) {
+            return 0.0;
+        }
+
+        return (float) DB::connection('school')
+            ->table('arkas_raw_mirror_rows as tax_raw')
+            ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
+            ->where('tax_table.source_id', $this->source_id)
+            ->where('tax_table.source_table', 'kas_umum')
+            ->where('tax_table.status', 'ACTIVE')
+            ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
+            ->whereRaw("CAST(COALESCE(json_extract(tax_raw.payload, '$.id_ref_bku'), 0) AS INTEGER) IN (10, 30)")
+            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
+            ->whereIn(DB::raw("json_extract(tax_raw.payload, '$.parent_id_kas_umum')"), $parentIds)
+            ->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
+    }
+
+    public function getNetAmountAttribute(): float
+    {
+        return $this->gross_amount - $this->tax_total;
+    }
+
+    /** @return array<int, string> */
+    private function sourceItemIds(): array
+    {
+        return $this->sourceItems()
+            ->map(function (SpjFreshTransactionItem $item): string {
+                $payload = $item->rawMirrorRow?->payload ?? [];
+
+                return trim((string) ($payload['id_kas_umum'] ?? $item->source_key));
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @return EloquentCollection<int, SpjFreshTransactionItem> */
+    private function sourceItems(): EloquentCollection
+    {
+        if ($this->relationLoaded('items')) {
+            /** @var EloquentCollection<int, SpjFreshTransactionItem> $items */
+            $items = $this->getRelation('items');
+            $items->loadMissing('rawMirrorRow');
+
+            return $items;
+        }
+
+        /** @var EloquentCollection<int, SpjFreshTransactionItem> $items */
+        $items = $this->items()
+            ->with('rawMirrorRow')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return $items;
     }
 
     /** @param array<int, string> $keys */
