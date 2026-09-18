@@ -8,7 +8,6 @@ use App\Services\SpjWorkflowFilterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
@@ -68,15 +67,23 @@ class TransactionsTable extends Component
 
     public function getFilteredStatsProperty(): object
     {
-        $gross = $this->rawSpendingQuery()
-            ->selectRaw("COUNT(*) as count, COALESCE(SUM(CAST(COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.saldo'), 0) AS REAL)), 0) as gross")
-            ->first();
-        $tax = $this->filteredTaxTotal();
+        $transactions = $this->filteredQuery()
+            ->with(['items.rawMirrorRow'])
+            ->get();
 
-        $gross->tax = $tax;
-        $gross->net = (float) $gross->gross - $tax;
+        $gross = (float) $transactions->sum(
+            fn (SpjFreshTransaction $transaction): float => (float) $transaction->gross_amount
+        );
+        $tax = (float) $transactions->sum(
+            fn (SpjFreshTransaction $transaction): float => (float) $transaction->tax_total
+        );
 
-        return $gross;
+        return (object) [
+            'count' => $transactions->count(),
+            'gross' => $gross,
+            'tax' => $tax,
+            'net' => $gross - $tax,
+        ];
     }
 
     public function getStatusesProperty(): Collection
@@ -221,57 +228,7 @@ class TransactionsTable extends Component
         return $query;
     }
 
-    private function filteredTaxTotal(): float
-    {
-        $db = DB::connection('school');
-        $parentIds = $this->rawSpendingQuery()
-            ->selectRaw("json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_umum') as parent_source_id")
-            ->pluck('parent_source_id')
-            ->filter()
-            ->values()
-            ->all();
-
-        if ($parentIds === []) {
-            return 0.0;
-        }
-
-        $query = $db->table('arkas_raw_mirror_rows as tax_raw')
-            ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
-            ->where('tax_table.source_table', 'kas_umum')
-            ->where('tax_table.status', 'ACTIVE')
-            ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
-            ->whereRaw("NULLIF(TRIM(CAST(json_extract(tax_raw.payload, '$.volume') AS TEXT)), '') IS NULL")
-            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
-            ->whereIn(DB::raw("json_extract(tax_raw.payload, '$.parent_id_kas_umum')"), $parentIds);
-
-        return (float) $query->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)")) / 2;
-    }
-
-    private function rawSpendingQuery(): QueryBuilder
-    {
-        $query = DB::connection('school')->table('arkas_raw_mirror_rows')
-            ->join('arkas_raw_mirror_tables', 'arkas_raw_mirror_tables.id', '=', 'arkas_raw_mirror_rows.mirror_table_id')
-            ->where('arkas_raw_mirror_tables.source_table', 'kas_umum')
-            ->where('arkas_raw_mirror_tables.status', 'ACTIVE')
-            ->whereRaw("COALESCE(json_extract(arkas_raw_mirror_rows.payload, '$.soft_delete'), '0') != '1'")
-            ->whereRaw("substr(json_extract(arkas_raw_mirror_rows.payload, '$.tanggal_transaksi'), 1, 4) = ?", [(string) $this->activeYear()->year]);
-        $this->applySpendingRowConstraint($query);
-        $this->applyPeriodToRawQuery($query, 'arkas_raw_mirror_rows.payload');
-
-        if (trim($this->q) !== '') {
-            $search = trim($this->q);
-            $query->where(function (QueryBuilder $query) use ($search): void {
-                $query->whereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') like ?", ["%{$search}%"])
-                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.uraian') like ?", ["%{$search}%"])
-                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.kode_rekening') like ?", ["%{$search}%"])
-                    ->orWhereRaw("json_extract(arkas_raw_mirror_rows.payload, '$.penerima') like ?", ["%{$search}%"]);
-            });
-        }
-
-        return $query;
-    }
-
-    private function applySpendingRowConstraint(Builder|QueryBuilder $query): void
+    private function applySpendingRowConstraint(Builder $query): void
     {
         $query->whereRaw("(
             upper(trim(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT))) LIKE 'BPU%'
@@ -310,25 +267,6 @@ class TransactionsTable extends Component
                 )
             )
         )");
-    }
-
-    private function applyPeriodToRawQuery(QueryBuilder $query, string $payloadColumn): void
-    {
-        $activeYear = $this->activeYear();
-
-        if ($this->month) {
-            $query->whereRaw("CAST(strftime('%m', json_extract($payloadColumn, '$.tanggal_transaksi')) AS INTEGER) = ?", [$this->month]);
-        } elseif ($this->quarter) {
-            $query->whereRaw("date(json_extract($payloadColumn, '$.tanggal_transaksi')) between ? and ?", [
-                now()->setYear($activeYear->year)->setMonth(($this->quarter - 1) * 3 + 1)->startOfMonth()->toDateString(),
-                now()->setYear($activeYear->year)->setMonth($this->quarter * 3)->endOfMonth()->toDateString(),
-            ]);
-        } elseif ($this->semester) {
-            $query->whereRaw("date(json_extract($payloadColumn, '$.tanggal_transaksi')) between ? and ?", [
-                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 1 : 7)->startOfMonth()->toDateString(),
-                now()->setYear($activeYear->year)->setMonth($this->semester === 1 ? 6 : 12)->endOfMonth()->toDateString(),
-            ]);
-        }
     }
 
     private function activeYear(): FiscalYear
