@@ -30,12 +30,17 @@ final class V2CLegacyMigrationTest extends TestCase
         $this->assertSame('PASS', $result['source_adapter_validation']['status']);
         $this->assertSame(0, $result['source_adapter_validation']['unresolved_links']);
         $this->assertTrue($result['context_isolation']['transaction_boundary_unique']);
+        $this->assertSame(268, $result['context_isolation']['source_identity_cross_context_count']);
+        $this->assertSame('FAIL', $result['context_isolation']['status']);
         $this->assertSame(187, (int) ($result['canonical_context_classification']['ACTIVE_CANONICAL'] ?? 0));
         $this->assertSame(104, (int) ($result['canonical_context_classification']['LEGACY_DUPLICATE'] ?? 0));
         $this->assertSame(245, $result['item_overlay_reconciliation']['legacy_operator_owned_candidates']);
         $this->assertSame(245, $result['item_overlay_reconciliation']['v2_item_overlays']);
         $this->assertSame(0, $result['item_overlay_reconciliation']['lost_overlay']);
         $this->assertSame(0, $result['item_overlay_reconciliation']['unexpected_overlay']);
+        $this->assertEquals(429605000, $result['financial_reconciliation']['ACTIVE_CANONICAL']['gross_from_raw']);
+        $this->assertEquals(20497310, $result['financial_reconciliation']['ACTIVE_CANONICAL']['tax_from_raw']);
+        $this->assertEquals(409107690, $result['financial_reconciliation']['ACTIVE_CANONICAL']['net_from_raw']);
     }
 
     public function test_tenant_b_dry_run_is_source_safe_and_does_not_guess(): void

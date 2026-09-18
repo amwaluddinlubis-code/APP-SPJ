@@ -76,8 +76,11 @@ final class MigrateSpjV2 extends Command
             if ($verify) {
                 $result = $this->migration->verify($db);
                 $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                foreach ($result['gates'] as $gate => $passed) {
+                    $this->line(sprintf('Gate %-24s %s', $gate, $passed ? 'PASS' : 'FAIL'));
+                }
 
-                return ($result['integrity_check'] === 'ok' && $result['foreign_key_violations'] === 0 && max($result['orphans']) === 0) ? self::SUCCESS : self::FAILURE;
+                return $result['status'] === 'PASS' ? self::SUCCESS : self::FAILURE;
             }
 
             if ($execute) {

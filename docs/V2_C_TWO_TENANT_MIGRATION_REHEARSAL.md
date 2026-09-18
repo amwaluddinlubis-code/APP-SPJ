@@ -76,10 +76,12 @@ dry-run tetap `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A`
 - Test V2-B/V2-C: 5 test, 101 assertions, 5 deprecations.
 - Importer tenant-boundary regression: 4 test, 80 assertions, 4 deprecations.
 
-Canonical `spj:verify --strict-style --skip-build` masih harus dijalankan pada
-head final setelah dokumentasi selesai. V2-D belum dimulai: langkah berikutnya
-adalah shadow read/comparison adapter dan review cutover, bukan production
-migration. Source evidence dari fixture `10208183` bukan blocker tenant wajib.
+Semantic V2-C verification terbaru menghitung semua gate dari database, bukan
+hard-code. Integrity, FK, orphan, source adapter, canonical reconciliation, dan
+identity overlay lulus; tetapi `context_isolation` masih **FAIL** karena 268
+source identities muncul pada context legacy duplicate `3|1` dan context aktif
+`4|1`. Ini menjadi blocker Phase A yang harus direkonsiliasi secara eksplisit;
+V2-D belum dimulai dan tidak ada production read-path cutover.
 
 ## Report machine-readable
 

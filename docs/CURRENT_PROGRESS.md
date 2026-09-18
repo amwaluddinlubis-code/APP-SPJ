@@ -562,8 +562,10 @@ tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
 Evidence lengkap: `V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` dan report JSON lokal di
 `storage/app/v2-c-rehearsal/reports/`. Original tenant, central registry, dan ARKAS
 source tidak dimutasi. V2-C kini memisahkan source-resolution dari canonical
-context: 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`; V2-D read-path
-cutover belum dimulai.
+context: 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`. Semantic verify
+sekarang menghitung gate dari evidence aktual; saat ini context isolation masih
+FAIL dengan 268 source identity lintas context, sehingga V2-D read-path cutover
+belum dimulai.
 
 ---
 

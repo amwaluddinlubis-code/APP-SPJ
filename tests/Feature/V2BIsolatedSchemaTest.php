@@ -208,7 +208,11 @@ final class V2BIsolatedSchemaTest extends TestCase
     {
         $tables = $connection->select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'migrations'");
         $manifest = [];
+        $v2Tables = ['arkas_source_identity_registry', 'spj_transactions', 'spj_transaction_sources', 'spj_transaction_overlays', 'spj_item_overlays', 'legacy_transaction_v2_map'];
         foreach ($tables as $table) {
+            if (in_array($table->name, $v2Tables, true)) {
+                continue;
+            }
             $manifest[$table->name] = $this->tableHash($connection, $table->name);
         }
 

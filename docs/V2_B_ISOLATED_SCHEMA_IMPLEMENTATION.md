@@ -22,7 +22,7 @@ File baru:
 
 - `app/Services/V2BIsolatedDatabaseGuard.php`
 - `app/Services/V2BSourceIdentityRegistryService.php`
-- `database/migrations/school/2026_09_19_000000_create_v2_b_overlay_schema.php`
+- `database/migrations/v2-rehearsal/2026_09_19_000000_create_v2_b_overlay_schema.php`
 - `tests/Feature/V2BIsolatedSchemaTest.php`
 
 Migration additive membuat:

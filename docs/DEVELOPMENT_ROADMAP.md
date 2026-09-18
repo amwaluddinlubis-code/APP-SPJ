@@ -297,6 +297,8 @@ Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
 - [x] EXACT 269 dan DETERMINISTIC 22 tanpa rewrite legacy `source_key`;
 - [x] package/document NUMBERED continuity, overlay continuity, idempotency,
   integrity, FK, orphan, dan synthetic FINAL regression lulus;
+- [ ] semantic context-isolation gate: 268 source identity lintasan legacy
+  duplicate `3|1` versus active `4|1` masih memerlukan explicit reconciliation;
 - [x] external/orphan fixture 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
 - [x] command/service/report V2-C tersedia;
 - [ ] source evidence/ownership fixture `10208183` (opsional, bukan gate current-project);

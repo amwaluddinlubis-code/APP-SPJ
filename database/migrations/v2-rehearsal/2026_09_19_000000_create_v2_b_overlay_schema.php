@@ -15,7 +15,19 @@ return new class extends Migration
             config('spj.v2_b_isolated_manifest'),
         );
 
-        if (Schema::connection('school')->hasTable('arkas_source_identity_registry')) {
+        $v2Tables = [
+            'arkas_source_identity_registry',
+            'spj_transactions',
+            'spj_transaction_sources',
+            'spj_transaction_overlays',
+            'spj_item_overlays',
+            'legacy_transaction_v2_map',
+        ];
+        $existingTables = array_values(array_filter($v2Tables, fn (string $table): bool => Schema::connection('school')->hasTable($table)));
+        if ($existingTables !== [] && count($existingTables) !== count($v2Tables)) {
+            throw new RuntimeException('V2-B rehearsal schema is partial; existing tables: '.implode(', ', $existingTables));
+        }
+        if (count($existingTables) === count($v2Tables)) {
             return;
         }
 
