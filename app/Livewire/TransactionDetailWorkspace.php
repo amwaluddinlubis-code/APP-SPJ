@@ -172,7 +172,7 @@ class TransactionDetailWorkspace extends Component
             return $this->transactionFromFresh($this->transactionId);
         }
         $fresh = SpjFreshTransaction::query()
-            ->with('rawMirrorRow')
+            ->with(['rawMirrorRow', 'items.rawMirrorRow'])
             ->where('fiscal_year_id', session('active_fiscal_year_id'))
             ->where('fund_source_id', session('active_fund_source_id'))
             ->where('source_table', 'kas_umum')
@@ -182,7 +182,7 @@ class TransactionDetailWorkspace extends Component
         if ($fresh !== null) {
             $payload = $fresh->rawMirrorRow?->payload ?? [];
             $gross = (float) $fresh->gross_amount;
-            $tax = $this->freshTaxTotal($fresh);
+            $tax = (float) $fresh->tax_total;
             $transaction->forceFill([
                 'no_bukti' => $fresh->no_bukti,
                 'transaction_date' => $fresh->transaction_date?->toDateString(),
@@ -229,7 +229,7 @@ class TransactionDetailWorkspace extends Component
             'activity_code' => $fresh->activity_code,
             'recipient_name' => $fresh->recipient_name,
             'gross_amount' => $fresh->gross_amount,
-            'tax_total' => $this->freshTaxTotal($fresh),
+            'tax_total' => $fresh->tax_total,
             'source_status' => $fresh->source_status,
             'requires_reconciliation' => $fresh->requires_reconciliation,
         ]);
@@ -276,26 +276,6 @@ class TransactionDetailWorkspace extends Component
         $decoded = is_string($payload) ? json_decode($payload, true) : [];
 
         return is_array($decoded) ? $decoded : [];
-    }
-
-    private function freshTaxTotal(SpjFreshTransaction $transaction): float
-    {
-        $parentId = $transaction->rawMirrorRow?->payload['id_kas_umum'] ?? null;
-
-        if (blank($parentId)) {
-            return 0.0;
-        }
-
-        $total = DB::connection('school')->table('arkas_raw_mirror_rows as tax_raw')
-            ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
-            ->where('tax_table.source_table', 'kas_umum')
-            ->where('tax_table.status', 'ACTIVE')
-            ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
-            ->whereRaw("json_extract(tax_raw.payload, '$.parent_id_kas_umum') = ?", [$parentId])
-            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
-            ->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
-
-        return (float) $total / 2;
     }
 
     private function loadTransaction(): void
