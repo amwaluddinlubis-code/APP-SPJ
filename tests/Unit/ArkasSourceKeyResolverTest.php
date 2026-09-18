@@ -50,4 +50,39 @@ class ArkasSourceKeyResolverTest extends TestCase
         $this->assertSame($expected, $resolver->resolve($record));
         $this->assertSame($expected, $resolver->resolve($record));
     }
+
+    public function test_primary_key_columns_override_unsafe_global_fallbacks(): void
+    {
+        $resolver = new ArkasSourceKeyResolver;
+
+        $key = $resolver->resolveFromColumns([
+            'ID_RAPBS' => 'RAPBS-SHARED',
+            'ID_KAS_NOTA' => 'NOTA-SHARED',
+            'ID_KAS_UMUM' => 'KAS-UNIQUE-001',
+        ], ['ID_KAS_UMUM']);
+
+        $this->assertSame('KAS-UNIQUE-001', $key);
+    }
+
+    public function test_composite_primary_key_is_deterministic_and_uses_all_components(): void
+    {
+        $resolver = new ArkasSourceKeyResolver;
+
+        $first = $resolver->resolveFromColumns([
+            'ID_KODE' => 'KODE-01',
+            'ID_LEVEL_KODE' => 'LEVEL-02',
+        ], ['ID_LEVEL_KODE', 'ID_KODE']);
+        $same = $resolver->resolveFromColumns([
+            'id_level_kode' => 'LEVEL-02',
+            'id_kode' => 'KODE-01',
+        ], ['ID_LEVEL_KODE', 'ID_KODE']);
+        $different = $resolver->resolveFromColumns([
+            'ID_LEVEL_KODE' => 'LEVEL-02',
+            'ID_KODE' => 'KODE-99',
+        ], ['ID_LEVEL_KODE', 'ID_KODE']);
+
+        $this->assertSame($first, $same);
+        $this->assertNotSame($first, $different);
+        $this->assertSame(64, strlen($first));
+    }
 }
