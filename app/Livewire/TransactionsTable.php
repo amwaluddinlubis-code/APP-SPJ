@@ -276,6 +276,20 @@ class TransactionsTable extends Component
         $query->whereRaw("(
             upper(trim(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT))) LIKE 'BPU%'
             OR upper(trim(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT))) LIKE 'BNU%'
+            OR (
+                NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.kode_rekening') AS TEXT)), '') IS NOT NULL
+                AND NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_nota') AS TEXT)), '') IS NOT NULL
+                AND EXISTS (
+                    SELECT 1
+                    FROM arkas_raw_mirror_rows AS nota_reference
+                    WHERE nota_reference.mirror_table_id = arkas_raw_mirror_rows.mirror_table_id
+                      AND json_extract(nota_reference.payload, '$.id_kas_nota') = json_extract(arkas_raw_mirror_rows.payload, '$.id_kas_nota')
+                      AND (
+                          upper(trim(CAST(json_extract(nota_reference.payload, '$.no_bukti') AS TEXT))) LIKE 'BPU%'
+                          OR upper(trim(CAST(json_extract(nota_reference.payload, '$.no_bukti') AS TEXT))) LIKE 'BNU%'
+                      )
+                )
+            )
         )");
 
         // Volume is not consistently populated by ARKAS for BKU rows. Prefer
