@@ -15,6 +15,10 @@ return new class extends Migration
             config('spj.v2_b_isolated_manifest'),
         );
 
+        if (Schema::connection('school')->hasTable('arkas_source_identity_registry')) {
+            return;
+        }
+
         Schema::connection('school')->create('arkas_source_identity_registry', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('source_id');

@@ -84,6 +84,15 @@ final class V2BIsolatedDatabaseGuard
         }
     }
 
+    public function assertExplicitIsolatedTarget(Connection $connection, ?array $manifest = null): void
+    {
+        if ($manifest === null) {
+            throw new RuntimeException('V2 rehearsal requires an explicit isolated identity manifest.');
+        }
+
+        $this->assertMigrationTarget($connection, $manifest);
+    }
+
     public function assertStableCriticalIdentity(string $identityType): void
     {
         if ($identityType === 'UNSTABLE_FALLBACK') {
@@ -106,11 +115,17 @@ final class V2BIsolatedDatabaseGuard
 
     private function canonicalPath(string $path): string
     {
+        $path = str_replace('/', '\\', $path);
         $resolved = realpath($path);
-        if ($resolved !== false) {
+        if ($resolved === false) {
+            $parent = realpath(dirname($path));
+            if ($parent === false) {
+                throw new RuntimeException('Cannot canonicalize filesystem path: '.$path);
+            }
+            $path = $parent.'\\'.basename($path);
+        } else {
             $path = $resolved;
         }
-        $path = str_replace('/', '\\', $path);
         $path = rtrim($path, '\\');
 
         return strtolower($path);

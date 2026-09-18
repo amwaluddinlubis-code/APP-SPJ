@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\SpjV2LegacyMigrationService;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -16,6 +17,7 @@ final class V2CLegacyMigrationTest extends TestCase
         $this->assertNotSame('', $target);
         $this->assertNotSame('', $source);
         $this->connect($target, $source, 10260756);
+        $this->migrateRehearsalSchema();
 
         $result = app(SpjV2LegacyMigrationService::class)->verify(DB::connection('school'));
         $this->assertSame('ok', $result['integrity_check']);
@@ -28,6 +30,12 @@ final class V2CLegacyMigrationTest extends TestCase
         $this->assertSame('PASS', $result['source_adapter_validation']['status']);
         $this->assertSame(0, $result['source_adapter_validation']['unresolved_links']);
         $this->assertTrue($result['context_isolation']['transaction_boundary_unique']);
+        $this->assertSame(187, (int) ($result['canonical_context_classification']['ACTIVE_CANONICAL'] ?? 0));
+        $this->assertSame(104, (int) ($result['canonical_context_classification']['LEGACY_DUPLICATE'] ?? 0));
+        $this->assertSame(245, $result['item_overlay_reconciliation']['legacy_operator_owned_candidates']);
+        $this->assertSame(245, $result['item_overlay_reconciliation']['v2_item_overlays']);
+        $this->assertSame(0, $result['item_overlay_reconciliation']['lost_overlay']);
+        $this->assertSame(0, $result['item_overlay_reconciliation']['unexpected_overlay']);
     }
 
     public function test_tenant_b_dry_run_is_source_safe_and_does_not_guess(): void
@@ -54,6 +62,7 @@ final class V2CLegacyMigrationTest extends TestCase
 
         try {
             $this->connect($synthetic, $source, 10260756);
+            $this->migrateRehearsalSchema();
             $db = DB::connection('school');
             $package = $db->table('spj_packages')->where('status', 'NUMBERED')->first();
             $this->assertNotNull($package);
@@ -96,6 +105,16 @@ final class V2CLegacyMigrationTest extends TestCase
             'mode' => $sourceUnavailable ? 'SOURCE_UNAVAILABLE_DRY_RUN' : null,
         ]);
         DB::purge('school');
+    }
+
+    private function migrateRehearsalSchema(): void
+    {
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/v2-rehearsal',
+            '--force' => true,
+            '--no-interaction' => true,
+        ]);
     }
 
     private function protectedPackage(object $package): array

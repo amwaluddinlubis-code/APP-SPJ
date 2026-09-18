@@ -18,6 +18,9 @@ read-path V2.
   `spj_packages.spj_transaction_id` dan provenance fields pada bridge.
 - Guard menolak path tenant asli, database utama, dan path ARKAS; mode orphan
   `SOURCE_UNAVAILABLE_DRY_RUN` tidak membuat mapping tebakan.
+- V2 rehearsal migrations berada di `database/migrations/v2-rehearsal`, terpisah
+  dari `database/migrations/school`; migrasi tenant reguler tidak menjalankan
+  schema rehearsal.
 
 ## Clone dan evidence
 
@@ -28,12 +31,21 @@ read-path V2.
 
 Tenant A menghasilkan 291 V2 transactions, 699 source links, 291 transaction
 overlays, 245 item overlays, 291 legacy maps, dan 67 package links. Classification
-adalah EXACT 269 dan DETERMINISTIC 22; seluruh 22 deterministic mempertahankan
+source-resolution adalah EXACT 269 dan DETERMINISTIC 22; canonical context
+adalah 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`. Seluruh 22 deterministic mempertahankan
 `transactions.source_key` lama dan tidak mengubah Paket NUMBERED.
 
-Tenant B adalah orphan/unregistered tanpa raw mirror yang dapat dibuktikan. Semua
-46 transaction diklasifikasikan `SOURCE_MISSING`; tidak ada V2 transaction, source
-link, overlay, atau package link yang dibuat.
+Sebanyak 104 row tambahan berasal dari fiscal-year record legacy id `3` yang
+menunjuk fund source `1` tetapi transaction date 2025 dan source membership-nya
+duplikat persis dengan context 2025/fund 1 pada fiscal-year id `4`. Reconciliation
+ini read-only: row tidak dihapus dan tidak dipromosikan ke canonical production
+read-path.
+
+Database `10208183` adalah database legacy dari project sebelumnya, bukan Tenant B
+current-project. Ia dipakai sebagai external/orphan negative fixture tanpa raw
+mirror yang dapat dibuktikan. Semua 46 transaction diklasifikasikan
+`SOURCE_MISSING`; tidak ada V2 transaction, source link, overlay, atau package
+link yang dibuat.
 
 Hash source tenant asli sebelum/sesudah rehearsal tetap sama:
 
@@ -60,14 +72,14 @@ dry-run tetap `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A`
 - Execute kedua tidak membuat duplicate V2 transaction, membership, overlay,
   item overlay, legacy map, atau package link.
 - Synthetic FINAL package/document regression lulus; hanya relation V2 additive.
-- Dry-run Tenant B tidak mengubah hash clone.
+- Dry-run external/orphan fixture tidak mengubah hash clone.
 - Test V2-B/V2-C: 5 test, 101 assertions, 5 deprecations.
 - Importer tenant-boundary regression: 4 test, 80 assertions, 4 deprecations.
 
 Canonical `spj:verify --strict-style --skip-build` masih harus dijalankan pada
-head final setelah dokumentasi selesai. V2-D tetap BLOCKED sampai read-path
-cutover review, source evidence Tenant B, dan keputusan production migration
-disetujui terpisah.
+head final setelah dokumentasi selesai. V2-D belum dimulai: langkah berikutnya
+adalah shadow read/comparison adapter dan review cutover, bukan production
+migration. Source evidence dari fixture `10208183` bukan blocker tenant wajib.
 
 ## Report machine-readable
 

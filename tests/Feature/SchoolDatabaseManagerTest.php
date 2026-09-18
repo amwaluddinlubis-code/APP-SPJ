@@ -81,4 +81,33 @@ class SchoolDatabaseManagerTest extends TestCase
         $this->assertSame(5000, config('database.connections.sqlite.busy_timeout'));
         $this->assertSame(5000, config('database.connections.school.busy_timeout'));
     }
+
+    public function test_normal_school_migration_does_not_execute_v2_rehearsal_schema(): void
+    {
+        $path = storage_path('framework/testing/normal-school-'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($path));
+        File::delete($path);
+        config()->set('database.connections.school.database', $path);
+        config()->set('database.connections.school.journal_mode', null);
+        config()->set('spj.v2_b_isolated_manifest', null);
+        DB::purge('school');
+
+        try {
+            Artisan::call('migrate', [
+                '--database' => 'school',
+                '--path' => 'database/migrations/school',
+                '--force' => true,
+                '--no-interaction' => true,
+            ]);
+
+            $connection = DB::connection('school');
+            $this->assertFalse($connection->getSchemaBuilder()->hasTable('spj_transactions'));
+            $this->assertFalse($connection->getSchemaBuilder()->hasTable('arkas_source_identity_registry'));
+        } finally {
+            DB::purge('school');
+            foreach ([$path, $path.'-wal', $path.'-shm'] as $file) {
+                File::delete($file);
+            }
+        }
+    }
 }

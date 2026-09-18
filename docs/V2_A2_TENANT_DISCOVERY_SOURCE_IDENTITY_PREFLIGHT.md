@@ -41,7 +41,7 @@ foreign-key violations `0`):
 | Candidate | Size | Migrations | Transactions/items/packages | Identity/evidence | Classification |
 |---|---:|---:|---:|---|---|
 | `school-databases/10260756/spj.sqlite` | 10,219,520 | 53 | 170 / 407 / 67 | internal NPSN `10260756` | external tenant copy |
-| `school-databases/10208183/spj.sqlite` | 4,251,648 | 53 | 46 / 90 / 46 | internal NPSN `10208183` | **tenant kedua, valid historical mapping** |
+| `school-databases/10208183/spj.sqlite` | 4,251,648 | 53 | 46 / 90 / 46 | internal NPSN `10208183` | **previous-project external/orphan legacy fixture** |
 | `school-databases/10208246/spj.sqlite` | 3,678,208 | 53 | 52 / 113 / 1 | no internal NPSN | orphan/unknown |
 | `school-databases-raw/10208183/spj.sqlite` | 4,218,880 | 50 | 46 / 90 / 46 | internal NPSN `10208183` | historical raw variant |
 | `school-databases-raw/10208246/spj.sqlite` | 1,056,768 | 50 | 52 / 113 / 0 | no internal NPSN | raw/orphan variant |
@@ -55,8 +55,8 @@ historical backup artifacts in the clean checkout. Readable SQLite backups were
 valid; central `school_backups` has no rows. No backup was restored or changed.
 
 ```text
-TENANT_2_NOT_DISCOVERABLE = FALSE
-tenant kedua              = 10208183
+TENANT_2_NOT_DISCOVERABLE = NOT_APPLICABLE
+previous-project fixture  = 10208183
 central registry entry    = BELUM ADA
 physical path             = D:\lrvProject\spj-bosp-data\school-databases\10208183\spj.sqlite
 ```
@@ -104,8 +104,9 @@ Package-sensitive result:
 | FINAL | 0 | 0 | 0 |
 | no package | 224 | 0 | 224 |
 
-There are 115 `spj_documents` with status `NUMBERED`. Tenant `10208183` is not
-yet raw-mirror projected, so its mapping classification remains **PENDING**.
+There are 115 `spj_documents` with status `NUMBERED`. Database `10208183` is a
+previous-project external/orphan fixture, not a required current-project tenant;
+its mapping classification remains **SOURCE_MISSING** for negative rehearsal.
 
 ## 5. Raw mirror identity classification
 
@@ -253,14 +254,16 @@ legacy transaction retirement is deferred to V2-G.
 
 ## 9. V2-B gate and conclusion
 
-V2-B real-tenant execution remains blocked because tenant `10208183` has no
-central school/source registry or full raw mirror audit, the 22 deterministic
+V2-B real-tenant execution remains separately gated by the current-project
+tenant `10260756` registry/path and migration approval. Database `10208183` has
+no central school/source registry or full raw mirror audit and is retained only
+as an external/orphan negative fixture. The 22 deterministic
 NUMBERED mappings require additive bridge evidence, and central
 `school_backups` does not represent the filesystem backups.
 
 ```text
 [x] discoverable tenant files inventoried
-[x] tenant 10208183 discovered
+[x] previous-project fixture 10208183 inventoried
 [x] central/path mismatch explained
 [x] V2-A mapping and package-sensitive mapping measured
 [x] 56-table identity classification completed

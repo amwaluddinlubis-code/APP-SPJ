@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Database\Connection;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 
@@ -23,6 +25,43 @@ final class SpjV2LegacyMigrationService
         $packages = $db->table('spj_packages')->orderBy('id')->get();
         $documents = $db->table('spj_documents')->orderBy('id')->get();
         $source = $this->loadKasUmumSource($db, $sourceId);
+        $fiscalYears = $db->getSchemaBuilder()->hasTable('fiscal_years')
+            ? $db->table('fiscal_years')->get()->keyBy('id')
+            : collect();
+        $sourcePlans = [];
+        $validMembershipContexts = [];
+        foreach ($legacyTransactions as $legacy) {
+            $items = $legacyItems->get($legacy->id, collect());
+            $sourceIds = $items->pluck('source_item_id')->map(fn ($id): string => trim((string) $id))->filter()->unique()->sort()->values()->all();
+            $found = array_values(array_filter($sourceIds, fn (string $id): bool => isset($source['rows'][$id])));
+            $missing = array_values(array_diff($sourceIds, $found));
+            $mapping = $this->classify($sourceIds, $found, $missing, (string) ($legacy->source_key ?? ''), $source['membership_hashes']);
+            $transactionYear = (int) date('Y', strtotime((string) $legacy->transaction_date));
+            $effectiveFiscalYear = $fiscalYears->first(fn (object $year): bool => (int) $year->year === $transactionYear
+                && (string) ($year->fund_source_id ?? '') === (string) ($legacy->fund_source_id ?? ''));
+            $legacyFiscalYear = $fiscalYears->get($legacy->fiscal_year_id);
+            $legacyContextMatches = $legacyFiscalYear !== null
+                && (int) $legacyFiscalYear->year === $transactionYear
+                && (string) ($legacyFiscalYear->fund_source_id ?? '') === (string) ($legacy->fund_source_id ?? '');
+            $contextValid = $effectiveFiscalYear !== null;
+            $contextKey = (string) ($effectiveFiscalYear?->id ?? $legacy->fiscal_year_id).':'.(string) $legacy->fund_source_id.':'.$sourceId;
+            if ($contextValid && $mapping['membership_hash'] !== null) {
+                $validMembershipContexts[$mapping['membership_hash']][$contextKey][] = [
+                    'legacy_id' => (int) $legacy->id,
+                    'legacy_context_matches' => $legacyContextMatches,
+                ];
+            }
+            $sourcePlans[$legacy->id] = [
+                'items' => $items,
+                'source_ids' => $sourceIds,
+                'found' => $found,
+                'missing' => $missing,
+                'mapping' => $mapping,
+                'context_valid' => $contextValid,
+                'effective_context_key' => $contextKey,
+                'legacy_context_matches' => $legacyContextMatches,
+            ];
+        }
         $beforeProtected = $this->protectedManifest($packages, $documents);
         $counts = array_fill_keys(['EXACT', 'DETERMINISTIC', 'PARTIAL', 'SOURCE_MISSING', 'AMBIGUOUS', 'LEGACY_ONLY'], 0);
         $packageSensitive = array_fill_keys(['DRAFT', 'NUMBERED', 'FINAL', 'OTHER'], 0);
@@ -34,11 +73,19 @@ final class SpjV2LegacyMigrationService
         $plans = [];
 
         foreach ($legacyTransactions as $legacy) {
-            $items = $legacyItems->get($legacy->id, collect());
-            $sourceIds = $items->pluck('source_item_id')->map(fn ($id): string => trim((string) $id))->filter()->unique()->sort()->values()->all();
-            $found = array_values(array_filter($sourceIds, fn (string $id): bool => isset($source['rows'][$id])));
-            $missing = array_values(array_diff($sourceIds, $found));
-            $classification = $this->classify($sourceIds, $found, $missing, (string) ($legacy->source_key ?? ''), $source['membership_hashes']);
+            $sourcePlan = $sourcePlans[$legacy->id];
+            $items = $sourcePlan['items'];
+            $sourceIds = $sourcePlan['source_ids'];
+            $found = $sourcePlan['found'];
+            $missing = $sourcePlan['missing'];
+            $classification = $sourcePlan['mapping'];
+            $canonical = $this->classifyCanonicalContext(
+                $legacy,
+                $classification,
+                $sourcePlan['context_valid'],
+                $sourcePlan['legacy_context_matches'],
+                $validMembershipContexts,
+            );
             $counts[$classification['status']]++;
             $package = $packages->firstWhere('transaction_id', $legacy->id);
             if ($package !== null) {
@@ -54,6 +101,8 @@ final class SpjV2LegacyMigrationService
                 'current_membership_hash' => $classification['membership_hash'],
                 'source_keys' => $found,
                 'missing_source_keys' => $missing,
+                'canonical_context_status' => $canonical['status'],
+                'canonical_context_reason' => $canonical['reason'],
                 'package_id' => $package?->id,
                 'package_status' => $package?->status,
             ];
@@ -64,7 +113,7 @@ final class SpjV2LegacyMigrationService
             }
 
             try {
-                $result = $this->migrateOne($db, $legacy, $items, $found, $classification, $source['rows'], $package, $sourceId);
+                $result = $this->migrateOne($db, $legacy, $items, $found, $classification, $canonical, $source['rows'], $package, $sourceId);
                 $sourceLinkCount += $result['source_links'];
                 $itemOverlayCount += $result['item_overlays'];
                 $transactionOverlayCount += $result['transaction_overlay'];
@@ -91,12 +140,14 @@ final class SpjV2LegacyMigrationService
                 'documents' => $documents->count(),
             ],
             'classification' => $counts,
+            'canonical_context_classification' => $this->canonicalCounts($plans),
             'package_sensitive_classification' => $packageSensitive,
             'migrated' => [
                 'v2_transactions' => (int) $db->getSchemaBuilder()->hasTable('spj_transactions') ? $db->table('spj_transactions')->count() : 0,
                 'source_links' => $sourceLinkCount,
                 'transaction_overlays' => $transactionOverlayCount,
-                'item_overlays' => $itemOverlayCount,
+                'item_overlays' => $db->getSchemaBuilder()->hasTable('spj_item_overlays') ? $db->table('spj_item_overlays')->count() : 0,
+                'created_item_overlays' => $itemOverlayCount,
                 'legacy_maps' => $legacyMapCount,
                 'package_v2_links' => $db->getSchemaBuilder()->hasColumn('spj_packages', 'spj_transaction_id') ? $db->table('spj_packages')->whereNotNull('spj_transaction_id')->count() : 0,
             ],
@@ -113,6 +164,7 @@ final class SpjV2LegacyMigrationService
                 'after_hash' => $this->hashArray($afterProtected),
             ],
             'source_adapter_validation' => $execute ? $this->sourceAdapterValidation($db, $sourceId) : ['status' => 'NOT_RUN_DRY_RUN'],
+            'item_overlay_reconciliation' => $this->itemOverlayReconciliation($db, $legacyItems),
             'errors' => $errors,
             'plan' => $plans,
         ];
@@ -132,6 +184,7 @@ final class SpjV2LegacyMigrationService
                 throw new RuntimeException('V2-C verify requires table: '.$table);
             }
         }
+        $legacyItems = $db->table('transaction_items')->get()->groupBy('transaction_id');
 
         return [
             'integrity_check' => (string) $db->selectOne('PRAGMA integrity_check')->integrity_check,
@@ -164,6 +217,12 @@ final class SpjV2LegacyMigrationService
                 'legacy_transaction_v2_map' => $db->table('legacy_transaction_v2_map')->count(),
                 'package_v2_links' => $db->table('spj_packages')->whereNotNull('spj_transaction_id')->count(),
             ],
+            'canonical_context_classification' => $db->table('spj_transactions')
+                ->select('canonical_context_status', DB::raw('COUNT(*) as count'))
+                ->groupBy('canonical_context_status')
+                ->pluck('count', 'canonical_context_status')
+                ->all(),
+            'item_overlay_reconciliation' => $this->itemOverlayReconciliation($db, $legacyItems),
         ];
     }
 
@@ -210,10 +269,10 @@ final class SpjV2LegacyMigrationService
         ];
     }
 
-    /** @param object $legacy @param \Illuminate\Support\Collection<int, object> $items @param array<int, string> $sourceIds @param array{status:string,reason:string,membership_hash:?string} $classification @param array<string, object> $rawRows */
-    private function migrateOne(Connection $db, object $legacy, $items, array $sourceIds, array $classification, array $rawRows, ?object $package, int $sourceId): array
+    /** @param object $legacy @param \Illuminate\Support\Collection<int, object> $items @param array<int, string> $sourceIds @param array{status:string,reason:string,membership_hash:?string} $classification @param array{status:string,reason:string} $canonical @param array<string, object> $rawRows */
+    private function migrateOne(Connection $db, object $legacy, $items, array $sourceIds, array $classification, array $canonical, array $rawRows, ?object $package, int $sourceId): array
     {
-        return $db->transaction(function () use ($db, $legacy, $items, $sourceIds, $classification, $rawRows, $package, $sourceId): array {
+        return $db->transaction(function () use ($db, $legacy, $items, $sourceIds, $classification, $canonical, $rawRows, $package, $sourceId): array {
             $now = now();
             $v2 = $db->table('spj_transactions')
                 ->where('fiscal_year_id', $legacy->fiscal_year_id)
@@ -229,6 +288,8 @@ final class SpjV2LegacyMigrationService
                 'source_status' => 'ACTIVE',
                 'requires_reconciliation' => $classification['status'] === 'DETERMINISTIC',
                 'source_missing_since' => null,
+                'canonical_context_status' => $canonical['status'],
+                'canonical_context_reason' => $canonical['reason'],
                 'updated_at' => $now,
             ];
             $v2Id = $v2?->id;
@@ -286,6 +347,8 @@ final class SpjV2LegacyMigrationService
                 'mapping_status' => $classification['status'],
                 'mapping_reason' => $classification['reason'],
                 'current_membership_hash' => $classification['membership_hash'],
+                'canonical_context_status' => $canonical['status'],
+                'canonical_context_reason' => $canonical['reason'],
                 'updated_at' => $now,
             ];
             if ($mapping === null) {
@@ -310,6 +373,80 @@ final class SpjV2LegacyMigrationService
 
             return ['source_links' => $sourceLinks, 'item_overlays' => $itemOverlays, 'transaction_overlay' => $transactionOverlay, 'legacy_map' => $legacyMap];
         });
+    }
+
+    /** @param array{status:string,membership_hash:?string} $mapping @param array<string, array<string, array<int, array{legacy_id:int,legacy_context_matches:bool}>>> $validMembershipContexts @return array{status:string,reason:string} */
+    private function classifyCanonicalContext(object $legacy, array $mapping, bool $contextValid, bool $legacyContextMatches, array $validMembershipContexts): array
+    {
+        if ($mapping['status'] === 'SOURCE_MISSING') {
+            return ['status' => 'SOURCE_MISSING', 'reason' => 'source mapping is unresolved because the active raw mirror does not contain the source items'];
+        }
+        if ($mapping['status'] === 'PARTIAL') {
+            return ['status' => 'REQUIRES_REVIEW', 'reason' => 'source mapping is partial and cannot enter the canonical read path'];
+        }
+        if ($mapping['status'] === 'AMBIGUOUS') {
+            return ['status' => 'REQUIRES_REVIEW', 'reason' => 'source mapping is ambiguous and cannot enter the canonical read path'];
+        }
+        if ($mapping['status'] === 'LEGACY_ONLY') {
+            return ['status' => 'REQUIRES_REVIEW', 'reason' => 'legacy transaction has no source identity'];
+        }
+        if (! $contextValid) {
+            $reason = 'fiscal year and fund source do not agree in the legacy context';
+            if ($mapping['membership_hash'] !== null && count($validMembershipContexts[$mapping['membership_hash']] ?? []) > 0) {
+                $reason .= '; source membership duplicates a valid context';
+            }
+
+            return ['status' => 'INVALID_CONTEXT', 'reason' => $reason];
+        }
+        $candidates = $mapping['membership_hash'] !== null
+            ? array_merge(...array_values($validMembershipContexts[$mapping['membership_hash']] ?? []))
+            : [];
+        if (count($candidates) > 1) {
+            usort($candidates, function (array $left, array $right): int {
+                return [(int) $right['legacy_context_matches'], $left['legacy_id']] <=> [(int) $left['legacy_context_matches'], $right['legacy_id']];
+            });
+            if ((int) $legacy->id !== $candidates[0]['legacy_id']) {
+                $reason = 'source membership duplicates another legacy row in the same effective fiscal/fund context';
+                if (! $legacyContextMatches) {
+                    $reason .= '; legacy fiscal_year_id does not match the effective transaction-date context';
+                }
+
+                return ['status' => 'LEGACY_DUPLICATE', 'reason' => $reason];
+            }
+        }
+
+        return [
+            'status' => 'ACTIVE_CANONICAL',
+            'reason' => $legacyContextMatches
+                ? 'fiscal year, fund source, and source identity are valid for the canonical context'
+                : 'transaction date and fund source resolve to the canonical context; legacy fiscal_year_id is stale',
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $plans @return array<string, int> */
+    private function canonicalCounts(array $plans): array
+    {
+        $counts = array_fill_keys(['ACTIVE_CANONICAL', 'HISTORICAL', 'LEGACY_DUPLICATE', 'INVALID_CONTEXT', 'SOURCE_MISSING', 'REQUIRES_REVIEW'], 0);
+        foreach ($plans as $plan) {
+            $status = $plan['canonical_context_status'];
+            $counts[array_key_exists($status, $counts) ? $status : 'REQUIRES_REVIEW']++;
+        }
+
+        return $counts;
+    }
+
+    /** @param Collection<int, Collection<int, object>> $legacyItems @return array<string, int> */
+    private function itemOverlayReconciliation(Connection $db, $legacyItems): array
+    {
+        $expected = $legacyItems->flatten()->filter(fn (object $item): bool => filled($item->item_description ?? null))->count();
+        $migrated = $db->getSchemaBuilder()->hasTable('spj_item_overlays') ? $db->table('spj_item_overlays')->count() : 0;
+
+        return [
+            'legacy_operator_owned_candidates' => $expected,
+            'v2_item_overlays' => $migrated,
+            'lost_overlay' => max(0, $expected - $migrated),
+            'unexpected_overlay' => max(0, $migrated - $expected),
+        ];
     }
 
     private function countOrphans(Connection $db, string $child, string $foreignKey, string $parent): int

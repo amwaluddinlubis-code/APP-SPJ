@@ -276,14 +276,14 @@ Koreksi raw-mirror yang didorong audit database nyata:
 
 ### V2-A2 — Tenant discovery dan source identity preflight
 
-Status: **READ-ONLY PREFLIGHT COMPLETE / V2-B REAL-TENANT EXECUTION BLOCKED**.
+Status: **READ-ONLY PREFLIGHT COMPLETE / ISOLATED REHEARSAL COMPLETE**.
 
-- [x] tenant kedua `10208183` ditemukan pada `D:\lrvProject\spj-bosp-data`;
+- [x] previous-project external/orphan fixture `10208183` diinventarisasi;
 - [x] mismatch central NPSN `10260756` vs path `10260786` diklasifikasikan sebagai `DATABASE_REGISTRY_MISMATCH`;
 - [x] 291 legacy transaction V2-A dipetakan ke full raw `kas_umum`;
 - [x] 56 raw mirror table identities diklasifikasikan;
 - [x] stable identity registry contract dan additive V2-B schema proposal dikunci;
-- [ ] register/audit source ARKAS tenant `10208183` tanpa menyentuh original tenant;
+- [ ] optional audit/source recovery untuk fixture `10208183` (bukan blocker tenant current-project);
 - [ ] execute V2-B migration pada isolated/test database;
 - [ ] promote V2-B ke real tenants;
 
@@ -297,9 +297,9 @@ Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
 - [x] EXACT 269 dan DETERMINISTIC 22 tanpa rewrite legacy `source_key`;
 - [x] package/document NUMBERED continuity, overlay continuity, idempotency,
   integrity, FK, orphan, dan synthetic FINAL regression lulus;
-- [x] Tenant B 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
+- [x] external/orphan fixture 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
 - [x] command/service/report V2-C tersedia;
-- [ ] source evidence dan ownership Tenant B diselesaikan;
+- [ ] source evidence/ownership fixture `10208183` (opsional, bukan gate current-project);
 - [ ] production migration dan legacy retirement;
 - [ ] V2-D read-path cutover preparation.
 

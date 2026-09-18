@@ -8,6 +8,13 @@ use RuntimeException;
 
 final class V2BSourceIdentityRegistryService
 {
+    private const ALLOWED_IDENTITY_TYPES = [
+        'PRIMARY_KEY',
+        'COMPOSITE_PRIMARY_KEY',
+        'DETERMINISTIC_FALLBACK',
+        'UNSTABLE_FALLBACK',
+    ];
+
     public function __construct(
         private readonly V2BIsolatedDatabaseGuard $guard,
     ) {}
@@ -22,7 +29,14 @@ final class V2BSourceIdentityRegistryService
         ?int $rawMirrorRowId,
         ?string $payloadHash,
     ): int {
+        if (! in_array($identityType, self::ALLOWED_IDENTITY_TYPES, true)) {
+            throw new RuntimeException('Unknown source identity type: '.$identityType);
+        }
+        if (trim($sourceKey) === '') {
+            throw new RuntimeException('Source identity key cannot be empty.');
+        }
         $this->guard->assertStableCriticalIdentity($identityType);
+        $this->assertRawMirrorLineage($connection, $sourceId, $sourceTable, $sourceKey, $rawMirrorRowId, $payloadHash);
         $now = Carbon::now();
         $encodedPrimaryKey = json_encode($primaryKey, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $existing = $connection->table('arkas_source_identity_registry')
@@ -59,6 +73,37 @@ final class V2BSourceIdentityRegistryService
         ]);
 
         return (int) $existing->id;
+    }
+
+    private function assertRawMirrorLineage(
+        Connection $connection,
+        int $sourceId,
+        string $sourceTable,
+        string $sourceKey,
+        ?int $rawMirrorRowId,
+        ?string $payloadHash,
+    ): void {
+        if ($rawMirrorRowId === null) {
+            return;
+        }
+
+        $lineage = $connection->table('arkas_raw_mirror_rows as rows')
+            ->join('arkas_raw_mirror_tables as tables', 'tables.id', '=', 'rows.mirror_table_id')
+            ->where('rows.id', $rawMirrorRowId)
+            ->first([
+                'tables.source_id',
+                'tables.source_table',
+                'rows.source_key',
+                'rows.payload_hash',
+            ]);
+
+        if ($lineage === null
+            || (int) $lineage->source_id !== $sourceId
+            || (string) $lineage->source_table !== $sourceTable
+            || (string) $lineage->source_key !== $sourceKey
+            || ($payloadHash !== null && (string) $lineage->payload_hash !== $payloadHash)) {
+            throw new RuntimeException('Raw mirror lineage does not match the requested source identity.');
+        }
     }
 
     public function markMissing(Connection $connection, int $sourceId, string $sourceTable, string $sourceKey): void

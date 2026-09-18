@@ -266,9 +266,9 @@ P0 code/dependency integration gate sudah hijau pada current canonical code head
 
 Status: **READ-ONLY PREFLIGHT COMPLETE / V2-B REAL-TENANT EXECUTION BLOCKED**.
 
-Tenant kedua `10208183` ditemukan pada `D:\lrvProject\spj-bosp-data\school-databases`,
-tetapi belum terdaftar pada central `schools`/`school_databases` dan belum
-memiliki full raw mirror audit. Tenant V2-A `10260756` memiliki path runtime
+Database `10208183` ditemukan pada `D:\lrvProject\spj-bosp-data\school-databases`,
+tetapi merupakan database legacy dari project sebelumnya, bukan tenant kedua
+wajib pada project sekarang. Tenant V2-A/current-project `10260756` memiliki path runtime
 registry `...\10260786\spj.sqlite`; mismatch tersebut diklasifikasikan sebagai
 `DATABASE_REGISTRY_MISMATCH`, bukan diperbaiki pada tahap ini.
 
@@ -280,8 +280,10 @@ dokumen `NUMBERED`; tidak ada Paket `FINAL` pada tenant yang diaudit.
 Raw mirror 56 tabel: 38 single-PK, 13 composite-PK, 1 deterministic fallback,
 4 unstable fallback. Registry identity contract dan additive V2-B schema sudah
 ditulis pada `docs/V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
-Tidak ada original tenant yang dimutasi. V2-B real-tenant execution tetap
-blocked sampai source identity tenant `10208183` tersedia dan diaudit.
+Tidak ada original tenant yang dimutasi. Database `10208183` dipertahankan
+sebagai external/orphan negative fixture; ia bukan blocker untuk tenant
+current-project. V2-B/V2-C rehearsal tetap hanya boleh berjalan pada clone
+isolated.
 
 ---
 
@@ -553,13 +555,15 @@ item overlay 245, legacy map 291, dan package V2 links 67. Seluruh 22 determinis
 mempertahankan legacy `source_key`; 66 NUMBERED Paket dan 115 NUMBERED dokumen
 tetap identik. Execute kedua idempotent.
 
-Tenant B clone hanya menjalani source-unavailable dry-run karena orphan/unregistered
-dan tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
+External/orphan fixture clone hanya menjalani source-unavailable dry-run karena
+tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
 `SOURCE_MISSING`, tanpa mapping tebakan dan tanpa V2 mutation.
 
 Evidence lengkap: `V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` dan report JSON lokal di
 `storage/app/v2-c-rehearsal/reports/`. Original tenant, central registry, dan ARKAS
-source tidak dimutasi. V2-D read-path cutover belum aman.
+source tidak dimutasi. V2-C kini memisahkan source-resolution dari canonical
+context: 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`; V2-D read-path
+cutover belum dimulai.
 
 ---
 

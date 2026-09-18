@@ -39,7 +39,7 @@ bukan identity canonical.
 
 ## Guard
 
-Migration menolak target yang bukan file SQLite explicit dan isolated. Guard menolak seluruh
+Migration rehearsal menolak target yang bukan file SQLite explicit dan isolated. Guard menolak seluruh
 root database original, termasuk tenant 10208183, 10260756, dan path registry 10260786.
 Manifest wajib menyamakan target path, NPSN, `source_id`, dan ARKAS source identity; source
 path harus berbeda, ada, dan diberi tanda `source_read_only=true` serta `query_only=true`.
@@ -101,9 +101,10 @@ perubahan source tenant. Source ARKAS hash sebelum/sesudah tetap sama.
 
 ## Blocker real tenant
 
-V2-B belum boleh dieksekusi pada tenant nyata. Masih diperlukan review lanjutan untuk:
+V2-B tidak dijalankan oleh migrasi tenant normal dan belum boleh dieksekusi pada
+tenant nyata. Masih diperlukan review lanjutan untuk:
 
-1. tenant kedua dan mismatch `10260756` versus folder `10260786`;
+1. current-project tenant `10260756` dan mismatch registry versus folder `10260786`;
 2. pemetaan legacy seluruh transaction/package nyata;
 3. finalisasi source identity registry terhadap full ARKAS mirror;
 4. keputusan additive transition package untuk real tenant;

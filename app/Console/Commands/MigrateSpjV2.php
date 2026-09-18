@@ -87,6 +87,12 @@ final class MigrateSpjV2 extends Command
                     '--force' => true,
                     '--no-interaction' => true,
                 ]);
+                Artisan::call('migrate', [
+                    '--database' => 'school',
+                    '--path' => 'database/migrations/v2-rehearsal',
+                    '--force' => true,
+                    '--no-interaction' => true,
+                ]);
                 $db = DB::connection('school');
             }
 

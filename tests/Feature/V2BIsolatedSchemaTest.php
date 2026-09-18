@@ -36,12 +36,12 @@ final class V2BIsolatedSchemaTest extends TestCase
 
         Artisan::call('migrate', [
             '--database' => 'school',
-            '--path' => 'database/migrations/school/2026_09_19_000000_create_v2_b_overlay_schema.php',
+            '--path' => 'database/migrations/v2-rehearsal',
             '--force' => true,
         ]);
         Artisan::call('migrate', [
             '--database' => 'school',
-            '--path' => 'database/migrations/school/2026_09_19_000000_create_v2_b_overlay_schema.php',
+            '--path' => 'database/migrations/v2-rehearsal',
             '--force' => true,
         ]);
 
@@ -56,7 +56,12 @@ final class V2BIsolatedSchemaTest extends TestCase
         $this->assertSame('ok', $connection->selectOne('PRAGMA integrity_check')->integrity_check);
         $this->assertCount(0, $connection->select('PRAGMA foreign_key_check'));
 
-        $raw = $connection->table('arkas_raw_mirror_rows')->first();
+        $raw = $connection->table('arkas_raw_mirror_rows as rows')
+            ->join('arkas_raw_mirror_tables as tables', 'tables.id', '=', 'rows.mirror_table_id')
+            ->where('tables.source_id', 1)
+            ->where('tables.source_table', 'kas_umum')
+            ->select('rows.*')
+            ->first();
         $this->assertNotNull($raw);
         $service = app(V2BSourceIdentityRegistryService::class);
         $identityId = $service->registerOrRefresh($connection, 1, 'kas_umum', $raw->source_key, ['ID_KAS_UMUM' => $raw->source_key], 'PRIMARY_KEY', (int) $raw->id, $raw->payload_hash);
@@ -143,6 +148,60 @@ final class V2BIsolatedSchemaTest extends TestCase
             'npsn' => 10208183, 'source_id' => 1, 'source_identity_npsn' => 10260756,
             'source_path' => 'D:\\backupdata\\datasmp.db', 'source_read_only' => true, 'query_only' => true,
         ]);
+    }
+
+    public function test_guard_rejects_path_traversal_to_original_tenant(): void
+    {
+        $guard = app(V2BIsolatedDatabaseGuard::class);
+        $target = storage_path('app/v2-b-isolated'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'school-databases'.DIRECTORY_SEPARATOR.'10260786'.DIRECTORY_SEPARATOR.'spj.sqlite');
+        config()->set('database.connections.school.database', $target);
+        DB::purge('school');
+
+        $this->expectException(RuntimeException::class);
+        $guard->assertMigrationTarget(DB::connection('school'), [
+            'target_path' => $target,
+            'npsn' => 10260756,
+            'source_id' => 1,
+            'source_identity_npsn' => 10260756,
+            'source_path' => 'D:\\backupdata\\datasmp.db',
+            'source_read_only' => true,
+            'query_only' => true,
+        ]);
+    }
+
+    public function test_registry_rejects_mismatched_raw_mirror_lineage_and_unknown_type(): void
+    {
+        $target = getenv('SPJ_V2_B_TARGET_PATH') ?: '';
+        $source = getenv('SPJ_V2_B_SOURCE_PATH') ?: '';
+        $this->assertNotSame('', $target);
+        $this->assertNotSame('', $source);
+        config()->set('database.connections.school.database', $target);
+        config()->set('spj.v2_b_isolated_manifest', [
+            'target_path' => $target, 'npsn' => 10260756, 'source_id' => 1,
+            'source_identity_npsn' => 10260756, 'source_path' => $source,
+            'source_read_only' => true, 'query_only' => true,
+        ]);
+        DB::purge('school');
+        $connection = DB::connection('school');
+        Artisan::call('migrate', ['--database' => 'school', '--path' => 'database/migrations/v2-rehearsal', '--force' => true]);
+        $raw = $connection->table('arkas_raw_mirror_rows as rows')
+            ->join('arkas_raw_mirror_tables as tables', 'tables.id', '=', 'rows.mirror_table_id')
+            ->where('tables.source_id', 1)
+            ->where('tables.source_table', 'kas_umum')
+            ->select('rows.*')
+            ->first();
+        $other = $connection->table('arkas_raw_mirror_rows')->where('id', '!=', $raw->id)->first();
+        $service = app(V2BSourceIdentityRegistryService::class);
+
+        try {
+            $service->registerOrRefresh($connection, 1, 'kas_umum', $raw->source_key, ['id_kas_umum' => $raw->source_key], 'UNKNOWN_TYPE', null, null);
+            $this->fail('Unknown identity type was accepted.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('identity type', strtolower($exception->getMessage()));
+        }
+
+        $this->expectException(RuntimeException::class);
+        $service->registerOrRefresh($connection, 1, 'kas_umum', $raw->source_key, ['id_kas_umum' => $raw->source_key], 'PRIMARY_KEY', (int) $other->id, $raw->payload_hash);
     }
 
     private function manifest($connection): array
