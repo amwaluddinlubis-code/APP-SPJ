@@ -266,7 +266,24 @@ class TransactionsTable extends Component
 
     private function applySpendingRowConstraint(Builder|QueryBuilder $query): void
     {
-        $query->whereRaw("NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.volume') AS TEXT)), '') IS NOT NULL");
+        // Volume is not consistently populated by ARKAS for BKU rows. Prefer
+        // the account code while retaining volume for older source payloads.
+        $query->whereRaw("(
+            NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.kode_rekening') AS TEXT)), '') IS NOT NULL
+            OR NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.volume') AS TEXT)), '') IS NOT NULL
+            OR (
+                NULLIF(TRIM(CAST(json_extract(arkas_raw_mirror_rows.payload, '$.no_bukti') AS TEXT)), '') IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM arkas_raw_mirror_rows AS spending_probe
+                    WHERE spending_probe.mirror_table_id = arkas_raw_mirror_rows.mirror_table_id
+                      AND (
+                          NULLIF(TRIM(CAST(json_extract(spending_probe.payload, '$.kode_rekening') AS TEXT)), '') IS NOT NULL
+                          OR NULLIF(TRIM(CAST(json_extract(spending_probe.payload, '$.volume') AS TEXT)), '') IS NOT NULL
+                      )
+                )
+            )
+        )");
     }
 
     private function applyPeriodToRawQuery(QueryBuilder $query, string $payloadColumn): void
