@@ -64,7 +64,7 @@ class TransactionController extends Controller
             );
         }
 
-        return view('transactions.show', ['transactionId' => $transaction->id]);
+        return view('transactions.show', ['transactionId' => $transaction->source_key ?: (string) $transaction->id]);
     }
 
     /** @return array{0: ?Transaction, 1: ?Transaction} */

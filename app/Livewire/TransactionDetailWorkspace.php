@@ -2,19 +2,21 @@
 
 namespace App\Livewire;
 
+use App\Models\SpjFreshTransaction;
 use App\Models\Transaction;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
 use DomainException;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class TransactionDetailWorkspace extends Component
 {
-    public int $transactionId;
+    public string $transactionId;
 
     public string $paymentDescription = '';
 
@@ -27,16 +29,16 @@ class TransactionDetailWorkspace extends Component
 
     public ?int $sourceEventId = null;
 
-    public function mount(int $transactionId, ActiveSpjContext $context): void
+    public function mount(string $transactionId, ActiveSpjContext $context): void
     {
-        $transaction = Transaction::query()->find($transactionId);
+        $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first();
         if (! $transaction || ! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
 
             return;
         }
 
-        $this->transactionId = $transactionId;
+        $this->transactionId = $transaction->source_key ?: $transactionId;
         $this->loadTransaction();
     }
 
@@ -156,9 +158,59 @@ class TransactionDetailWorkspace extends Component
 
     private function transaction(): Transaction
     {
-        return Transaction::query()->with([
+        $transaction = Transaction::query()->with([
             'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
-        ])->findOrFail($this->transactionId);
+        ])->forSourceIdentifier($this->transactionId)->firstOrFail();
+        $fresh = SpjFreshTransaction::query()
+            ->with('rawMirrorRow')
+            ->where('fiscal_year_id', session('active_fiscal_year_id'))
+            ->where('fund_source_id', session('active_fund_source_id'))
+            ->where('source_table', 'kas_umum')
+            ->where('source_key', $transaction->source_key ?: $this->transactionId)
+            ->first();
+
+        if ($fresh !== null) {
+            $payload = $fresh->rawMirrorRow?->payload ?? [];
+            $gross = (float) $fresh->gross_amount;
+            $tax = $this->freshTaxTotal($fresh);
+            $transaction->forceFill([
+                'no_bukti' => $fresh->no_bukti,
+                'transaction_date' => $fresh->transaction_date?->toDateString(),
+                'description' => $fresh->description,
+                'account_code' => $fresh->account_code,
+                'activity_code' => $fresh->activity_code,
+                'recipient_name' => $fresh->recipient_name,
+                'gross_amount' => $gross,
+                'tax_total' => $tax,
+                'net_amount' => $gross - $tax,
+                'source_status' => $fresh->source_status,
+                'requires_reconciliation' => $fresh->requires_reconciliation,
+                'source_key' => $fresh->source_key,
+                'id_kas_umum' => $payload['id_kas_umum'] ?? $transaction->id_kas_umum,
+            ]);
+        }
+
+        return $transaction;
+    }
+
+    private function freshTaxTotal(SpjFreshTransaction $transaction): float
+    {
+        $parentId = $transaction->rawMirrorRow?->payload['id_kas_umum'] ?? null;
+
+        if (blank($parentId)) {
+            return 0.0;
+        }
+
+        $total = DB::connection('school')->table('arkas_raw_mirror_rows as tax_raw')
+            ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
+            ->where('tax_table.source_table', 'kas_umum')
+            ->where('tax_table.status', 'ACTIVE')
+            ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
+            ->whereRaw("json_extract(tax_raw.payload, '$.parent_id_kas_umum') = ?", [$parentId])
+            ->whereRaw("(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), '0') = '1' OR COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), '0') = '1')")
+            ->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
+
+        return (float) $total / 2;
     }
 
     private function loadTransaction(): void
