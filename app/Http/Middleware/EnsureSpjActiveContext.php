@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\SpjDocument;
+use App\Models\SpjFreshTransaction;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Closure;
@@ -23,12 +24,20 @@ class EnsureSpjActiveContext
 
         $transactionId = $request->route('transactionId');
         if ($transactionId !== null) {
+            $legacyTransactionExists = Transaction::query()
+                ->forSourceIdentifier((string) $transactionId)
+                ->where('fiscal_year_id', $yearId)
+                ->where('fund_source_id', $fundSourceId)
+                ->exists();
+            $freshTransactionExists = SpjFreshTransaction::query()
+                ->where('source_table', 'kas_umum')
+                ->where('source_key', (string) $transactionId)
+                ->where('fiscal_year_id', $yearId)
+                ->where('fund_source_id', $fundSourceId)
+                ->exists();
+
             abort_unless(
-                Transaction::query()
-                    ->forSourceIdentifier((string) $transactionId)
-                    ->where('fiscal_year_id', $yearId)
-                    ->where('fund_source_id', $fundSourceId)
-                    ->exists(),
+                $legacyTransactionExists || $freshTransactionExists,
                 404
             );
         }
