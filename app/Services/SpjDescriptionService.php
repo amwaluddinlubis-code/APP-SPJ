@@ -13,8 +13,6 @@ use App\Models\Transaction;
  */
 class SpjDescriptionService
 {
-
-
     public function updatePaymentDescription(Transaction $transaction, ?string $description): void
     {
         $description = trim((string) $description);

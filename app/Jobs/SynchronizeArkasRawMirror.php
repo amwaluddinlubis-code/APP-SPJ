@@ -44,11 +44,17 @@ class SynchronizeArkasRawMirror implements ShouldQueue
         $operation->update(['progress' => 10, 'message' => 'Menyinkronkan seluruh tabel ARKAS ke raw mirror.']);
 
         $result = $mirror->synchronize($source);
-        $projection = $projector->project($year, $this->fundSourceId, $source);
+        $projection = $projector->projectAllValidContexts($source);
         $operation->update([
             'status' => 'COMPLETED',
             'progress' => 100,
-            'result' => $result + ['fiscal_year_id' => $year->id, 'fund_source_id' => $this->fundSourceId, 'fresh_projection' => $projection],
+            'result' => $result + [
+                'fiscal_year_id' => $year->id,
+                'fund_source_id' => $this->fundSourceId,
+                'requested_fiscal_year_id' => $year->id,
+                'requested_fund_source_id' => $this->fundSourceId,
+                'fresh_projection' => $projection,
+            ],
             'message' => 'Raw mirror ARKAS selesai disinkronkan.',
             'finished_at' => now(),
         ]);

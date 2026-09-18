@@ -236,7 +236,7 @@ Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/b
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: SOURCE CORRECTION IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
+**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
 
 Koreksi raw-mirror yang didorong audit database nyata:
 
@@ -247,6 +247,8 @@ Koreksi raw-mirror yang didorong audit database nyata:
 - [x] compatibility grouped `source_key` ke legacy workspace/overlay;
 - [x] gross/tax/net grouped transaction mengikuti seluruh item dan PBT source;
 - [x] statistik count/gross/tax/net halaman transaksi memakai dataset fresh + filter yang sama.
+- [x] langkah 6B: setelah raw mirror, projection catch-up mengiterasi semua Fiscal Year + Fund Source valid pada tenant;
+- [x] regression multi-year/fund-source untuk 2025+2026, isolation, dan idempotensi;
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 

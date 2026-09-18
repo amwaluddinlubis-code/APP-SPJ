@@ -344,7 +344,9 @@ Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 - [x] regression source ditambahkan pada `SpjFreshTransactionCompatibilityTest` untuk overlay/Paket grouped source key serta gross/tax/net multi-item;
 - [x] statistik count/gross/tax/net halaman transaksi memakai `filteredQuery()` yang sama dengan tabel, sehingga fund source, periode, pencarian, dan workflow status memakai dataset fresh yang sama;
 - [x] regression `TransactionsWorkflowFilterTest` mengunci summary terhadap fund-source isolation, triwulan, status, dan pencarian;
-- [ ] focused Laravel regression/CI untuk koreksi raw identity + projection/compatibility/statistik belum memiliki evidence runtime pada head ini;
+- [x] langkah 6B projection catch-up setelah raw mirror memproyeksikan seluruh pasangan Fiscal Year + Fund Source valid pada tenant dari job GUI dan command, dengan isolation dan idempotensi;
+- [x] regression multi-year/fund-source mengunci projection 2025+2026, fund-source isolation, dan idempotensi;
+- [x] focused Laravel regression untuk projection/compatibility/statistik berjalan pada head ini: 7 test terlapor, 35 assertions, tanpa failure; PHPUnit hanya melaporkan deprecated metadata dan cache hasil tidak writable;
 - [x] GUI Penganggaran RKAS membaca payload raw mirror bila proyeksi legacy belum tersedia;
 - [x] modul Referensi ARKAS read-only menampilkan Program, Subprogram, Kegiatan, dan Rekening dari snapshot raw pada konteks aktif;
 - [x] tab Acuan Barang menampilkan master aktif `ref_acuan_barang` yang di-inner-join ke `ref_rekening` hanya setelah pencarian, dengan status `Belum Ada Rekening` bila pasangan tidak tersedia;
@@ -371,7 +373,7 @@ BELANJA menghasilkan bruto Rp138.195.000, pajak Rp7.677.946, dan netto
 Rp130.517.054. Formula pajak menggunakan PBT saja dan tidak menghitung PBS/setoran
 dua kali.
 
-**Status: SOURCE CORRECTION + GROUPED COMPATIBILITY IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
+**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / SOURCE CORRECTION + GROUPED COMPATIBILITY IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / FOCUSED REGRESSION VERIFIED.**
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
 

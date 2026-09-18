@@ -100,7 +100,7 @@ class TransactionsTableLivewireTest extends TestCase
         foreach (range(1, 31) as $number) {
             $rawRowId = DB::connection('school')->table('arkas_raw_mirror_rows')->insertGetId([
                 'mirror_table_id' => $mirrorTableId, 'source_key' => sprintf('BPU-%03d', $number), 'ordinal' => $number,
-            'payload' => json_encode(['no_bukti' => sprintf('BPU-%03d', $number), 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Transaksi '.$number, 'jumlah' => 100000]),
+                'payload' => json_encode(['no_bukti' => sprintf('BPU-%03d', $number), 'tanggal_transaksi' => '2026-01-10', 'uraian' => 'Transaksi '.$number, 'jumlah' => 100000]),
                 'payload_hash' => str_repeat((string) (($number % 8) + 1), 64), 'created_at' => now(), 'updated_at' => now(),
             ]);
             SpjFreshTransaction::query()->create([

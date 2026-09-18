@@ -10,6 +10,44 @@ use Illuminate\Support\Facades\DB;
 final class SpjFreshProjectionService
 {
     /**
+     * Project every valid fiscal-year/fund-source context in the tenant.
+     *
+     * Raw mirror synchronization is source-wide, so projection must not be
+     * limited to the context that happened to be active when it was started.
+     *
+     * @return array{contexts:int, transactions:int, items:int, skipped:int, projections:array<int, array{fiscal_year_id:int, year:int, fund_source_id:int, transactions:int, items:int, skipped:int}>}
+     */
+    public function projectAllValidContexts(ArkasSource $source): array
+    {
+        $contexts = FiscalYear::query()
+            ->whereNotNull('fund_source_id')
+            ->where('fund_source_id', '>', 0)
+            ->orderBy('year')
+            ->orderBy('fund_source_id')
+            ->get();
+        $projections = [];
+
+        foreach ($contexts as $year) {
+            $fundSourceId = (int) $year->fund_source_id;
+            $result = $this->project($year, $fundSourceId, $source);
+            $projections[] = [
+                'fiscal_year_id' => (int) $year->id,
+                'year' => (int) $year->year,
+                'fund_source_id' => $fundSourceId,
+                ...$result,
+            ];
+        }
+
+        return [
+            'contexts' => count($projections),
+            'transactions' => array_sum(array_column($projections, 'transactions')),
+            'items' => array_sum(array_column($projections, 'items')),
+            'skipped' => array_sum(array_column($projections, 'skipped')),
+            'projections' => $projections,
+        ];
+    }
+
+    /**
      * @return array{transactions:int, items:int, skipped:int}
      */
     public function project(FiscalYear $year, int $fundSourceId, ArkasSource $source): array

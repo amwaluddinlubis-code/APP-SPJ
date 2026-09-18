@@ -11,6 +11,18 @@ const SYNC_PROFILES = {
             { percent: 92, label: 'Menyusun referensi turunan' },
         ],
     },
+    arkasRawMirror: {
+        title: 'Mirror Database ARKAS',
+        subtitle: 'Seluruh tabel ARKAS dan indeks fresh SPJ sedang diantrikan.',
+        match: (url) => url.pathname.endsWith('/pengaturan/arkas/importer/raw-mirror'),
+        queued: true,
+        stages: [
+            { percent: 8, label: 'Menyiapkan konteks sekolah dan tahun' },
+            { percent: 35, label: 'Mengantrikan pembacaan seluruh tabel ARKAS' },
+            { percent: 70, label: 'Menyiapkan projection transaksi fresh SPJ' },
+            { percent: 92, label: 'Menunggu worker menyelesaikan proses' },
+        ],
+    },
     dapodik: {
         title: 'Sinkronisasi Dapodik',
         subtitle: 'GTK dan Peserta Didik sedang diambil dan dipadankan.',
@@ -37,47 +49,47 @@ const profileForForm = (form) => {
 const createOverlay = () => {
     const overlay = document.createElement('div');
     overlay.id = 'sync-progress-overlay';
-    overlay.className = 'fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm';
+    overlay.className = 'fixed inset-0 z-[120] hidden items-center justify-center bg-[color-mix(in_srgb,var(--ui-fg-strong)_60%,transparent)] p-4 backdrop-blur-sm';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'sync-progress-title');
     overlay.innerHTML = `
-        <section class="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-            <header class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+        <section class="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-2xl">
+            <header class="border-b border-[var(--ui-line)] px-5 py-4">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">Proses sinkronisasi</p>
-                        <h2 id="sync-progress-title" class="mt-1 text-xl font-extrabold text-slate-900 dark:text-white"></h2>
-                        <p data-sync-subtitle class="mt-1 text-sm text-slate-500 dark:text-slate-400"></p>
+                        <p class="text-xs font-bold uppercase tracking-wider text-[var(--theme-content-accent)]">Proses sinkronisasi</p>
+                        <h2 id="sync-progress-title" class="mt-1 text-xl font-extrabold text-[var(--ui-fg-strong)]"></h2>
+                        <p data-sync-subtitle class="mt-1 text-sm text-[var(--ui-fg-muted)]"></p>
                     </div>
-                    <span data-sync-percent class="rounded-full bg-indigo-50 px-3 py-1 text-sm font-extrabold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">0%</span>
+                    <span data-sync-percent class="rounded-full bg-[var(--theme-accent-soft)] px-3 py-1 text-sm font-extrabold text-[var(--theme-content-accent)]">0%</span>
                 </div>
             </header>
 
             <div class="space-y-5 px-5 py-5">
                 <div>
-                    <div class="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <div class="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-[var(--ui-fg-muted)]">
                         <span data-sync-current-stage>Menyiapkan proses...</span>
                         <span data-sync-elapsed>00:00</span>
                     </div>
-                    <div class="h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" aria-hidden="true">
-                        <div data-sync-bar class="h-full rounded-full bg-indigo-600 transition-[width] duration-500 ease-out" style="width: 0%"></div>
+                    <div class="h-3 overflow-hidden rounded-full bg-[var(--ui-surface-soft)]" aria-hidden="true">
+                        <div data-sync-bar class="h-full rounded-full bg-[var(--theme-action-bg)] transition-[width] duration-500 ease-out" style="width: 0%"></div>
                     </div>
-                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Persentase menunjukkan tahapan proses. Penyelesaian 100% hanya ditampilkan setelah server benar-benar selesai.</p>
+                    <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">Persentase menunjukkan tahapan proses. Untuk pekerjaan antrean, selesai berarti permintaan sudah diterima worker.</p>
                 </div>
 
                 <ol data-sync-stages class="grid gap-2 sm:grid-cols-2"></ol>
 
-                <div data-sync-waiting class="hidden rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                <div data-sync-waiting class="hidden rounded-xl border border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] px-4 py-3 text-sm text-[var(--ui-fg)]">
                     Tahap utama sudah dikirim. Server masih menyelesaikan penyimpanan dan validasi akhir. Jangan tutup halaman ini.
                 </div>
 
-                <div data-sync-error class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200"></div>
+                <div data-sync-error class="hidden rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900"></div>
             </div>
 
-            <footer class="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-400">
+            <footer class="flex items-center justify-between gap-3 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 text-xs text-[var(--ui-fg-muted)]">
                 <span data-sync-footer>Mohon tunggu. Data manual SPJ tidak ditimpa otomatis oleh sinkronisasi.</span>
-                <button data-sync-close type="button" class="hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">Tutup</button>
+                <button data-sync-close type="button" class="hidden rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm font-bold text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]">Tutup</button>
             </footer>
         </section>
     `;
@@ -104,10 +116,10 @@ const renderStages = (root, profile, activeIndex) => {
         const active = index === activeIndex;
         const marker = completed ? '✓' : (active ? '●' : String(index + 1));
         const classes = completed
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
             : active
-                ? 'border-indigo-300 bg-indigo-50 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200'
-                : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400';
+                ? 'border-[var(--theme-accent)] bg-[var(--theme-accent-soft)] text-[var(--ui-fg-strong)]'
+            : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)] text-[var(--ui-fg-muted)]';
 
         return `<li class="flex items-center gap-3 rounded-xl border px-3 py-2.5 ${classes}">
             <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-current text-xs font-extrabold">${marker}</span>
@@ -188,7 +200,9 @@ const runProgress = async (form, profile) => {
         activeIndex = profile.stages.length;
         if (percentLabel) percentLabel.textContent = '100%';
         if (bar instanceof HTMLElement) bar.style.width = '100%';
-        if (currentStage) currentStage.textContent = response.ok ? 'Sinkronisasi selesai' : 'Sinkronisasi selesai dengan respons error';
+        if (currentStage) currentStage.textContent = response.ok
+            ? (profile.queued ? 'Permintaan masuk antrean worker' : 'Sinkronisasi selesai')
+            : 'Sinkronisasi selesai dengan respons error';
         if (waiting) waiting.classList.add('hidden');
         renderStages(root, profile, profile.stages.length);
 
@@ -196,7 +210,9 @@ const runProgress = async (form, profile) => {
             throw new Error(`Server merespons HTTP ${response.status}.`);
         }
 
-        if (footer) footer.textContent = 'Selesai. Membuka hasil sinkronisasi...';
+        if (footer) footer.textContent = profile.queued
+            ? 'Permintaan diterima. Histori operasi akan menampilkan hasil setelah worker selesai.'
+            : 'Selesai. Membuka hasil sinkronisasi...';
         await new Promise((resolve) => window.setTimeout(resolve, 500));
         window.location.assign(response.url || window.location.href);
     } catch (error) {

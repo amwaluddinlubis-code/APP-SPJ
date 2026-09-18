@@ -18,6 +18,7 @@ class SpjIsolatedQuarterRollbackCommandTest extends TestCase
     use RefreshDatabase;
 
     private ?string $baselinePath = null;
+
     private ?string $copyPath = null;
 
     /** @var array<string, mixed>|null */

@@ -26,7 +26,8 @@
             <x-ui.form-section title="Mirror Seluruh Database ARKAS" description="Simpan seluruh tabel berisi dari database ARKAS sebagai raw mirror readonly tanpa mapping ke tabel legacy.">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <p class="max-w-3xl text-sm" style="color: var(--ui-fg-muted)">Konteks pekerjaan: sekolah aktif, tahun {{ $activeYear?->year ?: 'belum dipilih' }}, dan sumber dana {{ $activeYear?->fundSource?->name ?: ($activeYear?->fund_source ?: 'belum dipilih') }}. Data raw menjadi referensi; tabel SPJ legacy dan overlay operator tidak diubah.</p>
-                    <form method="POST" action="{{ route('arkas.importer.raw-mirror') }}">
+                    <form method="POST" action="{{ route('arkas.importer.raw-mirror') }}"
+                        data-confirm="Seluruh tabel ARKAS akan dibaca ulang dan projection fresh SPJ diperbarui. Data manual SPJ tetap dipertahankan. Lanjutkan?">
                         @csrf
                         <x-ui.button type="submit" icon="refresh">Sinkronkan Semua ARKAS</x-ui.button>
                     </form>

@@ -12,6 +12,7 @@ class SyncProgressUiTest extends TestCase
         $bootstrap = file_get_contents(resource_path('js/bootstrap.js'));
 
         $this->assertStringContainsString('/sinkronisasi/arkas', $javascript);
+        $this->assertStringContainsString('/pengaturan/arkas/importer/raw-mirror', $javascript);
         $this->assertStringContainsString('/pengaturan/dapodik/sinkron', $javascript);
         $this->assertStringContainsString('Sinkronisasi ARKAS', $javascript);
         $this->assertStringContainsString('Sinkronisasi Dapodik', $javascript);
@@ -19,6 +20,8 @@ class SyncProgressUiTest extends TestCase
         $this->assertStringContainsString('Mengambil data GTK', $javascript);
         $this->assertStringContainsString('Mengambil data Peserta Didik', $javascript);
         $this->assertStringContainsString('Persentase menunjukkan tahapan proses', $javascript);
+        $this->assertStringContainsString('Permintaan masuk antrean worker', $javascript);
+        $this->assertStringContainsString('var(--ui-surface-base)', $javascript);
         $this->assertStringContainsString("import './sync-progress';", $bootstrap);
     }
 

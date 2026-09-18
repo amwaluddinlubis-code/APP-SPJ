@@ -129,12 +129,97 @@ class SpjFreshProjectionContractTest extends TestCase
         );
     }
 
+    public function test_raw_mirror_catch_up_projects_all_years_and_fund_sources_idempotently(): void
+    {
+        $this->prepareSchoolConnection();
+        $source = new ArkasSource;
+        $source->id = 7;
+
+        DB::connection('school')->table('fund_sources')->insert([
+            ['id' => 1, 'code' => 'BOS-REG', 'name' => 'BOS Reguler'],
+            ['id' => 2, 'code' => 'BOS-KIN', 'name' => 'BOS Kinerja'],
+        ]);
+        DB::connection('school')->table('fiscal_years')->insert([
+            ['id' => 11, 'year' => 2025, 'fund_source_id' => 1],
+            ['id' => 12, 'year' => 2026, 'fund_source_id' => 1],
+            ['id' => 13, 'year' => 2026, 'fund_source_id' => 2],
+        ]);
+
+        $anggaranTableId = $this->insertMirrorTable($source->id, 'anggaran');
+        foreach ([
+            ['id_anggaran' => 'ANG-2025-REG', 'tahun_anggaran' => '2025', 'id_ref_sumber_dana' => 1],
+            ['id_anggaran' => 'ANG-2026-REG', 'tahun_anggaran' => '2026', 'id_ref_sumber_dana' => 1],
+            ['id_anggaran' => 'ANG-2026-KIN', 'tahun_anggaran' => '2026', 'id_ref_sumber_dana' => 2],
+        ] as $index => $budget) {
+            $this->insertRawRow($anggaranTableId, $budget['id_anggaran'], $budget + [
+                'is_approve' => 1,
+                'is_aktif' => 1,
+                'soft_delete' => 0,
+                'is_revisi' => 0,
+                'last_update' => '2026-01-01 08:00:0'.$index,
+            ]);
+        }
+
+        $kasTableId = $this->insertMirrorTable($source->id, 'kas_umum');
+        foreach ([
+            ['id' => 'KAS-2025', 'budget' => 'ANG-2025-REG', 'date' => '2025-02-03', 'proof' => 'BPU-2025'],
+            ['id' => 'KAS-2026-REG', 'budget' => 'ANG-2026-REG', 'date' => '2026-02-03', 'proof' => 'BPU-2026-REG'],
+            ['id' => 'KAS-2026-KIN', 'budget' => 'ANG-2026-KIN', 'date' => '2026-03-03', 'proof' => 'BPU-2026-KIN'],
+        ] as $item) {
+            $this->insertRawRow($kasTableId, $item['id'], [
+                'id_kas_umum' => $item['id'],
+                'id_ref_bku' => 4,
+                'id_anggaran' => $item['budget'],
+                'tanggal_transaksi' => $item['date'],
+                'no_bukti' => $item['proof'],
+                'saldo' => 1000,
+                'soft_delete' => 0,
+            ]);
+        }
+
+        $first = app(SpjFreshProjectionService::class)->projectAllValidContexts($source);
+        $second = app(SpjFreshProjectionService::class)->projectAllValidContexts($source);
+
+        $this->assertSame(3, $first['contexts']);
+        $this->assertSame(3, $first['transactions']);
+        $this->assertSame(3, $first['items']);
+        $this->assertSame(0, $second['transactions']);
+        $this->assertSame(0, $second['items']);
+        $this->assertSame([
+            ['fiscal_year_id' => 11, 'fund_source_id' => 1, 'count' => 1],
+            ['fiscal_year_id' => 12, 'fund_source_id' => 1, 'count' => 1],
+            ['fiscal_year_id' => 13, 'fund_source_id' => 2, 'count' => 1],
+        ], DB::connection('school')->table('spj_fresh_transactions')
+            ->selectRaw('fiscal_year_id, fund_source_id, COUNT(*) as count')
+            ->groupBy('fiscal_year_id', 'fund_source_id')
+            ->orderBy('fiscal_year_id')
+            ->orderBy('fund_source_id')
+            ->get()
+            ->map(fn (object $row): array => [
+                'fiscal_year_id' => (int) $row->fiscal_year_id,
+                'fund_source_id' => (int) $row->fund_source_id,
+                'count' => (int) $row->count,
+            ])->all());
+    }
+
     private function prepareSchoolConnection(): void
     {
         config()->set('database.connections.school.database', ':memory:');
         config()->set('database.connections.school.journal_mode', null);
         DB::purge('school');
         DB::reconnect('school');
+
+        Schema::connection('school')->create('fund_sources', function ($table): void {
+            $table->unsignedInteger('id')->primary();
+            $table->string('code');
+            $table->string('name');
+        });
+
+        Schema::connection('school')->create('fiscal_years', function ($table): void {
+            $table->id();
+            $table->unsignedSmallInteger('year');
+            $table->unsignedInteger('fund_source_id')->nullable();
+        });
 
         Schema::connection('school')->create('arkas_raw_mirror_tables', function ($table): void {
             $table->id();

@@ -112,7 +112,8 @@ class SpjGeneratedDocumentRegressionTest extends TestCase
         $package->setRelation('transaction', $transaction);
 
         $template = $this->createConsumptionTemplate();
-        $service = new class extends PreviewAlignedSpjTemplateService {
+        $service = new class extends PreviewAlignedSpjTemplateService
+        {
             public function renderCanonical(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
             {
                 return $this->canonicalSpreadsheet($template, $package, $school);

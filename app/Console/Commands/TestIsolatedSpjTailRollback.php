@@ -416,7 +416,7 @@ class TestIsolatedSpjTailRollback extends Command
     }
 
     /** @param list<string> $paths
-     *  @return array<string,string>|null
+     * @return array<string,string>|null
      */
     private function hashPaths(array $paths): ?array
     {
@@ -433,7 +433,7 @@ class TestIsolatedSpjTailRollback extends Command
     }
 
     /** @param array<string,string> $before
-     *  @param array<string,string> $after
+     * @param  array<string,string>  $after
      */
     private function sameHashes(array $before, array $after): bool
     {

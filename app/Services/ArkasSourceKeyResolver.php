@@ -34,8 +34,8 @@ class ArkasSourceKeyResolver
     /**
      * Resolve a row from the table's actual primary-key columns.
      *
-     * @param array<string, mixed> $record
-     * @param array<int, string> $columns
+     * @param  array<string, mixed>  $record
+     * @param  array<int, string>  $columns
      */
     public function resolveFromColumns(array $record, array $columns): string
     {

@@ -46,27 +46,32 @@ class TestIsolatedSpjQuarterRollback extends Command
 
         if ($copyPath === '' || ! is_file($copyPath)) {
             $this->error('Path --database wajib menunjuk file SQLite copy yang sudah ada.');
+
             return self::FAILURE;
         }
         if ($year < 2000 || $year > 2100 || $quarter < 1 || $quarter > 4) {
             $this->error('Tahun atau triwulan tidak valid.');
+
             return self::FAILURE;
         }
 
         $school = School::query()->with('databaseRecord')->where('npsn', $npsn)->first();
         if (! $school) {
             $this->error('Sekolah dengan NPSN '.$npsn.' tidak ditemukan.');
+
             return self::FAILURE;
         }
 
         $baselinePaths = $this->resolveBaselinePaths($school);
         if ($baselinePaths === []) {
             $this->error('Baseline database sekolah tidak ditemukan.');
+
             return self::FAILURE;
         }
         foreach ($baselinePaths as $baselinePath) {
             if ($this->samePath($copyPath, $baselinePath)) {
                 $this->error('DITOLAK: --database menunjuk salah satu baseline asli. Gunakan file copy terisolasi.');
+
                 return self::FAILURE;
             }
         }
@@ -75,6 +80,7 @@ class TestIsolatedSpjQuarterRollback extends Command
         $copyHashBefore = hash_file('sha256', $copyPath);
         if ($baselineHashesBefore === null || $copyHashBefore === false) {
             $this->error('Hash database tidak dapat dibaca.');
+
             return self::FAILURE;
         }
 
@@ -286,10 +292,12 @@ class TestIsolatedSpjQuarterRollback extends Command
         if ($failureMessage !== null) {
             $this->error('Isolated quarter rollback test gagal: '.$failureMessage);
             $this->line('BASELINE HASH UNCHANGED: '.($baselineUnchanged ? 'YES' : 'NO'));
+
             return self::FAILURE;
         }
         if ($report === null || ! $baselineUnchanged || ! $copyChanged) {
             $this->error('Isolated quarter rollback guarantee gagal: seluruh baseline harus tetap sama dan copy harus berubah.');
+
             return self::FAILURE;
         }
 
@@ -298,6 +306,7 @@ class TestIsolatedSpjQuarterRollback extends Command
 
         if ((bool) $this->option('json')) {
             $this->line((string) json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
             return self::SUCCESS;
         }
 
@@ -335,6 +344,7 @@ class TestIsolatedSpjQuarterRollback extends Command
                 if (! FundSource::query()->whereKey($id)->exists()) {
                     throw new RuntimeException('Fund source ID '.$id.' tidak ditemukan pada copy.');
                 }
+
                 return $id;
             }
 
@@ -345,6 +355,7 @@ class TestIsolatedSpjQuarterRollback extends Command
             if (! $resolved) {
                 throw new RuntimeException('Fund source '.$fundSource.' tidak ditemukan pada copy.');
             }
+
             return (int) $resolved->id;
         }
 
@@ -358,6 +369,7 @@ class TestIsolatedSpjQuarterRollback extends Command
         if ($ids->count() !== 1) {
             throw new RuntimeException('Gunakan --fund-source karena tahun '.$year.' tidak memiliki tepat satu sumber dana.');
         }
+
         return (int) $ids->first();
     }
 
@@ -367,6 +379,7 @@ class TestIsolatedSpjQuarterRollback extends Command
         $startMonth = (($quarter - 1) * 3) + 1;
         $from = Carbon::create($year, $startMonth, 1)->startOfMonth();
         $to = $from->copy()->addMonths(2)->endOfMonth();
+
         return [$from->toDateString(), $to->toDateString()];
     }
 
@@ -390,11 +403,12 @@ class TestIsolatedSpjQuarterRollback extends Command
             }
             $resolved[] = $candidate;
         }
+
         return $resolved;
     }
 
     /** @param list<string> $paths
-     *  @return array<string,string>|null
+     * @return array<string,string>|null
      */
     private function hashPaths(array $paths): ?array
     {
@@ -406,11 +420,12 @@ class TestIsolatedSpjQuarterRollback extends Command
             }
             $hashes[$this->normalizedPath($path)] = $hash;
         }
+
         return $hashes;
     }
 
     /** @param array<string,string> $before
-     *  @param array<string,string> $after
+     * @param  array<string,string>  $after
      */
     private function sameHashes(array $before, array $after): bool
     {
@@ -422,6 +437,7 @@ class TestIsolatedSpjQuarterRollback extends Command
                 return false;
             }
         }
+
         return true;
     }
 
@@ -435,6 +451,7 @@ class TestIsolatedSpjQuarterRollback extends Command
         $real = realpath($path);
         $path = $real !== false ? $real : $this->absolutePath($path);
         $path = rtrim(str_replace('\\', '/', $path), '/');
+
         return PHP_OS_FAMILY === 'Windows' ? mb_strtolower($path) : $path;
     }
 
@@ -446,6 +463,7 @@ class TestIsolatedSpjQuarterRollback extends Command
         if (str_starts_with($path, '/') || preg_match('~^[A-Za-z]:[\\\\/]~', $path) === 1) {
             return $path;
         }
+
         return base_path($path);
     }
 }

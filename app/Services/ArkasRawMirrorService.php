@@ -107,7 +107,7 @@ final class ArkasRawMirrorService
     }
 
     /**
-     * @param array<int, array<string, string>> $columns
+     * @param  array<int, array<string, string>>  $columns
      * @return array<int, string>
      */
     private function primaryKeyColumns(array $columns): array

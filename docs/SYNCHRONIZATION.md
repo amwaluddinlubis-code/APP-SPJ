@@ -75,6 +75,16 @@ proses mirror. Setelah snapshot selesai, job membentuk indeks transaksi/item fre
 dari `kas_umum` melalui foreign key ke raw mirror; fakta source tetap dibaca dari
 payload raw dan paket SPJ tidak dibuat otomatis.
 
+Projection catch-up setelah raw mirror bersifat source-wide. Job GUI dan command
+`arkas:sync-raw-mirror` mengiterasi seluruh baris `fiscal_years` tenant yang
+memiliki `fund_source_id` valid, lalu memproyeksikan setiap pasangan Fiscal Year
++ Fund Source melalui `SpjFreshProjectionService`. Konteks aktif hanya menjadi
+konteks permintaan/audit, bukan batas projection. Setiap pasangan tetap
+di-scope sendiri sehingga budget, transaksi, `SOURCE_MISSING`, dan identity
+fresh tidak dapat bocor ke tahun atau sumber dana lain. Projection berulang
+bersifat idempotent; row fresh existing diperbarui tanpa membuat duplikat dan
+overlay/Paket SPJ tidak disentuh.
+
 GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
 `anggaran.id_anggaran`, kemudian membatasi `tahun_anggaran` dan
 `id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan

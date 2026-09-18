@@ -6,6 +6,7 @@ use App\Models\ArkasSource;
 use App\Models\School;
 use App\Services\ArkasRawMirrorService;
 use App\Services\SchoolDatabaseManager;
+use App\Services\SpjFreshProjectionService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -17,7 +18,7 @@ use Illuminate\Console\Command;
 #[Description('Sinkronisasi semua tabel ARKAS ke raw mirror readonly.')]
 class SyncArkasRawMirror extends Command
 {
-    public function handle(SchoolDatabaseManager $databases, ArkasRawMirrorService $mirror): int
+    public function handle(SchoolDatabaseManager $databases, ArkasRawMirrorService $mirror, SpjFreshProjectionService $projector): int
     {
         $schoolId = (int) $this->option('school-id');
         $sourceId = (int) $this->option('source-id');
@@ -39,11 +40,15 @@ class SyncArkasRawMirror extends Command
         $databases->ensureMigrated($school);
         $this->info('Menyinkronkan seluruh tabel ARKAS ke raw mirror...');
         $result = $mirror->synchronize($source, $limit);
+        $projection = $projector->projectAllValidContexts($source);
         $this->table(['Metrik', 'Jumlah'], [
             ['Tabel diperiksa', $result['tables']],
             ['Tabel berisi data', $result['non_empty']],
             ['Row tersimpan', $result['rows']],
             ['Tabel stale', $result['stale']],
+            ['Konteks fiscal year + fund source', $projection['contexts']],
+            ['Transaksi fresh baru', $projection['transactions']],
+            ['Item fresh baru', $projection['items']],
         ]);
 
         return self::SUCCESS;
