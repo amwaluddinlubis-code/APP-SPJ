@@ -246,7 +246,7 @@ Koreksi raw-mirror yang didorong audit database nyata:
 - [ ] jalankan focused Laravel regression/CI pada head koreksi;
 - [x] compatibility grouped `source_key` ke legacy workspace/overlay;
 - [x] gross/tax/net grouped transaction mengikuti seluruh item dan PBT source;
-- [ ] selaraskan statistik count/gross/tax/net halaman transaksi ke dataset fresh + filter yang sama.
+- [x] statistik count/gross/tax/net halaman transaksi memakai dataset fresh + filter yang sama.
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 
