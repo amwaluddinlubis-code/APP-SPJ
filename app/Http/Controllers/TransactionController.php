@@ -15,7 +15,7 @@ class TransactionController extends Controller
 {
     public function updateSpjDescriptions(Request $request, string $transactionId, ActiveSpjContext $context, SpjDescriptionService $descriptions): RedirectResponse
     {
-        $transaction = Transaction::query()->with('items')->forSourceIdentifier($transactionId)->first();
+        $transaction = Transaction::query()->with('items')->forSpjContext($context)->forSourceIdentifier($transactionId)->first();
         if (! $transaction || ! $context->matchesTransaction($transaction)) {
             return redirect()->route('transactions.index')->with('error', 'Transaksi tidak ditemukan pada tahun aktif.');
         }
@@ -57,9 +57,10 @@ class TransactionController extends Controller
 
     public function show(string $transactionId, ActiveSpjContext $context): View|RedirectResponse
     {
-        $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first();
+        $transaction = Transaction::query()->forSpjContext($context)->forSourceIdentifier($transactionId)->first();
         if ($transaction === null) {
             $fresh = SpjFreshTransaction::query()
+                ->forSpjContext($context)
                 ->where('source_table', 'kas_umum')
                 ->where('source_key', $transactionId)
                 ->first();

@@ -18,7 +18,7 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: COMPLETE / CI #486 GREEN.**
+**Status: COMPLETE / CI #486 historical GREEN / current boundary regression PASS.**
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -78,6 +78,11 @@ Checklist P0-00:
 - [x] Full Unit PASS;
 - [x] Full Feature PASS;
 - [x] promote green code gate baru.
+- [x] `TransactionDetailWorkspace` fresh/legacy lookup scoped oleh fiscal year + fund source;
+- [x] `saveDescriptions()` dan `resolveReconciliation()` memiliki action-level OPERATOR/ADMIN guard;
+- [x] regression cross-year fresh lookup dan negative VIEWER mutation;
+- [x] compatibility verification 2025 dan fresh-data verification 2026 pada tenant nyata;
+- [x] audit read-only seluruh kuartal scope 2025/2026 tanpa critical atau financial mismatch.
 
 Evidence CI #486:
 
@@ -185,7 +190,7 @@ Tidak menambah smoke test numbering tanpa bug/operator requirement baru.
 
 ## P0-04 — Authorization
 
-**Status: HTTP/ROUTE PASS / LIVEWIRE MUTATION HARDENING COMPLETE / NEGATIVE REGRESSION PASS / CODE GATE PASS / BROWSER RVR.**
+**Status: HTTP/ROUTE PASS / LIVEWIRE MUTATION HARDENING COMPLETE / DETAIL BOUNDARY REGRESSION PASS / CODE GATE HISTORICAL GREEN / BROWSER RVR.**
 
 Definition of Done Phase 2:
 
@@ -236,19 +241,21 @@ Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/b
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
+**Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / COMPATIBILITY VERIFIED FOR 2025 / 2026 LEGACY BASELINE ABSENT / RUNTIME REGRESSION PENDING.**
 
 Koreksi raw-mirror yang didorong audit database nyata:
 
 - [x] kunci regression contract untuk PK row ARKAS, grouped transaction, dan fund-source isolation;
 - [x] raw mirror memakai primary key asli tabel, termasuk composite PK;
 - [x] fresh projection membatasi approved active budget dan mengelompokkan BELANJA per `NO_BUKTI`;
-- [ ] jalankan focused Laravel regression/CI pada head koreksi;
+- [x] jalankan focused Laravel regression pada head koreksi;
 - [x] compatibility grouped `source_key` ke legacy workspace/overlay;
 - [x] gross/tax/net grouped transaction mengikuti seluruh item dan PBT source;
 - [x] statistik count/gross/tax/net halaman transaksi memakai dataset fresh + filter yang sama.
 - [x] langkah 6B: setelah raw mirror, projection catch-up mengiterasi semua Fiscal Year + Fund Source valid pada tenant;
 - [x] regression multi-year/fund-source untuk 2025+2026, isolation, dan idempotensi;
+- [x] migration/integrity verification tenant: fresh migration applied, SQLite integrity `ok`, foreign-key violations 0;
+- [x] audit read-only 2025 seluruh scope bertransaksi dan 2026 seluruh kuartal: critical 0, financial mismatches 0;
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 

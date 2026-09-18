@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir diverifikasi: **2026-09-11** terhadap branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-19** terhadap branch `arkas-raw-mirror`.
 
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
@@ -342,9 +342,24 @@ Terima (`id_ref_bku` 10/30) yang `parent_id_kas_umum`-nya termasuk seluruh item
 transaksi dan berasal dari source ARKAS yang sama. Baris Pajak Belanja Setor
 (`id_ref_bku` 11/31) tidak dihitung kembali. Netto = bruto - pajak.
 
-Audit read-only database 2026 memvalidasi formula ini terhadap APP-SPJ lama:
-66 transaksi / 139 item BELANJA menghasilkan bruto Rp138.195.000, pajak
-Rp7.677.946, dan netto Rp130.517.054.
+Audit read-only tenant 10260756 memvalidasi formula ini pada projection fresh.
+2026 fund 1 menghasilkan 66 transaksi / 139 item BELANJA dengan bruto
+Rp138.195.000, pajak Rp7.677.946, dan netto Rp130.517.054. APP-SPJ lama pada
+tenant ini tidak memiliki transaksi 2026, sehingga angka 2026 tidak diklaim
+sebagai compatibility match. Compatibility yang benar-benar terukur:
+2025 fund 1 fresh dan legacy sama-sama 104 transaksi / 268 item dengan bruto
+Rp256.410.000, pajak Rp12.819.364, netto Rp243.590.636; 2025 fund 12 sama-sama
+17 transaksi / 24 item dengan bruto/netto Rp35.000.000 dan pajak Rp0.
+
+Projection dan schema juga diverifikasi read-only pada database tenant: 56 raw
+mirror tables (38 ACTIVE, 18 EMPTY), 91.070 raw rows, fresh status 329 ACTIVE,
+12 DELETED, 97 SOURCE_MISSING, migration fresh terbaru sudah tercatat, SQLite
+`integrity_check` mengembalikan `ok`, dan `foreign_key_check` mengembalikan 0.
+
+Boundary workspace mengikuti aturan yang sama: fresh/legacy lookup harus memakai
+`ActiveSpjContext` untuk tahun dan sumber dana; mutation Livewire pada detail
+harus mengulang guard OPERATOR/ADMIN. Jangan mengandalkan middleware halaman GET
+atau `session()` yang tidak diikat ke query fresh.
 
 Statistik halaman Transaksi memakai `filteredQuery()` yang sama dengan daftar
 transaksi. Count, bruto, pajak, dan netto karena itu mengikuti boundary

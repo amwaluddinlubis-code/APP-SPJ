@@ -32,9 +32,8 @@ class TransactionDetailWorkspace extends Component
 
     public function mount(string $transactionId, ActiveSpjContext $context): void
     {
-        $transaction = Transaction::query()->forSourceIdentifier($transactionId)->first()
-            ?: $this->transactionFromFresh($transactionId);
-        if (! $transaction || ($transaction->exists && ! $context->matchesTransaction($transaction))) {
+        $transaction = $this->transaction($context, $transactionId);
+        if ($transaction === null || ! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -46,8 +45,9 @@ class TransactionDetailWorkspace extends Component
 
     public function saveDescriptions(SpjDescriptionService $descriptions, ActiveSpjContext $context): void
     {
-        $transaction = $this->transaction();
-        if (! $context->matchesTransaction($transaction)) {
+        $this->authorizeOperatorOrAdministrator();
+        $transaction = $this->transaction($context);
+        if ($transaction === null || ! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -99,12 +99,13 @@ class TransactionDetailWorkspace extends Component
 
     public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context): void
     {
+        $this->authorizeOperatorOrAdministrator();
         if ($requestedResolution !== null) {
             $this->resolution = $requestedResolution;
         }
 
-        $transaction = $this->transaction();
-        if (! $context->matchesTransaction($transaction)) {
+        $transaction = $this->transaction($context);
+        if ($transaction === null || ! $transaction->exists || ! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -136,7 +137,8 @@ class TransactionDetailWorkspace extends Component
 
     public function render(): View
     {
-        $transaction = $this->transaction();
+        $transaction = $this->transaction(app(ActiveSpjContext::class));
+        abort_unless($transaction !== null, 404);
         $rupiah = fn ($value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
 
         return view('livewire.transaction-detail-workspace', [
@@ -163,20 +165,20 @@ class TransactionDetailWorkspace extends Component
         ]);
     }
 
-    private function transaction(): Transaction
+    private function transaction(ActiveSpjContext $context, ?string $sourceIdentifier = null): ?Transaction
     {
+        $sourceIdentifier ??= $this->transactionId;
         $transaction = Transaction::query()->with([
             'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
-        ])->forSourceIdentifier($this->transactionId)->first();
+        ])->forSpjContext($context)->forSourceIdentifier($sourceIdentifier)->first();
         if ($transaction === null) {
-            return $this->transactionFromFresh($this->transactionId);
+            return $this->transactionFromFresh($sourceIdentifier, $context);
         }
         $fresh = SpjFreshTransaction::query()
             ->with(['rawMirrorRow', 'items.rawMirrorRow'])
-            ->where('fiscal_year_id', session('active_fiscal_year_id'))
-            ->where('fund_source_id', session('active_fund_source_id'))
+            ->forSpjContext($context)
             ->where('source_table', 'kas_umum')
-            ->where('source_key', $transaction->source_key ?: $this->transactionId)
+            ->where('source_key', $transaction->source_key ?: $sourceIdentifier)
             ->first();
 
         if ($fresh !== null) {
@@ -203,10 +205,11 @@ class TransactionDetailWorkspace extends Component
         return $transaction;
     }
 
-    private function transactionFromFresh(string $sourceKey): ?Transaction
+    private function transactionFromFresh(string $sourceKey, ActiveSpjContext $context): ?Transaction
     {
         $fresh = SpjFreshTransaction::query()
             ->with(['rawMirrorRow', 'items.rawMirrorRow'])
+            ->forSpjContext($context)
             ->where('source_table', 'kas_umum')
             ->where('source_key', $sourceKey)
             ->first();
@@ -236,7 +239,7 @@ class TransactionDetailWorkspace extends Component
         $transaction->net_amount = (float) $transaction->gross_amount - (float) $transaction->tax_total;
         $items = $fresh->items->map(function ($freshItem) use ($fresh): TransactionItem {
             $itemPayload = $freshItem->rawMirrorRow?->payload ?? [];
-            $periodPayload = $this->freshPeriodPayload($itemPayload['id_rapbs_periode'] ?? null);
+            $periodPayload = $this->freshPeriodPayload($itemPayload['id_rapbs_periode'] ?? null, $fresh->source_id);
             $item = new TransactionItem;
             $item->forceFill([
                 'id' => $freshItem->id,
@@ -260,7 +263,7 @@ class TransactionDetailWorkspace extends Component
     }
 
     /** @return array<string, mixed> */
-    private function freshPeriodPayload(?string $periodId): array
+    private function freshPeriodPayload(?string $periodId, ?int $sourceId = null): array
     {
         if (blank($periodId)) {
             return [];
@@ -268,6 +271,7 @@ class TransactionDetailWorkspace extends Component
 
         $payload = DB::connection('school')->table('arkas_raw_mirror_rows as period_raw')
             ->join('arkas_raw_mirror_tables as period_table', 'period_table.id', '=', 'period_raw.mirror_table_id')
+            ->when($sourceId !== null, fn ($query) => $query->where('period_table.source_id', $sourceId))
             ->where('period_table.source_table', 'rapbs_periode')
             ->where('period_table.status', 'ACTIVE')
             ->whereRaw("json_extract(period_raw.payload, '$.id_rapbs_periode') = ?", [$periodId])
@@ -280,7 +284,8 @@ class TransactionDetailWorkspace extends Component
 
     private function loadTransaction(): void
     {
-        $transaction = $this->transaction();
+        $transaction = $this->transaction(app(ActiveSpjContext::class));
+        abort_unless($transaction !== null, 404);
         $siplahDescription = $transaction->is_siplah
             ? app(SpjDescriptionService::class)->siplahPaymentDescription($transaction)
             : null;
@@ -294,6 +299,12 @@ class TransactionDetailWorkspace extends Component
     {
         $query = Transaction::query()->activeContext();
         $date = $transaction->transaction_date;
+        if ($date === null) {
+            return $query->whereNull('transaction_date')
+                ->when($next, fn ($query) => $query->where('id', '>', $transaction->id)->orderBy('id'))
+                ->when(! $next, fn ($query) => $query->where('id', '<', $transaction->id)->orderByDesc('id'))
+                ->first();
+        }
         if ($next) {
             return $query->where(function ($query) use ($transaction, $date): void {
                 $query->where('transaction_date', '>', $date)->orWhere(function ($query) use ($transaction, $date): void {
@@ -352,5 +363,10 @@ class TransactionDetailWorkspace extends Component
         }
 
         return 'tunai';
+    }
+
+    private function authorizeOperatorOrAdministrator(): void
+    {
+        abort_unless(auth()->user()?->isOperatorOrAdministrator(), 403);
     }
 }

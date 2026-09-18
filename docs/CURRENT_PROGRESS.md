@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-19**
 
-Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:
 
@@ -124,6 +124,52 @@ BROWSER/RUNTIME     : RVR ACTIVE
 LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE PASS
 FINAL RELEASE       : NOT YET
 ```
+
+### Boundary Livewire dan compatibility verification — 2026-09-19
+
+`TransactionDetailWorkspace` sekarang mengambil legacy maupun fresh transaction
+melalui `ActiveSpjContext` (tahun + sumber dana), termasuk fresh-only lookup;
+`TransactionController::show` memakai scope yang sama. `saveDescriptions()` dan
+`resolveReconciliation()` mengulang guard OPERATOR/ADMIN pada action Livewire,
+menolak fresh-only mutation untuk overlay yang belum ada, dan reconciliation
+menolak transaction synthetic/non-persisted. Regression lokal:
+`TransactionDetailWorkspaceAuthorizationTest` **2 test / 5 assertions PASS**;
+regression terkait authorization, reconciliation, fresh compatibility, dan UI
+**17 test / 119 assertions PASS** (PHPUnit melaporkan deprecated metadata).
+
+Evidence database tenant yang dipakai untuk verifikasi:
+
+```text
+tenant       : 10260756 / SMP Negeri 2 Ranto Baek
+database     : storage/app/school-databases/10260786/spj.sqlite
+branch       : arkas-raw-mirror
+raw mirror   : 56 tables (38 ACTIVE, 18 EMPTY), 91,070 rows
+fresh status : 329 ACTIVE, 12 DELETED, 97 SOURCE_MISSING
+migration    : 54 applied; latest 2026_09_17_155741_create_fresh_spj_tables
+integrity    : PRAGMA integrity_check = ok; foreign_key_check = 0
+```
+
+Perbandingan projection fresh dengan APP-SPJ lama dilakukan pada fiscal year
+dan fund source yang sama:
+
+```text
+2025 / fund 1  : fresh 104 tx / 268 item / Rp256.410.000 gross /
+                 Rp12.819.364 tax / Rp243.590.636 net
+                 legacy 104 tx / 268 item / nominal identik
+2025 / fund 12 : fresh 17 tx / 24 item / Rp35.000.000 gross /
+                 Rp0 tax / Rp35.000.000 net
+                 legacy 17 tx / 24 item / nominal identik
+2026 / fund 1  : fresh 66 tx / 139 item / Rp138.195.000 gross /
+                 Rp7.677.946 tax / Rp130.517.054 net
+                 legacy APP-SPJ: 0 tx / 0 item — tidak ada baseline legacy 2026
+```
+
+Audit `spj:audit-quarter` read-only pada seluruh kuartal 2025 (fund 1 dan
+fund 12 yang memiliki transaksi) dan 2026 (fund 1) menghasilkan integrity
+**PASS**, foreign-key violations **0**, financial mismatches **0**, critical
+anomalies **0**. Warning yang tersisa adalah data lama yang belum lengkap:
+2025 fund 1 **75 warning**, 2025 fund 12 **16 warning**, dan 2026 **0 warning**;
+terutama blank `item_description`, bukan mismatch projection/nominal.
 
 P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
@@ -363,15 +409,18 @@ Perintah memiliki mode dry-run, membuat backup tenant sebelum execute, menyimpan
 report unmatched/ambiguous, dan tidak menulis database ARKAS/raw mirror.
 
 Audit read-only terhadap database ARKAS asli dan APP-SPJ lama mengonfirmasi kontrak:
-2025 memiliki 104 transaksi dari 268 item BELANJA, sedangkan 2026 memiliki 66
-transaksi dari 139 item BELANJA. Pada `kas_umum`, `ID_KAS_UMUM` unik per row dan
+2025 Reguler memiliki 104 transaksi dari 268 item BELANJA, 2025 fund 12 memiliki
+17 transaksi dari 24 item, sedangkan 2026 Reguler memiliki 66 transaksi dari 139
+item BELANJA. Pada `kas_umum`, `ID_KAS_UMUM` unik per row dan
 global fallback lama menghasilkan collision, sehingga koreksi identity menggunakan
 primary key tabel diterapkan sebelum projection grouped.
 
-Audit amount 2026 juga cocok dengan database APP-SPJ lama: 66 transaksi / 139 item
-BELANJA menghasilkan bruto Rp138.195.000, pajak Rp7.677.946, dan netto
-Rp130.517.054. Formula pajak menggunakan PBT saja dan tidak menghitung PBS/setoran
-dua kali.
+Audit amount 2026 menghasilkan 66 transaksi / 139 item BELANJA dengan bruto
+Rp138.195.000, pajak Rp7.677.946, dan netto Rp130.517.054. Angka 2026 fresh tidak
+boleh disebut cocok dengan APP-SPJ lama karena tabel legacy tenant tidak memiliki
+transaksi 2026; pembanding nominal identik yang benar-benar tersedia adalah 2025
+fund 1 dan fund 12. Formula pajak menggunakan PBT saja dan tidak menghitung
+PBS/setoran dua kali.
 
 **Status: MULTI-YEAR CATCH-UP IMPLEMENTED / SOURCE CORRECTION + GROUPED COMPATIBILITY IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / FOCUSED REGRESSION VERIFIED.**
 

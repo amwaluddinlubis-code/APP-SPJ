@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ActiveSpjContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +38,13 @@ class SpjFreshTransaction extends Model
     public function spjPackage(): HasOne
     {
         return $this->package();
+    }
+
+    public function scopeForSpjContext(Builder $query, ActiveSpjContext $context): Builder
+    {
+        return $query
+            ->where('fiscal_year_id', $context->fiscalYearId())
+            ->where('fund_source_id', $context->fundSourceId());
     }
 
     public function rawMirrorRow(): BelongsTo
