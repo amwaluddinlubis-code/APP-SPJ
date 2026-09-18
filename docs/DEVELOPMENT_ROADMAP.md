@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-19**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `arkas-raw-mirror`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -236,9 +236,18 @@ Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/b
 
 ## P0-08 — Generic ARKAS Importer
 
-**Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
+**Status: SOURCE CORRECTION IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / RUNTIME REGRESSION PENDING.**
 
-Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Kerjakan hanya issue nyata pada operator flow.
+Koreksi raw-mirror yang didorong audit database nyata:
+
+- [x] kunci regression contract untuk PK row ARKAS, grouped transaction, dan fund-source isolation;
+- [x] raw mirror memakai primary key asli tabel, termasuk composite PK;
+- [x] fresh projection membatasi approved active budget dan mengelompokkan BELANJA per `NO_BUKTI`;
+- [ ] jalankan focused Laravel regression/CI pada head koreksi;
+- [ ] lanjutkan compatibility grouped `source_key` ke legacy workspace/overlay sebelum operator flow fresh;
+- [ ] lanjutkan agregasi gross/tax/net grouped transaction dan statistik dari dataset fresh yang sama.
+
+Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 
 ---
 
