@@ -173,7 +173,7 @@ class TransactionsTable extends Component
             ->join('arkas_raw_mirror_rows', 'arkas_raw_mirror_rows.id', '=', 'spj_fresh_transactions.raw_mirror_row_id')
             ->where('spj_fresh_transactions.fiscal_year_id', session('active_fiscal_year_id'))
             ->where('spj_fresh_transactions.fund_source_id', session('active_fund_source_id'))
-            ->where('spj_fresh_transactions.source_status', 'ACTIVE');
+            ->whereIn('spj_fresh_transactions.source_status', ['ACTIVE', 'SOURCE_MISSING']);
     }
 
     private function filteredQuery(): Builder
