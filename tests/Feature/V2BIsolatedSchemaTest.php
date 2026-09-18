@@ -81,21 +81,23 @@ final class V2BIsolatedSchemaTest extends TestCase
         $this->assertSame('{"id_ref_kode":"A","tahun":2026}', $guard->serializePrimaryKey(['id_ref_kode', 'tahun'], ['id_ref_kode' => 'A', 'tahun' => 2026]));
         $this->assertSame('{"tahun":2026,"id_ref_kode":"A"}', $guard->serializePrimaryKey(['tahun', 'id_ref_kode'], ['id_ref_kode' => 'A', 'tahun' => 2026]));
 
-        $transactionId = $connection->table('spj_transactions')->insertGetId([
+        $existingV2 = $connection->table('spj_transactions')->where('source_membership_hash', hash('sha256', $raw->source_key))->first();
+        $transactionId = $existingV2?->id ?: $connection->table('spj_transactions')->insertGetId([
             'fiscal_year_id' => 1, 'fund_source_id' => 1, 'source_id' => 1,
             'source_membership_hash' => hash('sha256', $raw->source_key), 'source_status' => 'ACTIVE',
             'requires_reconciliation' => false, 'created_at' => now(), 'updated_at' => now(),
         ]);
-        $sourceLinkId = $connection->table('spj_transaction_sources')->insertGetId([
+        $existingLink = $connection->table('spj_transaction_sources')->where('spj_transaction_id', $transactionId)->where('arkas_source_identity_id', $identityId)->first();
+        $sourceLinkId = $existingLink?->id ?: $connection->table('spj_transaction_sources')->insertGetId([
             'spj_transaction_id' => $transactionId, 'arkas_source_identity_id' => $identityId,
             'sort_order' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
-        $connection->table('spj_transaction_overlays')->insert([
+        $connection->table('spj_transaction_overlays')->updateOrInsert(['spj_transaction_id' => $transactionId], [
             'spj_transaction_id' => $transactionId, 'spj_category' => 'GOODS',
             'payment_description' => 'operator-only overlay', 'operator_metadata' => json_encode(['kept' => true]),
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        $connection->table('spj_item_overlays')->insert([
+        $connection->table('spj_item_overlays')->updateOrInsert(['spj_transaction_source_id' => $sourceLinkId], [
             'spj_transaction_source_id' => $sourceLinkId, 'item_description' => 'operator item note',
             'operator_metadata' => json_encode(['kept' => true]), 'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -103,17 +105,18 @@ final class V2BIsolatedSchemaTest extends TestCase
         $legacyRows = $connection->table('transactions')->orderBy('id')->limit(2)->get();
         $this->assertCount(2, $legacyRows);
         $legacySourceKeys = $legacyRows->pluck('source_key')->all();
-        $connection->table('legacy_transaction_v2_map')->insert([
+        $connection->table('legacy_transaction_v2_map')->updateOrInsert(['legacy_transaction_id' => $legacyRows[0]->id], [
             'legacy_transaction_id' => $legacyRows[0]->id, 'spj_transaction_id' => $transactionId,
             'mapping_status' => 'EXACT', 'mapping_reason' => 'all source_item_id values resolved',
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        $secondSpjId = $connection->table('spj_transactions')->insertGetId([
+        $secondExisting = $connection->table('spj_transactions')->where('source_membership_hash', hash('sha256', $legacyRows[1]->source_key))->first();
+        $secondSpjId = $secondExisting?->id ?: $connection->table('spj_transactions')->insertGetId([
             'fiscal_year_id' => 1, 'fund_source_id' => 1, 'source_id' => 1,
             'source_membership_hash' => hash('sha256', $legacyRows[1]->source_key), 'source_status' => 'ACTIVE',
             'requires_reconciliation' => true, 'created_at' => now(), 'updated_at' => now(),
         ]);
-        $connection->table('legacy_transaction_v2_map')->insert([
+        $connection->table('legacy_transaction_v2_map')->updateOrInsert(['legacy_transaction_id' => $legacyRows[1]->id], [
             'legacy_transaction_id' => $legacyRows[1]->id, 'spj_transaction_id' => $secondSpjId,
             'mapping_status' => 'DETERMINISTIC', 'mapping_reason' => 'derived without source_key rewrite',
             'created_at' => now(), 'updated_at' => now(),
@@ -156,6 +159,7 @@ final class V2BIsolatedSchemaTest extends TestCase
     private function tableHash($connection, string $table): string
     {
         $rows = $connection->table($table)->orderBy('id')->get()->map(fn ($row): array => (array) $row)->all();
+
         return hash('sha256', json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     }
 }

@@ -141,6 +141,16 @@ Gunakan `ARKAS_IMPORTER.md` untuk detail mapping, sync mode, stable source key, 
 
 Generic Importer **bukan pengganti otomatis** canonical transaction sync; keduanya memiliki tujuan dan boundary berbeda.
 
+### V2-C legacy rehearsal boundary
+
+Migrasi legacy V2-C hanya boleh berjalan pada clone yang explicit dan terverifikasi.
+Ia membuat stable source membership ke raw mirror, bukan copy fakta tanggal,
+uraian, rekening, penerima, bruto, pajak, neto, kuantitas, atau harga ke overlay.
+`EXACT` dan `DETERMINISTIC` dipisahkan; deterministic tidak boleh menulis ulang
+legacy `source_key`. `SOURCE_MISSING`, `PARTIAL`, `AMBIGUOUS`, dan `LEGACY_ONLY`
+tidak boleh diberi source relation tebakan. Package/document NUMBERED/FINAL tetap
+immutable dan source missing/returning mempertahankan identity registry.
+
 Pada UI, Generic Importer memiliki mode **Sederhana** (preset tabel yang dikenal) dan **Lanjutan** (mapping/profile custom). Mode sederhana tetap hanya tersedia untuk administrator. Untuk referensi Program/Subprogram/Kegiatan, gunakan profile `ref_kode` dengan target `activity_reference`; setelah itu canonical sync RKAS/BKU tetap diperlukan bila transaksi lama perlu menerima perubahan nama kegiatan.
 
 ### 2.3 Dapodik synchronization

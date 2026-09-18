@@ -289,6 +289,22 @@ Status: **READ-ONLY PREFLIGHT COMPLETE / V2-B REAL-TENANT EXECUTION BLOCKED**.
 
 Evidence canonical: `docs/V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
 
+### V2-C — Full legacy migration rehearsal
+
+Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
+
+- [x] Tenant A 291 transaction dan 699 item diproses pada clone baru;
+- [x] EXACT 269 dan DETERMINISTIC 22 tanpa rewrite legacy `source_key`;
+- [x] package/document NUMBERED continuity, overlay continuity, idempotency,
+  integrity, FK, orphan, dan synthetic FINAL regression lulus;
+- [x] Tenant B 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
+- [x] command/service/report V2-C tersedia;
+- [ ] source evidence dan ownership Tenant B diselesaikan;
+- [ ] production migration dan legacy retirement;
+- [ ] V2-D read-path cutover preparation.
+
+Evidence: `docs/V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md`.
+
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 
 ---

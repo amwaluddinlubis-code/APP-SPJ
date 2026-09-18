@@ -10,8 +10,7 @@ final class V2BSourceIdentityRegistryService
 {
     public function __construct(
         private readonly V2BIsolatedDatabaseGuard $guard,
-    ) {
-    }
+    ) {}
 
     public function registerOrRefresh(
         Connection $connection,

@@ -68,6 +68,11 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk number
 aktif untuk discovery tenant, physical path mapping, legacy/source classification,
 identity 56 tabel raw mirror, dan additive V2-B proposal.
 
+`V2_B_ISOLATED_SCHEMA_IMPLEMENTATION.md` dan
+`V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` adalah evidence additive schema dan
+full-legacy rehearsal pada clone terisolasi; keduanya bukan bukti production
+migration atau read-path cutover.
+
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |

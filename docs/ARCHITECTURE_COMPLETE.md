@@ -41,6 +41,13 @@ canonical. Rows classified `UNSTABLE_FALLBACK` tidak boleh menjadi critical
 foreign-key target. Detail evidence dan proposal schema ada pada
 `V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
 
+V2-C menambahkan jalur rehearsal additive: legacy transaction dipetakan ke
+`spj_transactions`, relation source disimpan pada `spj_transaction_sources`, dan
+fakta live tetap dibaca dari raw mirror melalui source identity registry. Overlay
+V2 hanya menyimpan field operator-owned. `spj_packages.transaction_id` tetap
+authoritative selama transisi; `spj_packages.spj_transaction_id` adalah relation
+additive rehearsal. Production read-path belum dipotong.
+
 ### Database utama
 
 Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, metadata global,

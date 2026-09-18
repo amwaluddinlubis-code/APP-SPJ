@@ -544,6 +544,23 @@ immutability regression tersedia di `docs/V2_B_ISOLATED_SCHEMA_IMPLEMENTATION.md
 Real tenant migration, cleanup legacy, central registry mutation, dan source ARKAS mutation
 tetap BLOCKED sampai V2-A2 tenant discovery/source identity review selesai.
 
+## V2-C full legacy migration rehearsal — 2026-09-19
+
+V2-C **FUNCTIONAL PASS ON ISOLATED CLONES / PRODUCTION CUTOVER BLOCKED**.
+Tenant A clone memproses seluruh 291 transaction dan 699 item: EXACT 269,
+DETERMINISTIC 22, V2 transaction 291, source links 699, transaction overlay 291,
+item overlay 245, legacy map 291, dan package V2 links 67. Seluruh 22 deterministic
+mempertahankan legacy `source_key`; 66 NUMBERED Paket dan 115 NUMBERED dokumen
+tetap identik. Execute kedua idempotent.
+
+Tenant B clone hanya menjalani source-unavailable dry-run karena orphan/unregistered
+dan tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
+`SOURCE_MISSING`, tanpa mapping tebakan dan tanpa V2 mutation.
+
+Evidence lengkap: `V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` dan report JSON lokal di
+`storage/app/v2-c-rehearsal/reports/`. Original tenant, central registry, dan ARKAS
+source tidak dimutasi. V2-D read-path cutover belum aman.
+
 ---
 
 ## Prioritas kerja aktif

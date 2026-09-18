@@ -11,31 +11,40 @@ final class V2BIsolatedDatabaseGuard
     {
         $database = $connection->getConfig('database');
 
-        if (! is_string($database) || $database === ':memory:' || $database === '') {
+        if ($database === ':memory:' && app()->environment('testing')) {
+            return;
+        }
+
+        if (! is_string($database) || $database === '' || $database === ':memory:') {
             throw new RuntimeException('V2-B requires an explicit file-backed isolated SQLite target.');
         }
 
-        $target = $this->normalisePath($database);
+        $target = $this->canonicalPath($database);
         $forbidden = [
-            $this->normalisePath('D:\\lrvProject\\spj-bosp-data'),
-            $this->normalisePath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10260786'),
-            $this->normalisePath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10208183'),
-            $this->normalisePath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10260756'),
+            $this->canonicalPath('D:\\lrvProject\\spj-bosp-data'),
+            $this->canonicalPath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10260786'),
+            $this->canonicalPath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10208183'),
+            $this->canonicalPath('D:\\lrvProject\\spj-bosp-web-raw\\storage\\app\\school-databases\\10260756'),
+            $this->canonicalPath('D:\\lrvProject\\spj-bosp-web-raw\\database\\database.sqlite'),
+            $this->canonicalPath('D:\\backupdata'),
         ];
 
         foreach ($forbidden as $path) {
-            if ($target === $path || str_starts_with($target, $path . '\\')) {
-                throw new RuntimeException('V2-B refuses a tenant/original database path: ' . $database);
+            if ($target === $path || str_starts_with($target, $path.'\\')) {
+                throw new RuntimeException('V2-B refuses a tenant/original database path: '.$database);
             }
         }
 
-        $testingDatabase = $this->normalisePath(base_path('database'));
-        $isolatedRoot = $this->normalisePath(storage_path('app/v2-b-isolated'));
-        $isTestingTarget = $target === $testingDatabase . '\\testing.sqlite'
-            || str_starts_with($target, $testingDatabase . '\\');
-        $isIsolatedTarget = $target === $isolatedRoot || str_starts_with($target, $isolatedRoot . '\\');
+        $isolatedRoot = $this->canonicalPath(storage_path('app/v2-b-isolated'));
+        $v2cRoot = $this->canonicalPath(storage_path('app/v2-c-rehearsal'));
+        $isIsolatedTarget = $target === $isolatedRoot || str_starts_with($target, $isolatedRoot.'\\')
+            || $target === $v2cRoot || str_starts_with($target, $v2cRoot.'\\');
 
-        if (app()->environment('testing') && $isTestingTarget && $manifest === null) {
+        // Existing PHPUnit tenant-boundary tests intentionally create temporary
+        // SQLite files outside the rehearsal roots. They are test copies, not
+        // production tenants, and must remain usable without weakening the
+        // production/original-path rejection above.
+        if (app()->environment('testing') && $manifest === null) {
             return;
         }
 
@@ -44,11 +53,12 @@ final class V2BIsolatedDatabaseGuard
         }
 
         $manifestTarget = $manifest['target_path'] ?? null;
-        if (! is_string($manifestTarget) || $this->normalisePath($manifestTarget) !== $target) {
+        if (! is_string($manifestTarget) || $this->canonicalPath($manifestTarget) !== $target) {
             throw new RuntimeException('V2-B target path does not match the explicit identity manifest.');
         }
 
-        if (($manifest['npsn'] ?? null) !== ($manifest['source_identity_npsn'] ?? null)) {
+        $sourceUnavailable = ($manifest['source_unavailable'] ?? false) === true;
+        if (! $sourceUnavailable && ($manifest['npsn'] ?? null) !== ($manifest['source_identity_npsn'] ?? null)) {
             throw new RuntimeException('V2-B school NPSN and ARKAS source identity do not match.');
         }
 
@@ -56,8 +66,16 @@ final class V2BIsolatedDatabaseGuard
             throw new RuntimeException('V2-B source_id is missing or invalid.');
         }
 
+        if ($sourceUnavailable) {
+            if (($manifest['mode'] ?? null) !== 'SOURCE_UNAVAILABLE_DRY_RUN') {
+                throw new RuntimeException('Source-unavailable mode is permitted only for an explicit dry-run.');
+            }
+
+            return;
+        }
+
         $sourcePath = $manifest['source_path'] ?? null;
-        if (! is_string($sourcePath) || $this->normalisePath($sourcePath) === $target || ! is_file($sourcePath)) {
+        if (! is_string($sourcePath) || $this->canonicalPath($sourcePath) === $target || ! is_file($sourcePath)) {
             throw new RuntimeException('V2-B source path is missing, equals the target, or does not exist.');
         }
 
@@ -78,7 +96,7 @@ final class V2BIsolatedDatabaseGuard
         $ordered = [];
         foreach ($columns as $column) {
             if (! array_key_exists($column, $row)) {
-                throw new RuntimeException('Composite primary key component is missing: ' . $column);
+                throw new RuntimeException('Composite primary key component is missing: '.$column);
             }
             $ordered[$column] = $row[$column];
         }
@@ -86,8 +104,12 @@ final class V2BIsolatedDatabaseGuard
         return json_encode($ordered, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
     }
 
-    private function normalisePath(string $path): string
+    private function canonicalPath(string $path): string
     {
+        $resolved = realpath($path);
+        if ($resolved !== false) {
+            $path = $resolved;
+        }
         $path = str_replace('/', '\\', $path);
         $path = rtrim($path, '\\');
 

@@ -29,6 +29,15 @@ Jika implementasi atau UI bertentangan dengan keputusan domain di dokumen ini, i
 9. **Data nyata tidak boleh difabrikasi untuk coverage.** Vendor, penerima, SPPD, template, source transaction, atau identifier tidak boleh dibuat-buat hanya agar satu skenario terlihat lulus.
 10. **Evidence harus dibedakan dari asumsi.** Functional regression, real-data verification, visual/runtime verification, dan deferred work adalah status berbeda.
 
+11. **V2-C rehearsal bukan production migration.** Full legacy migration boleh
+    diuji pada clone isolated dengan hash dan manifest sebelum/sesudah. Tenant asli,
+    central registry, dan ARKAS source tetap read-only; production cutover memerlukan
+    review terpisah.
+12. **Legacy source identity tidak ditulis ulang.** Mapping DETERMINISTIC menyimpan
+    provenance dan current membership pada bridge/V2 relation, tetapi
+    `transactions.source_key`, package identity, numbering, snapshot, dan dokumen
+    resmi tetap immutable.
+
 ---
 
 ## 2. Multi-database dan APP DATA
