@@ -22,14 +22,50 @@ class ArkasSourceKeyResolver
     public function resolve(array $record, ?string $configuredColumn = null): string
     {
         foreach ($this->candidates($configuredColumn) as $candidate) {
-            foreach ($record as $key => $value) {
-                if (strcasecmp((string) $key, $candidate) === 0 && filled($value)) {
-                    return (string) $value;
-                }
+            $value = $this->valueForColumn($record, $candidate);
+            if (filled($value)) {
+                return (string) $value;
             }
         }
 
         return hash('sha256', $this->payload($record));
+    }
+
+    /**
+     * Resolve a row from the table's actual primary-key columns.
+     *
+     * @param array<string, mixed> $record
+     * @param array<int, string> $columns
+     */
+    public function resolveFromColumns(array $record, array $columns): string
+    {
+        $columns = array_values(array_unique(array_filter(
+            array_map(static fn (string $column): string => strtoupper(trim($column)), $columns),
+            filled(...),
+        )));
+
+        if ($columns === []) {
+            return $this->resolve($record);
+        }
+
+        $identity = [];
+        foreach ($columns as $column) {
+            $value = $this->valueForColumn($record, $column);
+            if (! filled($value)) {
+                return hash('sha256', $this->payload($record));
+            }
+
+            $identity[$column] = (string) $value;
+        }
+
+        if (count($identity) === 1) {
+            return (string) reset($identity);
+        }
+
+        return hash('sha256', json_encode(
+            $identity,
+            JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE,
+        ));
     }
 
     /** @return array<int, string> */
@@ -38,6 +74,18 @@ class ArkasSourceKeyResolver
         $candidates = array_filter([$configuredColumn, ...self::FALLBACK_COLUMNS], filled(...));
 
         return array_values(array_unique(array_map(static fn (string $column): string => strtoupper($column), $candidates)));
+    }
+
+    /** @param array<string, mixed> $record */
+    private function valueForColumn(array $record, string $column): mixed
+    {
+        foreach ($record as $key => $value) {
+            if (strcasecmp((string) $key, $column) === 0) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     /** @param array<string, mixed> $record */
