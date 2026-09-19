@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SpjPackage;
 use App\Support\ActiveSpjContext;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final class SpjV2MutationContextService
@@ -11,6 +12,7 @@ final class SpjV2MutationContextService
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjV2PackageReadMembershipService $packageReadMembership,
+        private readonly SpjV2CanonicalReadService $canonicalReads,
     ) {}
 
     /**
@@ -75,6 +77,23 @@ final class SpjV2MutationContextService
             return false;
         }
 
+        if ((bool) $transaction->requires_reconciliation
+            || strtoupper((string) ($transaction->source_status ?: 'ACTIVE')) === 'SOURCE_MISSING') {
+            return false;
+        }
+
+        $canonical = $this->canonicalReads
+            ->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                $fundSourceId,
+                $membership['source_id'],
+            )
+            ->first(fn (array $row): bool => (int) $row['id'] === $canonicalTransactionId);
+        if (! is_array($canonical) || ! $this->sourceFactsMatch($canonical, $transaction)) {
+            return false;
+        }
+
         $transaction->setAttribute('fiscal_year_id', $this->context->fiscalYearId());
         $transaction->unsetRelation('fiscalYear');
         $transaction->setAttribute('mutation_context_path', 'v2_compat');
@@ -84,4 +103,52 @@ final class SpjV2MutationContextService
 
         return true;
     }
+
+    /** @param array<string, mixed> $canonical */
+    private function sourceFactsMatch(array $canonical, object $legacy): bool
+    {
+        foreach (['no_bukti', 'description', 'activity_code', 'account_code', 'recipient_name'] as $field) {
+            if ($this->normalize($canonical[$field] ?? null) !== $this->normalize($legacy->{$field} ?? null)) {
+                return false;
+            }
+        }
+
+        if ($this->date($canonical['transaction_date'] ?? null) !== $this->date($legacy->transaction_date ?? null)) {
+            return false;
+        }
+
+        foreach (['gross_amount', 'tax_total', 'net_amount', 'ppn', 'pph21', 'pph22', 'pph23', 'pph4', 'sspd'] as $field) {
+            if (abs(round((float) ($canonical[$field] ?? 0), 2) - round((float) ($legacy->{$field} ?? 0), 2)) > 0.01) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function date(mixed $value): ?string
+    {
+        $value = $this->normalize($value);
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function normalize(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
 }
