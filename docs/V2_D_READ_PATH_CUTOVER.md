@@ -931,3 +931,15 @@ A production switch requires all of the following:
 - Pint, focused regression, `git diff --check`, and applicable CI evidence.
 
 No production read path has been switched pada D1, D2, D3, maupun downstream parity.
+
+### Effective numbering authorization boundary — PASS; issuance BLOCKED
+
+`SpjV2NumberingAuthorizationService` menambahkan preflight authorization
+read-only yang fail-closed untuk effective membership, exact Package-V2
+provenance, fund/source and canonical/item parity, document relation, READY
+lifecycle, dan effective period proof. Focused runtime evidence: **1 test / 31
+assertions / 1 deprecation**. Boundary ini tidak menerbitkan nomor, menulis
+audit, mengubah status Paket, atau menulis ulang `transactions.fiscal_year_id`.
+Effective-context numbering issuance tetap **BLOCKED / DEFERRED** sampai
+effective year/quarter sequence, collision/idempotency completeness, atomic
+numbering rollback, dan effective audit trail terbukti aman.

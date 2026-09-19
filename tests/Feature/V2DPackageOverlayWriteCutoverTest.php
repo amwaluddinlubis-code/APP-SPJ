@@ -7,6 +7,7 @@ use App\Models\SpjPackage;
 use App\Models\User;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2MutationContextService;
+use App\Services\SpjV2NumberingAuthorizationService;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
 use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
@@ -267,6 +268,121 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $this->assertSame('READY', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
             $this->assertNull($db->table('spj_packages')->where('id', $row->package_id)->value('document_number'));
             $this->assertSame(0, (int) $db->table('spj_documents')->where('spj_package_id', $row->package_id)->whereNotNull('document_number')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_numbering_authorization_is_explicit_and_fail_closed_without_side_effects(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-numbering-authorization.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['spj_category' => 'BARANG']);
+            $db->table('spj_packages')->where('id', $row->package_id)->update(['status' => 'READY']);
+
+            $packageId = (int) $row->package_id;
+            $authorize = function () use ($packageId): array {
+                $package = SpjPackage::query()->with(['transaction.items', 'documents'])->findOrFail($packageId);
+
+                return app(SpjV2NumberingAuthorizationService::class)->authorize($package, ['SPJ']);
+            };
+            $before = [
+                'package' => $db->table('spj_packages')->where('id', $row->package_id)->first(),
+                'transaction' => $db->table('transactions')->where('id', $row->legacy_transaction_id)->first(),
+                'documents' => $this->documentsHash($db, (int) $row->package_id),
+                'audit' => (int) $db->table('operational_audit_logs')->count(),
+            ];
+            $positive = $authorize();
+            $this->assertTrue($positive['authorized'], $positive['reason']);
+            $this->assertSame('v2_authorized_preflight', $positive['path']);
+
+            $scenarios = [
+                'legacy selector' => function (): void {
+                    config()->set('spj.v2_read_path', 'legacy');
+                },
+                'package membership' => function () use ($db, $row): void {
+                    $db->table('spj_packages')->where('id', $row->package_id)->update(['spj_transaction_id' => null]);
+                },
+                'wrong bridge' => function () use ($db, $row): void {
+                    $other = $db->table('spj_transactions')->where('id', '!=', $row->spj_transaction_id)->where('fiscal_year_id', $row->effective_fiscal_year_id)->where('fund_source_id', $row->fund_source_id)->first();
+                    $this->assertNotNull($other);
+                    $db->table('spj_packages')->where('id', $row->package_id)->update(['spj_transaction_id' => $other->id]);
+                },
+                'missing provenance' => function () use ($db, $row): void {
+                    $db->table('legacy_transaction_v2_map')->where('legacy_transaction_id', $row->legacy_transaction_id)->delete();
+                },
+                'ambiguous provenance' => function () use ($db, $row): void {
+                    $db->table('legacy_transaction_v2_map')->where('legacy_transaction_id', $row->legacy_transaction_id)->update(['mapping_status' => 'AMBIGUOUS']);
+                },
+                'provenance status' => function () use ($db, $row): void {
+                    $db->table('legacy_transaction_v2_map')->where('legacy_transaction_id', $row->legacy_transaction_id)->update(['mapping_status' => 'REQUIRES_REVIEW']);
+                },
+                'fund mismatch' => function () use ($db, $row): void {
+                    $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['fund_source_id' => null]);
+                },
+                'reconciliation' => function () use ($db, $row): void {
+                    $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['requires_reconciliation' => true]);
+                },
+                'source missing' => function () use ($db, $row): void {
+                    $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['source_status' => 'SOURCE_MISSING']);
+                },
+                'source facts drift' => function () use ($db, $row): void {
+                    $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['description' => 'DRIFTED SOURCE FACT']);
+                },
+                'canonical financial drift' => function () use ($db, $row): void {
+                    $this->driftCanonicalGrossSource($db, (int) $row->spj_transaction_id);
+                },
+                'item drift' => function () use ($db, $row): void {
+                    $db->table('transaction_items')->where('transaction_id', $row->legacy_transaction_id)->limit(1)->update(['amount' => DB::raw('amount + 1')]);
+                },
+                'extra item' => function () use ($db, $row): void {
+                    $db->table('transaction_items')->insert(['transaction_id' => $row->legacy_transaction_id, 'source_item_id' => 'AUTH-EXTRA', 'description' => 'Unexpected item', 'quantity' => 1, 'amount' => 1, 'source_status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+                },
+                'document relation' => function () use ($db, $row): void {
+                    $db->table('spj_documents')->insert(['spj_package_id' => $row->package_id, 'document_type' => 'UNKNOWN_AUTH_DOCUMENT', 'scope_key' => 'MAIN', 'status' => 'DRAFT', 'created_at' => now(), 'updated_at' => now()]);
+                },
+                'lifecycle' => function () use ($db, $row): void {
+                    $db->table('spj_packages')->where('id', $row->package_id)->update(['status' => 'FINAL']);
+                },
+                'period proof' => function () use ($db, $row): void {
+                    $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['transaction_date' => '1900-01-01']);
+                },
+            ];
+
+            foreach ($scenarios as $label => $mutate) {
+                $db->beginTransaction();
+                try {
+                    config()->set('spj.v2_read_path', 'v2');
+                    $mutate();
+                    $result = $authorize();
+                    $this->assertFalse($result['authorized'], $label.' unexpectedly authorized');
+                } finally {
+                    $db->rollBack();
+                }
+            }
+
+            config()->set('spj.v2_read_path', 'v2');
+            $after = [
+                'package' => $db->table('spj_packages')->where('id', $row->package_id)->first(),
+                'transaction' => $db->table('transactions')->where('id', $row->legacy_transaction_id)->first(),
+                'documents' => $this->documentsHash($db, (int) $row->package_id),
+                'audit' => (int) $db->table('operational_audit_logs')->count(),
+            ];
+            $this->assertSame((array) $before['package'], (array) $after['package']);
+            $this->assertSame((array) $before['transaction'], (array) $after['transaction']);
+            $this->assertSame($before['documents'], $after['documents']);
+            $this->assertSame($before['audit'], $after['audit']);
+            $this->assertSame((int) $row->legacy_fiscal_year_id, (int) $after['transaction']->fiscal_year_id);
+            $this->assertNull($after['package']->document_number);
         } finally {
             File::delete($target);
         }

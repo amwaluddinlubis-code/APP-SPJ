@@ -9,6 +9,7 @@ use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2NumberingAuthorizationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class SpjSingleNumberingUseCase
         private readonly SpjNumberingOrderService $order,
         private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly SpjNumberingGateService $numberingGate,
+        private readonly SpjV2NumberingAuthorizationService $numberingAuthorization,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -44,6 +46,12 @@ class SpjSingleNumberingUseCase
         ])->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
+        }
+        if ($package->status === 'READY') {
+            $authorization = $this->numberingAuthorization->authorize($package, ['SPJ']);
+            if (! $authorization['authorized']) {
+                return back()->with('error', 'Penomoran ditolak oleh authorization boundary: '.$authorization['reason']);
+            }
         }
         if ($package->document_number && in_array($package->status, ['NUMBERED', 'FINAL'], true)) {
             return back()->with('success', 'Nomor dokumen SPJ sudah ditetapkan.');
@@ -84,6 +92,13 @@ class SpjSingleNumberingUseCase
         ])->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
+        }
+
+        if ($package->status === 'READY') {
+            $authorization = $this->numberingAuthorization->authorize($package, [$documentType]);
+            if (! $authorization['authorized']) {
+                return back()->with('error', 'Penomoran ditolak oleh authorization boundary: '.$authorization['reason']);
+            }
         }
 
         $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);

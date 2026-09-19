@@ -962,3 +962,15 @@ Code/dependency integration gate **bukan lagi blocker**. Blocker/verifikasi ters
 - Field mati dihapus dari kontrak data (`tone`, `completion_checks`, `queue_state`, `latestOperation`, `action` pipeline kini dirender).
 
 Status: **FUNCTIONAL PASS** berdasarkan persetujuan pengguna dan evidence berikut: `tests/Feature/DashboardMetricsTest.php` 5 passed (21 assertions; 5 deprecated), Pint passed, `view:cache` sukses, `npm run build` sukses, dan `git diff --check` bersih. `resources/views/dashboard.blade.php` proteksi tidak diubah. Browser/operator visual QA dan timing real-data tetap RVR.
+
+### Effective numbering authorization boundary — PASS; issuance tetap BLOCKED
+
+`SpjV2NumberingAuthorizationService` kini menyediakan preflight read-only yang
+fail-closed untuk selector V2, effective package membership, exact provenance
+bridge, fund/source reconciliation, canonical transaction dan item parity,
+registry document relation, lifecycle READY, serta effective period proof.
+Focused runtime regression lulus **1 test / 31 assertions / 1 deprecation**
+dan membuktikan authorization failure tidak mengubah nomor, status, fiscal
+year legacy, dokumen, atau audit. Effective-context numbering issuance tetap
+**BLOCKED / DEFERRED** sampai sequence/quarter resolution, collision,
+completeness, atomic rollback, dan effective audit trail ditutup.

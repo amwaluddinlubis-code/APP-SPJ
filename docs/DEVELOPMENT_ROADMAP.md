@@ -500,3 +500,4 @@ Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful,
 - source-responsive PASS tidak sama dengan browser/mobile PASS;
 - setelah contract utama PASS, jangan menambah test tanpa alasan nyata;
 - bila ada bug: reproduce -> fix -> focused regression bila perlu -> operator re-check.
+- effective numbering authorization boundary: **PASS** pada focused runtime 1 test / 31 assertions; effective-context numbering issuance tetap **BLOCKED / DEFERRED** sampai sequence/quarter, collision/completeness, atomic rollback, dan effective audit trail aman.
