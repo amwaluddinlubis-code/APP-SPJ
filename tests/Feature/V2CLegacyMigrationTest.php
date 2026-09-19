@@ -13,9 +13,9 @@ final class V2CLegacyMigrationTest extends TestCase
     public function test_full_tenant_a_rehearsal_and_verify_contract(): void
     {
         $sourceClone = storage_path('app/school-databases/10260786/spj.sqlite');
-        $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
+        $source = $this->sourcePath();
         $this->assertFileExists($sourceClone);
-        $this->assertNotSame('', $source);
+        $this->assertNotSame('', $source, 'No readable ARKAS evidence source was found for the V2-C rehearsal.');
         $target = storage_path('app/v2-c-rehearsal/test-fresh-c2.sqlite');
         File::copy($sourceClone, $target);
 
@@ -77,8 +77,10 @@ final class V2CLegacyMigrationTest extends TestCase
 
     public function test_tenant_b_dry_run_is_source_safe_and_does_not_guess(): void
     {
-        $target = getenv('SPJ_V2_C_TENANT_B_PATH') ?: '';
-        $this->assertNotSame('', $target);
+        $target = $this->tenantBPath();
+        if ($target === '') {
+            $this->markTestSkipped('Optional external/orphan Tenant B fixture is not available on this workstation.');
+        }
         $before = hash_file('sha256', $target);
         $this->connect($target, null, 10208183, true);
 
@@ -92,8 +94,9 @@ final class V2CLegacyMigrationTest extends TestCase
     public function test_final_package_and_document_are_immutable_in_synthetic_rehearsal(): void
     {
         $target = storage_path('app/school-databases/10260786/spj.sqlite');
-        $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
+        $source = $this->sourcePath();
         $this->assertFileExists($target);
+        $this->assertNotSame('', $source, 'No readable ARKAS evidence source was found for the V2-C rehearsal.');
         $synthetic = storage_path('app/v2-c-rehearsal/final-synthetic-c2.sqlite');
         File::copy($target, $synthetic);
 
@@ -152,7 +155,9 @@ final class V2CLegacyMigrationTest extends TestCase
         File::copy($source, $target);
 
         try {
-            $this->connect($target, getenv('SPJ_V2_C_SOURCE_PATH') ?: '', 10260756);
+            $sourcePath = $this->sourcePath();
+            $this->assertNotSame('', $sourcePath, 'No readable ARKAS evidence source was found for the V2-C rehearsal.');
+            $this->connect($target, $sourcePath, 10260756);
             $this->migrateRehearsalSchema();
             $db = DB::connection('school');
             app(SpjV2LegacyMigrationService::class)->migrate(
@@ -177,6 +182,43 @@ final class V2CLegacyMigrationTest extends TestCase
         } finally {
             File::delete($target);
         }
+    }
+
+    private function sourcePath(): string
+    {
+        $configured = getenv('SPJ_V2_C_SOURCE_PATH') ?: config('spj.v2_c_source_path');
+        $candidates = array_filter([
+            is_string($configured) ? $configured : null,
+            base_path('../../backupdata/datasmp.db'),
+            storage_path('app/datasmp.db'),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    private function tenantBPath(): string
+    {
+        $configured = getenv('SPJ_V2_C_TENANT_B_PATH') ?: config('spj.v2_c_tenant_b_path');
+        $candidates = array_filter([
+            is_string($configured) ? $configured : null,
+            storage_path('app/school-databases/10208183/spj.sqlite'),
+            base_path('../spj-bosp-data/storage/app/school-databases/10208183/spj.sqlite'),
+            base_path('../../spj-bosp-data/storage/app/school-databases/10208183/spj.sqlite'),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     private function connect(string $target, ?string $source, int $npsn, bool $sourceUnavailable = false): void
