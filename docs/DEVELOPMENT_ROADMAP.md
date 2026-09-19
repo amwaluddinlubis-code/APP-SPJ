@@ -127,7 +127,9 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] jalankan focused V2-C → V2-D suite pada isolated clone: 16 test / 378 assertions PASS;
 - [x] implement fail-safe read-path selector default `legacy`, tanpa hard-code `source_id`;
 - [x] jalankan `V2DReadPathSelectorTest`: 7 test / 22 assertions PASS; Pint + diff-check bersih;
-- [ ] authorization + active-context regression pada consumer read-only pertama;
+- [x] implement consumer read-only pertama: financial summary tab Laporan di belakang selector;
+- [ ] jalankan `V2DReportSummaryCutoverTest` + regression selector/report parity + Pint/diff;
+- [ ] tutup authorization + active-context runtime evidence consumer read-only pertama;
 - [ ] rollback strategy documented + tested;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
