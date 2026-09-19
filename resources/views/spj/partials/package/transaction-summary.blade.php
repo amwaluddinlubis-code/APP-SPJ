@@ -10,7 +10,7 @@
 
     </div>
 
-    <a href="{{ route('transactions.show', $transaction->id) }}" title="Buka Detail Transaksi" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
+    <a href="{{ route('transactions.show', $transactionDetailIdentifier ?? $transaction->id) }}" title="Buka Detail Transaksi" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
         <span aria-hidden="true">↗</span><span>Lihat Transaksi</span>
     </a>
 </div>
