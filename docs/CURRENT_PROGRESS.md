@@ -603,20 +603,38 @@ Gate runtime D2 ditutup; production read-path tetap belum dialihkan.
 
 ## V2-D3 Paket/document relation parity — 2026-09-19
 
-Source D3 sudah ditambahkan melalui `SpjV2PackageDocumentParityService` dan
-`V2DPackageDocumentParityTest`. Service ini read-only dan membandingkan jalur
-legacy Paket `transaction_id -> legacy_transaction_v2_map -> spj_transactions`
-dengan link additive `spj_packages.spj_transaction_id`. Gate menolak missing
-provenance, link null, wrong-but-valid V2 link, missing V2 transaction,
-non-`ACTIVE_CANONICAL` package, dan dokumen orphan.
+`SpjV2PackageDocumentParityService` dan `V2DPackageDocumentParityTest` sudah
+mendapat runtime evidence lokal. Focused test PASS dengan **3 test / 42 assertions**
+dan 3 deprecations; `vendor/bin/pint --dirty --format agent` PASS dan
+`git diff --check` bersih.
 
-Protected Paket/document manifest dihitung dari field lifecycle, numbering,
-snapshot, template/render hash, serta cancel/final metadata. Regression baru juga
-mencakup synthetic wrong-but-valid V2 link yang wajib fail-closed dan synthetic
-FINAL package/document untuk membuktikan service parity tidak memutasi lifecycle.
-**Runtime evidence D3 masih RVR** sampai focused test dijalankan pada isolated
-clone. `SpjPackage::transaction()` dan seluruh write/lifecycle production tetap
-menggunakan relation legacy; tidak ada cutover production pada D3.
+Gate D3 membuktikan jalur legacy Paket
+`transaction_id -> legacy_transaction_v2_map -> spj_transactions` konsisten
+dengan `spj_packages.spj_transaction_id`, termasuk provenance
+`LEGACY_DUPLICATE -> ACTIVE_CANONICAL` yang valid. Synthetic wrong-but-valid V2
+link tetap fail-closed, synthetic FINAL package/document tetap immutable, dan
+service parity tidak memutasi lifecycle. D3 ditutup sebagai **RUNTIME PASS**.
+Production `SpjPackage::transaction()` dan write/lifecycle flow tetap legacy.
+
+## V2-D downstream report/tax/period parity — 2026-09-19
+
+Source gate berikutnya sudah ditambahkan. `SpjV2CanonicalReadService` kini
+mengekspos breakdown pajak PPN/PPh/SSPD dari PBT raw `kas_umum` dan menelusuri
+kode kegiatan langsung dari raw RKAS melalui
+`rapbs_periode -> rapbs -> ref_kode`, tanpa membaca fakta tersebut dari legacy
+transaction projection.
+
+`SpjV2WorkflowParityService` + `V2DWorkflowParityTest` membandingkan current
+legacy consumer contract dengan canonical V2 untuk transaction source fields,
+gross/tax/net, tax components, report successful/cancelled/pending, seluruh
+filter bulan/triwulan/semester, quarter closure-readiness inputs, serta realization
+per kegiatan/rekening. Regression synthetic mengubah tax component tanpa mengubah
+total pajak dan memindahkan tanggal source lintas quarter; keduanya wajib
+fail-closed.
+
+Runtime evidence tahap ini masih **RVR**. Karena canonical adapter ikut berubah,
+focused gate berikutnya harus menjalankan ulang `V2DCanonicalReadAdapterTest`
+bersama `V2DWorkflowParityTest`. Production read-path tetap BLOCKED.
 
 ---
 
