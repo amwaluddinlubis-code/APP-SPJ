@@ -1,6 +1,6 @@
 # V2-D — Read-Path Cutover
 
-Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 CANONICAL ADAPTER RUNTIME PASS / D3 PACKAGE/DOCUMENT PARITY SOURCE IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
+Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 CANONICAL ADAPTER RUNTIME PASS / D3 PACKAGE/DOCUMENT PARITY RUNTIME PASS / DOWNSTREAM REPORT-TAX-PERIOD PARITY SOURCE IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
 
 Baseline V2-C3: commit `8876478`, 187 canonical V2 transactions, 291 legacy
 provenance mappings, 431 source links, 187 transaction overlays, 245 item
@@ -122,9 +122,40 @@ fail-closed bila bridge tidak lagi menunjuk Paket dan dokumen yang sama.
 
 Regression juga mencakup synthetic wrong-but-valid V2 link yang wajib FAIL dan
 synthetic FINAL Paket/document untuk membuktikan parity service read-only terhadap
-lifecycle protected. Source D3 sudah masuk branch; runtime verification focused
-masih **RVR** sampai `V2DPackageDocumentParityTest` dijalankan pada isolated clone.
-Production `SpjPackage::transaction()` tetap memakai `transaction_id` legacy.
+lifecycle protected. Runtime evidence pada 2026-09-19: `php artisan test --compact
+tests/Feature/V2DPackageDocumentParityTest.php` PASS dengan 3 test, 42 assertions,
+dan 3 deprecations. `vendor/bin/pint --dirty --format agent` PASS dan
+`git diff --check` bersih. D3 ditutup sebagai runtime PASS. Production
+`SpjPackage::transaction()` tetap memakai `transaction_id` legacy.
+
+## Downstream workflow parity — report, tax, period
+
+Setelah D3 PASS, gate berikutnya membuktikan consumer downstream yang masih memakai
+legacy `transactions`: `SpjReportUseCase`, `TaxFilterService`, dan
+`FiscalPeriodWorkflowService`.
+
+`SpjV2CanonicalReadService` kini juga mengekspos breakdown pajak
+`ppn/pph21/pph22/pph23/pph4/sspd` langsung dari row PBT raw `kas_umum`, dan
+menelusuri kode kegiatan dari relasi raw
+`kas_umum.id_rapbs_periode -> rapbs_periode -> rapbs -> ref_kode`.
+Tidak ada fallback ke legacy transaction projection untuk fakta tersebut.
+
+`SpjV2WorkflowParityService` dan `V2DWorkflowParityTest` membandingkan:
+
+- identity/source fields dan gross/tax/net per canonical transaction;
+- breakdown pajak per transaction dan summary pajak;
+- report successful/cancelled/pending serta financial summary;
+- filter semua/bulan/triwulan/semester;
+- quarter closure-readiness inputs: reconciliation/source-missing, package absence,
+  dan FINAL state;
+- realization grouping per kode kegiatan dan rekening;
+- synthetic tax-component drift dan transaction-date/quarter drift yang wajib
+  fail closed.
+
+Source gate sudah masuk branch, tetapi runtime verification masih **RVR**. Karena
+canonical adapter berubah untuk downstream fields, focused runtime gate harus
+menjalankan ulang `V2DCanonicalReadAdapterTest` bersama
+`V2DWorkflowParityTest`.
 
 ## D4 — Controlled cutover
 
