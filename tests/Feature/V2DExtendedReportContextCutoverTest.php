@@ -235,21 +235,30 @@ final class V2DExtendedReportContextCutoverTest extends TestCase
     /** @return array{0:object,1:int,2:int} */
     private function seedSyntheticOperatorOverlays(Connection $db): array
     {
-        $context = $db->table('spj_transactions')
-            ->where('canonical_context_status', 'ACTIVE_CANONICAL')
-            ->select(['fiscal_year_id', 'fund_source_id', 'source_id'])
-            ->orderBy('fiscal_year_id')
-            ->orderBy('fund_source_id')
+        $context = $db->table('spj_packages as package')
+            ->join('transactions as legacy', 'legacy.id', '=', 'package.transaction_id')
+            ->join('spj_transactions as v2', 'v2.id', '=', 'package.spj_transaction_id')
+            ->where('v2.canonical_context_status', 'ACTIVE_CANONICAL')
+            ->whereColumn('legacy.fiscal_year_id', '!=', 'v2.fiscal_year_id')
+            ->select([
+                'v2.fiscal_year_id',
+                'v2.fund_source_id',
+                'v2.source_id',
+            ])
+            ->orderBy('v2.fiscal_year_id')
+            ->orderBy('v2.fund_source_id')
             ->first();
         $this->assertNotNull($context);
 
         $candidateIds = $db->table('legacy_transaction_v2_map as map')
+            ->join('transactions as legacy', 'legacy.id', '=', 'map.legacy_transaction_id')
             ->join('spj_transactions as v2', 'v2.id', '=', 'map.spj_transaction_id')
             ->join('transaction_items as item', 'item.transaction_id', '=', 'map.legacy_transaction_id')
             ->where('v2.fiscal_year_id', $context->fiscal_year_id)
             ->where('v2.fund_source_id', $context->fund_source_id)
             ->where('v2.source_id', $context->source_id)
             ->where('v2.canonical_context_status', 'ACTIVE_CANONICAL')
+            ->whereColumn('legacy.fiscal_year_id', '!=', 'v2.fiscal_year_id')
             ->orderBy('map.legacy_transaction_id')
             ->pluck('map.legacy_transaction_id')
             ->map(fn ($id): int => (int) $id)
