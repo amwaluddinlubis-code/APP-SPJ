@@ -493,6 +493,16 @@ Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful,
 - [ ] Effective batch/quarter operator UI — tetap BLOCKED.
 - [ ] Browser visual QA dan repository-wide canonical gate — RVR.
 
+Follow-up evidence 2026-09-19: browser QA tetap **RVR / DEFERRED** sesuai
+instruksi. Repository-wide gate pada `e8eb73d` PASS untuk Composer validation,
+platform checks, Pint, Blade cache, frontend build, dan diff check, tetapi full
+PHPUnit FAIL dengan **11 failures, 17 passes, 7,435 assertions, 645
+deprecations, 885.60s**. Failure berada pada legacy category/authorization/
+workspace, hierarchy fixture, dan V2-B isolated-clone environment. Focused
+effective-numbering/V2-D regression PASS (**31 tests / 304 assertions / 31
+deprecations**). Canonical gate belum hijau; batch/quarter UI audit belum
+dimulai dan tetap **BLOCKED**.
+
 ---
 
 # Aturan pengerjaan

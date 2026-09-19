@@ -943,6 +943,19 @@ reservation without a new sequence or audit. Effective batch/quarter UI and
 all other mutation-heavy lifecycle surfaces remain closed. Browser visual QA
 and repository-wide canonical gate for this UI change are RVR.
 
+Canonical gate follow-up evidence for `e8eb73d` (2026-09-19): browser
+visual/runtime QA was **RVR / DEFERRED** and was not run. Composer validation,
+platform checks, Pint, Blade cache, frontend build, and `git diff --check`
+passed. Full `php artisan test --compact` failed with **11 failures, 17
+passes, 7,435 assertions, 645 deprecations**, duration **885.60s**. Failures
+were six legacy `SpjSixCategoryE2eTest` cases, plus
+`LivewireMutationAuthorizationTest`, `TransactionsTableLivewireTest`,
+`SpjProgramHierarchyPlaceholderTest`, and two `V2BIsolatedSchemaTest` cases
+without explicit isolated-clone environment. Focused V2-D/read-path/numbering
+regression passed **31 tests / 304 assertions / 31 deprecations**. No canonical
+green promotion is claimed; effective batch/quarter UI audit is deferred and
+remains blocked.
+
 ### Effective sequence reservation — PASS; issuance backend PASS
 
 `SpjV2NumberingSequenceService` mempertahankan scope executable existing:

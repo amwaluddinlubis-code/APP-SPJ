@@ -1031,3 +1031,15 @@ runtime regression. Batch/quarter effective UI tetap **BLOCKED** karena belum
 dibuka pada surface operator; FINAL, settlement, bulk-final, dan period
 close/open tetap tertutup. Browser visual QA dan repository-wide canonical gate
 belum dijalankan pada perubahan ini = **RVR**.
+
+Canonical gate follow-up pada 2026-09-19 dijalankan dari HEAD `e8eb73d` tanpa
+browser automation. Composer validation, platform checks, Pint, Blade cache,
+frontend build, dan `git diff --check` PASS. Full `php artisan test --compact`
+FAIL: **11 failed, 17 passed, 7,435 assertions, 645 deprecations, 885.60s**.
+Failure berada di enam kasus `SpjSixCategoryE2eTest`, satu
+`LivewireMutationAuthorizationTest`, satu `TransactionsTableLivewireTest`,
+satu `SpjProgramHierarchyPlaceholderTest`, dan dua `V2BIsolatedSchemaTest`
+yang tidak diberi explicit isolated-clone environment. Focused V2-D/read-path/
+numbering regression tetap PASS (**31 tests / 304 assertions / 31
+deprecations**). Canonical repository gate tetap **FAIL** dan batch/quarter
+effective-numbering UI audit ditunda; UI tetap **BLOCKED**.
