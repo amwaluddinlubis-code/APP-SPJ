@@ -159,6 +159,34 @@ final class V2DMutationContextReadyTest extends TestCase
         }
     }
 
+    public function test_unresolved_reconciliation_blocks_ready_before_validation(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-reconciliation.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->staleDraftPackage($db);
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update([
+                'requires_reconciliation' => 1,
+            ]);
+            $this->mockValidationMustNotRun();
+
+            $result = app(SpjPackageLifecycleUseCase::class)->markReadyResult((string) $row->package_id);
+
+            $this->assertFalse($result['success']);
+            $this->assertSame('DRAFT', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_raw_source_drift_blocks_ready_before_validation(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-source-drift.sqlite');
