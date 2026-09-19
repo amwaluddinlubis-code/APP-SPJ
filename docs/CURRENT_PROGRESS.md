@@ -583,6 +583,23 @@ manual yang diperlukan. Pint dan `git diff --check` juga PASS. Evidence ini hany
 functional local rehearsal; canonical read adapter dan production read-path
 cutover belum dilakukan.
 
+
+## V2-D2 canonical read adapter — 2026-09-19
+
+Source implementation sudah ditambahkan melalui `SpjV2CanonicalReadService` dan
+focused regression `V2DCanonicalReadAdapterTest`. Adapter tetap read-only dan
+belum dipakai controller/Livewire production. Boundary query adalah fiscal year +
+fund source + source id + ACTIVE_CANONICAL; ARKAS-owned facts berasal dari source
+identity/raw mirror, sedangkan operator-owned transaction/item fields hanya dari
+overlay V2. Lookup mempertahankan `legacy_source_key` melalui provenance bridge
+agar mapping DETERMINISTIC tidak kehilangan kompatibilitas identifier.
+
+Regression D2 dirancang membuktikan 187 canonical transaction, context partition,
+source-link/item cardinality, aggregate gross/tax/net canonical, lookup deterministic
+legacy-source-key → canonical transaction, dan overlay ownership. **Runtime evidence
+D2 belum tersedia pada branch ini** sampai focused test benar-benar dijalankan;
+production read-path cutover tetap BLOCKED dan tahap berikutnya belum dipromosikan.
+
 ---
 
 ## Prioritas kerja aktif
