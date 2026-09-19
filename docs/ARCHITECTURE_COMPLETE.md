@@ -639,3 +639,22 @@ with Bulk Final, quarter numbering, Checklist/Persiapan navigation, and
 fiscal-period close/reopen. Until effective-context mutation authorization or
 write-through exists, those flows remain legacy-authoritative and V2 read
 compatibility must not be used to broaden their write scope.
+
+### Transitional effective-context mutation boundary
+
+`SpjV2MutationContextService` is the first explicit bridge from controlled V2
+reads into legacy-authoritative writes. It does **not** write canonical V2
+overlays. It authorizes an existing legacy Paket only when the active
+`School + Fiscal Year + Fund Source` can be proven through the same unique-source
+and provenance/package bridge used by controlled reads.
+
+For stale legacy fiscal-year packages, authorization also requires no unresolved
+source reconciliation and exact parity of source-owned facts against current
+canonical raw data. The legacy transaction fiscal year is normalized in memory
+for downstream validation and is never saved.
+
+The initial consumer is deliberately narrow: Checklist plus
+`SpjPackageLifecycleUseCase::markReadyResult()` for `DRAFT -> READY`.
+Numbering, package detail writes, settlement, cancel/replace, FINAL/bulk FINAL,
+Monitoring mutation actions, and fiscal-period mutations remain
+legacy-authoritative until separate write gates exist.
