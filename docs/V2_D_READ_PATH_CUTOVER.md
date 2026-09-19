@@ -664,7 +664,44 @@ Existing `TaxFilterLivewireTest` remains the legacy/no-V2-schema compatibility
 gate, while `TransactionDetailWorkspaceAuthorizationTest` is reused to protect
 fresh source-key context isolation and mutation authorization.
 
-Runtime evidence for D4 step 10 is currently **RVR**.
+Runtime evidence on 2026-09-19: focused gate
+`V2DTaxReadContextCutoverTest`, `TaxFilterLivewireTest`,
+`TransactionDetailWorkspaceAuthorizationTest`, `V2DWorkflowParityTest`,
+`V2DReadPathSelectorTest`, and `V2DEffectiveContextCompatibilityTest` PASS
+with **33 tests / 199 assertions / 33 deprecations**.
+`vendor/bin/pint --dirty --format agent` PASS and `git diff --check` clean.
+D4 step 10 is therefore **RUNTIME PASS**.
+
+### Post-Step-10 audit — Monitoring remains legacy-authoritative
+
+The next visible consumer was audited after Step 10. The Monitoring tab is **not**
+a read-only surface even though its pending queue is rendered through Livewire.
+
+The same tab exposes:
+
+- Bulk Final SPJ;
+- quarter numbering;
+- quarter close/reopen;
+- pending rows that link to Checklist or Persiapan.
+
+Those actions remain intentionally authorized by legacy
+`ActiveSpjContext`/legacy Paket state. Switching only the queue membership to
+effective-context would therefore create a split-brain UI: an operator could see
+a stale-context row through V2 compatibility while the adjacent mutation action
+still operates only on legacy context.
+
+The audit decision is therefore **DEFERRED / BLOCKED FOR READ CUTOVER**:
+
+- do not switch `SpjMonitoringList` membership yet;
+- do not normalize legacy fiscal-year data to make Monitoring mutations appear
+  compatible;
+- do not use read compatibility as mutation authorization;
+- Checklist/Persiapan mutation-adjacent navigation remains legacy-authoritative;
+- Bulk Final, numbering, and fiscal-period close/reopen remain fully legacy;
+- revisit Monitoring only after an explicit effective-context write-through or
+  mutation-authorization strategy has runtime evidence.
+
+This is an intentional safety boundary, not an unresolved read-parity defect.
 
 A production switch requires all of the following:
 
