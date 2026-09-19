@@ -847,8 +847,18 @@ Workspace stale-context tidak dibuka penuh. View baru
 `spj.package-compat-edit` hanya merender Isian Manual canonical untuk DRAFT/READY;
 Penomoran, FINAL, settlement, bulk-final, dan maintenance material/labor linkage
 tetap di luar gate. NUMBERED effective-context juga tetap ditolak untuk overlay
-write. Regression `V2DPackageOverlayWriteCutoverTest` sudah ditambahkan.
-Runtime evidence Step 11B masih **RVR**.
+write.
+
+Regression `V2DPackageOverlayWriteCutoverTest` sudah diperkeras pada
+`3aa331a` dan `eb96214`: selain positive DRAFT/READY dan config rollback,
+gate sekarang secara eksplisit menolak wrong Paket/V2 bridge, unresolved
+reconciliation, `SOURCE_MISSING`, synthetic raw-source financial drift,
+overlay write pada NUMBERED, serta category mutation pada NUMBERED; seluruh
+negative path juga mensyaratkan tidak ada audit mutation palsu. Ini masih
+**source/test coverage**, bukan runtime evidence. Workflow canonical repository
+tidak otomatis berjalan pada branch `arkas-raw-mirror`, dan focused isolated
+fixture Step 11B belum dieksekusi pada runtime branch ini. Karena itu runtime
+evidence Step 11B tetap **RVR** dan belum boleh dipromosikan menjadi PASS.
 
 ---
 
