@@ -1043,3 +1043,21 @@ yang tidak diberi explicit isolated-clone environment. Focused V2-D/read-path/
 numbering regression tetap PASS (**31 tests / 304 assertions / 31
 deprecations**). Canonical repository gate tetap **FAIL** dan batch/quarter
 effective-numbering UI audit ditunda; UI tetap **BLOCKED**.
+
+### Transaksi dan Detail Transaksi — focused runtime audit
+
+Audit focused pada 2026-09-19 terhadap route `transaksi`,
+`transaksi/{transactionId}`, Livewire `TransactionsTable`, dan
+`TransactionDetailWorkspace` menemukan satu regression read-path: pagination
+halaman kedua dapat merender `SpjFreshTransaction` tanpa relasi
+`rawMirrorRow`, lalu lazy-loading violation terjadi saat source attributes
+dibaca oleh Blade. Fix minimal memastikan relasi source parent, package, dan
+items dimuat sebelum statistik/paginator dirender. Tidak ada perubahan
+mutation, fiscal-year legacy, lifecycle, atau canonical identity.
+
+Evidence setelah fix: halaman Transaksi PASS (**8 tests / 44 assertions / 8
+deprecations**); Detail Transaksi PASS (**8 tests / 29 assertions / 8
+deprecations**); related V2-D read/mutation/package/workspace regression PASS
+(gabungan **63 deprecations / 805 assertions**). Pint, Blade cache, frontend
+build, dan `git diff --check` PASS. Browser QA tetap **RVR / DEFERRED** dan
+canonical full gate tetap **FAIL** berdasarkan blocker yang tercatat di atas.

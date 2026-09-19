@@ -503,6 +503,15 @@ effective-numbering/V2-D regression PASS (**31 tests / 304 assertions / 31
 deprecations**). Canonical gate belum hijau; batch/quarter UI audit belum
 dimulai dan tetap **BLOCKED**.
 
+Focused Transaksi/Detail Transaksi follow-up 2026-09-19: one pagination
+read-path regression was fixed by explicitly loading the fresh source parent,
+package, and item raw-mirror relations before rendering. Transaksi regression
+passed **8 tests / 44 assertions / 8 deprecations**; Detail Transaksi passed
+**8 tests / 29 assertions / 8 deprecations**. Related V2-D/read/mutation/
+package/workspace regression passed (**805 assertions, 63 deprecations**).
+No browser claim is made; browser QA remains **RVR / DEFERRED**. The full
+canonical gate remains **FAIL**, and batch/quarter UI remains **BLOCKED**.
+
 ---
 
 # Aturan pengerjaan

@@ -68,7 +68,7 @@ class TransactionsTable extends Component
     public function getFilteredStatsProperty(): object
     {
         $transactions = $this->filteredQuery()
-            ->with(['items.rawMirrorRow'])
+            ->with(['rawMirrorRow', 'items.rawMirrorRow'])
             ->get();
 
         $gross = (float) $transactions->sum(
@@ -114,11 +114,24 @@ class TransactionsTable extends Component
             ->orderBy('id')
             ->paginate($perPage);
 
+        $paginator->getCollection()->loadMissing([
+            'rawMirrorRow',
+            'spjPackage',
+            'items.rawMirrorRow',
+        ]);
+
         if ($paginator->total() > 0 && $paginator->currentPage() > $paginator->lastPage()) {
             $lastPage = $paginator->lastPage();
             $this->paginators['page'] = $lastPage;
 
-            return $query->paginate($perPage, ['*'], 'page', $lastPage);
+            $paginator = $query->paginate($perPage, ['*'], 'page', $lastPage);
+            $paginator->getCollection()->loadMissing([
+                'rawMirrorRow',
+                'spjPackage',
+                'items.rawMirrorRow',
+            ]);
+
+            return $paginator;
         }
 
         return $paginator;

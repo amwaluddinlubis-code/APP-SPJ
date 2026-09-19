@@ -956,6 +956,20 @@ regression passed **31 tests / 304 assertions / 31 deprecations**. No canonical
 green promotion is claimed; effective batch/quarter UI audit is deferred and
 remains blocked.
 
+### Transaksi and Detail Transaksi read-path audit
+
+Focused route and workspace regression on 2026-09-19 found and fixed a
+pagination-only lazy-loading failure in `TransactionsTable`: source parent,
+package, and item raw-mirror relations are now explicitly loaded before
+statistics and paginator rendering. The fix is read-only and does not rewrite
+legacy fiscal year or alter mutation/lifecycle boundaries. Transaksi passed
+**8 tests / 44 assertions / 8 deprecations**; Detail Transaksi passed **8
+tests / 29 assertions / 8 deprecations**; related V2-D/read/mutation/package/
+workspace coverage passed (**805 assertions / 63 deprecations**). Browser QA
+remains **RVR / DEFERRED**; the repository-wide canonical gate remains **FAIL**
+from the previously recorded unrelated blockers. Effective batch/quarter UI,
+FINAL, settlement, bulk-final, and period-close mutation remain blocked.
+
 ### Effective sequence reservation — PASS; issuance backend PASS
 
 `SpjV2NumberingSequenceService` mempertahankan scope executable existing:
