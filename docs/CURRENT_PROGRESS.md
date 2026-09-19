@@ -650,8 +650,9 @@ Source D4 step 1 sekarang sudah tersedia: `SpjV2CanonicalSourceResolver` +
 `SpjReadPathSelector`, dengan config `SPJ_V2_READ_PATH=legacy` sebagai default.
 Request V2 hanya eligible bila satu source canonical unik ditemukan; invalid config,
 schema V2 belum ada, source kosong, atau source ambigu kembali ke legacy. Belum ada
-production consumer yang dipindahkan. Runtime regression selector masih **RVR**
-sampai `V2DReadPathSelectorTest`, Pint, dan diff-check dijalankan lokal.
+production consumer yang dipindahkan. Runtime regression selector sekarang PASS:
+`V2DReadPathSelectorTest` **7 test / 22 assertions / 7 deprecations**, Pint PASS,
+dan `git diff --check` bersih.
 
 ---
 
