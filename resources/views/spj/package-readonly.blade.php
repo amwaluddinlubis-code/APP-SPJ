@@ -52,9 +52,41 @@
         </section>
 
         <section class="mx-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            @include('spj.partials.package.documents')
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] px-4 py-3.5">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Dokumen &amp; Template</h2>
+                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Hanya operasi Preview/Download read-only yang tersedia pada mode kompatibilitas.</p>
+                </div>
+                @unless($validationIssues || $package->status === 'CANCELLED')
+                    <div class="flex flex-wrap items-center gap-2">
+                        <x-ui.button variant="secondary" :href="route('spj.preview-package', $package->id)">Preview Paket</x-ui.button>
+                        <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<x-ui.button type="submit" variant="secondary">Download Excel</x-ui.button></form>
+                        <form method="POST" action="{{ route('spj.download', $package->id) }}" target="_blank">@csrf<x-ui.button type="submit">Download PDF</x-ui.button></form>
+                    </div>
+                @endunless
+            </div>
+
+            @if($templates->isNotEmpty())
+                <div class="divide-y divide-[var(--ui-line)]">
+                    @foreach($templates as $template)
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div>
+                                <p class="font-semibold text-[var(--ui-fg-strong)]">{{ $template->name }}</p>
+                                <p class="mt-0.5 font-mono text-[11px] text-[var(--theme-content-accent)]">{{ $template->document_type }} · {{ strtoupper($template->format) }}</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <x-ui.button variant="secondary" :href="route('spj.preview-template', [$package->id, $template->id])">Preview</x-ui.button>
+                                @unless($validationIssues || $package->status === 'CANCELLED')
+                                    <form method="POST" action="{{ route('spj.download-template', [$package->id, $template->id]) }}">@csrf<x-ui.button type="submit" variant="secondary">Download</x-ui.button></form>
+                                    <form method="POST" action="{{ route('spj.download-template-pdf', [$package->id, $template->id]) }}" target="_blank">@csrf<x-ui.button type="submit">PDF</x-ui.button></form>
+                                @endunless
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="px-4 py-6 text-center text-sm text-[var(--ui-fg-muted)]">Belum ada template aktif yang sesuai dengan kategori {{ $spjTypeLabel($packageCategory) }}.</div>
+            @endif
         </section>
     </div>
-
-    @include('spj.partials.preview-modal')
 </x-layouts.tailwind-app>
