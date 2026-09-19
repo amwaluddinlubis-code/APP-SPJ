@@ -68,7 +68,11 @@ labels realization, dan write/lifecycle tetap legacy. D4 step 3 menambahkan
 menerjemahkan effective canonical context kembali ke provenance legacy/Paket.
 Service ini mengklasifikasikan stale legacy `fiscal_year_id`, duplicate
 provenance, dan unsafe bridge secara fail-closed; ia tidak memperbaiki atau
-menulis ulang legacy context.
+menulis ulang legacy context. Isolated real-fixture audit membuktikan seluruh
+Paket existing berada pada deterministic stale-legacy-fiscal-year transition
+tanpa fund-source mismatch atau unsafe bridge. Karena itu membership read untuk
+Paket/list selama transisi harus berasal dari effective canonical context +
+provenance bridge, bukan dari legacy `transactions.fiscal_year_id` saja.
 
 ### Database utama
 
