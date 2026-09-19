@@ -185,6 +185,163 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
         }
     }
 
+    public function test_wrong_package_bridge_blocks_overlay_write_without_audit(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-write-wrong-bridge.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $replacementId = $db->table('spj_transactions')
+                ->where('fiscal_year_id', $row->effective_fiscal_year_id)
+                ->where('fund_source_id', $row->fund_source_id)
+                ->where('source_id', $row->source_id)
+                ->where('canonical_context_status', 'ACTIVE_CANONICAL')
+                ->where('id', '!=', $row->spj_transaction_id)
+                ->orderBy('id')
+                ->value('id');
+            $this->assertNotNull($replacementId);
+
+            $db->table('spj_packages')->where('id', $row->package_id)->update([
+                'spj_transaction_id' => $replacementId,
+            ]);
+
+            $before = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertNotNull($before);
+
+            app(UpdateSpjPackageDetailsUseCase::class)->handle(
+                (string) $row->package_id,
+                Request::create('/spj/update', 'PUT', [
+                    'payment_description' => 'FORGED WRONG BRIDGE WRITE',
+                ]),
+            );
+
+            $after = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertSame($before->payment_description, $after?->payment_description);
+            $this->assertSame((int) $before->fiscal_year_id, (int) $after?->fiscal_year_id);
+            $this->assertSame(
+                0,
+                $db->table('operational_audit_logs')
+                    ->where('entity_type', 'SPJ_PACKAGE')
+                    ->where('entity_id', (string) $row->package_id)
+                    ->where('action', 'PERBARUI_ISIAN')
+                    ->count(),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_reconciliation_and_source_missing_block_overlay_write_without_audit(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-write-source-state.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $before = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertNotNull($before);
+
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update([
+                'requires_reconciliation' => 1,
+            ]);
+
+            app(UpdateSpjPackageDetailsUseCase::class)->handle(
+                (string) $row->package_id,
+                Request::create('/spj/update', 'PUT', [
+                    'payment_description' => 'FORGED RECONCILIATION WRITE',
+                ]),
+            );
+
+            $this->assertSame(
+                $before->payment_description,
+                $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('payment_description'),
+            );
+
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update([
+                'requires_reconciliation' => 0,
+                'source_status' => 'SOURCE_MISSING',
+            ]);
+
+            app(UpdateSpjPackageDetailsUseCase::class)->handle(
+                (string) $row->package_id,
+                Request::create('/spj/update', 'PUT', [
+                    'payment_description' => 'FORGED SOURCE MISSING WRITE',
+                ]),
+            );
+
+            $after = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertSame($before->payment_description, $after?->payment_description);
+            $this->assertSame((int) $before->fiscal_year_id, (int) $after?->fiscal_year_id);
+            $this->assertSame(
+                0,
+                $db->table('operational_audit_logs')
+                    ->where('entity_type', 'SPJ_PACKAGE')
+                    ->where('entity_id', (string) $row->package_id)
+                    ->where('action', 'PERBARUI_ISIAN')
+                    ->count(),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_raw_source_drift_blocks_overlay_write_without_audit(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-write-source-drift.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $before = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertNotNull($before);
+
+            $this->driftCanonicalGrossSource($db, (int) $row->spj_transaction_id);
+
+            app(UpdateSpjPackageDetailsUseCase::class)->handle(
+                (string) $row->package_id,
+                Request::create('/spj/update', 'PUT', [
+                    'payment_description' => 'FORGED RAW DRIFT WRITE',
+                ]),
+            );
+
+            $after = $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            $this->assertSame($before->payment_description, $after?->payment_description);
+            $this->assertSame((int) $before->fiscal_year_id, (int) $after?->fiscal_year_id);
+            $this->assertSame(
+                0,
+                $db->table('operational_audit_logs')
+                    ->where('entity_type', 'SPJ_PACKAGE')
+                    ->where('entity_id', (string) $row->package_id)
+                    ->where('action', 'PERBARUI_ISIAN')
+                    ->count(),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_numbered_effective_context_package_remains_locked_for_overlay_write(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-numbered-lock.sqlite');
@@ -389,6 +546,39 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             'invoice_status' => 'Lunas',
             'siplah_order_number' => 'ORDER-STEP11B',
         ]);
+    }
+
+    private function driftCanonicalGrossSource(Connection $db, int $canonicalTransactionId): void
+    {
+        $rawRows = $db->table('spj_transaction_sources as source_link')
+            ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'source_link.arkas_source_identity_id')
+            ->join('arkas_raw_mirror_rows as raw', 'raw.id', '=', 'identity.current_raw_mirror_row_id')
+            ->where('source_link.spj_transaction_id', $canonicalTransactionId)
+            ->orderBy('source_link.sort_order')
+            ->get(['raw.id', 'raw.payload']);
+
+        $drifted = false;
+        foreach ($rawRows as $rawRow) {
+            $payload = json_decode((string) $rawRow->payload, true, 512, JSON_THROW_ON_ERROR);
+            if (! in_array((int) ($payload['id_ref_bku'] ?? 0), [4, 15, 24, 35], true)) {
+                continue;
+            }
+
+            foreach (['saldo', 'jumlah', 'nilai', 'nominal'] as $amountKey) {
+                if (! array_key_exists($amountKey, $payload)) {
+                    continue;
+                }
+
+                $payload[$amountKey] = (float) $payload[$amountKey] + 12345.0;
+                $db->table('arkas_raw_mirror_rows')->where('id', $rawRow->id)->update([
+                    'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                ]);
+                $drifted = true;
+                break 2;
+            }
+        }
+
+        $this->assertTrue($drifted, 'Expected a canonical gross source row that can be drifted.');
     }
 
     private function sourceFactsHash(Connection $db, int $transactionId): string
