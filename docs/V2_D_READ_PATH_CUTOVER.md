@@ -771,9 +771,18 @@ The fix stores compatibility metadata only in the in-memory
 `mutation_context_*` keys exist in Paket/Transaction SQL attributes and none
 are dirty before READY persistence.
 
-Runtime evidence for D4 step 11A remains **RVR** until a clean rerun passes.
-Production configuration must remain `SPJ_V2_READ_PATH=legacy` until this
-mutation gate and later write-path gates have explicit runtime evidence.
+Clean rerun evidence on 2026-09-19 is now PASS. The focused
+`V2DMutationContextReadyTest` passed with **8 tests / 90 assertions / 8
+deprecations**. The full Step 11A gate passed with **42 tests / 556 assertions /
+42 deprecations** across mutation-context READY, effective-context compatibility,
+package membership/read context/read-only workspace/list cutover, lifecycle,
+pre-numbering, and transaction-detail authorization regressions.
+
+`vendor/bin/pint --dirty --format agent` PASS, `npm run build` PASS, and
+`git diff --check` clean. D4 step 11A is therefore **RUNTIME PASS**.
+
+Production configuration remains `SPJ_V2_READ_PATH=legacy` because Step 11B+
+write-path gates are still pending.
 
 A production switch requires all of the following:
 
