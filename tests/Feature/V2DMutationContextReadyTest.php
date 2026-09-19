@@ -159,6 +159,54 @@ final class V2DMutationContextReadyTest extends TestCase
         }
     }
 
+    public function test_effective_context_invoice_duplicate_validation_does_not_fall_back_to_stale_legacy_year(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-invoice-duplicate.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->staleDraftPackage($db);
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $otherLegacyId = $db->table('legacy_transaction_v2_map as provenance')
+                ->join('spj_transactions as v2', 'v2.id', '=', 'provenance.spj_transaction_id')
+                ->where('v2.fiscal_year_id', $row->effective_fiscal_year_id)
+                ->where('v2.fund_source_id', $row->fund_source_id)
+                ->where('v2.source_id', $row->source_id)
+                ->where('v2.canonical_context_status', 'ACTIVE_CANONICAL')
+                ->where('provenance.legacy_transaction_id', '!=', $row->legacy_transaction_id)
+                ->orderBy('provenance.legacy_transaction_id')
+                ->value('provenance.legacy_transaction_id');
+            $this->assertNotNull($otherLegacyId);
+
+            $db->table('transactions')->whereIn('id', [$row->legacy_transaction_id, $otherLegacyId])->update([
+                'spj_category' => 'BARANG',
+                'invoice_number' => 'INV-V2-DUPLICATE',
+                'vendor_name' => 'Vendor Effective Context',
+            ]);
+
+            $package = SpjPackage::query()->with([
+                'transaction.items',
+                'transaction.goods',
+                'transaction.honors',
+                'transaction.serviceRecipients',
+            ])->findOrFail($row->package_id);
+            $this->assertTrue(app(SpjV2MutationContextService::class)->preparePackage($package));
+
+            $checks = collect(app(SpjPackageValidationService::class)->checklist($package))->keyBy('key');
+
+            $this->assertArrayHasKey('invoice_duplicate', $checks->all());
+            $this->assertFalse($checks['invoice_duplicate']['passed']);
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_unresolved_reconciliation_blocks_ready_before_validation(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-reconciliation.sqlite');
