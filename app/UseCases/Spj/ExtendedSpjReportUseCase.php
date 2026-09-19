@@ -13,6 +13,7 @@ use App\Services\SpjV2ReportFinancialSummaryService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         private readonly ActiveSpjContext $activeContext,
         private readonly RoutineHonorRegisterService $routineHonorRegister,
         SpjV2ReportFinancialSummaryService $v2FinancialSummary,
-        SpjV2PackageReadMembershipService $packageReadMembership,
+        private readonly SpjV2PackageReadMembershipService $packageReadMembership,
     ) {
         parent::__construct($activeContext, $v2FinancialSummary, $packageReadMembership);
     }
@@ -35,9 +36,8 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
     {
         $relation = $category === 'HONOR_PEGAWAI' ? 'honors' : 'serviceRecipients';
 
-        return Transaction::query()
+        return $this->reportTransactionQuery()
             ->with([$relation, 'spjPackage'])
-            ->forSpjContext($this->activeContext)
             ->where('spj_category', $category)
             ->has($relation)
             ->when(! empty($filters['month']), fn ($query) => $query->whereMonth('transaction_date', (int) $filters['month']))
@@ -61,9 +61,8 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             'transaction_ids' => ['required', 'array', 'min:1'],
             'transaction_ids.*' => ['integer', 'distinct'],
         ]);
-        $transactions = Transaction::query()
+        $transactions = $this->reportTransactionQuery()
             ->with(['honors', 'spjPackage'])
-            ->forSpjContext($this->activeContext)
             ->where('spj_category', 'HONOR_PEGAWAI')
             ->whereKey($data['transaction_ids'])
             ->has('honors')
@@ -96,7 +95,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $honors = SpjHonor::query()
             ->with(['item.transaction.spjPackage'])
             ->whereHas('item.transaction', function ($query) use ($request): void {
-                $query->forSpjContext($this->activeContext)->where('spj_category', 'HONOR_PEGAWAI');
+                $this->applyReportTransactionContext($query)->where('spj_category', 'HONOR_PEGAWAI');
                 if ($request->filled('transaction_ids')) {
                     $query->whereIn('id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
                 }
@@ -190,7 +189,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $recipients = SpjServiceRecipient::query()
             ->with('transaction.spjPackage')
             ->whereHas('transaction', function ($query) use ($request): void {
-                $query->forSpjContext($this->activeContext)->where('spj_category', 'JASA_LAINNYA');
+                $this->applyReportTransactionContext($query)->where('spj_category', 'JASA_LAINNYA');
                 if ($request->filled('transaction_ids')) {
                     $query->whereIn('id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
                 }
@@ -277,9 +276,8 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             'transaction_ids' => ['required', 'array', 'min:1'],
             'transaction_ids.*' => ['integer', 'distinct'],
         ]);
-        $transactions = Transaction::query()
+        $transactions = $this->reportTransactionQuery()
             ->with(['serviceRecipients', 'spjPackage'])
-            ->forSpjContext($this->activeContext)
             ->where('spj_category', 'JASA_LAINNYA')
             ->whereKey($data['transaction_ids'])
             ->has('serviceRecipients')
@@ -303,4 +301,28 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             ],
         ]);
     }
+
+    private function reportTransactionQuery(): Builder
+    {
+        return $this->applyReportTransactionContext(Transaction::query());
+    }
+
+    private function applyReportTransactionContext(Builder $query): Builder
+    {
+        $fundSourceId = $this->activeContext->fundSourceId();
+        if ($fundSourceId !== null) {
+            $membership = $this->packageReadMembership->forContext(
+                DB::connection('school'),
+                $this->activeContext->fiscalYearId(),
+                $fundSourceId,
+            );
+
+            if ($membership !== null) {
+                return $query->whereIn('transactions.id', $membership['legacy_transaction_ids']);
+            }
+        }
+
+        return $query->forSpjContext($this->activeContext);
+    }
+
 }
