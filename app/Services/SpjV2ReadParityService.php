@@ -10,72 +10,54 @@ final class SpjV2ReadParityService
     /** @return array<string, mixed> */
     public function compare(Connection $db): array
     {
-        $required = [
-            'spj_fresh_transactions',
-            'spj_fresh_transaction_items',
-            'spj_transactions',
-            'spj_transaction_sources',
-            'spj_transaction_overlays',
-            'spj_item_overlays',
-            'arkas_source_identity_registry',
-        ];
-
-        foreach ($required as $table) {
+        foreach ([
+            'spj_fresh_transactions', 'spj_fresh_transaction_items',
+            'spj_transactions', 'spj_transaction_sources', 'spj_transaction_overlays',
+            'spj_item_overlays', 'arkas_source_identity_registry',
+        ] as $table) {
             if (! $db->getSchemaBuilder()->hasTable($table)) {
                 throw new RuntimeException('V2-D shadow parity requires table: '.$table);
             }
         }
 
-        $freshRows = $db->table('spj_fresh_transactions')
-            ->where('source_status', 'ACTIVE')
-            ->orderBy('id')
-            ->get();
-        $v2Rows = $db->table('spj_transactions')
-            ->where('source_status', 'ACTIVE')
-            ->orderBy('id')
-            ->get();
-
         $freshByKey = [];
-        foreach ($freshRows as $row) {
-            $freshByKey[$this->freshKey($row)] = $row;
+        foreach ($db->table('spj_fresh_transactions')->where('source_status', 'ACTIVE')->orderBy('id')->get() as $row) {
+            $freshByKey[$this->key($row, 'source_key')] = $row;
         }
 
         $v2ByKey = [];
-        foreach ($v2Rows as $row) {
-            $v2ByKey[$this->v2Key($row)] = $row;
+        foreach ($db->table('spj_transactions')->where('source_status', 'ACTIVE')->orderBy('id')->get() as $row) {
+            $v2ByKey[$this->key($row, 'source_membership_hash')] = $row;
         }
 
         $freshKeys = array_keys($freshByKey);
         $v2Keys = array_keys($v2ByKey);
         sort($freshKeys);
         sort($v2Keys);
-
         $missingInV2 = array_values(array_diff($freshKeys, $v2Keys));
         $missingInFresh = array_values(array_diff($v2Keys, $freshKeys));
         $sharedKeys = array_values(array_intersect($freshKeys, $v2Keys));
 
         $freshMembership = $this->freshMembership($db, $freshByKey);
         $v2Membership = $this->v2Membership($db, $v2ByKey);
+        $freshItems = $this->freshItemOverlays($db, $freshByKey);
+        $v2Items = $this->v2ItemOverlays($db, $v2ByKey);
+        $v2Overlays = $db->table('spj_transaction_overlays')->get()->keyBy('spj_transaction_id');
+
         $membershipMismatches = [];
         $transactionOverlayMismatches = [];
         $itemOverlayMismatches = [];
-
-        $v2Overlays = $db->table('spj_transaction_overlays')->get()->keyBy('spj_transaction_id');
-        $freshItemOverlays = $this->freshItemOverlays($db, $freshByKey);
-        $v2ItemOverlays = $this->v2ItemOverlays($db, $v2ByKey);
-
         foreach ($sharedKeys as $key) {
             if (($freshMembership[$key] ?? []) !== ($v2Membership[$key] ?? [])) {
                 $membershipMismatches[] = $key;
             }
 
-            $fresh = $freshByKey[$key];
             $v2Overlay = $v2Overlays->get($v2ByKey[$key]->id);
-            if ($v2Overlay === null || $this->freshOverlay($fresh) !== $this->v2Overlay($v2Overlay)) {
+            if ($v2Overlay === null || $this->overlay($freshByKey[$key]) !== $this->overlay($v2Overlay)) {
                 $transactionOverlayMismatches[] = $key;
             }
 
-            if (($freshItemOverlays[$key] ?? []) !== ($v2ItemOverlays[$key] ?? [])) {
+            if (($freshItems[$key] ?? []) !== ($v2Items[$key] ?? [])) {
                 $itemOverlayMismatches[] = $key;
             }
         }
@@ -84,15 +66,10 @@ final class SpjV2ReadParityService
             'transaction' => $this->conflictCount($db, 'spj_transaction_overlays'),
             'item' => $this->conflictCount($db, 'spj_item_overlays'),
         ];
-
-        $status = $missingInV2 === []
-            && $missingInFresh === []
-            && $membershipMismatches === []
-            && $transactionOverlayMismatches === []
-            && $itemOverlayMismatches === []
-            && max($conflicts) === 0
-            ? 'PASS'
-            : 'FAIL';
+        $status = $missingInV2 === [] && $missingInFresh === []
+            && $membershipMismatches === [] && $transactionOverlayMismatches === []
+            && $itemOverlayMismatches === [] && max($conflicts) === 0
+            ? 'PASS' : 'FAIL';
 
         return [
             'status' => $status,
@@ -124,127 +101,106 @@ final class SpjV2ReadParityService
         ];
     }
 
-    /** @param array<string, object> $freshByKey
-     *  @return array<string, array<int, string>>
-     */
-    private function freshMembership(Connection $db, array $freshByKey): array
+    /** @param array<string, object> $rows @return array<string, array<int, string>> */
+    private function freshMembership(Connection $db, array $rows): array
     {
-        $keyById = [];
-        foreach ($freshByKey as $key => $row) {
-            $keyById[(int) $row->id] = $key;
-        }
-
-        $membership = [];
-        if ($keyById === []) {
-            return $membership;
+        $keys = $this->keyById($rows);
+        $result = [];
+        if ($keys === []) {
+            return $result;
         }
 
         foreach ($db->table('spj_fresh_transaction_items')
-            ->whereIn('spj_fresh_transaction_id', array_keys($keyById))
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get() as $item) {
-            $key = $keyById[(int) $item->spj_fresh_transaction_id];
-            $membership[$key][] = trim((string) $item->source_key);
+            ->whereIn('spj_fresh_transaction_id', array_keys($keys))->get() as $item) {
+            $result[$keys[(int) $item->spj_fresh_transaction_id]][] = trim((string) $item->source_key);
         }
 
-        foreach ($membership as &$sourceKeys) {
-            $sourceKeys = array_values(array_unique(array_filter($sourceKeys)));
-            sort($sourceKeys);
-        }
-        unset($sourceKeys);
-
-        return $membership;
+        return $this->sortMembership($result);
     }
 
-    /** @param array<string, object> $v2ByKey
-     *  @return array<string, array<int, string>>
-     */
-    private function v2Membership(Connection $db, array $v2ByKey): array
+    /** @param array<string, object> $rows @return array<string, array<int, string>> */
+    private function v2Membership(Connection $db, array $rows): array
     {
-        $keyById = [];
-        foreach ($v2ByKey as $key => $row) {
-            $keyById[(int) $row->id] = $key;
+        $keys = $this->keyById($rows);
+        $result = [];
+        if ($keys === []) {
+            return $result;
         }
 
-        $membership = [];
-        if ($keyById === []) {
-            return $membership;
+        foreach ($db->table('spj_transaction_sources as link')
+            ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'link.arkas_source_identity_id')
+            ->whereIn('link.spj_transaction_id', array_keys($keys))
+            ->get(['link.spj_transaction_id', 'identity.source_key']) as $item) {
+            $result[$keys[(int) $item->spj_transaction_id]][] = trim((string) $item->source_key);
         }
 
-        foreach ($db->table('spj_transaction_sources as source_link')
-            ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'source_link.arkas_source_identity_id')
-            ->whereIn('source_link.spj_transaction_id', array_keys($keyById))
-            ->orderBy('source_link.sort_order')
-            ->orderBy('source_link.id')
-            ->get(['source_link.spj_transaction_id', 'identity.source_key']) as $item) {
-            $key = $keyById[(int) $item->spj_transaction_id];
-            $membership[$key][] = trim((string) $item->source_key);
-        }
-
-        foreach ($membership as &$sourceKeys) {
-            $sourceKeys = array_values(array_unique(array_filter($sourceKeys)));
-            sort($sourceKeys);
-        }
-        unset($sourceKeys);
-
-        return $membership;
+        return $this->sortMembership($result);
     }
 
-    /** @param array<string, object> $freshByKey
-     *  @return array<string, array<string, string|null>>
-     */
-    private function freshItemOverlays(Connection $db, array $freshByKey): array
+    /** @param array<string, object> $rows @return array<string, array<string, string|null>> */
+    private function freshItemOverlays(Connection $db, array $rows): array
     {
-        $keyById = [];
-        foreach ($freshByKey as $key => $row) {
-            $keyById[(int) $row->id] = $key;
-        }
-
-        $overlays = [];
-        if ($keyById === []) {
-            return $overlays;
+        $keys = $this->keyById($rows);
+        $result = [];
+        if ($keys === []) {
+            return $result;
         }
 
         foreach ($db->table('spj_fresh_transaction_items')
-            ->whereIn('spj_fresh_transaction_id', array_keys($keyById))
+            ->whereIn('spj_fresh_transaction_id', array_keys($keys))
             ->get(['spj_fresh_transaction_id', 'source_key', 'item_description']) as $item) {
-            $key = $keyById[(int) $item->spj_fresh_transaction_id];
-            $overlays[$key][trim((string) $item->source_key)] = $this->normalize($item->item_description);
+            $result[$keys[(int) $item->spj_fresh_transaction_id]][trim((string) $item->source_key)] = $this->normalize($item->item_description);
         }
 
-        foreach ($overlays as &$values) {
-            ksort($values);
+        return $this->sortOverlays($result);
+    }
+
+    /** @param array<string, object> $rows @return array<string, array<string, string|null>> */
+    private function v2ItemOverlays(Connection $db, array $rows): array
+    {
+        $keys = $this->keyById($rows);
+        $result = [];
+        if ($keys === []) {
+            return $result;
+        }
+
+        foreach ($db->table('spj_transaction_sources as link')
+            ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'link.arkas_source_identity_id')
+            ->leftJoin('spj_item_overlays as overlay', 'overlay.spj_transaction_source_id', '=', 'link.id')
+            ->whereIn('link.spj_transaction_id', array_keys($keys))
+            ->get(['link.spj_transaction_id', 'identity.source_key', 'overlay.item_description']) as $item) {
+            $result[$keys[(int) $item->spj_transaction_id]][trim((string) $item->source_key)] = $this->normalize($item->item_description);
+        }
+
+        return $this->sortOverlays($result);
+    }
+
+    /** @param array<string, object> $rows @return array<int, string> */
+    private function keyById(array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $key => $row) {
+            $result[(int) $row->id] = $key;
+        }
+
+        return $result;
+    }
+
+    /** @param array<string, array<int, string>> $membership @return array<string, array<int, string>> */
+    private function sortMembership(array $membership): array
+    {
+        foreach ($membership as &$values) {
+            $values = array_values(array_unique(array_filter($values)));
+            sort($values);
         }
         unset($values);
 
-        return $overlays;
+        return $membership;
     }
 
-    /** @param array<string, object> $v2ByKey
-     *  @return array<string, array<string, string|null>>
-     */
-    private function v2ItemOverlays(Connection $db, array $v2ByKey): array
+    /** @param array<string, array<string, string|null>> $overlays @return array<string, array<string, string|null>> */
+    private function sortOverlays(array $overlays): array
     {
-        $keyById = [];
-        foreach ($v2ByKey as $key => $row) {
-            $keyById[(int) $row->id] = $key;
-        }
-
-        $overlays = [];
-        if ($keyById === []) {
-            return $overlays;
-        }
-
-        foreach ($db->table('spj_transaction_sources as source_link')
-            ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'source_link.arkas_source_identity_id')
-            ->leftJoin('spj_item_overlays as overlay', 'overlay.spj_transaction_source_id', '=', 'source_link.id')
-            ->whereIn('source_link.spj_transaction_id', array_keys($keyById))
-            ->get(['source_link.spj_transaction_id', 'identity.source_key', 'overlay.item_description']) as $item) {
-            $key = $keyById[(int) $item->spj_transaction_id];
-            $overlays[$key][trim((string) $item->source_key)] = $this->normalize($item->item_description);
-        }
-
         foreach ($overlays as &$values) {
             ksort($values);
         }
@@ -254,19 +210,7 @@ final class SpjV2ReadParityService
     }
 
     /** @return array<string, string|null> */
-    private function freshOverlay(object $row): array
-    {
-        return [
-            'spj_category' => $this->normalize($row->spj_category ?? null),
-            'payment_description' => $this->normalize($row->payment_description ?? null),
-            'payment_method' => $this->normalize($row->payment_method ?? null),
-            'payment_reference' => $this->normalize($row->payment_reference ?? null),
-            'receipt_recipient_name' => $this->normalize($row->receipt_recipient_name ?? null),
-        ];
-    }
-
-    /** @return array<string, string|null> */
-    private function v2Overlay(object $row): array
+    private function overlay(object $row): array
     {
         return [
             'spj_category' => $this->normalize($row->spj_category ?? null),
@@ -279,30 +223,24 @@ final class SpjV2ReadParityService
 
     private function conflictCount(Connection $db, string $table): int
     {
-        return (int) $db->table($table)
-            ->whereNotNull('operator_metadata')
-            ->whereRaw("json_type(operator_metadata, '$._v2_reconciliation_conflicts') = 'object'")
-            ->whereRaw("json_array_length(json_object('keys', json_extract(operator_metadata, '$._v2_reconciliation_conflicts'))) > 0")
-            ->count();
+        $count = 0;
+        foreach ($db->table($table)->whereNotNull('operator_metadata')->pluck('operator_metadata') as $metadata) {
+            $decoded = json_decode((string) $metadata, true);
+            if (is_array($decoded) && ! empty($decoded['_v2_reconciliation_conflicts'])) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
-    private function freshKey(object $row): string
+    private function key(object $row, string $membershipColumn): string
     {
         return implode(':', [
             (string) $row->fiscal_year_id,
             (string) $row->fund_source_id,
             (string) $row->source_id,
-            trim((string) $row->source_key),
-        ]);
-    }
-
-    private function v2Key(object $row): string
-    {
-        return implode(':', [
-            (string) $row->fiscal_year_id,
-            (string) $row->fund_source_id,
-            (string) $row->source_id,
-            trim((string) $row->source_membership_hash),
+            trim((string) $row->{$membershipColumn}),
         ]);
     }
 
