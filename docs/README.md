@@ -76,12 +76,13 @@ migration atau read-path cutover.
 `V2_D_READ_PATH_CUTOVER.md` adalah guide aktif untuk shadow parity, canonical
 read adapter, Paket/document relation bridge, downstream report/tax/period parity,
 controlled read-path cutover, serta transitional mutation authorization.
-D1-D3, downstream workflow parity, dan read-only cutover sampai Step 10 sudah
-memiliki focused runtime evidence pada isolated rehearsal. Step 11A mulai
-membuka Checklist/READY secara fail-closed tetapi masih RVR. Dokumen ini bukan
-bukti production cutover; package overlay write-through, numbering, lifecycle
-lanjutan, settlement, Monitoring mutation, dan period-close tetap harus ditutup
-bertahap sebelum production switch.
+D1-D3, downstream workflow parity, read-only cutover sampai Step 10, dan Step
+11A Checklist/READY sudah memiliki focused runtime evidence pada isolated
+rehearsal. Step 11B mulai membuka legacy-authoritative operator overlay Paket
+DRAFT/READY secara fail-closed dan masih RVR. Dokumen ini bukan bukti production
+cutover; NUMBERED/lifecycle lanjutan, numbering, settlement, Monitoring mutation,
+bulk-final, dan period-close tetap harus ditutup bertahap sebelum production
+switch.
 
 ## Feature verification / RVR aktif
 
