@@ -185,8 +185,10 @@ D4 step 1 source implementation:
   document, numbering, atau source ARKAS;
 - belum ada controller/Livewire production consumer yang memakai selector ini.
 
-Regression source: `V2DReadPathSelectorTest`. Runtime verification untuk source
-baru ini masih RVR sampai focused test/Pint/diff dijalankan pada workstation.
+Runtime evidence pada 2026-09-19: `V2DReadPathSelectorTest` PASS dengan **7 test,
+22 assertions, 7 deprecations**. `vendor/bin/pint --dirty --format agent` PASS dan
+`git diff --check` bersih. Selector gate D4 step 1 ditutup sebagai runtime PASS;
+production consumer tetap belum dialihkan.
 
 A production switch requires all of the following:
 
