@@ -75,8 +75,13 @@ Paket/list selama transisi harus berasal dari effective canonical context +
 provenance bridge, bukan dari legacy `transactions.fiscal_year_id` saja.
 `SpjV2PackageReadMembershipService` menyediakan identity-only compatibility
 membership di belakang selector; ia tidak mengganti relation
-`SpjPackage::transaction()`. UI Paket/report belum memakai membership ini sampai
-open/preview/download context guard juga memahami effective-context provenance.
+`SpjPackage::transaction()`. UI Paket/report belum memakai membership ini secara penuh.
+`SpjV2PackageReadContextService` sekarang menjadi compatibility boundary khusus
+Preview/Download: ia membuktikan effective membership lalu menormalisasi legacy
+`fiscal_year_id` hanya pada model in-memory supaya selector template, school
+profile, placeholder tahun, dan preview cache memakai effective fiscal year.
+Workspace `Buka Paket` tetap legacy karena read compatibility tidak boleh
+memperluas mutation authorization.
 
 ### Database utama
 
