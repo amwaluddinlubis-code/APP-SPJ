@@ -16,7 +16,7 @@ final class SpjV2PackageDocumentParityService
         $packages = $db->table('spj_packages')->orderBy('id')->get();
         $documents = $db->table('spj_documents')->orderBy('id')->get();
         $maps = $db->table('legacy_transaction_v2_map')->get()->keyBy('legacy_transaction_id');
-        $v2Ids = $db->table('spj_transactions')->pluck('id')->mapWithKeys(fn ($id): array => [(int) $id => true])->all();
+        $v2Transactions = $db->table('spj_transactions')->get()->keyBy('id');
 
         $missingProvenance = [];
         $missingV2Links = [];
@@ -50,15 +50,18 @@ final class SpjV2PackageDocumentParityService
                 ];
                 $broken = true;
             }
-            if ($actualV2Id !== null && ! isset($v2Ids[$actualV2Id])) {
+            $targetV2 = $actualV2Id === null ? null : $v2Transactions->get($actualV2Id);
+            if ($actualV2Id !== null && $targetV2 === null) {
                 $missingV2Transactions[] = $packageId;
                 $broken = true;
             }
-            if ($map !== null && (string) ($map->canonical_context_status ?? '') !== 'ACTIVE_CANONICAL') {
+            if ($targetV2 !== null && (string) ($targetV2->canonical_context_status ?? '') !== 'ACTIVE_CANONICAL') {
                 $nonCanonicalPackages[] = [
                     'package_id' => $packageId,
                     'legacy_transaction_id' => (int) $package->transaction_id,
-                    'canonical_context_status' => (string) ($map->canonical_context_status ?? ''),
+                    'spj_transaction_id' => $actualV2Id,
+                    'canonical_context_status' => (string) ($targetV2->canonical_context_status ?? ''),
+                    'legacy_provenance_status' => (string) ($map?->canonical_context_status ?? ''),
                 ];
                 $broken = true;
             }
@@ -80,7 +83,7 @@ final class SpjV2PackageDocumentParityService
 
         $legacyManifest = $this->manifest($packages, $documents);
         $v2EligiblePackageIds = $packages
-            ->filter(function (object $package) use ($maps, $v2Ids): bool {
+            ->filter(function (object $package) use ($maps, $v2Transactions): bool {
                 $map = $maps->get($package->transaction_id);
                 if ($map === null || $package->spj_transaction_id === null) {
                     return false;
@@ -88,10 +91,11 @@ final class SpjV2PackageDocumentParityService
 
                 $actual = (int) $package->spj_transaction_id;
                 $expected = (int) $map->spj_transaction_id;
+                $targetV2 = $v2Transactions->get($actual);
 
                 return $actual === $expected
-                    && isset($v2Ids[$actual])
-                    && (string) ($map->canonical_context_status ?? '') === 'ACTIVE_CANONICAL';
+                    && $targetV2 !== null
+                    && (string) ($targetV2->canonical_context_status ?? '') === 'ACTIVE_CANONICAL';
             })
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
