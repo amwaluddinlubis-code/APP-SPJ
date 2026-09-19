@@ -1,6 +1,6 @@
 # V2-D — Read-Path Cutover
 
-Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 CANONICAL ADAPTER RUNTIME PASS / D3 PACKAGE/DOCUMENT PARITY RUNTIME PASS / DOWNSTREAM REPORT-TAX-PERIOD PARITY SOURCE IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
+Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 CANONICAL ADAPTER RUNTIME PASS / D3 PACKAGE/DOCUMENT PARITY RUNTIME PASS / DOWNSTREAM REPORT-TAX-PERIOD PARITY RUNTIME PASS / PRODUCTION CUTOVER BLOCKED**.
 
 Baseline V2-C3: commit `8876478`, 187 canonical V2 transactions, 291 legacy
 provenance mappings, 431 source links, 187 transaction overlays, 245 item
@@ -152,10 +152,14 @@ Tidak ada fallback ke legacy transaction projection untuk fakta tersebut.
 - synthetic tax-component drift dan transaction-date/quarter drift yang wajib
   fail closed.
 
-Source gate sudah masuk branch, tetapi runtime verification masih **RVR**. Karena
-canonical adapter berubah untuk downstream fields, focused runtime gate harus
-menjalankan ulang `V2DCanonicalReadAdapterTest` bersama
-`V2DWorkflowParityTest`.
+Runtime evidence pada 2026-09-19: focused suite `V2CLegacyMigrationTest`,
+`V2DReadParityTest`, `V2DCanonicalReadAdapterTest`,
+`V2DPackageDocumentParityTest`, dan `V2DWorkflowParityTest` PASS dengan **16 test,
+378 assertions, 16 deprecations**, tanpa failure. Gate ini menutup ulang V2-C
+migration/idempotency sekaligus D1-D3 dan downstream report/tax/period parity pada
+isolated rehearsal. Perbedaan representasi package pada fiscal-period readiness
+tetap dicatat sebagai diagnostic bila total unfinished/closure decision identik;
+synthetic tax-component drift dan date/quarter drift tetap fail-closed.
 
 ## D4 — Controlled cutover
 
