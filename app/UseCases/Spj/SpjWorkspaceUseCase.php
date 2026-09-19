@@ -8,6 +8,7 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2PackageReadContextService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,6 +23,7 @@ class SpjWorkspaceUseCase
         private readonly SpjWorkflowFilterService $workflowFilters,
         private readonly ActiveSpjContext $context,
         private readonly SpjPackageTemplateSelector $templateSelector,
+        private readonly SpjV2PackageReadContextService $packageReadContext,
     ) {}
 
     public function handle(Request $request): View|RedirectResponse
@@ -182,9 +184,19 @@ class SpjWorkspaceUseCase
             'transaction.payments',
             'transaction.goodsReceipts.items',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package) {
             return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
+
+        if (! $this->context->matchesTransaction($package->transaction)) {
+            if (! $this->packageReadContext->prepare($package)
+                || $package->getAttribute('read_context_path') !== 'v2_compat') {
+                return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
+            }
+
+            return $this->readOnlyCompatibilityPackage($package);
+        }
+
         if ($package->transaction->items->isEmpty()
             || $package->transaction->items->contains(fn ($item): bool => blank(trim((string) $item->item_description)))) {
             return app(CreateSpjDraftUseCase::class)->handle((string) $package->transaction_id);
@@ -237,6 +249,33 @@ class SpjWorkspaceUseCase
             'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
             'participantRoster' => $participantRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
+        ]);
+    }
+
+    private function readOnlyCompatibilityPackage(SpjPackage $package): View
+    {
+        $validator = app(SpjPackageValidationService::class);
+        $transaction = $package->transaction;
+        $activeSpjDocument = $package->documents
+            ->first(fn ($document): bool => $document->document_type === 'SPJ'
+                && $document->scope_key === 'MAIN'
+                && in_array($document->status, ['NUMBERED', 'FINAL'], true)
+                && filled($document->document_number));
+        $cancelledSpjDocument = $package->documents
+            ->where('document_type', 'SPJ')
+            ->where('scope_key', 'MAIN')
+            ->where('status', 'CANCELLED')
+            ->sortByDesc('id')
+            ->first();
+
+        return view('spj.package-readonly', [
+            'package' => $package,
+            'transaction' => $transaction,
+            'validationIssues' => $validator->validate($package),
+            'templates' => $this->templateSelector->forPackage($package),
+            'activeSpjDocument' => $activeSpjDocument,
+            'cancelledSpjDocument' => $cancelledSpjDocument,
+            'hasActiveSpjNumber' => $activeSpjDocument !== null && $package->status !== 'CANCELLED',
         ]);
     }
 
