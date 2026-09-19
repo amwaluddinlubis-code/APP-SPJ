@@ -8,6 +8,7 @@ use App\Models\SpjServiceRecipient;
 use App\Models\Transaction;
 use App\Services\DocumentStoragePathService;
 use App\Services\RoutineHonorRegisterService;
+use App\Services\SpjV2PackageReadMembershipService;
 use App\Services\SpjV2ReportFinancialSummaryService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,8 +25,9 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         private readonly ActiveSpjContext $activeContext,
         private readonly RoutineHonorRegisterService $routineHonorRegister,
         SpjV2ReportFinancialSummaryService $v2FinancialSummary,
+        SpjV2PackageReadMembershipService $packageReadMembership,
     ) {
-        parent::__construct($activeContext, $v2FinancialSummary);
+        parent::__construct($activeContext, $v2FinancialSummary, $packageReadMembership);
     }
 
     /** @return Collection<int,Transaction> */
