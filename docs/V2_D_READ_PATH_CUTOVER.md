@@ -163,6 +163,16 @@ synthetic tax-component drift dan date/quarter drift tetap fail-closed.
 
 ## D4 — Controlled cutover
 
+D4 tidak boleh mengalihkan consumer mutation-heavy langsung ke canonical overlay
+selama mutation operator masih hanya menulis legacy tables. Tanpa write-through
+atau transitional merge yang eksplisit, `payment_description`, `item_description`,
+category, receipt-recipient, dan overlay operator lain dapat menjadi stale setelah
+migration snapshot. Karena itu cutover pertama harus read-only atau memakai
+compatibility adapter yang mempertahankan live operator overlay dari jalur legacy
+sampai write-path V2 mempunyai evidence tersendiri. `source_id` juga tidak boleh
+di-hard-code; resolver cutover harus membuktikan source canonical unik pada active
+`Fiscal Year + Fund Source` context atau tetap di legacy path.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
@@ -172,6 +182,8 @@ A production switch requires all of the following:
 - report/tax/period workflow parity PASS;
 - authorization and active-context regression PASS;
 - rollback strategy documented and tested;
+- canonical source resolver tidak menebak `source_id`;
+- mutation-heavy consumer mempunyai overlay write-through/compatibility strategy sebelum membaca V2 overlay;
 - Pint, focused regression, `git diff --check`, and applicable CI evidence.
 
-No production read path has been switched pada D1, D2, maupun D3.
+No production read path has been switched pada D1, D2, D3, maupun downstream parity.
