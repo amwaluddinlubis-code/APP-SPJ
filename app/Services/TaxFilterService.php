@@ -75,7 +75,12 @@ class TaxFilterService
             );
         }
 
-        return compact('summary', 'filteredSummary', 'transactions', 'year', 'readPath')
-            + ['read_path' => $readPath];
+        return [
+            'summary' => $summary,
+            'filteredSummary' => $filteredSummary,
+            'transactions' => $transactions,
+            'year' => $year,
+            'read_path' => $readPath,
+        ];
     }
 }
