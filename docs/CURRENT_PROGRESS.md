@@ -751,14 +751,26 @@ deprecations**; Pint PASS dan `git diff --check` bersih. Stale Paket sekarang
 dapat dibuka hanya pada dedicated read-only workspace tanpa memperluas mutation
 authorization.
 
-D4 step 7 source sekarang mengalihkan membership daftar Paket + metrik
-`totalPackages/numberedPackages` ke effective-context ketika selector V2
-RESOLVED. Row stale diberi label `Baca saja` dan tetap membuka workspace
-read-only Step 6. Persiapan, readyTransactions, navigation legacy, numbering,
-lifecycle, settlement, dan mutation lain tetap legacy. Regression
-`V2DPackageListCutoverTest` sudah ditambahkan untuk exact list membership,
-metric consistency, rollback config, wrong-bridge fallback, read-only labeling,
-dan protected-state immutability. Runtime evidence step 7 masih **RVR**.
+D4 step 7 **RUNTIME PASS**. Focused gate
+`V2DPackageReadMembershipTest`, `V2DPackageReadContextTest`,
+`V2DPackageWorkspaceReadOnlyTest`, `V2DPackageListCutoverTest`,
+`SpjPackageNavigationContextTest`, `SpjMainTabsRenderingTest`,
+`SpjDocumentGeneratorHardeningTest`, dan `SpjPreviewExcelParityTest` PASS
+dengan **29 test / 583 assertions / 29 deprecations**; Pint PASS dan
+`git diff --check` bersih. Daftar Paket + package-only summary metrics sekarang
+memiliki runtime evidence untuk effective-context membership + config rollback.
+
+D4 step 8 source sekarang melakukan atomic cutover pada tabel Paket Laporan +
+financial summary. Effective Paket IDs dipakai untuk menghitung live consumer
+summary, lalu canonical V2 summary wajib exact match sebelum **keduanya** switch.
+Jika raw-source drift atau bridge tidak aman, tabel dan summary bersama-sama
+fallback legacy. Filter bulan/triwulan/semester ikut effective membership; row
+ditandai `Baca saja`. Pending transaction, activities/accounts, monitoring,
+export, settlement, numbering, lifecycle, dan mutation lain tetap legacy.
+`V2DReportSummaryCutoverTest` dipromosikan dari stale-context fallback menjadi
+effective-context compatibility, dan regression baru
+`V2DReportPackageListCutoverTest` ditambahkan. Runtime evidence step 8 masih
+**RVR**.
 
 ---
 
