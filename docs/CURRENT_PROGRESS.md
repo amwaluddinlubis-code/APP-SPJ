@@ -665,8 +665,12 @@ numbered count 66 tetapi live legacy count 0 pada context yang sama; ini bukan
 alasan mengubah angka legacy, melainkan bukti bahwa provenance/workflow parity belum
 cukup untuk production cutover. Consumer sekarang fail-closed ke legacy pada
 context mismatch atau financial drift. Positive V2 path hanya diuji pada isolated
-clone setelah legacy package-context disejajarkan eksplisit. Runtime evidence step 2
-tetap **RVR** sampai focused suite berikutnya hijau.
+clone setelah legacy package-context disejajarkan eksplisit. Focused runtime gate
+sekarang PASS: **16 test / 354 assertions / 16 deprecations**, Pint PASS, dan
+`git diff --check` bersih. D4 step 2 therefore FUNCTIONAL/RUNTIME PASS sebagai
+fail-safe consumer implementation, tetapi **effective production cutover masih
+BLOCKED** sampai akar live-context mismatch nyata diselesaikan tanpa rewrite
+source/protected lifecycle.
 
 ---
 
