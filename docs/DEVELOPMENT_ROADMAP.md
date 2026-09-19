@@ -126,7 +126,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement `SpjV2WorkflowParityService` + report/tax/period fail-closed regression;
 - [x] jalankan focused V2-C → V2-D suite pada isolated clone: 16 test / 378 assertions PASS;
 - [x] implement fail-safe read-path selector default `legacy`, tanpa hard-code `source_id`;
-- [ ] jalankan `V2DReadPathSelectorTest` + Pint + diff-check;
+- [x] jalankan `V2DReadPathSelectorTest`: 7 test / 22 assertions PASS; Pint + diff-check bersih;
 - [ ] authorization + active-context regression pada consumer read-only pertama;
 - [ ] rollback strategy documented + tested;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
