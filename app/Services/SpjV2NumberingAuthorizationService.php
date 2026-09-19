@@ -25,6 +25,7 @@ final class SpjV2NumberingAuthorizationService
         private readonly SpjV2CanonicalReadService $canonicalReads,
         private readonly SpjNumberingDocumentRegistry $registry,
         private readonly SpjNumberingPolicyService $numberingPolicy,
+        private readonly SpjV2EffectiveNumberingPeriodResolver $periodResolver,
     ) {}
 
     /**
@@ -128,31 +129,34 @@ final class SpjV2NumberingAuthorizationService
             return $blocked('canonical item facts are not in parity', 'v2', (int) $selection['source_id']);
         }
 
-        $period = $this->periodFromCanonical($canonical, $blocked);
-        if ($period !== null && ! $period['authorized']) {
-            return $period;
+        $period = $this->periodResolver->resolve($package, $canonical);
+        if (! $period['authorized']) {
+            return array_merge(
+                $blocked($period['reason'], 'v2', (int) $selection['source_id'], $period['effective_quarter']),
+                ['effective_fiscal_year_id' => $period['effective_fiscal_year_id']],
+            );
         }
 
         $documentBlocker = $this->documentRelationBlocker($package, $documentTypes);
         if ($documentBlocker !== null) {
-            return $blocked($documentBlocker, 'v2', (int) $selection['source_id'], $period['quarter'] ?? null);
+            return $blocked($documentBlocker, 'v2', (int) $selection['source_id'], $period['effective_quarter']);
         }
         if ($documentBlocker = $this->eligibilityBlocker($package, $documentTypes)) {
-            return $blocked($documentBlocker, 'v2', (int) $selection['source_id'], $period['quarter'] ?? null);
+            return $blocked($documentBlocker, 'v2', (int) $selection['source_id'], $period['effective_quarter']);
         }
 
-        return $this->allowed((int) $package->id, 'v2_authorized_preflight', (int) $selection['source_id'], $period['quarter'] ?? null);
+        return $this->allowed((int) $package->id, 'v2_authorized_preflight', (int) $selection['source_id'], $period['effective_quarter'], $period['effective_fiscal_year_id']);
     }
 
     /** @return array{authorized:bool,path:string,reason:string,package_id:int,effective_fiscal_year_id:?int,effective_fund_source_id:?int,source_id:?int,quarter:?int} */
-    private function allowed(int $packageId, string $path, ?int $sourceId, ?int $quarter): array
+    private function allowed(int $packageId, string $path, ?int $sourceId, ?int $quarter, ?int $effectiveFiscalYearId = null): array
     {
         return [
             'authorized' => true,
             'path' => $path,
             'reason' => 'all read-only effective numbering authorization checks passed; issuance remains separately gated',
             'package_id' => $packageId,
-            'effective_fiscal_year_id' => $this->context->fiscalYearId(),
+            'effective_fiscal_year_id' => $effectiveFiscalYearId ?? $this->context->fiscalYearId(),
             'effective_fund_source_id' => $this->context->fundSourceId(),
             'source_id' => $sourceId,
             'quarter' => $quarter,
@@ -228,18 +232,6 @@ final class SpjV2NumberingAuthorizationService
         }
 
         return ['authorized' => true, 'quarter' => $quarter];
-    }
-
-    /** @param array<string,mixed> $canonical @param callable(string,string,?int,?int):array $blocked */
-    private function periodFromCanonical(array $canonical, callable $blocked): ?array
-    {
-        $date = $canonical['transaction_date'] ?? null;
-        if ($date === null || trim((string) $date) === '') {
-            return $blocked('effective canonical period cannot be proven', 'v2');
-        }
-        $transaction = new Transaction(['transaction_date' => $date]);
-
-        return $this->period($transaction, $this->context->fiscalYearId(), $blocked);
     }
 
     /** @param array<string,mixed> $canonical */

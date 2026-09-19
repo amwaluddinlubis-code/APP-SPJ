@@ -496,6 +496,17 @@ Audit minimal menyimpan actor, tenant context, quarter bila relevant, nomor awal
 
 Detail lengkap ada pada `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 
+### 17.7 Effective-context year/quarter preflight
+
+Untuk future V2 numbering authorization, effective fiscal year berasal dari
+canonical `spj_transactions.fiscal_year_id` yang diverifikasi terhadap
+`FiscalYear.year`; effective quarter berasal dari canonical transaction date
+dengan batas Q1 1 Januari–31 Maret, Q2 1 April–30 Juni, Q3 1 Juli–30
+September, dan Q4 1 Oktober–31 Desember. Effective period state harus terbukti
+dan tidak CLOSED. `transactions.fiscal_year_id` legacy hanya fakta pembanding
+dan tidak boleh ditulis ulang. Resolver ini read-only dan tidak berarti actual
+effective-context numbering issuance telah dibuka.
+
 ---
 
 ## 18. Read-only audit dan real-data verification

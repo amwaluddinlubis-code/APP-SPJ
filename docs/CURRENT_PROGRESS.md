@@ -969,8 +969,12 @@ Status: **FUNCTIONAL PASS** berdasarkan persetujuan pengguna dan evidence beriku
 fail-closed untuk selector V2, effective package membership, exact provenance
 bridge, fund/source reconciliation, canonical transaction dan item parity,
 registry document relation, lifecycle READY, serta effective period proof.
-Focused runtime regression lulus **1 test / 31 assertions / 1 deprecation**
-dan membuktikan authorization failure tidak mengubah nomor, status, fiscal
-year legacy, dokumen, atau audit. Effective-context numbering issuance tetap
-**BLOCKED / DEFERRED** sampai sequence/quarter resolution, collision,
-completeness, atomic rollback, dan effective audit trail ditutup.
+Focused runtime regression lulus **2 test / 72 assertions / 2 deprecations**.
+Resolver canonical kini membuktikan effective fiscal year dari
+`spj_transactions.fiscal_year_id` canonical + `FiscalYear.year`, serta quarter
+dari canonical transaction date dengan boundary Q1-Q4. Authorization failure
+tidak mengubah nomor, status, fiscal year legacy, dokumen, atau audit. Effective
+numbering authorization boundary = **PASS** dan effective year/quarter
+resolution = **PASS**; effective-context numbering issuance tetap **BLOCKED /
+DEFERRED** sampai sequence/collision, completeness, atomic rollback, dan
+effective audit trail ditutup.

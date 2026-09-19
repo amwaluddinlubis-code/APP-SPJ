@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\TransactionDetailWorkspace;
+use App\Models\FiscalYear;
 use App\Models\SpjPackage;
 use App\Models\User;
+use App\Services\SpjV2EffectiveNumberingPeriodResolver;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2MutationContextService;
 use App\Services\SpjV2NumberingAuthorizationService;
@@ -288,6 +290,12 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             config()->set('spj.v2_read_path', 'v2');
             $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['spj_category' => 'BARANG']);
             $db->table('spj_packages')->where('id', $row->package_id)->update(['status' => 'READY']);
+            foreach (range(1, 4) as $quarter) {
+                $db->table('fiscal_period_closures')->updateOrInsert(
+                    ['fiscal_year_id' => $row->effective_fiscal_year_id, 'quarter' => $quarter],
+                    ['status' => 'OPEN', 'updated_at' => now(), 'created_at' => now()],
+                );
+            }
 
             $packageId = (int) $row->package_id;
             $authorize = function () use ($packageId): array {
@@ -304,6 +312,9 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $positive = $authorize();
             $this->assertTrue($positive['authorized'], $positive['reason']);
             $this->assertSame('v2_authorized_preflight', $positive['path']);
+            $this->assertSame((int) $row->effective_fiscal_year_id, $positive['effective_fiscal_year_id']);
+            $this->assertNotSame((int) $row->legacy_fiscal_year_id, $positive['effective_fiscal_year_id']);
+            $this->assertContains($positive['quarter'], [1, 2, 3, 4]);
 
             $scenarios = [
                 'legacy selector' => function (): void {
@@ -383,6 +394,90 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $this->assertSame($before['audit'], $after['audit']);
             $this->assertSame((int) $row->legacy_fiscal_year_id, (int) $after['transaction']->fiscal_year_id);
             $this->assertNull($after['package']->document_number);
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_numbering_period_resolver_proves_year_and_all_quarter_boundaries_without_legacy_rewrite(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-numbering-period-resolver.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            $package = SpjPackage::query()->with('transaction')->findOrFail($row->package_id);
+            $year = (int) FiscalYear::query()->findOrFail($row->effective_fiscal_year_id)->year;
+            foreach (range(1, 4) as $quarter) {
+                $db->table('fiscal_period_closures')->updateOrInsert(
+                    ['fiscal_year_id' => $row->effective_fiscal_year_id, 'quarter' => $quarter],
+                    ['status' => 'OPEN', 'updated_at' => now(), 'created_at' => now()],
+                );
+            }
+
+            $legacyFiscalYearId = (int) $package->transaction->fiscal_year_id;
+            $resolver = app(SpjV2EffectiveNumberingPeriodResolver::class);
+            $canonical = [
+                'fiscal_year_id' => (int) $row->effective_fiscal_year_id,
+                'fund_source_id' => (int) $row->fund_source_id,
+                'source_id' => (int) $row->source_id,
+                'canonical_context_status' => 'ACTIVE_CANONICAL',
+                'source_status' => 'ACTIVE',
+            ];
+
+            foreach ([
+                [1, $year.'-03-31'],
+                [2, $year.'-04-01'],
+                [2, $year.'-06-30'],
+                [3, $year.'-07-01'],
+                [3, $year.'-09-30'],
+                [4, $year.'-10-01'],
+            ] as [$quarter, $date]) {
+                $package->transaction->setAttribute('transaction_date', $date);
+                $canonical['transaction_date'] = $date;
+                $result = $resolver->resolve($package, $canonical);
+                $this->assertTrue($result['authorized'], $result['reason']);
+                $this->assertSame($quarter, $result['effective_quarter']);
+                $this->assertSame((int) $row->effective_fiscal_year_id, $result['effective_fiscal_year_id']);
+                $this->assertSame($legacyFiscalYearId, (int) $package->transaction->fiscal_year_id);
+            }
+
+            $canonical['transaction_date'] = $year.'-03-31';
+            $package->transaction->setAttribute('transaction_date', $canonical['transaction_date']);
+            foreach ([
+                'missing date' => static function (array &$facts): void {
+                    unset($facts['transaction_date']);
+                },
+                'invalid date' => static function (array &$facts): void {
+                    $facts['transaction_date'] = 'not-a-date';
+                },
+                'year mismatch' => static function (array &$facts) use ($year): void {
+                    $facts['transaction_date'] = ($year + 1).'-01-01';
+                },
+                'context mismatch' => static function (array &$facts): void {
+                    $facts['fund_source_id'] = 999999;
+                },
+            ] as $label => $mutate) {
+                $facts = $canonical;
+                $mutate($facts);
+                $result = $resolver->resolve($package, $facts);
+                $this->assertFalse($result['authorized'], $label.' unexpectedly authorized');
+            }
+
+            $db->table('fiscal_period_closures')
+                ->where(['fiscal_year_id' => $row->effective_fiscal_year_id, 'quarter' => 1])
+                ->update(['status' => 'CLOSED']);
+            $closed = $resolver->resolve($package, $canonical);
+            $this->assertFalse($closed['authorized']);
+            $this->assertSame('EFFECTIVE_PERIOD_CLOSED', $closed['error_code']);
+            $this->assertSame($legacyFiscalYearId, (int) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('fiscal_year_id'));
+            $this->assertSame('DRAFT', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
+            $this->assertSame(0, (int) $db->table('operational_audit_logs')->count());
         } finally {
             File::delete($target);
         }
