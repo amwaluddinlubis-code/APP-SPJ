@@ -760,9 +760,20 @@ Regression `V2DMutationContextReadyTest` is staged to prove:
 - a legacy-aligned context keeps the pre-existing READY behavior;
 - compatibility UI exposes Checklist/READY only through the guarded entry point.
 
-Runtime evidence for D4 step 11A is currently **RVR**. Production configuration
-must remain `SPJ_V2_READ_PATH=legacy` until this mutation gate and later
-write-path gates have explicit runtime evidence.
+First runtime attempt on 2026-09-19 did **not** pass: **2 failed / 534
+assertions / 40 deprecations**. Both failures were the same persistence-boundary
+bug: transient `mutation_context_*` metadata had been attached through Eloquent
+`setAttribute()`, so the subsequent Paket `save()` tried to write nonexistent
+columns such as `mutation_context_path`.
+
+The fix stores compatibility metadata only in the in-memory
+`v2MutationContext` relation. Regression now explicitly asserts that no
+`mutation_context_*` keys exist in Paket/Transaction SQL attributes and none
+are dirty before READY persistence.
+
+Runtime evidence for D4 step 11A remains **RVR** until a clean rerun passes.
+Production configuration must remain `SPJ_V2_READ_PATH=legacy` until this
+mutation gate and later write-path gates have explicit runtime evidence.
 
 A production switch requires all of the following:
 
