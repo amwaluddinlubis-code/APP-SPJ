@@ -26,7 +26,7 @@ final class V2DPackageDocumentParityTest extends TestCase
             $result = app(SpjV2PackageDocumentParityService::class)->compare($db);
             $after = $this->protectedHash($db);
 
-            $this->assertSame('PASS', $result['status']);
+            $this->assertSame('PASS', $result['status'], $this->diagnostic($result));
             $this->assertSame(67, $result['counts']['packages']);
             $this->assertSame(67, $result['counts']['v2_linked_packages']);
             $this->assertSame(67, $result['counts']['v2_parity_packages']);
@@ -87,7 +87,7 @@ final class V2DPackageDocumentParityTest extends TestCase
             $result = app(SpjV2PackageDocumentParityService::class)->compare($db);
 
             $this->assertSame('FAIL', $result['status']);
-            $this->assertSame(1, $result['relations']['mismatch_count']);
+            $this->assertSame(1, $result['relations']['mismatch_count'], $this->diagnostic($result));
             $this->assertCount(1, $result['relations']['mismatched_v2_links']);
             $this->assertSame((int) $package->id, $result['relations']['mismatched_v2_links'][0]['package_id']);
             $this->assertNotEmpty($result['relations']['impacted_document_ids']);
@@ -210,6 +210,18 @@ final class V2DPackageDocumentParityTest extends TestCase
         }
 
         return '';
+    }
+
+    /** @param array<string, mixed> $result */
+    private function diagnostic(array $result): string
+    {
+        return json_encode([
+            'status' => $result['status'] ?? null,
+            'counts' => $result['counts'] ?? null,
+            'relations' => $result['relations'] ?? null,
+            'documents' => $result['documents'] ?? null,
+            'protected_manifest' => $result['protected_manifest'] ?? null,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
     }
 
     private function protectedHash(Connection $db): string
