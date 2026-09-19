@@ -573,6 +573,43 @@ Clean rerun after the DI fix passed on 2026-09-19 with **42 tests / 711 assertio
 42 deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
 `git diff --check` clean. D4 step 8 is therefore **RUNTIME PASS**.
 
+### D4 step 9 — effective-context Honor/Jasa report flows
+
+The active Laporan toolbar exposes **Honor Pegawai** and **Jasa Lainnya** report
+flows. Before this step, their select/compose/export queries still used
+`Transaction::forSpjContext()`, so a stale legacy fiscal-year could make these
+flows empty even when the main report table was already reading the same
+effective context through Steps 4–8.
+
+`ExtendedSpjReportUseCase` now centralizes the read boundary:
+
+- `reportTransactionQuery()` / `applyReportTransactionContext()` use
+  `SpjV2PackageReadMembershipService::legacy_transaction_ids` when
+  `SPJ_V2_READ_PATH=v2` and the effective context is fully resolved;
+- otherwise the query falls back immediately to legacy `forSpjContext()`;
+- transaction/operator overlays, Honor rows, and Jasa recipients are still read
+  from the authoritative legacy tables;
+- no V2 write-through is introduced;
+- selection, compose validation, Honor export, and Jasa export all use the same
+  effective transaction boundary;
+- transaction IDs outside the resolved membership remain rejected by compose
+  validation;
+- rollback remains config-only.
+
+Regression `V2DExtendedReportContextCutoverTest` uses controlled operator-owned
+Honor/Jasa overlays on an isolated clone, pinned to a real
+`STALE_LEGACY_FISCAL_YEAR` effective context. It is staged to prove:
+
+- legacy config does not see the stale synthetic Honor/Jasa transactions;
+- V2 config resolves both through effective legacy transaction membership;
+- compose Honor/Jasa accepts only the resolved transaction IDs;
+- an outside/forged transaction ID remains rejected;
+- `v2 -> legacy` rollback is immediate;
+- protected transaction/Paket/document lifecycle state is not mutated by the
+  read-context flow.
+
+Runtime evidence for D4 step 9 is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
