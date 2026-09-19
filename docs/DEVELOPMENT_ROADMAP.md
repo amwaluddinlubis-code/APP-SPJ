@@ -143,7 +143,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement Paket list membership + Paket summary metrics cutover berbasis effective context;
 - [x] jalankan Step 7 Paket-list gate: 29 test / 583 assertions PASS; Pint + diff-check bersih;
 - [x] implement atomic Laporan Paket-table + financial-summary cutover berbasis effective membership + canonical parity;
-- [ ] jalankan `V2DReportPackageListCutoverTest` + updated `V2DReportSummaryCutoverTest` + Step 5-7 regressions + Pint/diff;
+- [x] jalankan Step 8 atomic report gate: 42 test / 711 assertions PASS; Pint + diff-check bersih;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
