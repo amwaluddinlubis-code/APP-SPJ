@@ -834,14 +834,30 @@ PASS **8 test / 90 assertions / 8 deprecations**; full Step 11A gate PASS **42
 test / 556 assertions / 42 deprecations**. Pint PASS, `npm run build` PASS,
 dan `git diff --check` bersih. D4 Step 11A sekarang **RUNTIME PASS**.
 
+D4 Step 11B source sekarang membuka write boundary berikutnya secara terbatas
+untuk **operator overlay Paket DRAFT/READY**. `authorizePackageWrite()` memakai
+effective-context/provenance/source-parity yang sama tetapi sengaja tidak
+menormalisasi `transactions.fiscal_year_id`, bahkan in-memory, karena
+`UpdateSpjPackageDetailsUseCase` dan child synchronizer benar-benar menyimpan
+legacy Transaction/relations. `SpjPackageCategoryUseCase` juga memakai boundary
+ini; perubahan kategori READY tetap turun ke DRAFT untuk revalidasi. Audit
+`PERBARUI_ISIAN`/ `UBAH_KATEGORI` memakai effective fiscal year.
+
+Workspace stale-context tidak dibuka penuh. View baru
+`spj.package-compat-edit` hanya merender Isian Manual canonical untuk DRAFT/READY;
+Penomoran, FINAL, settlement, bulk-final, dan maintenance material/labor linkage
+tetap di luar gate. NUMBERED effective-context juga tetap ditolak untuk overlay
+write. Regression `V2DPackageOverlayWriteCutoverTest` sudah ditambahkan.
+Runtime evidence Step 11B masih **RVR**.
+
 ---
 
 ## Prioritas kerja aktif
 
 P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas aktif pada branch migrasi ini:
 
-1. **V2-D Step 11A runtime gate** untuk transitional Checklist/READY mutation authorization;
-2. setelah Step 11A hijau, audit **Step 11B package/operator-overlay write boundary** tanpa membuka numbering/FINAL lebih awal;
+1. **V2-D Step 11B runtime gate** untuk package/operator-overlay write boundary tanpa membuka numbering/FINAL;
+2. setelah Step 11B hijau, audit lifecycle-specific gate berikutnya sebelum NUMBERED/numbering dibuka;
 3. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
 4. **browser/operator QA desktop-laptop** berdasarkan `GUI_RUNTIME_QA.md`, khususnya repeated `Livewire.navigate`, SPA tab SPJ, modal preview, pagination, dropdown, dan filter URL state;
 5. **Office/PDF visual-output QA** untuk individual template, master terbaru, XLSX/PDF hasil generate, print area/page break/header/footer;
