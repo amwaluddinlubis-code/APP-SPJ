@@ -324,6 +324,48 @@ relative to the effective canonical context. The next cutover step must therefor
 use the provenance/effective-context resolver for read compatibility rather than
 relying on `Transaction::forSpjContext()` for Paket/list membership.
 
+### D4 step 4 — package read membership compatibility
+
+Source implementation now adds `SpjV2PackageReadMembershipService`.
+It composes the existing read-path selector with the effective-context
+compatibility resolver and returns package membership only when all of these are
+true:
+
+- `SPJ_V2_READ_PATH=v2` is explicitly requested;
+- exactly one canonical source resolves for the active fiscal-year/fund-source;
+- effective-context compatibility returns `RESOLVED`;
+- package/provenance relations are deterministic and fund-source safe.
+
+Its output is intentionally identity-only:
+
+```text
+package_ids
+legacy_transaction_ids
+canonical_transaction_ids
+source_id
+compatibility_mode
+```
+
+A `null` result means the caller must stay on the legacy membership path. The
+service never rewrites legacy fiscal-year context or Paket/document lifecycle.
+
+Regression `V2DPackageReadMembershipTest` is intended to prove:
+
+- the union of effective-context memberships equals the exact 67 Paket fixture;
+- exactly 66 returned Paket are NUMBERED;
+- every context membership equals the direct ACTIVE_CANONICAL package bridge;
+- returned legacy transactions never cross fund source;
+- config rollback `v2 -> legacy` is immediate;
+- a wrong-but-valid Paket V2 bridge makes membership fail closed;
+- resolver execution does not mutate transaction/Paket/document state.
+
+The production Paket list and report package table are **not switched yet**.
+Both expose follow-up actions such as open Paket, preview, and download, while
+those action/detail guards still validate the legacy transaction context. Showing
+effective-context Paket before those action boundaries are compatible would
+create rows that are visible but cannot be opened safely. D4 step 4 runtime
+evidence is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
