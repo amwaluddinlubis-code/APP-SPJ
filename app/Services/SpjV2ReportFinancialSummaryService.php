@@ -17,7 +17,7 @@ final class SpjV2ReportFinancialSummaryService
      * Return a V2 financial summary only when the selector and required bridge
      * relations are fully eligible. Null means the consumer must use legacy.
      *
-     * @param array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float} $legacySummary
+     * @param array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float} $consumerSummary
      * @return array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float,source_id:int}|null
      */
     public function forContext(
@@ -27,7 +27,7 @@ final class SpjV2ReportFinancialSummaryService
         int $year,
         string $mode,
         ?int $periode,
-        array $legacySummary,
+        array $consumerSummary,
     ): ?array {
         $selection = $this->readPaths->select($db, $fiscalYearId, $fundSourceId);
         if ($selection['path'] !== SpjReadPathSelector::V2 || $selection['source_id'] === null) {
@@ -92,7 +92,7 @@ final class SpjV2ReportFinancialSummaryService
             'source_id' => $selection['source_id'],
         ];
 
-        if (! $this->matchesLegacySummary($summary, $legacySummary)) {
+        if (! $this->matchesConsumerSummary($summary, $consumerSummary)) {
             return null;
         }
 
@@ -103,16 +103,16 @@ final class SpjV2ReportFinancialSummaryService
      * @param array<string, mixed> $canonical
      * @param array<string, mixed> $legacy
      */
-    private function matchesLegacySummary(array $canonical, array $legacy): bool
+    private function matchesConsumerSummary(array $canonical, array $consumer): bool
     {
         foreach (['count', 'cancelled_count'] as $field) {
-            if ((int) ($canonical[$field] ?? 0) !== (int) ($legacy[$field] ?? 0)) {
+            if ((int) ($canonical[$field] ?? 0) !== (int) ($consumer[$field] ?? 0)) {
                 return false;
             }
         }
 
         foreach (['gross', 'tax', 'net', 'ppn', 'pph21', 'pph22', 'pph23', 'pph4', 'sspd'] as $field) {
-            if (abs(round((float) ($canonical[$field] ?? 0), 2) - round((float) ($legacy[$field] ?? 0), 2)) > 0.01) {
+            if (abs(round((float) ($canonical[$field] ?? 0), 2) - round((float) ($consumer[$field] ?? 0), 2)) > 0.01) {
                 return false;
             }
         }
