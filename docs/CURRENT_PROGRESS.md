@@ -693,11 +693,32 @@ wrong Paket bridge, multiple Paket per canonical transaction, atau schema V2
 tidak lengkap semuanya fail-closed. `LEGACY_DUPLICATE` hanya eligible bila
 tetap menunjuk ACTIVE_CANONICAL yang sama.
 
-Regression `V2DEffectiveContextCompatibilityTest` sudah ditambahkan untuk real
-isolated fixture, synthetic wrong Paket bridge, missing-schema fail-safe, context
-isolation, dan protected-state immutability. Test juga menulis exact inventory ke
-`storage/app/v2-c-rehearsal/reports/test-v2d-effective-context-compatibility.json`.
-Runtime evidence step 3 masih **RVR** sampai test/Pint/diff dijalankan.
+Regression `V2DEffectiveContextCompatibilityTest` sekarang memiliki runtime
+evidence. Focused gate PASS dengan **16 test / 174 assertions / 16 deprecations**,
+Pint PASS, dan `git diff --check` bersih.
+
+Exact inventory isolated fixture:
+
+```text
+status                       : COMPATIBLE_STALE_CONTEXT
+Paket total                  : 67
+Paket NUMBERED               : 66
+Paket FINAL                  : 0
+Paket aligned                : 0
+Paket stale legacy FY        : 67
+Paket unsafe                 : 0
+Paket duplicate provenance   : 1
+provenance aligned context   : 121
+provenance stale legacy FY   : 170
+provenance fund mismatch     : 0
+provenance LEGACY_DUPLICATE  : 104
+```
+
+D4 step 3 ditutup sebagai **RUNTIME PASS**. Temuan terpenting: seluruh 67 Paket
+existing pada fixture bersifat stale hanya pada legacy `fiscal_year_id`, bukan
+unsafe dan bukan cross-fund. Karena itu Step 4 harus membuat compatibility read
+membership berbasis effective-context/provenance; jangan memperbaikinya dengan
+mass rewrite `transactions.fiscal_year_id`.
 
 ---
 
