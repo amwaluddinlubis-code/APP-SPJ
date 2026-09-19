@@ -800,8 +800,16 @@ Pajak consumer fallback legacy. Row V2 diberi label `Baca saja` dan Detail
 Transaksi diarahkan lewat `source_key` ke fresh effective-context read model,
 bukan legacy ID stale. Regression `V2DTaxReadContextCutoverTest` ditambahkan;
 `TaxFilterLivewireTest` dan `TransactionDetailWorkspaceAuthorizationTest` tetap
-menjadi compatibility/action-boundary regression. Runtime evidence step 10 masih
-**RVR**.
+menjadi compatibility/action-boundary regression. Focused runtime gate Step 10 PASS dengan **33 test / 199 assertions /
+33 deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 10 sekarang
+**RUNTIME PASS**.
+
+Audit consumer berikutnya menetapkan tab **Monitoring** tetap legacy-authoritative
+untuk saat ini. Walaupun antrean pending read-only secara visual, tab yang sama
+memuat Bulk Final, Penomoran Triwulan, Tutup/Buka Periode, dan row action menuju
+Checklist/Persiapan. Cutover membership tanpa write-path/effective-context
+authorization akan menciptakan split read/write context. Karena itu Monitoring
+ditandai **DEFERRED/BLOCKED FOR READ CUTOVER**, bukan dipaksa masuk V2.
 
 ---
 
