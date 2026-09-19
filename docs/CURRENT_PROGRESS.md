@@ -1154,3 +1154,9 @@ tidak tersedia untuk parity lintas sekolah pada audit ini. Status schema:
 **PARTIAL FREEZE**. Detail contract ada di `docs/ARKAS_MIRROR_SCHEMA_CONTRACT.md`.
 Tidak ada drop/move/destructive migration dan boundary FINAL/lifecycle lain
 tetap tertutup.
+
+Final verification pada HEAD `0f515de`: full PHPUnit **PASS** (**19 tests /
+7,995 assertions / 0 failures / 658 deprecated notices / 811.02s**), focused
+manifest/raw mirror **PASS** (**2 test groups / 28 assertions / 2 deprecated**),
+Pint, Blade cache, frontend build, dan diff-check **PASS**. Composer checks
+tetap RVR karena executable Composer tidak tersedia di shell audit.
