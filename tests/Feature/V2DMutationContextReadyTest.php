@@ -41,8 +41,18 @@ final class V2DMutationContextReadyTest extends TestCase
             $transactionHashBefore = $this->transactionHash($db, (int) $package->transaction_id);
             $documentsHashBefore = $this->documentsHash($db, (int) $package->id);
 
-            $this->assertTrue(app(SpjV2MutationContextService::class)->preparePackage($package));
-            $this->assertSame('v2_compat', $package->getAttribute('mutation_context_path'));
+            $mutationContext = app(SpjV2MutationContextService::class);
+            $this->assertTrue($mutationContext->preparePackage($package));
+            $this->assertSame('v2_compat', $mutationContext->packageContext($package)['path'] ?? null);
+            $this->assertSame('v2_compat', $mutationContext->transactionContext($package->transaction)['path'] ?? null);
+            $this->assertArrayNotHasKey('mutation_context_path', $package->getAttributes());
+            $this->assertArrayNotHasKey('mutation_context_source_id', $package->getAttributes());
+            $this->assertArrayNotHasKey('mutation_context_mode', $package->getAttributes());
+            $this->assertArrayNotHasKey('mutation_context_path', $package->transaction->getAttributes());
+            $this->assertArrayNotHasKey('mutation_context_source_id', $package->transaction->getAttributes());
+            $this->assertFalse($package->isDirty('mutation_context_path'));
+            $this->assertFalse($package->isDirty('mutation_context_source_id'));
+            $this->assertFalse($package->isDirty('mutation_context_mode'));
             $this->assertSame((int) $row->effective_fiscal_year_id, (int) $package->transaction->fiscal_year_id);
             $this->assertSame(
                 $legacyFiscalYearId,
@@ -345,8 +355,9 @@ final class V2DMutationContextReadyTest extends TestCase
         $this->assertStringContainsString('Effective context', $checklist);
         $this->assertStringContainsString("route('spj.checklist', \$package->id)", $readOnlyPackage);
         $this->assertStringNotContainsString("route('spj.ready'", $readOnlyPackage);
-        $this->assertStringContainsString("mutation_context_path') === 'v2_compat'", $validation);
+        $this->assertStringContainsString("relationLoaded('v2MutationContext')", $validation);
         $this->assertStringContainsString('$transaction->source_key', $validation);
+        $this->assertStringNotContainsString("setAttribute('mutation_context_", (string) file_get_contents(app_path('Services/SpjV2MutationContextService.php')));
     }
 
     private function prepareClone(string $target): string
