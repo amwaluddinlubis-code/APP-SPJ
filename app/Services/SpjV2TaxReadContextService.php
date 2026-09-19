@@ -58,6 +58,7 @@ final class SpjV2TaxReadContextService
             ->select([
                 'provenance.spj_transaction_id',
                 'legacy.id',
+                'legacy.source_key',
                 'legacy.no_bukti',
                 'legacy.transaction_date',
                 'legacy.description',
@@ -102,6 +103,15 @@ final class SpjV2TaxReadContextService
     /** @param array<string, mixed> $canonical */
     private function matches(array $canonical, object $legacy): bool
     {
+        $sourceKey = $this->normalize($legacy->source_key ?? null);
+        $canonicalSourceKeys = array_values(array_filter(array_map(
+            fn ($value): ?string => $this->normalize($value),
+            $canonical['legacy_source_keys'] ?? [],
+        )));
+        if ($sourceKey === null || ! in_array($sourceKey, $canonicalSourceKeys, true)) {
+            return false;
+        }
+
         foreach (['no_bukti', 'description', 'recipient_name'] as $field) {
             if ($this->normalize($canonical[$field] ?? null) !== $this->normalize($legacy->{$field} ?? null)) {
                 return false;
