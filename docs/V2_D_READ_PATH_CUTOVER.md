@@ -359,12 +359,18 @@ Regression `V2DPackageReadMembershipTest` is intended to prove:
 - a wrong-but-valid Paket V2 bridge makes membership fail closed;
 - resolver execution does not mutate transaction/Paket/document state.
 
+Runtime evidence on 2026-09-19: focused gate
+`V2DReadPathSelectorTest`, `V2DPackageDocumentParityTest`,
+`V2DReportSummaryCutoverTest`, `V2DEffectiveContextCompatibilityTest`, and
+`V2DPackageReadMembershipTest` PASS with **19 tests / 216 assertions / 19
+deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
+`git diff --check` clean. D4 step 4 is therefore **RUNTIME PASS**.
+
 The production Paket list and report package table are **not switched yet**.
 Both expose follow-up actions such as open Paket, preview, and download, while
 those action/detail guards still validate the legacy transaction context. Showing
 effective-context Paket before those action boundaries are compatible would
-create rows that are visible but cannot be opened safely. D4 step 4 runtime
-evidence is currently **RVR**.
+create rows that are visible but cannot be opened safely.
 
 A production switch requires all of the following:
 
