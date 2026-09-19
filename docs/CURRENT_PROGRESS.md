@@ -777,7 +777,9 @@ Percobaan runtime pertama Step 8 gagal pada wiring DI, bukan pada assertion pari
 dependency setelah `SpjReportUseCase` membutuhkan
 `SpjV2PackageReadMembershipService` sebagai dependency ketiga. Commit
 `956ae6c2` memperbaiki constructor subclass dan meneruskan dependency tersebut.
-Gate harus dijalankan ulang. Runtime evidence step 8 tetap **RVR**.
+Clean rerun setelah fix DI PASS dengan **42 test / 711 assertions / 42
+deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 8 sekarang
+**RUNTIME PASS**.
 
 ---
 
