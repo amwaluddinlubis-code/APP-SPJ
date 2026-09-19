@@ -212,7 +212,14 @@ D4 step 2 source implementation:
   kembali ke legacy. Protected transaction/package/document tetap immutable dan
   VIEWER tetap dapat membaca summary ketika live parity exact.
 
-Runtime verification untuk step 2 masih **RVR** sampai focused test/Pint/diff dijalankan.
+Runtime evidence pada 2026-09-19: focused gate `V2DReadPathSelectorTest`,
+`V2DCanonicalReadAdapterTest`, `V2DWorkflowParityTest`, dan
+`V2DReportSummaryCutoverTest` PASS dengan **16 test / 354 assertions / 16
+deprecations**. `vendor/bin/pint --dirty --format agent` PASS dan
+`git diff --check` bersih. D4 step 2 source + fail-safe consumer gate ditutup
+sebagai runtime PASS. Effective production cutover tetap blocked karena fixture
+nyata membuktikan live legacy `ActiveSpjContext` dapat berbeda dari canonical V2;
+pada kondisi itu consumer secara benar tetap memakai legacy.
 
 A production switch requires all of the following:
 
