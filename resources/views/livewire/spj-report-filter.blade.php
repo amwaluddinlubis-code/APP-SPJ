@@ -77,7 +77,10 @@
                         <a href="{{ $packageUrl }}" class="hover:underline">{{ $package->report_document_number }}</a>
                     </td>
                     <td class="px-4 py-3">
-                        <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
+                        <div class="flex flex-wrap items-center gap-1">
+                            <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
+                            @if($package->getAttribute('read_context_path') === 'v2_compat')<x-ui.status-badge status="READY" label="Baca saja" size="xs" />@endif
+                        </div>
                         @if ($isCancelled && $package->report_cancellation_reason)
                             <p class="mt-1 max-w-48 text-xs text-rose-700">{{ $package->report_cancellation_reason }}</p>
                         @endif
@@ -97,7 +100,7 @@
                                 <form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form>
                                 <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>
                             @endif
-                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">Buka Paket</a>
+                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">{{ $package->getAttribute('read_context_path') === 'v2_compat' ? 'Buka Paket (baca saja)' : 'Buka Paket' }}</a>
                         </x-ui.action-menu>
                     </td>
                 </tr>
