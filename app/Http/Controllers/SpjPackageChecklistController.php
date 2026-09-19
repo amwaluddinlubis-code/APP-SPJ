@@ -6,6 +6,7 @@ use App\Models\SpjPackage;
 use App\Models\User;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2MutationContextService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -17,6 +18,7 @@ class SpjPackageChecklistController extends Controller
         SpjPackageValidationService $validator,
         SpjDocumentRequirementService $requirements,
         ActiveSpjContext $context,
+        SpjV2MutationContextService $mutationContext,
     ): View|RedirectResponse {
         $package = SpjPackage::query()
             ->with([
@@ -32,7 +34,7 @@ class SpjPackageChecklistController extends Controller
             ])
             ->find($packageId);
 
-        if (! $package || ! $package->transaction || ! $context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $package->transaction || ! $mutationContext->preparePackage($package)) {
             return redirect()
                 ->route('spj.index', ['tab' => 'persiapan'])
                 ->with('error', 'Paket SPJ tidak ditemukan pada konteks aktif.');
@@ -48,6 +50,7 @@ class SpjPackageChecklistController extends Controller
         $requirementSummary = $requirements->summary($package->transaction);
 
         $canEdit = in_array(auth()->user()?->role, [User::ROLE_ADMIN, User::ROLE_OPERATOR], true);
+        $isEffectiveContextMutation = $package->getAttribute('mutation_context_path') === 'v2_compat';
         $canMarkReady = $canEdit
             && $package->status === 'DRAFT'
             && $remainingChecks === 0
@@ -64,6 +67,7 @@ class SpjPackageChecklistController extends Controller
             'requirementSummary',
             'canEdit',
             'canMarkReady',
+            'isEffectiveContextMutation',
         ));
     }
 }
