@@ -791,6 +791,18 @@ boundary yang sama; forged/outside transaction ID tetap ditolak dan config
 `V2DExtendedReportContextCutoverTest` memakai synthetic operator overlays pada
 clone yang dipaku ke stale effective-context nyata. Focused runtime gate Step 9 PASS dengan **20 test / 241 assertions / 20 deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 9 sekarang **RUNTIME PASS**.
 
+D4 step 10 source sekarang mengalihkan consumer read-only **Pajak** ke
+effective-context hanya setelah `SpjV2TaxReadContextService` membuktikan
+representative legacy per canonical transaction dan seluruh field yang dipakai
+UI—termasuk komponen pajak—masih exact-match terhadap raw canonical. Duplicate
+provenance tidak didouble-count. Bila raw-tax/source-key/identity drift, seluruh
+Pajak consumer fallback legacy. Row V2 diberi label `Baca saja` dan Detail
+Transaksi diarahkan lewat `source_key` ke fresh effective-context read model,
+bukan legacy ID stale. Regression `V2DTaxReadContextCutoverTest` ditambahkan;
+`TaxFilterLivewireTest` dan `TransactionDetailWorkspaceAuthorizationTest` tetap
+menjadi compatibility/action-boundary regression. Runtime evidence step 10 masih
+**RVR**.
+
 ---
 
 ## Prioritas kerja aktif
