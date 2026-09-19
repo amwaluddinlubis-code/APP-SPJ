@@ -8,6 +8,7 @@ use App\Models\SpjHonor;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\DocumentStoragePathService;
+use App\Services\SpjV2PackageReadMembershipService;
 use App\Services\SpjV2ReportFinancialSummaryService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,6 +23,7 @@ class SpjReportUseCase
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjV2ReportFinancialSummaryService $v2FinancialSummary,
+        private readonly SpjV2PackageReadMembershipService $packageReadMembership,
     ) {}
 
     public function tabLaporan(Request $request): View
@@ -222,17 +224,18 @@ class SpjReportUseCase
     {
         $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
         $transactionFilter = fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year);
-        $packageQuery = SpjPackage::query()->with(['transaction', 'documents'])
-            ->whereHas('transaction', $transactionFilter)
-            ->where(function ($query): void {
-                $query->whereNotNull('document_number')
-                    ->orWhereHas('documents', fn ($document) => $document
-                        ->where('document_type', 'SPJ')
-                        ->where('scope_key', 'MAIN')
-                        ->where('status', 'CANCELLED'));
-            })
-            ->orderByRaw("COALESCE((SELECT sequence_number FROM spj_documents WHERE spj_documents.spj_package_id = spj_packages.id AND document_type = 'SPJ' ORDER BY id DESC LIMIT 1), 2147483647)")
-            ->orderBy('spj_packages.id');
+        $effectiveTransactionFilter = fn ($query) => $this->applyReportTransactionFilters($query, $request, $year);
+
+        $legacyPackageQuery = $this->reportPackageQuery($transactionFilter);
+        $packageQuery = $legacyPackageQuery;
+        $effectiveMembership = null;
+        if ($allowV2FinancialSummary && $this->context->fundSourceId() !== null) {
+            $effectiveMembership = $this->packageReadMembership->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                (int) $this->context->fundSourceId(),
+            );
+        }
 
         $decorate = function ($packages) {
             return $packages->map(function (SpjPackage $package): SpjPackage {
@@ -249,13 +252,6 @@ class SpjReportUseCase
                 return $package;
             });
         };
-
-        if ($perPage) {
-            $packages = $packageQuery->paginate($perPage, ['*'], 'page')->withQueryString();
-            $packages->setCollection($decorate($packages->getCollection()));
-        } else {
-            $packages = $decorate($packageQuery->get())->values();
-        }
 
         $pendingQuery = Transaction::query()->with('spjPackage.documents')
             ->tap(fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year))
@@ -277,17 +273,108 @@ class SpjReportUseCase
             ->selectRaw("COALESCE(account_code, '-') as account_code, COALESCE(account_name, 'Rekening belum diisi') as account_name, SUM(gross_amount) as realization")
             ->groupBy('account_code', 'account_name')->orderBy('account_code')->get();
 
-        $successfulTransactions = Transaction::query()
-            ->tap(fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year))
-            ->whereHas('spjPackage', fn ($package) => $package->whereNotNull('document_number'));
-        $successfulSummary = (clone $successfulTransactions)->selectRaw('COUNT(*) as aggregate_count, COALESCE(SUM(gross_amount), 0) as gross, COALESCE(SUM(tax_total), 0) as tax, COALESCE(SUM(net_amount), 0) as net, COALESCE(SUM(ppn), 0) as ppn, COALESCE(SUM(pph21), 0) as pph21, COALESCE(SUM(pph22), 0) as pph22, COALESCE(SUM(pph23), 0) as pph23, COALESCE(SUM(pph4), 0) as pph4, COALESCE(SUM(sspd), 0) as sspd')->first();
-        $cancelledCount = SpjPackage::query()
+        $financialSummary = $this->reportFinancialSummary(
+            fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year),
+            $transactionFilter,
+        );
+        $readPath = 'legacy';
+
+        if ($allowV2FinancialSummary && $effectiveMembership !== null) {
+            $effectivePackageIds = $effectiveMembership['package_ids'];
+            $effectiveFinancialSummary = $this->reportFinancialSummary(
+                fn ($query) => $this->applyReportTransactionFilters(
+                    $query->whereHas('spjPackage', fn ($package) => $package->whereIn('id', $effectivePackageIds)),
+                    $request,
+                    $year,
+                ),
+                fn ($query) => $effectiveTransactionFilter($query),
+                $effectivePackageIds,
+            );
+
+            [$mode, $periode] = self::resolveModePeriode($request->all());
+            $v2Summary = $this->v2FinancialSummary->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                (int) $this->context->fundSourceId(),
+                (int) $year->year,
+                $mode,
+                $periode,
+                $effectiveFinancialSummary,
+            );
+
+            if ($v2Summary !== null) {
+                $financialSummary = array_intersect_key($v2Summary, $effectiveFinancialSummary);
+                $packageQuery = $this->reportPackageQuery(
+                    $effectiveTransactionFilter,
+                    $effectivePackageIds,
+                );
+                $readPath = 'v2';
+            }
+        }
+
+        if ($perPage) {
+            $packages = $packageQuery->paginate($perPage, ['*'], 'page')->withQueryString();
+            $packages->setCollection($decorate($packages->getCollection()));
+        } else {
+            $packages = $decorate($packageQuery->get())->values();
+        }
+
+        return [$packages, [
+            'year' => $year->year,
+            ...$financialSummary,
+            'read_path' => $readPath,
+            'pending_transactions' => $pendingTransactions,
+            'activities' => $activities,
+            'accounts' => $accounts,
+        ]];
+    }
+
+    private function reportPackageQuery(callable $transactionFilter, ?array $packageIds = null)
+    {
+        return SpjPackage::query()
+            ->with(['transaction', 'documents'])
+            ->when($packageIds !== null, fn ($query) => $query->whereIn('id', $packageIds))
             ->whereHas('transaction', $transactionFilter)
+            ->where(function ($query): void {
+                $query->whereNotNull('document_number')
+                    ->orWhereHas('documents', fn ($document) => $document
+                        ->where('document_type', 'SPJ')
+                        ->where('scope_key', 'MAIN')
+                        ->where('status', 'CANCELLED'));
+            })
+            ->orderByRaw("COALESCE((SELECT sequence_number FROM spj_documents WHERE spj_documents.spj_package_id = spj_packages.id AND document_type = 'SPJ' ORDER BY id DESC LIMIT 1), 2147483647)")
+            ->orderBy('spj_packages.id');
+    }
+
+    private function reportFinancialSummary(
+        callable $successfulTransactionFilter,
+        callable $cancelledTransactionFilter,
+        ?array $packageIds = null,
+    ): array {
+        $successfulTransactions = Transaction::query()
+            ->tap($successfulTransactionFilter)
+            ->whereHas('spjPackage', function ($package) use ($packageIds): void {
+                $package->whereNotNull('document_number');
+                if ($packageIds !== null) {
+                    $package->whereIn('id', $packageIds);
+                }
+            });
+        $successfulSummary = (clone $successfulTransactions)
+            ->selectRaw('COUNT(*) as aggregate_count, COALESCE(SUM(gross_amount), 0) as gross, COALESCE(SUM(tax_total), 0) as tax, COALESCE(SUM(net_amount), 0) as net, COALESCE(SUM(ppn), 0) as ppn, COALESCE(SUM(pph21), 0) as pph21, COALESCE(SUM(pph22), 0) as pph22, COALESCE(SUM(pph23), 0) as pph23, COALESCE(SUM(pph4), 0) as pph4, COALESCE(SUM(sspd), 0) as sspd')
+            ->first();
+
+        $cancelledCount = SpjPackage::query()
+            ->when($packageIds !== null, fn ($query) => $query->whereIn('id', $packageIds))
+            ->whereHas('transaction', $cancelledTransactionFilter)
             ->whereNull('document_number')
-            ->whereHas('documents', fn ($document) => $document->where(['document_type' => 'SPJ', 'scope_key' => 'MAIN', 'status' => 'CANCELLED']))
+            ->whereHas('documents', fn ($document) => $document->where([
+                'document_type' => 'SPJ',
+                'scope_key' => 'MAIN',
+                'status' => 'CANCELLED',
+            ]))
             ->count();
 
-        $financialSummary = [
+        return [
             'count' => (int) $successfulSummary->aggregate_count,
             'cancelled_count' => $cancelledCount,
             'gross' => (float) $successfulSummary->gross,
@@ -300,33 +387,6 @@ class SpjReportUseCase
             'pph4' => (float) $successfulSummary->pph4,
             'sspd' => (float) $successfulSummary->sspd,
         ];
-        $readPath = 'legacy';
-
-        if ($allowV2FinancialSummary) {
-            [$mode, $periode] = self::resolveModePeriode($request->all());
-            $v2Summary = $this->v2FinancialSummary->forContext(
-                DB::connection('school'),
-                $this->context->fiscalYearId(),
-                (int) $this->context->fundSourceId(),
-                (int) $year->year,
-                $mode,
-                $periode,
-                $financialSummary,
-            );
-            if ($v2Summary !== null) {
-                $financialSummary = array_intersect_key($v2Summary, $financialSummary);
-                $readPath = 'v2';
-            }
-        }
-
-        return [$packages, [
-            'year' => $year->year,
-            ...$financialSummary,
-            'read_path' => $readPath,
-            'pending_transactions' => $pendingTransactions,
-            'activities' => $activities,
-            'accounts' => $accounts,
-        ]];
     }
 
     private function applyReportTransactionFilters($query, Request $request, FiscalYear $year)
