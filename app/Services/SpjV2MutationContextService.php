@@ -30,6 +30,29 @@ final class SpjV2MutationContextService
      */
     public function preparePackage(SpjPackage $package): bool
     {
+        if (! $this->authorizePackageWrite($package)) {
+            return false;
+        }
+
+        $transaction = $package->transaction;
+        $metadata = $this->packageContext($package);
+        if ($transaction === null || ($metadata['path'] ?? null) !== 'v2_compat') {
+            return true;
+        }
+
+        $transaction->setAttribute('fiscal_year_id', $this->context->fiscalYearId());
+        $transaction->unsetRelation('fiscalYear');
+
+        return true;
+    }
+
+    /**
+     * Authorize legacy operator-overlay writes without changing the legacy
+     * transaction context, even in memory. This is the Step 11B boundary for
+     * DRAFT/READY package fields and category-specific overlay relations.
+     */
+    public function authorizePackageWrite(SpjPackage $package): bool
+    {
         $transaction = $package->transaction;
         if ($transaction === null) {
             return false;
@@ -95,8 +118,6 @@ final class SpjV2MutationContextService
             return false;
         }
 
-        $transaction->setAttribute('fiscal_year_id', $this->context->fiscalYearId());
-        $transaction->unsetRelation('fiscalYear');
         $this->attachContext(
             $package,
             $transaction,
