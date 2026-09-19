@@ -617,3 +617,10 @@ legacy fiscal-year tidak lagi memblokir read cutover bila provenance bridge aman
 namun canonical raw drift tetap menyebabkan seluruh report consumer kembali ke
 legacy. Pending queue, realization grouping, monitoring, export, settlement,
 numbering, lifecycle, dan mutation tetap di legacy boundary.
+
+Honor/Jasa report composition keeps legacy operator overlays authoritative while
+its transaction membership may come from the V2 effective-context bridge.
+`ExtendedSpjReportUseCase` scopes legacy `transactions.id` by resolved
+`legacy_transaction_ids` for V2 reads and otherwise uses
+`Transaction::forSpjContext()`. This boundary is shared by select, compose, and
+export so read compatibility does not create a second authorization rule.
