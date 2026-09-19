@@ -720,6 +720,19 @@ unsafe dan bukan cross-fund. Karena itu Step 4 harus membuat compatibility read
 membership berbasis effective-context/provenance; jangan memperbaikinya dengan
 mass rewrite `transactions.fiscal_year_id`.
 
+D4 step 4 source sekarang tersedia melalui `SpjV2PackageReadMembershipService`.
+Service menggabungkan selector + effective-context resolver dan hanya mengeluarkan
+identity membership Paket ketika seluruh gate `RESOLVED`; selain itu hasil
+`null` memaksa caller tetap legacy. Regression
+`V2DPackageReadMembershipTest` sudah ditambahkan untuk exact 67-Paket union,
+66 NUMBERED, context/fund isolation, rollback config, wrong-bridge fail-closed,
+dan protected-state immutability. Runtime evidence step 4 masih **RVR**.
+
+Production Paket list/report table belum dialihkan karena row tersebut menyediakan
+Buka Paket/Preview/Download, sementara action/detail guard masih memvalidasi legacy
+transaction context. Action-boundary compatibility harus ditutup sebelum membership
+V2 dipakai pada UI tersebut.
+
 ---
 
 ## Prioritas kerja aktif
