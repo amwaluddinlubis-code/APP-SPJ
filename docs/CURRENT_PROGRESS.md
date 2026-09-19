@@ -681,6 +681,24 @@ id stale, dan `migrateOne()` hanya menulis context efektif ke V2/provenance,
 bukan mengubah transaksi legacy. Jadi mismatch 66 canonical numbered vs 0 live
 legacy adalah boundary transisi yang nyata, bukan bug selector D4.
 
+D4 step 3 source sekarang tersedia melalui
+`SpjV2EffectiveContextCompatibilityService`. Service ini read-only dan tidak
+mengubah `transactions.fiscal_year_id`, Paket, dokumen, numbering, snapshot,
+atau V2 rows. `audit()` menginventarisasi provenance + Paket menjadi
+`ALIGNED`, `STALE_LEGACY_FISCAL_YEAR`, atau `UNSAFE`; `resolve()`
+menerjemahkan satu effective context eksplisit
+`fiscal_year_id + fund_source_id + source_id` kembali ke legacy provenance dan
+Paket secara deterministic. Missing provenance, cross-context/fund mismatch,
+wrong Paket bridge, multiple Paket per canonical transaction, atau schema V2
+tidak lengkap semuanya fail-closed. `LEGACY_DUPLICATE` hanya eligible bila
+tetap menunjuk ACTIVE_CANONICAL yang sama.
+
+Regression `V2DEffectiveContextCompatibilityTest` sudah ditambahkan untuk real
+isolated fixture, synthetic wrong Paket bridge, missing-schema fail-safe, context
+isolation, dan protected-state immutability. Test juga menulis exact inventory ke
+`storage/app/v2-c-rehearsal/reports/test-v2d-effective-context-compatibility.json`.
+Runtime evidence step 3 masih **RVR** sampai test/Pint/diff dijalankan.
+
 ---
 
 ## Prioritas kerja aktif
