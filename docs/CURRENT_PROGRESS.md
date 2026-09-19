@@ -632,9 +632,14 @@ per kegiatan/rekening. Regression synthetic mengubah tax component tanpa menguba
 total pajak dan memindahkan tanggal source lintas quarter; keduanya wajib
 fail-closed.
 
-Runtime evidence tahap ini masih **RVR**. Karena canonical adapter ikut berubah,
-focused gate berikutnya harus menjalankan ulang `V2DCanonicalReadAdapterTest`
-bersama `V2DWorkflowParityTest`. Production read-path tetap BLOCKED.
+Runtime evidence tahap ini sekarang **PASS**. Pada 2026-09-19 focused suite
+`V2CLegacyMigrationTest`, `V2DReadParityTest`, `V2DCanonicalReadAdapterTest`,
+`V2DPackageDocumentParityTest`, dan `V2DWorkflowParityTest` lulus dengan **16 test /
+378 assertions / 16 deprecations**, tanpa failure. Ini membuktikan ulang V2-C
+migration/idempotency, D1 shadow parity, D2 canonical adapter, D3 package/document
+bridge, serta downstream report/tax/period parity pada isolated clone. Production
+read-path tetap BLOCKED sampai authorization/active-context cutover regression,
+rollback strategy, dan source-quality/CI gate D4 selesai.
 
 ---
 
