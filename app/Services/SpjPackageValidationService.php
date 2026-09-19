@@ -20,7 +20,10 @@ class SpjPackageValidationService
     public function checklist(SpjPackage $package): array
     {
         $transaction = $package->transaction;
-        $transactionUrl = route('transactions.show', $transaction->id);
+        $transactionIdentifier = $transaction->getAttribute('mutation_context_path') === 'v2_compat'
+            ? ($transaction->source_key ?: $transaction->id)
+            : $transaction->id;
+        $transactionUrl = route('transactions.show', $transactionIdentifier);
         $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]).'#spj-manual-form';
         $checks = [];
         $policy = $this->procurementPolicy->forTransaction($transaction);
