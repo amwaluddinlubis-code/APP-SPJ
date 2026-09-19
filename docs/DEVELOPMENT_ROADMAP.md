@@ -147,7 +147,9 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement effective-context read boundary untuk Honor Pegawai + Jasa Lainnya select/compose/export;
 - [x] jalankan Step 9 Honor/Jasa effective-context gate: 20 test / 241 assertions PASS; Pint + diff-check bersih;
 - [x] implement fail-closed effective-context cutover untuk Pajak + safe source-key detail navigation;
-- [ ] jalankan `V2DTaxReadContextCutoverTest` + `TaxFilterLivewireTest` + `TransactionDetailWorkspaceAuthorizationTest` + V2 workflow/read-path regressions + Pint/diff;
+- [x] jalankan Step 10 Pajak gate: 33 test / 199 assertions PASS; Pint + diff-check bersih;
+- [x] audit Monitoring post-Step-10: read cutover DEFERRED karena tab berbagi boundary dengan Bulk Final, numbering, Checklist/Persiapan, dan fiscal-period mutation;
+- [ ] desain write-through/effective-context mutation authorization sebelum membuka Monitoring, Persiapan, numbering, settlement, atau period-close ke V2;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
