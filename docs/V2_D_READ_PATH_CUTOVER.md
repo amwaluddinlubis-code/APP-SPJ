@@ -703,6 +703,66 @@ The audit decision is therefore **DEFERRED / BLOCKED FOR READ CUTOVER**:
 
 This is an intentional safety boundary, not an unresolved read-parity defect.
 
+### D4 step 11A — transitional mutation authorization for Checklist/READY
+
+Step 10 completed the currently safe read-only cutovers. The first write-path
+transition is intentionally limited to the smallest reversible lifecycle mutation:
+`SpjPackage.status: DRAFT -> READY`.
+
+`SpjV2MutationContextService` is the mutation authorization boundary. It does
+not make V2 the write owner and it does not rewrite legacy context.
+
+Rules:
+
+1. a legacy-aligned Paket is authorized exactly as before;
+2. a stale legacy fiscal year is eligible only when `SPJ_V2_READ_PATH=v2`;
+3. Step 4 package membership must resolve one canonical source and the exact
+   package id, legacy transaction id, canonical transaction id, and provenance
+   bridge must all agree;
+4. fund source must equal the active context;
+5. `SOURCE_MISSING` or unresolved source reconciliation blocks compatibility
+   mutation;
+6. source-owned facts used by READY validation — proof number, transaction date,
+   source description, activity/account code, recipient, gross/tax/net, and tax
+   components — must still match current canonical raw facts;
+7. only after those checks is legacy `transaction.fiscal_year_id` normalized to
+   the active effective year **in memory only** for downstream validation;
+8. no Transaction/Paket/document row is persisted by the authorization service.
+
+`SpjPackageLifecycleUseCase::markReadyResult()` now uses this boundary before
+validation. The only intended persistence is the existing DRAFT -> READY status
+change plus the existing `PAKET_READY` operational audit row. The audit is
+recorded against the active effective fiscal year. Numbering, FINAL, settlement,
+package detail edits, cancel/replace, bulk-final, and fiscal-period mutations are
+unchanged.
+
+Checklist behavior follows the same boundary:
+
+- an exact effective-context Paket can open Checklist;
+- V2-compatible transaction links use `source_key` so Detail Transaksi stays
+  inside the active effective context;
+- the compatibility Paket page exposes only a **Buka Checklist** entry for DRAFT;
+- the **Tandai siap diproses** POST appears only when the existing checklist and
+  document requirements are fully satisfied;
+- Isian Manual, numbering, and every other lifecycle mutation remain unavailable
+  from the compatibility Paket surface.
+
+Regression `V2DMutationContextReadyTest` is staged to prove:
+
+- stale DRAFT + resolved V2 context can transition to READY;
+- persisted legacy `transactions.fiscal_year_id` is unchanged;
+- transaction source rows and documents are unchanged;
+- `PAKET_READY` audit uses the effective fiscal year;
+- config `legacy` blocks stale-context READY before validation;
+- a wrong package bridge blocks READY;
+- synthetic raw-source drift blocks READY before validation;
+- a legacy-aligned context keeps the pre-existing READY behavior;
+- compatibility UI exposes Checklist/READY only through the guarded entry point.
+
+Runtime evidence for D4 step 11A is currently **RVR**. Production configuration
+must remain `SPJ_V2_READ_PATH=legacy` until this mutation gate and later
+write-path gates have explicit runtime evidence.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
