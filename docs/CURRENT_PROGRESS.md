@@ -742,14 +742,23 @@ deprecations**; Pint PASS dan `git diff --check` bersih. Delapan jalur
 Preview/Download read-only sekarang terbukti memakai effective-context secara
 fail-closed tanpa persistence mutation.
 
-D4 step 6 source sekarang memisahkan `Buka Paket` stale-context menjadi dedicated
-`spj.package-readonly` surface. Surface ini hanya menampilkan summary, item,
-validation text, Preview, dan Download; Isian Manual, READY, numbering,
-FINAL/cancel/replace, serta mutation control lain tidak dirender. Legacy Paket
-tetap memakai workspace lama. Regression `V2DPackageWorkspaceReadOnlyTest`
-sudah ditambahkan untuk resolved V2, config rollback, wrong-bridge fail-closed,
-effective-year template scope, dan protected-state immutability. Runtime evidence
-step 6 masih **RVR**.
+D4 step 6 **RUNTIME PASS**. Focused gate
+`V2DPackageReadMembershipTest`, `V2DPackageReadContextTest`,
+`V2DPackageWorkspaceReadOnlyTest`, `SpjPackageNavigationContextTest`,
+`SpjMainTabsRenderingTest`, `SpjDocumentGeneratorHardeningTest`, dan
+`SpjPreviewExcelParityTest` PASS dengan **25 test / 351 assertions / 25
+deprecations**; Pint PASS dan `git diff --check` bersih. Stale Paket sekarang
+dapat dibuka hanya pada dedicated read-only workspace tanpa memperluas mutation
+authorization.
+
+D4 step 7 source sekarang mengalihkan membership daftar Paket + metrik
+`totalPackages/numberedPackages` ke effective-context ketika selector V2
+RESOLVED. Row stale diberi label `Baca saja` dan tetap membuka workspace
+read-only Step 6. Persiapan, readyTransactions, navigation legacy, numbering,
+lifecycle, settlement, dan mutation lain tetap legacy. Regression
+`V2DPackageListCutoverTest` sudah ditambahkan untuk exact list membership,
+metric consistency, rollback config, wrong-bridge fallback, read-only labeling,
+dan protected-state immutability. Runtime evidence step 7 masih **RVR**.
 
 ---
 
