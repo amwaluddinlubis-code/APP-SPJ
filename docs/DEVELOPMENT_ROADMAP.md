@@ -137,8 +137,9 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement compatibility read membership resolver untuk Paket/list berbasis effective-context/provenance tanpa mutation legacy;
 - [x] jalankan Step 4 membership gate: 19 test / 216 assertions PASS; Pint + diff-check bersih;
 - [x] implement read-only document action compatibility untuk Preview/Download dengan effective-year in-memory normalization;
-- [ ] jalankan `V2DPackageReadContextTest` + generator/read-membership regressions + Pint/diff;
-- [ ] desain Paket workspace read-only compatibility terpisah dari mutation authorization sebelum `Buka Paket` memakai effective-context membership;
+- [x] jalankan Step 5 document read-context gate: 27 test / 353 assertions PASS; Pint + diff-check bersih;
+- [x] implement dedicated Paket workspace read-only compatibility terpisah dari mutation authorization;
+- [ ] jalankan `V2DPackageWorkspaceReadOnlyTest` + Step 4/5 + legacy package navigation/render regression + Pint/diff;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
