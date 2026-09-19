@@ -2,7 +2,8 @@
     @php
         $transaction = $package->transaction;
         $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
-        $transactionUrl = route('transactions.show', $transaction->id);
+        $transactionIdentifier = $isEffectiveContextMutation ? ($transaction->source_key ?: $transaction->id) : $transaction->id;
+        $transactionUrl = route('transactions.show', $transactionIdentifier);
         $failedChecks = $checklist->where('passed', false)->values();
         $blockingRequirements = $documentRequirements->filter(fn ($item) => $item['applicable'] && $item['required'] && ! $item['available'])->values();
         $blockingCount = $failedChecks->count() + $blockingRequirements->count();
@@ -29,7 +30,18 @@
             kicker="Checklist Paket SPJ"
         >
             <x-slot:actions>
-                <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
+                <div class="flex flex-wrap items-center gap-2">
+                    @if($isEffectiveContextMutation)
+                        <x-ui.status-badge status="READY" label="Effective context" size="xs" />
+                    @endif
+                    <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
+                    @if($canMarkReady)
+                        <form method="POST" action="{{ route('spj.ready', $package->id) }}">
+                            @csrf
+                            <x-ui.button type="submit">Tandai siap diproses</x-ui.button>
+                        </form>
+                    @endif
+                </div>
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
