@@ -156,6 +156,8 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] jalankan `V2DPackageOverlayWriteCutoverTest` (9 test / 109 assertions) + Step 11A/read-context + package manual/category/transaction-boundary/authorization/NUMBERED regressions (59 test / 644 assertions) + Pint/view-cache/build/diff;
 - [x] audit lifecycle-specific gate setelah Step 11B dan buka hanya koreksi `payment_description` pada Paket stale `NUMBERED` melalui exact effective-context parity; numbering, settlement, Monitoring, bulk-final, dan period-close tetap legacy;
 - [x] audit/implement `item_description` + `payment_description` effective-context correction pada Detail Transaksi dengan resolver fail-closed; focused + related 25 test / 193 assertions PASS;
+- [x] audit numbering lifecycle effective-context; legacy regression 64 test / 528 assertions PASS dan stale single-numbering closure 1 test / 9 assertions PASS;
+- [ ] buka effective-context numbering lifecycle; BLOCKED sampai authorization bridge, parity, sequence/collision, atomic batch rollback, completeness, period, dan audit effective-year gate terbukti;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 

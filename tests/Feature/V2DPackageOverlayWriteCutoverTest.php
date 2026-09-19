@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2MutationContextService;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
+use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
 use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
 use Illuminate\Database\Connection;
@@ -240,6 +241,32 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $item->forceFill(['amount' => (float) $item->amount + 1])->save();
 
             $this->assertNull($resolver->resolveTransactionForDescription((string) $transaction->source_key));
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_stale_effective_context_remains_closed_for_single_numbering(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-numbering-closed.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+            $db->table('spj_packages')->where('id', $row->package_id)->update(['status' => 'READY']);
+
+            $response = app(SpjSingleNumberingUseCase::class)->assignNumber((string) $row->package_id);
+
+            $this->assertSame(302, $response->getStatusCode());
+            $this->assertSame('READY', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
+            $this->assertNull($db->table('spj_packages')->where('id', $row->package_id)->value('document_number'));
+            $this->assertSame(0, (int) $db->table('spj_documents')->where('spj_package_id', $row->package_id)->whereNotNull('document_number')->count());
         } finally {
             File::delete($target);
         }

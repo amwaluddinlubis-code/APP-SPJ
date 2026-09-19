@@ -893,6 +893,19 @@ deprecations**; Pint, `view:cache`, `npm run build`, dan `git diff --check`
 lulus. FINAL, numbering, settlement, bulk-final, dan period-close tetap
 tertutup.
 
+Audit gate berikutnya, **V2-D numbering lifecycle: BLOCKED / DEFERRED**.
+Regression numbering/lifecycle legacy lulus **64 test / 528 assertions / 64
+deprecations**, tetapi belum membuktikan effective-context numbering. Single
+numbering, numbering gate/order, quarter selection, sequence, dan audit masih
+berbasis `transactions.fiscal_year_id` legacy; exact effective
+provenance/package bridge, item/source parity, package/document completeness,
+effective period constraints, collision isolation, dan effective-fiscal-year
+audit belum menjadi authorization boundary. Quarter batch juga belum atomic
+end-to-end saat iterasi gagal. Regression tambahan membuktikan stale
+effective-context single numbering tetap tertutup (**1 test / 9 assertions**).
+Tidak ada boundary numbering yang dibuka dan tidak ada mass rewrite fiscal
+year legacy.
+
 ## Prioritas kerja aktif
 
 P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas aktif pada branch migrasi ini:

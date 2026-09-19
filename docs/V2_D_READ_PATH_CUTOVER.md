@@ -895,6 +895,28 @@ Focused + related regression passed **25 tests / 193 assertions / 25
 deprecations**. Pint, Blade cache, frontend build, and `git diff --check`
 passed.
 
+### D4 numbering lifecycle audit — BLOCKED / DEFERRED
+
+The next audit does **not** open effective-context numbering. Existing legacy
+numbering/lifecycle regression remains green, but it is not evidence for the
+stale effective-context path. `SpjSingleNumberingUseCase`,
+`SpjNumberingGateService`, `SpjNumberingOrderService`, and
+`SpjQuarterNumberingUseCase` still scope reads through legacy
+`transactions.fiscal_year_id`; `SpjDocumentNumberService` also derives the
+sequence and audit fiscal year from that legacy value. The effective
+provenance/package bridge, item/source parity, and package/document parity are
+not enforced as a numbering authorization boundary.
+
+The quarter path additionally selects packages through the legacy context and
+can leave numbers issued before a later package failure because the outer run
+is not one atomic transaction. Collision/idempotency checks are only evidenced
+for the legacy numbering domain; no effective-context evidence proves sequence
+isolation, duplicate protection, complete registry identities, period
+constraints, or effective-fiscal-year audit attribution. A focused regression
+now proves stale effective-context single numbering remains closed: **1 test /
+9 assertions**. No production numbering boundary was opened. FINAL, settlement,
+bulk-final, and period-close/open mutation remain closed.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
