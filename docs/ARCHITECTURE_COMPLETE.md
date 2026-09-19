@@ -63,7 +63,12 @@ write-through/compatibility mempunyai evidence tersendiri. Consumer production
 pertama yang disiapkan untuk controlled cutover adalah financial summary pada tab
 Laporan SPJ. Adapter `SpjV2ReportFinancialSummaryService` hanya mengganti angka
 summary read-only ketika selector memilih V2; daftar Paket, export, monitoring,
-labels realization, dan write/lifecycle tetap legacy.
+labels realization, dan write/lifecycle tetap legacy. D4 step 3 menambahkan
+`SpjV2EffectiveContextCompatibilityService` sebagai boundary read-only untuk
+menerjemahkan effective canonical context kembali ke provenance legacy/Paket.
+Service ini mengklasifikasikan stale legacy `fiscal_year_id`, duplicate
+provenance, dan unsafe bridge secara fail-closed; ia tidak memperbaiki atau
+menulis ulang legacy context.
 
 ### Database utama
 
