@@ -209,6 +209,10 @@ final class SpjV2LegacyMigrationService
         $sourceId = (int) $db->table('arkas_source_identity_registry')->value('source_id');
         $sourceAdapter = $this->sourceAdapterValidation($db, $sourceId);
         $activeSourceAdapter = $this->sourceAdapterValidation($db, $sourceId, 'ACTIVE_CANONICAL');
+        $provenanceComplete = $canonical['legacy_map_count'] === $canonical['legacy_transaction_count'];
+        $transactionOverlayComplete = $db->table('spj_transaction_overlays')->count() === $db->table('spj_transactions')->count();
+        $packageLinksComplete = ! $db->getSchemaBuilder()->hasColumn('spj_packages', 'spj_transaction_id')
+            || $db->table('spj_packages')->whereNull('spj_transaction_id')->count() === 0;
         $gates = [
             'integrity' => (string) $db->selectOne('PRAGMA integrity_check')->integrity_check === 'ok',
             'foreign_keys' => count($db->select('PRAGMA foreign_key_check')) === 0,
@@ -216,7 +220,10 @@ final class SpjV2LegacyMigrationService
             'source_adapter' => $sourceAdapter['status'] === 'PASS',
             'context_isolation' => $contextIsolation['status'] === 'PASS',
             'canonical_context' => $canonical['status'] === 'PASS',
+            'legacy_provenance' => $provenanceComplete,
+            'transaction_overlay_reconciliation' => $transactionOverlayComplete,
             'overlay_reconciliation' => $overlay['status'] === 'PASS',
+            'package_links' => $packageLinksComplete,
         ];
 
         return [
@@ -243,7 +250,21 @@ final class SpjV2LegacyMigrationService
                 ->pluck('count', 'canonical_context_status')
                 ->all(),
             'canonical_reconciliation' => $canonical,
+            'legacy_provenance' => [
+                'complete' => $provenanceComplete,
+                'many_to_one_v2_count' => (int) $db->table('legacy_transaction_v2_map')
+                    ->select('spj_transaction_id')
+                    ->groupBy('spj_transaction_id')
+                    ->havingRaw('COUNT(*) > 1')
+                    ->get()
+                    ->count(),
+            ],
             'package_document_matrix' => $this->packageDocumentMatrix($db),
+            'legacy_mapping_classification' => $db->table('legacy_transaction_v2_map')
+                ->select('mapping_status', DB::raw('COUNT(*) as count'))
+                ->groupBy('mapping_status')
+                ->pluck('count', 'mapping_status')
+                ->all(),
             'item_overlay_reconciliation' => $overlay,
             'gates' => $gates,
             'status' => in_array(false, $gates, true) ? 'FAIL' : 'PASS',
@@ -304,6 +325,12 @@ final class SpjV2LegacyMigrationService
                 ->where('source_id', $sourceId)
                 ->where('source_membership_hash', $classification['membership_hash'])
                 ->first();
+            $canonicalStatus = $v2 !== null && (string) ($v2->canonical_context_status ?? '') === 'ACTIVE_CANONICAL'
+                ? 'ACTIVE_CANONICAL'
+                : $canonical['status'];
+            $canonicalReason = $canonicalStatus === 'ACTIVE_CANONICAL' && $canonical['status'] === 'LEGACY_DUPLICATE'
+                ? 'canonical source membership is represented by the active context; legacy duplicate retained in provenance'
+                : $canonical['reason'];
             $attributes = [
                 'fiscal_year_id' => $sourcePlan['effective_fiscal_year_id'],
                 'fund_source_id' => $sourcePlan['effective_fund_source_id'],
@@ -312,8 +339,8 @@ final class SpjV2LegacyMigrationService
                 'source_status' => 'ACTIVE',
                 'requires_reconciliation' => $classification['status'] === 'DETERMINISTIC',
                 'source_missing_since' => null,
-                'canonical_context_status' => $canonical['status'],
-                'canonical_context_reason' => $canonical['reason'],
+                'canonical_context_status' => $canonicalStatus,
+                'canonical_context_reason' => $canonicalReason,
                 'updated_at' => $now,
             ];
             $v2Id = $v2?->id;
@@ -338,7 +365,9 @@ final class SpjV2LegacyMigrationService
                 $item = $items->firstWhere('source_item_id', $sourceKey);
                 if ($item !== null && filled($item->item_description)) {
                     $existingOverlay = $db->table('spj_item_overlays')->where('spj_transaction_source_id', $linkId)->first();
-                    $itemValues = ['item_description' => $item->item_description, 'updated_at' => $now];
+                    $itemValues = $this->mergeOverlayValues($existingOverlay, [
+                        'item_description' => (string) $item->item_description,
+                    ], $now);
                     if ($existingOverlay === null) {
                         $db->table('spj_item_overlays')->insert($itemValues + ['spj_transaction_source_id' => $linkId, 'created_at' => $now]);
                         $itemOverlays++;
@@ -348,14 +377,13 @@ final class SpjV2LegacyMigrationService
                 }
             }
 
-            $overlayValues = [
+            $overlayValues = $this->mergeOverlayValues($db->table('spj_transaction_overlays')->where('spj_transaction_id', $v2Id)->first(), [
                 'spj_category' => $legacy->spj_category,
                 'payment_description' => $legacy->payment_description,
                 'payment_method' => $legacy->payment_method,
                 'payment_reference' => $legacy->payment_reference,
                 'receipt_recipient_name' => $legacy->receipt_recipient_name,
-                'updated_at' => $now,
-            ];
+            ], $now);
             $overlay = $db->table('spj_transaction_overlays')->where('spj_transaction_id', $v2Id)->first();
             if ($overlay === null) {
                 $db->table('spj_transaction_overlays')->insert($overlayValues + ['spj_transaction_id' => $v2Id, 'created_at' => $now]);
@@ -399,6 +427,43 @@ final class SpjV2LegacyMigrationService
 
             return ['source_links' => $sourceLinks, 'item_overlays' => $itemOverlays, 'transaction_overlay' => $transactionOverlay, 'legacy_map' => $legacyMap];
         });
+    }
+
+    /** @param object|null $existing @param array<string, mixed> $incoming @return array<string, mixed> */
+    private function mergeOverlayValues(?object $existing, array $incoming, \DateTimeInterface $now): array
+    {
+        $values = [];
+        $conflicts = [];
+        $metadata = $existing !== null && isset($existing->operator_metadata)
+            ? json_decode((string) $existing->operator_metadata, true)
+            : [];
+        if (! is_array($metadata)) {
+            $metadata = [];
+        }
+        if (isset($metadata['_v2_reconciliation_conflicts']) && is_array($metadata['_v2_reconciliation_conflicts'])) {
+            $conflicts = $metadata['_v2_reconciliation_conflicts'];
+        }
+
+        foreach ($incoming as $field => $incomingValue) {
+            $currentValue = $existing?->{$field};
+            if (! filled($currentValue) && filled($incomingValue)) {
+                $values[$field] = $incomingValue;
+            } elseif (filled($currentValue) && filled($incomingValue) && (string) $currentValue !== (string) $incomingValue) {
+                $conflicts[$field] = array_values(array_unique(array_filter([
+                    (string) $currentValue,
+                    (string) $incomingValue,
+                    ...((array) ($conflicts[$field] ?? [])),
+                ])));
+            }
+        }
+
+        if ($conflicts !== []) {
+            $metadata['_v2_reconciliation_conflicts'] = $conflicts;
+            $values['operator_metadata'] = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        }
+        $values['updated_at'] = $now;
+
+        return $values;
     }
 
     /** @param array{status:string,membership_hash:?string} $mapping @param array<string, array<string, array<int, array{legacy_id:int,legacy_context_matches:bool}>>> $validMembershipContexts @return array{status:string,reason:string} */
@@ -464,14 +529,36 @@ final class SpjV2LegacyMigrationService
     /** @param Collection<int, Collection<int, object>> $legacyItems @return array<string, int|string> */
     private function itemOverlayReconciliation(Connection $db, $legacyItems): array
     {
+        if (! $db->getSchemaBuilder()->hasTable('legacy_transaction_v2_map')) {
+            return [
+                'legacy_operator_owned_candidates' => 0,
+                'v2_item_overlays' => 0,
+                'expected_overlay' => 0,
+                'matched_overlay' => 0,
+                'missing_overlay' => 0,
+                'unexpected_overlay' => 0,
+                'lost_overlay' => 0,
+                'description_mismatch' => 0,
+                'wrong_source_link' => 0,
+                'status' => 'NOT_RUN_DRY_RUN',
+            ];
+        }
         $expected = [];
         $legacySourceKeys = [];
         foreach ($legacyItems as $legacyId => $items) {
+            $map = $db->table('legacy_transaction_v2_map')->where('legacy_transaction_id', $legacyId)->first();
+            if ($map === null) {
+                continue;
+            }
             foreach ($items as $item) {
-                $key = (int) $legacyId.'|'.(string) $item->source_item_id;
+                $key = (int) $map->spj_transaction_id.'|'.(string) $item->source_item_id;
                 $legacySourceKeys[$key] = true;
                 if (filled($item->item_description ?? null)) {
-                    $expected[$key] = (string) $item->item_description;
+                    if (isset($expected[$key]) && $expected[$key] !== (string) $item->item_description) {
+                        $expected[$key] = '__CONFLICT__';
+                    } else {
+                        $expected[$key] = (string) $item->item_description;
+                    }
                 }
             }
         }
@@ -482,8 +569,8 @@ final class SpjV2LegacyMigrationService
                 ->join('spj_transaction_sources as links', 'links.spj_transaction_id', '=', 'maps.spj_transaction_id')
                 ->join('arkas_source_identity_registry as identities', 'identities.id', '=', 'links.arkas_source_identity_id')
                 ->join('spj_item_overlays as overlays', 'overlays.spj_transaction_source_id', '=', 'links.id')
-                ->get(['maps.legacy_transaction_id', 'identities.source_key', 'overlays.item_description']) as $row) {
-                $key = (int) $row->legacy_transaction_id.'|'.(string) $row->source_key;
+                ->get(['maps.spj_transaction_id', 'identities.source_key', 'overlays.item_description']) as $row) {
+                $key = (int) $row->spj_transaction_id.'|'.(string) $row->source_key;
                 if (! isset($legacySourceKeys[$key])) {
                     $wrongSourceLink++;
                 }
@@ -493,7 +580,7 @@ final class SpjV2LegacyMigrationService
         $matched = array_intersect_key($expected, $actual);
         $descriptionMismatch = 0;
         foreach ($matched as $key => $description) {
-            if ($description !== $actual[$key]) {
+            if ($description === '__CONFLICT__' || $description !== $actual[$key]) {
                 $descriptionMismatch++;
             }
         }
@@ -556,11 +643,23 @@ final class SpjV2LegacyMigrationService
         $transactions = $db->table('transactions')->count();
 
         return [
-            'status' => $invalid === 0 && $maps === $transactions ? 'PASS' : 'FAIL',
+            'status' => $invalid === 0 && $maps === $transactions && $this->canonicalIdentityUnique($db) ? 'PASS' : 'FAIL',
             'invalid_context_rows' => $invalid,
             'legacy_map_count' => $maps,
             'legacy_transaction_count' => $transactions,
+            'canonical_transaction_count' => $db->table('spj_transactions')->count(),
+            'active_canonical_count' => (int) $db->table('spj_transactions')->where('canonical_context_status', 'ACTIVE_CANONICAL')->count(),
+            'legacy_duplicate_count' => (int) $db->table('spj_transactions')->where('canonical_context_status', 'LEGACY_DUPLICATE')->count(),
         ];
+    }
+
+    private function canonicalIdentityUnique(Connection $db): bool
+    {
+        return $db->table('spj_transactions')
+            ->select('fiscal_year_id', 'fund_source_id', 'source_id', 'source_membership_hash')
+            ->groupBy('fiscal_year_id', 'fund_source_id', 'source_id', 'source_membership_hash')
+            ->havingRaw('COUNT(*) > 1')
+            ->count() === 0;
     }
 
     /** @return array<string, int> */
@@ -573,7 +672,8 @@ final class SpjV2LegacyMigrationService
         $matrix = [];
         foreach ($db->table('spj_packages as packages')
             ->join('legacy_transaction_v2_map as maps', 'maps.legacy_transaction_id', '=', 'packages.transaction_id')
-            ->select('maps.canonical_context_status', 'packages.status')
+            ->join('spj_transactions as transactions', 'transactions.id', '=', 'maps.spj_transaction_id')
+            ->select('transactions.canonical_context_status', 'packages.status')
             ->get() as $row) {
             $key = $row->canonical_context_status.'_'.strtoupper((string) $row->status);
             $matrix[$key] = ($matrix[$key] ?? 0) + 1;

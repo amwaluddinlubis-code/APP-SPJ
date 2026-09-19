@@ -12,35 +12,48 @@ final class V2CLegacyMigrationTest extends TestCase
 {
     public function test_full_tenant_a_rehearsal_and_verify_contract(): void
     {
-        $target = getenv('SPJ_V2_C_TENANT_A_PATH') ?: '';
+        $sourceClone = storage_path('app/school-databases/10260786/spj.sqlite');
         $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
-        $this->assertNotSame('', $target);
+        $this->assertFileExists($sourceClone);
         $this->assertNotSame('', $source);
-        $this->connect($target, $source, 10260756);
-        $this->migrateRehearsalSchema();
+        $target = storage_path('app/v2-c-rehearsal/test-fresh-c2.sqlite');
+        File::copy($sourceClone, $target);
 
-        $result = app(SpjV2LegacyMigrationService::class)->verify(DB::connection('school'));
-        $this->assertSame('ok', $result['integrity_check']);
-        $this->assertSame(0, $result['foreign_key_violations']);
-        $this->assertSame(0, max($result['orphans']));
-        $this->assertSame(291, $result['counts']['spj_transactions']);
-        $this->assertSame(699, $result['counts']['spj_transaction_sources']);
-        $this->assertSame(291, $result['counts']['legacy_transaction_v2_map']);
-        $this->assertSame(67, $result['counts']['package_v2_links']);
-        $this->assertSame('PASS', $result['source_adapter_validation']['status']);
-        $this->assertSame(0, $result['source_adapter_validation']['unresolved_links']);
-        $this->assertTrue($result['context_isolation']['transaction_boundary_unique']);
-        $this->assertSame(268, $result['context_isolation']['source_identity_cross_context_count']);
-        $this->assertSame('FAIL', $result['context_isolation']['status']);
-        $this->assertSame(187, (int) ($result['canonical_context_classification']['ACTIVE_CANONICAL'] ?? 0));
-        $this->assertSame(104, (int) ($result['canonical_context_classification']['LEGACY_DUPLICATE'] ?? 0));
-        $this->assertSame(245, $result['item_overlay_reconciliation']['legacy_operator_owned_candidates']);
-        $this->assertSame(245, $result['item_overlay_reconciliation']['v2_item_overlays']);
-        $this->assertSame(0, $result['item_overlay_reconciliation']['lost_overlay']);
-        $this->assertSame(0, $result['item_overlay_reconciliation']['unexpected_overlay']);
-        $this->assertEquals(429605000, $result['financial_reconciliation']['ACTIVE_CANONICAL']['gross_from_raw']);
-        $this->assertEquals(20497310, $result['financial_reconciliation']['ACTIVE_CANONICAL']['tax_from_raw']);
-        $this->assertEquals(409107690, $result['financial_reconciliation']['ACTIVE_CANONICAL']['net_from_raw']);
+        try {
+            $this->connect($target, $source, 10260756);
+            $this->migrateRehearsalSchema();
+            $service = app(SpjV2LegacyMigrationService::class);
+            $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-1.json'), 10260756);
+            $result = $service->verify(DB::connection('school'));
+            $this->assertSame('ok', $result['integrity_check']);
+            $this->assertSame(0, $result['foreign_key_violations']);
+            $this->assertSame(0, max($result['orphans']));
+            $this->assertSame(187, $result['counts']['spj_transactions']);
+            $this->assertSame(431, $result['counts']['spj_transaction_sources']);
+            $this->assertSame(291, $result['counts']['legacy_transaction_v2_map']);
+            $this->assertSame(67, $result['counts']['package_v2_links']);
+            $this->assertSame('PASS', $result['source_adapter_validation']['status']);
+            $this->assertSame(0, $result['source_adapter_validation']['unresolved_links']);
+            $this->assertTrue($result['context_isolation']['transaction_boundary_unique']);
+            $this->assertSame(0, $result['context_isolation']['source_identity_cross_context_count']);
+            $this->assertSame('PASS', $result['context_isolation']['status']);
+            $this->assertSame(187, $result['canonical_reconciliation']['active_canonical_count']);
+            $this->assertSame(104, $result['legacy_provenance']['many_to_one_v2_count']);
+            $this->assertSame(245, $result['item_overlay_reconciliation']['legacy_operator_owned_candidates']);
+            $this->assertSame(245, $result['item_overlay_reconciliation']['v2_item_overlays']);
+            $this->assertSame(0, $result['item_overlay_reconciliation']['lost_overlay']);
+            $this->assertSame(0, $result['item_overlay_reconciliation']['unexpected_overlay']);
+            $this->assertEquals(429605000, $result['financial_reconciliation']['ACTIVE_CANONICAL']['gross_from_raw']);
+            $this->assertEquals(20497310, $result['financial_reconciliation']['ACTIVE_CANONICAL']['tax_from_raw']);
+            $this->assertEquals(409107690, $result['financial_reconciliation']['ACTIVE_CANONICAL']['net_from_raw']);
+
+            $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-2.json'), 10260756);
+            $second = $service->verify(DB::connection('school'));
+            $this->assertSame($result['counts'], $second['counts']);
+            $this->assertSame('PASS', $second['status']);
+        } finally {
+            File::delete($target);
+        }
     }
 
     public function test_tenant_b_dry_run_is_source_safe_and_does_not_guess(): void
@@ -59,10 +72,10 @@ final class V2CLegacyMigrationTest extends TestCase
 
     public function test_final_package_and_document_are_immutable_in_synthetic_rehearsal(): void
     {
-        $target = getenv('SPJ_V2_C_TENANT_A_PATH') ?: '';
+        $target = storage_path('app/school-databases/10260786/spj.sqlite');
         $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
-        $this->assertNotSame('', $target);
-        $synthetic = storage_path('app/v2-c-rehearsal/final-synthetic.sqlite');
+        $this->assertFileExists($target);
+        $synthetic = storage_path('app/v2-c-rehearsal/final-synthetic-c2.sqlite');
         File::copy($target, $synthetic);
 
         try {
@@ -93,6 +106,23 @@ final class V2CLegacyMigrationTest extends TestCase
         } finally {
             File::delete($synthetic);
         }
+    }
+
+    public function test_many_to_one_overlay_merge_is_non_destructive_and_conflicts_are_explicit(): void
+    {
+        $service = app(SpjV2LegacyMigrationService::class);
+        $method = new \ReflectionMethod($service, 'mergeOverlayValues');
+        $method->setAccessible(true);
+
+        $blank = (object) ['payment_description' => null, 'operator_metadata' => null];
+        $kept = $method->invoke($service, $blank, ['payment_description' => 'operator value'], now());
+        $this->assertSame('operator value', $kept['payment_description']);
+
+        $existing = (object) ['payment_description' => 'first value', 'operator_metadata' => null];
+        $conflict = $method->invoke($service, $existing, ['payment_description' => 'second value'], now());
+        $this->assertArrayNotHasKey('payment_description', $conflict);
+        $metadata = json_decode($conflict['operator_metadata'], true);
+        $this->assertSame(['first value', 'second value'], $metadata['_v2_reconciliation_conflicts']['payment_description']);
     }
 
     private function connect(string $target, ?string $source, int $npsn, bool $sourceUnavailable = false): void

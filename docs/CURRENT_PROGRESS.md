@@ -548,12 +548,14 @@ tetap BLOCKED sampai V2-A2 tenant discovery/source identity review selesai.
 
 ## V2-C full legacy migration rehearsal — 2026-09-19
 
-V2-C **FUNCTIONAL PASS ON ISOLATED CLONES / PRODUCTION CUTOVER BLOCKED**.
-Tenant A clone memproses seluruh 291 transaction dan 699 item: EXACT 269,
-DETERMINISTIC 22, V2 transaction 291, source links 699, transaction overlay 291,
-item overlay 245, legacy map 291, dan package V2 links 67. Seluruh 22 deterministic
-mempertahankan legacy `source_key`; 66 NUMBERED Paket dan 115 NUMBERED dokumen
-tetap identik. Execute kedua idempotent.
+V2-C2 **CANONICAL RECONCILIATION PASS ON A FRESH ISOLATED CLONE / PRODUCTION CUTOVER BLOCKED**.
+Tenant A fresh clone memproses seluruh 291 legacy transaction menjadi 187 canonical
+V2 transactions, 431 unique source links, 187 transaction overlays, 245 item
+overlays, 291 provenance maps, dan 67 package V2 links. Source-resolution tetap
+EXACT 269 dan DETERMINISTIC 22; 104 legacy rows menjadi provenance many-to-one,
+bukan canonical transaction tambahan. Seluruh 22 deterministic mempertahankan
+legacy `source_key`; 66 NUMBERED Paket dan 115 NUMBERED dokumen tetap identik.
+Execute kedua mempertahankan seluruh count dan lulus verify.
 
 External/orphan fixture clone hanya menjalani source-unavailable dry-run karena
 tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
@@ -561,10 +563,11 @@ tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
 
 Evidence lengkap: `V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` dan report JSON lokal di
 `storage/app/v2-c-rehearsal/reports/`. Original tenant, central registry, dan ARKAS
-source tidak dimutasi. V2-C kini memisahkan source-resolution dari canonical
-context: 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`. Semantic verify
-sekarang menghitung gate dari evidence aktual; saat ini context isolation masih
-FAIL dengan 268 source identity lintas context, sehingga V2-D read-path cutover
+source tidak dimutasi. V2-C2 memisahkan source-resolution dari canonical
+transaction identity: 187 canonical V2 transaction dan 104 legacy provenance
+duplicate. Semantic verify menghitung gate dari evidence aktual; integrity, FK,
+orphan, source adapter, context isolation, canonical identity, dan item-overlay
+reconciliation semuanya PASS pada fresh clone. V2-D read-path cutover tetap
 belum dimulai.
 
 ---

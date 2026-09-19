@@ -293,12 +293,13 @@ Evidence canonical: `docs/V2_A2_TENANT_DISCOVERY_SOURCE_IDENTITY_PREFLIGHT.md`.
 
 Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
 
-- [x] Tenant A 291 transaction dan 699 item diproses pada clone baru;
+- [x] Tenant A 291 legacy transaction dan 699 item diproses pada fresh clone;
+- [x] V2-C2 menghasilkan 187 canonical transaction, 431 unique source links,
+  dan 291 legacy provenance mappings (104 many-to-one duplicate provenance);
 - [x] EXACT 269 dan DETERMINISTIC 22 tanpa rewrite legacy `source_key`;
 - [x] package/document NUMBERED continuity, overlay continuity, idempotency,
   integrity, FK, orphan, dan synthetic FINAL regression lulus;
-- [ ] semantic context-isolation gate: 268 source identity lintasan legacy
-  duplicate `3|1` versus active `4|1` masih memerlukan explicit reconciliation;
+- [x] semantic context-isolation gate PASS pada fresh V2-C2 clone;
 - [x] external/orphan fixture 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
 - [x] command/service/report V2-C tersedia;
 - [ ] source evidence/ownership fixture `10208183` (opsional, bukan gate current-project);

@@ -29,10 +29,12 @@ read-path V2.
 | 10260756 | `storage/app/v2-c-rehearsal/tenant-10260756-v2c.sqlite` | `E2B2AFAE4369374CA1F8215B1D26785117D9A131CF784EDA9614243FFA57A27C` | execute + idempotent verify |
 | 10208183 | `storage/app/v2-c-rehearsal/tenant-10208183-v2c.sqlite` | `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A` | source-unavailable dry-run |
 
-Tenant A menghasilkan 291 V2 transactions, 699 source links, 291 transaction
-overlays, 245 item overlays, 291 legacy maps, dan 67 package links. Classification
-source-resolution adalah EXACT 269 dan DETERMINISTIC 22; canonical context
-adalah 187 `ACTIVE_CANONICAL` dan 104 `LEGACY_DUPLICATE`. Seluruh 22 deterministic mempertahankan
+Tenant A fresh V2-C2 clone menghasilkan 187 canonical V2 transactions, 431 unique
+source links, 187 transaction overlays, 245 item overlays, 291 legacy provenance
+maps, dan 67 package links. Classification source-resolution adalah EXACT 269 dan
+DETERMINISTIC 22. Sebanyak 104 legacy rows menjadi many-to-one provenance terhadap
+187 canonical transactions; duplicate provenance tidak membuat V2 transaction
+tambahan. Seluruh 22 deterministic mempertahankan
 `transactions.source_key` lama dan tidak mengubah Paket NUMBERED.
 
 Sebanyak 104 row tambahan berasal dari fiscal-year record legacy id `3` yang
@@ -76,12 +78,13 @@ dry-run tetap `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A`
 - Test V2-B/V2-C: 5 test, 101 assertions, 5 deprecations.
 - Importer tenant-boundary regression: 4 test, 80 assertions, 4 deprecations.
 
-Semantic V2-C verification terbaru menghitung semua gate dari database, bukan
-hard-code. Integrity, FK, orphan, source adapter, canonical reconciliation, dan
-identity overlay lulus; tetapi `context_isolation` masih **FAIL** karena 268
-source identities muncul pada context legacy duplicate `3|1` dan context aktif
-`4|1`. Ini menjadi blocker Phase A yang harus direkonsiliasi secara eksplisit;
-V2-D belum dimulai dan tidak ada production read-path cutover.
+Semantic V2-C2 verification terbaru menghitung semua gate dari database, bukan
+hard-code. Integrity, FK, orphan, source adapter, context isolation, canonical
+identity, provenance completeness, dan identity-level item overlay reconciliation
+lulus pada fresh clone. Execute kedua tetap 187/431/245/291/67 dan verify PASS.
+Bridge kini additive: `legacy_transaction_id` tetap unik, sedangkan satu canonical
+V2 transaction dapat memiliki banyak legacy provenance rows. V2-D belum dimulai
+dan tidak ada production read-path cutover.
 
 ## Report machine-readable
 
