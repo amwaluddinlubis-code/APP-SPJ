@@ -789,8 +789,7 @@ berasal dari provenance/effective context. Select, compose, dan export memakai
 boundary yang sama; forged/outside transaction ID tetap ditolak dan config
 `legacy` langsung mengembalikan behavior lama. Regression
 `V2DExtendedReportContextCutoverTest` memakai synthetic operator overlays pada
-clone yang dipaku ke stale effective-context nyata. Runtime evidence step 9 masih
-**RVR**.
+clone yang dipaku ke stale effective-context nyata. Focused runtime gate Step 9 PASS dengan **20 test / 241 assertions / 20 deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 9 sekarang **RUNTIME PASS**.
 
 ---
 
