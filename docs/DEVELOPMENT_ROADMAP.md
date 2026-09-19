@@ -125,8 +125,10 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement canonical tax breakdown + raw RKAS activity-code resolution;
 - [x] implement `SpjV2WorkflowParityService` + report/tax/period fail-closed regression;
 - [x] jalankan focused V2-C → V2-D suite pada isolated clone: 16 test / 378 assertions PASS;
-- [ ] authorization + active-context cutover regression;
+- [ ] implement fail-safe read-path selector default `legacy`, tanpa hard-code `source_id`;
+- [ ] authorization + active-context regression pada consumer read-only pertama;
 - [ ] rollback strategy documented + tested;
+- [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
 Jangan memindahkan controller/Livewire/write-path ke V2 sebelum D3 relation parity, report/tax/period parity, dan rollback gate lulus.
