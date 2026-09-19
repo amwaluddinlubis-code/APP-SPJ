@@ -39,12 +39,12 @@ Commit dokumentasi setelah `ba8fa0b...` tidak menggantikan code gate tersebut se
 ### Latest local canonical gate for `arkas-raw-mirror`
 
 ```text
-HEAD                       : 3e872fb (canonical gate repair checkpoint)
-FULL PHPUNIT               : PASS — 17 tests / 7,973 assertions / 0 failures
-DEPRECATIONS               : 656
-FULL PHPUNIT DURATION      : 955.64s
-COMPOSER VALIDATE          : PASS
-PLATFORM REQUIREMENTS     : PASS
+HEAD                       : 598b74a (lock-stability verification checkpoint)
+FULL PHPUNIT               : PASS — 17 tests / 7,979 assertions / 0 failures
+DEPRECATIONS               : 657
+FULL PHPUNIT DURATION      : 1,232.55s
+COMPOSER VALIDATE          : NOT RUN - Composer executable unavailable in this shell
+PLATFORM REQUIREMENTS     : NOT RUN - Composer executable unavailable in this shell
 PINT                      : PASS
 BLADE CACHE               : PASS
 FRONTEND BUILD            : PASS
@@ -53,6 +53,23 @@ GIT DIFF CHECK            : PASS
 
 This is local evidence for the current branch checkpoint and does not claim CI
 or browser/operator verification. Browser QA remains RVR / DEFERRED.
+
+### SQLite lock-stability verification - 2026-09-19
+
+The lock investigation reran the complete Feature suite and then the complete
+repository PHPUnit gate from the clean `598b74a` head. The Feature suite passed
+with **593 deprecated notices and 5,135 assertions** in **2,871.14s**. The
+repository gate passed with **17 tests / 7,979 assertions / 0 failures / 657
+deprecated notices** in **1,232.55s**. Three serial focused runs of
+`LivewireMutationAuthorizationTest` passed with **22 assertions** each and no
+lock exception.
+
+Because no deterministic `database is locked` exception was reproduced, no
+production, test-isolation, or connection-lifecycle patch is justified by this
+run. The remaining signal is environmental contention/slow startup rather than
+a proven application regression. Composer validation/platform checks could not
+be rerun because the Composer executable is not installed in this shell; this
+is distinct from the passing PHP, Blade, frontend, Pint, and diff checks.
 
 ### P0 dependency-platform repair — CI #483 → #486
 

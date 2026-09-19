@@ -1029,3 +1029,12 @@ settlement, bulk-final, period close/open, or browser QA surface was opened.
 
 Focused evidence: **11 tests / 121 assertions / 11 deprecations PASS** from
 the batch UI contract and V2 numbering suites.
+
+### Canonical SQLite lock-stability verification - 2026-09-19
+
+The clean `598b74a` head passed the complete repository PHPUnit gate with
+**17 tests / 7,979 assertions / 0 failures / 657 deprecated notices** in
+**1,232.55s**. The complete Feature suite also passed with **5,135
+assertions** and **593 deprecated notices**. Three serial authorization-suite
+runs passed without a `database is locked` exception. This evidence does not
+claim browser/runtime verification; browser QA remains RVR/DEFERRED.

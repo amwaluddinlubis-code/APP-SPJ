@@ -551,3 +551,14 @@ bulk-final, period close/open, dan browser QA tetap BLOCKED/DEFERRED.
 
 Evidence focused: `SpjNumberingConfirmationModalUiTest` +
 `V2DNumberingIssuanceTest` **11 tests / 121 assertions / 11 deprecations PASS**.
+
+## SQLite lock-stability verification - 2026-09-19
+
+From clean HEAD `598b74a`, the full Feature suite passed (**5,135 assertions,
+593 deprecated notices, 2,871.14s**) and the full repository PHPUnit gate
+passed (**17 tests / 7,979 assertions / 0 failures / 657 deprecated notices,
+1,232.55s**). Three serial `LivewireMutationAuthorizationTest` runs passed
+with 22 assertions each. No deterministic SQLite lock exception was observed,
+so no speculative retry or transaction-lifecycle change was introduced.
+Composer checks were not rerun because Composer is unavailable in the shell.
+Browser QA remains RVR/DEFERRED and lifecycle boundaries remain closed.
