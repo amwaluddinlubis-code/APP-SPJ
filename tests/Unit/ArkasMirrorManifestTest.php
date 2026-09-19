@@ -43,6 +43,10 @@ class ArkasMirrorManifestTest extends TestCase
         self::assertSame('UNKNOWN', $manifest->entry('ref_kode')['category']);
         self::assertFalse($manifest->entry('ref_kode')['enabled']);
         self::assertSame(ArkasCentralReferenceBridge::class, $manifest->entry('ref_kode')['bridge']);
+        self::assertSame('COMPOSITE', $manifest->entry('kas_umum_nota_pajak')['key_strategy']);
+        self::assertSame(['id_kas_nota', 'ntpn'], $manifest->entry('kas_umum_nota_pajak')['key_columns']);
+        self::assertSame('OPTIONAL', $manifest->entry('pegawai')['availability']);
+        self::assertSame(['id_kas_umum'], $manifest->entry('kas_umum')['key_columns']);
     }
 
     public function test_manifest_rejects_tables_without_an_explicit_contract(): void

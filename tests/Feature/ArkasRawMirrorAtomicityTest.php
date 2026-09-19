@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\ArkasSource;
 use App\Services\ArkasBridgeClient;
 use App\Services\ArkasDatabaseExplorer;
+use App\Services\ArkasMirrorManifest;
 use App\Services\ArkasRawMirrorService;
 use App\Services\ArkasSourceKeyResolver;
+use App\Services\ArkasTenantDataBridge;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -75,7 +77,7 @@ class ArkasRawMirrorAtomicityTest extends TestCase
         $bridge->shouldReceive('execute')->once()->withArgs(fn (ArkasSource $actualSource, string $command): bool => $actualSource->id === $source->id && $command === 'rows')
             ->andReturn("FIELDS|ID\nDATA|NEW-ROW-1\nDATA|NEW-ROW-2");
         $sourceKeys = Mockery::mock(ArkasSourceKeyResolver::class);
-        $sourceKeys->shouldReceive('resolveFromColumns')->twice()->andReturnUsing(function (): string {
+        $sourceKeys->shouldReceive('resolveStrictFromColumns')->twice()->andReturnUsing(function (): string {
             static $calls = 0;
             $calls++;
             if ($calls === 2) {
@@ -89,7 +91,7 @@ class ArkasRawMirrorAtomicityTest extends TestCase
         $this->expectExceptionMessage('deterministic row failure');
 
         try {
-            (new ArkasRawMirrorService($explorer, $bridge, $sourceKeys))->synchronize($source);
+            (new ArkasRawMirrorService($explorer, $bridge, $sourceKeys, $this->minimalManifest()))->synchronize($source);
         } finally {
             $metadata = DB::connection('school')->table('arkas_raw_mirror_tables')->where('id', $mirrorTableId)->first();
             $this->assertSame('ACTIVE', $metadata->status);
@@ -121,13 +123,31 @@ class ArkasRawMirrorAtomicityTest extends TestCase
         $bridge->shouldReceive('execute')->once()->withArgs(fn (ArkasSource $actualSource, string $command): bool => $actualSource->id === $source->id && $command === 'rows')
             ->andReturn("FIELDS|ID\nDATA|KNOWN-ROW");
         $sourceKeys = Mockery::mock(ArkasSourceKeyResolver::class);
-        $sourceKeys->shouldReceive('resolveFromColumns')->once()->andReturn('KNOWN-ROW');
+        $sourceKeys->shouldReceive('resolveStrictFromColumns')->once()->andReturn('KNOWN-ROW');
 
-        $result = (new ArkasRawMirrorService($explorer, $bridge, $sourceKeys))->synchronize($source);
+        $result = (new ArkasRawMirrorService($explorer, $bridge, $sourceKeys, $this->minimalManifest()))->synchronize($source);
 
         $this->assertSame(1, $result['tables']);
         $this->assertSame(1, $result['skipped_tables']);
         $this->assertSame(1, DB::connection('school')->table('arkas_raw_mirror_tables')->count());
         $this->assertSame('kas_umum', DB::connection('school')->table('arkas_raw_mirror_tables')->value('source_table'));
+    }
+
+    private function minimalManifest(): ArkasMirrorManifest
+    {
+        return new ArkasMirrorManifest([
+            'kas_umum' => [
+                'source_table' => 'kas_umum',
+                'category' => 'TENANT',
+                'bridge' => ArkasTenantDataBridge::class,
+                'enabled' => true,
+                'availability' => 'REQUIRED',
+                'key_strategy' => 'COMPOSITE',
+                'key_columns' => ['ID'],
+                'required_columns' => ['ID'],
+                'school_scope' => 'DIRECT',
+                'contract_note' => 'Test contract',
+            ],
+        ]);
     }
 }
