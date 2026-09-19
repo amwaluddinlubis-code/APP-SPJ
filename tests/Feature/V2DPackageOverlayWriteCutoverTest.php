@@ -252,7 +252,12 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $maintenance = (string) file_get_contents(resource_path('views/spj/partials/package/categories/pemeliharaan.blade.php'));
             $categoryJs = (string) file_get_contents(resource_path('js/spj-package-manual-category.js'));
 
+            $summary = (string) file_get_contents(resource_path('views/spj/partials/package/transaction-summary.blade.php'));
+
             $this->assertStringContainsString('data-compatibility-editor="1"', $editor);
+            $this->assertStringContainsString('$transactionDetailIdentifier = $transaction->source_key', $editor);
+            $this->assertStringContainsString('$activeSpjDocument = $package->documents', $editor);
+            $this->assertStringContainsString('$transactionDetailIdentifier ?? $transaction->id', $summary);
             $this->assertStringContainsString("route('spj.update', \$package->id)", $editor);
             $this->assertStringNotContainsString("route('spj.quarter-numbering'", $editor);
             $this->assertStringNotContainsString("route('spj.assign-number'", $editor);
