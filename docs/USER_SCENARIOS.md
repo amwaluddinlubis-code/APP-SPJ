@@ -251,6 +251,40 @@ Dari sisi operator: Rincian untuk memeriksa, Isian Manual satu-satunya tempat me
 
 ---
 
+### Compatibility effective-context untuk Checklist/READY
+
+Pada fase transisi V2, Paket dengan legacy `fiscal_year_id` stale dapat terlihat
+melalui mode baca kompatibilitas. Paket tersebut **tidak** otomatis menjadi
+editable.
+
+Alur yang diizinkan pada Step 11A:
+
+```text
+Buka Paket kompatibilitas
+→ Buka Checklist
+→ backend membuktikan effective context + exact package/provenance bridge
+→ pastikan source tidak missing/reconciliation
+→ pastikan source facts masih sama dengan canonical raw
+→ seluruh validation/requirement lulus
+→ Tandai siap diproses
+→ DRAFT menjadi READY
+```
+
+Yang belum diizinkan pada mode kompatibilitas:
+
+```text
+Isian Manual / perubahan kategori
+numbering
+cancel / replace
+FINAL / bulk FINAL
+settlement
+close / reopen periode
+```
+
+Jika Checklist menemukan blocker, tombol/perbaikan tidak menjadi izin untuk
+menulis di luar context. Operator tetap mengikuti workspace yang tersedia; write
+boundary Paket yang lebih luas baru dibuka pada gate berikutnya.
+
 ## 11. Isian Manual — kategori dan konteks
 
 Kategori canonical:
