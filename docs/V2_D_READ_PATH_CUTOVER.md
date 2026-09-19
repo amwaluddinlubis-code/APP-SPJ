@@ -841,11 +841,22 @@ proves it safe. FINAL/CANCELLED remain locked.
 - `PERBARUI_ISIAN` audit uses the effective fiscal year;
 - READY category change still demotes to DRAFT and leaves legacy context intact;
 - config rollback to `legacy` immediately blocks stale-context overlay writes;
-- NUMBERED effective-context Paket remain locked;
+- wrong Paket/V2 bridge fails closed without an audit mutation;
+- unresolved reconciliation and `SOURCE_MISSING` fail closed without an audit
+  mutation;
+- synthetic raw-source financial drift fails closed before any overlay write;
+- NUMBERED effective-context Paket remain locked for both normal overlay save and
+  category mutation;
 - the dedicated editor keeps legacy fiscal year in memory and does not expose
   numbering/bulk-final controls or maintenance-link mutation.
 
-Runtime evidence for D4 step 11B is currently **RVR**.
+Negative-path hardening was added in commits `3aa331a` and `eb96214`.
+These commits extend the staged regression contract only; they are not runtime
+PASS evidence. The branch currently has no canonical Actions run for this head
+because the repository workflow auto-trigger targets `gui-standardization`,
+while the isolated Step 11B fixture is branch/local evidence. Runtime evidence
+for D4 step 11B therefore remains **RVR** until the focused gate is actually
+executed.
 
 A production switch requires all of the following:
 
