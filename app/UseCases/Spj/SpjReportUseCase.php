@@ -311,6 +311,7 @@ class SpjReportUseCase
                 (int) $year->year,
                 $mode,
                 $periode,
+                $financialSummary,
             );
             if ($v2Summary !== null) {
                 $financialSummary = array_intersect_key($v2Summary, $financialSummary);
