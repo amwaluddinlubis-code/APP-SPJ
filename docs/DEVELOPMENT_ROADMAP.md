@@ -133,8 +133,8 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] rollback strategy documented + tested pada selector/consumer fail-safe;
 - [x] audit akar live legacy `ActiveSpjContext` vs canonical V2 mismatch;
 - [x] implement read-only effective-context compatibility audit/resolver berbasis provenance;
-- [ ] jalankan `V2DEffectiveContextCompatibilityTest` + review exact 67-Paket/context inventory;
-- [ ] tentukan compatibility read strategy untuk Paket/list consumer tanpa mutation legacy;
+- [x] jalankan `V2DEffectiveContextCompatibilityTest` + review exact 67-Paket/context inventory: 67/67 stale legacy FY, 0 unsafe, 0 fund-source mismatch;
+- [ ] implement compatibility read membership untuk Paket/list consumer berbasis effective-context/provenance tanpa mutation legacy;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
