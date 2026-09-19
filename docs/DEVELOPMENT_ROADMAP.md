@@ -135,7 +135,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement read-only effective-context compatibility audit/resolver berbasis provenance;
 - [x] jalankan `V2DEffectiveContextCompatibilityTest` + review exact 67-Paket/context inventory: 67/67 stale legacy FY, 0 unsafe, 0 fund-source mismatch;
 - [x] implement compatibility read membership resolver untuk Paket/list berbasis effective-context/provenance tanpa mutation legacy;
-- [ ] jalankan `V2DPackageReadMembershipTest` + regression Step 3/selector/package parity + Pint/diff;
+- [x] jalankan Step 4 membership gate: 19 test / 216 assertions PASS; Pint + diff-check bersih;
 - [ ] tutup action/detail context compatibility (Buka Paket/Preview/Download) sebelum mengaktifkan Paket/list membership V2 pada UI;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
