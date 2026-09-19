@@ -192,13 +192,12 @@ final class SpjV2NumberingAuthorizationService
 
     private function documentRelationBlocker(SpjPackage $package, ?array $documentTypes): ?string
     {
-        $allowed = $documentTypes === null ? $this->registry->numberedCodes() : array_values(array_filter(array_map(fn (string $type): ?string => $this->registry->canonical($type), $documentTypes)));
         $documents = $package->relationLoaded('documents') ? $package->documents : $package->documents()->get();
         $active = $documents->filter(fn ($document): bool => strtoupper((string) $document->status) !== 'CANCELLED');
         $seen = [];
         foreach ($active as $document) {
             $type = $this->registry->canonical((string) $document->document_type);
-            if ($type === null || ! in_array($type, $allowed, true)) {
+            if ($type === null) {
                 return 'package has an orphan or unknown numbering document relation';
             }
             $scope = trim((string) $document->scope_key);
