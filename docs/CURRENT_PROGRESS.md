@@ -829,8 +829,10 @@ metadata transient `mutation_context_*` dipasang sebagai Eloquent attribute,
 sehingga saat status Paket disimpan ke READY Eloquent mencoba menulis kolom yang
 tidak ada (`mutation_context_path`, dst.). Fix sudah mengubah metadata tersebut
 menjadi relation in-memory `v2MutationContext`, dan regression kini memastikan
-metadata itu tidak pernah muncul sebagai SQL attribute/dirty field. Runtime
-evidence Step 11A tetap **RVR** sampai clean rerun hijau.
+metadata itu tidak pernah muncul sebagai SQL attribute/dirty field. Clean rerun sudah hijau: focused `V2DMutationContextReadyTest`
+PASS **8 test / 90 assertions / 8 deprecations**; full Step 11A gate PASS **42
+test / 556 assertions / 42 deprecations**. Pint PASS, `npm run build` PASS,
+dan `git diff --check` bersih. D4 Step 11A sekarang **RUNTIME PASS**.
 
 ---
 
