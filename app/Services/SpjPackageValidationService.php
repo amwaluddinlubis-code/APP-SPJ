@@ -134,9 +134,25 @@ class SpjPackageValidationService
 
             $duplicateExists = false;
             if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
-                $duplicateExists = $transaction->newQuery()
-                    ->where('fiscal_year_id', $transaction->fiscal_year_id)
-                    ->whereKeyNot($transaction->id)
+                $duplicateQuery = $transaction->newQuery()->whereKeyNot($transaction->id);
+
+                if ($transaction->getAttribute('mutation_context_path') === 'v2_compat') {
+                    $sourceId = (int) $transaction->getAttribute('mutation_context_source_id');
+                    $duplicateQuery->whereIn('id', function ($query) use ($transaction, $sourceId): void {
+                        $query->select('provenance.legacy_transaction_id')
+                            ->from('legacy_transaction_v2_map as provenance')
+                            ->join('spj_transactions as v2', 'v2.id', '=', 'provenance.spj_transaction_id')
+                            ->where('v2.fiscal_year_id', $transaction->fiscal_year_id)
+                            ->where('v2.fund_source_id', $transaction->fund_source_id)
+                            ->where('v2.source_id', $sourceId)
+                            ->where('v2.canonical_context_status', 'ACTIVE_CANONICAL')
+                            ->whereIn('provenance.canonical_context_status', ['ACTIVE_CANONICAL', 'LEGACY_DUPLICATE']);
+                    });
+                } else {
+                    $duplicateQuery->where('fiscal_year_id', $transaction->fiscal_year_id);
+                }
+
+                $duplicateExists = $duplicateQuery
                     ->whereRaw('LOWER(TRIM(invoice_number)) = ?', [mb_strtolower(trim((string) $transaction->invoice_number))])
                     ->whereRaw('LOWER(TRIM(vendor_name)) = ?', [mb_strtolower(trim((string) $transaction->vendor_name))])
                     ->exists();
