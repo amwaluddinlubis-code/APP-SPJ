@@ -248,12 +248,16 @@ Summary canonical:
 Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
 ```
 
-Pada mode Paket effective-context compatibility, workspace tetap read-only untuk
-Isian Manual dan Penomoran. Pengecualian transisi yang sempit: Paket DRAFT boleh
-menampilkan **Buka Checklist**, dan Checklist hanya menampilkan **Tandai siap
-diproses** bila backend mutation authorization + seluruh validation/requirement
-sudah lulus. Tombol tersebut tidak boleh dipakai sebagai shortcut untuk membuka
-mutation Paket lain.
+Pada mode Paket effective-context compatibility, workspace utama tetap baca-saja
+untuk Penomoran dan lifecycle lanjutan. Step 11A memperbolehkan Paket DRAFT
+menampilkan **Buka Checklist** dan READY hanya melalui backend mutation
+authorization + seluruh validation/requirement.
+
+Step 11B menambahkan **Edit Isian Manual** hanya untuk Paket DRAFT/READY melalui
+surface khusus `spj.package-compat-edit`. Surface tersebut reuse partial Isian
+Manual canonical tetapi tidak merender tab Penomoran, lifecycle controls, atau
+maintenance-link mutation. Effective-context authorization tidak boleh menjadi
+shortcut untuk mutation di luar overlay Paket yang sedang digate.
 
 Nilai uang menggunakan accounting tanpa `Rp`/desimal.
 
