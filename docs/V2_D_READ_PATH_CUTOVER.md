@@ -190,6 +190,24 @@ Runtime evidence pada 2026-09-19: `V2DReadPathSelectorTest` PASS dengan **7 test
 `git diff --check` bersih. Selector gate D4 step 1 ditutup sebagai runtime PASS;
 production consumer tetap belum dialihkan.
 
+D4 step 2 source implementation:
+
+- consumer pertama adalah financial summary pada tab Laporan SPJ;
+- hanya field read-only `count/cancelled_count/gross/tax/net/ppn/pph21/pph22/pph23/pph4/sspd`
+  yang eligible membaca canonical V2;
+- daftar Paket, pending paginator, activity/account labels, export, monitoring,
+  numbering, lifecycle, dan seluruh mutation tetap memakai jalur legacy;
+- `SpjV2ReportFinancialSummaryService` memakai selector D4 step 1 dan jatuh
+  kembali ke legacy bila package bridge/document relation belum tersedia;
+- `SpjReportUseCase::reportData()` dan tab laporan mengaktifkan gate summary ini,
+  sedangkan `export()` tetap legacy;
+- regression `V2DReportSummaryCutoverTest` membuktikan V2/legacy parity awal,
+  synthetic raw-source drift hanya terlihat pada mode V2, rollback config mengembalikan
+  summary legacy, protected transaction/package/document tetap immutable, dan
+  VIEWER dapat membaca summary pada active context.
+
+Runtime verification untuk step 2 masih **RVR** sampai focused test/Pint/diff dijalankan.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
