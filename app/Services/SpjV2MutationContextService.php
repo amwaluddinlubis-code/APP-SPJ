@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SpjV2MutationContextService
 {
+    private const CONTEXT_RELATION = 'v2MutationContext';
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjV2PackageReadMembershipService $packageReadMembership,
@@ -35,8 +36,7 @@ final class SpjV2MutationContextService
         }
 
         if ($this->context->matchesTransaction($transaction)) {
-            $package->setAttribute('mutation_context_path', 'legacy');
-            $transaction->setAttribute('mutation_context_path', 'legacy');
+            $this->attachContext($package, $transaction, 'legacy', null, 'ALIGNED');
 
             return true;
         }
@@ -97,13 +97,62 @@ final class SpjV2MutationContextService
 
         $transaction->setAttribute('fiscal_year_id', $this->context->fiscalYearId());
         $transaction->unsetRelation('fiscalYear');
-        $transaction->setAttribute('mutation_context_path', 'v2_compat');
-        $transaction->setAttribute('mutation_context_source_id', $membership['source_id']);
-        $package->setAttribute('mutation_context_path', 'v2_compat');
-        $package->setAttribute('mutation_context_source_id', $membership['source_id']);
-        $package->setAttribute('mutation_context_mode', $membership['compatibility_mode']);
+        $this->attachContext(
+            $package,
+            $transaction,
+            'v2_compat',
+            $membership['source_id'],
+            $membership['compatibility_mode'],
+        );
 
         return true;
+    }
+
+    /** @return array{path:string,source_id:int|null,mode:string}|null */
+    public function packageContext(SpjPackage $package): ?array
+    {
+        return $this->relationContext($package->relationLoaded(self::CONTEXT_RELATION)
+            ? $package->getRelation(self::CONTEXT_RELATION)
+            : null);
+    }
+
+    /** @return array{path:string,source_id:int|null,mode:string}|null */
+    public function transactionContext(Transaction $transaction): ?array
+    {
+        return $this->relationContext($transaction->relationLoaded(self::CONTEXT_RELATION)
+            ? $transaction->getRelation(self::CONTEXT_RELATION)
+            : null);
+    }
+
+    private function attachContext(
+        SpjPackage $package,
+        Transaction $transaction,
+        string $path,
+        ?int $sourceId,
+        string $mode,
+    ): void {
+        $context = [
+            'path' => $path,
+            'source_id' => $sourceId,
+            'mode' => $mode,
+        ];
+
+        $package->setRelation(self::CONTEXT_RELATION, $context);
+        $transaction->setRelation(self::CONTEXT_RELATION, $context);
+    }
+
+    /** @return array{path:string,source_id:int|null,mode:string}|null */
+    private function relationContext(mixed $context): ?array
+    {
+        if (! is_array($context) || ! isset($context['path'], $context['mode'])) {
+            return null;
+        }
+
+        return [
+            'path' => (string) $context['path'],
+            'source_id' => isset($context['source_id']) ? (int) $context['source_id'] : null,
+            'mode' => (string) $context['mode'],
+        ];
     }
 
     /** @param array<string, mixed> $canonical */
