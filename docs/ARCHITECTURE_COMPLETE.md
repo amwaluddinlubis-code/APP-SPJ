@@ -80,8 +80,13 @@ membership di belakang selector; ia tidak mengganti relation
 Preview/Download: ia membuktikan effective membership lalu menormalisasi legacy
 `fiscal_year_id` hanya pada model in-memory supaya selector template, school
 profile, placeholder tahun, dan preview cache memakai effective fiscal year.
-Workspace `Buka Paket` tetap legacy karena read compatibility tidak boleh
-memperluas mutation authorization.
+Workspace legacy tetap authoritative untuk mutation. Untuk stale effective-context
+Paket, `SpjWorkspaceUseCase` sekarang mempunyai cabang terpisah yang hanya
+mengembalikan `spj.package-readonly` setelah
+`SpjV2PackageReadContextService` membuktikan `v2_compat`. Surface tersebut
+tidak memuat form Isian Manual, READY, numbering, FINAL/cancel/replace, atau
+mutation route lain. Dengan demikian read compatibility tidak memperluas mutation
+authorization.
 
 ### Database utama
 
