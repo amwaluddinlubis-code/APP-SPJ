@@ -130,8 +130,9 @@ final class SpjV2CanonicalReadService
 
         $taxByParent = $this->taxBreakdownByParent($db, $sourceId, $allSourceKeys);
         $notaById = $this->notaById($db, $sourceId);
+        $activityByRapbsPeriod = $this->activityCodesByRapbsPeriod($db, $sourceId);
 
-        return $transactions->map(function (object $transaction) use ($overlays, $provenance, $sourceRows, $taxByParent, $notaById): array {
+        return $transactions->map(function (object $transaction) use ($overlays, $provenance, $sourceRows, $taxByParent, $notaById, $activityByRapbsPeriod): array {
             $items = collect($sourceRows->get($transaction->id, collect()))
                 ->map(function (object $row): array {
                     $payload = json_decode((string) ($row->payload ?? ''), true);
@@ -176,6 +177,7 @@ final class SpjV2CanonicalReadService
             if ($recipient === null && $notaId !== null) {
                 $recipient = $this->normalize($notaById[$notaId] ?? null);
             }
+            $activityCode = $this->activityCode($items, $activityByRapbsPeriod);
 
             return [
                 'id' => (int) $transaction->id,
@@ -203,7 +205,7 @@ final class SpjV2CanonicalReadService
                 'transaction_date' => $this->firstSourceValue($items, ['tanggal_transaksi', 'tanggal']),
                 'description' => $this->firstSourceValue($items, ['uraian', 'description']),
                 'account_code' => $this->firstSourceValue($items, ['kode_rekening', 'account_code']),
-                'activity_code' => $this->firstSourceValue($items, ['kode_kegiatan', 'activity_code']),
+                'activity_code' => $this->firstSourceValue($items, ['kode_kegiatan', 'activity_code']) ?? $activityCode,
                 'recipient_name' => $recipient,
                 'gross_amount' => $gross,
                 'ppn' => $taxes['ppn'],
@@ -287,6 +289,115 @@ final class SpjV2CanonicalReadService
         }
 
         return null;
+    }
+
+    /**
+     * Resolve native ARKAS relation kas_umum.id_rapbs_periode -> rapbs_periode.id_rapbs
+     * -> rapbs.id_ref_kode -> ref_kode.id_kode without depending on legacy
+     * transaction projection tables.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function activityCodesByRapbsPeriod(Connection $db, int $sourceId): array
+    {
+        $periodToRapbs = [];
+        foreach ($this->rawPayloadRows($db, $sourceId, 'rapbs_periode') as $payload) {
+            if ((int) ($payload['soft_delete'] ?? 0) === 1) {
+                continue;
+            }
+
+            $periodId = $this->normalize($payload['id_rapbs_periode'] ?? null);
+            $rapbsId = $this->normalize($payload['id_rapbs'] ?? null);
+            if ($periodId !== null && $rapbsId !== null) {
+                $periodToRapbs[$periodId] = $rapbsId;
+            }
+        }
+
+        $rapbsToRef = [];
+        foreach ($this->rawPayloadRows($db, $sourceId, 'rapbs') as $payload) {
+            if ((int) ($payload['soft_delete'] ?? 0) === 1) {
+                continue;
+            }
+
+            $rapbsId = $this->normalize($payload['id_rapbs'] ?? null);
+            $refId = $this->normalize($payload['id_ref_kode'] ?? null);
+            if ($rapbsId !== null && $refId !== null) {
+                $rapbsToRef[$rapbsId] = $refId;
+            }
+        }
+
+        $codesByRef = [];
+        foreach ($this->rawPayloadRows($db, $sourceId, 'ref_kode') as $payload) {
+            if ((int) ($payload['soft_delete'] ?? 0) === 1) {
+                continue;
+            }
+
+            $refId = $this->normalize($payload['id_ref_kode'] ?? null);
+            $code = $this->normalize($payload['id_kode'] ?? null);
+            $year = $this->normalize($payload['tahun'] ?? null);
+            if ($refId === null || $code === null) {
+                continue;
+            }
+
+            if ($year !== null) {
+                $codesByRef[$refId][$year] = $code;
+            }
+            $codesByRef[$refId]['default'] ??= $code;
+        }
+
+        $result = [];
+        foreach ($periodToRapbs as $periodId => $rapbsId) {
+            $refId = $rapbsToRef[$rapbsId] ?? null;
+            if ($refId !== null && isset($codesByRef[$refId])) {
+                $result[$periodId] = $codesByRef[$refId];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param Collection<int, array<string, mixed>> $items
+     * @param array<string, array<string, string>> $activityByRapbsPeriod
+     */
+    private function activityCode(Collection $items, array $activityByRapbsPeriod): ?string
+    {
+        $periodId = $this->firstSourceValue($items, ['id_rapbs_periode']);
+        if ($periodId === null || ! isset($activityByRapbsPeriod[$periodId])) {
+            return null;
+        }
+
+        $date = $this->firstSourceValue($items, ['tanggal_transaksi', 'tanggal']);
+        $year = $date !== null && strlen($date) >= 4 ? substr($date, 0, 4) : null;
+
+        return $this->normalize(
+            ($year !== null ? ($activityByRapbsPeriod[$periodId][$year] ?? null) : null)
+            ?? ($activityByRapbsPeriod[$periodId]['default'] ?? null),
+        );
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function rawPayloadRows(Connection $db, int $sourceId, string $sourceTable): array
+    {
+        $table = $db->table('arkas_raw_mirror_tables')
+            ->where('source_id', $sourceId)
+            ->where('source_table', $sourceTable)
+            ->where('status', 'ACTIVE')
+            ->first();
+
+        if ($table === null) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $table->id)->get(['payload']) as $row) {
+            $payload = json_decode((string) $row->payload, true);
+            if (is_array($payload)) {
+                $result[] = $payload;
+            }
+        }
+
+        return $result;
     }
 
     /**
