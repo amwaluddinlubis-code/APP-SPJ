@@ -15,7 +15,43 @@ use Tests\TestCase;
 
 final class V2DReportSummaryCutoverTest extends TestCase
 {
-    public function test_report_financial_summary_uses_v2_only_when_selected_and_rolls_back_without_legacy_mutation(): void
+    public function test_report_summary_falls_back_when_live_legacy_context_does_not_match_v2(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-report-summary-context-fallback.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $context = $this->numberedContext($db);
+            $this->activateContext($context);
+
+            config()->set('spj.v2_read_path', 'legacy');
+            [, $legacy] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+            $this->assertSame('legacy', $legacy['read_path']);
+
+            $canonicalNumberedCount = $this->canonicalNumberedCount($db, $context);
+            $this->assertNotSame(
+                (int) $legacy['count'],
+                $canonicalNumberedCount,
+                'Fixture must retain the known active-context transition mismatch so the consumer fallback is meaningful.',
+            );
+
+            config()->set('spj.v2_read_path', 'v2');
+            [, $guarded] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+
+            $this->assertSame('legacy', $guarded['read_path']);
+            foreach ($this->financialFields() as $field) {
+                $this->assertEquals($legacy[$field], $guarded[$field], 'Fail-safe fallback mismatch for '.$field);
+            }
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_report_summary_uses_v2_only_with_exact_live_parity_and_falls_back_on_raw_drift(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-report-summary-cutover.sqlite');
         $source = $this->prepareClone($target);
@@ -26,22 +62,20 @@ final class V2DReportSummaryCutoverTest extends TestCase
 
             $db = DB::connection('school');
             $context = $this->numberedContext($db);
-            session([
-                'active_school_id' => 1,
-                'active_fiscal_year_id' => $context->fiscal_year_id,
-                'active_fund_source_id' => $context->fund_source_id,
-            ]);
+            $this->alignLegacyPackageContext($db, $context);
+            $this->activateContext($context);
             $before = $this->protectedHash($db);
 
             config()->set('spj.v2_read_path', 'legacy');
             [, $legacy] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
             $this->assertSame('legacy', $legacy['read_path']);
+            $this->assertSame($this->canonicalNumberedCount($db, $context), (int) $legacy['count']);
 
             config()->set('spj.v2_read_path', 'v2');
             [, $canonical] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
             $this->assertSame('v2', $canonical['read_path']);
             foreach ($this->financialFields() as $field) {
-                $this->assertEquals($legacy[$field], $canonical[$field], 'Initial V2 summary mismatch for '.$field);
+                $this->assertEquals($legacy[$field], $canonical[$field], 'Initial consumer parity mismatch for '.$field);
             }
 
             $raw = $this->numberedGrossSourceRow($db, $context);
@@ -49,16 +83,16 @@ final class V2DReportSummaryCutoverTest extends TestCase
             $payload = json_decode((string) $raw->payload, true, 512, JSON_THROW_ON_ERROR);
             $amountKey = $this->amountKey($payload);
             $this->assertNotNull($amountKey);
-            $delta = 12345.0;
-            $payload[$amountKey] = (float) $payload[$amountKey] + $delta;
+            $payload[$amountKey] = (float) $payload[$amountKey] + 12345.0;
             $db->table('arkas_raw_mirror_rows')->where('id', $raw->id)->update([
                 'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
             ]);
 
-            [, $driftedV2] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
-            $this->assertSame('v2', $driftedV2['read_path']);
-            $this->assertEquals((float) $legacy['gross'] + $delta, (float) $driftedV2['gross']);
-            $this->assertEquals((float) $legacy['net'] + $delta, (float) $driftedV2['net']);
+            [, $driftGuarded] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+            $this->assertSame('legacy', $driftGuarded['read_path'], 'Consumer must fail closed when live V2 financial values drift.');
+            foreach ($this->financialFields() as $field) {
+                $this->assertEquals($legacy[$field], $driftGuarded[$field], 'Drift fallback mismatch for '.$field);
+            }
 
             config()->set('spj.v2_read_path', 'legacy');
             [, $rolledBack] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
@@ -67,13 +101,13 @@ final class V2DReportSummaryCutoverTest extends TestCase
                 $this->assertEquals($legacy[$field], $rolledBack[$field], 'Legacy rollback mismatch for '.$field);
             }
 
-            $this->assertSame($before, $this->protectedHash($db), 'Read-path cutover must not mutate legacy transaction/package/document state.');
+            $this->assertSame($before, $this->protectedHash($db), 'Read-path selection must not mutate legacy transaction/package/document state.');
         } finally {
             File::delete($target);
         }
     }
 
-    public function test_viewer_can_read_v2_report_summary_inside_active_context(): void
+    public function test_viewer_can_read_v2_report_summary_when_active_context_parity_is_exact(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-report-summary-viewer.sqlite');
         $source = $this->prepareClone($target);
@@ -84,22 +118,16 @@ final class V2DReportSummaryCutoverTest extends TestCase
 
             $db = DB::connection('school');
             $context = $this->numberedContext($db);
-            $expectedCount = (int) $db->table('spj_packages as package')
-                ->join('spj_transactions as transaction', 'transaction.id', '=', 'package.spj_transaction_id')
-                ->where('transaction.fiscal_year_id', $context->fiscal_year_id)
-                ->where('transaction.fund_source_id', $context->fund_source_id)
-                ->where('transaction.canonical_context_status', 'ACTIVE_CANONICAL')
-                ->whereNotNull('package.document_number')
-                ->count();
+            $this->alignLegacyPackageContext($db, $context);
+            $this->activateContext($context);
+
+            config()->set('spj.v2_read_path', 'legacy');
+            [, $legacy] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+            $expectedCount = (int) $legacy['count'];
 
             config()->set('spj.v2_read_path', 'v2');
             $viewer = User::factory()->create(['role' => User::ROLE_VIEWER]);
             $this->actingAs($viewer);
-            session([
-                'active_school_id' => 1,
-                'active_fiscal_year_id' => $context->fiscal_year_id,
-                'active_fund_source_id' => $context->fund_source_id,
-            ]);
 
             Livewire::test(SpjReportFilter::class)
                 ->assertViewHas('summary', fn (array $summary): bool => $summary['read_path'] === 'v2'
@@ -195,6 +223,48 @@ final class V2DReportSummaryCutoverTest extends TestCase
         $this->assertNotNull($context);
 
         return $context;
+    }
+
+    private function activateContext(object $context): void
+    {
+        session([
+            'active_school_id' => 1,
+            'active_fiscal_year_id' => $context->fiscal_year_id,
+            'active_fund_source_id' => $context->fund_source_id,
+        ]);
+    }
+
+    private function alignLegacyPackageContext(Connection $db, object $context): void
+    {
+        $legacyTransactionIds = $db->table('spj_packages as package')
+            ->join('spj_transactions as transaction', 'transaction.id', '=', 'package.spj_transaction_id')
+            ->where('transaction.fiscal_year_id', $context->fiscal_year_id)
+            ->where('transaction.fund_source_id', $context->fund_source_id)
+            ->where('transaction.source_id', $context->source_id)
+            ->where('transaction.canonical_context_status', 'ACTIVE_CANONICAL')
+            ->pluck('package.transaction_id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->assertNotEmpty($legacyTransactionIds);
+        $db->table('transactions')->whereIn('id', $legacyTransactionIds)->update([
+            'fiscal_year_id' => (int) $context->fiscal_year_id,
+            'fund_source_id' => (int) $context->fund_source_id,
+        ]);
+    }
+
+    private function canonicalNumberedCount(Connection $db, object $context): int
+    {
+        return (int) $db->table('spj_packages as package')
+            ->join('spj_transactions as transaction', 'transaction.id', '=', 'package.spj_transaction_id')
+            ->where('transaction.fiscal_year_id', $context->fiscal_year_id)
+            ->where('transaction.fund_source_id', $context->fund_source_id)
+            ->where('transaction.source_id', $context->source_id)
+            ->where('transaction.canonical_context_status', 'ACTIVE_CANONICAL')
+            ->whereNotNull('package.document_number')
+            ->count();
     }
 
     private function numberedGrossSourceRow(Connection $db, object $context): ?object
