@@ -10,6 +10,7 @@ use App\Services\SpjNumberingOrderService;
 use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2NumberingAuthorizationService;
+use App\Services\SpjV2NumberingIssuanceService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class SpjSingleNumberingUseCase
         private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly SpjNumberingGateService $numberingGate,
         private readonly SpjV2NumberingAuthorizationService $numberingAuthorization,
+        private readonly SpjV2NumberingIssuanceService $v2Numbering,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
     ) {}
@@ -44,8 +46,15 @@ class SpjSingleNumberingUseCase
             'transaction.spjPackage',
             'documents',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->packageMatchesActivePath($package)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
+        }
+        if ($this->v2Requested()) {
+            return $this->respondToV2Issuance(
+                $package,
+                $this->v2Numbering->issue($package, 'SPJ', 'MAIN'),
+                'Nomor SPJ',
+            );
         }
         if ($package->status === 'READY') {
             $authorization = $this->numberingAuthorization->authorize($package, ['SPJ']);
@@ -90,8 +99,26 @@ class SpjSingleNumberingUseCase
             'transaction.serviceRecipients',
             'transaction.spjPackage',
         ])->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->packageMatchesActivePath($package)) {
             return back()->with('error', 'Paket tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
+        }
+
+        $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
+        if ($documentType === null) {
+            return back()->with('error', 'Penomoran ditolak. Jenis dokumen tidak termasuk domain penomoran canonical aplikasi.');
+        }
+
+        if ($this->v2Requested()) {
+            $data = $request->validate([
+                'scope_key' => ['nullable', 'string', 'max:80'],
+            ]);
+            $scopeKey = trim((string) ($data['scope_key'] ?? '')) ?: 'MAIN';
+
+            return $this->respondToV2Issuance(
+                $package,
+                $this->v2Numbering->issue($package, $documentType, $scopeKey),
+                $this->numberingPolicy->numberingDefinition($documentType)['label'] ?? $documentType,
+            );
         }
 
         if ($package->status === 'READY') {
@@ -101,10 +128,6 @@ class SpjSingleNumberingUseCase
             }
         }
 
-        $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
-        if ($documentType === null) {
-            return back()->with('error', 'Penomoran ditolak. Jenis dokumen tidak termasuk '.count($this->numberingPolicy->automaticDocumentTypes()).' domain penomoran canonical aplikasi.');
-        }
         $definition = $this->numberingPolicy->numberingDefinition($documentType);
         if (! $definition) {
             return back()->with('error', 'Metadata penomoran canonical tidak ditemukan.');
@@ -150,5 +173,47 @@ class SpjSingleNumberingUseCase
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_DOCUMENT', $document->id, 'TETAPKAN_NOMOR', 'Nomor '.$document->document_type.' '.$document->document_number.' ditetapkan.');
 
         return back()->with('success', 'Nomor '.$definition['label'].' berhasil dibuat: '.$document->document_number);
+    }
+
+    private function v2Requested(): bool
+    {
+        return config('spj.v2_read_path', 'legacy') === 'v2';
+    }
+
+    private function packageMatchesActivePath(SpjPackage $package): bool
+    {
+        if ($this->context->matchesTransaction($package->transaction)) {
+            return true;
+        }
+
+        return $this->v2Requested()
+            && $this->context->fundSourceId() !== null
+            && (int) $package->transaction->fund_source_id === (int) $this->context->fundSourceId();
+    }
+
+    /** @param array<string,mixed> $result */
+    private function respondToV2Issuance(SpjPackage $package, array $result, string $label): RedirectResponse
+    {
+        if (($result['status'] ?? null) === 'ISSUED') {
+            $message = ($result['idempotent'] ?? false)
+                ? $label.' sudah diterbitkan sebelumnya: '.($result['document_number'] ?? '-')
+                : $label.' berhasil diterbitkan: '.($result['document_number'] ?? '-');
+
+            return back()->with('success', $message);
+        }
+
+        return back()->with('error', $this->v2FailureMessage((string) ($result['error_code'] ?? ''), $label));
+    }
+
+    private function v2FailureMessage(string $errorCode, string $label): string
+    {
+        return match ($errorCode) {
+            'PACKAGE_NOT_ELIGIBLE', 'AUTHORIZATION_BLOCKED', 'VALIDATION_BLOCKED', 'ORDER_BLOCKED' => $label.' ditolak karena paket belum memenuhi seluruh syarat penomoran.',
+            'EFFECTIVE_PERIOD_CLOSED', 'EFFECTIVE_PERIOD_UNPROVEN', 'EFFECTIVE_CONTEXT_UNRESOLVED' => $label.' ditolak karena periode effective tidak terbuka atau tidak dapat dibuktikan.',
+            'RESUME_DRIFT', 'SOURCE_MISSING', 'RECONCILIATION_REQUIRED' => $label.' ditolak karena transaksi memerlukan rekonsiliasi atau sumber tidak lagi aktif.',
+            'FORMAT_MISSING', 'DOCUMENT_TYPE_INVALID', 'SCOPE_INVALID' => $label.' ditolak karena registry dokumen effective belum lengkap.',
+            'ISSUANCE_COLLISION' => $label.' belum selesai karena terjadi konflik nomor. Silakan periksa ulang dan coba lagi.',
+            default => $label.' gagal diterbitkan. Tidak ada perubahan yang disimpan.',
+        };
     }
 }

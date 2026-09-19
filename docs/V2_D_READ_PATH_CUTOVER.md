@@ -932,7 +932,18 @@ A production switch requires all of the following:
 
 No production read path has been switched pada D1, D2, D3, maupun downstream parity.
 
-### Effective sequence reservation — PASS; issuance tetap BLOCKED
+### Effective numbering operator path — single PASS, batch BLOCKED
+
+Evidence 2026-09-19: the existing single-numbering action now routes selector
+V2 directly to `SpjV2NumberingIssuanceService`; selector legacy remains on the
+legacy use case and there is no V2-to-legacy fallback. The effective package
+workspace exposes the action only after server-side preflight and package
+validation pass. Repeated operator submission resumes the completed V2
+reservation without a new sequence or audit. Effective batch/quarter UI and
+all other mutation-heavy lifecycle surfaces remain closed. Browser visual QA
+and repository-wide canonical gate for this UI change are RVR.
+
+### Effective sequence reservation — PASS; issuance backend PASS
 
 `SpjV2NumberingSequenceService` mempertahankan scope executable existing:
 `effective fiscal year + fund source + document type + period_key`. Reservation
@@ -942,9 +953,11 @@ Focused sequence evidence **3 tests / 96 assertions / 3 deprecations**;
 related V2-D dan legacy numbering/lifecycle evidence **68 tests / 633
 assertions / 68 deprecations**. Reservation/completion tidak menulis nomor ke
 dokumen, tidak mengubah status Paket, dan tidak membuat numbering-issued audit.
-Actual effective-context numbering issuance tetap **BLOCKED / DEFERRED**.
+Actual effective-context numbering issuance backend **PASS**; single operator
+UI is now PASS after the focused operator regression, while effective
+batch/quarter UI remains BLOCKED.
 
-### Effective numbering authorization boundary — PASS; issuance BLOCKED
+### Effective numbering authorization boundary — PASS; issuance backend PASS
 
 `SpjV2NumberingAuthorizationService` menambahkan preflight authorization
 read-only yang fail-closed untuk effective membership, exact Package-V2
@@ -959,6 +972,7 @@ canonical `spj_transactions.fiscal_year_id` yang diverifikasi terhadap
 `FiscalYear.year`; quarter berasal dari canonical transaction date; open
 period state wajib terbukti; legacy fiscal year hanya diagnostic. Focused
 resolver + authorization evidence adalah **2 tests / 72 assertions / 2
-deprecations**. Effective-context numbering issuance tetap **BLOCKED / DEFERRED**
-sampai effective year/quarter sequence, collision/idempotency completeness,
-atomic numbering rollback, dan effective audit trail terbukti aman.
+deprecations**. Effective-context numbering issuance backend **PASS** setelah
+gate sequence, collision/idempotency, atomic rollback, dan effective audit
+trail. Single operator path PASS pada focused regression; batch/quarter UI
+tetap BLOCKED.

@@ -484,6 +484,15 @@ Kandidat Livewire read-only setelah operator/runtime priorities:
 
 Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful, workspace detail Paket mutation-heavy, Dashboard filter migration, dan protected Siswa.
 
+## Effective-context numbering operator gate — 2026-09-19
+
+- [x] Backend effective single/batch issuance gate tetap PASS.
+- [x] Single effective numbering operator action memakai V2 issuance service.
+- [x] Legacy selector tetap memakai jalur legacy dan tidak fallback dari V2.
+- [x] UI preflight fail-closed, retry idempotent, dan success refresh melalui redirect canonical.
+- [ ] Effective batch/quarter operator UI — tetap BLOCKED.
+- [ ] Browser visual QA dan repository-wide canonical gate — RVR.
+
 ---
 
 # Aturan pengerjaan

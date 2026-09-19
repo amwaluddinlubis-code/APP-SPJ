@@ -10,6 +10,7 @@ use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2NumberingAuthorizationService;
 use App\Services\SpjV2NumberingBatchService;
 use App\Services\SpjV2NumberingIssuanceService;
+use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +106,37 @@ final class V2DNumberingIssuanceTest extends TestCase
             $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
             $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'TETAPKAN_NOMOR_V2')->count());
             $this->assertSame((int) $first['sequence_number'], (int) $db->table('document_number_sequences')->where('format_name', 'SPJ')->value('last_number'));
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_operator_single_action_routes_effective_request_to_v2_issuance_once(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-operator-single.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $package = $this->firstIssuablePackage($db);
+            $this->assertNotNull($package);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $first = app(SpjSingleNumberingUseCase::class)->assignNumber((string) $package->id);
+            $this->assertSame(302, $first->getStatusCode());
+            $number = (string) $db->table('spj_packages')->where('id', $package->id)->value('document_number');
+            $this->assertNotSame('', $number, (string) session('error'));
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+
+            $second = app(SpjSingleNumberingUseCase::class)->assignNumber((string) $package->id);
+            $this->assertSame(302, $second->getStatusCode());
+            $this->assertSame($number, (string) $db->table('spj_packages')->where('id', $package->id)->value('document_number'));
+            $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'TETAPKAN_NOMOR_V2')->count());
+            $this->assertSame(0, $db->table('operational_audit_logs')->where('action', 'TETAPKAN_NOMOR')->count());
         } finally {
             File::delete($target);
         }

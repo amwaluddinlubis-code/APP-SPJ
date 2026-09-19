@@ -40,4 +40,16 @@ class SpjNumberingConfirmationModalUiTest extends TestCase
         $this->assertStringContainsString('Terbitkan nomor SPJ baru sebagai pengganti nomor yang dibatalkan?', $blade);
         $this->assertStringContainsString('Nomor lama {{ $document->document_number }} akan dibatalkan permanen', $blade);
     }
+
+    public function test_effective_numbering_ui_is_fail_closed_and_uses_the_existing_action_route(): void
+    {
+        $modal = file_get_contents(resource_path('views/spj/partials/package/numbering-preflight-modal.blade.php'));
+        $readonly = file_get_contents(resource_path('views/spj/package-readonly.blade.php'));
+
+        $this->assertStringContainsString('$effectiveNumberingBlocked', $modal);
+        $this->assertStringContainsString('@disabled($effectiveNumberingBlocked)', $modal);
+        $this->assertStringContainsString("route('spj.assign-number'", $modal);
+        $this->assertStringContainsString('$effectiveNumberingPreflight[\'active\']', $readonly);
+        $this->assertStringNotContainsString("route('spj.quarter-numbering'", $readonly);
+    }
 }

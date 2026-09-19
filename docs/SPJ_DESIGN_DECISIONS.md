@@ -485,8 +485,12 @@ App\Services\SpjV2NumberingBatchService (quarter/batch, all-or-nothing)
    jalur V2 karena context-match-nya terikat tahun legacy yang stale;
    seluruh pemeriksaan setaranya sudah dibuktikan pada fakta efektif oleh
    `SpjV2NumberingAuthorizationService`.
-7. UI/tombol penomoran effective-context tetap tertutup sampai operator path
-   diaudit; backend gate PASS tidak otomatis membuka UI.
+7. Setelah audit operator path, single UI effective-context boleh aktif hanya
+   ketika selector V2, preflight authorization, validasi paket, dan action
+   request context lulus. Mutation tetap satu-satunya milik
+   `SpjV2NumberingIssuanceService`; selector legacy tetap legacy dan V2 tidak
+   fallback diam-diam. Batch/quarter UI, FINAL, settlement, bulk-final, dan
+   period close/open tetap tertutup sampai audit terpisah.
 
 ### 17.4 Cancel Penomoran Triwulan
 

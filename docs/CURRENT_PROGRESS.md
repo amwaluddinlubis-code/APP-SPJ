@@ -1016,3 +1016,18 @@ batch all-or-nothing, batch ordering + retry); related sequence/11A/11B
 **11 test / 85 assertions PASS**. Actual effective-context numbering
 issuance = **PASS** pada backend gate; FINAL, settlement, bulk-final, dan
 period close/open tetap tertutup.
+
+### Effective-context numbering operator path — single PASS, batch BLOCKED
+
+Evidence 2026-09-19: selector `v2` pada action operator kini merutekan
+langsung ke `SpjV2NumberingIssuanceService`; selector `legacy` tetap memakai
+jalur legacy. Stale/effective Paket READY menggunakan preflight authorization
+server dan action hanya aktif bila preflight serta validasi paket lulus. Retry
+identik menghasilkan nomor/audit V2 yang sama tanpa audit legacy.
+`V2DNumberingIssuanceTest` operator regression menutup issuance melalui use
+case, retry, status NUMBERED, satu reservation, satu audit V2, dan zero audit
+legacy. Single effective numbering UI/operator path = **PASS** pada focused
+runtime regression. Batch/quarter effective UI tetap **BLOCKED** karena belum
+dibuka pada surface operator; FINAL, settlement, bulk-final, dan period
+close/open tetap tertutup. Browser visual QA dan repository-wide canonical gate
+belum dijalankan pada perubahan ini = **RVR**.

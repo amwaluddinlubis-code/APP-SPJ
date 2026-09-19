@@ -30,8 +30,28 @@
 
         <section class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
             <p class="font-bold">Paket dibuka dalam mode baca effective-context.</p>
-            <p class="mt-1">Data sumber legacy tidak diubah. DRAFT/READY dapat membuka editor overlay khusus setelah effective-context authorization; penomoran dan lifecycle lanjutan tetap tidak tersedia. Paket DRAFT hanya dapat dipromosikan ke READY melalui Checklist setelah seluruh validasi lulus.</p>
+            <p class="mt-1">Data sumber legacy tidak diubah. DRAFT/READY dapat membuka editor overlay khusus setelah effective-context authorization. Penomoran effective hanya tersedia untuk Paket READY setelah preflight server lulus; lifecycle lanjutan tetap tidak tersedia.</p>
         </section>
+
+        @if($package->status === 'READY' && ($effectiveNumberingPreflight['active'] ?? false))
+            @php
+                $activeSpjDocument = $package->documents->first(fn ($document) => $document->document_type === 'SPJ' && $document->scope_key === 'MAIN' && in_array($document->status, ['NUMBERED', 'FINAL'], true) && filled($document->document_number));
+                $hasActiveSpjNumber = $activeSpjDocument !== null;
+                $cancelledSpjDocument = $package->documents->where('document_type', 'SPJ')->where('scope_key', 'MAIN')->where('status', 'CANCELLED')->sortByDesc('id')->first();
+                $packageCategory = strtoupper((string) $transaction->spj_category);
+                $isHonorPackage = $packageCategory === 'HONOR_PEGAWAI';
+                $isGoodsPackage = $packageCategory === 'BARANG';
+            @endphp
+            <section class="mx-5 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] px-4 py-3.5">
+                    <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Penomoran effective-context</h2>
+                    <p class="mt-0.5 text-sm text-[var(--ui-fg-muted)]">Action ini memakai service issuance V2. Batch, finalisasi, dan perubahan lifecycle lain tetap tertutup.</p>
+                </div>
+                <div class="p-4">
+                    @include('spj.partials.package.numbering-preflight-modal')
+                </div>
+            </section>
+        @endif
 
         @include('spj.partials.package.transaction-summary')
 

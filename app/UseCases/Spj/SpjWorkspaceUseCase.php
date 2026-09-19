@@ -8,9 +8,10 @@ use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2MutationContextService;
+use App\Services\SpjV2NumberingAuthorizationService;
 use App\Services\SpjV2PackageReadContextService;
 use App\Services\SpjV2PackageReadMembershipService;
-use App\Services\SpjV2MutationContextService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -30,6 +31,7 @@ class SpjWorkspaceUseCase
         private readonly SpjV2PackageReadContextService $packageReadContext,
         private readonly SpjV2PackageReadMembershipService $packageReadMembership,
         private readonly SpjV2MutationContextService $mutationContext,
+        private readonly SpjV2NumberingAuthorizationService $numberingAuthorization,
     ) {}
 
     public function handle(Request $request): View|RedirectResponse
@@ -288,6 +290,7 @@ class SpjWorkspaceUseCase
             'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
             'participantRoster' => $participantRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
+            'effectiveNumberingPreflight' => $this->effectiveNumberingPreflight($package),
         ]);
     }
 
@@ -356,7 +359,34 @@ class SpjWorkspaceUseCase
             'activeSpjDocument' => $activeSpjDocument,
             'cancelledSpjDocument' => $cancelledSpjDocument,
             'hasActiveSpjNumber' => $activeSpjDocument !== null && $package->status !== 'CANCELLED',
+            'effectiveNumberingPreflight' => $this->effectiveNumberingPreflight($package),
         ]);
+    }
+
+    /** @return array{active:bool,authorized:bool,reason:string,path:string,effective_fiscal_year:?int,quarter:?int} */
+    private function effectiveNumberingPreflight(SpjPackage $package): array
+    {
+        if (config('spj.v2_read_path', 'legacy') !== 'v2') {
+            return [
+                'active' => false,
+                'authorized' => false,
+                'reason' => '',
+                'path' => 'legacy',
+                'effective_fiscal_year' => null,
+                'quarter' => null,
+            ];
+        }
+
+        $authorization = $this->numberingAuthorization->authorize($package, ['SPJ']);
+
+        return [
+            'active' => true,
+            'authorized' => $authorization['authorized'] && ($authorization['path'] ?? null) === 'v2_authorized_preflight',
+            'reason' => (string) ($authorization['reason'] ?? 'effective numbering preflight was blocked'),
+            'path' => (string) ($authorization['path'] ?? 'blocked'),
+            'effective_fiscal_year' => isset($authorization['effective_fiscal_year']) ? (int) $authorization['effective_fiscal_year'] : null,
+            'quarter' => isset($authorization['quarter']) ? (int) $authorization['quarter'] : null,
+        ];
     }
 
     /** @return array{previousPackageId: int|null, nextPackageId: int|null} */
