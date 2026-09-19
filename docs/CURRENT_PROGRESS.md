@@ -570,8 +570,18 @@ duplicate. Semantic verify menghitung gate dari evidence aktual; integrity, FK,
 orphan, source adapter, context isolation, canonical identity, dan item-overlay
 reconciliation semuanya PASS pada fresh clone. Provenance classification eksplisit
 adalah ACTIVE_CANONICAL 187 dan LEGACY_DUPLICATE 104; metric many-to-one 104 tetap
-terpisah. Transaction/item overlay conflict masing-masing 0. V2-D read-path
-cutover tetap belum dimulai.
+terpisah. Transaction/item overlay conflict masing-masing 0.
+
+## V2-D1 shadow read parity — 2026-09-19
+
+Focused `V2DReadParityTest` PASS dengan 2 test, 20 assertions, dan 2 deprecations.
+Parity membatasi fresh projection ke konteks yang sudah direpresentasikan V2,
+membandingkan overlay operator dari legacy read model melalui provenance map, dan
+tetap fail-closed saat overlay V2 diubah secara sintetis. Fixture sumber ARKAS
+ditemukan dari path relatif proyek `../../backupdata/datasmp.db`; tidak ada env
+manual yang diperlukan. Pint dan `git diff --check` juga PASS. Evidence ini hanya
+functional local rehearsal; canonical read adapter dan production read-path
+cutover belum dilakukan.
 
 ---
 

@@ -20,14 +20,22 @@ final class SpjV2ReadParityService
             }
         }
 
-        $freshByKey = [];
-        foreach ($db->table('spj_fresh_transactions')->where('source_status', 'ACTIVE')->orderBy('id')->get() as $row) {
-            $freshByKey[$this->key($row, 'source_key')] = $row;
-        }
-
         $v2ByKey = [];
         foreach ($db->table('spj_transactions')->where('source_status', 'ACTIVE')->orderBy('id')->get() as $row) {
             $v2ByKey[$this->key($row, 'source_membership_hash')] = $row;
+        }
+
+        $v2Contexts = [];
+        foreach ($v2ByKey as $row) {
+            $v2Contexts[(string) $row->fiscal_year_id.':'.(string) $row->fund_source_id] = true;
+        }
+
+        $freshByKey = [];
+        foreach ($db->table('spj_fresh_transactions')->where('source_status', 'ACTIVE')->orderBy('id')->get() as $row) {
+            $context = (string) $row->fiscal_year_id.':'.(string) $row->fund_source_id;
+            if (isset($v2Contexts[$context])) {
+                $freshByKey[$this->key($row, 'source_key')] = $row;
+            }
         }
 
         $freshKeys = array_keys($freshByKey);
@@ -40,7 +48,8 @@ final class SpjV2ReadParityService
 
         $freshMembership = $this->freshMembership($db, $freshByKey);
         $v2Membership = $this->v2Membership($db, $v2ByKey);
-        $freshItems = $this->freshItemOverlays($db, $freshByKey);
+        $legacyOverlays = $this->legacyOverlays($db);
+        $legacyItems = $this->legacyItemOverlays($db);
         $v2Items = $this->v2ItemOverlays($db, $v2ByKey);
         $v2Overlays = $db->table('spj_transaction_overlays')->get()->keyBy('spj_transaction_id');
 
@@ -53,11 +62,11 @@ final class SpjV2ReadParityService
             }
 
             $v2Overlay = $v2Overlays->get($v2ByKey[$key]->id);
-            if ($v2Overlay === null || $this->overlay($freshByKey[$key]) !== $this->overlay($v2Overlay)) {
+            if ($v2Overlay === null || ($legacyOverlays[$v2ByKey[$key]->id] ?? []) !== $this->overlay($v2Overlay)) {
                 $transactionOverlayMismatches[] = $key;
             }
 
-            if (($freshItems[$key] ?? []) !== ($v2Items[$key] ?? [])) {
+            if (($legacyItems[$v2ByKey[$key]->id] ?? []) !== ($v2Items[$key] ?? [])) {
                 $itemOverlayMismatches[] = $key;
             }
         }
@@ -137,19 +146,45 @@ final class SpjV2ReadParityService
         return $this->sortMembership($result);
     }
 
-    /** @param array<string, object> $rows @return array<string, array<string, string|null>> */
-    private function freshItemOverlays(Connection $db, array $rows): array
+    /** @return array<int, array<string, string|null>> */
+    private function legacyOverlays(Connection $db): array
     {
-        $keys = $this->keyById($rows);
         $result = [];
-        if ($keys === []) {
-            return $result;
+        foreach ($db->table('legacy_transaction_v2_map as maps')
+            ->join('transactions', 'transactions.id', '=', 'maps.legacy_transaction_id')
+            ->get([
+                'maps.spj_transaction_id',
+                'transactions.spj_category',
+                'transactions.payment_description',
+                'transactions.payment_method',
+                'transactions.payment_reference',
+                'transactions.receipt_recipient_name',
+            ]) as $row) {
+            $transactionId = (int) $row->spj_transaction_id;
+            $overlay = $this->overlay($row);
+            foreach ($overlay as $column => $value) {
+                if (! isset($result[$transactionId][$column]) || $result[$transactionId][$column] === null) {
+                    $result[$transactionId][$column] = $value;
+                }
+            }
         }
 
-        foreach ($db->table('spj_fresh_transaction_items')
-            ->whereIn('spj_fresh_transaction_id', array_keys($keys))
-            ->get(['spj_fresh_transaction_id', 'source_key', 'item_description']) as $item) {
-            $result[$keys[(int) $item->spj_fresh_transaction_id]][trim((string) $item->source_key)] = $this->normalize($item->item_description);
+        return $result;
+    }
+
+    /** @return array<int, array<string, array<string, string|null>>> */
+    private function legacyItemOverlays(Connection $db): array
+    {
+        $result = [];
+        foreach ($db->table('legacy_transaction_v2_map as maps')
+            ->join('transaction_items', 'transaction_items.transaction_id', '=', 'maps.legacy_transaction_id')
+            ->get(['maps.spj_transaction_id', 'transaction_items.source_item_id', 'transaction_items.item_description']) as $item) {
+            $transactionId = (int) $item->spj_transaction_id;
+            $sourceKey = trim((string) $item->source_item_id);
+            $description = $this->normalize($item->item_description);
+            if (! isset($result[$transactionId][$sourceKey]) || $result[$transactionId][$sourceKey] === null) {
+                $result[$transactionId][$sourceKey] = $description;
+            }
         }
 
         return $this->sortOverlays($result);

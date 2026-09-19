@@ -14,9 +14,9 @@ final class V2DReadParityTest extends TestCase
     public function test_fresh_rehearsal_matches_v2_canonical_read_contract(): void
     {
         $sourceClone = storage_path('app/school-databases/10260786/spj.sqlite');
-        $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
+        $source = $this->sourcePath();
         $this->assertFileExists($sourceClone);
-        $this->assertNotSame('', $source);
+        $this->assertNotSame('', $source, 'No readable ARKAS evidence source was found for the V2-D rehearsal.');
         $target = storage_path('app/v2-c-rehearsal/test-v2d-read-parity.sqlite');
         File::copy($sourceClone, $target);
 
@@ -60,9 +60,9 @@ final class V2DReadParityTest extends TestCase
     public function test_shadow_read_parity_fails_closed_when_v2_overlay_drifts(): void
     {
         $sourceClone = storage_path('app/school-databases/10260786/spj.sqlite');
-        $source = getenv('SPJ_V2_C_SOURCE_PATH') ?: '';
+        $source = $this->sourcePath();
         $this->assertFileExists($sourceClone);
-        $this->assertNotSame('', $source);
+        $this->assertNotSame('', $source, 'No readable ARKAS evidence source was found for the V2-D rehearsal.');
         $target = storage_path('app/v2-c-rehearsal/test-v2d-read-parity-drift.sqlite');
         File::copy($sourceClone, $target);
 
@@ -112,5 +112,23 @@ final class V2DReadParityTest extends TestCase
             'mode' => null,
         ]);
         DB::purge('school');
+    }
+
+    private function sourcePath(): string
+    {
+        $configured = getenv('SPJ_V2_C_SOURCE_PATH') ?: config('spj.v2_c_source_path');
+        $candidates = array_filter([
+            is_string($configured) ? $configured : null,
+            base_path('../../backupdata/datasmp.db'),
+            storage_path('app/datasmp.db'),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 }

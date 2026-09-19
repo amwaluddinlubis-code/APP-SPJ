@@ -309,12 +309,13 @@ Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
   conflict count, dan protected manifest;
 - [ ] source evidence/ownership fixture `10208183` (opsional, bukan gate current-project);
 - [ ] production migration dan legacy retirement;
-- [ ] V2-D read-path cutover preparation.
+- [x] V2-D1 shadow read parity rehearsal and fail-closed drift regression.
 
 Evidence: `docs/V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md`.
 
-V2-C3 semantic gate PASS pada fresh Tenant A clone. V2-D tetap merupakan tahap
-terpisah dan production read-path belum berubah.
+V2-C3 semantic gate PASS pada fresh Tenant A clone. V2-D1 shadow parity juga PASS
+pada isolated rehearsal; canonical read adapter, downstream workflow parity, dan
+production read-path cutover tetap belum dilakukan.
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 

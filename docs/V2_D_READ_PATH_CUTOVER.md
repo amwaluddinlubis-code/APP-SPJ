@@ -1,6 +1,6 @@
 # V2-D — Read-Path Cutover
 
-Status: **D1 SHADOW PARITY IMPLEMENTED / RUNTIME EVIDENCE PENDING**.
+Status: **D1 SHADOW PARITY FUNCTIONAL PASS / PRODUCTION CUTOVER BLOCKED**.
 
 Baseline V2-C3: commit `8876478`, 187 canonical V2 transactions, 291 legacy
 provenance mappings, 431 source links, 187 transaction overlays, 245 item
@@ -39,7 +39,11 @@ Therefore V2-D does **not** start by replacing `Transaction::query()` globally.
 ## D1 — Shadow read parity
 
 `SpjV2ReadParityService` compares the current active fresh projection against V2
-using the canonical boundary:
+using the canonical boundary. Fresh rows are restricted to fiscal-year/fund-source
+contexts represented by active V2 rows; legacy-only contexts remain outside the
+V2-D gate. Operator overlays are read from the current legacy read model through
+the V2 provenance map and compared with the canonical V2 overlays, including
+many-to-one provenance.
 
 `fiscal_year_id + fund_source_id + source_id + source membership hash`.
 
@@ -62,9 +66,13 @@ isolated clone, then requires 187 fresh and 187 V2 canonical transactions with
 zero identity/membership/overlay mismatches. A synthetic V2 overlay drift must
 make parity fail closed.
 
-Runtime/Pint evidence has not yet been produced from the current execution
-environment, so D1 must remain **runtime pending** until those commands are run on
-the local project or CI.
+Runtime evidence on 2026-09-19: `php artisan test --compact
+tests/Feature/V2DReadParityTest.php` passed with 2 tests, 20 assertions, and 2
+deprecations. The rehearsal found the ARKAS evidence source from the documented
+project-relative fixture `../../backupdata/datasmp.db` without requiring manual
+environment setup. `vendor/bin/pint --dirty --format agent` and `git diff --check`
+also passed. The synthetic overlay-drift regression remained fail-closed. This is
+functional local rehearsal evidence only; no production read path has switched.
 
 ## D2 — Canonical read adapter (next)
 
