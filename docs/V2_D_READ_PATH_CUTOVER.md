@@ -1,6 +1,6 @@
 # V2-D — Read-Path Cutover
 
-Status: **D1 SHADOW PARITY FUNCTIONAL PASS / PRODUCTION CUTOVER BLOCKED**.
+Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 ADAPTER IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
 
 Baseline V2-C3: commit `8876478`, 187 canonical V2 transactions, 291 legacy
 provenance mappings, 431 source links, 187 transaction overlays, 245 item
@@ -74,17 +74,32 @@ environment setup. `vendor/bin/pint --dirty --format agent` and `git diff --chec
 also passed. The synthetic overlay-drift regression remained fail-closed. This is
 functional local rehearsal evidence only; no production read path has switched.
 
-## D2 — Canonical read adapter (next)
+## D2 — Canonical read adapter
 
-Only after D1 runtime parity is PASS:
+D1 runtime parity sudah memberikan evidence lokal yang cukup untuk membuka implementasi D2.
+`SpjV2CanonicalReadService` sekarang menyediakan jalur baca read-only untuk konteks
+`Fiscal Year + Fund Source + source_id` tanpa memindahkan controller/Livewire production.
 
-- introduce a canonical V2 read DTO/adapter for transaction list/detail;
-- derive ARKAS-owned fields through `spj_transaction_sources ->
-  arkas_source_identity_registry -> current_raw_mirror_row_id`;
-- derive operator-owned transaction/item fields only from V2 overlay tables;
-- preserve the active `Fiscal Year + Fund Source` boundary;
-- keep production UI on the existing read path while shadow comparison remains
-  enabled in tests/rehearsal.
+Kontrak adapter:
+
+- hanya membaca `ACTIVE_CANONICAL` pada context eksplisit;
+- fakta ARKAS berasal dari `spj_transaction_sources -> arkas_source_identity_registry
+  -> current_raw_mirror_row_id`;
+- kategori, uraian pembayaran, payment method/reference, penerima override, dan
+  item description hanya berasal dari tabel overlay V2;
+- identifier dapat berupa membership hash canonical **atau** `legacy_source_key`
+  dari provenance bridge, sehingga 22 mapping `DETERMINISTIC` tetap dapat dibuka
+  memakai URL/source key legacy;
+- gross/tax/net dihitung dari source rows canonical dan tax receipt rows (10/30),
+  bukan dari field operator;
+- output menyertakan legacy provenance dan source-item membership untuk audit.
+
+Regression baru `V2DCanonicalReadAdapterTest` memverifikasi context partition,
+187 canonical transactions, aggregate financial parity, legacy deterministic
+identifier resolution, source-link/item cardinality, dan ownership overlay.
+Source implementation sudah masuk branch; runtime test untuk regression ini masih
+**RVR** sampai benar-benar dijalankan pada clone lokal. Production UI tetap memakai
+jalur lama selama D2 belum mendapat runtime PASS.
 
 ## D3 — Paket/document bridge
 
@@ -107,4 +122,4 @@ A production switch requires all of the following:
 - rollback strategy documented and tested;
 - Pint, focused regression, `git diff --check`, and applicable CI evidence.
 
-No production read path has been switched in D1.
+No production read path has been switched pada D1 maupun D2.
