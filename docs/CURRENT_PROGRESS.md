@@ -646,6 +646,13 @@ atau memakai compatibility overlay/write-through eksplisit. Resolver production
 juga tidak boleh mengasumsikan `source_id=1` karena source identity bukan bagian
 dari active session context.
 
+Source D4 step 1 sekarang sudah tersedia: `SpjV2CanonicalSourceResolver` +
+`SpjReadPathSelector`, dengan config `SPJ_V2_READ_PATH=legacy` sebagai default.
+Request V2 hanya eligible bila satu source canonical unik ditemukan; invalid config,
+schema V2 belum ada, source kosong, atau source ambigu kembali ke legacy. Belum ada
+production consumer yang dipindahkan. Runtime regression selector masih **RVR**
+sampai `V2DReadPathSelectorTest`, Pint, dan diff-check dijalankan lokal.
+
 ---
 
 ## Prioritas kerja aktif
