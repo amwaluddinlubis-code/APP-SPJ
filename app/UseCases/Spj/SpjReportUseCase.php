@@ -12,6 +12,7 @@ use App\Services\SpjV2PackageReadMembershipService;
 use App\Services\SpjV2ReportFinancialSummaryService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -248,6 +249,10 @@ class SpjReportUseCase
                 $package->setAttribute('report_document_number', $package->document_number ?: $cancelledDocument?->document_number);
                 $package->setAttribute('report_status', $package->document_number ? $package->status : 'CANCELLED');
                 $package->setAttribute('report_cancellation_reason', $package->document_number ? null : $cancelledDocument?->cancellation_reason);
+                $package->setAttribute(
+                    'read_context_path',
+                    $this->context->matchesTransaction($package->transaction) ? 'legacy' : 'v2_compat',
+                );
 
                 return $package;
             });
@@ -329,7 +334,7 @@ class SpjReportUseCase
         ]];
     }
 
-    private function reportPackageQuery(callable $transactionFilter, ?array $packageIds = null)
+    private function reportPackageQuery(callable $transactionFilter, ?array $packageIds = null): Builder
     {
         return SpjPackage::query()
             ->with(['transaction', 'documents'])
@@ -346,6 +351,9 @@ class SpjReportUseCase
             ->orderBy('spj_packages.id');
     }
 
+    /**
+     * @return array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float}
+     */
     private function reportFinancialSummary(
         callable $successfulTransactionFilter,
         callable $cancelledTransactionFilter,
