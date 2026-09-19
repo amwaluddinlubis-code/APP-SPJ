@@ -94,10 +94,13 @@ inventory profile tenant nyata.
 ## Schema drift dan failure policy
 
 Bridge harus fail-closed bila table yang diminta tidak ada atau contract
-source/key berubah secara material. Raw mirror mempertahankan snapshot valid
-sebelumnya bila refresh gagal. Unknown, empty, dan disabled table tidak boleh
-menjadi target baru. Perubahan schema harus menghasilkan audit/error yang dapat
-ditindaklanjuti sebelum import diteruskan.
+source/key berubah secara material. Implementasi saat ini memeriksa table
+manifest dan primary key untuk entry `PRIMARY_KEY`; validasi required columns
+dan type-specific baru boleh ditambahkan pada bridge eksplisit terkait. Raw
+mirror mempertahankan snapshot valid sebelumnya bila refresh gagal. Unknown,
+empty, dan disabled table tidak boleh menjadi target baru. Perubahan schema
+harus menghasilkan audit/error yang dapat ditindaklanjuti sebelum import
+diteruskan.
 
 ## Existing schema disposition
 

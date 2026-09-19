@@ -37,6 +37,9 @@ final class ArkasRawMirrorService
             $seenTables[] = $tableName;
             $columns = $this->explorer->inspect($source, $tableName, 1)['columns'];
             $primaryKeyColumns = $this->primaryKeyColumns($columns);
+            if ($entry['key_strategy'] === 'PRIMARY_KEY' && $primaryKeyColumns === []) {
+                throw new \RuntimeException('Schema ARKAS berubah: tabel manifest '.$tableName.' tidak lagi memiliki primary key yang stabil.');
+            }
             $records = $this->fetchAllRows($source, $tableName, $limit);
             $schema = array_values(array_map(static fn (array $column): array => [
                 'name' => $column['name'],
