@@ -851,12 +851,17 @@ proves it safe. FINAL/CANCELLED remain locked.
   numbering/bulk-final controls or maintenance-link mutation.
 
 Negative-path hardening was added in commits `3aa331a` and `eb96214`.
-These commits extend the staged regression contract only; they are not runtime
-PASS evidence. The branch currently has no canonical Actions run for this head
-because the repository workflow auto-trigger targets `gui-standardization`,
-while the isolated Step 11B fixture is branch/local evidence. Runtime evidence
-for D4 step 11B therefore remains **RVR** until the focused gate is actually
-executed.
+Runtime evidence on branch `arkas-raw-mirror` is now PASS: the focused
+`V2DPackageOverlayWriteCutoverTest` passed with **9 tests / 109 assertions /
+9 deprecations**, and the combined Step 11A/read-context/package
+manual/category/transaction-boundary/authorization/NUMBERED regression passed
+with **59 tests / 644 assertions / 59 deprecations**. `vendor/bin/pint
+--dirty --format agent`, `php artisan view:cache --no-interaction`,
+`npm run build`, and `git diff --check` also passed.
+
+This gate remains deliberately limited to DRAFT/READY package overlay writes.
+Numbering, FINAL, settlement, bulk-final, and period-close remain outside the
+Step 11B scope and were not opened.
 
 A production switch requires all of the following:
 

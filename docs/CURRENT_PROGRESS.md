@@ -854,11 +854,15 @@ Regression `V2DPackageOverlayWriteCutoverTest` sudah diperkeras pada
 gate sekarang secara eksplisit menolak wrong Paket/V2 bridge, unresolved
 reconciliation, `SOURCE_MISSING`, synthetic raw-source financial drift,
 overlay write pada NUMBERED, serta category mutation pada NUMBERED; seluruh
-negative path juga mensyaratkan tidak ada audit mutation palsu. Ini masih
-**source/test coverage**, bukan runtime evidence. Workflow canonical repository
-tidak otomatis berjalan pada branch `arkas-raw-mirror`, dan focused isolated
-fixture Step 11B belum dieksekusi pada runtime branch ini. Karena itu runtime
-evidence Step 11B tetap **RVR** dan belum boleh dipromosikan menjadi PASS.
+negative path juga mensyaratkan tidak ada audit mutation palsu.
+
+Runtime evidence branch ini sekarang PASS: `V2DPackageOverlayWriteCutoverTest`
+lulus **9 test / 109 assertions / 9 deprecations**; regression gabungan
+Step 11A/read-context/package manual/category/transaction-boundary/
+authorization/NUMBERED lulus **59 test / 644 assertions / 59 deprecations**.
+Pint, `php artisan view:cache`, `npm run build`, dan `git diff --check` juga
+lulus. Step 11B tetap terbatas pada Paket DRAFT/READY; numbering, FINAL,
+settlement, bulk-final, dan period-close tidak dibuka.
 
 ---
 
