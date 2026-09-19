@@ -115,3 +115,7 @@ tenant nyata. Masih diperlukan review lanjutan untuk:
 3. finalisasi source identity registry terhadap full ARKAS mirror;
 4. keputusan additive transition package untuk real tenant;
 5. backup, approval, dan migration runbook production.
+
+V2-B harus membaca source melalui explicit ARKAS mirror manifest. Generic
+mapping/importer tidak boleh menjadi dependency baru untuk isolated schema;
+transition lama hanya compatibility read sampai two-tier mirror parity selesai.

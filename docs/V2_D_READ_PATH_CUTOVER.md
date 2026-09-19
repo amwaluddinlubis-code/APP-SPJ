@@ -1030,6 +1030,11 @@ settlement, bulk-final, period close/open, or browser QA surface was opened.
 Focused evidence: **11 tests / 121 assertions / 11 deprecations PASS** from
 the batch UI contract and V2 numbering suites.
 
+V2-D read-path source dependency kini mengikuti explicit ARKAS mirror manifest.
+Tenant raw facts tetap dibaca dari school DB; reference candidates yang belum
+terbukti global tidak dipromosikan ke central. Status mirror schema tetap
+PARTIAL FREEZE sampai two-tenant parity audit selesai.
+
 ### Canonical SQLite lock-stability verification - 2026-09-19
 
 The clean `598b74a` head passed the complete repository PHPUnit gate with

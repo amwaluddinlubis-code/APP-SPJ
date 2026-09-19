@@ -1139,3 +1139,18 @@ isolation. Browser QA tetap **RVR / DEFERRED**.
 Status: **EFFECTIVE BATCH/QUARTER OPERATOR UI PASS untuk SPJ Utama**. Domain
 dokumen pendukung, FINAL, settlement, bulk-final, period close/open, dan
 browser QA tetap tertutup.
+
+## ARKAS two-tier mirror contract - 2026-09-19
+
+Audit menemukan raw mirror sebelumnya menerima enumerasi tabel ARKAS secara
+luas dan importer lama menyediakan mapping dinamis. `ArkasMirrorManifest` kini
+menjadi allow-list eksplisit; raw mirror hanya memproses sepuluh tabel tenant
+yang tercantum dan melaporkan tabel source lain sebagai skipped. Generic
+importer mapping dipertahankan sementara sebagai compatibility shim, bukan
+authority arsitektur baru.
+
+Reference candidates belum dipromosikan ke central karena source database nyata
+tidak tersedia untuk parity lintas sekolah pada audit ini. Status schema:
+**PARTIAL FREEZE**. Detail contract ada di `docs/ARKAS_MIRROR_SCHEMA_CONTRACT.md`.
+Tidak ada drop/move/destructive migration dan boundary FINAL/lifecycle lain
+tetap tertutup.

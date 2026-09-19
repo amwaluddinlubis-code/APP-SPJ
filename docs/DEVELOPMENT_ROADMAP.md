@@ -562,3 +562,17 @@ with 22 assertions each. No deterministic SQLite lock exception was observed,
 so no speculative retry or transaction-lifecycle change was introduced.
 Composer checks were not rerun because Composer is unavailable in the shell.
 Browser QA remains RVR/DEFERRED and lifecycle boundaries remain closed.
+
+## ARKAS two-tier mirror architecture - PARTIAL FREEZE
+
+The raw mirror is now gated by the explicit, versioned
+`ArkasMirrorManifest`. Tenant source tables use `ArkasTenantDataBridge` and
+are captured in the school database. Central reference candidates use an
+explicit `ArkasCentralReferenceBridge` contract but remain disabled until
+cross-school parity is proven. Generic importer mapping remains a temporary
+compatibility shim only; it is no longer the raw-mirror authority.
+
+Total source-table inventory and real cross-school classification remain RVR
+because no configured readable ARKAS source database was available in this
+audit shell. Do not call the schema FROZEN or remove legacy mapping until the
+two-tenant read-only inventory and isolated parity rehearsal are complete.

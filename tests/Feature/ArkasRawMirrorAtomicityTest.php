@@ -99,4 +99,35 @@ class ArkasRawMirrorAtomicityTest extends TestCase
             $this->assertSame(['OLD-ROW'], DB::connection('school')->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirrorTableId)->pluck('source_key')->all());
         }
     }
+
+    public function test_unknown_source_tables_are_skipped_without_dynamic_mapping_or_target_creation(): void
+    {
+        $source = new ArkasSource;
+        $source->id = 8;
+
+        $explorer = Mockery::mock(ArkasDatabaseExplorer::class);
+        $explorer->shouldReceive('tables')->once()->with($source)->andReturn(['unknown_table', 'kas_umum']);
+        $explorer->shouldReceive('inspect')->once()->with($source, 'kas_umum', 1)->andReturn([
+            'columns' => [[
+                'name' => 'ID',
+                'type' => 'TEXT',
+                'nullable' => 'Ya',
+                'primary' => 'Ya',
+                'primary_order' => '1',
+            ]],
+            'rows' => [],
+        ]);
+        $bridge = Mockery::mock(ArkasBridgeClient::class);
+        $bridge->shouldReceive('execute')->once()->withArgs(fn (ArkasSource $actualSource, string $command): bool => $actualSource->id === $source->id && $command === 'rows')
+            ->andReturn("FIELDS|ID\nDATA|KNOWN-ROW");
+        $sourceKeys = Mockery::mock(ArkasSourceKeyResolver::class);
+        $sourceKeys->shouldReceive('resolveFromColumns')->once()->andReturn('KNOWN-ROW');
+
+        $result = (new ArkasRawMirrorService($explorer, $bridge, $sourceKeys))->synchronize($source);
+
+        $this->assertSame(1, $result['tables']);
+        $this->assertSame(1, $result['skipped_tables']);
+        $this->assertSame(1, DB::connection('school')->table('arkas_raw_mirror_tables')->count());
+        $this->assertSame('kas_umum', DB::connection('school')->table('arkas_raw_mirror_tables')->value('source_table'));
+    }
 }

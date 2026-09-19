@@ -11,20 +11,29 @@ final class ArkasRawMirrorService
         private readonly ArkasDatabaseExplorer $explorer,
         private readonly ArkasBridgeClient $bridge,
         private readonly ArkasSourceKeyResolver $sourceKeys,
+        private readonly ?ArkasMirrorManifest $manifest = null,
     ) {}
 
     /**
-     * @return array{tables:int, non_empty:int, rows:int, stale:int}
+     * @return array{tables:int, skipped_tables:int, non_empty:int, rows:int, stale:int}
      */
     public function synchronize(ArkasSource $source, int $limit = 100000): array
     {
         $db = DB::connection('school');
-        $tables = $this->explorer->tables($source);
+        $manifest = $this->manifest ?? new ArkasMirrorManifest;
+        $availableTables = $this->explorer->tables($source);
+        $tables = $manifest->importableTables($availableTables);
         $seenTables = [];
         $rowCount = 0;
         $nonEmpty = 0;
 
         foreach ($tables as $tableName) {
+            $entry = $manifest->entry($tableName);
+            $bridgeClass = $entry['bridge'];
+            $bridge = new $bridgeClass;
+            if (! in_array($tableName, $bridge->sourceTables(), true)) {
+                throw new \RuntimeException('Kontrak bridge ARKAS tidak mendukung tabel manifest: '.$tableName);
+            }
             $seenTables[] = $tableName;
             $columns = $this->explorer->inspect($source, $tableName, 1)['columns'];
             $primaryKeyColumns = $this->primaryKeyColumns($columns);
@@ -104,7 +113,13 @@ final class ArkasRawMirrorService
             ->whereNotIn('source_table', $seenTables);
         $stale = $staleQuery->update(['status' => 'STALE', 'updated_at' => now()]);
 
-        return ['tables' => count($tables), 'non_empty' => $nonEmpty, 'rows' => $rowCount, 'stale' => $stale];
+        return [
+            'tables' => count($tables),
+            'skipped_tables' => count(array_diff($availableTables, $tables)),
+            'non_empty' => $nonEmpty,
+            'rows' => $rowCount,
+            'stale' => $stale,
+        ];
     }
 
     /**

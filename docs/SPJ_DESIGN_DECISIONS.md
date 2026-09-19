@@ -665,3 +665,16 @@ docs/GUI_STANDARDIZATION.md
 ```
 
 Arsip migration yang sudah selesai dihapus dari `docs/`; jejaknya ada di git history.
+
+## 23. ARKAS mirror ownership
+
+Raw mirror ARKAS memakai manifest eksplisit dan bridge berbasis scope. Data
+source sekolah, transaksi, anggaran, BKU, pegawai, dan provenance masuk
+database sekolah. Reference hanya boleh masuk database pusat setelah parity
+lintas sekolah dan tidak adanya override tenant terbukti. Generic importer
+mapping adalah compatibility debt, bukan authority arsitektur mirror.
+
+Kontrak rinci dan status freeze berada di
+`docs/ARKAS_MIRROR_SCHEMA_CONTRACT.md`. Status saat ini **PARTIAL FREEZE**;
+tidak ada destructive cleanup atau perubahan lifecycle Paket dari keputusan
+ini.
