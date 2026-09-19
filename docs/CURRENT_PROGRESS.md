@@ -781,6 +781,17 @@ Clean rerun setelah fix DI PASS dengan **42 test / 711 assertions / 42
 deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 8 sekarang
 **RUNTIME PASS**.
 
+D4 step 9 source sekarang mengalihkan jalur read-only **Honor Pegawai** dan
+**Jasa Lainnya** pada toolbar Laporan ke effective legacy-transaction membership
+ketika selector V2 RESOLVED. `ExtendedSpjReportUseCase` tetap membaca seluruh
+operator-owned detail Honor/Jasa dari tabel legacy; hanya scope transaksi yang
+berasal dari provenance/effective context. Select, compose, dan export memakai
+boundary yang sama; forged/outside transaction ID tetap ditolak dan config
+`legacy` langsung mengembalikan behavior lama. Regression
+`V2DExtendedReportContextCutoverTest` memakai synthetic operator overlays pada
+clone yang dipaku ke stale effective-context nyata. Runtime evidence step 9 masih
+**RVR**.
+
 ---
 
 ## Prioritas kerja aktif
