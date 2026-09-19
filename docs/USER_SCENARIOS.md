@@ -285,6 +285,28 @@ Jika Checklist menemukan blocker, tombol/perbaikan tidak menjadi izin untuk
 menulis di luar context. Operator tetap mengikuti workspace yang tersedia; write
 boundary Paket yang lebih luas baru dibuka pada gate berikutnya.
 
+### Effective-context Isian Manual untuk Paket editable
+
+Setelah Step 11A, Paket stale-context yang DRAFT/READY dapat masuk ke editor
+transisi khusus dari mode baca Paket:
+
+```text
+Mode baca Paket
+→ Edit Isian Manual
+→ backend membuktikan effective context + exact Paket/provenance + source parity
+→ simpan operator overlay ke legacy Transaction/relasi SPJ
+→ fiscal_year_id legacy tetap tidak berubah
+→ kembali ke mode baca/Checklist
+```
+
+Editor ini bukan workspace Paket penuh. Operator tidak memperoleh akses ke
+Penomoran, FINAL, settlement, bulk-final, atau linkage bahan/upah pemeliharaan
+melalui mode compatibility.
+
+Perubahan kategori tetap mengikuti rule normal: bila Paket READY dan kategori
+berubah, status kembali menjadi DRAFT agar divalidasi ulang. Paket NUMBERED pada
+effective-context belum menerima koreksi overlay melalui editor ini.
+
 ## 11. Isian Manual — kategori dan konteks
 
 Kategori canonical:
