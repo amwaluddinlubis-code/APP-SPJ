@@ -632,3 +632,10 @@ canonical raw data, and only then allows `TaxFilterService` to scope legacy
 models by effective-context IDs. V2 tax rows navigate to Detail Transaksi by
 source key so stale legacy IDs do not cross the active context boundary; the
 fresh detail model remains read-only unless an authoritative legacy overlay exists.
+
+Monitoring is deliberately excluded from the current read-only V2 cutover even
+though its pending queue is display-oriented. The tab shares one operator surface
+with Bulk Final, quarter numbering, Checklist/Persiapan navigation, and
+fiscal-period close/reopen. Until effective-context mutation authorization or
+write-through exists, those flows remain legacy-authoritative and V2 read
+compatibility must not be used to broaden their write scope.
