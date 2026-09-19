@@ -1,6 +1,6 @@
 # ARKAS Mirror Schema Contract
 
-Status: **PARTIAL FREEZE**  
+Status: **PARTIAL FREEZE**
 Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-19.v1`)
 
 ## Tujuan
