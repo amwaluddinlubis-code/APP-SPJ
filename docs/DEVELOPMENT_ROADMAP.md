@@ -113,7 +113,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
 ## V2-D — Canonical read-path migration
 
-**Status: D1 FUNCTIONAL PASS / D2 RUNTIME PASS / D3 RUNTIME PASS / REPORT-TAX-PERIOD PARITY SOURCE IMPLEMENTED, RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED.**
+**Status: D1 FUNCTIONAL PASS / D2 RUNTIME PASS / D3 RUNTIME PASS / REPORT-TAX-PERIOD RUNTIME PASS / PRODUCTION CUTOVER BLOCKED.**
 
 - [x] V2-C3 canonical migration semantic gate pada fresh isolated clone;
 - [x] D1 shadow parity fresh ↔ V2 dengan fail-closed overlay drift regression;
@@ -124,7 +124,9 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] jalankan `V2DPackageDocumentParityTest` pada isolated clone: 3 test / 42 assertions PASS;
 - [x] implement canonical tax breakdown + raw RKAS activity-code resolution;
 - [x] implement `SpjV2WorkflowParityService` + report/tax/period fail-closed regression;
-- [ ] jalankan ulang `V2DCanonicalReadAdapterTest` + `V2DWorkflowParityTest` pada isolated clone;
+- [x] jalankan focused V2-C → V2-D suite pada isolated clone: 16 test / 378 assertions PASS;
+- [ ] authorization + active-context cutover regression;
+- [ ] rollback strategy documented + tested;
 - [ ] controlled production read-path cutover + rollback evidence.
 
 Jangan memindahkan controller/Livewire/write-path ke V2 sebelum D3 relation parity, report/tax/period parity, dan rollback gate lulus.
