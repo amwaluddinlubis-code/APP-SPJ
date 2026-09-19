@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SpjPackage;
+use App\Models\Transaction;
 use App\Support\ActiveSpjContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,7 @@ final class SpjV2MutationContextService
         $transaction->setAttribute('fiscal_year_id', $this->context->fiscalYearId());
         $transaction->unsetRelation('fiscalYear');
         $transaction->setAttribute('mutation_context_path', 'v2_compat');
+        $transaction->setAttribute('mutation_context_source_id', $membership['source_id']);
         $package->setAttribute('mutation_context_path', 'v2_compat');
         $package->setAttribute('mutation_context_source_id', $membership['source_id']);
         $package->setAttribute('mutation_context_mode', $membership['compatibility_mode']);
@@ -105,7 +107,7 @@ final class SpjV2MutationContextService
     }
 
     /** @param array<string, mixed> $canonical */
-    private function sourceFactsMatch(array $canonical, object $legacy): bool
+    private function sourceFactsMatch(array $canonical, Transaction $legacy): bool
     {
         foreach (['no_bukti', 'description', 'activity_code', 'account_code', 'recipient_name'] as $field) {
             if ($this->normalize($canonical[$field] ?? null) !== $this->normalize($legacy->{$field} ?? null)) {
@@ -150,5 +152,4 @@ final class SpjV2MutationContextService
 
         return $value === '' ? null : $value;
     }
-
 }
