@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2MutationContextService;
-use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -17,7 +16,6 @@ class SpjPackageChecklistController extends Controller
         string $packageId,
         SpjPackageValidationService $validator,
         SpjDocumentRequirementService $requirements,
-        ActiveSpjContext $context,
         SpjV2MutationContextService $mutationContext,
     ): View|RedirectResponse {
         $package = SpjPackage::query()
