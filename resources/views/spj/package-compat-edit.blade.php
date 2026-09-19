@@ -1,5 +1,19 @@
 <x-layouts.tailwind-app>
     @php
+        $activeSpjDocument = $package->documents
+            ->first(fn ($document) => $document->document_type === 'SPJ'
+                && $document->scope_key === 'MAIN'
+                && in_array($document->status, ['NUMBERED', 'FINAL'], true)
+                && filled($document->document_number));
+        $cancelledSpjDocument = $package->documents
+            ->where('document_type', 'SPJ')
+            ->where('scope_key', 'MAIN')
+            ->where('status', 'CANCELLED')
+            ->sortByDesc('id')
+            ->first();
+        $hasActiveSpjNumber = $activeSpjDocument !== null && $package->status !== 'CANCELLED';
+        $transactionDetailIdentifier = $transaction->source_key ?: $transaction->id;
+
         $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
             'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
             'JASA_LAINNYA' => 'Jasa Lainnya',
