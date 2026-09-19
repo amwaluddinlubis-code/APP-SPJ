@@ -639,7 +639,12 @@ Runtime evidence tahap ini sekarang **PASS**. Pada 2026-09-19 focused suite
 migration/idempotency, D1 shadow parity, D2 canonical adapter, D3 package/document
 bridge, serta downstream report/tax/period parity pada isolated clone. Production
 read-path tetap BLOCKED sampai authorization/active-context cutover regression,
-rollback strategy, dan source-quality/CI gate D4 selesai.
+rollback strategy, dan source-quality/CI gate D4 selesai. Audit D4 juga memastikan
+consumer mutation-heavy belum boleh membaca V2 overlay secara langsung selama
+mutation operator masih menulis legacy tables saja; cutover awal harus read-only
+atau memakai compatibility overlay/write-through eksplisit. Resolver production
+juga tidak boleh mengasumsikan `source_id=1` karena source identity bukan bagian
+dari active session context.
 
 ---
 
