@@ -730,9 +730,22 @@ Paket membership, 66 NUMBERED, fund-source isolation, immediate rollback config,
 wrong-bridge fail-closed, dan tanpa mutation protected state.
 
 Production Paket list/report table belum dialihkan karena row tersebut menyediakan
-Buka Paket/Preview/Download, sementara action/detail guard masih memvalidasi legacy
-transaction context. Action-boundary compatibility harus ditutup sebelum membership
-V2 dipakai pada UI tersebut.
+Buka Paket/Preview/Download, sementara action/detail guard sebelumnya masih
+memvalidasi legacy transaction context.
+
+D4 step 5 source sekarang menutup **read-only document actions** melalui
+`SpjV2PackageReadContextService`. Delapan jalur Preview/Download di
+`SpjDocumentUseCase` memakai effective-context membership bila config V2
+explicit dan seluruh bridge aman. Untuk mencegah template/profile tahun salah,
+legacy `fiscal_year_id` dinormalisasi hanya pada model Transaction in-memory;
+database tidak diubah. Regression `V2DPackageReadContextTest` mengunci
+effective-year template selection, legacy-config blocking, wrong-bridge
+fail-closed, dan protected-state immutability. Runtime evidence step 5 masih
+**RVR**.
+
+`Buka Paket` tetap belum dialihkan karena workspace Paket mutation-heavy dan
+NUMBERED masih memiliki correction carve-out. Read compatibility tidak boleh
+menjadi implicit write authorization.
 
 ---
 
