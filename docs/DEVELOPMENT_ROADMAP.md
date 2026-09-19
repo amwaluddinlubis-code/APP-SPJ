@@ -299,14 +299,22 @@ Status: **ISOLATED CLONE FUNCTIONAL PASS / PRODUCTION MIGRATION BLOCKED**.
 - [x] EXACT 269 dan DETERMINISTIC 22 tanpa rewrite legacy `source_key`;
 - [x] package/document NUMBERED continuity, overlay continuity, idempotency,
   integrity, FK, orphan, dan synthetic FINAL regression lulus;
-- [x] semantic context-isolation gate PASS pada fresh V2-C2 clone;
+- [x] semantic context-isolation gate PASS pada fresh V2-C3 clone;
 - [x] external/orphan fixture 46 transaction diaudit sebagai `SOURCE_MISSING` tanpa fabrikasi;
 - [x] command/service/report V2-C tersedia;
+- [x] provenance classification eksplisit: ACTIVE_CANONICAL 187 dan
+  LEGACY_DUPLICATE 104; metric many-to-one 104 dilaporkan terpisah;
+- [x] transaction overlay conflict gate dan item overlay conflict gate fail-closed;
+- [x] fresh execute #1/#2 idempotency mencakup counts, errors, classification,
+  conflict count, dan protected manifest;
 - [ ] source evidence/ownership fixture `10208183` (opsional, bukan gate current-project);
 - [ ] production migration dan legacy retirement;
 - [ ] V2-D read-path cutover preparation.
 
 Evidence: `docs/V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md`.
+
+V2-C3 semantic gate PASS pada fresh Tenant A clone. V2-D tetap merupakan tahap
+terpisah dan production read-path belum berubah.
 
 Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Jangan lanjut ke operator-flow promotion sebelum regression runtime dan compatibility boundary di atas ditutup.
 

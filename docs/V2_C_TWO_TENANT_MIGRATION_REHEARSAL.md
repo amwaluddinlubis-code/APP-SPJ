@@ -29,7 +29,7 @@ read-path V2.
 | 10260756 | `storage/app/v2-c-rehearsal/tenant-10260756-v2c.sqlite` | `E2B2AFAE4369374CA1F8215B1D26785117D9A131CF784EDA9614243FFA57A27C` | execute + idempotent verify |
 | 10208183 | `storage/app/v2-c-rehearsal/tenant-10208183-v2c.sqlite` | `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A` | source-unavailable dry-run |
 
-Tenant A fresh V2-C2 clone menghasilkan 187 canonical V2 transactions, 431 unique
+Tenant A fresh V2-C3 clone menghasilkan 187 canonical V2 transactions, 431 unique
 source links, 187 transaction overlays, 245 item overlays, 291 legacy provenance
 maps, dan 67 package links. Classification source-resolution adalah EXACT 269 dan
 DETERMINISTIC 22. Sebanyak 104 legacy rows menjadi many-to-one provenance terhadap
@@ -67,24 +67,61 @@ dry-run tetap `2AC46F6F96B4CAF266F1E27A8A1BB8025067233FB05ABA03C5FDA15060D54A8A`
 
 - Tenant A: `PRAGMA integrity_check = ok`, foreign-key violations `0`, seluruh
   orphan checks `0`.
-- Adapter source validation: PASS; 699 links resolved, unresolved `0`, gross
-  `686015000`, tax `33316674`, net `652698326`, formula valid.
+- Adapter source validation: PASS; 431 unique canonical links resolved,
+  unresolved `0`, gross `429605000`, tax `20497310`, net `409107690`, formula
+  valid.
 - Package/document protected manifest tetap identik; 67 Paket dan 115 dokumen
   dipertahankan, termasuk 66 Paket NUMBERED dan 115 dokumen NUMBERED.
 - Execute kedua tidak membuat duplicate V2 transaction, membership, overlay,
   item overlay, legacy map, atau package link.
 - Synthetic FINAL package/document regression lulus; hanya relation V2 additive.
 - Dry-run external/orphan fixture tidak mengubah hash clone.
-- Test V2-B/V2-C: 5 test, 101 assertions, 5 deprecations.
+- Focused V2-C3: 5 tests, 59 assertions, 5 deprecations.
 - Importer tenant-boundary regression: 4 test, 80 assertions, 4 deprecations.
 
-Semantic V2-C2 verification terbaru menghitung semua gate dari database, bukan
+Semantic V2-C3 verification terbaru menghitung semua gate dari database, bukan
 hard-code. Integrity, FK, orphan, source adapter, context isolation, canonical
 identity, provenance completeness, dan identity-level item overlay reconciliation
 lulus pada fresh clone. Execute kedua tetap 187/431/245/291/67 dan verify PASS.
 Bridge kini additive: `legacy_transaction_id` tetap unik, sedangkan satu canonical
 V2 transaction dapat memiliki banyak legacy provenance rows. V2-D belum dimulai
 dan tidak ada production read-path cutover.
+
+## V2-C3 final semantic evidence
+
+Fresh clone baru `tenant-10260756-v2c-fresh-c3.sqlite` menjalankan execute dua kali
+dari legacy clone bersih. Hasil canonical pada kedua tahap:
+
+- canonical V2 transactions: `187`;
+- unique source links: `431`;
+- transaction overlays: `187`;
+- item overlays: `245`;
+- legacy provenance: `291`;
+- package links: `67`.
+
+Provenance dihitung langsung dari `legacy_transaction_v2_map.canonical_context_status`:
+
+- `ACTIVE_CANONICAL`: `187`;
+- `LEGACY_DUPLICATE`: `104`;
+- total: `291`.
+
+Metric `many_to_one_v2_count` adalah metric berbeda dan bernilai `104`; metric ini
+tidak dipakai sebagai pengganti klasifikasi provenance.
+
+Transaction overlay reconciliation PASS dengan expected/actual `187/187` dan
+conflict count `0`. Item overlay reconciliation PASS dengan expected/matched
+`245/245`, missing `0`, unexpected `0`, description mismatch `0`, wrong source
+link `0`, dan conflict count `0`.
+
+Semantic gates PASS: integrity `ok`, foreign keys `0`, seluruh orphan checks `0`,
+source adapter PASS, context isolation PASS, canonical identity PASS, provenance
+PASS, transaction overlay PASS, item overlay PASS, package/document continuity
+PASS. Package matrix mencatat `ACTIVE_CANONICAL_NUMBERED = 66` dan
+`ACTIVE_CANONICAL_DRAFT = 1`; protected package/document manifest tetap identik
+di dalam execute #1 dan #2, dan synthetic FINAL regression tetap immutable.
+
+Focused V2-C3 regression: `5 tests`, `59 assertions`, `5 deprecations`, local
+PASS. Tidak ada klaim GitHub CI pada evidence ini.
 
 ## Report machine-readable
 

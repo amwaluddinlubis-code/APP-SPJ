@@ -23,7 +23,9 @@ final class V2CLegacyMigrationTest extends TestCase
             $this->connect($target, $source, 10260756);
             $this->migrateRehearsalSchema();
             $service = app(SpjV2LegacyMigrationService::class);
-            $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-1.json'), 10260756);
+            $firstMigration = $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-1.json'), 10260756);
+            $this->assertSame([], $firstMigration['errors']);
+            $this->assertTrue($firstMigration['package_document_continuity']['unchanged']);
             $result = $service->verify(DB::connection('school'));
             $this->assertSame('ok', $result['integrity_check']);
             $this->assertSame(0, $result['foreign_key_violations']);
@@ -39,6 +41,9 @@ final class V2CLegacyMigrationTest extends TestCase
             $this->assertSame('PASS', $result['context_isolation']['status']);
             $this->assertSame(187, $result['canonical_reconciliation']['active_canonical_count']);
             $this->assertSame(104, $result['legacy_provenance']['many_to_one_v2_count']);
+            $this->assertSame(['ACTIVE_CANONICAL' => 187, 'LEGACY_DUPLICATE' => 104], $result['legacy_provenance']['classification']);
+            $this->assertSame(0, $result['transaction_overlay_reconciliation']['transaction_overlay_conflict_count']);
+            $this->assertSame(0, $result['item_overlay_reconciliation']['item_overlay_conflict_count']);
             $this->assertSame(245, $result['item_overlay_reconciliation']['legacy_operator_owned_candidates']);
             $this->assertSame(245, $result['item_overlay_reconciliation']['v2_item_overlays']);
             $this->assertSame(0, $result['item_overlay_reconciliation']['lost_overlay']);
@@ -47,7 +52,21 @@ final class V2CLegacyMigrationTest extends TestCase
             $this->assertEquals(20497310, $result['financial_reconciliation']['ACTIVE_CANONICAL']['tax_from_raw']);
             $this->assertEquals(409107690, $result['financial_reconciliation']['ACTIVE_CANONICAL']['net_from_raw']);
 
-            $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-2.json'), 10260756);
+            $secondMigration = $service->migrate(DB::connection('school'), 1, true, storage_path('app/v2-c-rehearsal/reports/test-fresh-c2-2.json'), 10260756);
+            $this->assertSame([], $secondMigration['errors']);
+            $this->assertTrue($secondMigration['package_document_continuity']['unchanged']);
+            $this->assertSame(
+                $firstMigration['package_document_continuity']['after_hash'],
+                $secondMigration['package_document_continuity']['before_hash'],
+            );
+            $this->assertSame(187, $secondMigration['migrated']['v2_transactions']);
+            $this->assertSame(245, $secondMigration['migrated']['item_overlays']);
+            $this->assertSame(67, $secondMigration['migrated']['package_v2_links']);
+            $this->assertSame(0, $secondMigration['migrated']['source_links']);
+            $this->assertSame(0, $secondMigration['migrated']['transaction_overlays']);
+            $this->assertSame(0, $secondMigration['migrated']['legacy_maps']);
+            $this->assertSame($firstMigration['canonical_context_classification'], $secondMigration['canonical_context_classification']);
+            $this->assertSame($firstMigration['transaction_overlay_reconciliation'], $secondMigration['transaction_overlay_reconciliation']);
             $second = $service->verify(DB::connection('school'));
             $this->assertSame($result['counts'], $second['counts']);
             $this->assertSame('PASS', $second['status']);
@@ -123,6 +142,41 @@ final class V2CLegacyMigrationTest extends TestCase
         $this->assertArrayNotHasKey('payment_description', $conflict);
         $metadata = json_decode($conflict['operator_metadata'], true);
         $this->assertSame(['first value', 'second value'], $metadata['_v2_reconciliation_conflicts']['payment_description']);
+    }
+
+    public function test_transaction_overlay_conflict_fails_semantic_verify(): void
+    {
+        $source = storage_path('app/school-databases/10260786/spj.sqlite');
+        $target = storage_path('app/v2-c-rehearsal/overlay-conflict-c2.sqlite');
+        $this->assertFileExists($source);
+        File::copy($source, $target);
+
+        try {
+            $this->connect($target, getenv('SPJ_V2_C_SOURCE_PATH') ?: '', 10260756);
+            $this->migrateRehearsalSchema();
+            $db = DB::connection('school');
+            app(SpjV2LegacyMigrationService::class)->migrate(
+                $db,
+                1,
+                true,
+                storage_path('app/v2-c-rehearsal/reports/test-overlay-conflict-c2.json'),
+                10260756,
+            );
+            $overlay = $db->table('spj_transaction_overlays')->first();
+            $metadata = ['_v2_reconciliation_conflicts' => ['payment_description' => ['one', 'two']]];
+            $db->table('spj_transaction_overlays')->where('id', $overlay->id)->update(['operator_metadata' => json_encode($metadata)]);
+            $itemOverlay = $db->table('spj_item_overlays')->first();
+            $itemMetadata = ['_v2_reconciliation_conflicts' => ['item_description' => ['one', 'two']]];
+            $db->table('spj_item_overlays')->where('id', $itemOverlay->id)->update(['operator_metadata' => json_encode($itemMetadata)]);
+            $result = app(SpjV2LegacyMigrationService::class)->verify($db);
+            $this->assertSame('FAIL', $result['status']);
+            $this->assertSame(1, $result['transaction_overlay_reconciliation']['transaction_overlay_conflict_count']);
+            $this->assertFalse($result['gates']['transaction_overlay_reconciliation']);
+            $this->assertSame(1, $result['item_overlay_reconciliation']['item_overlay_conflict_count']);
+            $this->assertFalse($result['gates']['overlay_reconciliation']);
+        } finally {
+            File::delete($target);
+        }
     }
 
     private function connect(string $target, ?string $source, int $npsn, bool $sourceUnavailable = false): void

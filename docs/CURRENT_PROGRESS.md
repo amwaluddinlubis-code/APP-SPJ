@@ -548,14 +548,15 @@ tetap BLOCKED sampai V2-A2 tenant discovery/source identity review selesai.
 
 ## V2-C full legacy migration rehearsal — 2026-09-19
 
-V2-C2 **CANONICAL RECONCILIATION PASS ON A FRESH ISOLATED CLONE / PRODUCTION CUTOVER BLOCKED**.
+V2-C3 **FINAL SEMANTIC GATE PASS ON A FRESH ISOLATED CLONE / PRODUCTION CUTOVER BLOCKED**.
 Tenant A fresh clone memproses seluruh 291 legacy transaction menjadi 187 canonical
 V2 transactions, 431 unique source links, 187 transaction overlays, 245 item
 overlays, 291 provenance maps, dan 67 package V2 links. Source-resolution tetap
 EXACT 269 dan DETERMINISTIC 22; 104 legacy rows menjadi provenance many-to-one,
 bukan canonical transaction tambahan. Seluruh 22 deterministic mempertahankan
 legacy `source_key`; 66 NUMBERED Paket dan 115 NUMBERED dokumen tetap identik.
-Execute kedua mempertahankan seluruh count dan lulus verify.
+Execute kedua mempertahankan seluruh canonical count dan lulus verify tanpa
+menambah source link, overlay, item overlay, atau provenance map.
 
 External/orphan fixture clone hanya menjalani source-unavailable dry-run karena
 tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
@@ -563,12 +564,14 @@ tidak memiliki raw mirror/source evidence yang cukup: 46 transaction menjadi
 
 Evidence lengkap: `V2_C_TWO_TENANT_MIGRATION_REHEARSAL.md` dan report JSON lokal di
 `storage/app/v2-c-rehearsal/reports/`. Original tenant, central registry, dan ARKAS
-source tidak dimutasi. V2-C2 memisahkan source-resolution dari canonical
+source tidak dimutasi. V2-C3 memisahkan source-resolution dari canonical
 transaction identity: 187 canonical V2 transaction dan 104 legacy provenance
 duplicate. Semantic verify menghitung gate dari evidence aktual; integrity, FK,
 orphan, source adapter, context isolation, canonical identity, dan item-overlay
-reconciliation semuanya PASS pada fresh clone. V2-D read-path cutover tetap
-belum dimulai.
+reconciliation semuanya PASS pada fresh clone. Provenance classification eksplisit
+adalah ACTIVE_CANONICAL 187 dan LEGACY_DUPLICATE 104; metric many-to-one 104 tetap
+terpisah. Transaction/item overlay conflict masing-masing 0. V2-D read-path
+cutover tetap belum dimulai.
 
 ---
 
