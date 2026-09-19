@@ -149,7 +149,10 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement fail-closed effective-context cutover untuk Pajak + safe source-key detail navigation;
 - [x] jalankan Step 10 Pajak gate: 33 test / 199 assertions PASS; Pint + diff-check bersih;
 - [x] audit Monitoring post-Step-10: read cutover DEFERRED karena tab berbagi boundary dengan Bulk Final, numbering, Checklist/Persiapan, dan fiscal-period mutation;
-- [ ] desain write-through/effective-context mutation authorization sebelum membuka Monitoring, Persiapan, numbering, settlement, atau period-close ke V2;
+- [x] implement Step 11A `SpjV2MutationContextService` + Checklist/READY effective-context authorization, fail-closed pada reconciliation/source drift;
+- [ ] jalankan `V2DMutationContextReadyTest` + package read/membership + lifecycle/pre-numbering regressions + Pint/diff;
+- [ ] Step 11B: desain package/operator-overlay write boundary; Isian Manual tetap tertutup sampai gate ini terbukti;
+- [ ] setelah write boundary bertahap PASS, baru audit numbering, settlement, Monitoring, bulk-final, dan period-close;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
