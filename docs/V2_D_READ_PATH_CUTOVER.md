@@ -1,6 +1,6 @@
 # V2-D — Read-Path Cutover
 
-Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 ADAPTER IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
+Status: **D1 SHADOW PARITY FUNCTIONAL PASS / D2 CANONICAL ADAPTER RUNTIME PASS / D3 PACKAGE/DOCUMENT PARITY SOURCE IMPLEMENTED — RUNTIME VERIFICATION PENDING / PRODUCTION CUTOVER BLOCKED**.
 
 Baseline V2-C3: commit `8876478`, 187 canonical V2 transactions, 291 legacy
 provenance mappings, 431 source links, 187 transaction overlays, 245 item
@@ -94,12 +94,14 @@ Kontrak adapter:
   bukan dari field operator;
 - output menyertakan legacy provenance dan source-item membership untuk audit.
 
-Regression baru `V2DCanonicalReadAdapterTest` memverifikasi context partition,
+Regression `V2DCanonicalReadAdapterTest` memverifikasi context partition,
 187 canonical transactions, aggregate financial parity, legacy deterministic
 identifier resolution, source-link/item cardinality, dan ownership overlay.
-Source implementation sudah masuk branch; runtime test untuk regression ini masih
-**RVR** sampai benar-benar dijalankan pada clone lokal. Production UI tetap memakai
-jalur lama selama D2 belum mendapat runtime PASS.
+Runtime evidence pada 2026-09-19: `php artisan test --compact
+tests/Feature/V2DCanonicalReadAdapterTest.php` PASS dengan 3 test, 225 assertions,
+dan 3 deprecations. `vendor/bin/pint --dirty --format agent` PASS dan
+`git diff --check` bersih. Dengan evidence ini, gate runtime D2 ditutup. Production
+UI tetap belum dialihkan ke V2 karena D3 dan downstream workflow parity belum lulus.
 
 ## D3 — Paket/document bridge
 
@@ -108,6 +110,21 @@ flows. Existing `spj_packages.spj_transaction_id` is additive provenance from
 V2-C and does not by itself authorize switching package lifecycle writes.
 NUMBERED/FINAL state, document numbers, snapshots, and generated artifacts remain
 protected.
+
+Source D3 sekarang menyediakan `SpjV2PackageDocumentParityService` dan regression
+`V2DPackageDocumentParityTest`. Gate membandingkan jalur authoritative legacy
+`spj_packages.transaction_id -> legacy_transaction_v2_map -> spj_transactions`
+dengan link additive `spj_packages.spj_transaction_id`, menolak package tanpa
+provenance, link null, link ke V2 transaction berbeda walaupun FK valid, link ke
+canonical context non-aktif, serta dokumen orphan. Protected Paket/document
+manifest di-hash dari field lifecycle/numbering/snapshot agar parity traversal
+fail-closed bila bridge tidak lagi menunjuk Paket dan dokumen yang sama.
+
+Regression juga mencakup synthetic wrong-but-valid V2 link yang wajib FAIL dan
+synthetic FINAL Paket/document untuk membuktikan parity service read-only terhadap
+lifecycle protected. Source D3 sudah masuk branch; runtime verification focused
+masih **RVR** sampai `V2DPackageDocumentParityTest` dijalankan pada isolated clone.
+Production `SpjPackage::transaction()` tetap memakai `transaction_id` legacy.
 
 ## D4 — Controlled cutover
 
@@ -122,4 +139,4 @@ A production switch requires all of the following:
 - rollback strategy documented and tested;
 - Pint, focused regression, `git diff --check`, and applicable CI evidence.
 
-No production read path has been switched pada D1 maupun D2.
+No production read path has been switched pada D1, D2, maupun D3.
