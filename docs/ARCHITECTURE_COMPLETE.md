@@ -59,7 +59,11 @@ tepat satu `source_id` ACTIVE_CANONICAL; schema hilang, source tidak ada, source
 ambigu, atau config invalid selalu fail-safe kembali ke legacy. Selector belum
 mengalihkan controller/Livewire apa pun dan rollback cukup mengembalikan config
 ke `legacy`. Consumer mutation-heavy tetap diblokir sampai overlay
-write-through/compatibility mempunyai evidence tersendiri.
+write-through/compatibility mempunyai evidence tersendiri. Consumer production
+pertama yang disiapkan untuk controlled cutover adalah financial summary pada tab
+Laporan SPJ. Adapter `SpjV2ReportFinancialSummaryService` hanya mengganti angka
+summary read-only ketika selector memilih V2; daftar Paket, export, monitoring,
+labels realization, dan write/lifecycle tetap legacy.
 
 ### Database utama
 
