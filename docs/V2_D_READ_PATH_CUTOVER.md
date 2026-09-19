@@ -173,6 +173,21 @@ sampai write-path V2 mempunyai evidence tersendiri. `source_id` juga tidak boleh
 di-hard-code; resolver cutover harus membuktikan source canonical unik pada active
 `Fiscal Year + Fund Source` context atau tetap di legacy path.
 
+D4 step 1 source implementation:
+
+- `SPJ_V2_READ_PATH` defaults to `legacy`;
+- `SpjV2CanonicalSourceResolver` resolves source identity only when exactly one
+  ACTIVE_CANONICAL `source_id` exists in the requested fiscal-year/fund-source context;
+- `SpjReadPathSelector` permits `v2` only after that unique resolution;
+- invalid config, missing V2 schema, no canonical source, atau multiple source ids
+  selalu jatuh kembali ke `legacy`;
+- rollback selector bersifat configuration-only; tidak memutasi V2, legacy, Paket,
+  document, numbering, atau source ARKAS;
+- belum ada controller/Livewire production consumer yang memakai selector ini.
+
+Regression source: `V2DReadPathSelectorTest`. Runtime verification untuk source
+baru ini masih RVR sampai focused test/Pint/diff dijalankan pada workstation.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
