@@ -624,3 +624,11 @@ its transaction membership may come from the V2 effective-context bridge.
 `legacy_transaction_ids` for V2 reads and otherwise uses
 `Transaction::forSpjContext()`. This boundary is shared by select, compose, and
 export so read compatibility does not create a second authorization rule.
+
+Pajak uses a dedicated fail-closed read boundary. `SpjV2TaxReadContextService`
+collapses many-to-one provenance to one deterministic legacy representative per
+canonical transaction, requires source-key and visible tax facts to match
+canonical raw data, and only then allows `TaxFilterService` to scope legacy
+models by effective-context IDs. V2 tax rows navigate to Detail Transaksi by
+source key so stale legacy IDs do not cross the active context boundary; the
+fresh detail model remains read-only unless an authoritative legacy overlay exists.
