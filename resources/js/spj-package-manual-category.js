@@ -239,12 +239,16 @@ const persistCategory = async (form, categorySelect, previousCategory) => {
         categorySelect.value = categorySelect.dataset.persistedCategory;
         applyPackageManualCategory();
         setCategoryStatus(form, 'Kategori SPJ tersimpan.', 'success');
-        try {
-            await refreshPackagePanels();
-        } catch (_) {
-            setCategoryStatus(form, 'Kategori tersimpan, tetapi panel dokumen belum dapat diperbarui.', 'error');
-        } finally {
+        if (form.dataset.compatibilityEditor === '1') {
             setPanelsBusy(false);
+        } else {
+            try {
+                await refreshPackagePanels();
+            } catch (_) {
+                setCategoryStatus(form, 'Kategori tersimpan, tetapi panel dokumen belum dapat diperbarui.', 'error');
+            } finally {
+                setPanelsBusy(false);
+            }
         }
 
         document.dispatchEvent(new CustomEvent('spj:category-changed', {
