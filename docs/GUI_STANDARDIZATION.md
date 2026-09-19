@@ -248,6 +248,13 @@ Summary canonical:
 Periode | Penerima | Bruto | Pajak | Nilai Dibayarkan
 ```
 
+Pada mode Paket effective-context compatibility, workspace tetap read-only untuk
+Isian Manual dan Penomoran. Pengecualian transisi yang sempit: Paket DRAFT boleh
+menampilkan **Buka Checklist**, dan Checklist hanya menampilkan **Tandai siap
+diproses** bila backend mutation authorization + seluruh validation/requirement
+sudah lulus. Tombol tersebut tidak boleh dipakai sebagai shortcut untuk membuka
+mutation Paket lain.
+
 Nilai uang menggunakan accounting tanpa `Rp`/desimal.
 
 ## 11. Paket SPJ — sub-tab
