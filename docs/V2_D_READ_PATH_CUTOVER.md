@@ -513,7 +513,61 @@ Regression `V2DPackageListCutoverTest` is staged to prove:
 - list rendering adds read-only labels without adding mutation routes;
 - list/metric reads do not mutate protected transaction/Paket/document state.
 
-Runtime evidence for D4 step 7 is currently **RVR**.
+Runtime evidence on 2026-09-19: focused gate
+`V2DPackageReadMembershipTest`, `V2DPackageReadContextTest`,
+`V2DPackageWorkspaceReadOnlyTest`, `V2DPackageListCutoverTest`,
+`SpjPackageNavigationContextTest`, `SpjMainTabsRenderingTest`,
+`SpjDocumentGeneratorHardeningTest`, and `SpjPreviewExcelParityTest` PASS
+with **29 tests / 583 assertions / 29 deprecations**.
+`vendor/bin/pint --dirty --format agent` PASS and `git diff --check` clean.
+D4 step 7 is therefore **RUNTIME PASS**.
+
+### D4 step 8 — atomic report Paket table + financial summary cutover
+
+Source implementation now extends the controlled cutover to the read-only Paket
+table on the Laporan tab. The switch is **atomic**: the table must never move to
+effective-context membership while the financial summary remains on a stale
+legacy context.
+
+For `reportData(..., allowV2=true)`:
+
+1. legacy report Paket query and legacy financial summary are built as the
+   fallback;
+2. Step 4 effective Paket membership is resolved for the active context;
+3. a live consumer summary is recomputed from the exact effective Paket IDs,
+   while still using the current live legacy transaction fields for operator-owned
+   data;
+4. `SpjV2ReportFinancialSummaryService` compares canonical V2 financial facts
+   against that exact live consumer summary;
+5. only when parity is exact do both the Paket table and financial summary switch
+   to V2/effective-context;
+6. if membership is unavailable, bridge safety fails, or canonical raw facts
+   drift, both table and summary fall back to legacy together.
+
+The Step-2 regression contract is intentionally promoted: stale legacy
+`fiscal_year_id` alone is no longer a fallback reason once the provenance/effective
+context bridge from Steps 3–7 has proved the Paket membership safe.
+
+The cutover remains narrow:
+
+- period filters `bulan/triwulan/semester` are applied to the same effective
+  Paket transaction dates;
+- report rows are tagged `v2_compat` and labelled **Baca saja**;
+- Preview/Download/Buka Paket reuse the already-gated Step 5–6 read-only actions;
+- pending transactions, activity/account realization groupings, monitoring,
+  report export, Honor/Jasa exports, settlement, numbering, lifecycle, and all
+  mutation paths remain legacy.
+
+Regression work:
+
+- `V2DReportSummaryCutoverTest` is updated so the real stale-fiscal-year fixture
+  must now resolve through V2 compatibility rather than fall back solely because
+  legacy context is stale;
+- `V2DReportPackageListCutoverTest` proves exact Paket membership, summary/list
+  atomicity, month/quarter/semester filtering, config rollback, raw-source drift
+  fail-closed behavior, read-only row labelling, and protected-state immutability.
+
+Runtime evidence for D4 step 8 is currently **RVR**.
 
 A production switch requires all of the following:
 
