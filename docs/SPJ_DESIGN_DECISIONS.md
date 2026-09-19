@@ -678,3 +678,11 @@ Kontrak rinci dan status freeze berada di
 `docs/ARKAS_MIRROR_SCHEMA_CONTRACT.md`. Status saat ini **PARTIAL FREEZE**;
 tidak ada destructive cleanup atau perubahan lifecycle Paket dari keputusan
 ini.
+
+Tenant mirror contract wajib menyatakan availability source dan identitas
+baris secara eksplisit. `kas_umum_nota_pajak` tidak boleh diperlakukan sebagai
+primary-key tunggal; identitasnya adalah `id_kas_nota + ntpn`. Source `pegawai`
+bersifat optional dan absence-nya tidak boleh membuat mirror membuat tabel
+palsu atau mengambil fallback dari source lain. Duplicate key, missing key,
+required-column drift, dan orphan `kas_umum.id_anggaran` harus fail-closed.
+Central reference tetap deferred sampai parity dua sekolah terbukti.

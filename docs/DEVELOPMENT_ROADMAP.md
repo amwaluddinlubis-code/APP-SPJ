@@ -576,3 +576,17 @@ Total source-table inventory and real cross-school classification remain RVR
 because no configured readable ARKAS source database was available in this
 audit shell. Do not call the schema FROZEN or remove legacy mapping until the
 two-tenant read-only inventory and isolated parity rehearsal are complete.
+
+## Tenant mirror contract hardening - PARTIAL FREEZE
+
+The tenant manifest now distinguishes required and optional sources, uses
+explicit key columns, and validates required columns, identity uniqueness, and
+tenant relations before writing. `kas_umum_nota_pajak` is keyed by
+`id_kas_nota + ntpn`; `pegawai` is optional and missing-source diagnostics do
+not abort the tenant mirror.
+
+The available `datasmp.db.sql` dump was rehearsed against an isolated in-memory
+school database: dry-run produced no writes, the real rehearsal imported 13
+tenant tables / 7,771 rows, and the second run was idempotent. Central
+promotion remains deferred because only one school dump is available. Schema
+status remains **PARTIAL FREEZE**.

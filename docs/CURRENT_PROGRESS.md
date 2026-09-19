@@ -1160,3 +1160,26 @@ Final verification pada HEAD `0f515de`: full PHPUnit **PASS** (**19 tests /
 manifest/raw mirror **PASS** (**2 test groups / 28 assertions / 2 deprecated**),
 Pint, Blade cache, frontend build, dan diff-check **PASS**. Composer checks
 tetap RVR karena executable Composer tidak tersedia di shell audit.
+
+### Tenant ARKAS mirror contract hardening dan isolated rehearsal
+
+Manifest tenant kini memakai availability `REQUIRED`/`OPTIONAL`, explicit key
+columns, dan school-scope metadata. `kas_umum_nota_pajak` memakai composite
+identity `id_kas_nota + ntpn`; key kosong, duplicate identity,
+required-column drift, dan primary-key drift ditolak sebelum mirror mutation.
+`pegawai` menjadi optional; source tanpa tabel tersebut tidak menggagalkan
+mirror dan dilaporkan sebagai `optional_unavailable` tanpa membuat tabel palsu.
+`kas_umum` wajib memiliki relasi ke `anggaran` melalui `id_anggaran`; orphan
+relation fail-closed.
+
+Dump `D:\PC Data\Documents\datasmp.db.sql` direhearsal melalui adapter
+SQLite in-memory. Dry-run tidak menulis target. Isolated real-write rehearsal
+memproses **13 tabel / 7.771 rows**, lalu rerun menghasilkan jumlah tabel dan
+rows yang sama tanpa duplicate identity. Focused validator regression lulus
+**4 tests / 7 assertions**; raw mirror atomicity + isolated rehearsal lulus
+**3 tests / 31 assertions**. Manifest contract coverage juga lulus.
+
+Central reference promotion tetap **DEFERRED** karena baru satu dump sekolah
+tersedia; schema mirror tetap **PARTIAL FREEZE**. Tidak ada tenant asli,
+central reference, FINAL, settlement, bulk-final, period-close, atau browser QA
+yang dimutasi/dibuka.

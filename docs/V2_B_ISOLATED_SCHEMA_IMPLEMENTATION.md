@@ -119,3 +119,14 @@ tenant nyata. Masih diperlukan review lanjutan untuk:
 V2-B harus membaca source melalui explicit ARKAS mirror manifest. Generic
 mapping/importer tidak boleh menjadi dependency baru untuk isolated schema;
 transition lama hanya compatibility read sampai two-tier mirror parity selesai.
+
+### Tenant mirror rehearsal contract
+
+Isolated rehearsal source dapat berupa dump SQLite SQL yang dimuat ke memory;
+target school database tetap clone/in-memory. Manifest memvalidasi source
+required/optional, explicit composite identity, required columns, dan relasi
+tenant sebelum menulis. `pegawai` boleh tidak tersedia, sedangkan
+`kas_umum_nota_pajak` wajib memakai `id_kas_nota + ntpn`. Dry-run tidak menulis
+target; real-write rehearsal dan rerun harus membuktikan parity serta
+idempotensi. Kontrak ini tidak mengubah tenant production dan tidak
+mempromosikan central reference.

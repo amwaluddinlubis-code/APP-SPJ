@@ -1,7 +1,7 @@
 # ARKAS Mirror Schema Contract
 
 Status: **PARTIAL FREEZE**
-Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-19.v1`)
+Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-19.v2`)
 
 ## Tujuan
 
@@ -30,32 +30,30 @@ absence of school override sudah dibuktikan. `TENANT` berarti source fact
 memiliki konteks sekolah, transaksi, fiscal year, fund source, pegawai, atau
 provenance sekolah dan harus tetap di database sekolah.
 
-Pada checkpoint ini lima tabel reference (`ref_kode`, `ref_level_kode`,
-`ref_periode`, `ref_rekening`, `ref_sumber_dana`) masih `UNKNOWN` dan disabled.
-Belum ada bukti dua sekolah yang cukup untuk mempromosikannya ke central.
+Pada checkpoint ini central reference tetap deferred. `ref_periode` dan
+`ref_sumber_dana` adalah `CENTRAL_CANDIDATE`, sedangkan `ref_kode`,
+`ref_rekening`, dan `ref_acuan_barang` tetap `UNKNOWN/HYBRID_CANDIDATE` karena
+dump memiliki dimensi tahun, sumber dana, atau bentuk pendidikan. Belum ada
+bukti dua sekolah yang cukup untuk mempromosikan satu pun ke central.
 
 ## Manifest resmi
 
 `app/Services/ArkasMirrorManifest.php` adalah allow-list version-controlled.
-Hanya tabel berikut yang enabled untuk raw mirror tenant:
+Tabel tenant berikut enabled untuk raw mirror:
 
 | Source table | Classification | Bridge | Key strategy | Target |
 |---|---|---|---|---|
-| `anggaran` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `kas_umum` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `kas_umum_nota` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `kas_umum_nota_pajak` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `pegawai` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `ptk` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `rapbs` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `rapbs_periode` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `sekolah_penjab` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
-| `mst_sekolah` | TENANT_DATA | `ArkasTenantDataBridge` | PRIMARY_KEY | school |
+| `aktivasi_bku`, `anggaran` | TENANT_DATA | `ArkasTenantDataBridge` | explicit | school |
+| `kas_umum`, `kas_umum_nota` | TENANT_DATA | `ArkasTenantDataBridge` | primary key | school |
+| `kas_umum_nota_pajak` | TENANT_DATA | `ArkasTenantDataBridge` | `id_kas_nota + ntpn` | school |
+| `ptk`, `rapbs_ptk`, `salur` | TENANT_DATA | `ArkasTenantDataBridge` | explicit composite | school |
+| `rapbs`, `rapbs_periode` | TENANT_DATA | `ArkasTenantDataBridge` | primary key | school |
+| `sekolah_history`, `sekolah_penjab` | TENANT_DATA | `ArkasTenantDataBridge` | explicit composite | school |
+| `mst_sekolah` | TENANT_DATA | `ArkasTenantDataBridge` | primary key | school |
+| `pegawai` | TENANT_DATA | `ArkasTenantDataBridge` | optional source key | school |
 
-Reference candidates currently disabled/UNKNOWN:
-
-`ref_kode`, `ref_level_kode`, `ref_periode`, `ref_rekening`,
-`ref_sumber_dana`.
+Reference candidates remain disabled: `ref_kode`, `ref_level_kode`,
+`ref_periode`, `ref_rekening`, `ref_sumber_dana`, `ref_acuan_barang`.
 
 Tabel source lain yang tidak tercantum di manifest tidak diimpor. Enumerasi
 `tables` hanya digunakan untuk menemukan apakah entry eksplisit tersedia dan
@@ -65,11 +63,12 @@ dihasilkan dari hasil enumerasi.
 ## Bridge contract
 
 Setiap bridge harus mengetahui source tables dan scope target melalui code.
-Kontrak minimalnya adalah `ArkasMirrorBridge::scope()` dan
-`ArkasMirrorBridge::sourceTables()`. Handler harus ditambah secara eksplisit
-ke manifest sebelum dapat dipakai. Transformasi domain khusus tetap berada di
-service domain yang sudah ada (`ArkasReferenceSynchronizationService`,
-`ArkasSynchronizationServiceV2`) dan bukan pada mapping UI.
+Manifest juga menyimpan availability (`REQUIRED`/`OPTIONAL`), key strategy,
+key columns, required columns, dan school-scope strategy. Validator
+`ArkasMirrorContractValidator` memeriksa table shape, kolom wajib, key,
+duplicate identity, dan malformed rows sebelum metadata atau rows ditulis.
+`kas_umum` wajib memiliki relasi `id_anggaran` ke `anggaran`; orphan relation
+fail-closed.
 
 Raw mirror menyimpan capture/provenance readonly. Ia bukan canonical mutation
 table. `spj_transactions`, overlays, Paket, dokumen, numbering, audit, dan
@@ -93,14 +92,12 @@ inventory profile tenant nyata.
 
 ## Schema drift dan failure policy
 
-Bridge harus fail-closed bila table yang diminta tidak ada atau contract
-source/key berubah secara material. Implementasi saat ini memeriksa table
-manifest dan primary key untuk entry `PRIMARY_KEY`; validasi required columns
-dan type-specific baru boleh ditambahkan pada bridge eksplisit terkait. Raw
-mirror mempertahankan snapshot valid sebelumnya bila refresh gagal. Unknown,
-empty, dan disabled table tidak boleh menjadi target baru. Perubahan schema
-harus menghasilkan audit/error yang dapat ditindaklanjuti sebelum import
-diteruskan.
+Bridge fail-closed bila required table/column/key berubah, duplicate composite
+identity ditemukan, identity kosong, atau relasi tenant orphan. `pegawai`
+adalah satu-satunya source optional pada manifest tahap ini; jika tidak ada,
+mirror lanjut dengan diagnostic `optional_unavailable` tanpa membuat tabel
+palsu. Unknown, empty, dan disabled table tidak boleh menjadi target baru.
+Raw mirror mempertahankan snapshot valid sebelumnya bila refresh gagal.
 
 ## Existing schema disposition
 
@@ -128,13 +125,18 @@ tables belum ditambahkan karena belum ada evidence parity lintas sekolah.
 | Raw mirror schema | `create_arkas_raw_mirror_tables` | KEEP TENANT transitional |
 | Central schema | no ARKAS mirror table yet | NOT READY; requires cross-school evidence |
 
-## Audit classification result
+## Isolated dump rehearsal
 
-The repository contains a bridge schema/table command surface, but no
-configured readable ARKAS source database was available in this audit shell;
-therefore total source-table count and cross-school row parity are **RVR**, not
-fabricated. The code-level classification above is the current explicit
-manifest inventory. Schema status is **PARTIAL FREEZE**, not FROZEN.
+Dump `datasmp.db.sql` dibaca melalui adapter read-only ke SQLite in-memory dan
+ditulis hanya ke school database in-memory. Rehearsal aktual menemukan 56
+source tables, mengimpor 13 tabel tenant dengan 7.771 rows, dan melewati
+`pegawai` sebagai optional source yang tidak tersedia. Dry-run tidak menulis
+metadata/rows; real-write rehearsal kemudian berhasil dan rerun tidak
+menghasilkan row atau table tambahan. Composite identity pajak dan seluruh
+key composite yang dipakai dump tidak memiliki duplicate group.
+
+Evidence ini hanya tenant rehearsal satu dump. Cross-school parity dan central
+promotion tetap **RVR/DEFERRED**; schema status tetap **PARTIAL FREEZE**.
 
 ## Next migration phases
 
