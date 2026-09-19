@@ -608,3 +608,12 @@ docs/P0_01_SOURCE_AUDIT.md
 docs/SIPLAH_MVP_PLAN.md
 docs/MOBILE_VISUAL_QA_TODO.md
 ```
+
+
+Laporan SPJ read-only memakai atomic consumer boundary: effective Paket membership
+dan financial summary hanya switch bersama setelah canonical V2 financial facts
+exact-match terhadap live summary yang dihitung dari Paket IDs yang sama. Stale
+legacy fiscal-year tidak lagi memblokir read cutover bila provenance bridge aman,
+namun canonical raw drift tetap menyebabkan seluruh report consumer kembali ke
+legacy. Pending queue, realization grouping, monitoring, export, settlement,
+numbering, lifecycle, dan mutation tetap di legacy boundary.
