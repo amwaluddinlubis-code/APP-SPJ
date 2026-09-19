@@ -68,6 +68,35 @@ class ArkasSourceKeyResolver
         ));
     }
 
+    /**
+     * Resolve a source identity without falling back when a configured key is
+     * incomplete. Mirror contracts must reject malformed source rows.
+     *
+     * @param  array<string, mixed>  $record
+     * @param  array<int, string>  $columns
+     */
+    public function resolveStrictFromColumns(array $record, array $columns): string
+    {
+        $identity = [];
+        foreach ($columns as $column) {
+            $value = $this->valueForColumn($record, $column);
+            if ($value === null || trim((string) $value) === '') {
+                throw new \RuntimeException('Identitas source ARKAS tidak lengkap pada kolom '.$column.'.');
+            }
+
+            $identity[$column] = (string) $value;
+        }
+
+        if (count($identity) === 1) {
+            return (string) reset($identity);
+        }
+
+        return hash('sha256', json_encode(
+            $identity,
+            JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE,
+        ));
+    }
+
     /** @return array<int, string> */
     private function candidates(?string $configuredColumn): array
     {
