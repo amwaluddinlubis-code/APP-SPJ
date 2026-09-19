@@ -152,6 +152,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement Step 11A `SpjV2MutationContextService` + Checklist/READY effective-context authorization, fail-closed pada reconciliation/source drift;
 - [x] jalankan Step 11A gate: focused 8 test / 90 assertions PASS; full 42 test / 556 assertions PASS; Pint + build + diff-check bersih;
 - [x] implement Step 11B package/operator-overlay write boundary + dedicated DRAFT/READY compatibility editor tanpa fiscal-year rewrite;
+- [x] harden Step 11B negative regression untuk wrong bridge, reconciliation/`SOURCE_MISSING`, raw-source drift, dan NUMBERED category/write lock;
 - [ ] jalankan `V2DPackageOverlayWriteCutoverTest` + Step 11A/read-context + package manual/category/transaction-boundary/NUMBERED regressions + Pint/view-cache/build/diff;
 - [ ] setelah Step 11B PASS, audit lifecycle-specific gate berikutnya; numbering, settlement, Monitoring, bulk-final, dan period-close tetap legacy;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
