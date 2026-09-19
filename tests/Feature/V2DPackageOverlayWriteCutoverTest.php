@@ -145,6 +145,58 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
         }
     }
 
+    public function test_stale_numbered_package_allows_only_narrative_correction_without_opening_lifecycle_mutations(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-numbered-description.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'NUMBERED');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $package = SpjPackage::query()->with('transaction')->findOrFail($row->package_id);
+            $before = $db->table('spj_packages')->where('id', $package->id)->first();
+            $transactionBefore = $db->table('transactions')->where('id', $package->transaction_id)->first();
+            $documentsBefore = $this->documentsHash($db, (int) $package->id);
+
+            app(UpdateSpjPackageDetailsUseCase::class)->handle(
+                (string) $package->id,
+                Request::create('/spj/update', 'PUT', [
+                    'payment_description' => 'STEP 11C - Koreksi narasi NUMBERED',
+                    'vendor_name' => 'FORBIDDEN NUMBERED VENDOR',
+                    'payment_method' => 'transfer_bank',
+                    'spj_category' => 'JASA_LAINNYA',
+                ]),
+            );
+
+            $after = $db->table('spj_packages')->where('id', $package->id)->first();
+            $transaction = $db->table('transactions')->where('id', $package->transaction_id)->first();
+
+            $this->assertSame('NUMBERED', (string) $after->status);
+            $this->assertSame((string) $before->document_number, (string) $after->document_number);
+            $this->assertSame('STEP 11C - Koreksi narasi NUMBERED', (string) $transaction->payment_description);
+            $this->assertNotSame('FORBIDDEN NUMBERED VENDOR', (string) $transaction->vendor_name);
+            $this->assertSame((string) $transactionBefore->payment_method, (string) $transaction->payment_method);
+            $this->assertSame($documentsBefore, $this->documentsHash($db, (int) $package->id));
+            $this->assertSame(
+                (int) $row->effective_fiscal_year_id,
+                (int) $db->table('operational_audit_logs')
+                    ->where('entity_type', 'SPJ_PACKAGE')
+                    ->where('entity_id', (string) $package->id)
+                    ->where('action', 'KOREKSI_URAIAN_NUMBERED')
+                    ->latest('id')
+                    ->value('fiscal_year_id'),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_legacy_config_blocks_stale_overlay_write(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-write-legacy.sqlite');
@@ -342,7 +394,7 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
         }
     }
 
-    public function test_numbered_effective_context_package_remains_locked_for_overlay_write(): void
+    public function test_numbered_effective_context_package_allows_narrative_correction_without_lifecycle_write(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-numbered-lock.sqlite');
         $source = $this->prepareClone($target);
@@ -369,7 +421,8 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
                 ]),
             );
 
-            $this->assertSame($before, $package->transaction->fresh()->payment_description);
+            $this->assertNotSame($before, $package->transaction->fresh()->payment_description);
+            $this->assertSame('FORGED NUMBERED V2 WRITE', $package->transaction->fresh()->payment_description);
             $this->assertSame($legacyFiscalYearId, (int) $package->transaction->fresh()->fiscal_year_id);
             $this->assertSame('NUMBERED', (string) $package->fresh()->status);
         } finally {

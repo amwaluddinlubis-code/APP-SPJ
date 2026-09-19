@@ -31,12 +31,7 @@ class UpdateSpjPackageDetailsUseCase
                 ->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, atau sumber dana aktif.');
         }
 
-        $mutationMetadata = $this->mutationContext->packageContext($package);
         if ($package->status === 'NUMBERED') {
-            if (($mutationMetadata['path'] ?? null) === 'v2_compat') {
-                return back()->with('error', 'Koreksi Paket NUMBERED pada effective-context belum dibuka. Gunakan jalur legacy sampai gate lifecycle berikutnya.');
-            }
-
             return $this->updateNumberedDescriptions($package, $request);
         }
 
@@ -106,7 +101,7 @@ class UpdateSpjPackageDetailsUseCase
         $this->descriptions->updatePaymentDescription($package->transaction, $data['payment_description'] ?? null);
 
         $this->audit->record(
-            $package->transaction->fiscal_year_id,
+            $this->context->fiscalYearId(),
             'SPJ_PACKAGE',
             $package->id,
             'KOREKSI_URAIAN_NUMBERED',

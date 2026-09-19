@@ -827,10 +827,12 @@ render the Penomoran tab or lifecycle controls. The compatibility editor:
   switch because those panels are intentionally absent;
 - leaves Preview/Download on the separate read-compatible surface.
 
-NUMBERED effective-context Paket remain blocked from Paket-overlay writes in
-Step 11B, including the historical payment-description carve-out. That carve-out
-continues only on the legacy-aligned path until a later lifecycle-specific gate
-proves it safe. FINAL/CANCELLED remain locked.
+NUMBERED effective-context Paket remain blocked from normal Paket-overlay writes
+in Step 11B. The lifecycle-specific follow-up gate now permits only the
+historical `payment_description` narrative correction after the same exact
+effective-context/source-parity checks; category, payment, vendor, detail
+relations, and all other overlay writes remain blocked. FINAL/CANCELLED remain
+locked.
 
 `V2DPackageOverlayWriteCutoverTest` is staged to prove:
 
@@ -851,7 +853,8 @@ proves it safe. FINAL/CANCELLED remain locked.
   numbering/bulk-final controls or maintenance-link mutation.
 
 Negative-path hardening was added in commits `3aa331a` and `eb96214`.
-Runtime evidence on branch `arkas-raw-mirror` is now PASS: the focused
+Runtime evidence for the Step 11B baseline (before the Step 11C extension) on
+branch `arkas-raw-mirror` is PASS: the focused
 `V2DPackageOverlayWriteCutoverTest` passed with **9 tests / 109 assertions /
 9 deprecations**, and the combined Step 11A/read-context/package
 manual/category/transaction-boundary/authorization/NUMBERED regression passed
@@ -862,6 +865,24 @@ with **59 tests / 644 assertions / 59 deprecations**. `vendor/bin/pint
 This gate remains deliberately limited to DRAFT/READY package overlay writes.
 Numbering, FINAL, settlement, bulk-final, and period-close remain outside the
 Step 11B scope and were not opened.
+
+### D4 step 11C — NUMBERED narrative correction compatibility
+
+The first lifecycle-specific follow-up is deliberately narrower than normal
+Paket overlay editing. A stale effective-context Paket in `NUMBERED` may now
+correct only `payment_description`; the existing exact bridge, source-fact,
+fund-source, reconciliation, and V2 selector checks remain mandatory. The
+operation records its audit in the active effective fiscal year and does not
+change status, number, documents, category, payment fields, or legacy fiscal
+year. `FINAL`, numbering, settlement, bulk-final, and period-close remain
+closed.
+
+Runtime evidence on 2026-09-19: focused NUMBERED compatibility regression
+passed **3 tests / 32 assertions**; related lifecycle/category/READY regression
+passed **16 tests / 129 assertions**. Pint, Blade cache, frontend build, and
+`git diff --check` passed. `item_description` through the stale Detail
+Transaksi route remains deferred until it has its own effective-context
+resolver and fail-closed regression.
 
 A production switch requires all of the following:
 

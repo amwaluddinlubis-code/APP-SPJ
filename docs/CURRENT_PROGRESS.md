@@ -866,12 +866,28 @@ settlement, bulk-final, dan period-close tidak dibuka.
 
 ---
 
+### V2-D Step 11C — NUMBERED narrative correction compatibility gate
+
+Audit lifecycle-specific setelah Step 11B menemukan gap pada Paket `NUMBERED`
+stale-context: jalur legacy mengizinkan koreksi `payment_description`, tetapi
+jalur effective-context masih menolak seluruh koreksi. Perubahan minimal kini
+mengizinkan hanya koreksi narasi tersebut setelah exact Paket/provenance bridge,
+fund source, reconciliation, dan live source-fact parity lulus melalui boundary
+Step 11B.
+
+Regression focused lulus **3 test / 32 assertions**; related lifecycle,
+category, dan READY mutation lulus **16 test / 129 assertions**. Pint, Blade
+`view:cache`, `npm run build`, dan `git diff --check` juga lulus. Status Paket,
+nomor, dokumen, kategori, pembayaran, dan fiscal-year legacy tetap tidak
+berubah; FINAL, numbering, settlement, bulk-final, dan period-close tidak
+dibuka.
+
 ## Prioritas kerja aktif
 
 P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas aktif pada branch migrasi ini:
 
-1. **V2-D Step 11B runtime gate** untuk package/operator-overlay write boundary tanpa membuka numbering/FINAL;
-2. setelah Step 11B hijau, audit lifecycle-specific gate berikutnya sebelum NUMBERED/numbering dibuka;
+1. **V2-D Step 11C follow-up**: perluas evidence narasi ke `item_description` hanya jika resolver Detail Transaksi effective-context dapat fail-closed;
+2. definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 3. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
 4. **browser/operator QA desktop-laptop** berdasarkan `GUI_RUNTIME_QA.md`, khususnya repeated `Livewire.navigate`, SPA tab SPJ, modal preview, pagination, dropdown, dan filter URL state;
 5. **Office/PDF visual-output QA** untuk individual template, master terbaru, XLSX/PDF hasil generate, print area/page break/header/footer;

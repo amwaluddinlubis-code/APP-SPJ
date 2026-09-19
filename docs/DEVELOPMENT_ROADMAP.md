@@ -154,7 +154,8 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] implement Step 11B package/operator-overlay write boundary + dedicated DRAFT/READY compatibility editor tanpa fiscal-year rewrite;
 - [x] harden Step 11B negative regression untuk wrong bridge, reconciliation/`SOURCE_MISSING`, raw-source drift, dan NUMBERED category/write lock;
 - [x] jalankan `V2DPackageOverlayWriteCutoverTest` (9 test / 109 assertions) + Step 11A/read-context + package manual/category/transaction-boundary/authorization/NUMBERED regressions (59 test / 644 assertions) + Pint/view-cache/build/diff;
-- [ ] setelah Step 11B PASS, audit lifecycle-specific gate berikutnya; numbering, settlement, Monitoring, bulk-final, dan period-close tetap legacy;
+- [x] audit lifecycle-specific gate setelah Step 11B dan buka hanya koreksi `payment_description` pada Paket stale `NUMBERED` melalui exact effective-context parity; numbering, settlement, Monitoring, bulk-final, dan period-close tetap legacy;
+- [ ] audit/implement `item_description` effective-context correction pada Detail Transaksi dengan resolver fail-closed;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
