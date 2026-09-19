@@ -672,6 +672,15 @@ fail-safe consumer implementation, tetapi **effective production cutover masih
 BLOCKED** sampai akar live-context mismatch nyata diselesaikan tanpa rewrite
 source/protected lifecycle.
 
+Audit source mengonfirmasi akar mismatch: V2-C menentukan
+`effective_fiscal_year_id` dari tahun `transaction_date` + fund source, sedangkan
+production `Transaction::forSpjContext()` masih memakai
+`transactions.fiscal_year_id` legacy. `classifyCanonicalContext()` memang
+menerima ACTIVE_CANONICAL ketika context efektif valid walaupun legacy fiscal-year
+id stale, dan `migrateOne()` hanya menulis context efektif ke V2/provenance,
+bukan mengubah transaksi legacy. Jadi mismatch 66 canonical numbered vs 0 live
+legacy adalah boundary transisi yang nyata, bukan bug selector D4.
+
 ---
 
 ## Prioritas kerja aktif
