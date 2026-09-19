@@ -654,6 +654,14 @@ production consumer yang dipindahkan. Runtime regression selector sekarang PASS:
 `V2DReadPathSelectorTest` **7 test / 22 assertions / 7 deprecations**, Pint PASS,
 dan `git diff --check` bersih.
 
+D4 step 2 source sekarang tersedia untuk consumer read-only pertama: financial
+summary pada tab Laporan SPJ. Hanya angka count/cancelled/bruto/pajak/neto dan
+komponen pajak yang dapat membaca canonical V2; Paket list, pending, export,
+monitoring, activity/account labels, serta seluruh mutation tetap legacy.
+Regression `V2DReportSummaryCutoverTest` mengunci active-context VIEWER read,
+synthetic V2 raw drift, configuration rollback ke legacy, dan protected
+transaction/package/document immutability. Runtime evidence step 2 masih **RVR**.
+
 ---
 
 ## Prioritas kerja aktif
