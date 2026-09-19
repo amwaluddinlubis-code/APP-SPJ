@@ -4,22 +4,44 @@ namespace App\Services;
 
 use App\Models\FiscalYear;
 use App\Models\Transaction;
+use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class TaxFilterService
 {
+    public function __construct(
+        private readonly ActiveSpjContext $context,
+        private readonly SpjV2TaxReadContextService $v2ReadContext,
+    ) {}
+
     /**
      * Query rekap pajak dari parameter eksplisit memakai implementasi yang
      * sama dengan jalur HTTP, untuk dipakai controller dan komponen Livewire.
      *
-     * @return array{summary: object, filteredSummary: object, transactions: LengthAwarePaginator, year: FiscalYear}
+     * @return array{summary: object, filteredSummary: object, transactions: LengthAwarePaginator, year: FiscalYear, read_path: string}
      */
     public function taxData(string $search, ?int $month, ?int $quarter, ?int $semester, int $perPage): array
     {
+        $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
+        $membership = null;
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null) {
+            $membership = $this->v2ReadContext->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                $fundSourceId,
+            );
+        }
+
         $baseQuery = Transaction::query()
-            ->activeContext()
+            ->when(
+                $membership !== null,
+                fn ($query) => $query->whereIn('id', $membership['legacy_transaction_ids']),
+                fn ($query) => $query->forSpjContext($this->context),
+            )
             ->where('tax_total', '>', 0);
-        $year = FiscalYear::query()->findOrFail(session('active_fiscal_year_id'));
+        $readPath = $membership !== null ? 'v2' : 'legacy';
 
         $summary = (clone $baseQuery)->selectRaw(
             'COUNT(*) as count, COALESCE(SUM(ppn), 0) as ppn, COALESCE(SUM(pph21), 0) as pph21,
@@ -47,6 +69,13 @@ class TaxFilterService
             ->paginate($perPage)
             ->withQueryString();
 
-        return compact('summary', 'filteredSummary', 'transactions', 'year');
+        if ($membership !== null) {
+            $transactions->getCollection()->each(
+                fn (Transaction $transaction): Transaction => $transaction->setAttribute('read_context_path', 'v2_compat'),
+            );
+        }
+
+        return compact('summary', 'filteredSummary', 'transactions', 'year', 'readPath')
+            + ['read_path' => $readPath];
     }
 }
