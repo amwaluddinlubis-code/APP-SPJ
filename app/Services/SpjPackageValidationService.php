@@ -20,7 +20,8 @@ class SpjPackageValidationService
     public function checklist(SpjPackage $package): array
     {
         $transaction = $package->transaction;
-        $transactionIdentifier = $transaction->getAttribute('mutation_context_path') === 'v2_compat'
+        $mutationContext = $this->mutationContext($transaction);
+        $transactionIdentifier = ($mutationContext['path'] ?? null) === 'v2_compat'
             ? ($transaction->source_key ?: $transaction->id)
             : $transaction->id;
         $transactionUrl = route('transactions.show', $transactionIdentifier);
@@ -136,8 +137,8 @@ class SpjPackageValidationService
             if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
                 $duplicateQuery = $transaction->newQuery()->whereKeyNot($transaction->id);
 
-                if ($transaction->getAttribute('mutation_context_path') === 'v2_compat') {
-                    $sourceId = (int) $transaction->getAttribute('mutation_context_source_id');
+                if (($mutationContext['path'] ?? null) === 'v2_compat') {
+                    $sourceId = (int) ($mutationContext['source_id'] ?? 0);
                     $duplicateQuery->whereIn('id', function ($query) use ($transaction, $sourceId): void {
                         $query->select('provenance.legacy_transaction_id')
                             ->from('legacy_transaction_v2_map as provenance')
@@ -217,6 +218,25 @@ class SpjPackageValidationService
         }
 
         return $checks;
+    }
+
+    /** @return array{path:string,source_id:int|null,mode:string}|null */
+    private function mutationContext(Transaction $transaction): ?array
+    {
+        if (! $transaction->relationLoaded('v2MutationContext')) {
+            return null;
+        }
+
+        $context = $transaction->getRelation('v2MutationContext');
+        if (! is_array($context) || ! isset($context['path'], $context['mode'])) {
+            return null;
+        }
+
+        return [
+            'path' => (string) $context['path'],
+            'source_id' => isset($context['source_id']) ? (int) $context['source_id'] : null,
+            'mode' => (string) $context['mode'],
+        ];
     }
 
     private function rkasPeriodDate(Transaction $transaction): ?Carbon
