@@ -481,4 +481,22 @@ Jangan menambah test/smoke baru tanpa bug atau risiko konkret yang perlu dikunci
 
 Untuk perubahan metadata numbering, edit registry canonical lebih dulu. Jangan membuat daftar type, label, category, event date, target field, atau scope kedua di consumer.
 
+### Effective V2 sequence reservation preflight
+
+Effective reservation memakai scope sequence executable existing:
+
+```text
+effective fiscal year + fund source + document type + period_key
+```
+
+`period_key` tetap mengikuti `DocumentNumberFormat.reset_period`; format
+canonical saat ini reset `YEAR`, sehingga quarter tidak diam-diam menjadi scope
+baru. `SpjV2NumberingSequenceService` menggunakan counter row yang dikunci
+dalam transaction, unique intent/package identity, serta unique context dan
+candidate sequence reservation. Retry intent yang sama idempotent; completion
+memverifikasi owner/context/sequence; cancellation mempertahankan sequence
+terpakai sesuai policy nomor cancelled/history. Tahap ini hanya menyimpan
+reservation state dan tidak menerbitkan nomor ke dokumen atau mengubah Paket
+menjadi `NUMBERED`. Effective issuance tetap BLOCKED/DEFERRED.
+
 Checkpoint CI terbaru selalu lihat `P0_VERIFICATION_KIT.md` §1, bukan angka historis di feature guide ini.

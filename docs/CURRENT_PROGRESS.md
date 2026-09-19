@@ -978,3 +978,12 @@ numbering authorization boundary = **PASS** dan effective year/quarter
 resolution = **PASS**; effective-context numbering issuance tetap **BLOCKED /
 DEFERRED** sampai sequence/collision, completeness, atomic rollback, dan
 effective audit trail ditutup.
+
+Sequence gate terbaru: effective sequence/collision reservation/completion =
+**PASS**. Focused sequence evidence **3 tests / 96 assertions / 3
+deprecations**; related V2-D + legacy numbering/lifecycle evidence **68 tests /
+633 assertions / 68 deprecations**. Scope tetap `effective fiscal year + fund
+source + document type + period_key`; reservation atomic/idempotent dan tidak
+menerbitkan document number. Actual effective-context issuance tetap
+**BLOCKED / DEFERRED** sampai atomic end-to-end issuance, completeness/post-
+condition, dan effective audit trail.

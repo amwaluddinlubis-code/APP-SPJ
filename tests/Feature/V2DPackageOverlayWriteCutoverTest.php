@@ -10,6 +10,7 @@ use App\Services\SpjV2EffectiveNumberingPeriodResolver;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2MutationContextService;
 use App\Services\SpjV2NumberingAuthorizationService;
+use App\Services\SpjV2NumberingSequenceService;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
 use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
@@ -478,6 +479,85 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $this->assertSame($legacyFiscalYearId, (int) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('fiscal_year_id'));
             $this->assertSame('DRAFT', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
             $this->assertSame(0, (int) $db->table('operational_audit_logs')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_sequence_reservation_is_idempotent_completeable_and_never_issues_a_document(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-numbering-sequence-reservation.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            Artisan::call('migrate', ['--database' => 'school', '--path' => 'database/migrations/school', '--force' => true, '--no-interaction' => true]);
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'DRAFT');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['spj_category' => 'BARANG']);
+            $db->table('spj_packages')->where('id', $row->package_id)->update(['status' => 'READY']);
+            $transactionDate = (string) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('transaction_date');
+            $quarter = (int) ceil((int) date('n', strtotime($transactionDate)) / 3);
+            $db->table('fiscal_period_closures')->updateOrInsert(
+                ['fiscal_year_id' => $row->effective_fiscal_year_id, 'quarter' => $quarter],
+                ['status' => 'OPEN', 'updated_at' => now(), 'created_at' => now()],
+            );
+            $db->table('document_number_formats')->updateOrInsert(
+                ['fiscal_year_id' => $row->effective_fiscal_year_id, 'document_type' => 'SPJ'],
+                ['format_pattern' => '{SEQ}/SPJ/{SCHOOL}/{TW}/{YEAR}', 'reset_period' => 'YEAR', 'padding' => 4, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()],
+            );
+
+            $package = SpjPackage::query()->with(['transaction.items', 'documents'])->findOrFail($row->package_id);
+            $service = app(SpjV2NumberingSequenceService::class);
+            $before = [
+                'legacy_fiscal_year_id' => (int) $package->transaction->fiscal_year_id,
+                'status' => (string) $package->status,
+                'documents' => $this->documentsHash($db, (int) $package->id),
+            ];
+
+            $reserved = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1');
+            $this->assertSame('RESERVED', $reserved['status'], json_encode($reserved, JSON_THROW_ON_ERROR));
+            $this->assertTrue($reserved['authorized']);
+            $this->assertSame(1, $reserved['sequence_number']);
+            $this->assertSame(0, $db->table('spj_documents')->where('spj_package_id', $package->id)->count());
+
+            $retry = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1');
+            $this->assertSame($reserved['reservation_id'], $retry['reservation_id']);
+            $this->assertSame($reserved['sequence_number'], $retry['sequence_number']);
+            $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
+            $duplicateIntent = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-duplicate');
+            $this->assertSame('BLOCKED', $duplicateIntent['status']);
+            $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
+
+            $completed = $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', 1);
+            $this->assertSame('COMPLETED', $completed['status']);
+            $this->assertSame('COMPLETED', $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', 1)['status']);
+            $this->assertSame('BLOCKED', $service->complete($package, 'SPJ', 'MAIN', 'wrong-intent', 1)['status']);
+
+            config()->set('spj.v2_read_path', 'legacy');
+            $legacyPath = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-legacy-path');
+            $this->assertSame('BLOCKED', $legacyPath['status']);
+            $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
+            config()->set('spj.v2_read_path', 'v2');
+
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['requires_reconciliation' => true]);
+            $blocked = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-blocked');
+            $this->assertSame('BLOCKED', $blocked['status']);
+            $db->table('transactions')->where('id', $row->legacy_transaction_id)->update(['requires_reconciliation' => false]);
+
+            $after = [
+                'legacy_fiscal_year_id' => (int) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('fiscal_year_id'),
+                'status' => (string) $db->table('spj_packages')->where('id', $package->id)->value('status'),
+                'documents' => $this->documentsHash($db, (int) $package->id),
+            ];
+            $this->assertSame($before['legacy_fiscal_year_id'], $after['legacy_fiscal_year_id']);
+            $this->assertSame($before['status'], $after['status']);
+            $this->assertSame($before['documents'], $after['documents']);
+            $this->assertSame(1, (int) $db->table('document_number_sequences')->where('format_name', 'SPJ')->value('last_number'));
         } finally {
             File::delete($target);
         }

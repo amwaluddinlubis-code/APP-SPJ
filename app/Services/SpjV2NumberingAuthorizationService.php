@@ -145,21 +145,38 @@ final class SpjV2NumberingAuthorizationService
             return $blocked($documentBlocker, 'v2', (int) $selection['source_id'], $period['effective_quarter']);
         }
 
-        return $this->allowed((int) $package->id, 'v2_authorized_preflight', (int) $selection['source_id'], $period['effective_quarter'], $period['effective_fiscal_year_id']);
+        return $this->allowed(
+            (int) $package->id,
+            'v2_authorized_preflight',
+            (int) $selection['source_id'],
+            $period['effective_quarter'],
+            $period['effective_fiscal_year_id'],
+            $period['effective_fiscal_year'],
+            $period['date_basis'],
+        );
     }
 
     /** @return array{authorized:bool,path:string,reason:string,package_id:int,effective_fiscal_year_id:?int,effective_fund_source_id:?int,source_id:?int,quarter:?int} */
-    private function allowed(int $packageId, string $path, ?int $sourceId, ?int $quarter, ?int $effectiveFiscalYearId = null): array
-    {
+    private function allowed(
+        int $packageId,
+        string $path,
+        ?int $sourceId,
+        ?int $quarter,
+        ?int $effectiveFiscalYearId = null,
+        ?int $effectiveFiscalYear = null,
+        ?string $dateBasis = null,
+    ): array {
         return [
             'authorized' => true,
             'path' => $path,
             'reason' => 'all read-only effective numbering authorization checks passed; issuance remains separately gated',
             'package_id' => $packageId,
             'effective_fiscal_year_id' => $effectiveFiscalYearId ?? $this->context->fiscalYearId(),
+            'effective_fiscal_year' => $effectiveFiscalYear,
             'effective_fund_source_id' => $this->context->fundSourceId(),
             'source_id' => $sourceId,
             'quarter' => $quarter,
+            'date_basis' => $dateBasis,
         ];
     }
 

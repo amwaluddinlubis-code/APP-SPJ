@@ -932,6 +932,18 @@ A production switch requires all of the following:
 
 No production read path has been switched pada D1, D2, D3, maupun downstream parity.
 
+### Effective sequence reservation — PASS; issuance tetap BLOCKED
+
+`SpjV2NumberingSequenceService` mempertahankan scope executable existing:
+`effective fiscal year + fund source + document type + period_key`. Reservation
+memakai counter transaction lock, unique intent/package identity, unique
+context/candidate sequence, retry idempotency, dan completion ownership check.
+Focused sequence evidence **3 tests / 96 assertions / 3 deprecations**;
+related V2-D dan legacy numbering/lifecycle evidence **68 tests / 633
+assertions / 68 deprecations**. Reservation/completion tidak menulis nomor ke
+dokumen, tidak mengubah status Paket, dan tidak membuat numbering-issued audit.
+Actual effective-context numbering issuance tetap **BLOCKED / DEFERRED**.
+
 ### Effective numbering authorization boundary — PASS; issuance BLOCKED
 
 `SpjV2NumberingAuthorizationService` menambahkan preflight authorization
