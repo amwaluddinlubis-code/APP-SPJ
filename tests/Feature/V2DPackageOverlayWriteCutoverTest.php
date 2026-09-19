@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\TransactionDetailWorkspace;
 use App\Models\SpjPackage;
+use App\Models\User;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2MutationContextService;
 use App\UseCases\Spj\SpjPackageCategoryUseCase;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 final class V2DPackageOverlayWriteCutoverTest extends TestCase
@@ -192,6 +195,51 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
                     ->latest('id')
                     ->value('fiscal_year_id'),
             );
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_stale_numbered_transaction_detail_resolves_only_with_exact_item_source_parity(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-transaction-detail-description.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'NUMBERED');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $package = SpjPackage::query()->with(['transaction.items', 'transaction.spjPackage'])->findOrFail($row->package_id);
+            $transaction = $package->transaction;
+            $resolver = app(SpjV2MutationContextService::class);
+
+            $resolved = $resolver->resolveTransactionForDescription((string) $transaction->source_key);
+            $this->assertNotNull($resolved);
+            $this->assertSame((int) $transaction->id, (int) $resolved->id);
+            $this->assertTrue($resolver->authorizeTransactionDescription($resolved));
+            $this->assertSame('v2_compat', $resolver->transactionContext($resolved)['path'] ?? null);
+
+            $actor = User::factory()->create(['role' => User::ROLE_OPERATOR]);
+            $item = $transaction->items->first();
+            Livewire::actingAs($actor)
+                ->test(TransactionDetailWorkspace::class, ['transactionId' => $transaction->source_key])
+                ->set('paymentDescription', 'STEP 11C - Detail Transaksi')
+                ->set('itemDescriptions', [$item->id => 'STEP 11C - Item'])
+                ->call('saveDescriptions');
+
+            $this->assertSame('STEP 11C - Detail Transaksi', (string) $db->table('transactions')->where('id', $transaction->id)->value('payment_description'));
+            $this->assertSame('STEP 11C - Item', (string) $db->table('transaction_items')->where('id', $item->id)->value('item_description'));
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame((string) $package->document_number, (string) $db->table('spj_packages')->where('id', $package->id)->value('document_number'));
+
+            $item->forceFill(['amount' => (float) $item->amount + 1])->save();
+
+            $this->assertNull($resolver->resolveTransactionForDescription((string) $transaction->source_key));
         } finally {
             File::delete($target);
         }

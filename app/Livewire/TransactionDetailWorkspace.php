@@ -8,6 +8,7 @@ use App\Models\TransactionItem;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
+use App\Services\SpjV2MutationContextService;
 use App\Support\ActiveSpjContext;
 use DomainException;
 use Illuminate\Contracts\View\View;
@@ -34,7 +35,7 @@ class TransactionDetailWorkspace extends Component
     public function mount(string $transactionId, ActiveSpjContext $context): void
     {
         $transaction = $this->transaction($context, $transactionId);
-        if ($transaction === null || ! $context->matchesTransaction($transaction)) {
+        if ($transaction === null) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -48,7 +49,7 @@ class TransactionDetailWorkspace extends Component
     {
         $this->authorizeOperatorOrAdministrator();
         $transaction = $this->transaction($context);
-        if ($transaction === null || ! $context->matchesTransaction($transaction)) {
+        if ($transaction === null || ! app(SpjV2MutationContextService::class)->authorizeTransactionDescription($transaction)) {
             $this->redirectRoute('transactions.index');
 
             return;
@@ -94,7 +95,7 @@ class TransactionDetailWorkspace extends Component
         }
 
         $audit->record(
-            (int) $transaction->fiscal_year_id,
+            $context->fiscalYearId(),
             'TRANSACTION',
             $transaction->id,
             'DESCRIPTION_UPDATED',
@@ -189,6 +190,13 @@ class TransactionDetailWorkspace extends Component
             'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
         ])->forSpjContext($context)->forSourceIdentifier($sourceIdentifier)->first();
         if ($transaction === null) {
+            $transaction = app(SpjV2MutationContextService::class)->resolveTransactionForDescription($sourceIdentifier);
+            if ($transaction !== null) {
+                return Transaction::query()->with([
+                    'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
+                ])->find($transaction->id);
+            }
+
             return $this->transactionFromFresh($sourceIdentifier, $context);
         }
         $fresh = SpjFreshTransaction::query()

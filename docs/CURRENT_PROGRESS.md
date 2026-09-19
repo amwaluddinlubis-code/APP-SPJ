@@ -882,12 +882,22 @@ nomor, dokumen, kategori, pembayaran, dan fiscal-year legacy tetap tidak
 berubah; FINAL, numbering, settlement, bulk-final, dan period-close tidak
 dibuka.
 
+Follow-up Step 11C kini menutup boundary Detail Transaksi effective-context.
+Resolver fail-closed memeriksa membership Paket, provenance/package bridge,
+fund source, reconciliation/source status, source facts, dan seluruh item
+source facts sebelum stale legacy transaction dibuka. Livewire hanya menulis
+overlay legacy `payment_description`/`item_description`, mencatat audit pada
+effective fiscal year, dan tidak mengubah status/nomor/fiscal-year legacy.
+Focused + related regression lulus **25 test / 193 assertions / 25
+deprecations**; Pint, `view:cache`, `npm run build`, dan `git diff --check`
+lulus. FINAL, numbering, settlement, bulk-final, dan period-close tetap
+tertutup.
+
 ## Prioritas kerja aktif
 
 P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas aktif pada branch migrasi ini:
 
-1. **V2-D Step 11C follow-up**: perluas evidence narasi ke `item_description` hanya jika resolver Detail Transaksi effective-context dapat fail-closed;
-2. definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
+1. definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 3. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
 4. **browser/operator QA desktop-laptop** berdasarkan `GUI_RUNTIME_QA.md`, khususnya repeated `Livewire.navigate`, SPA tab SPJ, modal preview, pagination, dropdown, dan filter URL state;
 5. **Office/PDF visual-output QA** untuk individual template, master terbaru, XLSX/PDF hasil generate, print area/page break/header/footer;

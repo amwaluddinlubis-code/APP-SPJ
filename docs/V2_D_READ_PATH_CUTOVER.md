@@ -880,9 +880,20 @@ closed.
 Runtime evidence on 2026-09-19: focused NUMBERED compatibility regression
 passed **3 tests / 32 assertions**; related lifecycle/category/READY regression
 passed **16 tests / 129 assertions**. Pint, Blade cache, frontend build, and
-`git diff --check` passed. `item_description` through the stale Detail
-Transaksi route remains deferred until it has its own effective-context
-resolver and fail-closed regression.
+`git diff --check` passed. The stale Detail Transaksi route now has its own
+effective-context resolver and fail-closed regression for `item_description`.
+
+The resolver requires exact effective-context Paket membership,
+provenance/package bridge, fund source, reconciliation/source status, source
+facts, and every transaction-item source fact to match. Item overlays remain
+legacy-authoritative; no V2 dual-write or fiscal-year rewrite is introduced.
+The Livewire save action records the audit in the active effective fiscal year.
+`NUMBERED` status and document number remain unchanged; `FINAL`, source drift,
+item drift, wrong bridge, and missing/unsafe context remain blocked.
+
+Focused + related regression passed **25 tests / 193 assertions / 25
+deprecations**. Pint, Blade cache, frontend build, and `git diff --check`
+passed.
 
 A production switch requires all of the following:
 

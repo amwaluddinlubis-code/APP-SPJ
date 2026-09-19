@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 final class SpjV2MutationContextService
 {
     private const CONTEXT_RELATION = 'v2MutationContext';
+
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjV2PackageReadMembershipService $packageReadMembership,
@@ -129,6 +130,32 @@ final class SpjV2MutationContextService
         return true;
     }
 
+    /**
+     * Resolve a legacy Transaction for the active effective context.
+     *
+     * This is intentionally limited to the Detail Transaksi read/write
+     * surface. It never rewrites legacy context and returns null when the
+     * provenance, package bridge, source facts, or item facts are ambiguous.
+     */
+    public function resolveTransactionForDescription(string $sourceIdentifier): ?Transaction
+    {
+        $transaction = Transaction::query()
+            ->with(['items', 'spjPackage'])
+            ->forSourceIdentifier($sourceIdentifier)
+            ->get()
+            ->first(fn (Transaction $candidate): bool => $this->authorizeTransactionDescriptionBoundary($candidate, false));
+
+        return $transaction;
+    }
+
+    /**
+     * Authorize the narrow Detail Transaksi narrative correction boundary.
+     */
+    public function authorizeTransactionDescription(Transaction $transaction): bool
+    {
+        return $this->authorizeTransactionDescriptionBoundary($transaction, true);
+    }
+
     /** @return array{path:string,source_id:int|null,mode:string}|null */
     public function packageContext(SpjPackage $package): ?array
     {
@@ -160,6 +187,129 @@ final class SpjV2MutationContextService
 
         $package->setRelation(self::CONTEXT_RELATION, $context);
         $transaction->setRelation(self::CONTEXT_RELATION, $context);
+    }
+
+    private function authorizeTransactionDescriptionBoundary(Transaction $transaction, bool $write): bool
+    {
+        if ($this->context->matchesTransaction($transaction)) {
+            return ! $write || $transaction->spjPackage?->status !== 'FINAL';
+        }
+
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId === null || (int) $transaction->fund_source_id !== $fundSourceId) {
+            return false;
+        }
+
+        $package = $transaction->relationLoaded('spjPackage')
+            ? $transaction->spjPackage
+            : $transaction->spjPackage()->first();
+        if ($package === null) {
+            return false;
+        }
+
+        $membership = $this->packageReadMembership->forContext(
+            DB::connection('school'),
+            $this->context->fiscalYearId(),
+            $fundSourceId,
+        );
+        if ($membership === null
+            || ! in_array((int) $package->id, $membership['package_ids'], true)
+            || ! in_array((int) $transaction->id, $membership['legacy_transaction_ids'], true)
+            || $package->spj_transaction_id === null
+            || ! in_array((int) $package->spj_transaction_id, $membership['canonical_transaction_ids'], true)) {
+            return false;
+        }
+
+        $bridgeExists = DB::connection('school')
+            ->table('legacy_transaction_v2_map')
+            ->where('legacy_transaction_id', $transaction->id)
+            ->where('spj_transaction_id', $package->spj_transaction_id)
+            ->whereIn('canonical_context_status', ['ACTIVE_CANONICAL', 'LEGACY_DUPLICATE'])
+            ->exists();
+        if (! $bridgeExists
+            || (bool) $transaction->requires_reconciliation
+            || strtoupper((string) ($transaction->source_status ?: 'ACTIVE')) === 'SOURCE_MISSING') {
+            return false;
+        }
+
+        $canonical = $this->canonicalReads
+            ->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                $fundSourceId,
+                $membership['source_id'],
+            )
+            ->first(fn (array $row): bool => (int) $row['id'] === (int) $package->spj_transaction_id);
+
+        if (! is_array($canonical)
+            || ! $this->sourceFactsMatch($canonical, $transaction)
+            || ! $this->itemFactsMatch($canonical, $transaction)) {
+            return false;
+        }
+
+        if ($write && $package->status === 'FINAL') {
+            return false;
+        }
+
+        $context = [
+            'path' => 'v2_compat',
+            'source_id' => $membership['source_id'],
+            'mode' => $membership['compatibility_mode'],
+        ];
+        $transaction->setRelation(self::CONTEXT_RELATION, $context);
+        $package->setRelation(self::CONTEXT_RELATION, $context);
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $canonical */
+    private function itemFactsMatch(array $canonical, Transaction $legacy): bool
+    {
+        $legacyItems = $legacy->relationLoaded('items') ? $legacy->items : $legacy->items()->get();
+        $legacyBySource = $legacyItems->keyBy(fn ($item): string => trim((string) $item->source_item_id));
+        $canonicalItems = collect($canonical['items'] ?? []);
+
+        if ($canonicalItems->count() !== $legacyItems->count()) {
+            return false;
+        }
+
+        foreach ($canonicalItems as $canonicalItem) {
+            $sourceKey = trim((string) ($canonicalItem['source_key'] ?? ''));
+            $item = $legacyBySource->get($sourceKey);
+            $payload = $canonicalItem['payload'] ?? [];
+            if ($sourceKey === '' || $item === null || ! is_array($payload)) {
+                return false;
+            }
+
+            foreach (['description' => ['uraian', 'description'], 'unit' => ['satuan', 'unit']] as $field => $keys) {
+                $expected = null;
+                foreach ($keys as $key) {
+                    if (array_key_exists($key, $payload) && trim((string) $payload[$key]) !== '') {
+                        $expected = trim((string) $payload[$key]);
+                        break;
+                    }
+                }
+                if ($expected !== null && $this->normalize($expected) !== $this->normalize($item->{$field})) {
+                    return false;
+                }
+            }
+
+            $quantity = $payload['volume'] ?? $payload['quantity'] ?? null;
+            if ($quantity !== null && abs((float) $quantity - (float) $item->quantity) > 0.01) {
+                return false;
+            }
+            if (abs($this->canonicalAmount($payload) - (float) $item->amount) > 0.01) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function canonicalAmount(array $payload): float
+    {
+        return (float) ($payload['saldo'] ?? $payload['jumlah'] ?? $payload['nilai'] ?? $payload['nominal'] ?? 0);
     }
 
     /** @return array{path:string,source_id:int|null,mode:string}|null */

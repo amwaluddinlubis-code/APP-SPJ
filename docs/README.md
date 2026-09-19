@@ -78,8 +78,9 @@ read adapter, Paket/document relation bridge, downstream report/tax/period parit
 controlled read-path cutover, serta transitional mutation authorization.
 D1-D3, downstream workflow parity, read-only cutover sampai Step 10, dan Step
 11A Checklist/READY sudah memiliki focused runtime evidence pada isolated
-rehearsal. Step 11B mulai membuka legacy-authoritative operator overlay Paket
-DRAFT/READY secara fail-closed dan masih RVR. Dokumen ini bukan bukti production
+rehearsal. Step 11B dan Step 11C mulai membuka legacy-authoritative operator
+overlay Paket DRAFT/READY serta koreksi narasi NUMBERED/Detail Transaksi secara
+fail-closed dan masih terikat isolated regression. Dokumen ini bukan bukti production
 cutover; NUMBERED/lifecycle lanjutan, numbering, settlement, Monitoring mutation,
 bulk-final, dan period-close tetap harus ditutup bertahap sebelum production
 switch.
