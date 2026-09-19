@@ -101,7 +101,7 @@ final class SpjV2ReportFinancialSummaryService
 
     /**
      * @param array<string, mixed> $canonical
-     * @param array<string, mixed> $legacy
+     * @param array<string, mixed> $consumer
      */
     private function matchesConsumerSummary(array $canonical, array $consumer): bool
     {
