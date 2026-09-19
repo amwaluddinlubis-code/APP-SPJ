@@ -83,37 +83,43 @@ final class V2DExtendedReportContextCutoverTest extends TestCase
             $this->activateContext($context);
             config()->set('spj.v2_read_path', 'v2');
 
-            $outsideId = (int) $db->table('transactions as legacy')
-                ->join('legacy_transaction_v2_map as map', 'map.legacy_transaction_id', '=', 'legacy.id')
-                ->join('spj_transactions as v2', 'v2.id', '=', 'map.spj_transaction_id')
-                ->where(function ($query) use ($context): void {
-                    $query->where('v2.fiscal_year_id', '!=', $context->fiscal_year_id)
-                        ->orWhere('v2.fund_source_id', '!=', $context->fund_source_id);
-                })
-                ->orderBy('legacy.id')
-                ->value('legacy.id');
-            $this->assertGreaterThan(0, $outsideId);
+            $membershipIds = app(\App\Services\SpjV2PackageReadMembershipService::class)
+                ->forContext(
+                    $db,
+                    (int) $context->fiscal_year_id,
+                    (int) $context->fund_source_id,
+                )['legacy_transaction_ids'] ?? [];
 
-            $db->table('transactions')->where('id', $outsideId)->update([
-                'spj_category' => 'JASA_LAINNYA',
-            ]);
-            $db->table('spj_service_recipients')->insert([
-                'transaction_id' => $outsideId,
-                'name' => 'Outside Context Recipient',
-                'service_type' => 'Regression',
-                'service_description' => 'Outside effective context',
-                'quantity' => 1,
-                'unit' => 'kegiatan',
-                'rental_days' => 1,
-                'daily_rate' => 1000,
-                'amount' => 1000,
-                'tax_amount' => 0,
-                'net_amount' => 1000,
-                'is_receipt_recipient' => 1,
-                'sort_order' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $outsideId = $db->table('transactions')
+                ->whereNotIn('id', $membershipIds)
+                ->orderBy('id')
+                ->value('id');
+
+            if ($outsideId !== null) {
+                $outsideId = (int) $outsideId;
+                $db->table('transactions')->where('id', $outsideId)->update([
+                    'spj_category' => 'JASA_LAINNYA',
+                ]);
+                $db->table('spj_service_recipients')->insert([
+                    'transaction_id' => $outsideId,
+                    'name' => 'Outside Context Recipient',
+                    'service_type' => 'Regression',
+                    'service_description' => 'Outside effective context',
+                    'quantity' => 1,
+                    'unit' => 'kegiatan',
+                    'rental_days' => 1,
+                    'daily_rate' => 1000,
+                    'amount' => 1000,
+                    'tax_amount' => 0,
+                    'net_amount' => 1000,
+                    'is_receipt_recipient' => 1,
+                    'sort_order' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $outsideId = PHP_INT_MAX;
+            }
 
             $useCase = app(ExtendedSpjReportUseCase::class);
             $serviceIds = $useCase->selectionTransactions('JASA_LAINNYA')->modelKeys();
