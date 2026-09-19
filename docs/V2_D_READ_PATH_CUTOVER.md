@@ -372,6 +372,53 @@ those action/detail guards still validate the legacy transaction context. Showin
 effective-context Paket before those action boundaries are compatible would
 create rows that are visible but cannot be opened safely.
 
+### D4 step 5 — read-only document action context compatibility
+
+Source implementation now adds `SpjV2PackageReadContextService` and wires it
+only into `SpjDocumentUseCase` read-only document actions:
+
+- package PDF download;
+- package Excel download;
+- package preview;
+- package preview PDF;
+- individual template download;
+- individual template PDF download;
+- individual template preview;
+- individual template preview PDF.
+
+The compatibility rule is conservative:
+
+1. a legacy-aligned Paket passes unchanged;
+2. otherwise `SPJ_V2_READ_PATH=v2` must resolve exact package membership through
+   Step 4;
+3. package id, legacy transaction id, canonical transaction id, and fund source
+   must all match the active effective context;
+4. only then is the legacy transaction's `fiscal_year_id` normalized to the
+   active effective fiscal year **in memory only**;
+5. the fiscal-year relation is cleared so subsequent template/profile lookup
+   reloads the effective year;
+6. no legacy/V2/Paket/document database row is updated.
+
+The in-memory normalization is required because both
+`SpjPackageTemplateSelector` and `SpjTemplateService` historically derive
+template/profile/year placeholders from `package->transaction->fiscal_year_id`.
+Passing the context guard without this normalization could render a document with
+the wrong fiscal-year template or school profile.
+
+Regression `V2DPackageReadContextTest` is staged to prove:
+
+- a stale NUMBERED Paket is allowed only under resolved V2 compatibility;
+- database `transactions.fiscal_year_id` remains unchanged;
+- effective-year templates are selected while stale-year templates are excluded;
+- `SPJ_V2_READ_PATH=legacy` still blocks the stale package;
+- a wrong-but-valid V2 package bridge remains fail-closed;
+- transaction/Paket/document protected state remains unchanged.
+
+`SpjWorkspaceUseCase::tabPaket()` is intentionally **not** changed yet. Opening
+the Paket workspace exposes mutation controls, including the NUMBERED correction
+carve-out, so effective-context read compatibility must not silently widen write
+eligibility. Runtime evidence for D4 step 5 is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
