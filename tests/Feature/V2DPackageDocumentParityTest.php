@@ -38,6 +38,18 @@ final class V2DPackageDocumentParityTest extends TestCase
             $this->assertSame(0, $result['relations']['mismatch_count']);
             $this->assertSame(0, $result['documents']['orphan_count']);
             $this->assertTrue($result['protected_manifest']['match']);
+
+            $duplicateProvenancePackage = $db->table('spj_packages as package')
+                ->join('legacy_transaction_v2_map as map', 'map.legacy_transaction_id', '=', 'package.transaction_id')
+                ->join('spj_transactions as v2', 'v2.id', '=', 'package.spj_transaction_id')
+                ->where('map.canonical_context_status', 'LEGACY_DUPLICATE')
+                ->where('v2.canonical_context_status', 'ACTIVE_CANONICAL')
+                ->select(['package.id', 'package.spj_transaction_id'])
+                ->first();
+            $this->assertNotNull(
+                $duplicateProvenancePackage,
+                'A legacy duplicate provenance may validly bridge to the active canonical V2 transaction.',
+            );
             $this->assertSame($before, $after, 'Parity comparison must not mutate Paket/document lifecycle rows.');
         } finally {
             File::delete($target);
