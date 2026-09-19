@@ -46,7 +46,12 @@ V2-C menambahkan jalur rehearsal additive: legacy transaction dipetakan ke
 fakta live tetap dibaca dari raw mirror melalui source identity registry. Overlay
 V2 hanya menyimpan field operator-owned. `spj_packages.transaction_id` tetap
 authoritative selama transisi; `spj_packages.spj_transaction_id` adalah relation
-additive rehearsal. Production read-path belum dipotong.
+additive rehearsal. Production read-path belum dipotong. V2-D menambahkan `SpjV2CanonicalReadService`
+sebagai adapter read-only: canonical transaction dibatasi oleh fiscal year + fund
+source + source id, fakta source dibaca melalui source identity registry/raw mirror,
+dan field operator hanya dari overlay V2. Adapter juga mempertahankan lookup
+`legacy_source_key` melalui provenance bridge untuk mapping DETERMINISTIC. Controller,
+Livewire, Paket/document lifecycle, dan write-path production belum dialihkan.
 
 ### Database utama
 
