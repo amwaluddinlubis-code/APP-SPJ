@@ -199,12 +199,18 @@ D4 step 2 source implementation:
   numbering, lifecycle, dan seluruh mutation tetap memakai jalur legacy;
 - `SpjV2ReportFinancialSummaryService` memakai selector D4 step 1 dan jatuh
   kembali ke legacy bila package bridge/document relation belum tersedia;
+- selain selector/source eligibility, consumer melakukan **live consumer parity**
+  terhadap summary yang benar-benar dihasilkan jalur production legacy pada
+  `ActiveSpjContext`; projected provenance parity saja tidak cukup;
+- bila count/cancelled/gross/tax/net/komponen pajak berbeda sedikit pun, consumer
+  fail-closed ke legacy;
 - `SpjReportUseCase::reportData()` dan tab laporan mengaktifkan gate summary ini,
   sedangkan `export()` tetap legacy;
-- regression `V2DReportSummaryCutoverTest` membuktikan V2/legacy parity awal,
-  synthetic raw-source drift hanya terlihat pada mode V2, rollback config mengembalikan
-  summary legacy, protected transaction/package/document tetap immutable, dan
-  VIEWER dapat membaca summary pada active context.
+- regression `V2DReportSummaryCutoverTest` mengunci tiga kondisi: fixture nyata
+  dengan stale legacy-context harus fallback; clone yang context-nya disejajarkan
+  secara eksplisit boleh membaca V2; synthetic raw-source drift setelah itu wajib
+  kembali ke legacy. Protected transaction/package/document tetap immutable dan
+  VIEWER tetap dapat membaca summary ketika live parity exact.
 
 Runtime verification untuk step 2 masih **RVR** sampai focused test/Pint/diff dijalankan.
 
