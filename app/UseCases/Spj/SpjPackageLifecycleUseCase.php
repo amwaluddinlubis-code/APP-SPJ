@@ -5,6 +5,7 @@ namespace App\UseCases\Spj;
 use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2MutationContextService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 
@@ -14,6 +15,7 @@ class SpjPackageLifecycleUseCase
         private readonly SpjPackageValidationService $validator,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
+        private readonly SpjV2MutationContextService $mutationContext,
     ) {}
 
     public function markReady(string $packageId): RedirectResponse
@@ -27,8 +29,8 @@ class SpjPackageLifecycleUseCase
     public function markReadyResult(string $packageId): array
     {
         $package = $this->findPackage($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
-            return ['success' => false, 'message' => 'Paket tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.'];
+        if (! $package || ! $this->mutationContext->preparePackage($package)) {
+            return ['success' => false, 'message' => 'Paket tidak ditemukan atau tidak diizinkan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.'];
         }
         if ($package->status !== 'DRAFT') {
             return ['success' => false, 'message' => 'Hanya paket DRAFT yang dapat ditandai siap.'];
@@ -38,7 +40,7 @@ class SpjPackageLifecycleUseCase
         }
 
         $package->forceFill(['status' => 'READY'])->save();
-        $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_PACKAGE', $package->id, 'PAKET_READY', 'Paket dinyatakan siap untuk penomoran triwulan.');
+        $this->audit->record($this->context->fiscalYearId(), 'SPJ_PACKAGE', $package->id, 'PAKET_READY', 'Paket dinyatakan siap untuk penomoran triwulan.');
 
         return ['success' => true, 'message' => 'Paket siap dan masuk antrean penomoran.'];
     }
@@ -48,7 +50,7 @@ class SpjPackageLifecycleUseCase
         $package = $this->findPackage($packageId);
 
         return $package !== null
-            && $this->context->matchesTransaction($package->transaction)
+            && $this->mutationContext->preparePackage($package)
             && $package->status === 'DRAFT'
             && $this->validator->validate($package) === [];
     }
