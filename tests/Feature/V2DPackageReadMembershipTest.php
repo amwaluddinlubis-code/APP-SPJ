@@ -8,6 +8,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 final class V2DPackageReadMembershipTest extends TestCase
@@ -87,7 +88,14 @@ final class V2DPackageReadMembershipTest extends TestCase
             sort($resolvedPackageIds);
             sort($resolvedNumberedPackageIds);
 
-            $this->assertSame(range(1, 67), $resolvedPackageIds);
+            $expectedAllPackageIds = $db->table('spj_packages')
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+
+            $this->assertCount(67, $expectedAllPackageIds);
+            $this->assertSame($expectedAllPackageIds, $resolvedPackageIds);
             $this->assertCount(66, $resolvedNumberedPackageIds);
             $this->assertCount(67, array_unique($resolvedPackageIds));
             $this->assertSame($before, $this->protectedHash($db), 'Membership resolution must not mutate legacy/Paket/document state.');
@@ -265,8 +273,8 @@ final class V2DPackageReadMembershipTest extends TestCase
         return '';
     }
 
-    /** @return \Illuminate\Support\Collection<int, object> */
-    private function canonicalContexts(Connection $db)
+    /** @return Collection<int, object> */
+    private function canonicalContexts(Connection $db): Collection
     {
         return $db->table('spj_transactions')
             ->where('canonical_context_status', 'ACTIVE_CANONICAL')
