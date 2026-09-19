@@ -512,6 +512,13 @@ package/workspace regression passed (**805 assertions, 63 deprecations**).
 No browser claim is made; browser QA remains **RVR / DEFERRED**. The full
 canonical gate remains **FAIL**, and batch/quarter UI remains **BLOCKED**.
 
+Superseding canonical evidence from HEAD `3e872fb` (2026-09-19): serial
+`php artisan test --compact` passed with **17 tests / 7,973 assertions / 0
+failures / 656 deprecated notices / 955.64s**. Composer validation, platform
+requirements, Pint, Blade cache, frontend build, and diff check passed. The
+known blockers were closed without opening batch/quarter UI or other lifecycle
+boundaries. Browser QA remains **RVR / DEFERRED**.
+
 ---
 
 # Aturan pengerjaan

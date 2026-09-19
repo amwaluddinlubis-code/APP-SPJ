@@ -956,6 +956,15 @@ regression passed **31 tests / 304 assertions / 31 deprecations**. No canonical
 green promotion is claimed; effective batch/quarter UI audit is deferred and
 remains blocked.
 
+### Canonical gate promotion after blocker repair — 2026-09-19
+
+The earlier failure record above is superseded by the serial rerun from HEAD
+`3e872fb`: **17 tests passed, 7,973 assertions, 0 failures, 656 deprecated
+notices, 955.64s**. Composer validation, platform checks, Pint, Blade cache,
+frontend build, and `git diff --check` passed. This promotes the repository
+canonical code gate to **PASS** for this checkpoint. Browser visual/runtime QA
+remains **RVR / DEFERRED**; effective batch/quarter UI remains **BLOCKED**.
+
 ### Transaksi and Detail Transaksi read-path audit
 
 Focused route and workspace regression on 2026-09-19 found and fixed a

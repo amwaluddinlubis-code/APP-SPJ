@@ -59,10 +59,16 @@ Test:
 
 ```text
 vendor/bin/phpunit tests/Feature/V2BIsolatedSchemaTest.php --do-not-cache-result
-Tests: 2
-Assertions: 74
+Tests: 4
+Assertions: 79
 Result: PASS
 ```
+
+The test now creates a fresh clone for each test under the isolated rehearsal
+root, using `SPJ_V2_B_SOURCE_PATH` only as an optional source override. The
+target is never taken from a developer-local target environment variable; it
+is removed during teardown, so the canonical test command is self-contained
+and does not mutate a tenant database.
 
 Hasil akhir clone setelah verification:
 

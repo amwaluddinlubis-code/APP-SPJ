@@ -36,6 +36,24 @@ CI #486 adalah gate sukses canonical terbaru untuk code head `ba8fa0b...`. Gate 
 
 Commit dokumentasi setelah `ba8fa0b...` tidak menggantikan code gate tersebut selama tidak mengubah source/runtime yang digate.
 
+### Latest local canonical gate for `arkas-raw-mirror`
+
+```text
+HEAD                       : 3e872fb (canonical gate repair checkpoint)
+FULL PHPUNIT               : PASS — 17 tests / 7,973 assertions / 0 failures
+DEPRECATIONS               : 656
+FULL PHPUNIT DURATION      : 955.64s
+COMPOSER VALIDATE          : PASS
+PLATFORM REQUIREMENTS     : PASS
+PINT                      : PASS
+BLADE CACHE               : PASS
+FRONTEND BUILD            : PASS
+GIT DIFF CHECK            : PASS
+```
+
+This is local evidence for the current branch checkpoint and does not claim CI
+or browser/operator verification. Browser QA remains RVR / DEFERRED.
+
 ### P0 dependency-platform repair — CI #483 → #486
 
 CI #483 pada head TALL migration `a4dd3954...` gagal sebelum test pada langkah `composer install`. Log membuktikan `composer.lock` mengunci sejumlah Symfony 8.x yang membutuhkan PHP `>=8.4`, sedangkan project mendeklarasikan PHP `^8.3` dan workflow canonical berjalan pada PHP 8.3.
@@ -1061,3 +1079,19 @@ deprecations**); related V2-D read/mutation/package/workspace regression PASS
 (gabungan **63 deprecations / 805 assertions**). Pint, Blade cache, frontend
 build, dan `git diff --check` PASS. Browser QA tetap **RVR / DEFERRED** dan
 canonical full gate tetap **FAIL** berdasarkan blocker yang tercatat di atas.
+
+### Canonical gate repair — 2026-09-19
+
+Superseding evidence from HEAD `cd4bcf3` after serial execution of the full
+repository suite: **17 tests passed, 7,973 assertions, 0 failures, 656
+deprecated notices, 955.64s**. Composer validation, platform requirements,
+Blade cache, frontend build, Pint, and `git diff --check` also passed.
+
+The repaired blockers were classified as test/fixture isolation issues except
+for one real legacy authorization regression. The hierarchy fixture now
+provides fund-source context; V2-B tests create and remove a deterministic
+isolated clone under the rehearsal root; the Livewire authorization fixture
+asserts against its measured baseline; and legacy numbering accepts valid
+auxiliary registered documents while still rejecting unknown, duplicate, or
+ambiguous relations. Browser QA remains **RVR / DEFERRED** and effective
+batch/quarter UI remains **BLOCKED**.
