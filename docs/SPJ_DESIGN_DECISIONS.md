@@ -489,8 +489,10 @@ App\Services\SpjV2NumberingBatchService (quarter/batch, all-or-nothing)
    ketika selector V2, preflight authorization, validasi paket, dan action
    request context lulus. Mutation tetap satu-satunya milik
    `SpjV2NumberingIssuanceService`; selector legacy tetap legacy dan V2 tidak
-   fallback diam-diam. Batch/quarter UI, FINAL, settlement, bulk-final, dan
-   period close/open tetap tertutup sampai audit terpisah.
+   fallback diam-diam. Batch/quarter UI effective kini dibuka terbatas untuk
+   domain SPJ Utama melalui `SpjV2NumberingBatchService`; domain dokumen
+   pendukung tetap legacy sampai memiliki contract batch V2 terpisah. FINAL,
+   settlement, bulk-final, dan period close/open tetap tertutup.
 
 ### 17.4 Cancel Penomoran Triwulan
 

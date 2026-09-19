@@ -118,8 +118,12 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Pilih dokumen yang akan diberi nomor</p>
                             <p class="mt-1 text-xs text-[var(--theme-content-accent)]">Nomor dibuat sesuai tanggal dokumen dan format penomoran yang sedang aktif.</p>
+                            @if(config('spj.v2_read_path', 'legacy') === 'v2')
+                                <p class="mt-1 text-xs font-semibold text-amber-800">Mode effective aktif: hanya SPJ Utama yang diproses oleh batch atomic V2. Domain legacy tetap terpisah.</p>
+                            @endif
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach($documentTypes as $documentType)
+                                    @if(config('spj.v2_read_path', 'legacy') === 'v2' && $documentType !== 'SPJ') @continue @endif
                                     <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--theme-content-accent)]">
                                         <input type="checkbox" name="document_types[]" value="{{ $documentType }}" checked class="rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
                                         <span>{{ $documentLabels[$documentType] ?? $documentType }}</span>

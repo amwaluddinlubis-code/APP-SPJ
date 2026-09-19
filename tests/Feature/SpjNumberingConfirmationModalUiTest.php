@@ -52,4 +52,18 @@ class SpjNumberingConfirmationModalUiTest extends TestCase
         $this->assertStringContainsString('$effectiveNumberingPreflight[\'active\']', $readonly);
         $this->assertStringNotContainsString("route('spj.quarter-numbering'", $readonly);
     }
+
+    public function test_effective_quarter_ui_exposes_only_atomic_spj_batch_contract(): void
+    {
+        $view = file_get_contents(resource_path('views/spj/numbering.blade.php'));
+        $useCase = file_get_contents(app_path('UseCases/Spj/SpjQuarterNumberingUseCase.php'));
+
+        $this->assertStringContainsString("config('spj.v2_read_path', 'legacy') === 'v2'", $view);
+        $this->assertStringContainsString('$documentType !== \'SPJ\'', $view);
+        $this->assertStringContainsString('SpjV2NumberingBatchService', $useCase);
+        $this->assertStringContainsString('assignEffectiveBatchNumbers', $useCase);
+        $this->assertStringContainsString("\$this->v2Batch->issueBatch(\$authorizedCandidates, 'SPJ')", $useCase);
+        $effectiveAction = substr($useCase, strpos($useCase, 'private function assignEffectiveBatchNumbers'));
+        $this->assertStringNotContainsString('$this->numbers->assignAutomaticNumbers', $effectiveAction);
+    }
 }

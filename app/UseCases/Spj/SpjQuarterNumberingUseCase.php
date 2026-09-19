@@ -12,6 +12,8 @@ use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjNumberingPolicyService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2NumberingAuthorizationService;
+use App\Services\SpjV2NumberingBatchService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,10 +32,16 @@ class SpjQuarterNumberingUseCase
         private readonly SpjNumberingPolicyService $numberingPolicy,
         private readonly SpjNumberingGateService $numberingGate,
         private readonly ActiveSpjContext $context,
+        private readonly SpjV2NumberingBatchService $v2Batch,
+        private readonly SpjV2NumberingAuthorizationService $v2Authorization,
     ) {}
 
     public function assignQuarterNumbers(Request $request): RedirectResponse
     {
+        if (config('spj.v2_read_path', 'legacy') === 'v2') {
+            return $this->assignEffectiveBatchNumbers($request);
+        }
+
         $data = $request->validate([
             'quarter' => ['required', 'integer', 'between:1,4'],
             'document_types' => ['nullable', 'array'],
@@ -173,6 +181,80 @@ class SpjQuarterNumberingUseCase
         $this->audit->record($yearId, 'SPJ_QUARTER', $quarter, 'PENOMORAN_BATCH', "Penomoran triwulan {$quarter}: {$numbered} nomor baru, {$skipped} sudah bernomor.");
 
         return back()->with('success', "Penomoran triwulan selesai: {$numbered} nomor baru; {$skipped} dokumen dilewati karena sudah bernomor.");
+    }
+
+    private function assignEffectiveBatchNumbers(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'quarter' => ['required', 'integer', 'between:1,4'],
+            'document_types' => ['nullable', 'array'],
+            'document_types.*' => ['string', 'max:40'],
+        ]);
+        $requestedTypes = collect($data['document_types'] ?? ['SPJ'])
+            ->map(fn (string $type): string => strtoupper(trim($type)))
+            ->filter()
+            ->unique()
+            ->values();
+        if ($requestedTypes->count() !== 1 || $requestedTypes->first() !== 'SPJ') {
+            return back()->with('error', 'Penomoran effective batch saat ini hanya membuka domain SPJ Utama. Domain dokumen pendukung tetap melalui jalur legacy yang terpisah.');
+        }
+
+        $quarter = (int) $data['quarter'];
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId === null) {
+            return back()->with('error', 'Penomoran effective batch ditolak karena sumber dana aktif belum terbukti.');
+        }
+
+        // Candidate discovery deliberately uses fund source + calendar quarter,
+        // not the stale legacy fiscal-year column. The batch service then
+        // preflights every member, including invalid members, before any write.
+        $packages = SpjPackage::query()
+            ->with([
+                'documents',
+                'transaction.items',
+                'transaction.goods',
+                'transaction.goodsReceipts',
+                'transaction.workOrder',
+                'transaction.honors',
+                'transaction.travels',
+                'transaction.payments',
+                'transaction.workers',
+                'transaction.participants',
+                'transaction.serviceRecipients',
+                'transaction.spjPackage',
+            ])
+            // Keep completed V2 packages discoverable so a double-submit can
+            // replay through the batch service's idempotent path. Legacy
+            // numbered packages are rejected by the V2 preflight instead of
+            // being re-numbered or falling back to the legacy use case.
+            ->whereIn('status', ['READY', 'NUMBERED'])
+            ->whereHas('transaction', function ($query) use ($fundSourceId, $quarter): void {
+                $query->where('fund_source_id', $fundSourceId)
+                    ->whereMonth('transaction_date', '>=', (($quarter - 1) * 3) + 1)
+                    ->whereMonth('transaction_date', '<=', $quarter * 3);
+            })
+            ->orderBy('id')
+            ->get();
+
+        if ($packages->isEmpty()) {
+            return back()->with('error', 'Tidak ada kandidat Paket READY atau replay V2 pada quarter effective yang dipilih.');
+        }
+
+        // Read-only visibility/preflight: do not discard blocked members. A
+        // poison member must make the entire submitted batch fail closed.
+        $authorizedCandidates = $packages->filter(function (SpjPackage $package) use ($quarter): bool {
+            $authorization = $this->v2Authorization->authorize($package, ['SPJ']);
+
+            return ($authorization['quarter'] ?? null) === $quarter
+                || ($authorization['path'] ?? null) === 'blocked';
+        })->values();
+
+        $result = $this->v2Batch->issueBatch($authorizedCandidates, 'SPJ');
+        if (($result['status'] ?? null) !== 'ISSUED') {
+            return back()->with('error', 'Penomoran effective batch dibatalkan penuh: '.($result['reason'] ?? 'preflight atau mutation gagal.'));
+        }
+
+        return back()->with('success', 'Penomoran effective batch selesai: '.(int) ($result['issued'] ?? 0).' Paket diproses atomik dan state dimuat ulang dari backend canonical.');
     }
 
     /** @param Collection<int, SpjPackage> $packages @return array{created:int,skipped:int} */

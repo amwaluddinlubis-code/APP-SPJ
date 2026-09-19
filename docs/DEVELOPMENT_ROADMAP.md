@@ -536,3 +536,18 @@ boundaries. Browser QA remains **RVR / DEFERRED**.
 - setelah contract utama PASS, jangan menambah test tanpa alasan nyata;
 - bila ada bug: reproduce -> fix -> focused regression bila perlu -> operator re-check.
 - effective numbering authorization boundary = **PASS**, effective year/quarter resolution = **PASS**, effective sequence/collision reservation/completion = **PASS**, atomic single issuance = **PASS**, effective audit trail = **PASS**, quarter/batch atomicity = **PASS**, final post-condition gate = **PASS** (`V2DNumberingIssuanceTest` 5 test / 84 assertions); actual effective-context numbering issuance = **PASS** pada backend gate, UI tetap tertutup, FINAL/settlement/bulk-final/period mutation tetap di luar scope.
+## Effective batch/quarter operator UI promotion — 2026-09-19
+
+Route/action audit selesai untuk `POST /spj/penomoran-triwulan`. Dengan
+selector `SPJ_V2_READ_PATH=v2`, action memakai `SpjV2NumberingBatchService`
+sebagai satu-satunya mutation authority: seluruh kandidat dipreflight,
+deterministic order, satu transaksi atomic, collision-safe, retry idempotent,
+dan audit batch tepat sekali. Tidak ada loop single-numbering atau fallback V2
+ke legacy. Selector `legacy` tetap memakai `SpjQuarterNumberingUseCase` legacy.
+
+Status milestone: **PASS untuk UI effective batch SPJ Utama**. Domain dokumen
+pendukung belum dipromosikan ke V2 batch dan tetap legacy. FINAL, settlement,
+bulk-final, period close/open, dan browser QA tetap BLOCKED/DEFERRED.
+
+Evidence focused: `SpjNumberingConfirmationModalUiTest` +
+`V2DNumberingIssuanceTest` **11 tests / 121 assertions / 11 deprecations PASS**.

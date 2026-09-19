@@ -1095,3 +1095,30 @@ asserts against its measured baseline; and legacy numbering accepts valid
 auxiliary registered documents while still rejecting unknown, duplicate, or
 ambiguous relations. Browser QA remains **RVR / DEFERRED** and effective
 batch/quarter UI remains **BLOCKED**.
+## Effective batch/quarter operator UI — 2026-09-19
+
+Audit route `POST /spj/penomoran-triwulan` menemukan bahwa action sebelumnya
+masih memakai `SpjQuarterNumberingUseCase` legacy yang resumable dan dapat
+menulis per dokumen. Selector `SPJ_V2_READ_PATH=v2` sekarang bercabang di
+use-case yang sama ke `SpjV2NumberingBatchService`; selector `legacy` tetap
+memakai alur legacy tanpa fallback V2.
+
+Effective UI hanya menampilkan domain `SPJ` Utama. Kandidat discovery memakai
+sumber dana aktif dan quarter kalender, tidak memakai `transactions.fiscal_year_id`
+stale sebagai authority. Seluruh kandidat yang ditemukan dikirim ke preflight;
+member yang poison tidak disaring untuk mengejar sukses parsial. Batch service
+kemudian memvalidasi semua kandidat sebelum mutation, mengurutkan deterministic,
+menjalankan satu transaksi atomic, menjaga collision/idempotent retry, dan
+menulis audit batch tepat sekali. State sukses dikembalikan melalui redirect
+canonical; tidak ada loop single-numbering pada action V2.
+
+Regression focused pada 2026-09-19: `SpjNumberingConfirmationModalUiTest` +
+`V2DNumberingIssuanceTest` **11 tests / 121 assertions PASS / 11 deprecations**.
+Evidence V2 backend tetap mencakup valid batch, deterministic order, retry,
+poison-member rollback, collision, authorization, period, reconciliation,
+SOURCE_MISSING, source/item drift, duplicate candidate, dan legacy-selector
+isolation. Browser QA tetap **RVR / DEFERRED**.
+
+Status: **EFFECTIVE BATCH/QUARTER OPERATOR UI PASS untuk SPJ Utama**. Domain
+dokumen pendukung, FINAL, settlement, bulk-final, period close/open, dan
+browser QA tetap tertutup.

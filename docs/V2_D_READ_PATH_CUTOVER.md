@@ -1012,3 +1012,20 @@ deprecations**. Effective-context numbering issuance backend **PASS** setelah
 gate sequence, collision/idempotency, atomic rollback, dan effective audit
 trail. Single operator path PASS pada focused regression; batch/quarter UI
 tetap BLOCKED.
+### Effective batch/quarter operator UI — PASS for SPJ Main only (2026-09-19)
+
+The audited action is `POST /spj/penomoran-triwulan`, still owned by
+`SpjController@assignQuarterNumbers`. Under the V2 selector it now delegates
+to `SpjV2NumberingBatchService` after read-only candidate discovery and
+preflight. The legacy selector remains on `SpjQuarterNumberingUseCase` and is
+not used as a fallback from V2.
+
+The promoted surface exposes only the `SPJ` Main document domain. It sends the
+whole discovered candidate set to the atomic service, so a blocked/poison
+member cannot be filtered out to create partial success. The service enforces
+all-or-nothing mutation, deterministic ordering, collision safety, idempotent
+retry, exactly-once batch audit, and canonical redirect reload. No FINAL,
+settlement, bulk-final, period close/open, or browser QA surface was opened.
+
+Focused evidence: **11 tests / 121 assertions / 11 deprecations PASS** from
+the batch UI contract and V2 numbering suites.
