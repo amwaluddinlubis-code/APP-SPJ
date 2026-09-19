@@ -15,9 +15,9 @@ use Tests\TestCase;
 
 final class V2DReportSummaryCutoverTest extends TestCase
 {
-    public function test_report_summary_falls_back_when_live_legacy_context_does_not_match_v2(): void
+    public function test_report_summary_uses_effective_package_context_when_legacy_fiscal_year_is_stale(): void
     {
-        $target = storage_path('app/v2-c-rehearsal/test-v2d-report-summary-context-fallback.sqlite');
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-report-summary-context-compatibility.sqlite');
         $source = $this->prepareClone($target);
 
         try {
@@ -27,25 +27,30 @@ final class V2DReportSummaryCutoverTest extends TestCase
             $db = DB::connection('school');
             $context = $this->numberedContext($db);
             $this->activateContext($context);
+            $before = $this->protectedHash($db);
 
             config()->set('spj.v2_read_path', 'legacy');
-            [, $legacy] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+            [$legacyPackages, $legacy] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
             $this->assertSame('legacy', $legacy['read_path']);
 
             $canonicalNumberedCount = $this->canonicalNumberedCount($db, $context);
             $this->assertNotSame(
                 (int) $legacy['count'],
                 $canonicalNumberedCount,
-                'Fixture must retain the known active-context transition mismatch so the consumer fallback is meaningful.',
+                'Fixture must retain the stale legacy fiscal-year mismatch covered by the effective-context compatibility bridge.',
             );
 
             config()->set('spj.v2_read_path', 'v2');
-            [, $guarded] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
+            [$canonicalPackages, $canonical] = app(SpjReportUseCase::class)->reportData('semua', null, 10000, 10000);
 
-            $this->assertSame('legacy', $guarded['read_path']);
-            foreach ($this->financialFields() as $field) {
-                $this->assertEquals($legacy[$field], $guarded[$field], 'Fail-safe fallback mismatch for '.$field);
-            }
+            $this->assertSame('v2', $canonical['read_path']);
+            $this->assertSame($canonicalNumberedCount, (int) $canonical['count']);
+            $this->assertSame($canonicalNumberedCount, $canonicalPackages->total());
+            $this->assertNotSame($legacyPackages->total(), $canonicalPackages->total());
+            $this->assertTrue($canonicalPackages->getCollection()->every(
+                fn ($package): bool => $package->getAttribute('read_context_path') === 'v2_compat',
+            ));
+            $this->assertSame($before, $this->protectedHash($db));
         } finally {
             File::delete($target);
         }
