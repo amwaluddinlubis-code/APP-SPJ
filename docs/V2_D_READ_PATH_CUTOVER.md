@@ -755,7 +755,8 @@ Regression `V2DMutationContextReadyTest` is staged to prove:
 - `PAKET_READY` audit uses the effective fiscal year;
 - config `legacy` blocks stale-context READY before validation;
 - a wrong package bridge blocks READY;
-- synthetic raw-source drift blocks READY before validation;
+- unresolved reconciliation and synthetic raw-source drift block READY before validation;
+- duplicate-invoice validation remains scoped to effective provenance instead of stale legacy fiscal-year ids;
 - a legacy-aligned context keeps the pre-existing READY behavior;
 - compatibility UI exposes Checklist/READY only through the guarded entry point.
 
