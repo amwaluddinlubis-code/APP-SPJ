@@ -610,6 +610,62 @@ Honor/Jasa overlays on an isolated clone, pinned to a real
 
 Runtime evidence on 2026-09-19: focused gate `V2DExtendedReportContextCutoverTest`, `V2DReportSummaryCutoverTest`, `V2DReportPackageListCutoverTest`, `V2DPackageReadMembershipTest`, and `SpjMainTabsRenderingTest` PASS with **20 tests / 241 assertions / 20 deprecations**. `vendor/bin/pint --dirty --format agent` PASS and `git diff --check` clean. D4 step 9 is therefore **RUNTIME PASS**.
 
+### D4 step 10 — fail-closed Pajak effective-context cutover
+
+The Pajak page is a read-only Livewire consumer, but before this step
+`TaxFilterService` still scoped rows through legacy
+`Transaction::activeContext()`. A stale legacy fiscal-year could therefore make
+the Pajak page incomplete even though canonical V2 tax parity had already passed.
+
+Step 10 adds `SpjV2TaxReadContextService`.
+
+Eligibility is intentionally stricter than membership alone:
+
+1. `SPJ_V2_READ_PATH=v2` must resolve one canonical source for the active
+   fiscal-year/fund-source;
+2. effective-context compatibility must be `RESOLVED`;
+3. one deterministic legacy representative is selected for each canonical
+   transaction, matching the existing workflow-parity representation for
+   many-to-one `LEGACY_DUPLICATE` provenance;
+4. representative `source_key`, proof number, date, description, recipient, and
+   every tax component (`ppn/pph21/pph22/pph23/pph4/sspd/tax_total`) must still
+   match canonical raw facts exactly;
+5. any identity/source-key/raw-tax drift returns `null`, and the Pajak consumer
+   falls back to the existing legacy context as one unit.
+
+When eligible, `TaxFilterService` keeps returning legacy `Transaction` models
+so existing Livewire rendering/search/pagination contracts remain unchanged, but
+the query is scoped to the deterministic effective-context representative IDs.
+Summary and filtered summary therefore use exactly the same membership as the
+table.
+
+Follow-up navigation is also guarded:
+
+- V2-compatible tax rows are labelled **Baca saja**;
+- their Detail Transaksi URL uses `source_key`, not the stale legacy numeric ID;
+- `TransactionController` / `TransactionDetailWorkspace` can resolve that key
+  through the active `SpjFreshTransaction` projection;
+- fresh-only transaction detail is non-persistent (`exists=false`), so
+  description/reconciliation mutation remains unavailable there;
+- ordinary legacy tax rows keep the existing numeric/model navigation.
+
+Regression `V2DTaxReadContextCutoverTest` is staged to prove:
+
+- deterministic representative membership equals the tax table output;
+- annual summary, month filtering, and search remain scoped to the same effective
+  transaction set;
+- every V2 row has a source key and `v2_compat` read marker;
+- synthetic canonical tax-raw drift forces the whole consumer back to legacy;
+- config rollback remains immediate;
+- the Blade surface routes V2 rows by source key and adds no tax-page mutation;
+- protected transaction/Paket/document state remains unchanged.
+
+Existing `TaxFilterLivewireTest` remains the legacy/no-V2-schema compatibility
+gate, while `TransactionDetailWorkspaceAuthorizationTest` is reused to protect
+fresh source-key context isolation and mutation authorization.
+
+Runtime evidence for D4 step 10 is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
