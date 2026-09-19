@@ -811,13 +811,29 @@ Checklist/Persiapan. Cutover membership tanpa write-path/effective-context
 authorization akan menciptakan split read/write context. Karena itu Monitoring
 ditandai **DEFERRED/BLOCKED FOR READ CUTOVER**, bukan dipaksa masuk V2.
 
+D4 step 11A source sekarang menambahkan `SpjV2MutationContextService` sebagai
+boundary write-path transisi pertama. Scope sengaja hanya Checklist dan
+`DRAFT -> READY`: stale legacy fiscal-year hanya boleh dimutasi bila selector V2,
+effective package membership, exact provenance/package bridge, fund source,
+source-reconciliation state, dan live canonical source facts semuanya aman.
+Fiscal year legacy hanya dinormalisasi **in memory** untuk validasi dan tidak
+pernah dipersist. `SpjPackageLifecycleUseCase` memakai boundary ini sebelum
+READY; audit `PAKET_READY` memakai effective fiscal year. Compatibility Paket
+hanya membuka Checklist, sedangkan Isian Manual, numbering, FINAL, settlement,
+cancel/replace, bulk final, dan period mutation tetap tertutup. Regression
+`V2DMutationContextReadyTest` ditambahkan dengan config rollback, wrong bridge,
+raw-source drift, immutability, audit-year, dan legacy-aligned compatibility.
+Runtime evidence Step 11A masih **RVR**.
+
 ---
 
 ## Prioritas kerja aktif
 
-P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas berikutnya:
+P0 integration/dependency repair dan Phase 2 authorization sudah selesai. Prioritas aktif pada branch migrasi ini:
 
-1. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
+1. **V2-D Step 11A runtime gate** untuk transitional Checklist/READY mutation authorization;
+2. setelah Step 11A hijau, audit **Step 11B package/operator-overlay write boundary** tanpa membuka numbering/FINAL lebih awal;
+3. **Generated-document real-data/operator QA** untuk Paket nyata yang tersedia;
 2. **browser/operator QA desktop-laptop** berdasarkan `GUI_RUNTIME_QA.md`, khususnya repeated `Livewire.navigate`, SPA tab SPJ, modal preview, pagination, dropdown, dan filter URL state;
 3. **Office/PDF visual-output QA** untuk individual template, master terbaru, XLSX/PDF hasil generate, print area/page break/header/footer;
 4. lanjutkan JASA_LAINNYA multi-penerima dan PEMELIHARAAN bahan+upah pada output nyata bila ditemukan mismatch;
