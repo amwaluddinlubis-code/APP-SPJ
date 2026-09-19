@@ -10,6 +10,7 @@ use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2PackageReadContextService;
 use App\Services\SpjV2PackageReadMembershipService;
+use App\Services\SpjV2MutationContextService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,6 +29,7 @@ class SpjWorkspaceUseCase
         private readonly SpjPackageTemplateSelector $templateSelector,
         private readonly SpjV2PackageReadContextService $packageReadContext,
         private readonly SpjV2PackageReadMembershipService $packageReadMembership,
+        private readonly SpjV2MutationContextService $mutationContext,
     ) {}
 
     public function handle(Request $request): View|RedirectResponse
@@ -220,6 +222,12 @@ class SpjWorkspaceUseCase
         }
 
         if (! $this->context->matchesTransaction($package->transaction)) {
+            if ($request->boolean('edit')
+                && $package->isEditable()
+                && $this->mutationContext->authorizePackageWrite($package)) {
+                return $this->compatibilityEditPackage($package);
+            }
+
             if (! $this->packageReadContext->prepare($package)
                 || $package->getAttribute('read_context_path') !== 'v2_compat') {
                 return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
@@ -278,6 +286,47 @@ class SpjWorkspaceUseCase
             'spjTypes' => [],
             'filters' => [],
             'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
+            'participantRoster' => $participantRoster,
+            'consumptionOrderSources' => $consumptionOrderSources,
+        ]);
+    }
+
+    private function compatibilityEditPackage(SpjPackage $package): View
+    {
+        $transaction = $package->transaction;
+        $participantRoster = strtoupper((string) $transaction->spj_category) === 'KONSUMSI'
+            ? $this->participantRoster()
+            : collect();
+        $consumptionOrderSources = [];
+
+        if (strtoupper((string) $transaction->spj_category) === 'KONSUMSI') {
+            $consumptionOrderSources = $this->packageMembershipQuery()
+                ->where('spj_packages.id', '!=', $package->id)
+                ->whereHas('transaction', fn ($query) => $query->where('spj_category', 'KONSUMSI'))
+                ->with('transaction.participants')
+                ->orderByDesc('spj_packages.id')
+                ->limit(5)
+                ->get()
+                ->map(fn (SpjPackage $row) => [
+                    'id' => $row->id,
+                    'label' => ($row->transaction->no_bukti ?: 'Tanpa bukti').' · '.($row->transaction->transaction_date?->translatedFormat('d M Y') ?: '-').' · '.$row->transaction->participants->count().' peserta',
+                    'names' => $row->transaction->participants->map(fn ($participant) => $participant->name)->filter()->values()->all(),
+                    'participants' => $row->transaction->participants->map(fn ($participant) => [
+                        'name' => $participant->name,
+                        'position' => $participant->position,
+                        'nip' => $participant->nip,
+                        'nuptk' => $participant->nuptk,
+                        'portions' => $participant->portions ?: 1,
+                    ])->values()->all(),
+                ])
+                ->filter(fn (array $row) => $row['names'] !== [])
+                ->values()
+                ->all();
+        }
+
+        return view('spj.package-compat-edit', [
+            'package' => $package,
+            'transaction' => $transaction,
             'participantRoster' => $participantRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
         ]);
