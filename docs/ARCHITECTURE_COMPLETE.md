@@ -88,6 +88,13 @@ tidak memuat form Isian Manual, READY, numbering, FINAL/cancel/replace, atau
 mutation route lain. Dengan demikian read compatibility tidak memperluas mutation
 authorization.
 
+Paket list read-path kini menggunakan boundary yang sama ketika selector V2
+RESOLVED: `SpjWorkspaceUseCase::packageListData()` dan package-only summary
+metrics mengambil exact `package_ids` dari effective-context membership.
+Setiap row ditandai `legacy` atau `v2_compat`; row `v2_compat` hanya membuka
+dedicated read-only workspace. Persiapan, transaction queue, numbering,
+settlement, lifecycle, dan mutation authorization tetap legacy.
+
 ### Database utama
 
 Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, metadata global,
