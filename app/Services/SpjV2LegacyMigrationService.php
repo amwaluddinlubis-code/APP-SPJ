@@ -346,7 +346,7 @@ final class SpjV2LegacyMigrationService
                 'source_id' => $sourceId,
                 'source_membership_hash' => $classification['membership_hash'],
                 'source_status' => 'ACTIVE',
-                'requires_reconciliation' => $classification['status'] === 'DETERMINISTIC',
+                'requires_reconciliation' => (bool) ($legacy->requires_reconciliation ?? false),
                 'source_missing_since' => null,
                 'canonical_context_status' => $canonicalStatus,
                 'canonical_context_reason' => $canonicalReason,
