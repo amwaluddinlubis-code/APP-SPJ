@@ -221,6 +221,39 @@ sebagai runtime PASS. Effective production cutover tetap blocked karena fixture
 nyata membuktikan live legacy `ActiveSpjContext` dapat berbeda dari canonical V2;
 pada kondisi itu consumer secara benar tetap memakai legacy.
 
+### Live-context mismatch root cause
+
+Source audit after the step-2 runtime PASS confirms the remaining blocker is an
+intentional V2-C transition boundary, not the new report selector.
+
+V2-C resolves canonical context from:
+
+```text
+year(transaction_date) + fund_source_id
+→ matching fiscal_years.id
+→ spj_transactions.fiscal_year_id
+```
+
+while the current production legacy scope still resolves from:
+
+```text
+transactions.fiscal_year_id + transactions.fund_source_id
+→ Transaction::forSpjContext()
+```
+
+`SpjV2LegacyMigrationService::classifyCanonicalContext()` explicitly accepts a
+row as `ACTIVE_CANONICAL` when transaction date + fund source resolve a valid
+context even if legacy `fiscal_year_id` is stale, and records that reason.
+`migrateOne()` writes the effective fiscal-year id only to the V2 transaction and
+provenance bridge; it does **not** rewrite the legacy transaction. Therefore a
+numbered package can be validly linked to an ACTIVE_CANONICAL V2 transaction while
+the legacy production query for the same active context returns zero rows.
+
+Do not repair this by mutating legacy `transactions.fiscal_year_id` or protected
+Paket/document lifecycle data merely to enable cutover. The next D4 task is a
+read-only compatibility/context strategy that can prove equivalence from the
+provenance bridge before any broader consumer is switched.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
