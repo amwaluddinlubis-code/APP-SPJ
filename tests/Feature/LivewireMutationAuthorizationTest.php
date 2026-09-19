@@ -21,6 +21,7 @@ class LivewireMutationAuthorizationTest extends TestCase
 
     public function test_operator_and_viewer_cannot_invoke_administrator_livewire_mutations(): void
     {
+        $schoolCountBeforeMutationAttempts = School::query()->count();
         $school = School::query()->create([
             'school_code' => 'AUTH-001',
             'npsn' => '40000001',
@@ -103,7 +104,7 @@ class LivewireMutationAuthorizationTest extends TestCase
             'id' => $victim->id,
             'email' => 'protected-operator@example.test',
         ]);
-        $this->assertDatabaseCount('schools', 1);
+        $this->assertDatabaseCount('schools', $schoolCountBeforeMutationAttempts + 1);
     }
 
     public function test_document_storage_livewire_mutation_allows_operator_and_rejects_viewer(): void

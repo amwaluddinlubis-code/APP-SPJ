@@ -23,12 +23,14 @@ class SpjProgramHierarchyPlaceholderTest extends TestCase
         Schema::connection('school')->create('arkas_bku_rows', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('fiscal_year_id');
+            $table->unsignedBigInteger('fund_source_id')->nullable();
             $table->string('source_kas_id');
             $table->json('payload');
         });
         Schema::connection('school')->create('arkas_rkas_items', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('fiscal_year_id');
+            $table->unsignedBigInteger('fund_source_id')->nullable();
             $table->string('source_rapbs_id');
             $table->json('payload');
         });
@@ -60,11 +62,13 @@ class SpjProgramHierarchyPlaceholderTest extends TestCase
     {
         DB::connection('school')->table('arkas_bku_rows')->insert([
             'fiscal_year_id' => 77,
+            'fund_source_id' => 1,
             'source_kas_id' => 'KAS-001',
             'payload' => json_encode(['ID_RAPBS' => 'RAPBS-001'], JSON_THROW_ON_ERROR),
         ]);
         DB::connection('school')->table('arkas_rkas_items')->insert([
             'fiscal_year_id' => 77,
+            'fund_source_id' => 1,
             'source_rapbs_id' => 'RAPBS-001',
             'payload' => json_encode([
                 'KODE_PROGRAM' => '01.',
@@ -78,6 +82,7 @@ class SpjProgramHierarchyPlaceholderTest extends TestCase
 
         $transaction = new Transaction([
             'fiscal_year_id' => 77,
+            'fund_source_id' => 1,
             'id_kas_umum' => 'KAS-001',
             'activity_code' => '01.03.04.',
         ]);

@@ -39,6 +39,7 @@ class SpjSixCategoryE2eTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('spj.v2_read_path', 'legacy');
         config()->set('database.connections.school.database', ':memory:');
         config()->set('database.connections.school.journal_mode', null);
         DB::purge('school');
@@ -51,6 +52,7 @@ class SpjSixCategoryE2eTest extends TestCase
         ]);
 
         $fund = FundSource::query()->create([
+            'id' => 1,
             'code' => 'BOSP',
             'name' => 'BOSP',
         ]);

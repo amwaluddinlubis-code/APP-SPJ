@@ -7,11 +7,54 @@ use App\Services\V2BSourceIdentityRegistryService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use RuntimeException;
 use Tests\TestCase;
 
 final class V2BIsolatedSchemaTest extends TestCase
 {
+    private string $isolatedTargetPath;
+
+    private string $readOnlySourcePath;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $source = getenv('SPJ_V2_B_SOURCE_PATH') ?: storage_path('app/v2-b-isolated/tenant-10260756-v2b.sqlite');
+
+        if (! is_file($source)) {
+            throw new RuntimeException("V2-B source fixture is missing: {$source}");
+        }
+
+        $targetDirectory = storage_path('app/v2-b-isolated');
+        File::ensureDirectoryExists($targetDirectory);
+        $this->isolatedTargetPath = $targetDirectory.'/v2b-'.getmypid().'-'.bin2hex(random_bytes(8)).'.sqlite';
+        $this->readOnlySourcePath = $source;
+
+        if (! File::copy($source, $this->isolatedTargetPath)) {
+            throw new RuntimeException("Unable to create V2-B isolated clone: {$this->isolatedTargetPath}");
+        }
+
+        putenv('SPJ_V2_B_TARGET_PATH='.$this->isolatedTargetPath);
+        putenv('SPJ_V2_B_SOURCE_PATH='.$this->readOnlySourcePath);
+    }
+
+    protected function tearDown(): void
+    {
+        DB::disconnect('school');
+        DB::purge('school');
+
+        if (isset($this->isolatedTargetPath)) {
+            File::delete($this->isolatedTargetPath);
+        }
+
+        putenv('SPJ_V2_B_TARGET_PATH');
+        putenv('SPJ_V2_B_SOURCE_PATH');
+
+        parent::tearDown();
+    }
+
     public function test_v2_b_schema_lifecycle_mapping_and_immutability_are_safe_on_isolated_copy(): void
     {
         $target = getenv('SPJ_V2_B_TARGET_PATH') ?: '';
