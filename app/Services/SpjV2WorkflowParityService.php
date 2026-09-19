@@ -38,6 +38,7 @@ final class SpjV2WorkflowParityService
         $reportMismatches = [];
         $taxMismatches = [];
         $periodMismatches = [];
+        $periodRepresentationDeltas = [];
         $activityMismatches = [];
         $accountMismatches = [];
         $canonicalCount = 0;
@@ -157,12 +158,18 @@ final class SpjV2WorkflowParityService
                     fn (object $row): string => (string) ($row->source_status ?? ''),
                 );
                 if ($canonicalPeriod !== $legacyPeriod) {
-                    $periodMismatches[] = [
+                    $delta = [
                         'context' => $contextKey,
                         'quarter' => $quarter,
                         'canonical' => $canonicalPeriod,
                         'legacy' => $legacyPeriod,
                     ];
+
+                    if ($this->periodDecision($canonicalPeriod) !== $this->periodDecision($legacyPeriod)) {
+                        $periodMismatches[] = $delta;
+                    } else {
+                        $periodRepresentationDeltas[] = $delta;
+                    }
                 }
             }
 
@@ -219,6 +226,8 @@ final class SpjV2WorkflowParityService
             'period_workflow' => [
                 'mismatch_count' => count($periodMismatches),
                 'mismatches' => $periodMismatches,
+                'representation_delta_count' => count($periodRepresentationDeltas),
+                'representation_deltas' => $periodRepresentationDeltas,
             ],
             'activity_realization' => [
                 'mismatch_count' => count($activityMismatches),
@@ -371,7 +380,19 @@ final class SpjV2WorkflowParityService
             }
         }
 
+        $summary['unfinished'] = $summary['without_package'] + $summary['not_final'];
+
         return $summary;
+    }
+
+    /** @param array<string, int> $summary @return array{transactions:int,reconciliation_blockers:int,unfinished:int} */
+    private function periodDecision(array $summary): array
+    {
+        return [
+            'transactions' => (int) $summary['transactions'],
+            'reconciliation_blockers' => (int) $summary['reconciliation_blockers'],
+            'unfinished' => (int) $summary['unfinished'],
+        ];
     }
 
     /** @param Collection<int|string, mixed> $rows @return array<string, float> */
