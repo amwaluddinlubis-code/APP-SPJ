@@ -377,6 +377,60 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
         }
     }
 
+    public function test_numbered_effective_context_package_remains_locked_for_category_change(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-numbered-category-lock.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->stalePackage($db, 'NUMBERED');
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $beforeCategory = (string) $db->table('transactions')
+                ->where('id', $row->legacy_transaction_id)
+                ->value('spj_category');
+            $legacyFiscalYearId = (int) $db->table('transactions')
+                ->where('id', $row->legacy_transaction_id)
+                ->value('fiscal_year_id');
+
+            $request = Request::create('/spj/category', 'PUT', [
+                'spj_category' => $beforeCategory === 'BARANG' ? 'JASA_LAINNYA' : 'BARANG',
+            ]);
+            $request->headers->set('Accept', 'application/json');
+
+            $response = app(SpjPackageCategoryUseCase::class)->switchCategory(
+                (string) $row->package_id,
+                $request,
+            );
+
+            $this->assertSame(422, $response->getStatusCode());
+            $this->assertSame(
+                $beforeCategory,
+                (string) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('spj_category'),
+            );
+            $this->assertSame(
+                $legacyFiscalYearId,
+                (int) $db->table('transactions')->where('id', $row->legacy_transaction_id)->value('fiscal_year_id'),
+            );
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $row->package_id)->value('status'));
+            $this->assertSame(
+                0,
+                $db->table('operational_audit_logs')
+                    ->where('entity_type', 'SPJ_PACKAGE')
+                    ->where('entity_id', (string) $row->package_id)
+                    ->where('action', 'UBAH_KATEGORI')
+                    ->count(),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_workspace_exposes_dedicated_overlay_editor_without_normalizing_fiscal_year(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-overlay-editor.sqlite');
