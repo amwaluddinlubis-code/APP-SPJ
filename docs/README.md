@@ -74,9 +74,12 @@ full-legacy rehearsal pada clone terisolasi; keduanya bukan bukti production
 migration atau read-path cutover.
 
 `V2_D_READ_PATH_CUTOVER.md` adalah guide aktif untuk shadow parity, canonical
-read adapter, Paket/document relation bridge, dan controlled read-path cutover.
-D1 memiliki evidence lokal; D2 source adapter sudah diimplementasikan tetapi
-runtime regression masih RVR. Dokumen ini bukan bukti production cutover.
+read adapter, Paket/document relation bridge, downstream report/tax/period parity,
+dan controlled read-path cutover. D1, D2, D3, serta downstream workflow parity
+sudah memiliki focused runtime evidence pada isolated rehearsal. Dokumen ini
+bukan bukti production cutover; authorization/active-context cutover regression,
+rollback, dan write-through/overlay transition masih harus ditutup sebelum
+consumer mutation-heavy membaca canonical V2 secara production.
 
 ## Feature verification / RVR aktif
 
