@@ -128,7 +128,7 @@ final class SpjV2CanonicalReadService
             ->values()
             ->all();
 
-        $taxByParent = $this->taxByParent($db, $sourceId, $allSourceKeys);
+        $taxByParent = $this->taxBreakdownByParent($db, $sourceId, $allSourceKeys);
         $notaById = $this->notaById($db, $sourceId);
 
         return $transactions->map(function (object $transaction) use ($overlays, $provenance, $sourceRows, $taxByParent, $notaById): array {
@@ -161,12 +161,15 @@ final class SpjV2CanonicalReadService
                 return $this->amount($payload);
             });
 
-            $tax = (float) $items->sum(function (array $item) use ($taxByParent): float {
+            $taxes = ['ppn' => 0.0, 'pph21' => 0.0, 'pph22' => 0.0, 'pph23' => 0.0, 'pph4' => 0.0, 'sspd' => 0.0];
+            foreach ($items as $item) {
                 $payload = $item['payload'];
                 $parentKey = trim((string) ($payload['id_kas_umum'] ?? $item['source_key']));
-
-                return (float) ($taxByParent[$parentKey] ?? 0.0);
-            });
+                foreach (array_keys($taxes) as $taxField) {
+                    $taxes[$taxField] += (float) ($taxByParent[$parentKey][$taxField] ?? 0.0);
+                }
+            }
+            $tax = (float) array_sum($taxes);
 
             $notaId = $this->firstSourceValue($items, ['id_kas_nota']);
             $recipient = $this->firstSourceValue($items, ['nama_penerima', 'penerima', 'recipient_name']);
@@ -203,6 +206,12 @@ final class SpjV2CanonicalReadService
                 'activity_code' => $this->firstSourceValue($items, ['kode_kegiatan', 'activity_code']),
                 'recipient_name' => $recipient,
                 'gross_amount' => $gross,
+                'ppn' => $taxes['ppn'],
+                'pph21' => $taxes['pph21'],
+                'pph22' => $taxes['pph22'],
+                'pph23' => $taxes['pph23'],
+                'pph4' => $taxes['pph4'],
+                'sspd' => $taxes['sspd'],
                 'tax_total' => $tax,
                 'net_amount' => $gross - $tax,
                 'overlay' => [
@@ -220,9 +229,9 @@ final class SpjV2CanonicalReadService
 
     /**
      * @param array<int, string> $sourceKeys
-     * @return array<string, float>
+     * @return array<string, array{ppn: float, pph21: float, pph22: float, pph23: float, pph4: float, sspd: float}>
      */
-    private function taxByParent(Connection $db, int $sourceId, array $sourceKeys): array
+    private function taxBreakdownByParent(Connection $db, int $sourceId, array $sourceKeys): array
     {
         if ($sourceKeys === []) {
             return [];
@@ -249,10 +258,35 @@ final class SpjV2CanonicalReadService
                 continue;
             }
 
-            $taxes[$parent] = ($taxes[$parent] ?? 0.0) + $this->amount($payload);
+            $taxes[$parent] ??= ['ppn' => 0.0, 'pph21' => 0.0, 'pph22' => 0.0, 'pph23' => 0.0, 'pph4' => 0.0, 'sspd' => 0.0];
+            $field = $this->taxField($payload);
+            if ($field !== null) {
+                $taxes[$parent][$field] += $this->amount($payload);
+            }
         }
 
         return $taxes;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function taxField(array $payload): ?string
+    {
+        foreach ([
+            'ppn' => ['is_ppn'],
+            'pph21' => ['is_pph_21', 'is_pph21'],
+            'pph22' => ['is_pph_22', 'is_pph22'],
+            'pph23' => ['is_pph_23', 'is_pph23'],
+            'pph4' => ['is_pph_4', 'is_pph4'],
+            'sspd' => ['is_sspd'],
+        ] as $field => $keys) {
+            foreach ($keys as $key) {
+                if ((int) ($payload[$key] ?? 0) === 1) {
+                    return $field;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
