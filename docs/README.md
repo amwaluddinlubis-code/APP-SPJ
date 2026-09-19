@@ -73,6 +73,11 @@ identity 56 tabel raw mirror, dan additive V2-B proposal.
 full-legacy rehearsal pada clone terisolasi; keduanya bukan bukti production
 migration atau read-path cutover.
 
+`V2_D_READ_PATH_CUTOVER.md` adalah guide aktif untuk shadow parity, canonical
+read adapter, Paket/document relation bridge, dan controlled read-path cutover.
+D1 memiliki evidence lokal; D2 source adapter sudah diimplementasikan tetapi
+runtime regression masih RVR. Dokumen ini bukan bukti production cutover.
+
 ## Feature verification / RVR aktif
 
 | Dokumen | Status |
