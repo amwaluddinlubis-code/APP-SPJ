@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjTransactionDetailsService;
+use App\Services\SpjV2MutationContextService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,18 +19,24 @@ class UpdateSpjPackageDetailsUseCase
         private readonly SpjDescriptionService $descriptions,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
+        private readonly SpjV2MutationContextService $mutationContext,
     ) {}
 
     public function handle(string $packageId, Request $request): RedirectResponse
     {
         $package = SpjPackage::query()->with('transaction')->find($packageId);
-        if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
+        if (! $package || ! $this->mutationContext->authorizePackageWrite($package)) {
             return redirect()
                 ->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])
                 ->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, atau sumber dana aktif.');
         }
 
+        $mutationMetadata = $this->mutationContext->packageContext($package);
         if ($package->status === 'NUMBERED') {
+            if (($mutationMetadata['path'] ?? null) === 'v2_compat') {
+                return back()->with('error', 'Koreksi Paket NUMBERED pada effective-context belum dibuka. Gunakan jalur legacy sampai gate lifecycle berikutnya.');
+            }
+
             return $this->updateNumberedDescriptions($package, $request);
         }
 
@@ -73,7 +80,7 @@ class UpdateSpjPackageDetailsUseCase
         }
 
         $this->audit->record(
-            $package->transaction->fiscal_year_id,
+            $this->context->fiscalYearId(),
             'SPJ_PACKAGE',
             $package->id,
             'PERBARUI_ISIAN',
