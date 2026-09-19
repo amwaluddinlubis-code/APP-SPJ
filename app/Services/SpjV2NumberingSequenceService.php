@@ -100,6 +100,8 @@ final class SpjV2NumberingSequenceService
             });
         } catch (QueryException) {
             return $blocked('SEQUENCE_COLLISION', 'sequence reservation collided with another owner; no reservation was accepted');
+        } catch (\RuntimeException) {
+            return $blocked('SEQUENCE_COLLISION', 'sequence candidate is already occupied; no reservation was accepted');
         } catch (\Throwable) {
             return $blocked('RESERVATION_FAILED', 'sequence reservation failed atomically');
         }
@@ -265,7 +267,7 @@ final class SpjV2NumberingSequenceService
     private function documentSequenceOccupied(object $db, array $context, string $documentType, int $candidate): bool
     {
         if (! $db->getSchemaBuilder()->hasTable('spj_transactions')) {
-            throw new \RuntimeException('canonical V2 transaction schema is unavailable');
+            throw new \LogicException('canonical V2 transaction schema is unavailable');
         }
 
         $rows = $db->table('spj_documents as documents')
@@ -290,7 +292,7 @@ final class SpjV2NumberingSequenceService
     private function maxDocumentSequence(object $db, array $context, string $documentType): int
     {
         if (! $db->getSchemaBuilder()->hasTable('spj_transactions')) {
-            throw new \RuntimeException('canonical V2 transaction schema is unavailable');
+            throw new \LogicException('canonical V2 transaction schema is unavailable');
         }
 
         $rows = $db->table('spj_documents as documents')

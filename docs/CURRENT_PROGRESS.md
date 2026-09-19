@@ -986,4 +986,11 @@ deprecations**; related V2-D + legacy numbering/lifecycle evidence **68 tests /
 source + document type + period_key`; reservation atomic/idempotent dan tidak
 menerbitkan document number. Actual effective-context issuance tetap
 **BLOCKED / DEFERRED** sampai atomic end-to-end issuance, completeness/post-
-condition, dan effective audit trail.
+condition, dan effective audit trail. Follow-up hardening: schema-unavailable
+kini dipetakan ke `RESERVATION_FAILED` (bukan `SEQUENCE_COLLISION`) dan
+candidate occupied tetap `SEQUENCE_COLLISION`; collision regression memakai
+seed deterministik + unique-constraint proof tanpa mock final service.
+`V2DPackageOverlayWriteCutoverTest` 15 test / 248 assertions PASS; related
+mutation/rollback/policy 19 test / 184 assertions PASS dan
+lifecycle/correction/workflow 23 test / 104 assertions PASS. Pint,
+`view:cache`, `npm run build`, dan `git diff --check` bersih.

@@ -16,6 +16,7 @@ use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
 use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
 use Illuminate\Database\Connection;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -533,10 +534,80 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $this->assertSame('BLOCKED', $duplicateIntent['status']);
             $this->assertSame(1, $db->table('spj_v2_numbering_reservations')->count());
 
-            $completed = $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', 1);
+            // Deterministic competing-reservation coverage without requiring a
+            // second authorization-valid Paket in the same scope (the isolated
+            // fixture exposes a single stale Paket per effective scope).
+            // Occupy candidate sequence 2, prove the service fails closed,
+            // then release the seed and continue on the freed slot.
+            $reservation = $db->table('spj_v2_numbering_reservations')->where('id', $reserved['reservation_id'])->first();
+            $this->assertNotNull($reservation);
+            $db->table('spj_v2_numbering_reservations')->where('id', $reserved['reservation_id'])->delete();
+            $seedTransaction = (array) $db->table('transactions')->where('id', $row->legacy_transaction_id)->first();
+            unset($seedTransaction['id']);
+            $seedTransaction['no_bukti'] = 'COLLISION-SEED-'.$row->package_id;
+            $seedTransaction['source_key'] = 'COLLISION-SEED-'.$row->package_id;
+            $seedTransaction['created_at'] = now();
+            $seedTransaction['updated_at'] = now();
+            $seedTransactionId = $db->table('transactions')->insertGetId($seedTransaction);
+            $seedPackageId = $db->table('spj_packages')->insertGetId([
+                'transaction_id' => $seedTransactionId,
+                'spj_transaction_id' => null,
+                'status' => 'READY',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $db->table('spj_v2_numbering_reservations')->insert([
+                'spj_package_id' => $seedPackageId,
+                'effective_fiscal_year_id' => $reservation->effective_fiscal_year_id,
+                'fund_source_id' => $reservation->fund_source_id,
+                'effective_quarter' => $reservation->effective_quarter,
+                'document_type' => 'SPJ',
+                'scope_key' => 'MAIN',
+                'period_key' => $reservation->period_key,
+                'context_key' => $reservation->context_key,
+                'intent_key' => 'v2-sequence-collision-seed',
+                'sequence_number' => 2,
+                'status' => 'RESERVED',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            // Storage-level proof: the sequence tuple is unique.
+            try {
+                $db->table('spj_v2_numbering_reservations')->insert([
+                    'spj_package_id' => (int) $package->id,
+                    'effective_fiscal_year_id' => $reservation->effective_fiscal_year_id,
+                    'fund_source_id' => $reservation->fund_source_id,
+                    'effective_quarter' => $reservation->effective_quarter,
+                    'document_type' => 'SPJ',
+                    'scope_key' => 'MAIN',
+                    'period_key' => $reservation->period_key,
+                    'context_key' => $reservation->context_key,
+                    'intent_key' => 'v2-sequence-collision-duplicate-tuple',
+                    'sequence_number' => 2,
+                    'status' => 'RESERVED',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $this->fail('Duplicate effective sequence tuple must violate the unique constraint.');
+            } catch (QueryException) {
+                $this->assertTrue(true);
+            }
+            $collision = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-collision-attempt');
+            $this->assertSame('BLOCKED', $collision['status'], json_encode($collision, JSON_THROW_ON_ERROR));
+            $this->assertSame('SEQUENCE_COLLISION', $collision['error_code'], json_encode($collision, JSON_THROW_ON_ERROR));
+            $this->assertSame(1, (int) $db->table('document_number_sequences')->where('format_name', 'SPJ')->value('last_number'));
+            $db->table('spj_v2_numbering_reservations')->where('intent_key', 'v2-sequence-collision-seed')->delete();
+            $db->table('spj_packages')->where('id', $seedPackageId)->delete();
+            $db->table('transactions')->where('id', $seedTransactionId)->delete();
+            $this->assertSame(0, $db->table('spj_v2_numbering_reservations')->count());
+            $reserved = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1');
+            $this->assertSame('RESERVED', $reserved['status'], json_encode($reserved, JSON_THROW_ON_ERROR));
+            $sequenceNumber = (int) $reserved['sequence_number'];
+
+            $completed = $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', $sequenceNumber);
             $this->assertSame('COMPLETED', $completed['status']);
-            $this->assertSame('COMPLETED', $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', 1)['status']);
-            $this->assertSame('BLOCKED', $service->complete($package, 'SPJ', 'MAIN', 'wrong-intent', 1)['status']);
+            $this->assertSame('COMPLETED', $service->complete($package, 'SPJ', 'MAIN', 'v2-sequence-intent-1', $sequenceNumber)['status']);
+            $this->assertSame('BLOCKED', $service->complete($package, 'SPJ', 'MAIN', 'wrong-intent', $sequenceNumber)['status']);
 
             config()->set('spj.v2_read_path', 'legacy');
             $legacyPath = $service->reserve($package, 'SPJ', 'MAIN', 'v2-sequence-intent-legacy-path');
@@ -557,7 +628,7 @@ final class V2DPackageOverlayWriteCutoverTest extends TestCase
             $this->assertSame($before['legacy_fiscal_year_id'], $after['legacy_fiscal_year_id']);
             $this->assertSame($before['status'], $after['status']);
             $this->assertSame($before['documents'], $after['documents']);
-            $this->assertSame(1, (int) $db->table('document_number_sequences')->where('format_name', 'SPJ')->value('last_number'));
+            $this->assertSame($sequenceNumber, (int) $db->table('document_number_sequences')->where('format_name', 'SPJ')->value('last_number'));
         } finally {
             File::delete($target);
         }
