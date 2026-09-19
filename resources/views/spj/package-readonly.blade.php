@@ -17,6 +17,9 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket'])">← Daftar Paket</x-ui.button>
             <div class="flex flex-wrap items-center gap-2">
+                @if($package->isEditable())
+                    <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $package->id, 'edit' => 1])">Edit Isian Manual</x-ui.button>
+                @endif
                 @if($package->status === 'DRAFT')
                     <x-ui.button variant="secondary" :href="route('spj.checklist', $package->id)">Buka Checklist</x-ui.button>
                 @endif
@@ -26,7 +29,7 @@
 
         <section class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
             <p class="font-bold">Paket dibuka dalam mode baca effective-context.</p>
-            <p class="mt-1">Data sumber legacy tidak diubah. Isian manual, penomoran, dan lifecycle lain tetap tidak tersedia. Paket DRAFT hanya dapat dipromosikan ke READY melalui Checklist setelah effective-context authorization dan seluruh validasi lulus.</p>
+            <p class="mt-1">Data sumber legacy tidak diubah. DRAFT/READY dapat membuka editor overlay khusus setelah effective-context authorization; penomoran dan lifecycle lanjutan tetap tidak tersedia. Paket DRAFT hanya dapat dipromosikan ke READY melalui Checklist setelah seluruh validasi lulus.</p>
         </section>
 
         @include('spj.partials.package.transaction-summary')
