@@ -73,6 +73,10 @@ Paket existing berada pada deterministic stale-legacy-fiscal-year transition
 tanpa fund-source mismatch atau unsafe bridge. Karena itu membership read untuk
 Paket/list selama transisi harus berasal dari effective canonical context +
 provenance bridge, bukan dari legacy `transactions.fiscal_year_id` saja.
+`SpjV2PackageReadMembershipService` menyediakan identity-only compatibility
+membership di belakang selector; ia tidak mengganti relation
+`SpjPackage::transaction()`. UI Paket/report belum memakai membership ini sampai
+open/preview/download context guard juga memahami effective-context provenance.
 
 ### Database utama
 
