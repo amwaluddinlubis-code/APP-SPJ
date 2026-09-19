@@ -34,6 +34,7 @@ final class V2DWorkflowParityTest extends TestCase
             $this->assertSame(0, $result['reports']['mismatch_count'], $this->diagnostic($result));
             $this->assertSame(0, $result['taxes']['mismatch_count'], $this->diagnostic($result));
             $this->assertSame(0, $result['period_workflow']['mismatch_count'], $this->diagnostic($result));
+            $this->assertSame(1, $result['period_workflow']['representation_delta_count'], $this->diagnostic($result));
             $this->assertSame(0, $result['activity_realization']['mismatch_count'], $this->diagnostic($result));
             $this->assertSame(0, $result['account_realization']['mismatch_count'], $this->diagnostic($result));
             $this->assertSame(19, $result['reports']['period_windows_checked_per_context']);
@@ -53,6 +54,18 @@ final class V2DWorkflowParityTest extends TestCase
             $this->migrateAndProject();
 
             $db = DB::connection('school');
+            $canonicalSourceKeys = $db->table('spj_transaction_sources as source_link')
+                ->join('spj_transactions as transaction', 'transaction.id', '=', 'source_link.spj_transaction_id')
+                ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'source_link.arkas_source_identity_id')
+                ->where('transaction.canonical_context_status', 'ACTIVE_CANONICAL')
+                ->pluck('identity.source_key')
+                ->map(fn ($key): string => trim((string) $key))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $this->assertNotEmpty($canonicalSourceKeys);
+
             $taxRow = $db->table('arkas_raw_mirror_rows as raw')
                 ->join('arkas_raw_mirror_tables as mirror_table', 'mirror_table.id', '=', 'raw.mirror_table_id')
                 ->where('mirror_table.source_id', 1)
@@ -60,9 +73,11 @@ final class V2DWorkflowParityTest extends TestCase
                 ->where('mirror_table.status', 'ACTIVE')
                 ->whereRaw("CAST(COALESCE(json_extract(raw.payload, '$.id_ref_bku'), 0) AS INTEGER) IN (10, 30)")
                 ->whereRaw("CAST(COALESCE(json_extract(raw.payload, '$.is_ppn'), 0) AS INTEGER) = 1")
+                ->whereRaw("ABS(CAST(COALESCE(json_extract(raw.payload, '$.saldo'), json_extract(raw.payload, '$.jumlah'), json_extract(raw.payload, '$.nilai'), 0) AS REAL)) > 0.01")
+                ->whereIn(DB::raw("json_extract(raw.payload, '$.parent_id_kas_umum')"), $canonicalSourceKeys)
                 ->select(['raw.id', 'raw.payload'])
                 ->first();
-            $this->assertNotNull($taxRow, 'Expected at least one PPN tax row in the rehearsal raw mirror.');
+            $this->assertNotNull($taxRow, 'Expected at least one non-zero PPN row attached to a canonical source transaction.');
 
             $payload = json_decode((string) $taxRow->payload, true, 512, JSON_THROW_ON_ERROR);
             $payload['is_ppn'] = 0;
