@@ -608,7 +608,7 @@ Honor/Jasa overlays on an isolated clone, pinned to a real
 - protected transaction/Paket/document lifecycle state is not mutated by the
   read-context flow.
 
-Runtime evidence for D4 step 9 is currently **RVR**.
+Runtime evidence on 2026-09-19: focused gate `V2DExtendedReportContextCutoverTest`, `V2DReportSummaryCutoverTest`, `V2DReportPackageListCutoverTest`, `V2DPackageReadMembershipTest`, and `SpjMainTabsRenderingTest` PASS with **20 tests / 241 assertions / 20 deprecations**. `vendor/bin/pint --dirty --format agent` PASS and `git diff --check` clean. D4 step 9 is therefore **RUNTIME PASS**.
 
 A production switch requires all of the following:
 
