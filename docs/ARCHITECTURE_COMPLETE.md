@@ -658,3 +658,17 @@ The initial consumer is deliberately narrow: Checklist plus
 Numbering, package detail writes, settlement, cancel/replace, FINAL/bulk FINAL,
 Monitoring mutation actions, and fiscal-period mutations remain
 legacy-authoritative until separate write gates exist.
+
+Step 11B extends the transitional mutation bridge only to editable Paket operator
+overlays. `SpjV2MutationContextService::authorizePackageWrite()` proves the same
+effective identity/source boundary as Step 11A but intentionally leaves legacy
+`transaction.fiscal_year_id` untouched, including in-memory. The existing
+legacy Transaction and category-specific SPJ relations remain the only write
+owner.
+
+Stale-context DRAFT/READY packages use a dedicated
+`spj.package-compat-edit` surface rather than the full package workspace. This
+prevents read compatibility from implicitly authorizing numbering, FINAL,
+settlement, bulk-final, period mutations, or maintenance material/labor linkage.
+NUMBERED effective-context overlay correction remains closed until a separate
+lifecycle gate exists.
