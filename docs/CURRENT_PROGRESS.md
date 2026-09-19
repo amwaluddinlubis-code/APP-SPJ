@@ -769,8 +769,15 @@ ditandai `Baca saja`. Pending transaction, activities/accounts, monitoring,
 export, settlement, numbering, lifecycle, dan mutation lain tetap legacy.
 `V2DReportSummaryCutoverTest` dipromosikan dari stale-context fallback menjadi
 effective-context compatibility, dan regression baru
-`V2DReportPackageListCutoverTest` ditambahkan. Runtime evidence step 8 masih
-**RVR**.
+`V2DReportPackageListCutoverTest` ditambahkan.
+
+Percobaan runtime pertama Step 8 gagal pada wiring DI, bukan pada assertion parity:
+**8 failure / 627 assertions / 34 deprecations** karena
+`ExtendedSpjReportUseCase` masih memanggil parent constructor dengan 2
+dependency setelah `SpjReportUseCase` membutuhkan
+`SpjV2PackageReadMembershipService` sebagai dependency ketiga. Commit
+`956ae6c2` memperbaiki constructor subclass dan meneruskan dependency tersebut.
+Gate harus dijalankan ulang. Runtime evidence step 8 tetap **RVR**.
 
 ---
 
