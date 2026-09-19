@@ -8,16 +8,21 @@ use App\Models\SpjHonor;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\DocumentStoragePathService;
+use App\Services\SpjV2ReportFinancialSummaryService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class SpjReportUseCase
 {
-    public function __construct(private readonly ActiveSpjContext $context) {}
+    public function __construct(
+        private readonly ActiveSpjContext $context,
+        private readonly SpjV2ReportFinancialSummaryService $v2FinancialSummary,
+    ) {}
 
     public function tabLaporan(Request $request): View
     {
@@ -29,7 +34,7 @@ class SpjReportUseCase
         $pendingPerPage = $pendingPerPageRaw === 'all' ? 10000 : (int) $pendingPerPageRaw;
         $pendingPerPage = in_array($pendingPerPage, [15, 25, 50, 100, 10000]) ? $pendingPerPage : 15;
 
-        [$packages, $summary] = $this->report($request, $perPage, $pendingPerPage);
+        [$packages, $summary] = $this->report($request, $perPage, $pendingPerPage, true);
         $pendingPaginator = $summary['pending_transactions'];
 
         return view('spj.index', [
@@ -101,7 +106,7 @@ class SpjReportUseCase
      */
     public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15): array
     {
-        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage);
+        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage, true);
     }
 
     public function export(Request $request, string $format)
@@ -208,7 +213,12 @@ class SpjReportUseCase
         return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PEMBAYARAN-HONOR-'.$year->year.'.xlsx', (int) $year->year);
     }
 
-    private function report(Request $request, ?int $perPage = null, ?int $pendingPerPage = null): array
+    private function report(
+        Request $request,
+        ?int $perPage = null,
+        ?int $pendingPerPage = null,
+        bool $allowV2FinancialSummary = false,
+    ): array
     {
         $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
         $transactionFilter = fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year);
@@ -277,8 +287,7 @@ class SpjReportUseCase
             ->whereHas('documents', fn ($document) => $document->where(['document_type' => 'SPJ', 'scope_key' => 'MAIN', 'status' => 'CANCELLED']))
             ->count();
 
-        return [$packages, [
-            'year' => $year->year,
+        $financialSummary = [
             'count' => (int) $successfulSummary->aggregate_count,
             'cancelled_count' => $cancelledCount,
             'gross' => (float) $successfulSummary->gross,
@@ -290,6 +299,29 @@ class SpjReportUseCase
             'pph23' => (float) $successfulSummary->pph23,
             'pph4' => (float) $successfulSummary->pph4,
             'sspd' => (float) $successfulSummary->sspd,
+        ];
+        $readPath = 'legacy';
+
+        if ($allowV2FinancialSummary) {
+            [$mode, $periode] = self::resolveModePeriode($request->all());
+            $v2Summary = $this->v2FinancialSummary->forContext(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                (int) $this->context->fundSourceId(),
+                (int) $year->year,
+                $mode,
+                $periode,
+            );
+            if ($v2Summary !== null) {
+                $financialSummary = array_intersect_key($v2Summary, $financialSummary);
+                $readPath = 'v2';
+            }
+        }
+
+        return [$packages, [
+            'year' => $year->year,
+            ...$financialSummary,
+            'read_path' => $readPath,
             'pending_transactions' => $pendingTransactions,
             'activities' => $activities,
             'accounts' => $accounts,
