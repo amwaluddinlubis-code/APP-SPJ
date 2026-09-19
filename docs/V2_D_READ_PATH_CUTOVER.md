@@ -784,6 +784,69 @@ pre-numbering, and transaction-detail authorization regressions.
 Production configuration remains `SPJ_V2_READ_PATH=legacy` because Step 11B+
 write-path gates are still pending.
 
+### D4 step 11B — legacy-authoritative package overlay writes
+
+After Step 11A proved the narrow DRAFT -> READY mutation boundary, Step 11B
+extends effective-context authorization only to operator-owned Paket overlay
+fields on editable packages.
+
+The write owner deliberately remains the existing legacy Transaction and SPJ
+relations. V2 is used to authorize identity/context/source parity; it is not a
+second write target and no dual-write is introduced in this step.
+
+`SpjV2MutationContextService::authorizePackageWrite()` is distinct from the
+Step 11A `preparePackage()` path:
+
+- it requires the same unique V2 source, exact Paket/provenance bridge, fund
+  source, reconciliation, and live canonical source-fact checks;
+- it attaches only transient `v2MutationContext` relation metadata;
+- it **does not normalize `transactions.fiscal_year_id`, even in memory**;
+- therefore subsequent legacy Transaction/child-relation `save()` operations
+  cannot accidentally persist an effective fiscal year into the legacy row.
+
+The initial write consumers are deliberately limited to:
+
+1. `UpdateSpjPackageDetailsUseCase` for DRAFT/READY operator overlay fields and
+   category-specific legacy relations;
+2. `SpjPackageCategoryUseCase` for category changes, including the existing
+   READY -> DRAFT revalidation rule.
+
+Audit rows for these effective-context writes use the active effective fiscal
+year, while the legacy transaction keeps its original fiscal-year id.
+
+A dedicated `spj.package-compat-edit` surface is used instead of exposing the
+full Paket workspace. It reuses the canonical Paket form partials but does not
+render the Penomoran tab or lifecycle controls. The compatibility editor:
+
+- is available only for `SpjPackage::isEditable()` (DRAFT/READY);
+- writes through the existing `spj.update` endpoint/use cases;
+- keeps ARKAS/BKU source facts and tax values readonly;
+- hides maintenance material/labor linkage mutation because that endpoint has
+  not yet received effective-context authorization;
+- skips normal JS refresh of validation/documents/numbering panels after category
+  switch because those panels are intentionally absent;
+- leaves Preview/Download on the separate read-compatible surface.
+
+NUMBERED effective-context Paket remain blocked from Paket-overlay writes in
+Step 11B, including the historical payment-description carve-out. That carve-out
+continues only on the legacy-aligned path until a later lifecycle-specific gate
+proves it safe. FINAL/CANCELLED remain locked.
+
+`V2DPackageOverlayWriteCutoverTest` is staged to prove:
+
+- stale DRAFT Paket can save operator overlay fields after V2 authorization;
+- persisted legacy `fiscal_year_id` remains unchanged;
+- source-owned facts, Paket status, and documents remain unchanged by a normal
+  DRAFT overlay save;
+- `PERBARUI_ISIAN` audit uses the effective fiscal year;
+- READY category change still demotes to DRAFT and leaves legacy context intact;
+- config rollback to `legacy` immediately blocks stale-context overlay writes;
+- NUMBERED effective-context Paket remain locked;
+- the dedicated editor keeps legacy fiscal year in memory and does not expose
+  numbering/bulk-final controls or maintenance-link mutation.
+
+Runtime evidence for D4 step 11B is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
