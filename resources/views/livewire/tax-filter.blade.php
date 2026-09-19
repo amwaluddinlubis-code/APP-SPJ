@@ -94,7 +94,14 @@
                 <tbody class="divide-y divide-[var(--ui-line)]">
                     @forelse($transactions as $transaction)
                         <tr wire:key="tax-row-{{ $transaction->id }}" class="transition hover:bg-amber-50/50">
-                            <td class="px-5 py-4"><a href="{{ route('transactions.show', $transaction) }}" class="font-mono font-bold text-indigo-700">{{ $transaction->no_bukti }}</a><p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? '-' }}</p></td>
+                            <td class="px-5 py-4">
+                                @php($taxDetailIdentifier = $transaction->getAttribute('read_context_path') === 'v2_compat' ? $transaction->source_key : $transaction)
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <a href="{{ route('transactions.show', $taxDetailIdentifier) }}" class="font-mono font-bold text-indigo-700">{{ $transaction->no_bukti }}</a>
+                                    @if($transaction->getAttribute('read_context_path') === 'v2_compat')<x-ui.status-badge status="READY" label="Baca saja" size="xs" />@endif
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? '-' }}</p>
+                            </td>
                             <td class="max-w-xs px-4 py-4"><p class="truncate font-semibold text-slate-800">{{ $transaction->recipient_name ?: 'Penerima belum diisi' }}</p><p class="mt-1 truncate text-xs text-slate-500">{{ $transaction->description ?: 'Tanpa uraian' }}</p></td>
                             <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($transaction->ppn) }}</td>
                             <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($transaction->pph21) }}</td>
