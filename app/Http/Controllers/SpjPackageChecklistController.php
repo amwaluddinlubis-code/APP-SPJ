@@ -48,7 +48,8 @@ class SpjPackageChecklistController extends Controller
         $requirementSummary = $requirements->summary($package->transaction);
 
         $canEdit = in_array(auth()->user()?->role, [User::ROLE_ADMIN, User::ROLE_OPERATOR], true);
-        $isEffectiveContextMutation = $package->getAttribute('mutation_context_path') === 'v2_compat';
+        $mutationMetadata = $mutationContext->packageContext($package);
+        $isEffectiveContextMutation = ($mutationMetadata['path'] ?? null) === 'v2_compat';
         $canMarkReady = $canEdit
             && $package->status === 'DRAFT'
             && $remainingChecks === 0
