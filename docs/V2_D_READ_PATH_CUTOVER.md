@@ -469,7 +469,51 @@ Regression `V2DPackageWorkspaceReadOnlyTest` is staged to prove:
 - a wrong-but-valid Paket bridge remains fail-closed;
 - protected transaction/Paket/document state remains unchanged.
 
-Runtime evidence for D4 step 6 is currently **RVR**.
+Runtime evidence on 2026-09-19: focused gate
+`V2DPackageReadMembershipTest`, `V2DPackageReadContextTest`,
+`V2DPackageWorkspaceReadOnlyTest`, `SpjPackageNavigationContextTest`,
+`SpjMainTabsRenderingTest`, `SpjDocumentGeneratorHardeningTest`, and
+`SpjPreviewExcelParityTest` PASS with **25 tests / 351 assertions / 25
+deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
+`git diff --check` clean. D4 step 6 is therefore **RUNTIME PASS**.
+
+### D4 step 7 — Paket list membership cutover
+
+Source implementation now switches the read-only Paket list membership and Paket
+summary counters through `SpjV2PackageReadMembershipService` when
+`SPJ_V2_READ_PATH=v2` and the effective context is fully resolved.
+
+The cutover remains deliberately narrow:
+
+- `SpjWorkspaceUseCase::packageListData()` uses exact effective-context
+  `package_ids` when available;
+- `overviewMetrics()` uses the same package membership query for
+  `totalPackages` and `numberedPackages`, preventing a zero legacy summary
+  above a non-empty V2 Paket list;
+- `readyTransactions`, Persiapan, legacy previous/next navigation, transaction
+  mutation, numbering, lifecycle, and settlement queries remain legacy;
+- each listed row is tagged in-memory as `legacy` or `v2_compat`;
+- V2-compatible rows are visibly labelled **Baca saja** / **Buka baca**;
+- opening a `v2_compat` row continues into the dedicated Step 6 read-only
+  workspace, not the mutation-heavy workspace;
+- unresolved/unsafe membership still falls back immediately to the legacy Paket
+  query;
+- rollback remains config-only by setting `SPJ_V2_READ_PATH=legacy`.
+
+Regression `V2DPackageListCutoverTest` is staged to prove:
+
+- paginator membership equals the direct ACTIVE_CANONICAL Paket bridge for the
+  active effective context;
+- Paket total/numbered metrics use the same membership as the list;
+- every stale row is tagged `v2_compat`;
+- legacy config removes stale-context Paket from the list immediately;
+- switching `legacy -> v2` restores the same membership without data repair;
+- wrong-but-valid Paket bridge falls back to legacy and does not expose the stale
+  Paket;
+- list rendering adds read-only labels without adding mutation routes;
+- list/metric reads do not mutate protected transaction/Paket/document state.
+
+Runtime evidence for D4 step 7 is currently **RVR**.
 
 A production switch requires all of the following:
 
