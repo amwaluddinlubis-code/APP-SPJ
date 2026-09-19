@@ -569,7 +569,9 @@ Regression work:
 
 Initial runtime attempt on 2026-09-19 did **not** pass: the focused gate ended with **8 failures / 627 assertions / 34 deprecations** because `ExtendedSpjReportUseCase` still called the parent `SpjReportUseCase` constructor with two dependencies after Step 8 added `SpjV2PackageReadMembershipService` as the third dependency. This was a DI wiring regression, not a report-parity assertion failure. Commit `956ae6c2` updates the subclass constructor and forwards the membership service to the parent. A clean rerun is required before Step 8 can be promoted.
 
-Runtime evidence for D4 step 8 remains **RVR**.
+Clean rerun after the DI fix passed on 2026-09-19 with **42 tests / 711 assertions /
+42 deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
+`git diff --check` clean. D4 step 8 is therefore **RUNTIME PASS**.
 
 A production switch requires all of the following:
 
