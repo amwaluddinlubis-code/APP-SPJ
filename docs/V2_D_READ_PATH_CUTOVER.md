@@ -254,6 +254,47 @@ Paket/document lifecycle data merely to enable cutover. The next D4 task is a
 read-only compatibility/context strategy that can prove equivalence from the
 provenance bridge before any broader consumer is switched.
 
+### D4 step 3 — effective-context compatibility audit/resolver
+
+Source implementation now adds `SpjV2EffectiveContextCompatibilityService`.
+This service is read-only and does not modify legacy transaction context, Paket,
+documents, numbering, snapshots, or V2 rows.
+
+It has two responsibilities:
+
+1. `audit()` inventories every legacy provenance row and all existing Paket,
+   classifying Paket as `ALIGNED`, `STALE_LEGACY_FISCAL_YEAR`, or `UNSAFE`;
+2. `resolve()` resolves one explicit
+   `fiscal_year_id + fund_source_id + source_id` canonical context back to its
+   deterministic legacy provenance and Paket set.
+
+Resolver rules:
+
+- canonical target must be `ACTIVE_CANONICAL`;
+- fund source must remain identical across legacy and effective context;
+- `LEGACY_DUPLICATE` provenance may participate only when it targets the same
+  ACTIVE_CANONICAL transaction;
+- missing provenance, cross-context provenance, wrong Paket bridge, or more than
+  one Paket targeting the same canonical transaction blocks the resolver;
+- stale legacy `fiscal_year_id` is reported explicitly but never rewritten;
+- missing V2 schema returns `UNAVAILABLE`; no source/context identity is guessed.
+
+Regression `V2DEffectiveContextCompatibilityTest` uses the real isolated Tenant A
+fixture and is intended to prove:
+
+- all 67 Paket / 66 NUMBERED are inventoried;
+- stale legacy fiscal-year rows are surfaced;
+- duplicate provenance remains deterministic when bridge-safe;
+- package sets cannot leak across effective contexts;
+- a synthetic wrong Paket bridge fails closed;
+- audit/resolver execution does not mutate legacy transaction/Paket/document
+  state;
+- missing V2 schema fails unavailable.
+
+The test writes its exact audit inventory to
+`storage/app/v2-c-rehearsal/reports/test-v2d-effective-context-compatibility.json`
+for local inspection. Runtime evidence for D4 step 3 is currently **RVR**.
+
 A production switch requires all of the following:
 
 - V2-C3 semantic verify PASS;
