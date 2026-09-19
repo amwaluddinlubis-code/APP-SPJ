@@ -131,7 +131,10 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] jalankan focused D4 consumer gate: 16 test / 354 assertions PASS; Pint + diff-check bersih;
 - [x] tutup authorization + active-context runtime evidence consumer read-only pertama;
 - [x] rollback strategy documented + tested pada selector/consumer fail-safe;
-- [ ] audit dan selesaikan akar live legacy `ActiveSpjContext` vs canonical V2 mismatch sebelum effective production cutover;
+- [x] audit akar live legacy `ActiveSpjContext` vs canonical V2 mismatch;
+- [x] implement read-only effective-context compatibility audit/resolver berbasis provenance;
+- [ ] jalankan `V2DEffectiveContextCompatibilityTest` + review exact 67-Paket/context inventory;
+- [ ] tentukan compatibility read strategy untuk Paket/list consumer tanpa mutation legacy;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
