@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2PackageReadContextService;
+use App\Services\SpjV2PackageReadMembershipService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -24,6 +25,7 @@ class SpjWorkspaceUseCase
         private readonly ActiveSpjContext $context,
         private readonly SpjPackageTemplateSelector $templateSelector,
         private readonly SpjV2PackageReadContextService $packageReadContext,
+        private readonly SpjV2PackageReadMembershipService $packageReadMembership,
     ) {}
 
     public function handle(Request $request): View|RedirectResponse
@@ -41,7 +43,7 @@ class SpjWorkspaceUseCase
 
     public function overviewMetrics(): array
     {
-        $packages = SpjPackage::query()->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context));
+        $packages = $this->packageMembershipQuery();
 
         return [
             'totalPackages' => (clone $packages)->count(),
@@ -121,14 +123,41 @@ class SpjWorkspaceUseCase
 
     public function packageListData(int $perPage): LengthAwarePaginator
     {
-        return SpjPackage::query()
+        $paginator = $this->packageMembershipQuery()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
-            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')
             ->paginate($perPage, ['*'], 'package_page')
             ->withQueryString();
+
+        $paginator->getCollection()->each(function (SpjPackage $package): void {
+            $package->setAttribute(
+                'read_context_path',
+                $this->context->matchesTransaction($package->transaction) ? 'legacy' : 'v2_compat',
+            );
+        });
+
+        return $paginator;
+    }
+
+    private function packageMembershipQuery()
+    {
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null) {
+            $membership = $this->packageReadMembership->forContext(
+                \Illuminate\Support\Facades\DB::connection('school'),
+                $this->context->fiscalYearId(),
+                $fundSourceId,
+            );
+
+            if ($membership !== null) {
+                return SpjPackage::query()->whereIn('id', $membership['package_ids']);
+            }
+        }
+
+        return SpjPackage::query()
+            ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context));
     }
 
     private function tabPersiapan(Request $request): View
