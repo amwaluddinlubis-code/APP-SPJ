@@ -52,13 +52,15 @@
     }"
     class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"
 >
-    <div
-        data-spj-maintenance-links
-        data-show-url="{{ route('transactions.maintenance-links.show', $transaction->id) }}"
-        data-update-url="{{ route('transactions.maintenance-links.update', $transaction->id) }}"
-        data-editable="{{ $package->isEditable() ? '1' : '0' }}"
-        hidden
-    ></div>
+    @unless($compatibilityOverlayEdit ?? false)
+        <div
+            data-spj-maintenance-links
+            data-show-url="{{ route('transactions.maintenance-links.show', $transaction->id) }}"
+            data-update-url="{{ route('transactions.maintenance-links.update', $transaction->id) }}"
+            data-editable="{{ $package->isEditable() ? '1' : '0' }}"
+            hidden
+        ></div>
+    @endunless
 
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Work Order Pemeliharaan</h3>
