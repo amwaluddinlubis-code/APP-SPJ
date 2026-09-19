@@ -50,8 +50,16 @@ additive rehearsal. Production read-path belum dipotong. V2-D menambahkan `SpjV2
 sebagai adapter read-only: canonical transaction dibatasi oleh fiscal year + fund
 source + source id, fakta source dibaca melalui source identity registry/raw mirror,
 dan field operator hanya dari overlay V2. Adapter juga mempertahankan lookup
-`legacy_source_key` melalui provenance bridge untuk mapping DETERMINISTIC. Controller,
-Livewire, Paket/document lifecycle, dan write-path production belum dialihkan.
+`legacy_source_key` melalui provenance bridge untuk mapping DETERMINISTIC.
+
+D4 menambahkan `SpjV2CanonicalSourceResolver` dan `SpjReadPathSelector`.
+Selector production default tetap `legacy` melalui `SPJ_V2_READ_PATH=legacy`.
+Request `v2` hanya boleh lolos bila context fiscal year + fund source memiliki
+tepat satu `source_id` ACTIVE_CANONICAL; schema hilang, source tidak ada, source
+ambigu, atau config invalid selalu fail-safe kembali ke legacy. Selector belum
+mengalihkan controller/Livewire apa pun dan rollback cukup mengembalikan config
+ke `legacy`. Consumer mutation-heavy tetap diblokir sampai overlay
+write-through/compatibility mempunyai evidence tersendiri.
 
 ### Database utama
 
