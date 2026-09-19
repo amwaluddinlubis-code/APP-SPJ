@@ -159,6 +159,66 @@ final class V2DMutationContextReadyTest extends TestCase
         }
     }
 
+    public function test_raw_source_drift_blocks_ready_before_validation(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-source-drift.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $row = $this->staleDraftPackage($db);
+            $this->activateEffectiveContext($row);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $rawRows = $db->table('spj_transaction_sources as source_link')
+                ->join('arkas_source_identity_registry as identity', 'identity.id', '=', 'source_link.arkas_source_identity_id')
+                ->join('arkas_raw_mirror_rows as raw', 'raw.id', '=', 'identity.current_raw_mirror_row_id')
+                ->where('source_link.spj_transaction_id', $row->spj_transaction_id)
+                ->orderBy('source_link.sort_order')
+                ->get(['raw.id', 'raw.payload']);
+
+            $drifted = false;
+            foreach ($rawRows as $rawRow) {
+                $payload = json_decode((string) $rawRow->payload, true, 512, JSON_THROW_ON_ERROR);
+                if (! in_array((int) ($payload['id_ref_bku'] ?? 0), [4, 15, 24, 35], true)) {
+                    continue;
+                }
+
+                foreach (['saldo', 'jumlah', 'nilai', 'nominal'] as $amountKey) {
+                    if (! array_key_exists($amountKey, $payload)) {
+                        continue;
+                    }
+
+                    $payload[$amountKey] = (float) $payload[$amountKey] + 12345.0;
+                    $db->table('arkas_raw_mirror_rows')->where('id', $rawRow->id)->update([
+                        'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                    ]);
+                    $drifted = true;
+                    break 2;
+                }
+            }
+            $this->assertTrue($drifted, 'Expected a canonical gross source row that can be drifted.');
+
+            $package = SpjPackage::query()->with('transaction')->findOrFail($row->package_id);
+            $legacyFiscalYearId = (int) $package->transaction->fiscal_year_id;
+            $this->mockValidationMustNotRun();
+
+            $result = app(SpjPackageLifecycleUseCase::class)->markReadyResult((string) $package->id);
+
+            $this->assertFalse($result['success']);
+            $this->assertSame('DRAFT', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(
+                $legacyFiscalYearId,
+                (int) $db->table('transactions')->where('id', $package->transaction_id)->value('fiscal_year_id'),
+            );
+        } finally {
+            File::delete($target);
+        }
+    }
+
     public function test_legacy_aligned_context_keeps_existing_ready_behavior_without_v2_cutover(): void
     {
         $target = storage_path('app/v2-c-rehearsal/test-v2d-mutation-ready-aligned.sqlite');
