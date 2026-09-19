@@ -13,9 +13,11 @@ use App\Services\SpjV2PackageReadMembershipService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SpjWorkspaceUseCase
@@ -141,12 +143,12 @@ class SpjWorkspaceUseCase
         return $paginator;
     }
 
-    private function packageMembershipQuery()
+    private function packageMembershipQuery(): Builder
     {
         $fundSourceId = $this->context->fundSourceId();
         if ($fundSourceId !== null) {
             $membership = $this->packageReadMembership->forContext(
-                \Illuminate\Support\Facades\DB::connection('school'),
+                DB::connection('school'),
                 $this->context->fiscalYearId(),
                 $fundSourceId,
             );
