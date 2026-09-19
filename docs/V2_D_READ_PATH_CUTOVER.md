@@ -417,7 +417,59 @@ Regression `V2DPackageReadContextTest` is staged to prove:
 `SpjWorkspaceUseCase::tabPaket()` is intentionally **not** changed yet. Opening
 the Paket workspace exposes mutation controls, including the NUMBERED correction
 carve-out, so effective-context read compatibility must not silently widen write
-eligibility. Runtime evidence for D4 step 5 is currently **RVR**.
+eligibility. Runtime evidence on 2026-09-19: focused gate
+`V2DReadPathSelectorTest`, `V2DPackageDocumentParityTest`,
+`V2DEffectiveContextCompatibilityTest`, `V2DPackageReadMembershipTest`,
+`V2DPackageReadContextTest`, `SpjDocumentGeneratorHardeningTest`, and
+`SpjPreviewExcelParityTest` PASS with **27 tests / 353 assertions / 27
+deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
+`git diff --check` clean. D4 step 5 is therefore **RUNTIME PASS**.
+
+### D4 step 6 — Paket workspace read-only compatibility
+
+Source implementation now permits a stale-context Paket to open from
+`/spj?tab=paket&package_id=...` only when Step 5 effective-context preparation
+returns `v2_compat`.
+
+The compatibility branch does **not** reuse the normal mutation-heavy Paket
+workspace. It returns the dedicated `spj.package-readonly` view containing:
+
+- transaction summary;
+- read-only item detail;
+- validation messages as text only;
+- Preview Paket/template;
+- Download PDF/Excel/template operations already covered by Step 5.
+
+The read-only surface deliberately does not render routes/actions for:
+
+- `spj.update`;
+- `spj.ready`;
+- Paket/document numbering;
+- FINAL;
+- cancel/replace;
+- quarter numbering;
+- participant/manual editors or any other Paket mutation.
+
+Legacy-aligned Paket continue through the original workspace unchanged.
+`SPJ_V2_READ_PATH=legacy`, unresolved membership, or an unsafe/wrong V2 bridge
+still redirect away from the stale-context Paket. The V2 compatibility branch
+also skips `CreateSpjDraftUseCase`, previous/next legacy navigation, participant
+roster hydration, and other mutation-adjacent helpers.
+
+Regression `V2DPackageWorkspaceReadOnlyTest` is staged to prove:
+
+- stale NUMBERED Paket opens only as `spj.package-readonly` under a resolved V2
+  effective context;
+- effective fiscal year exists only in-memory while persisted legacy fiscal year
+  remains unchanged;
+- all selected templates belong to the effective fiscal year;
+- the dedicated view contains approved Preview/Download actions but no lifecycle
+  mutation route;
+- legacy config keeps the stale Paket unavailable;
+- a wrong-but-valid Paket bridge remains fail-closed;
+- protected transaction/Paket/document state remains unchanged.
+
+Runtime evidence for D4 step 6 is currently **RVR**.
 
 A production switch requires all of the following:
 
