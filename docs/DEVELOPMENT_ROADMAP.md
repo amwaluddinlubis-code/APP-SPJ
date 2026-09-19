@@ -157,7 +157,7 @@ Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 - [x] audit lifecycle-specific gate setelah Step 11B dan buka hanya koreksi `payment_description` pada Paket stale `NUMBERED` melalui exact effective-context parity; numbering, settlement, Monitoring, bulk-final, dan period-close tetap legacy;
 - [x] audit/implement `item_description` + `payment_description` effective-context correction pada Detail Transaksi dengan resolver fail-closed; focused + related 25 test / 193 assertions PASS;
 - [x] audit numbering lifecycle effective-context; legacy regression 64 test / 528 assertions PASS dan stale single-numbering closure 1 test / 9 assertions PASS;
-- [ ] buka effective-context numbering lifecycle; BLOCKED sampai authorization bridge, parity, sequence/collision, atomic batch rollback, completeness, period, dan audit effective-year gate terbukti;
+- [x] atomic effective-context single issuance + effective audit trail + atomic quarter/batch (all-or-nothing) + post-condition gate: `V2DNumberingIssuanceTest` 5 test / 84 assertions PASS; legacy quarter flow tidak diubah (tetap resumable); UI effective issuance tetap tertutup;
 - [ ] definisikan overlay write-through/compatibility sebelum consumer mutation-heavy membaca V2 overlay;
 - [ ] controlled production read-path cutover + rollback evidence.
 
@@ -500,4 +500,4 @@ Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful,
 - source-responsive PASS tidak sama dengan browser/mobile PASS;
 - setelah contract utama PASS, jangan menambah test tanpa alasan nyata;
 - bila ada bug: reproduce -> fix -> focused regression bila perlu -> operator re-check.
-- effective numbering authorization boundary = **PASS**, effective year/quarter resolution = **PASS**, dan effective sequence/collision reservation/completion = **PASS** pada focused runtime 3 test / 96 assertions; effective-context numbering issuance tetap **BLOCKED / DEFERRED** sampai atomic end-to-end issuance, completeness/post-condition, dan effective audit trail aman.
+- effective numbering authorization boundary = **PASS**, effective year/quarter resolution = **PASS**, effective sequence/collision reservation/completion = **PASS**, atomic single issuance = **PASS**, effective audit trail = **PASS**, quarter/batch atomicity = **PASS**, final post-condition gate = **PASS** (`V2DNumberingIssuanceTest` 5 test / 84 assertions); actual effective-context numbering issuance = **PASS** pada backend gate, UI tetap tertutup, FINAL/settlement/bulk-final/period mutation tetap di luar scope.

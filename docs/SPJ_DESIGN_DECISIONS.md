@@ -450,6 +450,44 @@ Nomor yang dilepas boleh digunakan kembali saat numbering ulang. Operational aud
 
 Rollback tidak boleh membuat lubang aktif di tengah sequence.
 
+### 17.4 Effective-context issuance (V2)
+
+Selain jalur legacy di atas, penomoran effective-context memakai dua service
+baru yang tidak mengubah kontrak legacy:
+
+```text
+App\Services\SpjV2NumberingIssuanceService (single, atomic)
+App\Services\SpjV2NumberingBatchService (quarter/batch, all-or-nothing)
+```
+
+1. Rantai single issuance — authorize V2 preflight → validasi kelengkapan →
+   queue order → reserve → complete (saat paket masih READY) → tulis dokumen
+   → lifecycle paket → audit tahun efektif → verifikasi post-condition —
+   seluruhnya dalam satu transaksi `school`. Satu langkah gagal berarti
+   seluruh write rollback; tidak ada nomor/dokumen/audit/reservasi parsial.
+2. Complete dilakukan sebelum transisi READY → NUMBERED karena boundary
+   reservasi melakukan re-autorisasi yang menolak paket NUMBERED. Resume
+   setelah crash memakai reservasi COMPLETED sebagai source of truth dengan
+   drift check fail-closed (rekonsiliasi, source status, fund mismatch);
+   mismatch tidak pernah di-repair diam-diam.
+3. Nomor dirender dari format aktif tahun efektif + sequence reservasi +
+   event date registry; tidak ada `MAX()+1`, tidak ada jalur sequence kedua,
+   dan `transactions.fiscal_year_id` stale tidak pernah menjadi authority
+   maupun ditulis ulang.
+4. Audit `TETAPKAN_NOMOR_V2` memakai `fiscal_year_id` efektif dan menjadi
+   bagian transaksi issuance; retry idempoten tidak menduplikasi audit.
+   Batch menulis satu audit `PENOMORAN_BATCH_V2` yang dipakai ulang saat retry.
+5. Batch V2 bersifat all-or-nothing dalam satu transaksi dengan preflight
+   seluruh kandidat sebelum write dan urutan deterministik BKU. Alur
+   triwulan legacy (`SpjQuarterNumberingUseCase`, resumable per dokumen)
+   tidak diubah.
+6. Legacy gate (`SpjNumberingGateService`) sengaja tidak dipakai ulang pada
+   jalur V2 karena context-match-nya terikat tahun legacy yang stale;
+   seluruh pemeriksaan setaranya sudah dibuktikan pada fakta efektif oleh
+   `SpjV2NumberingAuthorizationService`.
+7. UI/tombol penomoran effective-context tetap tertutup sampai operator path
+   diaudit; backend gate PASS tidak otomatis membuka UI.
+
 ### 17.4 Cancel Penomoran Triwulan
 
 Pembuatan numbering berjalan maju:

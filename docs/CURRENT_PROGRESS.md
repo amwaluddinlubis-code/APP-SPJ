@@ -994,3 +994,25 @@ seed deterministik + unique-constraint proof tanpa mock final service.
 mutation/rollback/policy 19 test / 184 assertions PASS dan
 lifecycle/correction/workflow 23 test / 104 assertions PASS. Pint,
 `view:cache`, `npm run build`, dan `git diff --check` bersih.
+
+### Effective-context numbering issuance — PASS (backend gate)
+
+`SpjV2NumberingIssuanceService` (single atomic) dan
+`SpjV2NumberingBatchService` (quarter/batch all-or-nothing) RUNTIME PASS
+tanpa menyentuh alur legacy. Rantai single: authorize V2 → validasi →
+order → reserve → complete saat READY → dokumen → lifecycle →
+audit tahun efektif → post-condition, satu transaksi `school`.
+Batch: preflight seluruh kandidat sebelum write, satu transaksi,
+urutan deterministik BKU, satu audit batch yang dipakai ulang saat retry.
+Legacy gate tidak dipakai ulang pada jalur V2 (context-match terikat FY
+stale yang sengaja tidak ditulis ulang); UI penomoran effective-context
+tetap tertutup.
+
+Evidence 2026-09-19: `V2DNumberingIssuanceTest` **5 test / 84 assertions
+PASS** (single efektif, retry idempoten, matriks negatif 4 kasus,
+batch all-or-nothing, batch ordering + retry); related sequence/11A/11B
+**23 test / 338 assertions PASS**; legacy numbering/lifecycle/correction
+**37 test / 217 assertions PASS**; isolated numbering/quarter/tail/cancel
+**11 test / 85 assertions PASS**. Actual effective-context numbering
+issuance = **PASS** pada backend gate; FINAL, settlement, bulk-final, dan
+period close/open tetap tertutup.
