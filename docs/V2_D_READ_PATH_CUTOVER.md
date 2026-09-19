@@ -293,7 +293,36 @@ fixture and is intended to prove:
 
 The test writes its exact audit inventory to
 `storage/app/v2-c-rehearsal/reports/test-v2d-effective-context-compatibility.json`
-for local inspection. Runtime evidence for D4 step 3 is currently **RVR**.
+for local inspection.
+
+Runtime evidence on 2026-09-19: focused gate
+`V2DPackageDocumentParityTest`, `V2DReadPathSelectorTest`,
+`V2DReportSummaryCutoverTest`, and
+`V2DEffectiveContextCompatibilityTest` PASS with **16 tests / 174 assertions /
+16 deprecations**. `vendor/bin/pint --dirty --format agent` PASS and
+`git diff --check` clean.
+
+Exact isolated-fixture inventory:
+
+- audit status: `COMPATIBLE_STALE_CONTEXT`;
+- Paket total: 67;
+- Paket NUMBERED: 66;
+- Paket FINAL: 0;
+- Paket aligned legacy/effective fiscal year: 0;
+- Paket stale legacy fiscal year: 67;
+- Paket unsafe: 0;
+- Paket with `LEGACY_DUPLICATE` provenance: 1;
+- provenance aligned legacy context: 121;
+- provenance stale legacy fiscal year: 170;
+- provenance fund-source mismatch: 0;
+- provenance `LEGACY_DUPLICATE`: 104.
+
+D4 step 3 is therefore **RUNTIME PASS**. The result proves the transition is
+deterministic and fund-source safe, but also proves that every existing Paket in
+this fixture is attached to a legacy transaction whose `fiscal_year_id` is stale
+relative to the effective canonical context. The next cutover step must therefore
+use the provenance/effective-context resolver for read compatibility rather than
+relying on `Transaction::forSpjContext()` for Paket/list membership.
 
 A production switch requires all of the following:
 
