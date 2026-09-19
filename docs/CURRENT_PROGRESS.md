@@ -823,7 +823,14 @@ hanya membuka Checklist, sedangkan Isian Manual, numbering, FINAL, settlement,
 cancel/replace, bulk final, dan period mutation tetap tertutup. Regression
 `V2DMutationContextReadyTest` ditambahkan dengan config rollback, wrong bridge,
 raw-source drift, immutability, audit-year, dan legacy-aligned compatibility.
-Runtime evidence Step 11A masih **RVR**.
+Percobaan runtime pertama Step 11A belum PASS: **2 failed / 534 assertions /
+40 deprecations**. Kedua failure berasal dari bug boundary persistence yang sama:
+metadata transient `mutation_context_*` dipasang sebagai Eloquent attribute,
+sehingga saat status Paket disimpan ke READY Eloquent mencoba menulis kolom yang
+tidak ada (`mutation_context_path`, dst.). Fix sudah mengubah metadata tersebut
+menjadi relation in-memory `v2MutationContext`, dan regression kini memastikan
+metadata itu tidak pernah muncul sebagai SQL attribute/dirty field. Runtime
+evidence Step 11A tetap **RVR** sampai clean rerun hijau.
 
 ---
 
