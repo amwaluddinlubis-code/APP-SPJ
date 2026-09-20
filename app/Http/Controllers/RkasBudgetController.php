@@ -450,19 +450,12 @@ class RkasBudgetController extends Controller
             $allowedBudgets[(string) ($budget['ID_ANGGARAN'] ?? '')] = true;
         }
 
-        $referenceTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'ref_kode')->where('status', 'ACTIVE')->first();
         $references = [];
         $referenceNames = [];
-        $legacyReferences = collect();
-        if ($referenceTable !== null) {
-            foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $referenceTable->id)->get() as $row) {
-                $payload = json_decode((string) $row->payload, true);
-                if (is_array($payload)) {
-                    $legacyReferences->push(array_change_key_case($payload, CASE_UPPER));
-                }
-            }
-        }
-        $referenceRows = app(ArkasReferenceReadBoundary::class)->resolve('ref_kode', $legacyReferences, (string) session('active_school_id')) ?? collect();
+        $referenceRows = app(ArkasReferenceReadBoundary::class)->resolveCentral('ref_kode', (string) session('active_school_id'), [
+            'year' => $year->year,
+            'fund_source_id' => $fundSourceId,
+        ]) ?? collect();
         foreach ($referenceRows as $payload) {
             $payload = array_change_key_case($payload, CASE_UPPER);
             $referenceId = trim((string) ($payload['ID_REF_KODE'] ?? $payload['REF_ID_KODE'] ?? $payload['ID_REF_KODE_KEGIATAN'] ?? ''));
@@ -471,7 +464,17 @@ class RkasBudgetController extends Controller
             }
 
             $references[$referenceId] = $payload;
-            $referenceNames[trim((string) ($payload['ID_KODE'] ?? ''), '.')] = (string) ($payload['URAIAN_KODE'] ?? '');
+            foreach ([
+                [$payload['KODE_PROGRAM'] ?? '', $payload['NAMA_PROGRAM'] ?? ''],
+                [$payload['KODE_SUB_PROGRAM'] ?? $payload['KODE_SUBPROGRAM'] ?? '', $payload['NAMA_SUB_PROGRAM'] ?? $payload['NAMA_SUBPROGRAM'] ?? ''],
+                [$payload['ID_KODE'] ?? '', $payload['URAIAN_KODE'] ?? ''],
+            ] as [$code, $name]) {
+                $code = trim((string) $code, '.');
+                $name = trim((string) $name);
+                if ($code !== '' && $name !== '') {
+                    $referenceNames[$code] = $name;
+                }
+            }
         }
 
         $periodTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'rapbs_periode')->where('status', 'ACTIVE')->first();
@@ -545,13 +548,17 @@ class RkasBudgetController extends Controller
             }
             $referenceId = trim((string) ($payload['ID_REF_KODE'] ?? $payload['REF_ID_KODE'] ?? $payload['ID_REF_KODE_KEGIATAN'] ?? ''));
             $reference = $references[$referenceId] ?? [];
-            $activityCode = trim((string) ($reference['ID_KODE'] ?? $payload['KODE_KEGIATAN'] ?? ''), '.');
-            $activityName = (string) ($reference['URAIAN_KODE'] ?? '');
+            $activityCode = trim((string) ($reference['ID_KODE'] ?? $payload['KODE_KEGIATAN'] ?? $payload['ID_KODE'] ?? ''), '.');
+            $activityName = trim((string) ($reference['URAIAN_KODE'] ?? $payload['NAMA_KEGIATAN'] ?? $payload['URAIAN_KEGIATAN'] ?? ''));
             $sourceId = (string) ($payload['ID_RAPBS'] ?? $row->source_key);
             $item = (object) [
                 'source_rapbs_id' => $sourceId,
                 'activity_code' => $activityCode,
                 'activity_name' => $activityName,
+                'program_code' => trim((string) ($payload['KODE_PROGRAM'] ?? ''), '.'),
+                'program_name' => trim((string) ($payload['NAMA_PROGRAM'] ?? '')),
+                'subprogram_code' => trim((string) ($payload['KODE_SUB_PROGRAM'] ?? $payload['KODE_SUBPROGRAM'] ?? ''), '.'),
+                'subprogram_name' => trim((string) ($payload['NAMA_SUB_PROGRAM'] ?? $payload['NAMA_SUBPROGRAM'] ?? '')),
                 'account_code' => (string) ($payload['KODE_REKENING'] ?? ''),
                 'description' => (string) ($payload['URAIAN_TEXT'] ?? $payload['URAIAN'] ?? ''),
                 'volume' => (float) ($payload['VOLUME'] ?? 0),
@@ -596,11 +603,13 @@ class RkasBudgetController extends Controller
         $hierarchyTree = [];
         foreach ($items as $item) {
             $parts = $item->activity_code !== '' ? explode('.', $item->activity_code) : [];
-            $program = $parts[0] ?? 'tanpa-program';
-            $subprogram = count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : $program;
+            $program = $item->program_code !== '' ? $item->program_code : ($parts[0] ?? 'tanpa-program');
+            $subprogram = $item->subprogram_code !== '' ? $item->subprogram_code : (count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : $program);
             $activity = $item->activity_code !== '' ? $item->activity_code : 'tanpa-kegiatan';
             $hierarchyTree[$program] ??= ['code' => $program, 'name' => $referenceNames[$program] ?? 'Program '.$program, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'subs' => []];
+            $hierarchyTree[$program]['name'] = $hierarchyTree[$program]['name'] === 'Program '.$program && $item->program_name !== '' ? $item->program_name : $hierarchyTree[$program]['name'];
             $hierarchyTree[$program]['subs'][$subprogram] ??= ['code' => $subprogram, 'name' => $referenceNames[$subprogram] ?? 'Subprogram '.$subprogram, 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'activities' => []];
+            $hierarchyTree[$program]['subs'][$subprogram]['name'] = $hierarchyTree[$program]['subs'][$subprogram]['name'] === 'Subprogram '.$subprogram && $item->subprogram_name !== '' ? $item->subprogram_name : $hierarchyTree[$program]['subs'][$subprogram]['name'];
             $hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity] ??= ['code' => $activity, 'name' => $item->activity_name ?: 'Kegiatan belum diisi', 'amount' => 0.0, 'realization' => 0.0, 'remaining' => 0.0, 'items' => []];
             $item->variance = $item->display_amount - $item->realization;
             foreach ([&$hierarchyTree[$program], &$hierarchyTree[$program]['subs'][$subprogram], &$hierarchyTree[$program]['subs'][$subprogram]['activities'][$activity]] as &$node) {

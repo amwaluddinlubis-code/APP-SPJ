@@ -34,6 +34,21 @@ class ArkasPersistentReferenceAuthorityTest extends TestCase
         $authority->promote('ref_bku', [['id_ref_bku' => '1', 'bku' => 'Changed', 'kode_bku' => '1']], '2026.09');
     }
 
+    public function test_acuan_semantic_conflict_is_quarantined_without_blocking_other_items(): void
+    {
+        $authority = new ArkasPersistentReferenceAuthority;
+        $authority->promote('ref_acuan_barang', [['id_barang' => 'B-1', 'tahun' => 2025, 'nama_barang' => 'Lama']], '2026.09');
+
+        self::assertSame(
+            ['accepted' => 1, 'quarantined' => 1],
+            $authority->promote('ref_acuan_barang', [
+                ['id_barang' => 'B-1', 'tahun' => 2025, 'nama_barang' => 'Berubah'],
+                ['id_barang' => 'B-2', 'tahun' => 2026, 'nama_barang' => 'Seng'],
+            ], '2026.09'),
+        );
+        self::assertCount(2, $authority->read('ref_acuan_barang'));
+    }
+
     public function test_code_variant_and_quarantine_are_persisted_with_tenant_scope(): void
     {
         $authority = new ArkasPersistentReferenceAuthority;

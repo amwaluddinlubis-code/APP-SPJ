@@ -26,6 +26,12 @@ final class ArkasPersistentReferenceAuthority
                 $payload = $this->semanticPayload($schema, $row);
                 $existing = DB::table('central_reference_rows')->where(['source_table' => $table, 'natural_key' => $identity['natural_key'], 'version_key' => $identity['version_key']])->first();
                 if ($existing !== null && (string) $existing->semantic_payload !== $payload) {
+                    if ($table === 'ref_acuan_barang') {
+                        $this->quarantine($table, 'QUARANTINED_SEMANTIC_CONFLICT', $this->contextKey($table, $row, $release, $versionContext), 'Conflicting semantic definition for the same item/year/release; incoming row was excluded without blocking unrelated items.', $row);
+                        $quarantined++;
+
+                        continue;
+                    }
                     throw new RuntimeException('Persistent central semantic conflict for '.$table.' '.$identity['natural_key'].' '.$identity['version_key'].'.');
                 }
                 DB::table('central_reference_rows')->updateOrInsert(['source_table' => $table, 'natural_key' => $identity['natural_key'], 'version_key' => $identity['version_key']], ['arkas_release' => $release, 'semantic_payload' => $payload, 'source_dump' => $sourceDump, 'source_row_key' => $identity['natural_key'], 'updated_at' => now(), 'created_at' => $existing?->created_at ?? now()]);
@@ -37,9 +43,12 @@ final class ArkasPersistentReferenceAuthority
     }
 
     /** @return array<int, array<string, mixed>> */
-    public function read(string $table): array
+    /** @param array<string, scalar|null> $context */
+    public function read(string $table, array $context = []): array
     {
-        return DB::table('central_reference_rows')->where('source_table', $table)->orderBy('natural_key')->orderBy('version_key')->get()->map(fn (object $row): array => json_decode((string) $row->semantic_payload, true, 512, JSON_THROW_ON_ERROR))->all();
+        $rows = DB::table('central_reference_rows')->where('source_table', $table)->orderBy('natural_key')->orderBy('version_key')->get()->map(fn (object $row): array => json_decode((string) $row->semantic_payload, true, 512, JSON_THROW_ON_ERROR))->all();
+
+        return $this->filterByContext($table, $rows, $context);
     }
 
     /** @param array<int, array<string, mixed>> $rows @return array{accepted: int, quarantined: int} */
@@ -79,10 +88,11 @@ final class ArkasPersistentReferenceAuthority
     }
 
     /** @return array<int, array<string, mixed>> */
-    public function readForTenant(string $table, string $tenantKey): array
+    /** @param array<string, scalar|null> $context */
+    public function readForTenant(string $table, string $tenantKey, array $context = []): array
     {
         if ($table === 'ref_kode') {
-            return DB::table('central_code_applicabilities as applicability')
+            $rows = DB::table('central_code_applicabilities as applicability')
                 ->join('central_code_variants as variant', 'variant.id', '=', 'applicability.variant_id')
                 ->where('applicability.tenant_key', $tenantKey)
                 ->orderBy('applicability.source_code')
@@ -96,21 +106,27 @@ final class ArkasPersistentReferenceAuthority
 
                     return $payload;
                 })->all();
+
+            return $this->filterByContext($table, $rows, $context);
         }
 
         if ($table === 'ref_sumber_dana') {
             $baseRows = DB::table('central_reference_rows')->where('source_table', $table)->get()->keyBy(fn (object $row): string => $row->natural_key.'|'.$row->version_key);
             $extensionRows = DB::table('central_reference_extensions')->where(['source_table' => $table, 'tenant_key' => $tenantKey])->orderBy('natural_key')->get();
 
-            return $extensionRows->map(function (object $row) use ($baseRows): array {
+            $rows = $extensionRows->map(function (object $row) use ($baseRows): array {
                 $base = $baseRows->get($row->natural_key.'|'.$row->version_key);
                 $basePayload = $base === null ? [] : json_decode((string) $base->semantic_payload, true, 512, JSON_THROW_ON_ERROR);
 
                 return array_replace($basePayload, json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR));
             })->all();
+
+            return $this->filterByContext($table, $rows, $context);
         }
 
-        return DB::table('central_reference_extensions')->where(['source_table' => $table, 'tenant_key' => $tenantKey])->orderBy('natural_key')->get()->map(fn (object $row): array => json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR))->all();
+        $rows = DB::table('central_reference_extensions')->where(['source_table' => $table, 'tenant_key' => $tenantKey])->orderBy('natural_key')->get()->map(fn (object $row): array => json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR))->all();
+
+        return $this->filterByContext($table, $rows, $context);
     }
 
     /** @param array<string, mixed> $row */
@@ -183,6 +199,67 @@ final class ArkasPersistentReferenceAuthority
         }
 
         return null;
+    }
+
+    /** @param array<int, array<string, mixed>> $rows @param array<string, scalar|null> $context @return array<int, array<string, mixed>> */
+    private function filterByContext(string $table, array $rows, array $context): array
+    {
+        $year = $context['year'] ?? $context['fiscal_year'] ?? null;
+        if ($year === null || trim((string) $year) === '') {
+            return $rows;
+        }
+
+        $yearTables = ['ref_rekening', 'ref_acuan_barang', 'ref_kode', 'ref_sumber_dana', 'ref_sumber_dana_sekolah'];
+        if (! in_array($table, $yearTables, true)) {
+            return $rows;
+        }
+
+        $fundSource = $context['fund_source_id'] ?? $context['fund_source'] ?? null;
+        $educationLevel = $context['education_level_id'] ?? $context['education_level'] ?? null;
+
+        return array_values(array_filter($rows, function (array $row) use ($table, $year, $fundSource, $educationLevel): bool {
+            $yearMatched = false;
+            foreach (['tahun', 'tahun_anggaran', 'fiscal_year'] as $column) {
+                $value = $this->value($row, $column);
+                if ($value !== null && trim((string) $value) !== '') {
+                    $yearMatched = true;
+                    if ((string) $value !== (string) $year) {
+                        return false;
+                    }
+
+                    break;
+                }
+            }
+            if (! $yearMatched) {
+                return false;
+            }
+
+            if ($table !== 'ref_kode') {
+                return true;
+            }
+
+            foreach ([['value' => $fundSource, 'columns' => ['sumber_dana_id', 'id_ref_sumber_dana', 'id_sumber_dana']], ['value' => $educationLevel, 'columns' => ['bentuk_pendidikan_id', 'education_level_id', 'id_level_pendidikan']]] as $dimension) {
+                if ($dimension['value'] === null) {
+                    continue;
+                }
+                $matched = false;
+                foreach ($dimension['columns'] as $column) {
+                    $value = $this->value($row, $column);
+                    if ($value !== null && trim((string) $value) !== '') {
+                        $matched = true;
+                        if ((string) $value !== (string) $dimension['value']) {
+                            return false;
+                        }
+                        break;
+                    }
+                }
+                if (! $matched) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     /** @param array<string, mixed> $row */

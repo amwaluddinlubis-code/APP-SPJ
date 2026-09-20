@@ -806,3 +806,10 @@ numbering, settlement history, or legacy fiscal-year fields, and records one
 `PERIOD_REOPEN_V2` audit. Missing context, audit storage, persistence, or
 post-condition evidence fails closed. The legacy workflow remains available
 under the legacy selector and is never a V2 fallback.
+### Reference catalog active context — 2026-09-21
+
+`ref_acuan_barang` valid rows remain searchable when account pairing is not
+exact; the UI reports `Belum Ada Rekening` instead of silently hiding the item.
+Year and expiry context remain authoritative, while local semantic conflicts
+are quarantined without blocking unrelated valid rows. Browser QA of the
+reference and RKAS screens remains RVR until independently observed.

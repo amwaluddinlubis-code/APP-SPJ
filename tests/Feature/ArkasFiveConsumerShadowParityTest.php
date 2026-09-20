@@ -64,6 +64,21 @@ final class ArkasFiveConsumerShadowParityTest extends TestCase
         app(ArkasReferenceReadBoundary::class)->resolve('ref_rekening', collect([['KODE_REKENING' => 'MISSING', 'REKENING' => 'Missing', 'TAHUN' => '2026']]), null);
     }
 
+    public function test_central_reference_is_read_when_tenant_raw_table_is_not_available(): void
+    {
+        config()->set('arkas.reference_read_mode', ArkasReferenceResolver::CENTRAL_COMPAT);
+        $school = DB::connection('school');
+        $mirror = $school->table('arkas_raw_mirror_tables')->where('source_table', 'ref_rekening')->first();
+        self::assertNotNull($mirror);
+        $school->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirror->id)->delete();
+        $school->table('arkas_raw_mirror_tables')->where('id', $mirror->id)->delete();
+
+        $rows = app(ArkasReferenceReadBoundary::class)->resolve('ref_rekening', null);
+
+        self::assertNotNull($rows);
+        self::assertArrayHasKey('KODE_REKENING', $rows->first());
+    }
+
     public function test_production_selector_defaults_to_central_compat_and_legacy_raw_is_explicit_rollback(): void
     {
         config()->set('arkas.reference_read_mode', ArkasReferenceResolver::CENTRAL_COMPAT);

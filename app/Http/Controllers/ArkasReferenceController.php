@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
 use App\Services\ArkasReferenceReadBoundary;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,12 +23,7 @@ class ArkasReferenceController extends Controller
         $budgetIds = $this->approvedBudgetIds($year, $fundSourceId);
         $rapbs = $this->rawRows('rapbs')?->filter(fn (array $row): bool => isset($budgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]) && (string) ($row['SOFT_DELETE'] ?? '0') !== '1') ?? collect();
         $referenceRows = $this->contextReferenceRows($year, $fundSourceId) ?? collect();
-        $names = $referenceRows->mapWithKeys(function (array $row): array {
-            $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
-            $name = trim((string) ($row['URAIAN_KODE'] ?? ''));
-
-            return $code !== '' && $name !== '' ? [$code => $name] : [];
-        });
+        $names = $this->referenceNames($referenceRows);
         $activities = $referenceRows->map(function (array $row): ?array {
             $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
             $name = trim((string) ($row['URAIAN_KODE'] ?? 'Kegiatan belum diisi'));
@@ -111,18 +107,15 @@ class ArkasReferenceController extends Controller
                 ->filter(function (array $row, int $index) use ($raw, $year): bool {
                     $source = $raw->get($index, []);
                     $sourceYear = (string) ($source['TAHUN'] ?? $source['YEAR'] ?? '');
-                    $expiredDate = $source['EXPIRED_DATE'] ?? $source['EXPIRED_AT'] ?? null;
 
                     return $row['code'] !== ''
                         && $sourceYear === (string) ($year?->year ?? '')
-                        && ($expiredDate === null || trim((string) $expiredDate) === '');
+                        && $this->isActiveReferenceRow($source, (int) ($year?->year ?? 0));
                 })
                 ->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
         }
 
-        return $rapbs->map(fn (array $row): array => ['code' => trim((string) ($row['KODE_REKENING'] ?? ''), '.'), 'name' => 'Rekening ARKAS'])
-            ->filter(fn (array $row): bool => $row['code'] !== '')
-            ->unique('code')->sort(fn (array $left, array $right): int => strnatcasecmp($left['code'], $right['code']))->values();
+        return collect();
     }
 
     /** @param Collection<int, array<string, mixed>> $rapbs */
@@ -135,27 +128,15 @@ class ArkasReferenceController extends Controller
 
         $accountNames = $accounts->mapWithKeys(fn (array $row): array => [$row['code'] => $row['name']]);
         $allowedAccounts = ['5.1.02.', '5.2.02.', '5.2.04.', '5.2.05.'];
-        $accountGroups = $accounts->groupBy(function (array $row) use ($allowedAccounts): string {
-            foreach ($allowedAccounts as $prefix) {
-                if (str_starts_with($row['code'].'.', $prefix)) {
-                    return $prefix;
-                }
-            }
-
-            return '';
-        })->map(fn (Collection $rows): Collection => $rows->pluck('name')->filter()->unique()->values());
         $usage = $rapbs->filter(fn (array $row): bool => trim((string) ($row['ID_BARANG'] ?? '')) !== '')
             ->countBy(fn (array $row): string => trim((string) $row['ID_BARANG']));
 
-        return $raw->filter(function (array $row) use ($year, $accountNames, $accountGroups, $allowedAccounts): bool {
-            $expiredDate = $row['EXPIRED_DATE'] ?? null;
+        return $raw->filter(function (array $row) use ($year, $allowedAccounts): bool {
             $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
             $accountPrefix = $this->accountPrefix($accountCode, $allowedAccounts);
 
             return (string) ($row['TAHUN'] ?? '') === (string) $year->year
-                && ($expiredDate === null || trim((string) $expiredDate) === '')
-                && $accountCode !== ''
-                && (isset($accountNames[$accountCode]) || $accountGroups->get($accountPrefix, collect())->isNotEmpty())
+                && $this->isActiveReferenceRow($row, (int) $year->year)
                 && trim((string) ($row['ID_BARANG'] ?? '')) !== '';
         })->map(function (array $row) use ($usage, $allowedAccounts, $accountNames): array {
             $accountCode = $this->acuanAccountCode($row, $allowedAccounts);
@@ -167,7 +148,7 @@ class ArkasReferenceController extends Controller
                 'code' => $itemId,
                 'name' => trim((string) ($row['NAMA_BARANG'] ?? '')),
                 'unit' => trim((string) ($row['SATUAN'] ?? '')),
-                'account_code' => isset($accountNames[$accountCode]) ? $accountCode : $accountPrefix.'*',
+                'account_code' => isset($accountNames[$accountCode]) ? $accountCode : ($accountPrefix !== '' ? $accountPrefix.'*' : '—'),
                 'account_name' => (string) $accountName,
                 'price' => (float) ($row['HARGA_BARANG'] ?? 0),
                 'min_price' => (float) ($row['BATAS_BAWAH'] ?? 0),
@@ -204,16 +185,31 @@ class ArkasReferenceController extends Controller
         return '';
     }
 
+    /** @param array<string, mixed> $row */
+    private function isActiveReferenceRow(array $row, int $year): bool
+    {
+        $expiredDate = $row['EXPIRED_DATE'] ?? $row['EXPIRED_AT'] ?? $row['expired_date'] ?? $row['expired_at'] ?? null;
+        if ($expiredDate === null || trim((string) $expiredDate) === '') {
+            return true;
+        }
+
+        try {
+            return CarbonImmutable::parse((string) $expiredDate)->greaterThanOrEqualTo(CarbonImmutable::create($year, 1, 1));
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /** @return Collection<int, array<string, mixed>>|null */
     private function rawRows(string $sourceTable): ?Collection
     {
         $db = DB::connection('school');
         if (! $db->getSchemaBuilder()->hasTable('arkas_raw_mirror_tables')) {
-            return null;
+            return $this->centralRowsWhenApplicable($sourceTable);
         }
         $mirror = $db->table('arkas_raw_mirror_tables')->where('source_table', $sourceTable)->where('status', 'ACTIVE')->where('row_count', '>', 0)->first();
         if (! $mirror) {
-            return null;
+            return $this->centralRowsWhenApplicable($sourceTable);
         }
 
         $cacheKey = 'arkas-raw-rows:'.$mirror->id.':'.(string) $mirror->updated_at;
@@ -227,8 +223,39 @@ class ArkasReferenceController extends Controller
         });
 
         return in_array($sourceTable, ['ref_rekening', 'ref_acuan_barang', 'ref_kode', 'ref_sumber_dana'], true)
-            ? app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'))
+            ? app(ArkasReferenceReadBoundary::class)->resolveCentral($sourceTable, (string) session('active_school_id'))
             : $rows;
+    }
+
+    /** @return Collection<int, array<string, mixed>>|null */
+    private function centralRowsWhenApplicable(string $sourceTable): ?Collection
+    {
+        if (! in_array($sourceTable, ['ref_rekening', 'ref_acuan_barang', 'ref_kode', 'ref_sumber_dana'], true)) {
+            return null;
+        }
+
+        return app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, null, (string) session('active_school_id'));
+    }
+
+    /** @param Collection<int, array<string, mixed>> $rows @return Collection<string, string> */
+    private function referenceNames(Collection $rows): Collection
+    {
+        $names = [];
+        foreach ($rows as $row) {
+            foreach ([
+                [$row['KODE_PROGRAM'] ?? '', $row['NAMA_PROGRAM'] ?? ''],
+                [$row['KODE_SUB_PROGRAM'] ?? $row['KODE_SUBPROGRAM'] ?? '', $row['NAMA_SUB_PROGRAM'] ?? $row['NAMA_SUBPROGRAM'] ?? ''],
+                [$row['ID_KODE'] ?? '', $row['URAIAN_KODE'] ?? ''],
+            ] as [$code, $name]) {
+                $code = trim((string) $code, '.');
+                $name = trim((string) $name);
+                if ($code !== '' && $name !== '') {
+                    $names[$code] = $name;
+                }
+            }
+        }
+
+        return collect($names);
     }
 
     /** @param array<string, mixed> $row */

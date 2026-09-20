@@ -375,12 +375,22 @@ class RkasBudgetFilter extends Component
             return [];
         }
 
-        return $rows->mapWithKeys(function (array $row): array {
-            $code = trim((string) ($row['ID_KODE'] ?? ''), '.');
-            $name = trim((string) ($row['URAIAN_KODE'] ?? ''));
+        $names = [];
+        foreach ($rows as $row) {
+            foreach ([
+                [$row['KODE_PROGRAM'] ?? '', $row['NAMA_PROGRAM'] ?? ''],
+                [$row['KODE_SUB_PROGRAM'] ?? $row['KODE_SUBPROGRAM'] ?? '', $row['NAMA_SUB_PROGRAM'] ?? $row['NAMA_SUBPROGRAM'] ?? ''],
+                [$row['ID_KODE'] ?? '', $row['URAIAN_KODE'] ?? ''],
+            ] as [$code, $name]) {
+                $code = trim((string) $code, '.');
+                $name = trim((string) $name);
+                if ($code !== '' && $name !== '') {
+                    $names[$code] = $name;
+                }
+            }
+        }
 
-            return $code !== '' && $name !== '' ? [$code => $name] : [];
-        })->all();
+        return $names;
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
@@ -388,25 +398,18 @@ class RkasBudgetFilter extends Component
     {
         $yearId = $this->fiscalYearId();
         $fundSourceId = $this->effectiveFundSourceId();
-        $rows = $this->rawMirrorRows('ref_kode');
-        if ($yearId === null || $fundSourceId === null || $rows === null) {
+        if ($yearId === null || $fundSourceId === null) {
             return null;
         }
 
         $year = FiscalYear::query()->find($yearId);
-        $approvedBudgetIds = $this->rawApprovedBudgetIds();
-        $rkasRows = $this->rawMirrorRows('rapbs');
-
-        if ($approvedBudgetIds === null || $rkasRows === null) {
+        $rows = $this->rawMirrorRows('ref_kode', [
+            'year' => $year?->year,
+            'fund_source_id' => $fundSourceId,
+        ]);
+        if ($rows === null) {
             return null;
         }
-
-        $referencedIds = $rkasRows
-            ->filter(fn (array $row): bool => isset($approvedBudgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]))
-            ->map(fn (array $row): string => trim((string) ($row['ID_REF_KODE'] ?? $row['REF_ID_KODE'] ?? $row['ID_REF_KODE_KEGIATAN'] ?? '')))
-            ->filter()
-            ->unique()
-            ->flip();
 
         return $rows->filter(function (array $row) use ($year, $fundSourceId): bool {
             $sourceYear = (string) ($row['TAHUN'] ?? $row['TAHUN_ANGGARAN'] ?? '');
@@ -414,15 +417,18 @@ class RkasBudgetFilter extends Component
 
             return $sourceYear === (string) ($year?->year ?? '')
                 && ($sourceFund === '' || (int) $sourceFund === $fundSourceId);
-        })->filter(fn (array $row): bool => $referencedIds->has(trim((string) ($row['ID_REF_KODE'] ?? $row['REF_ID_KODE'] ?? $row['ID_REF_KODE_KEGIATAN'] ?? ''))))->values();
+        })->values();
     }
 
     /** @return Collection<int, array<string, mixed>>|null */
-    protected function rawMirrorRows(string $sourceTable): ?Collection
+    /** @param array<string, scalar|null> $context */
+    protected function rawMirrorRows(string $sourceTable, array $context = []): ?Collection
     {
         $db = DB::connection('school');
         if (! $db->getSchemaBuilder()->hasTable('arkas_raw_mirror_tables')) {
-            return null;
+            return $sourceTable === 'ref_kode'
+                ? app(ArkasReferenceReadBoundary::class)->resolveCentral($sourceTable, (string) session('active_school_id'), $context)
+                : null;
         }
 
         $mirrorTable = $db->table('arkas_raw_mirror_tables')
@@ -431,7 +437,9 @@ class RkasBudgetFilter extends Component
             ->where('row_count', '>', 0)
             ->first();
         if ($mirrorTable === null) {
-            return null;
+            return $sourceTable === 'ref_kode'
+                ? app(ArkasReferenceReadBoundary::class)->resolveCentral($sourceTable, (string) session('active_school_id'), $context)
+                : null;
         }
 
         $rows = $db->table('arkas_raw_mirror_rows')
@@ -446,7 +454,7 @@ class RkasBudgetFilter extends Component
             ->values();
 
         return $sourceTable === 'ref_kode'
-            ? app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'))
+            ? app(ArkasReferenceReadBoundary::class)->resolveCentral($sourceTable, (string) session('active_school_id'), $context)
             : $rows;
     }
 

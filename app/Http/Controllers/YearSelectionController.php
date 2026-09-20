@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SynchronizeArkasCentralReferences;
 use App\Models\ArkasSource;
 use App\Models\FiscalYear;
 use App\Models\School;
@@ -104,6 +105,10 @@ class YearSelectionController extends Controller
             // dana langsung dari ARKAS sebelum menjalankan sinkronisasi penuh.
             $years = $synchronizer->synchronizeFiscalYearContexts($source);
 
+            SynchronizeArkasCentralReferences::dispatch($school->id, $source->id)
+                ->onConnection('database')
+                ->onQueue('operations');
+
             if ($years->isEmpty()) {
                 return redirect()
                     ->route('years.select')
@@ -112,7 +117,7 @@ class YearSelectionController extends Controller
 
             return redirect()
                 ->route('years.select')
-                ->with('success', 'Daftar tahun dan sumber dana berhasil diimpor dari ARKAS. Pilih salah satu konteks, lalu jalankan Sinkron Semua ARKAS dari dashboard.');
+                ->with('success', 'Konteks tahun dan sumber dana berhasil disinkronkan. Import referensi pusat masuk antrean dan akan memproses rekening, kode, serta acuan barang. Pilih konteks setelah proses antrean selesai.');
         } catch (\Throwable $exception) {
             Log::error('ARKAS synchronization from year selection failed.', [
                 'user_id' => $request->user()?->id,

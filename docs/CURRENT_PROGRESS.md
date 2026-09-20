@@ -6,6 +6,27 @@ Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. 
 
 Definisi status:
 
+### Reference catalog search checkpoint — 2026-09-21
+
+`ref_acuan_barang` central import completed with **68,757 accepted rows** and
+**4 quarantined rows**. Local semantic conflicts no longer roll back unrelated
+valid catalog rows. The reference page keeps year and active-date context, and
+items without an exact account pairing remain visible with `Belum Ada Rekening`.
+Focused regression passed **18 tests / 61 assertions**; Pint, view cache, and
+diff-check passed. Browser QA for `/referensi-arkas` and `/penganggaran-rkas`
+remains **RVR** because local browser automation could not be completed in this
+session.
+
+### Active-year reference read hardening — 2026-09-21
+
+Persistent reference reads now accept explicit active-year context. Versioned
+central rows remain available across years, while `ref_rekening`,
+`ref_acuan_barang`, and `ref_kode` consumers filter by active year before
+building results. `ref_kode` also filters fund context and `ref_acuan_barang`
+retains `expired_date` in its central semantic payload. Focused regression:
+**9 tests / 100 assertions**. Live ARKAS source verification after database
+reset remains required before a new full central import is declared verified.
+
 - **FUNCTIONAL PASS**: dibuktikan oleh source + deterministic test/CI yang benar-benar dijalankan;
 - **REAL-DATA VERIFIED**: dibuktikan pada database sekolah nyata atau isolated copy tanpa fabrikasi data;
 - **RVR**: masih memerlukan real-value/runtime/operator verification;

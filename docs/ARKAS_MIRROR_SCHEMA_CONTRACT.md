@@ -329,3 +329,14 @@ under the production selector `CENTRAL_COMPAT`: `ArkasReferenceController`,
 through `ARKAS_REFERENCE_READ_MODE`; `CENTRAL_ONLY` remains opt-in. Missing,
 unsupported, or quarantined reference context fails closed without fallback.
 Raw/legacy mirrors are retained and no destructive migration was performed.
+
+### Active-year read hardening — 2026-09-21
+
+Persistent reference reads now accept explicit active-year context. Versioned
+central rows remain available across years, but `ref_rekening`,
+`ref_acuan_barang`, and `ref_kode` consumers filter by the active year before
+building UI or RKAS results. `ref_kode` additionally filters fund context.
+`ref_acuan_barang` retains `expired_date` in its central semantic payload;
+`create_date` and `last_update` remain provenance noise and are not identity.
+Central import uses a semantic-column whitelist and runs through the queued
+operation path; central historical versions are not deleted.

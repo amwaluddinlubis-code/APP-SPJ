@@ -710,3 +710,11 @@ service only for V2; period close/open remains a separate blocked gate.
 
 Backend lifecycle gate status: **PERIOD CLOSE/OPEN PASS**. Remaining work is
 operational/browser validation only, not a new mutation authority.
+
+### Reference catalog search checkpoint - 2026-09-21
+
+Central `ref_acuan_barang` synchronization now quarantines local semantic
+conflicts without blocking unrelated valid rows and retains active-year/expiry
+context. Reference consumers use the shared context-aware resolver. Browser
+verification for `/referensi-arkas` and `/penganggaran-rkas` remains RVR until
+an operator confirms both screens.
