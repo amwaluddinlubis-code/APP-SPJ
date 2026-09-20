@@ -63,8 +63,16 @@ class ArkasReferenceCentralPromotionRehearsalTest extends TestCase
             self::markTestSkipped('Set ARKAS_PARITY_DUMP_A/B/C for the hybrid rehearsal.');
         }
 
-        $this->expectExceptionMessage('contradictory semantic definition');
-        (new ArkasReferencePromotionService)->promoteCodeVariants('A', $this->rows($databases['A'], 'ref_kode'), '2026.09');
+        $rows = $this->rows($databases['A'], 'ref_kode');
+        $first = new ArkasReferencePromotionService;
+        $second = new ArkasReferencePromotionService;
+        $firstReport = $first->promoteCodeVariantsReport('A', $rows, '2026.09');
+        $secondReport = $second->promoteCodeVariantsReport('A', array_reverse($rows), '2026.09');
+        self::assertGreaterThan(0, $firstReport['diagnostics']['quarantined']);
+        self::assertContains('QUARANTINED_SEMANTIC_CONFLICT', array_column($firstReport['quarantined'], 'status'));
+        self::assertSame($firstReport['diagnostics'], $secondReport['diagnostics']);
+        self::assertSame($this->canonical($first->readCentral('ref_kode')), $this->canonical($second->readCentral('ref_kode')));
+        self::assertSame($this->canonical($first->readTenantExtension('ref_kode', 'A')), $this->canonical($second->readTenantExtension('ref_kode', 'A')));
     }
 
     public function test_acuan_barang_invalid_source_rows_are_rejected_before_promotion(): void

@@ -72,33 +72,54 @@ final class ArkasReferencePromotionService
     /** @param array<int, array<string, mixed>> $rows @return array{accepted: int, variant_count: int, applicability_count: int} */
     public function promoteCodeVariants(string $tenantId, array $rows, string $release): array
     {
+        $report = $this->promoteCodeVariantsReport($tenantId, $rows, $release);
+
+        return ['accepted' => $report['accepted'], 'variant_count' => count($this->codeVariants), 'applicability_count' => count($this->codeApplicability)];
+    }
+
+    /** @param array<int, array<string, mixed>> $rows @return array{accepted: int, quarantined: array<int, array{status: string, row: array<string, mixed>, reason: string}>, diagnostics: array{accepted: int, quarantined: int}} */
+    public function promoteCodeVariantsReport(string $tenantId, array $rows, string $release): array
+    {
         $this->versionKey->validateRelease($release);
         $schema = ArkasReferenceCentralSchema::for('ref_kode');
         $stagedVariants = $this->codeVariants;
         $stagedApplicability = $this->codeApplicability;
+        $quarantined = [];
+        $groups = [];
+        $accepted = 0;
         foreach ($rows as $row) {
-            $this->values($schema['natural_key'], $row);
-            $variantData = $this->semanticData($schema, $row);
-            $variantKey = $this->semanticVariantKey($variantData);
-            $variantIdentity = json_encode([$release, (string) $row['id_kode'], $variantKey], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if (isset($stagedVariants[$variantIdentity]) && $stagedVariants[$variantIdentity]['data'] !== $variantData) {
-                throw new RuntimeException('ref_kode semantic variant conflict for '.$variantIdentity.'.');
+            try {
+                $this->values($schema['natural_key'], $row);
+                $applicability = $this->codeApplicabilityData($tenantId, $row, $release, 'pending');
+                $contextIdentity = $this->codeContextIdentity($tenantId, $row, $release, $applicability);
+                $variantData = $this->semanticData($schema, $row);
+                $variantKey = $this->semanticVariantKey($variantData);
+                $groups[$contextIdentity][] = ['row' => $row, 'variant_data' => $variantData, 'variant_key' => $variantKey, 'applicability' => $applicability];
+            } catch (RuntimeException $exception) {
+                $quarantined[] = ['status' => 'QUARANTINED_INVALID_CONTEXT', 'row' => $row, 'reason' => $exception->getMessage()];
             }
-            $stagedVariants[$variantIdentity] = ['variant_key' => $variantKey, 'data' => $variantData, 'release' => $release];
+        }
 
-            $applicability = $this->codeApplicabilityData($tenantId, $row, $release, $variantKey);
-            $contextIdentity = json_encode([$tenantId, $release, $row['id_kode'], $applicability['tahun'], $applicability['sumber_dana_id'], $applicability['bentuk_pendidikan_id']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            foreach ($stagedApplicability as $existingIdentity => $existing) {
-                if ($existing['context_identity'] === $contextIdentity && $existing['variant_key'] !== $variantKey) {
-                    throw new RuntimeException('ref_kode contradictory semantic definition for same applicability context '.$contextIdentity.'.');
+        foreach ($groups as $contextIdentity => $group) {
+            $variantKeys = array_values(array_unique(array_column($group, 'variant_key')));
+            $existing = $stagedApplicability[$contextIdentity]['variant_key'] ?? null;
+            if (count($variantKeys) > 1 || ($existing !== null && $existing !== $variantKeys[0])) {
+                foreach ($group as $entry) {
+                    $quarantined[] = ['status' => 'QUARANTINED_SEMANTIC_CONFLICT', 'row' => $entry['row'], 'reason' => 'Contradictory semantic definition for same applicability context '.$contextIdentity.'.'];
                 }
+
+                continue;
             }
-            $stagedApplicability[$contextIdentity] = $applicability + ['context_identity' => $contextIdentity];
+            $accepted++;
+            $entry = $group[0];
+            $variantIdentity = json_encode([$release, (string) $entry['row']['id_kode'], $entry['variant_key']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $stagedVariants[$variantIdentity] = ['variant_key' => $entry['variant_key'], 'data' => $entry['variant_data'], 'release' => $release];
+            $stagedApplicability[$contextIdentity] = $entry['applicability'] + ['variant_key' => $entry['variant_key'], 'context_identity' => $contextIdentity];
         }
         $this->codeVariants = $stagedVariants;
         $this->codeApplicability = $stagedApplicability;
 
-        return ['accepted' => count($rows), 'variant_count' => count($this->codeVariants), 'applicability_count' => count($this->codeApplicability)];
+        return ['accepted' => $accepted, 'quarantined' => $quarantined, 'diagnostics' => ['accepted' => $accepted, 'quarantined' => count($quarantined)]];
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
@@ -109,7 +130,7 @@ final class ArkasReferencePromotionService
             throw new RuntimeException('Orphan ref_kode applicability for '.$variantIdentity.'.');
         }
         $applicability = $this->codeApplicabilityData($tenantId, $row, $release, $variantKey);
-        $contextIdentity = json_encode([$tenantId, $release, $row['id_kode'], $applicability['tahun'], $applicability['sumber_dana_id'], $applicability['bentuk_pendidikan_id']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $contextIdentity = $this->codeContextIdentity($tenantId, $row, $release, $applicability);
         foreach ($this->codeApplicability as $existing) {
             if ($existing['context_identity'] === $contextIdentity && $existing['variant_key'] !== $variantKey) {
                 throw new RuntimeException('ref_kode contradictory semantic definition for same applicability context '.$contextIdentity.'.');
@@ -295,6 +316,12 @@ final class ArkasReferencePromotionService
         }
 
         return ['tenant_id' => $tenantId, 'release' => $release, 'source_id' => (string) $row['id_kode'], 'variant_key' => $variantKey, 'tahun' => (string) $row['tahun'], 'sumber_dana_id' => (string) $row['sumber_dana_id'], 'bentuk_pendidikan_id' => (string) $row['bentuk_pendidikan_id']];
+    }
+
+    /** @param array<string, mixed> $row @param array<string, mixed> $applicability */
+    private function codeContextIdentity(string $tenantId, array $row, string $release, array $applicability): string
+    {
+        return json_encode([$tenantId, $release, $row['id_kode'], $applicability['tahun'], $applicability['sumber_dana_id'], $applicability['bentuk_pendidikan_id']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     /** @param array<string, mixed> $row */

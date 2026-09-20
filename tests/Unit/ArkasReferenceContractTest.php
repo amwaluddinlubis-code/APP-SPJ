@@ -68,10 +68,11 @@ class ArkasReferenceContractTest extends TestCase
         ];
         $promotion->promoteCodeVariants('A', [$base], '2026.09');
 
-        $this->expectExceptionMessage('contradictory semantic definition');
         $conflict = $base;
         $conflict['uraian_kode'] = 'Different';
-        $promotion->promoteCodeVariants('A', [$conflict], '2026.09');
+        $report = $promotion->promoteCodeVariantsReport('A', [$conflict], '2026.09');
+        self::assertSame(0, $report['accepted']);
+        self::assertSame('QUARANTINED_SEMANTIC_CONFLICT', $report['quarantined'][0]['status']);
     }
 
     public function test_orphan_code_applicability_fails_closed(): void
