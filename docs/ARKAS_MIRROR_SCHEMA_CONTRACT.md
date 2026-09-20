@@ -238,3 +238,39 @@ version dimensions, bridge, availability, dan central-disabled status keenam
 tabel drift/hybrid. Status central promotion tetap **DEFERRED**: belum ada
 central migration, central write-path, cutover read, atau penghapusan raw
 tenant copy.
+## Central promotion rehearsal and read resolver checkpoint
+
+Checkpoint `d267839` menambahkan kontrak isolated untuk promotion central tanpa
+membuat migration atau menulis database tenant:
+
+- `ArkasReferenceCentralSchema` mendefinisikan target table, natural key,
+  version dimension, dan semantic columns untuk 9 confirmed reference,
+  `ref_rekening`, `ref_acuan_barang`, `ref_bku`, `ref_sumber_dana`, dan
+  `ref_kode`.
+- `ArkasReferencePromotionService` menyimpan rehearsal central secara
+  isolated, canonical, idempotent, dan atomic terhadap conflict.
+- `ArkasReferenceResolver` memiliki mode eksplisit `LEGACY_RAW`,
+  `CENTRAL_COMPAT`, dan `CENTRAL_ONLY`. `CENTRAL_COMPAT` hanya mengembalikan
+  central setelah shadow parity; mismatch tidak fallback diam-diam.
+
+Evidence dari dump A/B/C:
+
+- 9 `GLOBAL_REFERENCE_CONFIRMED`, `ref_rekening`, dan `ref_bku` lulus import
+  reverse-order serta idempotency rehearsal.
+- `ref_sumber_dana` lulus central base dedup dan tenant extension isolation.
+- `ref_acuan_barang` belum promotion-ready: ditemukan row source dengan
+  `id_barang` kosong dan row tersebut ditolak sebelum central write. Invalid
+  source rows tidak boleh di-skip diam-diam.
+- `ref_kode` belum promotion-ready: `id_kode` yang sama memiliki definisi
+  semantic berbeda (`uraian_kode`/flag BOS) bahkan dalam satu dump. Promotion
+  flat base gagal tertutup; applicability/semantic variant perlu kontrak baru.
+
+Read authority production tetap tenant raw mirror. Controller dan Livewire
+consumer (`ArkasReferenceController`, `RkasBudgetController`,
+`RkasBudgetFilter`, dan `SpjV2CanonicalReadService`) belum di-switch. Resolver
+baru menjadi boundary compatibility/shadow rehearsal, bukan production-wide
+cutover.
+
+Central promotion gate karena itu **PARTIAL / BLOCKED FOR TWO REFERENCES**;
+read cutover tetap belum READY sampai invalid `ref_acuan_barang`, semantic
+variant `ref_kode`, dan parity seluruh consumer diselesaikan.

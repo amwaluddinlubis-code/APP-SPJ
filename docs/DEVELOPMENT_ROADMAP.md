@@ -602,3 +602,16 @@ tenant-extension; `ref_rekening`, `ref_acuan_barang`, and `ref_bku` are
 versioned global; `ref_sumber_dana_sekolah` is an optional tenant reference.
 Empty references remain unused. No central promotion or destructive migration
 is authorized by this checkpoint.
+### Central reference promotion checkpoint — after schema partial freeze
+
+Tahap berikutnya sekarang memiliki isolated implementation, tetapi belum
+merupakan izin cutover production. `ArkasReferenceCentralSchema`,
+`ArkasReferencePromotionService`, dan `ArkasReferenceResolver` membuktikan
+target schema, idempotency, reverse import order, hybrid tenant isolation, dan
+explicit no-fallback resolver modes.
+
+Promotion-ready pada checkpoint ini: 9 confirmed global, `ref_rekening`,
+`ref_bku`, dan base/extension `ref_sumber_dana`. Blocker: invalid
+`ref_acuan_barang.id_barang` source row dan semantic conflict `ref_kode` untuk
+natural key yang sama. Consumer masih raw-authoritative; resolver baru dipakai
+untuk shadow/compatibility rehearsal. Production read cutover **NOT READY**.

@@ -699,3 +699,15 @@ copy tenant. Contract audit 2026-09-20 kini menetapkan `ref_rekening`,
 `HYBRID_CENTRAL_BASE_TENANT_EXTENSION`, serta `ref_sumber_dana_sekolah`
 sebagai `OPTIONAL_TENANT_REFERENCE`. Classification ini belum mengizinkan
 central promotion, read-path cutover, atau destructive cleanup.
+### Central reference promotion boundary
+
+Central reference promotion hanya boleh dilakukan melalui explicit target
+schema dan resolver mode. `LEGACY_RAW` tetap authority existing, `CENTRAL_COMPAT`
+memerlukan shadow parity, dan `CENTRAL_ONLY` tidak boleh menjadi default tanpa
+consumer gate. A central candidate yang memiliki invalid source key atau
+semantic conflict wajib fail closed.
+
+Rehearsal terbaru menahan `ref_acuan_barang` karena `id_barang` kosong dan
+menahan `ref_kode` karena semantic variant pada `id_kode` yang sama. Ini bukan
+alasan untuk menghapus row atau mengubah tenant source; kontrak variant dan
+source-data correction harus dibuktikan terlebih dahulu.

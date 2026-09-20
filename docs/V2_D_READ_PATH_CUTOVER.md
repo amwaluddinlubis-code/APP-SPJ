@@ -1043,3 +1043,15 @@ The clean `598b74a` head passed the complete repository PHPUnit gate with
 assertions** and **593 deprecated notices**. Three serial authorization-suite
 runs passed without a `database is locked` exception. This evidence does not
 claim browser/runtime verification; browser QA remains RVR/DEFERRED.
+### Reference resolver checkpoint after schema partial freeze
+
+Reference promotion sekarang memiliki boundary isolated `ArkasReferenceResolver`
+dengan mode `LEGACY_RAW`, `CENTRAL_COMPAT`, dan `CENTRAL_ONLY`. `CENTRAL_COMPAT`
+melakukan normalized shadow comparison dan fail-closed ketika central result
+berbeda; resolver tidak melakukan silent fallback.
+
+Belum ada consumer yang di-switch. `ArkasReferenceController`,
+`RkasBudgetController`, `RkasBudgetFilter`, dan `SpjV2CanonicalReadService`
+tetap membaca tenant raw/canonical path existing. Production read cutover
+**NOT READY** karena invalid `ref_acuan_barang` source row, semantic variant
+`ref_kode`, dan consumer-wide parity evidence masih tersisa.

@@ -1209,3 +1209,20 @@ dihapus. Enam reference lain kosong pada ketiga dump dan tetap diklasifikasi
 order-independent serta import order `A→B→C` = `C→A→B` untuk sembilan tabel
 confirmed. Tidak ada central migration atau live tenant mutation. Status schema
 tetap **PARTIAL FREEZE**; central promotion **DEFERRED**.
+### Central reference promotion rehearsal — PARTIAL / read cutover BLOCKED
+
+Dari HEAD `d267839`, isolated central contract dan resolver sudah ditambahkan
+tanpa migration, live tenant mutation, atau production read switch. Mode baca
+yang tersedia adalah `LEGACY_RAW`, `CENTRAL_COMPAT`, dan `CENTRAL_ONLY`; default
+production tetap legacy/raw.
+
+Rehearsal A/B/C lulus untuk 9 confirmed global, `ref_rekening`, `ref_bku`, serta
+central base + tenant extension `ref_sumber_dana`. `ref_acuan_barang` ditolak
+karena terdapat source row dengan `id_barang` kosong. `ref_kode` ditolak karena
+definisi semantic untuk `id_kode` yang sama berbeda bahkan dalam satu dump.
+Kedua kondisi tersebut dicatat sebagai fail-closed blockers, bukan dihapus atau
+dinormalisasi secara diam-diam.
+
+Consumer existing masih tenant raw-authoritative; belum ada central read
+cutover. FINAL, settlement, bulk-final, period close/open, destructive schema
+cleanup, dan browser QA tetap tertutup.
