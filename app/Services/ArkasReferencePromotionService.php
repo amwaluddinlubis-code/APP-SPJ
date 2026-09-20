@@ -12,12 +12,27 @@ final class ArkasReferencePromotionService
     /** @var array<string, array<string, array<string, array<string, mixed>>>> */
     private array $extensions = [];
 
+    /** @var array<string, array{variant_key: string, data: array<string, mixed>, release: string}> */
+    private array $codeVariants = [];
+
+    /** @var array<string, array<string, mixed>> */
+    private array $codeApplicability = [];
+
     public function __construct(private readonly ArkasReferenceVersionKey $versionKey = new ArkasReferenceVersionKey) {}
 
     /** @param array<int, array<string, mixed>> $rows @param array<string, scalar|null> $versionContext */
     public function promote(string $table, array $rows, string $release, array $versionContext = []): int
     {
         $this->versionKey->validateRelease($release);
+
+        if ($table === 'ref_acuan_barang') {
+            return $this->promoteReport($table, $rows, $release, $versionContext)['accepted'];
+        }
+
+        if ($table === 'ref_kode') {
+            throw new RuntimeException('ref_kode wajib dipromosikan melalui promoteCodeVariants() agar semantic variant dan applicability tidak ambigu.');
+        }
+
         $schema = ArkasReferenceCentralSchema::for($table);
         $staged = $this->central[$table] ?? [];
         foreach ($rows as $row) {
@@ -31,6 +46,78 @@ final class ArkasReferencePromotionService
         $this->central[$table] = $staged;
 
         return count($rows);
+    }
+
+    /** @param array<int, array<string, mixed>> $rows @param array<string, scalar|null> $versionContext @return array{accepted: int, quarantined: array<int, array{status: string, row: array<string, mixed>, reason: string}>, diagnostics: array{accepted: int, quarantined: int}} */
+    public function promoteReport(string $table, array $rows, string $release, array $versionContext = []): array
+    {
+        $this->versionKey->validateRelease($release);
+        $schema = ArkasReferenceCentralSchema::for($table);
+        $quarantined = [];
+        $valid = [];
+        foreach ($rows as $row) {
+            $reason = $this->invalidIdentityReason($schema, $row);
+            if ($reason !== null) {
+                $quarantined[] = ['status' => 'QUARANTINED_INVALID_ID', 'row' => $row, 'reason' => $reason];
+
+                continue;
+            }
+            $valid[] = $row;
+        }
+        $accepted = $this->promoteRows($table, $valid, $release, $versionContext);
+
+        return ['accepted' => $accepted, 'quarantined' => $quarantined, 'diagnostics' => ['accepted' => $accepted, 'quarantined' => count($quarantined)]];
+    }
+
+    /** @param array<int, array<string, mixed>> $rows @return array{accepted: int, variant_count: int, applicability_count: int} */
+    public function promoteCodeVariants(string $tenantId, array $rows, string $release): array
+    {
+        $this->versionKey->validateRelease($release);
+        $schema = ArkasReferenceCentralSchema::for('ref_kode');
+        $stagedVariants = $this->codeVariants;
+        $stagedApplicability = $this->codeApplicability;
+        foreach ($rows as $row) {
+            $this->values($schema['natural_key'], $row);
+            $variantData = $this->semanticData($schema, $row);
+            $variantKey = $this->semanticVariantKey($variantData);
+            $variantIdentity = json_encode([$release, (string) $row['id_kode'], $variantKey], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if (isset($stagedVariants[$variantIdentity]) && $stagedVariants[$variantIdentity]['data'] !== $variantData) {
+                throw new RuntimeException('ref_kode semantic variant conflict for '.$variantIdentity.'.');
+            }
+            $stagedVariants[$variantIdentity] = ['variant_key' => $variantKey, 'data' => $variantData, 'release' => $release];
+
+            $applicability = $this->codeApplicabilityData($tenantId, $row, $release, $variantKey);
+            $contextIdentity = json_encode([$tenantId, $release, $row['id_kode'], $applicability['tahun'], $applicability['sumber_dana_id'], $applicability['bentuk_pendidikan_id']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            foreach ($stagedApplicability as $existingIdentity => $existing) {
+                if ($existing['context_identity'] === $contextIdentity && $existing['variant_key'] !== $variantKey) {
+                    throw new RuntimeException('ref_kode contradictory semantic definition for same applicability context '.$contextIdentity.'.');
+                }
+            }
+            $stagedApplicability[$contextIdentity] = $applicability + ['context_identity' => $contextIdentity];
+        }
+        $this->codeVariants = $stagedVariants;
+        $this->codeApplicability = $stagedApplicability;
+
+        return ['accepted' => count($rows), 'variant_count' => count($this->codeVariants), 'applicability_count' => count($this->codeApplicability)];
+    }
+
+    /** @param array<string, mixed> $row @return array<string, mixed> */
+    public function attachCodeApplicability(string $tenantId, array $row, string $release, string $variantKey): array
+    {
+        $variantIdentity = json_encode([$release, (string) ($row['id_kode'] ?? ''), $variantKey], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (! isset($this->codeVariants[$variantIdentity])) {
+            throw new RuntimeException('Orphan ref_kode applicability for '.$variantIdentity.'.');
+        }
+        $applicability = $this->codeApplicabilityData($tenantId, $row, $release, $variantKey);
+        $contextIdentity = json_encode([$tenantId, $release, $row['id_kode'], $applicability['tahun'], $applicability['sumber_dana_id'], $applicability['bentuk_pendidikan_id']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        foreach ($this->codeApplicability as $existing) {
+            if ($existing['context_identity'] === $contextIdentity && $existing['variant_key'] !== $variantKey) {
+                throw new RuntimeException('ref_kode contradictory semantic definition for same applicability context '.$contextIdentity.'.');
+            }
+        }
+        $this->codeApplicability[$contextIdentity] = $applicability + ['context_identity' => $contextIdentity];
+
+        return $this->codeApplicability[$contextIdentity];
     }
 
     /** @param array<int, array<string, mixed>> $rows @param array<string, scalar|null> $versionContext */
@@ -58,6 +145,12 @@ final class ArkasReferencePromotionService
     /** @return array<int, array<string, mixed>> */
     public function readCentral(string $table): array
     {
+        if ($table === 'ref_kode') {
+            $rows = $this->codeVariants;
+            ksort($rows, SORT_STRING);
+
+            return array_values($rows);
+        }
         $rows = $this->central[$table] ?? [];
         ksort($rows, SORT_STRING);
 
@@ -67,6 +160,12 @@ final class ArkasReferencePromotionService
     /** @return array<int, array<string, mixed>> */
     public function readTenantExtension(string $table, string $tenantId): array
     {
+        if ($table === 'ref_kode') {
+            $rows = array_filter($this->codeApplicability, static fn (array $row): bool => $row['tenant_id'] === $tenantId);
+            ksort($rows, SORT_STRING);
+
+            return array_values($rows);
+        }
         $rows = $this->extensions[$table][$tenantId] ?? [];
         ksort($rows, SORT_STRING);
 
@@ -76,13 +175,50 @@ final class ArkasReferencePromotionService
     /** @return array<string, array<string, mixed>> */
     public function snapshot(): array
     {
-        return ['central' => $this->central, 'extensions' => $this->extensions];
+        return ['central' => $this->central, 'extensions' => $this->extensions, 'code_variants' => $this->codeVariants, 'code_applicability' => $this->codeApplicability];
     }
 
     /** @param array<string, mixed> $schema @param array<string, mixed> $row @param array<string, scalar|null> $versionContext */
     private function identity(array $schema, array $row, string $release, array $versionContext): string
     {
         return json_encode(['natural_key' => $this->values($schema['natural_key'], $row), 'version' => $this->version($schema, $row, $release, $versionContext)], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** @param array<string, mixed> $schema @param array<string, mixed> $row */
+    private function invalidIdentityReason(array $schema, array $row): ?string
+    {
+        foreach ($schema['natural_key'] as $column) {
+            $value = $this->rowValue($row, $column);
+            if ($value === null || trim((string) $value) === '') {
+                return $column.' kosong';
+            }
+            if (preg_match('/[[:cntrl:]]/', (string) $value) === 1) {
+                return $column.' malformed: contains control character';
+            }
+        }
+
+        return null;
+    }
+
+    /** @param array<string, mixed> $schema @param array<int, array<string, mixed>> $rows @param array<string, scalar|null> $versionContext */
+    private function promoteRows(string $table, array $rows, string $release, array $versionContext): int
+    {
+        if ($rows === []) {
+            return 0;
+        }
+        $schema = ArkasReferenceCentralSchema::for($table);
+        $staged = $this->central[$table] ?? [];
+        foreach ($rows as $row) {
+            $identity = $this->identity($schema, $row, $release, $versionContext);
+            $data = json_encode($this->semanticData($schema, $row), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if (isset($staged[$identity]) && $staged[$identity]['data'] !== $data) {
+                throw new RuntimeException('Central reference semantic conflict for '.$table.' identity '.$identity.'.');
+            }
+            $staged[$identity] = ['natural_key' => $this->values($schema['natural_key'], $row), 'version' => $this->version($schema, $row, $release, $versionContext), 'data' => $data];
+        }
+        $this->central[$table] = $staged;
+
+        return count($rows);
     }
 
     /** @param array<int, string> $columns @param array<string, mixed> $row @return array<int, string> */
@@ -139,6 +275,38 @@ final class ArkasReferencePromotionService
         ksort($data);
 
         return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function semanticVariantKey(array $data): string
+    {
+        ksort($data);
+
+        return hash('sha256', json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    /** @param array<string, mixed> $row @return array<string, mixed> */
+    private function codeApplicabilityData(string $tenantId, array $row, string $release, string $variantKey): array
+    {
+        foreach (['tahun', 'sumber_dana_id', 'bentuk_pendidikan_id'] as $dimension) {
+            if ($this->rowValue($row, $dimension) === null || trim((string) $this->rowValue($row, $dimension)) === '') {
+                throw new RuntimeException('ref_kode applicability dimension '.$dimension.' kosong.');
+            }
+        }
+
+        return ['tenant_id' => $tenantId, 'release' => $release, 'source_id' => (string) $row['id_kode'], 'variant_key' => $variantKey, 'tahun' => (string) $row['tahun'], 'sumber_dana_id' => (string) $row['sumber_dana_id'], 'bentuk_pendidikan_id' => (string) $row['bentuk_pendidikan_id']];
+    }
+
+    /** @param array<string, mixed> $row */
+    private function rowValue(array $row, string $column): mixed
+    {
+        foreach ($row as $name => $value) {
+            if (strcasecmp((string) $name, $column) === 0) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     /** @param array<string, mixed> $schema @param array<string, mixed> $row @return array<string, mixed> */

@@ -56,15 +56,15 @@ class ArkasReferenceCentralPromotionRehearsalTest extends TestCase
         $promotion->attachTenantExtension('ref_sumber_dana', 'A', [['kode' => 'ORPHAN', 'nama_sumber_dana' => 'Orphan']], '2026.09', ['fiscal_year' => 2026]);
     }
 
-    public function test_ref_kode_conflicting_semantic_definitions_block_central_promotion(): void
+    public function test_ref_kode_unexplained_same_context_conflict_fails_closed(): void
     {
         $databases = $this->databases();
         if ($databases === []) {
             self::markTestSkipped('Set ARKAS_PARITY_DUMP_A/B/C for the hybrid rehearsal.');
         }
 
-        $this->expectException(RuntimeException::class);
-        (new ArkasReferencePromotionService)->promote('ref_kode', $this->rows($databases['A'], 'ref_kode'), '2026.09');
+        $this->expectExceptionMessage('contradictory semantic definition');
+        (new ArkasReferencePromotionService)->promoteCodeVariants('A', $this->rows($databases['A'], 'ref_kode'), '2026.09');
     }
 
     public function test_acuan_barang_invalid_source_rows_are_rejected_before_promotion(): void
@@ -79,21 +79,22 @@ class ArkasReferenceCentralPromotionRehearsalTest extends TestCase
         self::assertCount(1, $invalid);
 
         $promotion = new ArkasReferencePromotionService;
-        try {
-            $promotion->promote('ref_acuan_barang', $invalid, '2026.09');
-            self::fail('Invalid ref_acuan_barang row was accepted.');
-        } catch (RuntimeException $exception) {
-            self::assertStringContainsString('id_barang kosong', $exception->getMessage());
-        }
+        $report = $promotion->promoteReport('ref_acuan_barang', $invalid, '2026.09');
+        self::assertSame(0, $report['accepted']);
+        self::assertSame(1, $report['diagnostics']['quarantined']);
+        self::assertSame('QUARANTINED_INVALID_ID', $report['quarantined'][0]['status']);
+        self::assertSame([], $promotion->readCentral('ref_acuan_barang'));
 
         $valid = $database->query("SELECT * FROM ref_acuan_barang WHERE trim(id_barang) <> '' LIMIT 25")->fetchAll(PDO::FETCH_ASSOC);
-        self::assertSame(25, $promotion->promote('ref_acuan_barang', $valid, '2026.09'));
+        $validReport = $promotion->promoteReport('ref_acuan_barang', $valid, '2026.09');
+        self::assertSame(25, $validReport['accepted']);
+        self::assertSame(0, $validReport['diagnostics']['quarantined']);
     }
 
     /** @return array<string, PDO> */
     private function databases(): array
     {
-        $paths = ['A' => (string) env('ARKAS_PARITY_DUMP_A', ''), 'B' => (string) env('ARKAS_PARITY_DUMP_B', ''), 'C' => (string) env('ARKAS_PARITY_DUMP_C', '')];
+        $paths = ['A' => (string) (getenv('ARKAS_PARITY_DUMP_A') ?: env('ARKAS_PARITY_DUMP_A', '')), 'B' => (string) (getenv('ARKAS_PARITY_DUMP_B') ?: env('ARKAS_PARITY_DUMP_B', '')), 'C' => (string) (getenv('ARKAS_PARITY_DUMP_C') ?: env('ARKAS_PARITY_DUMP_C', ''))];
         if (count(array_filter($paths, 'is_file')) !== 3) {
             return [];
         }
