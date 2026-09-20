@@ -627,8 +627,10 @@ Tahap berikutnya adalah full consumer shadow parity. Consumer inventory masih
 menandai raw-authoritative readers sebagai belum cutover; production read
 authority belum boleh diubah sampai setiap consumer critical memiliki context
 lengkap dan parity evidence.
-Full-dump `ref_kode` masih menghasilkan contradictory semantic definition pada
 Full-dump `ref_kode` mengklasifikasikan context yang sama sebagai duplicate
 source anomaly dan meng-quarantine context itu secara lokal. Applicability
 variant contract deterministik; consumer yang memakai context terquarantine
 tetap blocked sampai provenance source diperjelas.
+Persistent central schema/import authority is now available in an isolated
+central database boundary. Raw mirrors remain retained, `CENTRAL_ONLY` remains
+non-default, and request-level consumer parity is still pending.

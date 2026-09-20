@@ -727,3 +727,6 @@ Full-dump evidence mengklasifikasikan satu context `ref_kode` dengan dua
 semantic definition sebagai duplicate source anomaly. Context itu di-quarantine
 secara lokal; batch lain tetap berjalan. Consumer yang memerlukan context
 tersebut tetap fail-closed sampai source provenance memberi penjelasan.
+Persistent central tables are a candidate authority separate from tenant raw
+databases. Central import is idempotent and conflict fail-closed; tenant raw
+copies remain until consumer parity and rollback gates are complete.

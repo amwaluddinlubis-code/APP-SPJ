@@ -1252,3 +1252,4 @@ context tenant A / release `2026.09` / `id_kode=05.02.05.` / tahun 2025 / fund 1
 jenjang 6. Context tersebut di-quarantine sebagai duplicate source anomaly;
 batch lain tetap lanjut. Consumer yang membutuhkan context ini tetap blocked
 hingga provenance source menjelaskan row yang berlaku.
+Persistent central authority now exists through `ArkasPersistentReferenceAuthority`; isolated tests cover version coexistence, quarantine persistence, idempotency, conflict blocking, and `CENTRAL_COMPAT` reads without fallback. Five production consumers remain raw-authoritative; request-level parity is still 0/5.

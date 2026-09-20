@@ -73,6 +73,7 @@ key columns, required columns, dan school-scope strategy. Validator
 duplicate identity, dan malformed rows sebelum metadata atau rows ditulis.
 `kas_umum` wajib memiliki relasi `id_anggaran` ke `anggaran`; orphan relation
 fail-closed.
+Persistent authority checkpoint: migration `2026_09_20_120000_create_persistent_arkas_reference_authority` adds `central_reference_rows`, quarantine diagnostics, code variants/applicability, and tenant extensions. It is isolated from tenant raw databases and has not been applied as a live tenant mutation.
 
 Full-dump audit menemukan satu context `ref_kode` yang masih tidak dapat
 dibuktikan aman: tenant A, release `2026.09`, `id_kode=05.02.05.`, tahun 2025,
