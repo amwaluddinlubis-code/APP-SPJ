@@ -35,6 +35,7 @@ final class ArkasRawMirrorController implements HasMiddleware
         ]);
 
         SynchronizeArkasRawMirror::dispatch($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id)
+            ->onConnection('database')
             ->onQueue('operations');
 
         return redirect()->route('arkas.settings')->with('success', 'Sinkronisasi seluruh database ARKAS masuk antrean.');

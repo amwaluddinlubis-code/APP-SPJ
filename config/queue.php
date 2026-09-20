@@ -16,13 +16,6 @@ return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
     /*
-    | ARKAS synchronization runs in the foreground by default so the desktop /
-    | local-school installation never depends on a separate queue worker.
-    | Server deployments may opt in to background execution explicitly.
-    */
-    'arkas_sync_async' => env('ARKAS_SYNC_ASYNC', false),
-
-    /*
     |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------

@@ -28,30 +28,20 @@ class ArkasSyncController extends Controller
                     ->with('error', 'Sumber ARKAS untuk '.$school->name.' belum disimpan. Isi path database dan kata sandi terlebih dahulu.');
             }
 
-            $runAsync = (bool) config('queue.arkas_sync_async', false);
             $operation = BackgroundOperation::query()->create([
                 'school_id' => $school->id,
                 'fiscal_year_id' => $year->id,
                 'requested_by' => $request->user()?->id,
                 'type' => 'ARKAS_SYNC',
                 'status' => 'QUEUED',
-                'message' => $runAsync ? 'Menunggu worker antrean.' : 'Menunggu proses sinkronisasi langsung.',
+                'message' => 'Menunggu worker antrean.',
             ]);
 
-            if ($runAsync) {
-                SynchronizeArkasRawMirror::dispatch($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id)->onQueue('operations');
+            SynchronizeArkasRawMirror::dispatch($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id)
+                ->onConnection('database')
+                ->onQueue('operations');
 
-                return back()->with('success', 'Sinkronisasi ARKAS masuk antrean. Proses tetap berjalan di latar belakang. ID proses: '.$operation->id.'.');
-            }
-
-            SynchronizeArkasRawMirror::dispatchSync($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id);
-            $operation->refresh();
-
-            if ($operation->status === 'FAILED') {
-                return back()->with('error', $operation->message ?: 'Sinkronisasi ARKAS gagal.');
-            }
-
-            return back()->with('success', $operation->message ?: 'Sinkronisasi ARKAS selesai.');
+            return back()->with('success', 'Sinkronisasi ARKAS masuk antrean. Proses berjalan di latar belakang. ID proses: '.$operation->id.'.');
         } catch (\Throwable $exception) {
             if ($operation && ! in_array($operation->status, ['COMPLETED', 'FAILED'], true)) {
                 $operation->update([
