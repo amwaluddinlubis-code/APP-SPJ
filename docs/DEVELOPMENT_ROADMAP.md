@@ -634,3 +634,8 @@ tetap blocked sampai provenance source diperjelas.
 Persistent central schema/import authority is now available in an isolated
 central database boundary. Raw mirrors remain retained, `CENTRAL_ONLY` remains
 non-default, and request-level consumer parity is still pending.
+
+The next gate is one serial request-level shadow audit for all five named
+consumers. Keep production on `LEGACY_RAW`/explicit `CENTRAL_COMPAT`; do not
+make `CENTRAL_ONLY` default or perform destructive cleanup before all five
+semantic comparisons pass.

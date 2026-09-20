@@ -17,7 +17,7 @@ class ArkasPersistentReferenceResolverTest extends TestCase
         $rows = [['id_ref_bku' => '1', 'bku' => 'BKU', 'kode_bku' => '1']];
         $authority->promote('ref_bku', $rows, '2026.09');
 
-        self::assertSame([['bku' => 'BKU', 'id_ref_bku' => '1', 'kode_bku' => '1']], (new ArkasReferenceResolver)->readPersistent(ArkasReferenceResolver::CENTRAL_COMPAT, $authority, 'ref_bku', $rows));
+        self::assertSame([['BKU' => 'BKU', 'ID_REF_BKU' => '1', 'KODE_BKU' => '1']], (new ArkasReferenceResolver)->readPersistent(ArkasReferenceResolver::CENTRAL_COMPAT, $authority, 'ref_bku', $rows));
         $this->expectExceptionMessage('shadow parity mismatch');
         (new ArkasReferenceResolver)->readPersistent(ArkasReferenceResolver::CENTRAL_COMPAT, $authority, 'ref_bku', [['id_ref_bku' => '2']]);
     }

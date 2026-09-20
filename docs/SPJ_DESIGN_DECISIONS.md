@@ -730,3 +730,9 @@ tersebut tetap fail-closed sampai source provenance memberi penjelasan.
 Persistent central tables are a candidate authority separate from tenant raw
 databases. Central import is idempotent and conflict fail-closed; tenant raw
 copies remain until consumer parity and rollback gates are complete.
+
+The persistent reference boundary is additive and non-destructive. Versioned
+identity is natural key plus declared release/year dimensions; `ref_kode` uses
+deterministic semantic variants with tenant applicability. `CENTRAL_COMPAT`
+fails closed on mismatch and never silently falls back. Production default
+remains raw until five consumer request-level shadow results are PASS.

@@ -39,6 +39,14 @@ final class ArkasReferenceResolver
             ? $authority->readForTenant($table, $tenantKey)
             : $authority->read($table);
 
+        if ($mode === self::CENTRAL_COMPAT) {
+            if (! $this->semanticSubsetEqual($legacyRows, $centralRows)) {
+                throw new RuntimeException('ARKAS CENTRAL_COMPAT shadow parity mismatch; read path tetap closed.');
+            }
+
+            return $this->consumerRows($centralRows);
+        }
+
         return $this->read($mode, $legacyRows, $centralRows);
     }
 
@@ -71,5 +79,25 @@ final class ArkasReferenceResolver
         usort($normalized, static fn (array $left, array $right): int => strcmp(json_encode($left, JSON_THROW_ON_ERROR), json_encode($right, JSON_THROW_ON_ERROR)));
 
         return $normalized;
+    }
+
+    /** @param array<int, array<string, mixed>> $legacyRows @param array<int, array<string, mixed>> $centralRows */
+    private function semanticSubsetEqual(array $legacyRows, array $centralRows): bool
+    {
+        $central = $this->consumerRows($centralRows);
+        $legacyProjection = [];
+        foreach ($legacyRows as $row) {
+            $upper = array_change_key_case($row, CASE_UPPER);
+            $keys = array_keys($central[0] ?? $upper);
+            $legacyProjection[] = array_intersect_key($upper, array_fill_keys($keys, true));
+        }
+
+        return $this->normalize($legacyProjection) === $this->normalize($central);
+    }
+
+    /** @param array<int, array<string, mixed>> $rows @return array<int, array<string, mixed>> */
+    private function consumerRows(array $rows): array
+    {
+        return array_map(static fn (array $row): array => array_change_key_case($row, CASE_UPPER), $rows);
     }
 }

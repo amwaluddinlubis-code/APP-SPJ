@@ -1253,3 +1253,9 @@ jenjang 6. Context tersebut di-quarantine sebagai duplicate source anomaly;
 batch lain tetap lanjut. Consumer yang membutuhkan context ini tetap blocked
 hingga provenance source menjelaskan row yang berlaku.
 Persistent central authority now exists through `ArkasPersistentReferenceAuthority`; isolated tests cover version coexistence, quarantine persistence, idempotency, conflict blocking, and `CENTRAL_COMPAT` reads without fallback. Five production consumers remain raw-authoritative; request-level parity is still 0/5.
+
+Persistent A/B/C rehearsal is now PASS: forward/reverse imports converge,
+rerun is idempotent, and quarantine plus tenant isolation are deterministic.
+The resolver boundary is wired into the five consumer paths, but full
+request-level shadow parity remains outstanding. Production read cutover is
+therefore **NOT READY** and schema remains **PARTIAL FREEZE**.

@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\FiscalYear;
+use App\Services\ArkasReferenceReadBoundary;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -420,7 +421,7 @@ class RkasBudgetFilter extends Component
             return null;
         }
 
-        return $db->table('arkas_raw_mirror_rows')
+        $rows = $db->table('arkas_raw_mirror_rows')
             ->where('mirror_table_id', $mirrorTable->id)
             ->get()
             ->map(function (object $row): array {
@@ -430,6 +431,8 @@ class RkasBudgetFilter extends Component
             })
             ->filter(fn (array $row): bool => $row !== [])
             ->values();
+
+        return app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'));
     }
 
     /** @return Collection<int, array{kode:string,nama:string}> */

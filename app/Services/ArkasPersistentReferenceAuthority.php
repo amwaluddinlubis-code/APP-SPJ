@@ -66,7 +66,9 @@ final class ArkasPersistentReferenceAuthority
                 $context = ['tenant_key' => $tenantKey, 'source_code' => (string) $row['id_kode'], 'arkas_release' => $release, 'fiscal_year' => (string) $row['tahun'], 'fund_source' => (string) $row['sumber_dana_id'], 'education_level' => (string) $row['bentuk_pendidikan_id']];
                 $existing = DB::table('central_code_applicabilities')->where($context)->first();
                 if ($existing !== null && (int) $existing->variant_id !== (int) $variantId) {
-                    throw new RuntimeException('Persistent ref_kode applicability conflict.');
+                    $this->quarantine('ref_kode', 'QUARANTINED_SEMANTIC_CONFLICT', json_encode($context, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'Contradictory semantic definition for an existing applicability context.', $row);
+
+                    continue;
                 }
                 DB::table('central_code_applicabilities')->updateOrInsert($context, ['variant_id' => $variantId, 'applicability_payload' => json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'updated_at' => now(), 'created_at' => now()]);
                 $accepted++;
@@ -80,7 +82,32 @@ final class ArkasPersistentReferenceAuthority
     public function readForTenant(string $table, string $tenantKey): array
     {
         if ($table === 'ref_kode') {
-            return DB::table('central_code_applicabilities')->where('tenant_key', $tenantKey)->orderBy('source_code')->get()->map(fn (object $row): array => json_decode((string) $row->applicability_payload, true, 512, JSON_THROW_ON_ERROR))->all();
+            return DB::table('central_code_applicabilities as applicability')
+                ->join('central_code_variants as variant', 'variant.id', '=', 'applicability.variant_id')
+                ->where('applicability.tenant_key', $tenantKey)
+                ->orderBy('applicability.source_code')
+                ->get()
+                ->map(function (object $row): array {
+                    $payload = json_decode((string) $row->applicability_payload, true, 512, JSON_THROW_ON_ERROR);
+                    $payload['parent_kode'] ??= $row->parent_code;
+                    $payload['uraian_kode'] ??= $row->description;
+                    $payload['id_level_kode'] ??= $row->level_code;
+                    $payload['tipe'] ??= $row->variant_type;
+
+                    return $payload;
+                })->all();
+        }
+
+        if ($table === 'ref_sumber_dana') {
+            $baseRows = DB::table('central_reference_rows')->where('source_table', $table)->get()->keyBy(fn (object $row): string => $row->natural_key.'|'.$row->version_key);
+            $extensionRows = DB::table('central_reference_extensions')->where(['source_table' => $table, 'tenant_key' => $tenantKey])->orderBy('natural_key')->get();
+
+            return $extensionRows->map(function (object $row) use ($baseRows): array {
+                $base = $baseRows->get($row->natural_key.'|'.$row->version_key);
+                $basePayload = $base === null ? [] : json_decode((string) $base->semantic_payload, true, 512, JSON_THROW_ON_ERROR);
+
+                return array_replace($basePayload, json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR));
+            })->all();
         }
 
         return DB::table('central_reference_extensions')->where(['source_table' => $table, 'tenant_key' => $tenantKey])->orderBy('natural_key')->get()->map(fn (object $row): array => json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR))->all();

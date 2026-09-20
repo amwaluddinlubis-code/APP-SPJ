@@ -299,3 +299,12 @@ release. Tenant applicability menyimpan `tenant_id`, `tahun`, `sumber_dana_id`,
 sama dideduplicate; variant berbeda dapat coexist hanya di context applicability
 berbeda. Contradictory same-context, orphan applicability, dan dimension kosong
 fail-closed.
+
+### Persistent authority checkpoint — 2026-09-20
+
+Persistent A/B/C rehearsal passed in forward and reverse order with identical
+canonical snapshots and idempotent rerun. Invalid `ref_acuan_barang` rows are
+quarantined, while the exact `ref_kode` conflict context (`05.02.05.`, 2025,
+fund 1, level 6) remains excluded from central applicability. The explicit
+read boundary is wired into the five named consumer paths; production remains
+`LEGACY_RAW` by default until request-level parity is evidenced for all five.

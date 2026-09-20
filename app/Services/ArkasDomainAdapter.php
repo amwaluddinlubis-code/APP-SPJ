@@ -93,6 +93,11 @@ class ArkasDomainAdapter
     /** @param array<int, array<string, mixed>> $records */
     public function synchronize(ArkasImportProfile $profile, FiscalYear $year, array $records): int
     {
+        if (strtolower((string) $profile->source_table) === 'ref_kode') {
+            $resolved = app(ArkasReferenceReadBoundary::class)->resolve('ref_kode', collect($records), (string) session('active_school_id'));
+            $records = $resolved?->all() ?? $records;
+        }
+
         return match ($profile->target_domain) {
             'rkas' => $this->upsertRkas($profile, $year, $records),
             'rkas_periods' => $this->upsertPeriods($profile, $year, $records),

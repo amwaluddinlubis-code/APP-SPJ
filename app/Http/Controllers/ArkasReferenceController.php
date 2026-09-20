@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
+use App\Services\ArkasReferenceReadBoundary;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -217,13 +218,15 @@ class ArkasReferenceController extends Controller
 
         $cacheKey = 'arkas-raw-rows:'.$mirror->id.':'.(string) $mirror->updated_at;
 
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($db, $mirror): Collection {
+        $rows = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($db, $mirror): Collection {
             return $db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $mirror->id)->get()->map(function (object $row): array {
                 $payload = json_decode((string) $row->payload, true);
 
                 return is_array($payload) ? array_change_key_case($payload, CASE_UPPER) : [];
             })->filter(fn (array $row): bool => $row !== [])->values();
         });
+
+        return app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'));
     }
 
     /** @param array<string, mixed> $row */

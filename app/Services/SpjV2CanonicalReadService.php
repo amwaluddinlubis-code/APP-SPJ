@@ -78,7 +78,7 @@ final class SpjV2CanonicalReadService
     }
 
     /**
-     * @param Collection<int, object> $transactions
+     * @param  Collection<int, object>  $transactions
      * @return Collection<int, array<string, mixed>>
      */
     private function hydrate(Connection $db, Collection $transactions, int $sourceId): Collection
@@ -230,7 +230,7 @@ final class SpjV2CanonicalReadService
     }
 
     /**
-     * @param array<int, string> $sourceKeys
+     * @param  array<int, string>  $sourceKeys
      * @return array<string, array{ppn: float, pph21: float, pph22: float, pph23: float, pph4: float, sspd: float}>
      */
     private function taxBreakdownByParent(Connection $db, int $sourceId, array $sourceKeys): array
@@ -357,8 +357,8 @@ final class SpjV2CanonicalReadService
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $items
-     * @param array<string, array<string, string>> $activityByRapbsPeriod
+     * @param  Collection<int, array<string, mixed>>  $items
+     * @param  array<string, array<string, string>>  $activityByRapbsPeriod
      */
     private function activityCode(Collection $items, array $activityByRapbsPeriod): ?string
     {
@@ -397,6 +397,10 @@ final class SpjV2CanonicalReadService
             }
         }
 
+        if ($sourceTable === 'ref_kode') {
+            return app(ArkasReferenceReadBoundary::class)->resolve('ref_kode', collect($result), (string) session('active_school_id'))?->all() ?? $result;
+        }
+
         return $result;
     }
 
@@ -433,8 +437,8 @@ final class SpjV2CanonicalReadService
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $items
-     * @param array<int, string> $keys
+     * @param  Collection<int, array<string, mixed>>  $items
+     * @param  array<int, string>  $keys
      */
     private function firstSourceValue(Collection $items, array $keys): ?string
     {
@@ -452,7 +456,7 @@ final class SpjV2CanonicalReadService
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function amount(array $payload): float
     {

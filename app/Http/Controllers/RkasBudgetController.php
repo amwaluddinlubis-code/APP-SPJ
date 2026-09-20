@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
+use App\Services\ArkasReferenceReadBoundary;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -452,15 +453,20 @@ class RkasBudgetController extends Controller
         $referenceTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'ref_kode')->where('status', 'ACTIVE')->first();
         $references = [];
         $referenceNames = [];
+        $legacyReferences = collect();
         if ($referenceTable !== null) {
             foreach ($db->table('arkas_raw_mirror_rows')->where('mirror_table_id', $referenceTable->id)->get() as $row) {
                 $payload = json_decode((string) $row->payload, true);
                 if (is_array($payload)) {
-                    $payload = array_change_key_case($payload, CASE_UPPER);
-                    $references[(string) ($payload['ID_REF_KODE'] ?? '')] = $payload;
-                    $referenceNames[trim((string) ($payload['ID_KODE'] ?? ''), '.')] = (string) ($payload['URAIAN_KODE'] ?? '');
+                    $legacyReferences->push(array_change_key_case($payload, CASE_UPPER));
                 }
             }
+        }
+        $referenceRows = app(ArkasReferenceReadBoundary::class)->resolve('ref_kode', $legacyReferences, (string) session('active_school_id')) ?? collect();
+        foreach ($referenceRows as $payload) {
+            $payload = array_change_key_case($payload, CASE_UPPER);
+            $references[(string) ($payload['ID_REF_KODE'] ?? '')] = $payload;
+            $referenceNames[trim((string) ($payload['ID_KODE'] ?? ''), '.')] = (string) ($payload['URAIAN_KODE'] ?? '');
         }
 
         $periodTable = $db->table('arkas_raw_mirror_tables')->where('source_table', 'rapbs_periode')->where('status', 'ACTIVE')->first();
