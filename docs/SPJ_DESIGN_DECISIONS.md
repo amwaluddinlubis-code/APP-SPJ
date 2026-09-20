@@ -758,3 +758,16 @@ package/document snapshots, effective `FINALISASI_PAKET_V2` audit, and final
 post-condition are atomic. A failed audit or lifecycle step leaves the package
 NUMBERED and creates no false FINAL audit; legacy fiscal-year values are never
 rewritten.
+
+### Effective settlement authority
+
+Settlement is a separate V2 mutation after FINAL, not an implicit side effect
+of finalization or period close. `SpjV2SettlementService` locks the package,
+canonical context, and effective period, verifies active payment totals equal
+the transaction gross amount, persists one settlement row, writes one
+`SETTLEMENT_V2` audit, and verifies the post-condition in one tenant
+transaction. The unique package key makes retry idempotent. Missing audit
+storage, financial mismatch, closed period, invalid provenance, and invalid
+FINAL state fail closed without changing the FINAL package or legacy fiscal
+year. Legacy staged payment/receipt writes remain available for editable
+packages only.

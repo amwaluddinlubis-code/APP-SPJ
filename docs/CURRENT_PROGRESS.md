@@ -1296,3 +1296,15 @@ including operator use-case wiring, valid transition, idempotent retry, missing
 document, stale-context/source-item/period/selector guards, and audit-storage
 rollback. Legacy FINAL remains available only through the legacy selector;
 settlement, bulk-final, period close/open, and browser QA remain closed.
+
+### Effective-context settlement gate — 2026-09-20
+
+`SpjV2SettlementService` now owns settlement for an explicit V2 `FINAL`
+package. It requires exact effective membership/provenance, active canonical
+source, fund and financial-total parity, valid FINAL document post-condition,
+and an open effective period. Persistent settlement state and the
+`SETTLEMENT_V2` audit are written atomically; retry is idempotent, while
+financial mismatch, closed period, missing audit storage, and other failures
+leave the package FINAL without a settlement row or false audit. Editable
+packages continue using the legacy staged payment/receipt path. Settlement is
+PASS; bulk-final, period close/open, and browser QA remain closed/deferred.

@@ -664,3 +664,14 @@ document completeness, numbering post-condition, open period eligibility,
 atomic snapshots, effective audit, and post-condition verification are all
 enforced inside one tenant transaction. Settlement, bulk-final, and period
 close/open remain separate blocked gates.
+
+### Effective settlement checkpoint — 2026-09-20
+
+Settlement now has a dedicated `SpjV2SettlementService` and additive
+`spj_v2_settlements` tenant table. Only FINAL packages with exact V2 context,
+provenance, canonical source, financial-total parity, and an eligible open
+period can settle. Settlement state plus `SETTLEMENT_V2` audit are atomic and
+idempotent; the existing payment action delegates to this service only for
+FINAL packages selected through V2. Legacy staged payment/receipt behavior is
+unchanged for editable packages. Bulk-final and period close/open remain
+separate blocked gates.

@@ -1098,3 +1098,16 @@ fund and source/item parity, numbering/document completeness, and effective
 period eligibility; then writes snapshots and `FINALISASI_PAKET_V2` atomically
 with a verified post-condition. Missing or invalid audit storage rolls back the
 entire mutation. Legacy FINAL remains unchanged under the legacy selector.
+
+### Effective settlement mutation checkpoint — 2026-09-20
+
+After effective FINAL, settlement is authorized only through
+`SpjV2SettlementService` when the requested read path is explicitly V2. The
+service resolves the same effective membership and provenance bridge, validates
+canonical source and gross/payment parity, locks the effective period, and
+writes persistent `spj_v2_settlements` state plus `SETTLEMENT_V2` audit
+atomically. The package remains FINAL on failure; retries return the existing
+settlement without duplicate state or audit. Existing staged payment and goods
+receipt actions remain legacy for editable packages, while a FINAL package
+invokes the V2 settlement authority. Bulk-final and period mutation remain
+outside this gate.

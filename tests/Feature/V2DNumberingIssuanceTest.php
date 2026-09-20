@@ -11,12 +11,14 @@ use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2NumberingAuthorizationService;
 use App\Services\SpjV2NumberingBatchService;
 use App\Services\SpjV2NumberingIssuanceService;
+use App\Services\SpjV2SettlementService;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 final class V2DNumberingIssuanceTest extends TestCase
@@ -119,6 +121,105 @@ final class V2DNumberingIssuanceTest extends TestCase
             $this->assertSame('FINALIZED', $retry['status'], json_encode($retry, JSON_THROW_ON_ERROR));
             $this->assertTrue($retry['idempotent']);
             $this->assertSame(1, $db->table('operational_audit_logs')->where('entity_type', 'SPJ_PACKAGE')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_final_package_settles_on_effective_context_and_retry_is_idempotent(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-settlement.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->numberedFinalizationCandidate($db, 'v2-settle');
+            $transaction = $package->transaction;
+            $gross = (float) $transaction->gross_amount;
+            $transaction->payments()->create([
+                'scope_key' => 'PAYMENT:1',
+                'payment_sequence' => 1,
+                'payment_date' => $transaction->transaction_date->toDateString(),
+                'gross_amount' => $gross,
+                'tax_amount' => 0,
+                'net_amount' => $gross,
+                'payment_method' => 'tunai',
+                'status' => 'POSTED',
+            ]);
+            $package->refresh()->load(['transaction.items', 'transaction.payments', 'documents']);
+
+            $final = app(SpjV2FinalizationService::class)->finalize($package);
+            $this->assertSame('FINALIZED', $final['status'], json_encode($final, JSON_THROW_ON_ERROR));
+
+            $settlement = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('SETTLED', $settlement['status'], json_encode($settlement, JSON_THROW_ON_ERROR));
+            $this->assertFalse($settlement['idempotent']);
+            $this->assertSame(1, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'SETTLEMENT_V2')->count());
+
+            $retry = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('SETTLED', $retry['status']);
+            $this->assertTrue($retry['idempotent']);
+            $this->assertSame($settlement['settlement_id'], $retry['settlement_id']);
+            $this->assertSame(1, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'SETTLEMENT_V2')->count());
+
+            $response = $this->withoutMiddleware()
+                ->from(route('spj.index', ['tab' => 'paket']))
+                ->post(route('spj.payments.store', $transaction->id), []);
+            $response->assertSessionHas('success');
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_settlement_fail_closes_financial_period_and_audit_guards(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-settlement-guards.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->numberedFinalizationCandidate($db, 'v2-settle-guard');
+            $transaction = $package->transaction;
+            $gross = (float) $transaction->gross_amount;
+            $transaction->payments()->create([
+                'scope_key' => 'PAYMENT:1',
+                'payment_sequence' => 1,
+                'payment_date' => $transaction->transaction_date->toDateString(),
+                'gross_amount' => $gross - 1,
+                'tax_amount' => 0,
+                'net_amount' => $gross - 1,
+                'status' => 'POSTED',
+            ]);
+            $package->refresh()->load(['transaction.items', 'transaction.payments', 'documents']);
+            $final = app(SpjV2FinalizationService::class)->finalize($package);
+            $this->assertSame('FINALIZED', $final['status'], json_encode($final, JSON_THROW_ON_ERROR));
+
+            $blocked = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('BLOCKED', $blocked['status']);
+            $this->assertSame('FINANCIAL_TOTAL_MISMATCH', $blocked['error_code']);
+            $this->assertSame('FINAL', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(0, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
+
+            $transaction->payments()->first()->update(['gross_amount' => $gross, 'net_amount' => $gross]);
+            $period = $this->openContexts[(int) $package->id];
+            $quarter = (int) ceil((int) date('n', strtotime((string) $transaction->transaction_date)) / 3);
+            $db->table('fiscal_period_closures')->where('fiscal_year_id', $period[0])->where('quarter', $quarter)->update(['status' => 'CLOSED']);
+            $closed = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('BLOCKED', $closed['status']);
+            $this->assertSame('EFFECTIVE_PERIOD_CLOSED', $closed['error_code']);
+            $this->assertSame(0, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
+
+            $db->table('fiscal_period_closures')->where('fiscal_year_id', $period[0])->where('quarter', $quarter)->update(['status' => 'OPEN']);
+            Schema::connection('school')->dropIfExists('operational_audit_logs');
+            $auditBlocked = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('AUDIT_UNAVAILABLE', $auditBlocked['error_code']);
+            $this->assertSame(0, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
         } finally {
             File::delete($target);
         }
@@ -695,6 +796,12 @@ final class V2DNumberingIssuanceTest extends TestCase
         Artisan::call('migrate', [
             '--database' => 'school',
             '--path' => 'database/migrations/v2-rehearsal',
+            '--force' => true,
+            '--no-interaction' => true,
+        ]);
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/school',
             '--force' => true,
             '--no-interaction' => true,
         ]);

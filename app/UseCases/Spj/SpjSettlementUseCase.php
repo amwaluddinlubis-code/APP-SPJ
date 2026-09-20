@@ -4,10 +4,13 @@ namespace App\UseCases\Spj;
 
 use App\Models\Transaction;
 use App\Services\OperationalAuditService;
+use App\Services\SpjReadPathSelector;
+use App\Services\SpjV2SettlementService;
 use App\Services\TransactionSettlementService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SpjSettlementUseCase
 {
@@ -15,11 +18,29 @@ class SpjSettlementUseCase
         private readonly TransactionSettlementService $settlements,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
+        private readonly SpjReadPathSelector $readPaths,
+        private readonly SpjV2SettlementService $v2Settlement,
     ) {}
 
     public function storePayment(Request $request, string $transactionId): RedirectResponse
     {
-        $transaction = Transaction::query()->forSpjContext($this->context)->with('spjPackage')->findOrFail($transactionId);
+        $transaction = Transaction::query()->with('spjPackage')->findOrFail($transactionId);
+        if ($transaction->spjPackage?->status === 'FINAL') {
+            $selection = $this->readPaths->select(
+                DB::connection('school'),
+                $this->context->fiscalYearId(),
+                (int) ($this->context->fundSourceId() ?? 0),
+            );
+            if ($selection['requested'] === SpjReadPathSelector::V2) {
+                $result = $this->v2Settlement->settle($transaction->spjPackage);
+
+                return back()->with(
+                    $result['status'] === 'SETTLED' ? 'success' : 'error',
+                    $result['reason'],
+                );
+            }
+        }
+        abort_unless($this->context->matchesTransaction($transaction), 404);
         if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
             return back()->with('error', 'Pembayaran tidak dapat diubah karena paket SPJ sudah dikunci. Batalkan nomor dan buka paket untuk koreksi terlebih dahulu.');
         }
@@ -42,7 +63,8 @@ class SpjSettlementUseCase
 
     public function storeGoodsReceipt(Request $request, string $transactionId): RedirectResponse
     {
-        $transaction = Transaction::query()->forSpjContext($this->context)->with('spjPackage')->findOrFail($transactionId);
+        $transaction = Transaction::query()->with('spjPackage')->findOrFail($transactionId);
+        abort_unless($this->context->matchesTransaction($transaction), 404);
         if ($transaction->spjPackage && ! $transaction->spjPackage->isEditable()) {
             return back()->with('error', 'Penerimaan barang tidak dapat diubah karena paket SPJ sudah dikunci. Batalkan nomor dan buka paket untuk koreksi terlebih dahulu.');
         }
