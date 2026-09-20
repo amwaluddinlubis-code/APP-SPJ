@@ -173,11 +173,16 @@
                                     class="nav-label">Integrasi Dapodik</span></a>
                         @endif
                         @if (auth()->user()->isOperatorOrAdministrator())
-                            <form method="post" action="{{ route('arkas.sync') }}"
-                                data-confirm="Sinkronisasi akan memperbarui data RKAS dan BKU dari ARKAS. Paket SPJ manual dipertahankan, tetapi data transaksi sumber akan disegarkan. Lanjutkan?">
+                            <form method="post" action="{{ route('years.synchronize') }}"
+                                data-confirm="Tahap 1 akan mengimpor referensi tahun anggaran dan sumber dana dari ARKAS. Lanjutkan?">
                                 @csrf<input type="hidden" name="confirm_sync" value="1"><button
                                     class="app-nav w-full text-left"><x-ui.icon name="sync" /><span
-                                        class="nav-label">Sinkron Semua ARKAS</span></button></form>
+                                    class="nav-label">1. Sinkron Referensi &amp; Tahun</span></button></form>
+                            <form method="post" action="{{ route('arkas.raw-mirror') }}"
+                                data-confirm="Tahap 2 akan menyinkronkan seluruh data sekolah dari ARKAS melalui raw mirror. Pastikan Tahap 1 sudah selesai. Lanjutkan?">
+                                @csrf<input type="hidden" name="confirm_sync" value="1"><button
+                                    class="app-nav w-full text-left"><x-ui.icon name="sync" /><span
+                                        class="nav-label">2. Sinkron Data Sekolah</span></button></form>
                         @endif
                         @if (auth()->user()->isAdministrator())
                             <a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}"

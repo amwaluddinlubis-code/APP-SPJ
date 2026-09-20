@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-5xl space-y-6">
         <x-page-header
             title="Integrasi ARKAS"
-            subtitle="Setiap sekolah memiliki sumber database ARKAS dan database SPJ lokalnya sendiri. Simpan path sekali, lalu gunakan Sinkron Semua ARKAS."
+            subtitle="Setiap sekolah memiliki sumber database ARKAS dan database SPJ lokalnya sendiri. Simpan path sekali, lalu jalankan sinkronisasi sesuai urutan tahap."
             kicker="Pengaturan Sumber Data"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
@@ -49,10 +49,10 @@
             </x-ui.form-section>
 
             @if($selectedSource && (int) $selectedSchoolId === (int) session('active_school_id') && session('active_fiscal_year_id'))
-                <x-ui.form-section title="Raw Mirror ARKAS" description="Impor seluruh tabel melalui manifest dan explicit bridge. Tidak ada mapping tabel atau kolom manual.">
+                <x-ui.form-section title="Tahap 2 · Data Sekolah" description="Impor seluruh tabel sekolah melalui manifest dan explicit bridge. Jalankan setelah referensi dan konteks tahun tersedia.">
                     <form method="POST" action="{{ route('arkas.raw-mirror') }}" data-confirm="Seluruh tabel ARKAS akan dibaca ulang dan projection fresh SPJ diperbarui. Data manual SPJ tetap dipertahankan. Lanjutkan?">
-                        @csrf
-                        <x-ui.button type="submit" icon="refresh">Sinkronkan Semua ARKAS</x-ui.button>
+                        @csrf<input type="hidden" name="confirm_sync" value="1">
+                        <x-ui.button type="submit" icon="refresh">Sinkronkan Data Sekolah</x-ui.button>
                     </form>
                 </x-ui.form-section>
             @endif
@@ -71,7 +71,7 @@
                 @endif
                 <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                     <p class="font-bold">Urutan aman</p>
-                    <ol class="mt-2 list-decimal space-y-1 pl-4 text-xs"><li>Pastikan sekolah aktif dan tahun anggaran telah dipilih.</li><li>Simpan database ARKAS, engine, dan kata sandi.</li><li>Periksa tiga status hijau, lalu jalankan Sinkron Semua ARKAS.</li></ol>
+                    <ol class="mt-2 list-decimal space-y-1 pl-4 text-xs"><li>Pastikan sekolah aktif.</li><li>Simpan database ARKAS, engine, dan kata sandi.</li><li>Jalankan <strong>Tahap 1 · Sinkron Referensi &amp; Tahun</strong>.</li><li>Pilih tahun dan sumber dana, lalu jalankan <strong>Tahap 2 · Sinkron Data Sekolah</strong>.</li></ol>
                 </div>
             </aside>
         </section>

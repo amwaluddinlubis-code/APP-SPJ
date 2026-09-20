@@ -267,6 +267,19 @@ Route/job yang memakai connection `school` wajib memastikan tenant sekolah benar
 
 ## 6. Reference synchronization ARKAS
 
+### 6.1 Urutan menu sinkronisasi
+
+GUI memisahkan sinkronisasi ARKAS menjadi dua tahap yang harus dijalankan berurutan:
+
+1. **Sinkron Referensi & Tahun** (`years.synchronize`) mengimpor tahun anggaran,
+   sumber dana, dan konteks sekolah yang diperlukan untuk memilih scope aktif.
+2. **Sinkron Data Sekolah** (`arkas.raw-mirror`) menjalankan raw mirror melalui
+   manifest dan explicit bridge setelah konteks tahun dan sumber dana tersedia.
+
+Tahap pertama tidak menggantikan raw mirror. Tahap kedua tidak boleh dijalankan
+sebelum konteks tahap pertama tersedia. Keduanya tetap mempertahankan overlay
+operator SPJ dan berjalan melalui queue untuk pekerjaan yang lama.
+
 `ArkasReferenceSynchronizationService` menangani reference yang aman disegarkan dari source, termasuk:
 
 - fiscal year contexts;
