@@ -588,5 +588,15 @@ not abort the tenant mirror.
 The available `datasmp.db.sql` dump was rehearsed against an isolated in-memory
 school database: dry-run produced no writes, the real rehearsal imported 13
 tenant tables / 7,771 rows, and the second run was idempotent. Central
-promotion remains deferred because only one school dump is available. Schema
-status remains **PARTIAL FREEZE**.
+promotion remained deferred at the one-dump checkpoint. The 2026-09-20
+three-dump audit below now confirms a limited reference subset while keeping
+promotion and schema status **PARTIAL FREEZE**.
+
+### Cross-school central-reference parity — 2026-09-20
+
+Three-dump read-only audit completed. Nine references have exact schema, key,
+row-count, and content parity across three distinct schools and are eligible
+for a future central contract rehearsal. `ref_sumber_dana`, `ref_rekening`,
+`ref_acuan_barang`, and `ref_kode` remain versioned/hybrid candidates due
+content or membership drift. Empty references remain unused. No central
+promotion or destructive migration is authorized by this checkpoint.

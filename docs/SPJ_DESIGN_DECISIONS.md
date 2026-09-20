@@ -685,4 +685,14 @@ primary-key tunggal; identitasnya adalah `id_kas_nota + ntpn`. Source `pegawai`
 bersifat optional dan absence-nya tidak boleh membuat mirror membuat tabel
 palsu atau mengambil fallback dari source lain. Duplicate key, missing key,
 required-column drift, dan orphan `kas_umum.id_anggaran` harus fail-closed.
-Central reference tetap deferred sampai parity dua sekolah terbukti.
+Central reference tetap deferred sampai parity lintas sekolah dan contract
+promotion terbukti; audit tiga dump terbaru hanya mengonfirmasi subset.
+
+Audit 2026-09-20 memperluas evidence menjadi tiga sekolah. Sembilan reference
+(`mst_wilayah`, `ref_level_wilayah`, `ref_negara`, `ref_jabatan`,
+`ref_jenis_instansi`, `ref_satuan`, `ref_periode`, `ref_level_kode`, dan
+`ref_indikator`) memiliki rowset identik berdasarkan stable key. Ini adalah
+eligibility evidence, bukan instruksi untuk langsung memindahkan atau menghapus
+copy tenant. `ref_sumber_dana`, `ref_rekening`, `ref_acuan_barang`, dan
+`ref_kode` tetap non-central karena drift/membership difference dan harus
+memiliki versioned/hybrid contract lebih dahulu.

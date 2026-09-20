@@ -1183,3 +1183,21 @@ Central reference promotion tetap **DEFERRED** karena baru satu dump sekolah
 tersedia; schema mirror tetap **PARTIAL FREEZE**. Tidak ada tenant asli,
 central reference, FINAL, settlement, bulk-final, period-close, atau browser QA
 yang dimutasi/dibuka.
+
+### Cross-school central-reference parity audit — 2026-09-20
+
+Tiga dump berbeda telah dibaca secara read-only: NPSN `10260756`, `10208183`,
+dan `10208246`; masing-masing memiliki 56 tabel. Semua schema table hash sama.
+Content parity mengonfirmasi sembilan reference: `mst_wilayah`,
+`ref_level_wilayah`, `ref_negara`, `ref_jabatan`, `ref_jenis_instansi`,
+`ref_satuan`, `ref_periode`, `ref_level_kode`, dan `ref_indikator`.
+
+`ref_sumber_dana`, `ref_rekening`, `ref_acuan_barang`, dan `ref_kode` memiliki
+drift content/membership dan tetap non-central sampai desain versioned/hybrid
+disetujui. Enam reference table lain kosong pada ketiga dump dan diklasifikasi
+`UNUSED_EMPTY`.
+
+`ArkasReferenceParityService` dan rehearsal test membuktikan comparison
+order-independent serta import order `A→B→C` = `C→A→B` untuk sembilan tabel
+confirmed. Tidak ada central migration atau live tenant mutation. Status schema
+tetap **PARTIAL FREEZE**; central promotion **DEFERRED**.
