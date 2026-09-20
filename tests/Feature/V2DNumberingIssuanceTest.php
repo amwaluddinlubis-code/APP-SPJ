@@ -6,10 +6,12 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2FinalizationService;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2NumberingAuthorizationService;
 use App\Services\SpjV2NumberingBatchService;
 use App\Services\SpjV2NumberingIssuanceService;
+use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
@@ -75,6 +77,173 @@ final class V2DNumberingIssuanceTest extends TestCase
             // Stale legacy fiscal year is authority for nothing and stays put.
             $this->assertSame($legacyFiscalYearId, (int) $db->table('transactions')->where('id', $package->transaction_id)->value('fiscal_year_id'));
             $this->assertNotSame($legacyFiscalYearId, $effectiveFiscalYearId);
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_numbered_package_finalizes_on_effective_context_and_retry_is_idempotent(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-finalization.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $package = $this->firstIssuablePackage($db);
+            $this->assertNotNull($package, 'Expected one issuable stale Paket.');
+            $effectiveFiscalYearId = $this->openContexts[(int) $package->id][0];
+            $db->table('document_number_formats')->updateOrInsert(
+                ['fiscal_year_id' => $effectiveFiscalYearId, 'document_type' => 'PESANAN'],
+                ['format_pattern' => '{SEQ}/PESANAN/{SCHOOL}/{TW}/{YEAR}', 'reset_period' => 'YEAR', 'padding' => 4, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()],
+            );
+            $supportingIssue = app(SpjV2NumberingIssuanceService::class)->issue($package, 'PESANAN', 'MAIN', 'v2-finalization-order-'.$package->id);
+            $this->assertSame('ISSUED', $supportingIssue['status'], json_encode($supportingIssue, JSON_THROW_ON_ERROR));
+            $issue = app(SpjV2NumberingIssuanceService::class)->issue($package->fresh(['transaction.items', 'documents']), 'SPJ', 'MAIN', 'v2-finalization-number-'.$package->id);
+            $this->assertSame('ISSUED', $issue['status'], json_encode($issue, JSON_THROW_ON_ERROR));
+            $legacyFiscalYearId = (int) $db->table('transactions')->where('id', $package->transaction_id)->value('fiscal_year_id');
+
+            $response = app(SpjDocumentLifecycleUseCase::class)->finalizeDocument((string) $issue['document_id']);
+            $this->assertSame(302, $response->getStatusCode());
+            $this->assertSame('FINAL', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(2, $db->table('spj_documents')->where('spj_package_id', $package->id)->where('status', '!=', 'CANCELLED')->where('status', 'FINAL')->count());
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('entity_type', 'SPJ_PACKAGE')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+            $auditId = (int) $db->table('operational_audit_logs')->where('entity_type', 'SPJ_PACKAGE')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->value('id');
+            $this->assertSame($effectiveFiscalYearId, (int) $db->table('operational_audit_logs')->where('id', $auditId)->value('fiscal_year_id'));
+            $this->assertSame($legacyFiscalYearId, (int) $db->table('transactions')->where('id', $package->transaction_id)->value('fiscal_year_id'));
+
+            $retry = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+
+            $this->assertSame('FINALIZED', $retry['status'], json_encode($retry, JSON_THROW_ON_ERROR));
+            $this->assertTrue($retry['idempotent']);
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('entity_type', 'SPJ_PACKAGE')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_finalization_rejects_non_numbered_and_unresolved_selector_without_mutation(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-finalization-negative.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+
+            $db = DB::connection('school');
+            $package = $this->firstIssuablePackage($db);
+            $this->assertNotNull($package, 'Expected one issuable stale Paket.');
+            $before = [
+                'status' => (string) $db->table('spj_packages')->where('id', $package->id)->value('status'),
+                'audits' => $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count(),
+            ];
+
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+
+            $this->assertSame('BLOCKED', $blocked['status']);
+            $this->assertSame('PACKAGE_NOT_NUMBERED', $blocked['error_code']);
+            $this->assertSame($before['status'], (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame($before['audits'], $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_finalization_fail_closes_context_parity_document_and_period_guards(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-finalization-guards.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->numberedFinalizationCandidate($db, 'v2-finalization-guards');
+            $effectiveFiscalYearId = $this->openContexts[(int) $package->id][0];
+            $quarter = (int) ceil((int) date('n', strtotime((string) $package->transaction->transaction_date)) / 3);
+
+            $db->table('transactions')->where('id', $package->transaction_id)->update(['requires_reconciliation' => true]);
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('RECONCILIATION_BLOCKED', $blocked['error_code']);
+            $db->table('transactions')->where('id', $package->transaction_id)->update(['requires_reconciliation' => false]);
+
+            $db->table('fiscal_period_closures')->where(['fiscal_year_id' => $effectiveFiscalYearId, 'quarter' => $quarter])->update(['status' => 'CLOSED']);
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('EFFECTIVE_PERIOD_CLOSED', $blocked['error_code']);
+            $db->table('fiscal_period_closures')->where(['fiscal_year_id' => $effectiveFiscalYearId, 'quarter' => $quarter])->update(['status' => 'OPEN']);
+
+            config()->set('spj.v2_read_path', 'legacy');
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('V2_SELECTOR_UNAVAILABLE', $blocked['error_code']);
+            config()->set('spj.v2_read_path', 'v2');
+
+            $db->table('spj_packages')->where('id', $package->id)->update(['spj_transaction_id' => null]);
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('EFFECTIVE_MEMBERSHIP_INVALID', $blocked['error_code']);
+            $db->table('spj_packages')->where('id', $package->id)->update(['spj_transaction_id' => $package->spj_transaction_id]);
+
+            $legacyDescription = (string) $db->table('transactions')->where('id', $package->transaction_id)->value('description');
+            $db->table('transactions')->where('id', $package->transaction_id)->update(['description' => 'synthetic source drift']);
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('SOURCE_PARITY_DRIFT', $blocked['error_code']);
+            $db->table('transactions')->where('id', $package->transaction_id)->update(['description' => $legacyDescription]);
+
+            $documentId = (int) $db->table('spj_documents')->where('spj_package_id', $package->id)->where('document_type', 'SPJ')->value('id');
+            $db->table('spj_documents')->where('id', $documentId)->update(['document_number' => null]);
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('NUMBERING_POSTCONDITION_INVALID', $blocked['error_code']);
+
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(0, $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_finalization_requires_complete_numbered_document_set(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-finalization-documents.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->firstIssuablePackage($db);
+            $this->assertNotNull($package, 'Expected one issuable stale Paket.');
+            $issue = app(SpjV2NumberingIssuanceService::class)->issue($package, 'SPJ', 'MAIN', 'v2-finalization-missing-doc-'.$package->id);
+            $this->assertSame('ISSUED', $issue['status'], json_encode($issue, JSON_THROW_ON_ERROR));
+
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+
+            $this->assertSame('DOCUMENT_COMPLETENESS_INVALID', $blocked['error_code']);
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(0, $db->table('operational_audit_logs')->where('entity_id', (string) $package->id)->where('action', 'FINALISASI_PAKET_V2')->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_finalization_rolls_back_when_final_audit_storage_is_unavailable(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-finalization-audit.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->numberedFinalizationCandidate($db, 'v2-finalization-audit');
+            $db->statement('DROP TABLE operational_audit_logs');
+
+            $blocked = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+
+            $this->assertSame('AUDIT_UNAVAILABLE', $blocked['error_code']);
+            $this->assertSame('NUMBERED', (string) $db->table('spj_packages')->where('id', $package->id)->value('status'));
+            $this->assertSame(0, $db->table('spj_documents')->where('spj_package_id', $package->id)->where('status', 'FINAL')->count());
         } finally {
             File::delete($target);
         }
@@ -283,6 +452,23 @@ final class V2DNumberingIssuanceTest extends TestCase
         } finally {
             File::delete($target);
         }
+    }
+
+    private function numberedFinalizationCandidate(Connection $db, string $intentPrefix): SpjPackage
+    {
+        $package = $this->firstIssuablePackage($db);
+        $this->assertNotNull($package, 'Expected one issuable stale Paket.');
+        $effectiveFiscalYearId = $this->openContexts[(int) $package->id][0];
+        $db->table('document_number_formats')->updateOrInsert(
+            ['fiscal_year_id' => $effectiveFiscalYearId, 'document_type' => 'PESANAN'],
+            ['format_pattern' => '{SEQ}/PESANAN/{SCHOOL}/{TW}/{YEAR}', 'reset_period' => 'YEAR', 'padding' => 4, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()],
+        );
+        $supportingIssue = app(SpjV2NumberingIssuanceService::class)->issue($package, 'PESANAN', 'MAIN', $intentPrefix.'-order-'.$package->id);
+        $this->assertSame('ISSUED', $supportingIssue['status'], json_encode($supportingIssue, JSON_THROW_ON_ERROR));
+        $issue = app(SpjV2NumberingIssuanceService::class)->issue($package->fresh(['transaction.items', 'documents']), 'SPJ', 'MAIN', $intentPrefix.'-spj-'.$package->id);
+        $this->assertSame('ISSUED', $issue['status'], json_encode($issue, JSON_THROW_ON_ERROR));
+
+        return $package->fresh(['transaction.items', 'documents']);
     }
 
     /**

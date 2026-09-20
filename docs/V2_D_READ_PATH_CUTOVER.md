@@ -1087,3 +1087,14 @@ Production reference reads are now selected centrally as `CENTRAL_COMPAT`.
 opt-in. Resolver mismatch, missing context, unsupported context, and the
 quarantined `ref_kode` context fail closed; no silent raw fallback is allowed.
 Raw mirror tables remain available for compatibility and rollback.
+
+### Effective FINAL mutation checkpoint — 2026-09-20
+
+The V2 read-path boundary now has a matching FINAL mutation authority through
+`SpjV2FinalizationService`. The operator FINAL action delegates to it only for
+an explicit, uniquely resolved V2 selector. The service locks package,
+canonical context, and period rows; validates membership, bridge/provenance,
+fund and source/item parity, numbering/document completeness, and effective
+period eligibility; then writes snapshots and `FINALISASI_PAKET_V2` atomically
+with a verified post-condition. Missing or invalid audit storage rolls back the
+entire mutation. Legacy FINAL remains unchanged under the legacy selector.

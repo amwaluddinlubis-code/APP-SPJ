@@ -749,3 +749,12 @@ explicit rollback/compatibility mode, and `CENTRAL_ONLY` remains opt-in. The
 shared boundary is the only cutover path for the five critical consumers; a
 missing, unsupported, or quarantined context fails closed rather than reading
 raw data silently.
+
+Effective FINAL is now an explicit V2 mutation authority, not an extension of
+the legacy finalizer. Only a NUMBERED package with exact effective provenance,
+canonical source/item parity, fund parity, complete numbered documents, valid
+effective period, and valid numbering post-condition may transition. The
+package/document snapshots, effective `FINALISASI_PAKET_V2` audit, and final
+post-condition are atomic. A failed audit or lifecycle step leaves the package
+NUMBERED and creates no false FINAL audit; legacy fiscal-year values are never
+rewritten.

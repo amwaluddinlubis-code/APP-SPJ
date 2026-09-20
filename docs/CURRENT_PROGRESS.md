@@ -1278,3 +1278,21 @@ Default production mode is now `CENTRAL_COMPAT`, selected centrally through
 boundary, and the canonical gate is green with no silent fallback. Raw mirrors
 remain retained; FINAL, settlement, period mutation, and browser QA remain
 closed/deferred.
+
+### Effective-context FINAL lifecycle gate — 2026-09-20
+
+`SpjV2FinalizationService` now owns the explicit V2 `NUMBERED -> FINAL`
+transition. It locks the package, canonical transaction, and effective period;
+requires resolved membership and exact provenance, fund/source/item parity,
+clear reconciliation, an open effective fiscal year/quarter, complete numbered
+documents, and a valid numbering post-condition. Package/document snapshots and
+the `FINALISASI_PAKET_V2` audit are written in the same transaction, followed by
+an explicit post-condition check. Retry is idempotent; audit failure and every
+failed precondition roll back without false FINAL state or legacy fiscal-year
+rewrite.
+
+Focused effective FINAL evidence is **PASS**: 5 tests / 59 assertions,
+including operator use-case wiring, valid transition, idempotent retry, missing
+document, stale-context/source-item/period/selector guards, and audit-storage
+rollback. Legacy FINAL remains available only through the legacy selector;
+settlement, bulk-final, period close/open, and browser QA remain closed.

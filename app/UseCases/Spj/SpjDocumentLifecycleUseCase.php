@@ -8,9 +8,12 @@ use App\Services\SpjDocumentLifecycleService;
 use App\Services\SpjDocumentNumberService;
 use App\Services\SpjNumberingGateService;
 use App\Services\SpjNumberingPolicyService;
+use App\Services\SpjReadPathSelector;
+use App\Services\SpjV2FinalizationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SpjDocumentLifecycleUseCase
 {
@@ -21,11 +24,26 @@ class SpjDocumentLifecycleUseCase
         private readonly SpjNumberingGateService $numberingGate,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
+        private readonly SpjReadPathSelector $readPaths,
+        private readonly SpjV2FinalizationService $v2Finalization,
     ) {}
 
     public function finalizeDocument(string $documentId): RedirectResponse
     {
         $document = SpjDocument::query()->with('package.transaction')->findOrFail($documentId);
+        $selection = $this->readPaths->select(
+            DB::connection('school'),
+            $this->context->fiscalYearId(),
+            (int) ($this->context->fundSourceId() ?? 0),
+        );
+        if ($selection['requested'] === SpjReadPathSelector::V2) {
+            $result = $this->v2Finalization->finalize($document->package);
+            if ($result['status'] !== 'FINALIZED') {
+                return back()->with('error', $result['reason']);
+            }
+
+            return back()->with('success', 'Paket SPJ difinalkan pada konteks efektif. Seluruh dokumen aktif dan snapshot paket telah dikunci.');
+        }
         abort_unless($this->context->matchesTransaction($document->package->transaction), 404);
         $package = $this->lifecycle->finalizePackage($document->package, $this->context->actorId());
         $this->audit->record(

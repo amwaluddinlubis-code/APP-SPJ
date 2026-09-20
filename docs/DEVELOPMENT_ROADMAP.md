@@ -653,3 +653,14 @@ selector for all five critical consumers. Rollback is explicit via
 `LEGACY_RAW`, `CENTRAL_ONLY` is non-default, and missing/quarantined context
 fails closed. Raw mirror retention and the no-destructive-cleanup boundary
 remain in force.
+
+### Effective FINAL transition — 2026-09-20
+
+The V2 lifecycle now has a dedicated `SpjV2FinalizationService` for the
+explicit `NUMBERED -> FINAL` path. It is selected only when `SPJ_V2_READ_PATH`
+is `v2`; unresolved V2 selection fails closed rather than falling back to the
+legacy mutation. Effective membership, provenance, fund/source/item parity,
+document completeness, numbering post-condition, open period eligibility,
+atomic snapshots, effective audit, and post-condition verification are all
+enforced inside one tenant transaction. Settlement, bulk-final, and period
+close/open remain separate blocked gates.
