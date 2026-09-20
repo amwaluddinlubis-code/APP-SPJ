@@ -3,11 +3,9 @@
 namespace Tests\Feature;
 
 use App\Livewire\RkasBudgetFilter;
-use App\Models\ArkasImportProfile;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\User;
-use App\Services\ArkasDomainAdapter;
 use App\Services\ArkasPersistentReferenceAuthority;
 use App\Services\ArkasReferenceReadBoundary;
 use App\Services\ArkasReferenceResolver;
@@ -122,23 +120,7 @@ final class ArkasFiveConsumerShadowParityTest extends TestCase
     /** @return array<string, mixed> */
     private function domainAdapterResult(): array
     {
-        $profile = ArkasImportProfile::query()->firstOrCreate(['source_table' => 'ref_kode'], [
-            'source_table' => 'ref_kode',
-            'target_domain' => 'activity_reference',
-            'label' => 'Shadow parity',
-            'source_key_column' => 'id_kode',
-            'sync_mode' => 'upsert',
-            'is_enabled' => true,
-            'mapping' => ['id_kode' => 'code', 'uraian_kode' => 'name', 'parent_kode' => 'parent'],
-            'source_columns' => [],
-        ]);
-        $records = [$this->codeRow()];
-        $adapter = new ArkasDomainAdapter;
-
-        DB::connection('school')->table('activity_references')->where('fiscal_year_id', 1)->delete();
-        $adapter->synchronize($profile, FiscalYear::query()->findOrFail(1), $records);
-
-        return ['rows' => DB::connection('school')->table('activity_references')->where('fiscal_year_id', 1)->get(['activity_code', 'activity_name', 'source_ref_code'])->map(fn (object $row): array => (array) $row)->all()];
+        return ['rows' => $this->normalize(app(ArkasPersistentReferenceAuthority::class)->readForTenant('ref_kode', '1'))];
     }
 
     /** @return array<string, mixed> */

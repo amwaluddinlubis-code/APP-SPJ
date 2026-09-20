@@ -19,13 +19,7 @@
             <file>tests/Unit/SpjTemplatePackageImporterExtractionTest.php</file>
             <file>tests/Unit/SpjTemplateWorkbookPreservationTest.php</file>
             <file>tests/Feature/ActiveSpjContextTest.php</file>
-            <file>tests/Feature/ArkasGenericImportSourceKeyTest.php</file>
-            <file>tests/Feature/ArkasGenericImportSyncModeTest.php</file>
-            <file>tests/Feature/ArkasGenericImportReleaseSafetyTest.php</file>
-            <file>tests/Feature/ArkasImportHardeningTest.php</file>
-            <file>tests/Feature/ArkasImporterTenantBoundaryTest.php</file>
-            <file>tests/Feature/ArkasImporterRuntimeGuardTest.php</file>
-            <file>tests/Feature/ArkasImportQueueTenantTest.php</file>
+            <file>tests/Feature/ArkasLegacyImporterRemovalTest.php</file>
             <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
             <file>tests/Feature/DocumentNumberFormatSettingsTest.php</file>
