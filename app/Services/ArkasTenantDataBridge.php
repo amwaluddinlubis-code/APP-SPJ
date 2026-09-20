@@ -23,6 +23,7 @@ final class ArkasTenantDataBridge implements ArkasMirrorBridge
             'rapbs',
             'rapbs_periode',
             'rapbs_ptk',
+            'ref_sumber_dana_sekolah',
             'salur',
             'sekolah_history',
             'sekolah_penjab',
