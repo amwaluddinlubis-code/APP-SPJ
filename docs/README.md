@@ -31,6 +31,10 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Jangan mempro
 
 ## Dokumen aktif utama
 
+The former generic importer documentation is historical/superseded. It is not
+an active runtime contract; explicit bridge + manifest imports are authoritative
+and raw/legacy storage remains retained.
+
 | Dokumen | Peran / status |
 |---|---|
 | `CURRENT_PROGRESS.md` | **AUTHORITATIVE STATUS** — status release, evidence, blocker, dan RVR terbaru. |

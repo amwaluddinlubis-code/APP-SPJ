@@ -2,6 +2,10 @@
 
 Terakhir diverifikasi: **2026-09-19** terhadap branch `arkas-raw-mirror`.
 
+The generic profile/staging synchronization graph documented below is
+historical/superseded as of 2026-09-20. Active synchronization uses the
+explicit raw-mirror bridge and manifest; raw/legacy tables remain retained.
+
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
 Dokumen ini adalah panduan canonical untuk mekanisme sinkronisasi data aplikasi. Ia menjelaskan **alur runtime, ownership data, tenant boundary, safe-sync, reconciliation, dan employee identity**.
@@ -127,8 +131,10 @@ memilih `is_revisi` terbesar untuk tahun dan sumber dana aktif. `last_update`
 terbaru dipakai sebagai tie-breaker bila terdapat lebih dari satu record pada
 revisi terakhir.
 
+Historical generic mapping graph (superseded 2026-09-20):
+
 ```text
-ArkasImporterController
+ArkasImporterController (removed)
 → ArkasDatabaseExplorer / Bridge
 → ArkasImportProfile
 → ArkasStagingService
@@ -137,9 +143,10 @@ ArkasImporterController
 → ArkasDomainAdapter
 ```
 
-Gunakan `ARKAS_IMPORTER.md` untuk detail mapping, sync mode, stable source key, preview, concurrency lock, dan metrics.
+`ARKAS_IMPORTER.md` is historical only. Active import uses the manifest and
+explicit bridge contracts.
 
-Generic Importer **bukan pengganti otomatis** canonical transaction sync; keduanya memiliki tujuan dan boundary berbeda.
+The generic importer is removed and is no longer a runtime option.
 
 ### V2-C legacy rehearsal boundary
 
@@ -151,7 +158,8 @@ legacy `source_key`. `SOURCE_MISSING`, `PARTIAL`, `AMBIGUOUS`, dan `LEGACY_ONLY`
 tidak boleh diberi source relation tebakan. Package/document NUMBERED/FINAL tetap
 immutable dan source missing/returning mempertahankan identity registry.
 
-Pada UI, Generic Importer memiliki mode **Sederhana** (preset tabel yang dikenal) dan **Lanjutan** (mapping/profile custom). Mode sederhana tetap hanya tersedia untuk administrator. Untuk referensi Program/Subprogram/Kegiatan, gunakan profile `ref_kode` dengan target `activity_reference`; setelah itu canonical sync RKAS/BKU tetap diperlukan bila transaksi lama perlu menerima perubahan nama kegiatan.
+No generic mapping UI remains. Reference and transaction imports use explicit
+manifest/bridge contracts.
 
 ### 2.3 Dapodik synchronization
 
@@ -186,7 +194,7 @@ ARKAS database
 → database tenant
 ```
 
-`ArkasCanonicalSyncService` memegang lock:
+The raw mirror job owns the active synchronization lock and operation status.
 
 ```text
 arkas-canonical-sync:{school_id}:{fiscal_year_id}

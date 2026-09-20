@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-19**
+Terakhir diperbarui: **2026-09-20**
 
 Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
@@ -10,6 +10,14 @@ Definisi status:
 - **REAL-DATA VERIFIED**: dibuktikan pada database sekolah nyata atau isolated copy tanpa fabrikasi data;
 - **RVR**: masih memerlukan real-value/runtime/operator verification;
 - **DEFERRED**: sengaja tidak menjadi fokus aktif saat ini, bukan berarti PASS.
+
+### 2026-09-20 — legacy importer removal
+
+Runtime generic/dynamic ARKAS importer, mapping UI, mapping registry, staging
+profiles, and compatibility jobs have been removed. The explicit manifest and
+bridge path is now the sole active import authority. Persistent central
+promotion, quarantine, tenant mirror, and `CENTRAL_COMPAT` remain active.
+Raw/legacy tables are retained and no destructive cleanup was performed.
 
 ---
 

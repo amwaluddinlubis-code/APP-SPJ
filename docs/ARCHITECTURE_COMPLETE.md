@@ -6,6 +6,11 @@ Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk sta
 
 Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/assertion agar tidak menjadi stale ketika code gate bergerak. Detail context-isolation regression dan evidence test tetap berada di `CURRENT_PROGRESS.md`.
 
+The legacy generic importer/mapping graph is historical only and is no longer
+part of the active architecture. Active import ownership is the explicit
+manifest, bridge contracts, validators, quarantine, central authority, and
+tenant mirror path.
+
 ## 1. Ringkasan
 
 SPJ BOSP Web adalah aplikasi Laravel 13 untuk menyusun dokumen pertanggungjawaban BOSP berdasarkan RKAS/BKU yang disinkronkan dari ARKAS.
@@ -275,7 +280,13 @@ Kontrak:
 - perubahan source dapat menghasilkan reconciliation;
 - queue/background flow wajib mengaktifkan tenant yang benar.
 
-### Generic ARKAS Importer
+### Historical: Generic ARKAS Importer
+
+The following pipeline is retained only as implementation history. It has no
+active route, job, or service consumer. The active pipeline is
+`ArkasRawMirrorController`/`SyncArkasRawMirror` → `ArkasRawMirrorService` →
+`ArkasMirrorManifest` + explicit bridges → validation/quarantine → tenant raw
+mirror and persistent central authority.
 
 Pipeline utama:
 
@@ -290,7 +301,7 @@ ArkasImporterController
 → target domain / snapshot
 ```
 
-Status saat ini: **FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST**.
+Status saat ini: **HISTORICAL / SUPERSEDED (2026-09-20)**.
 
 Sudah diregresikan:
 

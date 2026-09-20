@@ -1,6 +1,11 @@
 # Modul Importer dan Sinkronisasi ARKAS
 
-Terakhir diperbarui: **2026-09-12**
+Terakhir diperbarui: **2026-09-20**
+
+> **HISTORICAL / SUPERSEDED (2026-09-20):** The generic/dynamic mapping
+> importer described below has been removed from runtime. Keep this document
+> as implementation history only. The active contract is the explicit
+> manifest/bridge raw mirror and persistent central authority.
 
 Checkpoint commit di dokumen ini adalah **implementation history** untuk fitur importer, bukan functional gate aplikasi saat ini. Evidence gate mutakhir selalu dibaca dari `P0_VERIFICATION_KIT.md` §1 dan status release dari `CURRENT_PROGRESS.md`.
 

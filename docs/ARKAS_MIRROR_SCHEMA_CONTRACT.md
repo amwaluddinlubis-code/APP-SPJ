@@ -3,6 +3,15 @@
 Status: **PARTIAL FREEZE**
 Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-20.v3`)
 
+## 2026-09-20 — explicit bridge authority
+
+The legacy generic/dynamic importer has been removed from runtime. Mapping
+profiles, mapping routes, generic staging, and compatibility jobs are no
+longer an import authority. The manifest, explicit bridges, validation,
+quarantine, persistent central promotion, and `CENTRAL_COMPAT` resolver are
+the active reference/import boundaries. Raw/legacy tables remain retained;
+destructive cleanup is deferred.
+
 ## Tujuan
 
 APP-SPJ tidak menggunakan generic importer mapping sebagai authority untuk raw
@@ -85,21 +94,13 @@ Raw mirror menyimpan capture/provenance readonly. Ia bukan canonical mutation
 table. `spj_transactions`, overlays, Paket, dokumen, numbering, audit, dan
 reconciliation tetap menjadi authority operasional APP-SPJ.
 
-## Generic importer mapping
+## Generic importer mapping — removed
 
-`ArkasGenericImportService`, `ArkasImportProfile`,
-`ArkasImportConfigurationService`, `ArkasDomainAdapter`, dan controller
-importer lama masih dipertahankan sementara sebagai compatibility shim untuk
-data/profile historis. Mereka bukan authority raw mirror baru dan tidak boleh
-menambah table ke manifest. Jalur berikutnya adalah:
-
-1. freeze pembuatan mapping baru pada UI;
-2. audit profile aktif dan migrasikan yang dibutuhkan ke bridge eksplisit;
-3. pindahkan read-path ke manifest/bridge;
-4. hapus shim setelah parity dan isolated rehearsal lulus.
-
-Penghapusan sekarang akan memutus active importer flow dan belum aman tanpa
-inventory profile tenant nyata.
+The generic mapping service, profile/configuration model, staging adapter,
+reconciliation UI, and legacy importer routes/jobs were removed on 2026-09-20.
+No runtime path may create source-target mappings dynamically. Historical
+`arkas_import_profiles`/`arkas_import_rows` schema remains retained because
+destructive cleanup is outside this change.
 
 ## Schema drift dan failure policy
 
@@ -128,10 +129,10 @@ tables belum ditambahkan karena belum ada evidence parity lintas sekolah.
 | Bridge process | `ArkasBridgeClient`, `bridge/src/ARKASBridge/Program.cs` | KEEP, explicit read-only adapter |
 | Raw capture | `ArkasRawMirrorService` | KEEP, now manifest-gated |
 | Source discovery | `ArkasDatabaseExplorer` | KEEP, discovery only; not mapping authority |
-| Full sync | `ArkasFullSynchronizationService` | KEEP, domain-specific orchestration |
-| Legacy mapping | `ArkasGenericImportService`, `ArkasDomainAdapter` | DEPRECATE, compatibility shim |
-| Mapping persistence | `ArkasImportProfile`, `ArkasImportConfigurationService` | DEPRECATE, migrate then remove |
-| Staging | `ArkasStagingService` | KEEP temporarily for existing domain adapters |
+| Full sync | `SynchronizeArkasRawMirror`, `ArkasRawMirrorService` | KEEP, explicit manifest authority |
+| Legacy mapping | Generic importer, dynamic adapter | REMOVED |
+| Mapping persistence | Generic profiles/configuration | REMOVED from runtime; historical tables retained |
+| Staging | Generic staging | REMOVED |
 | Reconciliation | `ArkasReconciliationService` | KEEP, no dynamic mapping expansion |
 | Raw mirror schema | `create_arkas_raw_mirror_tables` | KEEP TENANT transitional |
 | Central schema | no ARKAS mirror table yet | NOT READY; requires cross-school evidence |

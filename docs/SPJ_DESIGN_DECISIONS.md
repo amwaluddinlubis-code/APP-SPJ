@@ -12,6 +12,13 @@ Dokumen ini tidak menyatakan status implementasi. Gunakan:
 - `docs/GUI_STANDARDIZATION.md` untuk kontrak visual dan layout UI;
 - `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` untuk detail koreksi dan rollback numbering.
 
+### ARKAS import authority
+
+The generic/dynamic importer and mapping UI are removed. Explicit manifest and
+bridge contracts are the sole import authority, with validation, quarantine,
+persistent central promotion, tenant mirror projection, and `CENTRAL_COMPAT`
+reads. Raw/legacy tables remain retained until separately approved cleanup.
+
 Jika implementasi atau UI bertentangan dengan keputusan domain di dokumen ini, implementasi/UI yang harus diperbaiki kecuali keputusan domain memang diubah secara eksplisit.
 
 ---

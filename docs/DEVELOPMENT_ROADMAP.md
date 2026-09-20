@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-19**
+Terakhir diperbarui: **2026-09-20**
 
 Roadmap ini memuat urutan pekerjaan aktif pada branch `arkas-raw-mirror`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
@@ -9,6 +9,13 @@ Prinsip kerja aktif:
 ```text
 integration gate hijau -> operator flow -> temukan bug nyata -> perbaiki -> regression bila perlu
 ```
+
+## 2026-09-20 — importer authority closed
+
+The former generic/dynamic mapping importer is removed. Imports must use the
+explicit manifest, bridge contracts, schema validators, quarantine policy,
+persistent central authority, and tenant mirror bridge. Legacy/raw storage
+cleanup remains a separate deferred migration.
 
 Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contract inti cukup dibuktikan. Exception: mutation boundary baru wajib mempunyai negative authorization/tenant regression bila permission tidak dapat dibuktikan tanpa test tersebut.
 
