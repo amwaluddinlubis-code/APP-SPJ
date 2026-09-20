@@ -9,6 +9,17 @@ final class ArkasReferenceVersionKey
     /** @param array<int, string> $supportedReleases */
     public function __construct(private readonly array $supportedReleases = []) {}
 
+    public function validateRelease(?string $arkasRelease): void
+    {
+        if ($arkasRelease === null || trim($arkasRelease) === '') {
+            throw new RuntimeException('ARKAS release version wajib diisi.');
+        }
+
+        if ($this->supportedReleases !== [] && ! in_array($arkasRelease, $this->supportedReleases, true)) {
+            throw new RuntimeException('ARKAS release tidak didukung: '.$arkasRelease.'.');
+        }
+    }
+
     /** @param array<string, mixed> $entry @param array<string, mixed> $row */
     /** @param array<string, scalar|null> $versionContext */
     public function resolve(array $entry, array $row, ?string $arkasRelease = null, array $versionContext = []): string
@@ -19,12 +30,7 @@ final class ArkasReferenceVersionKey
         foreach ((array) ($entry['version_dimensions'] ?? []) as $dimension) {
             $dimension = (string) $dimension;
             if ($dimension === 'arkas_release') {
-                if ($arkasRelease === null || trim($arkasRelease) === '') {
-                    throw new RuntimeException('ARKAS release version wajib diisi untuk '.$entry['source_table'].'.');
-                }
-                if ($this->supportedReleases !== [] && ! in_array($arkasRelease, $this->supportedReleases, true)) {
-                    throw new RuntimeException('ARKAS release tidak didukung: '.$arkasRelease.'.');
-                }
+                $this->validateRelease($arkasRelease);
                 $version[$dimension] = $arkasRelease;
 
                 continue;
