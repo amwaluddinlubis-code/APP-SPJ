@@ -1259,3 +1259,13 @@ rerun is idempotent, and quarantine plus tenant isolation are deterministic.
 The resolver boundary is wired into the five consumer paths, but full
 request-level shadow parity remains outstanding. Production read cutover is
 therefore **NOT READY** and schema remains **PARTIAL FREEZE**.
+
+### Final schema/mirror gate — 2026-09-20
+
+Request-level shadow parity is now **5/5 PASS** for `ArkasReferenceController`,
+`RkasBudgetController`, `RkasBudgetFilter`, `ArkasDomainAdapter`, and
+`SpjV2CanonicalReadService`. `CENTRAL_COMPAT` produced the same semantic
+results as `LEGACY_RAW`; missing authority fails closed, and the quarantined
+`ref_kode` context remains excluded. Persistent central authority is PASS,
+production reference read cutover is READY, and schema is **FULL FREEZE**.
+`CENTRAL_ONLY` remains non-default and raw/legacy tables remain retained.

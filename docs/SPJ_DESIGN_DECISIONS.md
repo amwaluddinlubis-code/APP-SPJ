@@ -736,3 +736,9 @@ identity is natural key plus declared release/year dimensions; `ref_kode` uses
 deterministic semantic variants with tenant applicability. `CENTRAL_COMPAT`
 fails closed on mismatch and never silently falls back. Production default
 remains raw until five consumer request-level shadow results are PASS.
+
+The five-consumer request-level shadow result is now PASS. `CENTRAL_COMPAT`
+may be used for staged production reference reads with explicit fail-closed
+behavior; `CENTRAL_ONLY` is still not the default. This closes schema/mirror
+ownership and read-authority work without changing FINAL, settlement,
+period-close, or raw-table retention rules.

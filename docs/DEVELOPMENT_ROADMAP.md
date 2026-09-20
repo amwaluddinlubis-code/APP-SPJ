@@ -639,3 +639,11 @@ The next gate is one serial request-level shadow audit for all five named
 consumers. Keep production on `LEGACY_RAW`/explicit `CENTRAL_COMPAT`; do not
 make `CENTRAL_ONLY` default or perform destructive cleanup before all five
 semantic comparisons pass.
+
+### Schema/mirror completion — 2026-09-20
+
+The five-consumer request-level shadow matrix passed 5/5. The schema/mirror
+gate is complete: production reference reads are READY for staged
+`CENTRAL_COMPAT` use, while `CENTRAL_ONLY` remains opt-in and raw mirrors are
+retained for rollback/compatibility. Future work returns to application
+lifecycle only after this checkpoint; no lifecycle mutation is opened here.

@@ -226,7 +226,9 @@ class ArkasReferenceController extends Controller
             })->filter(fn (array $row): bool => $row !== [])->values();
         });
 
-        return app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'));
+        return in_array($sourceTable, ['ref_rekening', 'ref_acuan_barang', 'ref_kode', 'ref_sumber_dana'], true)
+            ? app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'))
+            : $rows;
     }
 
     /** @param array<string, mixed> $row */

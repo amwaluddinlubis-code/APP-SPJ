@@ -432,7 +432,9 @@ class RkasBudgetFilter extends Component
             ->filter(fn (array $row): bool => $row !== [])
             ->values();
 
-        return app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'));
+        return $sourceTable === 'ref_kode'
+            ? app(ArkasReferenceReadBoundary::class)->resolve($sourceTable, $rows, (string) session('active_school_id'))
+            : $rows;
     }
 
     /** @return Collection<int, array{kode:string,nama:string}> */

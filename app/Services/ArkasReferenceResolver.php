@@ -89,7 +89,7 @@ final class ArkasReferenceResolver
         foreach ($legacyRows as $row) {
             $upper = array_change_key_case($row, CASE_UPPER);
             $keys = array_keys($central[0] ?? $upper);
-            $legacyProjection[] = array_intersect_key($upper, array_fill_keys($keys, true));
+            $legacyProjection[] = array_combine($keys, array_map(static fn (string $key): mixed => $upper[$key] ?? null, $keys));
         }
 
         return $this->normalize($legacyProjection) === $this->normalize($central);

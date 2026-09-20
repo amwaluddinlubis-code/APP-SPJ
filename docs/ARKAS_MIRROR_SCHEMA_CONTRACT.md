@@ -308,3 +308,13 @@ quarantined, while the exact `ref_kode` conflict context (`05.02.05.`, 2025,
 fund 1, level 6) remains excluded from central applicability. The explicit
 read boundary is wired into the five named consumer paths; production remains
 `LEGACY_RAW` by default until request-level parity is evidenced for all five.
+
+### Final request-level parity checkpoint — 2026-09-20
+
+The five consumer request-level matrix is PASS: both `LEGACY_RAW` and
+`CENTRAL_COMPAT` return equal semantic rows/items for the same year, fund,
+release, and tenant context. The resolver has no silent fallback; missing
+central data raises a diagnostic, and the quarantined `ref_kode` context is
+not promoted. Persistent central authority is PASS, read cutover is READY,
+and this schema/mirror contract is **FULL FREEZE**. `CENTRAL_ONLY` remains
+non-default; raw tables are retained.
