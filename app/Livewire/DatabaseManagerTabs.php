@@ -10,17 +10,20 @@ class DatabaseManagerTabs extends Component
 
     public int $tableCount = 0;
 
+    public int $centralTableCount = 0;
+
     public string $activeTab = 'overview';
 
-    public function mount(int $databaseCount = 0, int $tableCount = 0): void
+    public function mount(int $databaseCount = 0, int $tableCount = 0, int $centralTableCount = 0): void
     {
         $this->databaseCount = $databaseCount;
         $this->tableCount = $tableCount;
+        $this->centralTableCount = $centralTableCount;
     }
 
     public function selectTab(string $tab): void
     {
-        if (! in_array($tab, ['overview', 'list', 'tables', 'diagnostic', 'maintenance'], true)) {
+        if (! in_array($tab, ['overview', 'list', 'central', 'diagnostic', 'maintenance'], true)) {
             return;
         }
 

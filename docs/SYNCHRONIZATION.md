@@ -91,13 +91,14 @@ overlay/Paket SPJ tidak disentuh.
 
 GUI Penganggaran membaca anggaran raw dengan relasi `rapbs.id_anggaran` ke
 `anggaran.id_anggaran`, kemudian membatasi `tahun_anggaran` dan
-`id_ref_sumber_dana` sesuai konteks aktif. Label program, subprogram, dan
-kegiatan berasal dari `rapbs.id_ref_kode` ke `ref_kode.id_ref_kode`.
+`id_ref_sumber_dana` sesuai konteks aktif. Sumber hierarki filter dan label
+program, subprogram, serta nama kegiatan selalu dimulai dari `ref_kode`, lalu
+`ref_kode.id_ref_kode` direlasikan ke `rapbs.id_ref_kode`. Dengan demikian opsi
+yang tidak dipakai oleh anggaran aktif tidak ikut tampil pada filter.
 
-Filter Program, Subprogram, dan Kegiatan pada GUI lama dibentuk dari seluruh
-baris raw `ref_kode` pada konteks tahun dan sumber dana aktif, bukan hanya kode
-yang kebetulan sudah dipakai pada `rapbs`. Urutan pilihan mengikuti kode
-numerik terkecil.
+Filter Program, Subprogram, dan Nama Kegiatan pada GUI dibentuk dari baris
+`ref_kode` yang memiliki `id_ref_kode` dan benar-benar direlasikan oleh baris
+`rapbs` pada anggaran aktif. Urutan pilihan mengikuti kode numerik terkecil.
 
 Referensi Rekening memakai master raw `ref_rekening` secara terpisah dengan
 aturan `tahun = tahun aktif` dan `expired_date IS NULL`; daftar ini tidak

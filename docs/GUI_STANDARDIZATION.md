@@ -25,7 +25,7 @@ Jalur raw mirror diberi konfirmasi eksplisit dan status akhirnya menyatakan perm
 masuk antrean worker; status tersebut bukan bukti bahwa worker sudah selesai. Surface,
 foreground, border, dan accent overlay wajib mengikuti token tema (`--ui-*`/`--theme-*`).
 
-Modul Database Aktif dimigrasikan bertahap. Ringkasan status database, navigasi tab, panel overview, diagnostik, Explorer Tabel, daftar sekolah, maintenance, dan reset memakai Livewire; Explorer Tabel juga memakai Livewire untuk pencarian, sorting, pagination, serta detail baca-saja. Operasi database tetap dijalankan melalui service canonical dan audit yang ada.
+Modul Database Aktif dimigrasikan bertahap. Ringkasan status database, navigasi tab, panel overview, diagnostik, Explorer Tabel, daftar sekolah, maintenance, dan reset memakai Livewire; tab **Database Sekolah** dan **Database Pusat** masing-masing menyediakan Explorer baca-saja dengan pencarian, sorting, pagination, dan detail modal. Detail modal memiliki toggle Struktur Kolom dan Contoh Isi; Struktur Kolom memakai scroll internal untuk tabel dengan banyak field. Operasi database tetap dijalankan melalui service canonical dan audit yang ada.
 
 Isi setiap tab Database Aktif dirakit melalui partial Blade di `resources/views/database-manager/partials/`; partial hanya menjadi komposisi view, sedangkan state dan aksi reactive tetap dimiliki komponen Livewire.
 
@@ -374,7 +374,7 @@ Gunakan compact list `status / nama / tipe-format / actions`. Metadata padat, st
 
 Dashboard utama harus memprioritaskan pekerjaan operator, terutama masalah source/reconciliation, DRAFT yang belum selesai, READY, lalu pekerjaan baru.
 
-Halaman Database Aktif tetap menjadi Pusat Kontrol Database Sekolah dengan pemisahan status, explorer read-only, diagnostik, maintenance, backup, dan zona berbahaya untuk reset.
+Halaman Database Aktif tetap menjadi Pusat Kontrol Database Sekolah dengan pemisahan status, tab Database Sekolah, tab Database Pusat, diagnostik, maintenance, backup, dan zona berbahaya untuk reset. Explorer kedua sumber tetap read-only; aksi Buka membuka modal detail dan tidak menulis database.
 
 ## 19. Compatibility layer
 

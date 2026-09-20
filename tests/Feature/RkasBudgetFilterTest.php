@@ -152,4 +152,12 @@ class RkasBudgetFilterTest extends TestCase
             ->assertSee('05.02.03')
             ->assertDontSee('03.03.07');
     }
+
+    public function test_budget_table_keeps_subtotals_in_header_and_labels_activity_as_name(): void
+    {
+        $this->get(route('rkas-budget.index', ['program' => '03']))
+            ->assertOk()
+            ->assertSee('Nama Kegiatan')
+            ->assertDontSee('Subtotal tersaring');
+    }
 }

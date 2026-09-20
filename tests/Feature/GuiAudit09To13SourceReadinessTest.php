@@ -45,15 +45,24 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
     {
         $blade = file_get_contents(resource_path('views/database-manager/index.blade.php'));
         $partial = file_get_contents(resource_path('views/database-manager/partials/tables.blade.php'));
+        $tabs = file_get_contents(resource_path('views/livewire/database-manager-tabs.blade.php'));
         $component = file_get_contents(resource_path('views/livewire/database-table-explorer.blade.php'));
         $css = file_get_contents(resource_path('css/ui-generalization.css'));
 
         $this->assertIsString($blade);
         $this->assertIsString($partial);
+        $this->assertIsString($tabs);
         $this->assertIsString($component);
         $this->assertIsString($css);
         $this->assertStringContainsString("@include('database-manager.partials.tables')", $blade);
         $this->assertStringContainsString('<livewire:database-table-explorer', $partial);
+        $this->assertStringContainsString("selectTab('list')", $tabs);
+        $this->assertStringContainsString('Database Sekolah', $tabs);
+        $this->assertStringContainsString("selectTab('central')", $tabs);
+        $this->assertStringContainsString('Database Pusat', $tabs);
+        $this->assertStringNotContainsString('Explorer Tabel', $tabs);
+        $this->assertStringContainsString('database="school"', $partial);
+        $this->assertStringContainsString('database="central"', $partial);
         $this->assertStringContainsString('wire:model.live.debounce.250ms="search"', $component);
         $this->assertStringContainsString('wire:click="setPage(', $component);
         $this->assertStringContainsString('.ui-pagination-control:first-child', $css);

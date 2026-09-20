@@ -394,6 +394,19 @@ class RkasBudgetFilter extends Component
         }
 
         $year = FiscalYear::query()->find($yearId);
+        $approvedBudgetIds = $this->rawApprovedBudgetIds();
+        $rkasRows = $this->rawMirrorRows('rapbs');
+
+        if ($approvedBudgetIds === null || $rkasRows === null) {
+            return null;
+        }
+
+        $referencedIds = $rkasRows
+            ->filter(fn (array $row): bool => isset($approvedBudgetIds[(string) ($row['ID_ANGGARAN'] ?? '')]))
+            ->map(fn (array $row): string => trim((string) ($row['ID_REF_KODE'] ?? $row['REF_ID_KODE'] ?? $row['ID_REF_KODE_KEGIATAN'] ?? '')))
+            ->filter()
+            ->unique()
+            ->flip();
 
         return $rows->filter(function (array $row) use ($year, $fundSourceId): bool {
             $sourceYear = (string) ($row['TAHUN'] ?? $row['TAHUN_ANGGARAN'] ?? '');
@@ -401,7 +414,7 @@ class RkasBudgetFilter extends Component
 
             return $sourceYear === (string) ($year?->year ?? '')
                 && ($sourceFund === '' || (int) $sourceFund === $fundSourceId);
-        })->values();
+        })->filter(fn (array $row): bool => $referencedIds->has(trim((string) ($row['ID_REF_KODE'] ?? $row['REF_ID_KODE'] ?? $row['ID_REF_KODE_KEGIATAN'] ?? ''))))->values();
     }
 
     /** @return Collection<int, array<string, mixed>>|null */

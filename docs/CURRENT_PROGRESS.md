@@ -11,6 +11,10 @@ Definisi status:
 - **RVR**: masih memerlukan real-value/runtime/operator verification;
 - **DEFERRED**: sengaja tidak menjadi fokus aktif saat ini, bukan berarti PASS.
 
+### 2026-09-20 — Database Aktif Explorer GUI
+
+Targeted browser QA halaman `/pengaturan/database-aktif` dinyatakan **PASS berdasarkan konfirmasi operator** setelah perubahan berikut: tab utama memisahkan Database Sekolah dan Database Pusat; masing-masing Explorer dapat membuka detail melalui modal; modal menyediakan toggle Struktur Kolom dan Contoh Isi; serta Struktur Kolom memiliki scroll internal untuk tabel dengan banyak kolom. Verifikasi source lokal juga lulus: focused Explorer **6 tests / 18 assertions**, Blade cache PASS, frontend build PASS, Pint PASS, dan diff check PASS. Browser QA repository-wide tetap RVR/DEFERRED.
+
 ### 2026-09-20 — legacy importer removal
 
 Runtime generic/dynamic ARKAS importer, mapping UI, mapping registry, staging

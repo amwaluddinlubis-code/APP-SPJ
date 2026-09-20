@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\DatabaseTableExplorer;
 use App\Models\School;
 use App\Models\SchoolDatabase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class DatabaseTableSummaryTest extends TestCase
@@ -77,5 +79,55 @@ class DatabaseTableSummaryTest extends TestCase
 
         $this->actingAs(User::factory()->create(['role' => User::ROLE_VIEWER]));
         $this->getJson('/pengaturan/database-aktif/tabel/demo_pegawai')->assertForbidden();
+    }
+
+    public function test_table_explorer_keeps_rows_visible_on_second_page(): void
+    {
+        $tables = collect(range(1, 30))->map(fn (int $number): array => [
+            'name' => 'demo_table_'.$number,
+            'label' => 'Demo '.$number,
+            'group' => 'Sistem',
+            'blurb' => 'Tabel uji',
+            'count' => $number,
+            'columns' => 3,
+        ])->all();
+
+        Livewire::test(DatabaseTableExplorer::class, ['tables' => $tables])
+            ->assertSee('demo_table_1')
+            ->call('setPage', 2)
+            ->assertSee('demo_table_23')
+            ->assertDontSee('demo_table_1</p>');
+    }
+
+    public function test_central_table_explorer_reads_the_application_database(): void
+    {
+        Schema::create('central_demo', function ($table): void {
+            $table->id();
+            $table->string('name');
+        });
+        DB::table('central_demo')->insert(['name' => 'Pusat']);
+
+        Livewire::test(DatabaseTableExplorer::class, [
+            'database' => 'central',
+            'tables' => [[
+                'name' => 'central_demo',
+                'label' => 'Central Demo',
+                'group' => 'Sistem',
+                'blurb' => 'Tabel pusat',
+                'count' => 1,
+                'columns' => 2,
+            ]],
+        ])
+            ->assertSee('central_demo')
+            ->call('openTable', 'central_demo')
+            ->assertSee('Pusat');
+    }
+
+    public function test_open_table_action_is_not_shadowed_by_livewire_state(): void
+    {
+        $reflection = new \ReflectionClass(DatabaseTableExplorer::class);
+
+        $this->assertFalse($reflection->hasProperty('openTable'));
+        $this->assertTrue($reflection->hasMethod('openTable'));
     }
 }

@@ -2,6 +2,7 @@
     @php
         $databaseCount = $list->count();
         $activeTableCount = count($tables ?? []);
+        $centralTableCount = count($centralTables ?? []);
     @endphp
 
     <div id="database-control-center" class="db-control-center space-y-5">
@@ -18,7 +19,7 @@
         <livewire:database-manager-alerts :active="$active" :active-status="$activeStatus" />
 
         <section id="db-tabs" class="db-workspace">
-            <livewire:database-manager-tabs :database-count="$databaseCount" :table-count="$activeTableCount" />
+            <livewire:database-manager-tabs :database-count="$databaseCount" :table-count="$activeTableCount" :central-table-count="$centralTableCount" />
             @include('database-manager.partials.overview')
             @include('database-manager.partials.school-list')
             @include('database-manager.partials.tables')

@@ -14,6 +14,8 @@ class DatabaseTableExplorer extends Component
 
     public array $tables = [];
 
+    public string $database = 'school';
+
     public string $search = '';
 
     public string $sort = 'name';
@@ -22,13 +24,14 @@ class DatabaseTableExplorer extends Component
 
     public int $perPage = 15;
 
-    public ?string $openTable = null;
+    public ?string $selectedTable = null;
 
     public ?array $detail = null;
 
-    public function mount(array $tables = [], ?string $initialTable = null): void
+    public function mount(array $tables = [], ?string $initialTable = null, string $database = 'school'): void
     {
         $this->tables = $tables;
+        $this->database = in_array($database, ['school', 'central'], true) ? $database : 'school';
         if ($initialTable !== null) {
             $this->openTable($initialTable);
         }
@@ -36,17 +39,27 @@ class DatabaseTableExplorer extends Component
 
     public function updatedSearch(): void
     {
-        $this->resetPage();
+        $this->resetPage('databaseTablePage');
     }
 
     public function updatedPerPage(): void
     {
-        $this->resetPage();
+        $this->resetPage('databaseTablePage');
     }
 
-    public function setPage(int $page): void
+    public function setPage(int $page, string $pageName = 'databaseTablePage'): void
     {
-        $this->gotoPage($page);
+        $this->paginators[$pageName] = max(1, $page);
+    }
+
+    public function previousTablePage(): void
+    {
+        $this->previousPage('databaseTablePage');
+    }
+
+    public function nextTablePage(): void
+    {
+        $this->nextPage('databaseTablePage');
     }
 
     public function sortBy(string $field): void
@@ -62,7 +75,7 @@ class DatabaseTableExplorer extends Component
             $this->direction = 'asc';
         }
 
-        $this->resetPage();
+        $this->resetPage('databaseTablePage');
     }
 
     public function openTable(string $name): void
@@ -71,16 +84,20 @@ class DatabaseTableExplorer extends Component
             return;
         }
 
-        $this->openTable = $name;
-        $active = app(SchoolDatabaseManager::class)->activeInfo();
-        if (! $active['school']) {
+        $this->selectedTable = $name;
+        $manager = app(SchoolDatabaseManager::class);
+        $active = $manager->activeInfo();
+        if ($this->database === 'school' && ! $active['school']) {
             return;
         }
 
         try {
-            $manager = app(SchoolDatabaseManager::class);
-            $schema = $manager->tableSchema($active['school'], $name);
-            $data = $manager->tableData($active['school'], $name, 10);
+            $schema = $this->database === 'central'
+                ? $manager->centralTableSchema($name)
+                : $manager->tableSchema($active['school'], $name);
+            $data = $this->database === 'central'
+                ? $manager->centralTableData($name, 10)
+                : $manager->tableData($active['school'], $name, 10);
             $this->detail = [
                 'name' => $name,
                 'meta' => app(SchoolDatabaseTableGuide::class)->describe($name),
@@ -100,7 +117,7 @@ class DatabaseTableExplorer extends Component
 
     public function closeTable(): void
     {
-        $this->openTable = null;
+        $this->selectedTable = null;
         $this->detail = null;
     }
 
@@ -127,12 +144,15 @@ class DatabaseTableExplorer extends Component
                 return ($a <=> $b) * ($this->direction === 'asc' ? 1 : -1);
             });
 
-        $page = $filtered->forPage($this->getPage(), $this->perPage);
+        $pages = max(1, (int) ceil($filtered->count() / $this->perPage));
+        $currentPage = max(1, min($this->getPage('databaseTablePage'), $pages));
+        $page = $filtered->forPage($currentPage, $this->perPage);
 
         return view('livewire.database-table-explorer', [
             'pageTables' => $page,
             'total' => $filtered->count(),
-            'pages' => max(1, (int) ceil($filtered->count() / $this->perPage)),
+            'pages' => $pages,
+            'currentPage' => $currentPage,
         ]);
     }
 }

@@ -438,7 +438,7 @@ const initializeDatabaseManagerTabs = () => {
     if (!(workspace instanceof HTMLElement) || workspace.dataset.tabsInitialized === 'true') return;
 
     workspace.dataset.tabsInitialized = 'true';
-    const validTabs = ['overview', 'list', 'tables', 'diagnostic', 'maintenance'];
+    const validTabs = ['overview', 'list', 'central', 'diagnostic', 'maintenance'];
     const render = (tab) => {
         const selectedTab = validTabs.includes(tab) ? tab : 'overview';
 

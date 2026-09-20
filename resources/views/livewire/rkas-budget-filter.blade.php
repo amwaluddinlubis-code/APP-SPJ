@@ -86,9 +86,9 @@
                     @endforeach
                 </x-ui.select>
             </x-ui.field>
-            <x-ui.field label="Kegiatan" for="rkas-filter-kegiatan">
+            <x-ui.field label="Nama Kegiatan" for="rkas-filter-kegiatan">
                 <x-ui.select id="rkas-filter-kegiatan" wire:model.live="kegiatan" :disabled="! $sub">
-                    <option value="">Semua Kegiatan</option>
+                    <option value="">Semua Nama Kegiatan</option>
                     @foreach ($kegiatanOptions as $k)
                         <option value="{{ $k['kode'] }}">{{ $k['kode'] }} - {{ $k['nama'] }}</option>
                     @endforeach

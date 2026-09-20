@@ -47,26 +47,12 @@
                 </a>
             </x-slot:actions>
 
-            @if($scope !== 'year' || filled($search) || filled($programFilter) || filled($subprogramFilter) || filled($activityFilter))
-                <div class="mx-4 mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border px-3 py-2 text-xs"
-                    style="border-color: var(--ui-line); background: var(--ui-surface-soft); color: var(--ui-fg-muted)">
-                    <span class="font-bold uppercase tracking-wide" style="color: var(--ui-fg-strong)">Subtotal
-                        tersaring</span>
-                    <span>Pagu tersaring <strong
-                            style="color: var(--theme-content-accent)">{{ $rupiah($budget) }}</strong></span>
-                    <span>Realisasi dibukukan <strong
-                            class="text-emerald-700">{{ $rupiah($spent) }}</strong></span>
-                    <span>Selisih <strong
-                            style="color: var(--ui-fg-strong)">{{ $rupiah($remaining) }}</strong></span>
-                </div>
-            @endif
-
             <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)">
                 <table class="min-w-[1100px] w-full divide-y text-sm" style="border-color: var(--ui-line)" data-pagination="none">
                     <thead style="background: var(--ui-surface-soft)">
                         <tr>
                             <th class="px-3 py-2 text-left text-xs font-bold uppercase"
-                                style="color: var(--ui-fg-muted)">Kode Program</th>
+                                style="color: var(--ui-fg-muted)">Program / Sub Program / Nama Kegiatan</th>
                             <th class="min-w-[260px] px-3 py-2 text-left text-xs font-bold uppercase"
                                 style="color: var(--ui-fg-muted)">Uraian</th>
                             <th class="px-3 py-2 text-left text-xs font-bold uppercase"

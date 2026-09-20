@@ -21,21 +21,28 @@ class DatabaseManagerController extends Controller
         $list = $manager->listAll();
         $activeStatus = null;
         $tables = [];
+        $centralTables = [];
         $table = $request->query('table');
         $tableError = null;
+
+        try {
+            $guide = app(SchoolDatabaseTableGuide::class);
+            $centralTables = collect($manager->listCentralTables())
+                ->map(function (array $row) use ($guide): array {
+                    return $row + $guide->describe((string) ($row['name'] ?? ''));
+                })
+                ->sortBy([fn ($row) => array_search($row['group'], $guide->groups()), fn ($row) => $row['label']])
+                ->values()->all();
+        } catch (\Throwable $e) {
+            Log::warning('Central database table listing failed.', ['exception' => $e]);
+        }
 
         if ($active['school']) {
             $activeStatus = $manager->status($active['school']);
             try {
                 $guide = app(SchoolDatabaseTableGuide::class);
                 $tables = collect($manager->listTables($active['school']))
-                    ->map(function (array $row) use ($manager, $active, $guide): array {
-                        try {
-                            $row['columns'] = count($manager->tableSchema($active['school'], (string) $row['name']));
-                        } catch (\Throwable) {
-                            $row['columns'] = null;
-                        }
-
+                    ->map(function (array $row) use ($guide): array {
                         return $row + $guide->describe((string) ($row['name'] ?? ''));
                     })
                     ->sortBy([fn ($row) => array_search($row['group'], $guide->groups()), fn ($row) => $row['label']])
@@ -46,7 +53,7 @@ class DatabaseManagerController extends Controller
             }
         }
 
-        return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'tableError'));
+        return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'centralTables', 'table', 'tableError'));
     }
 
     public function tableSummary(SchoolDatabaseManager $manager, string $table): JsonResponse

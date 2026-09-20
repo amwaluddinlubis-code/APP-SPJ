@@ -428,6 +428,11 @@ Core procurement policy functional PASS. Tersisa:
 
 **Status: SOURCE READINESS / RUNTIME RVR.** Checklist: `GUI_RUNTIME_QA.md`.
 
+Targeted exception: halaman `/pengaturan/database-aktif` telah dikonfirmasi operator
+**PASS** untuk tab Database Sekolah/Database Pusat, modal detail, toggle section,
+dan scroll Struktur Kolom. Checklist browser repository-wide serta halaman lain
+tetap RVR dan tidak tertutup oleh verifikasi targeted ini.
+
 Viewport prioritas:
 
 - [ ] 1366×768;

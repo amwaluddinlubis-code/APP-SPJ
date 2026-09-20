@@ -465,7 +465,12 @@ class RkasBudgetController extends Controller
         $referenceRows = app(ArkasReferenceReadBoundary::class)->resolve('ref_kode', $legacyReferences, (string) session('active_school_id')) ?? collect();
         foreach ($referenceRows as $payload) {
             $payload = array_change_key_case($payload, CASE_UPPER);
-            $references[(string) ($payload['ID_REF_KODE'] ?? '')] = $payload;
+            $referenceId = trim((string) ($payload['ID_REF_KODE'] ?? $payload['REF_ID_KODE'] ?? $payload['ID_REF_KODE_KEGIATAN'] ?? ''));
+            if ($referenceId === '') {
+                continue;
+            }
+
+            $references[$referenceId] = $payload;
             $referenceNames[trim((string) ($payload['ID_KODE'] ?? ''), '.')] = (string) ($payload['URAIAN_KODE'] ?? '');
         }
 
@@ -538,7 +543,8 @@ class RkasBudgetController extends Controller
             if (! isset($allowedBudgets[(string) ($payload['ID_ANGGARAN'] ?? '')]) || (string) ($payload['SOFT_DELETE'] ?? '0') === '1') {
                 continue;
             }
-            $reference = $references[(string) ($payload['ID_REF_KODE'] ?? '')] ?? [];
+            $referenceId = trim((string) ($payload['ID_REF_KODE'] ?? $payload['REF_ID_KODE'] ?? $payload['ID_REF_KODE_KEGIATAN'] ?? ''));
+            $reference = $references[$referenceId] ?? [];
             $activityCode = trim((string) ($reference['ID_KODE'] ?? $payload['KODE_KEGIATAN'] ?? ''), '.');
             $activityName = (string) ($reference['URAIAN_KODE'] ?? '');
             $sourceId = (string) ($payload['ID_RAPBS'] ?? $row->source_key);

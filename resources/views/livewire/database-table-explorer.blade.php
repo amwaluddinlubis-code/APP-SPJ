@@ -1,4 +1,4 @@
-<div data-livewire-explorer="true" data-panel="tables" class="db-panel db-table-single space-y-3">
+<div data-livewire-explorer="true" class="db-panel db-table-single space-y-3">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
             <p class="db-eyebrow">Explorer · {{ count($tables) }} tabel</p>
@@ -25,7 +25,7 @@
                 </thead>
                 <tbody>
                     @forelse($pageTables as $table)
-                        <tr>
+                        <tr wire:key="database-table-{{ $table['name'] }}">
                             <td>
                                 <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $table['label'] ?? $table['name'] }}</p>
                                 <p class="truncate font-mono text-[11px] text-[var(--ui-fg-muted)]">{{ $table['name'] }}</p>
@@ -34,9 +34,9 @@
                             <td><span class="db-health-pill">{{ $table['group'] ?? 'Sistem' }}</span></td>
                             <td class="text-right font-mono text-xs">{{ $table['count'] ?? '—' }}</td>
                             <td class="text-right font-mono text-xs">{{ $table['columns'] ?? '—' }}</td>
-                            <td class="text-right"><button type="button" wire:click="{{ $openTable === $table['name'] ? 'closeTable' : "openTable('{$table['name']}')" }}" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">{{ $openTable === $table['name'] ? 'Tutup' : 'Buka' }}</button></td>
+                            <td class="text-right"><button type="button" wire:click="openTable('{{ $table['name'] }}')" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs">Buka</button></td>
                         </tr>
-                        @if($openTable === $table['name'] && $detail)
+                        @if(false && $selectedTable === $table['name'] && $detail)
                             <tr>
                                 <td colspan="5">
                                     <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 text-sm text-[var(--ui-fg-muted)]">
@@ -56,14 +56,45 @@
             </table>
         </div>
         <div class="db-table-pagination">
-            <span>Menampilkan {{ $total ? (($this->getPage() - 1) * $perPage) + 1 : 0 }}–{{ min($this->getPage() * $perPage, $total) }} dari {{ $total }} tabel</span>
+            <span>Menampilkan {{ $total ? (($currentPage - 1) * $perPage) + 1 : 0 }}–{{ min($currentPage * $perPage, $total) }} dari {{ $total }} tabel</span>
             <div class="ui-pagination-group" aria-label="Navigasi halaman tabel">
-                <button type="button" wire:click="previousPage" @disabled($this->getPage() <= 1) class="ui-pagination-control">Sebelumnya</button>
-                @for($page = 1; $page <= min(3, $pages); $page++)<button type="button" wire:click="setPage({{ $page }})" class="ui-pagination-control {{ $this->getPage() === $page ? 'is-active' : '' }}">{{ $page }}</button>@endfor
+                <button type="button" wire:click="previousTablePage" @disabled($currentPage <= 1) class="ui-pagination-control">Sebelumnya</button>
+                @for($page = 1; $page <= min(3, $pages); $page++)<button type="button" wire:key="database-page-{{ $page }}" wire:click="setPage({{ $page }})" class="ui-pagination-control {{ $currentPage === $page ? 'is-active' : '' }}">{{ $page }}</button>@endfor
                 @if($pages > 6)<span class="ui-pagination-control ui-pagination-ellipsis">…</span>@endif
-                @if($pages > 3)@for($page = max(4, $pages - 2); $page <= $pages; $page++)<button type="button" wire:click="setPage({{ $page }})" class="ui-pagination-control {{ $this->getPage() === $page ? 'is-active' : '' }}">{{ $page }}</button>@endfor @endif
-                <button type="button" wire:click="nextPage" @disabled($this->getPage() >= $pages) class="ui-pagination-control">Berikutnya</button>
+                @if($pages > 3)@for($page = max(4, $pages - 2); $page <= $pages; $page++)<button type="button" wire:key="database-page-{{ $page }}" wire:click="setPage({{ $page }})" class="ui-pagination-control {{ $currentPage === $page ? 'is-active' : '' }}">{{ $page }}</button>@endfor @endif
+                <button type="button" wire:click="nextTablePage" @disabled($currentPage >= $pages) class="ui-pagination-control">Berikutnya</button>
             </div>
         </div>
     </div>
+
+    @if($detail)
+        <div wire:key="database-detail-modal-{{ $detail['name'] }}" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="database-detail-title">
+            <div class="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-2xl">
+                <header class="flex items-start justify-between gap-4 border-b border-[var(--ui-line)] p-4">
+                    <div>
+                        <p class="db-eyebrow">Detail tabel</p>
+                        <h2 id="database-detail-title" class="text-lg font-bold text-[var(--ui-fg-strong)]">{{ $detail['name'] }}</h2>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $detail['meta']['blurb'] ?? '' }}</p>
+                    </div>
+                    <button type="button" wire:click="closeTable" class="ui-btn ui-btn-secondary !min-h-0 !px-3 !py-1.5" aria-label="Tutup detail tabel">Tutup</button>
+                </header>
+                <div x-data="{ schemaOpen: true, rowsOpen: true }" class="max-h-[calc(90vh-96px)] overflow-y-auto p-4 text-sm text-[var(--ui-fg-muted)]">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <p class="text-[11px] font-bold uppercase tracking-wide">Struktur kolom ({{ count($detail['columns']) }})</p>
+                        <button type="button" @click="schemaOpen = !schemaOpen" :aria-expanded="schemaOpen" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs" x-text="schemaOpen ? 'Sembunyikan' : 'Tampilkan'"></button>
+                    </div>
+                    <div x-show="schemaOpen" x-cloak class="mb-5 overflow-y-scroll overflow-x-auto rounded-lg border border-[var(--ui-line)]" style="max-height: 280px;"><table class="db-data-table w-full"><thead><tr><th>Nama kolom</th><th>Type</th><th>Keterangan</th></tr></thead><tbody>@foreach($detail['columns'] as $column)<tr><td class="font-mono text-xs">{{ $column['name'] }}</td><td class="font-mono text-xs">{{ $column['type'] }}</td><td class="text-xs">{{ $column['pk'] ? 'Kunci utama' : ($column['required'] ? 'Wajib diisi' : '—') }}</td></tr>@endforeach</tbody></table></div>
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <p class="text-[11px] font-bold uppercase tracking-wide">Contoh isi (10 pertama dari {{ $detail['total'] }} baris)</p>
+                        <button type="button" @click="rowsOpen = !rowsOpen" :aria-expanded="rowsOpen" class="ui-btn ui-btn-secondary !min-h-0 !px-2 !py-1 !text-xs" x-text="rowsOpen ? 'Sembunyikan' : 'Tampilkan'"></button>
+                    </div>
+                    @if(empty($detail['rows']))
+                        <p x-show="rowsOpen" x-cloak class="text-xs">Tabel ini belum memiliki data.</p>
+                    @else
+                        <div x-show="rowsOpen" x-cloak class="overflow-auto"><table class="db-data-table w-full"><thead><tr>@foreach(array_keys($detail['rows'][0]) as $column)<th>{{ $column }}</th>@endforeach</tr></thead><tbody>@foreach($detail['rows'] as $row)<tr>@foreach($row as $value)<td class="max-w-[220px] truncate font-mono text-xs">{{ is_scalar($value) || $value === null ? ($value ?? 'NULL') : json_encode($value) }}</td>@endforeach</tr>@endforeach</tbody></table></div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

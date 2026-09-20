@@ -460,20 +460,45 @@ class SchoolDatabaseManager
     /**
      * Daftar tabel pada database sekolah aktif (sqlite_master).
      *
-     * @return array<int, array{name:string, sql:string, count:int|null}>
+     * @return array<int, array{name:string, sql:string, count:int|null, columns:int|null}>
      */
     public function listTables(School $school): array
     {
         $this->activate($school);
-        $rows = DB::connection('school')->select("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+
+        return $this->listTablesOnConnection('school');
+    }
+
+    /**
+     * Daftar tabel pada database pusat aplikasi.
+     *
+     * @return array<int, array{name:string, sql:string, count:int|null, columns:int|null}>
+     */
+    public function listCentralTables(): array
+    {
+        return $this->listTablesOnConnection((string) config('database.default', 'sqlite'));
+    }
+
+    /**
+     * @return array<int, array{name:string, sql:string, count:int|null, columns:int|null}>
+     */
+    private function listTablesOnConnection(string $connection): array
+    {
+        $db = DB::connection($connection);
+        $rows = $db->select("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
         $out = [];
         foreach ($rows as $r) {
             $cnt = null;
             try {
-                $cnt = DB::connection('school')->table($r->name)->count();
+                $cnt = $db->table($r->name)->count();
             } catch (\Throwable) {
             }
-            $out[] = ['name' => $r->name, 'sql' => $r->sql, 'count' => $cnt];
+            $columns = null;
+            try {
+                $columns = count($db->select("PRAGMA table_info('".str_replace("'", "''", $r->name)."')"));
+            } catch (\Throwable) {
+            }
+            $out[] = ['name' => $r->name, 'sql' => $r->sql, 'count' => $cnt, 'columns' => $columns];
         }
 
         return $out;
@@ -499,16 +524,42 @@ class SchoolDatabaseManager
     public function tableData(School $school, string $table, int $perPage = 15): LengthAwarePaginator
     {
         $this->activate($school);
+
+        return $this->tableDataOnConnection('school', $table, $perPage);
+    }
+
+    public function centralTableSchema(string $table): array
+    {
+        return $this->tableSchemaOnConnection((string) config('database.default', 'sqlite'), $table);
+    }
+
+    public function centralTableData(string $table, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->tableDataOnConnection((string) config('database.default', 'sqlite'), $table, $perPage);
+    }
+
+    private function tableSchemaOnConnection(string $connection, string $table): array
+    {
+        if (! preg_match('/^[A-Za-z0-9_]+$/', $table)) {
+            throw new \InvalidArgumentException('Nama tabel tidak valid');
+        }
+
+        return DB::connection($connection)->select("PRAGMA table_info('".str_replace("'", "''", $table)."')");
+    }
+
+    private function tableDataOnConnection(string $connection, string $table, int $perPage): LengthAwarePaginator
+    {
         if (! preg_match('/^[A-Za-z0-9_]+$/', $table)) {
             throw new \InvalidArgumentException('Nama tabel tidak valid');
         }
         // ensure table exists
-        $exists = DB::connection('school')->select("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [$table]);
+        $db = DB::connection($connection);
+        $exists = $db->select("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [$table]);
         if (empty($exists)) {
             throw new \RuntimeException('Tabel tidak ditemukan');
         }
 
-        $paginator = DB::connection('school')->table($table)->paginate($perPage);
+        $paginator = $db->table($table)->paginate($perPage);
         $sensitiveColumns = config('spj.database_manager_sensitive_columns', []);
         $paginator->getCollection()->transform(function (object $row) use ($sensitiveColumns): object {
             foreach (get_object_vars($row) as $column => $value) {
