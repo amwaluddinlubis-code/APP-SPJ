@@ -1123,3 +1123,19 @@ invokes the effective single-package FINAL authority atomically. The batch
 retry returns the existing batch audit without duplicate lifecycle events.
 Failure of any member leaves every package unchanged. Period close/open,
 destructive cleanup, and browser QA remain outside the gate.
+
+### Effective period close/open mutation checkpoint - 2026-09-20
+
+The V2 read-path boundary now covers period availability mutations through
+`SpjV2PeriodLifecycleService`. Close uses the effective canonical context,
+locks the period and its quarter members, requires FINAL and persistent
+SETTLED post-conditions, and writes `PERIOD_CLOSE_V2` in the same transaction.
+Reopen requires CLOSED state, administrator authorization, and an explicit
+reason; it writes `PERIOD_REOPEN_V2` and returns the period to NUMBERED without
+rolling back package, document, numbering, or settlement history.
+
+Both routes are wired through `SpjFiscalPeriodUseCase`. A requested V2 path
+that cannot prove context fails closed and does not invoke the legacy service.
+Focused isolated close/reopen evidence is **PASS (17 assertions)**. This
+closes the backend lifecycle gate; browser QA and destructive cleanup remain
+deferred/closed.

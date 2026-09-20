@@ -12,7 +12,9 @@ use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2NumberingAuthorizationService;
 use App\Services\SpjV2NumberingBatchService;
 use App\Services\SpjV2NumberingIssuanceService;
+use App\Services\SpjV2PeriodLifecycleService;
 use App\Services\SpjV2SettlementService;
+use App\Support\ActiveSpjContext;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjSingleNumberingUseCase;
 use Illuminate\Database\Connection;
@@ -171,6 +173,76 @@ final class V2DNumberingIssuanceTest extends TestCase
                 ->from(route('spj.index', ['tab' => 'paket']))
                 ->post(route('spj.payments.store', $transaction->id), []);
             $response->assertSessionHas('success');
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_period_close_and_reopen_are_atomic_and_idempotent(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-period-lifecycle.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $package = $this->numberedFinalizationCandidate($db, 'v2-period');
+            $effectiveYearId = $this->openContexts[(int) $package->id][0];
+            $fundSourceId = $this->openContexts[(int) $package->id][1];
+            $quarter = (int) ceil((int) date('n', strtotime((string) $package->transaction->transaction_date)) / 3);
+            $canonicalId = (int) $package->spj_transaction_id;
+
+            // Keep this isolated rehearsal deterministic: only the candidate
+            // remains active in the effective context; other canonical facts
+            // stay in the clone but are outside this rehearsal contract.
+            $otherCanonicalIds = $db->table('spj_transactions')
+                ->where('fiscal_year_id', $effectiveYearId)
+                ->where('fund_source_id', $fundSourceId)
+                ->where('canonical_context_status', 'ACTIVE_CANONICAL')
+                ->where('id', '!=', $canonicalId)
+                ->pluck('id');
+            $db->table('spj_transactions')->whereIn('id', $otherCanonicalIds->all())->update(['canonical_context_status' => 'REQUIRES_REVIEW']);
+            $db->table('legacy_transaction_v2_map')
+                ->where('spj_transaction_id', $canonicalId)
+                ->where('legacy_transaction_id', '!=', $package->transaction_id)
+                ->delete();
+            $transaction = $package->transaction;
+            $transaction->payments()->create([
+                'scope_key' => 'PAYMENT:PERIOD',
+                'payment_sequence' => 1,
+                'payment_date' => $transaction->transaction_date->toDateString(),
+                'gross_amount' => $transaction->gross_amount,
+                'tax_amount' => 0,
+                'net_amount' => $transaction->gross_amount,
+                'payment_method' => 'tunai',
+                'status' => 'POSTED',
+            ]);
+            $final = app(SpjV2FinalizationService::class)->finalize($package->fresh(['transaction.items', 'documents']));
+            $this->assertSame('FINALIZED', $final['status'], json_encode($final, JSON_THROW_ON_ERROR));
+            $settled = app(SpjV2SettlementService::class)->settle($package->fresh());
+            $this->assertSame('SETTLED', $settled['status'], json_encode($settled, JSON_THROW_ON_ERROR));
+
+            $db->table('fiscal_period_closures')->updateOrInsert(
+                ['fiscal_year_id' => $effectiveYearId, 'quarter' => $quarter],
+                ['status' => 'NUMBERED', 'updated_at' => now(), 'created_at' => now()],
+            );
+            app()->instance(ActiveSpjContext::class, new ActiveSpjContext(1, $effectiveYearId, $fundSourceId, 1, true));
+            $closed = app(SpjV2PeriodLifecycleService::class)->close($quarter);
+            $this->assertSame('CLOSED', $closed['status'], json_encode($closed, JSON_THROW_ON_ERROR));
+            $retry = app(SpjV2PeriodLifecycleService::class)->close($quarter);
+            $this->assertTrue($retry['idempotent']);
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'PERIOD_CLOSE_V2')->count());
+
+            $reopened = app(SpjV2PeriodLifecycleService::class)->reopen((int) $closed['period_id'], 'Koreksi administratif terverifikasi.');
+            $this->assertSame('OPEN', $reopened['status'], json_encode($reopened, JSON_THROW_ON_ERROR));
+            $this->assertSame('NUMBERED', (string) $db->table('fiscal_period_closures')->where('id', $closed['period_id'])->value('status'));
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'PERIOD_REOPEN_V2')->count());
+
+            $closeResponse = $this->withoutMiddleware()->post(route('spj.quarter-close'), ['quarter' => $quarter]);
+            $closeResponse->assertSessionHas('success');
+            $reopenResponse = $this->withoutMiddleware()->post(route('spj.quarter-reopen', ['periodId' => $closed['period_id']]), ['reason' => 'Retry operator action.']);
+            $reopenResponse->assertSessionHas('success');
         } finally {
             File::delete($target);
         }

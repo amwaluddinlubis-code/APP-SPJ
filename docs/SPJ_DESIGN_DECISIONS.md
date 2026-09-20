@@ -782,3 +782,20 @@ tenant transaction. Any poison member rolls back all package/document state;
 the batch audit is written only after every member succeeds and is keyed by
 effective context for idempotent retry. No fiscal period mutation or legacy
 fiscal-year rewrite is part of this gate.
+
+### Effective period close/open authority
+
+Effective period mutations use `SpjV2PeriodLifecycleService` only when
+`SpjReadPathSelector` explicitly requests V2. Close requires an authorized
+administrator, exact effective fiscal-year/fund/source context, resolved
+provenance, clean source/reconciliation facts, FINAL packages, and SETTLED
+state for every package in the quarter. It locks the period and members,
+mutates the period, writes one `PERIOD_CLOSE_V2` audit, verifies the result,
+and commits atomically.
+
+Reopen accepts only a CLOSED period and a non-empty reason. It restores the
+period to NUMBERED availability without changing package/document status,
+numbering, settlement history, or legacy fiscal-year fields, and records one
+`PERIOD_REOPEN_V2` audit. Missing context, audit storage, persistence, or
+post-condition evidence fails closed. The legacy workflow remains available
+under the legacy selector and is never a V2 fallback.

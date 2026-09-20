@@ -685,3 +685,16 @@ FINAL authority. One invalid member rolls back all package/document changes and
 audits. A deterministic `FINALISASI_BATCH_V2` audit makes identical retries
 canonical and idempotent. The existing administrator action delegates to this
 service only for V2; period close/open remains a separate blocked gate.
+
+### Effective period lifecycle checkpoint - 2026-09-20
+
+- [x] effective V2 close preflight proves canonical context, provenance,
+  source/reconciliation parity, FINAL packages, and settlement completion;
+- [x] close/reopen mutation is atomic, audited, post-condition verified, and
+  idempotent for identical close retry;
+- [x] operator close/reopen actions delegate to the V2 authority without a
+  legacy fallback when V2 is requested;
+- [ ] period cleanup and browser QA remain deliberately closed.
+
+Backend lifecycle gate status: **PERIOD CLOSE/OPEN PASS**. Remaining work is
+operational/browser validation only, not a new mutation authority.

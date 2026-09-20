@@ -1279,6 +1279,22 @@ boundary, and the canonical gate is green with no silent fallback. Raw mirrors
 remain retained; FINAL, settlement, period mutation, and browser QA remain
 closed/deferred.
 
+### Effective period close/open mutation checkpoint - 2026-09-20
+
+`SpjV2PeriodLifecycleService` is now the explicit effective-context authority
+for period close and reopen when the V2 selector is requested. Close locks the
+period and effective-quarter members, verifies canonical membership,
+provenance, source/reconciliation state, FINAL package state, and persistent
+SETTLED state before writing `PERIOD_CLOSE_V2`. Reopen is restricted to a
+CLOSED period, requires an administrator and a reason, changes only period
+availability back to NUMBERED, and writes `PERIOD_REOPEN_V2` without rewriting
+legacy fiscal years or lifecycle history. Audit and post-condition failure
+rolls back the whole transaction; V2 never falls back to legacy.
+
+Focused isolated evidence: **1 test / 17 assertions / 1 deprecation PASS**.
+The effective period close/open gate is PASS. Period maintenance cleanup and
+browser QA remain outside scope.
+
 ### Effective-context FINAL lifecycle gate — 2026-09-20
 
 `SpjV2FinalizationService` now owns the explicit V2 `NUMBERED -> FINAL`
