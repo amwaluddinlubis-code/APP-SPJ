@@ -60,7 +60,7 @@ class ArkasTenantDumpRehearsalTest extends TestCase
         $secondRows = DB::connection('school')->table('arkas_raw_mirror_rows')->count();
 
         self::assertSame(['pegawai'], $first['optional_unavailable']);
-        self::assertSame(13, $first['tables']);
+        self::assertSame(14, $first['tables']);
         self::assertSame(7771, $first['rows']);
         self::assertSame($firstTables, $secondTables);
         self::assertSame($firstRows, $secondRows);
