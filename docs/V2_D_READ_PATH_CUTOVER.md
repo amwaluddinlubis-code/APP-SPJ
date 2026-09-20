@@ -1063,9 +1063,9 @@ explicit quarantine/variant contracts dan fail-closed regression. Namun
 `ArkasDomainAdapter`, dan `SpjV2CanonicalReadService` belum membaca melalui
 central resolver. Consumer shadow matrix belum seluruhnya PASS, sehingga mode
 production tetap `LEGACY_RAW` dan read cutover **NOT READY**.
-Full-dump `ref_kode` masih memiliki contradictory semantic definition pada
-context yang sama, sehingga status consumer shadow tetap
-`BLOCKED_DATA_CONTRACT`; tidak ada read authority yang diubah.
+Full-dump `ref_kode` meng-quarantine duplicate source anomaly pada context yang
+sama. Consumer shadow untuk context tersebut tetap `BLOCKED_DATA_CONTRACT`; tidak
+ada read authority yang diubah.
 
 | Consumer | Current authority | Required context | Candidate central path | Status |
 |---|---|---|---|---|

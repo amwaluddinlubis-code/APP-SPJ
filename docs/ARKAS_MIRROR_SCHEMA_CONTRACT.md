@@ -76,17 +76,9 @@ fail-closed.
 
 Full-dump audit menemukan satu context `ref_kode` yang masih tidak dapat
 dibuktikan aman: tenant A, release `2026.09`, `id_kode=05.02.05.`, tahun 2025,
-fund 1, jenjang 6 memiliki semantic variant contradictory. Rehearsal menolak
-seluruh batch secara atomic; variant model tidak menghapus atau memilih salah
-satu definisi. Contract ini tetap `BLOCKED_DATA_CONTRACT` sampai provenance
-atau dimensi applicability tambahan menjelaskan conflict tersebut.
-
-Full-dump audit menemukan satu context `ref_kode` yang masih tidak dapat
-dibuktikan aman: tenant A, release `2026.09`, `id_kode=05.02.05.`, tahun 2025,
-fund 1, jenjang 6 memiliki semantic variant contradictory. Rehearsal menolak
-seluruh batch secara atomic; variant model tidak menghapus atau memilih salah
-satu definisi. Contract ini tetap `BLOCKED_DATA_CONTRACT` sampai provenance
-atau dimensi applicability tambahan menjelaskan conflict tersebut.
+fund 1, jenjang 6 memiliki duplicate source anomaly. Kedua row di-quarantine
+sebagai satu context; row lain tetap dapat dipromosikan. Contract context ini
+tetap fail-closed sampai provenance tambahan menjelaskan row mana yang berlaku.
 
 Raw mirror menyimpan capture/provenance readonly. Ia bukan canonical mutation
 table. `spj_transactions`, overlays, Paket, dokumen, numbering, audit, dan

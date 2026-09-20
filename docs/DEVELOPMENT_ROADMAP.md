@@ -628,10 +628,7 @@ menandai raw-authoritative readers sebagai belum cutover; production read
 authority belum boleh diubah sampai setiap consumer critical memiliki context
 lengkap dan parity evidence.
 Full-dump `ref_kode` masih menghasilkan contradictory semantic definition pada
-context yang sama dan tetap menjadi `BLOCKED_DATA_CONTRACT`. Applicability
-variant contract sudah deterministik, tetapi source provenance/dimensi tambahan
-belum cukup untuk menjelaskan conflict tersebut.
-Full-dump `ref_kode` masih menghasilkan contradictory semantic definition pada
-context yang sama dan tetap menjadi `BLOCKED_DATA_CONTRACT`. Applicability
-variant contract sudah deterministik, tetapi source provenance/dimensi tambahan
-belum cukup untuk menjelaskan conflict tersebut.
+Full-dump `ref_kode` mengklasifikasikan context yang sama sebagai duplicate
+source anomaly dan meng-quarantine context itu secara lokal. Applicability
+variant contract deterministik; consumer yang memakai context terquarantine
+tetap blocked sampai provenance source diperjelas.

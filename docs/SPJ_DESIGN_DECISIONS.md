@@ -723,7 +723,7 @@ contradiction dan orphan applicability wajib fail-closed.
 SPJ Critical lock evidence diselesaikan melalui serial/isolated execution,
 bukan perubahan speculative pada transaction production. Production reference
 read tetap raw-authoritative sampai shadow parity consumer selesai.
-Full-dump evidence menahan satu context `ref_kode` yang memiliki dua semantic
-definition pada applicability yang sama. Sistem wajib menolak batch tersebut
-secara atomic sampai source provenance atau applicability dimension tambahan
-memberi penjelasan yang dapat dibuktikan.
+Full-dump evidence mengklasifikasikan satu context `ref_kode` dengan dua
+semantic definition sebagai duplicate source anomaly. Context itu di-quarantine
+secara lokal; batch lain tetap berjalan. Consumer yang memerlukan context
+tersebut tetap fail-closed sampai source provenance memberi penjelasan.

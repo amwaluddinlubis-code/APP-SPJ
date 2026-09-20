@@ -1249,9 +1249,6 @@ Consumer inventory masih menunjukkan raw-authoritative reads pada
 parity belum PASS, sehingga read cutover tetap **NOT READY**.
 Full-dump ref_kode rehearsal menemukan conflict yang belum terjelaskan pada
 context tenant A / release `2026.09` / `id_kode=05.02.05.` / tahun 2025 / fund 1 /
-jenjang 6. Batch ditolak atomic oleh variant contract. Karena itu blocker data
-`ref_kode` belum ditutup; consumer wiring belum boleh menjadi production cutover.
-Full-dump ref_kode rehearsal menemukan conflict yang belum terjelaskan pada
-context tenant A / release `2026.09` / `id_kode=05.02.05.` / tahun 2025 / fund 1 /
-jenjang 6. Batch ditolak atomic oleh variant contract. Karena itu blocker data
-`ref_kode` belum ditutup; consumer wiring belum boleh menjadi production cutover.
+jenjang 6. Context tersebut di-quarantine sebagai duplicate source anomaly;
+batch lain tetap lanjut. Consumer yang membutuhkan context ini tetap blocked
+hingga provenance source menjelaskan row yang berlaku.
