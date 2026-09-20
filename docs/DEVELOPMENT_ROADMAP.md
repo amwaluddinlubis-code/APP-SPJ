@@ -647,3 +647,9 @@ gate is complete: production reference reads are READY for staged
 `CENTRAL_COMPAT` use, while `CENTRAL_ONLY` remains opt-in and raw mirrors are
 retained for rollback/compatibility. Future work returns to application
 lifecycle only after this checkpoint; no lifecycle mutation is opened here.
+
+Production read cutover is now staged through the central `CENTRAL_COMPAT`
+selector for all five critical consumers. Rollback is explicit via
+`LEGACY_RAW`, `CENTRAL_ONLY` is non-default, and missing/quarantined context
+fails closed. Raw mirror retention and the no-destructive-cleanup boundary
+remain in force.

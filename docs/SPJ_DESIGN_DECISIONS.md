@@ -742,3 +742,10 @@ may be used for staged production reference reads with explicit fail-closed
 behavior; `CENTRAL_ONLY` is still not the default. This closes schema/mirror
 ownership and read-authority work without changing FINAL, settlement,
 period-close, or raw-table retention rules.
+
+Production reference reads use `CENTRAL_COMPAT` as the default selector after
+the 5/5 request-level parity gate. `LEGACY_RAW` is available only as an
+explicit rollback/compatibility mode, and `CENTRAL_ONLY` remains opt-in. The
+shared boundary is the only cutover path for the five critical consumers; a
+missing, unsupported, or quarantined context fails closed rather than reading
+raw data silently.

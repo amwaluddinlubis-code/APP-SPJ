@@ -318,3 +318,13 @@ central data raises a diagnostic, and the quarantined `ref_kode` context is
 not promoted. Persistent central authority is PASS, read cutover is READY,
 and this schema/mirror contract is **FULL FREEZE**. `CENTRAL_ONLY` remains
 non-default; raw tables are retained.
+
+### Production read cutover checkpoint — 2026-09-20
+
+The five critical consumers now use the shared `ArkasReferenceReadBoundary`
+under the production selector `CENTRAL_COMPAT`: `ArkasReferenceController`,
+`RkasBudgetController`, `RkasBudgetFilter`, `ArkasDomainAdapter`, and
+`SpjV2CanonicalReadService`. `LEGACY_RAW` remains an explicit rollback mode
+through `ARKAS_REFERENCE_READ_MODE`; `CENTRAL_ONLY` remains opt-in. Missing,
+unsupported, or quarantined reference context fails closed without fallback.
+Raw/legacy mirrors are retained and no destructive migration was performed.

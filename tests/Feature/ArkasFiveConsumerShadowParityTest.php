@@ -66,6 +66,20 @@ final class ArkasFiveConsumerShadowParityTest extends TestCase
         app(ArkasReferenceReadBoundary::class)->resolve('ref_rekening', collect([['KODE_REKENING' => 'MISSING', 'REKENING' => 'Missing', 'TAHUN' => '2026']]), null);
     }
 
+    public function test_production_selector_defaults_to_central_compat_and_legacy_raw_is_explicit_rollback(): void
+    {
+        config()->set('arkas.reference_read_mode', ArkasReferenceResolver::CENTRAL_COMPAT);
+
+        self::assertSame(ArkasReferenceResolver::CENTRAL_COMPAT, config('arkas.reference_read_mode'));
+
+        config()->set('arkas.reference_read_mode', ArkasReferenceResolver::LEGACY_RAW);
+
+        self::assertSame(
+            [['KODE_REKENING' => 'ROLLBACK', 'REKENING' => 'Rollback', 'TAHUN' => '2026']],
+            app(ArkasReferenceReadBoundary::class)->resolve('ref_rekening', collect([['KODE_REKENING' => 'ROLLBACK', 'REKENING' => 'Rollback', 'TAHUN' => '2026']]))?->all(),
+        );
+    }
+
     /** @return array{legacy: array<string, mixed>, central: array<string, mixed>} */
     private function compareModes(callable $scenario): array
     {

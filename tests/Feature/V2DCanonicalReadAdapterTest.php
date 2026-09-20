@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\ArkasReferenceResolver;
 use App\Services\SpjV2CanonicalReadService;
 use App\Services\SpjV2LegacyMigrationService;
 use Illuminate\Support\Facades\Artisan;
@@ -11,6 +12,15 @@ use Tests\TestCase;
 
 final class V2DCanonicalReadAdapterTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // This isolated V2-D fixture predates the persistent central authority.
+        // Keep its source-read contract explicit while the cutover suite covers CENTRAL_COMPAT.
+        config()->set('arkas.reference_read_mode', ArkasReferenceResolver::LEGACY_RAW);
+    }
+
     public function test_canonical_adapter_reads_all_active_contexts_without_identity_or_financial_drift(): void
     {
         $sourceClone = storage_path('app/school-databases/10260786/spj.sqlite');

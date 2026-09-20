@@ -1269,3 +1269,12 @@ results as `LEGACY_RAW`; missing authority fails closed, and the quarantined
 `ref_kode` context remains excluded. Persistent central authority is PASS,
 production reference read cutover is READY, and schema is **FULL FREEZE**.
 `CENTRAL_ONLY` remains non-default and raw/legacy tables remain retained.
+
+### Production reference read cutover — 2026-09-20
+
+Default production mode is now `CENTRAL_COMPAT`, selected centrally through
+`ARKAS_REFERENCE_READ_MODE`. `LEGACY_RAW` remains an explicit rollback mode;
+`CENTRAL_ONLY` is opt-in. All five critical consumers use the shared resolver
+boundary, and the canonical gate is green with no silent fallback. Raw mirrors
+remain retained; FINAL, settlement, period mutation, and browser QA remain
+closed/deferred.

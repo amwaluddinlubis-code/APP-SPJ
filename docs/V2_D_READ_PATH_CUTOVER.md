@@ -1077,3 +1077,13 @@ ada read authority yang diubah.
 
 Critical consumer parity PASS count: **0/5** at this checkpoint. The matrix is
 explicit rather than inferred; `CENTRAL_COMPAT` remains a rehearsal mode.
+
+### Production cutover checkpoint — 2026-09-20
+
+The stale matrix above is superseded by the completed request-level gate:
+all five consumers pass semantic parity through the shared resolver boundary.
+Production reference reads are now selected centrally as `CENTRAL_COMPAT`.
+`LEGACY_RAW` remains an explicit rollback selector and `CENTRAL_ONLY` remains
+opt-in. Resolver mismatch, missing context, unsupported context, and the
+quarantined `ref_kode` context fail closed; no silent raw fallback is allowed.
+Raw mirror tables remain available for compatibility and rollback.

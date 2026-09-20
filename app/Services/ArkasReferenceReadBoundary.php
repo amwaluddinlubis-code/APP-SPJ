@@ -18,7 +18,7 @@ final class ArkasReferenceReadBoundary
             return null;
         }
 
-        $mode = (string) config('arkas.reference_read_mode', env('ARKAS_REFERENCE_READ_MODE', ArkasReferenceResolver::LEGACY_RAW));
+        $mode = (string) config('arkas.reference_read_mode', ArkasReferenceResolver::CENTRAL_COMPAT);
         if ($mode === ArkasReferenceResolver::LEGACY_RAW) {
             return $legacyRows;
         }
