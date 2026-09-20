@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ArkasImporterController;
+use App\Http\Controllers\ArkasRawMirrorController;
 use App\Http\Controllers\ArkasReferenceController;
 use App\Http\Controllers\ArkasSourceController;
 use App\Http\Controllers\ArkasSyncController;
@@ -72,13 +72,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengaturan/tahun', [SchoolConfigurationController::class, 'storeYear'])->name('years.store');
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
-        Route::get('/pengaturan/arkas/importer', ArkasImporterController::class)->name('arkas.importer');
-        Route::post('/pengaturan/arkas/importer/raw-mirror', [ArkasImporterController::class, 'rawMirror'])
-            ->middleware('administrator')
-            ->name('arkas.importer.raw-mirror');
-        Route::post('/pengaturan/arkas/importer/mapping', [ArkasImporterController::class, 'store'])->name('arkas.importer.mapping.store');
-        Route::post('/pengaturan/arkas/importer/{profileId}/preview', [ArkasImporterController::class, 'preview'])->name('arkas.importer.preview');
-        Route::post('/pengaturan/arkas/importer/{profileId}/sync', [ArkasImporterController::class, 'sync'])->name('arkas.importer.sync');
+        Route::post('/pengaturan/arkas/raw-mirror', ArkasRawMirrorController::class)->name('arkas.raw-mirror');
         Route::get('/pengaturan/database-aktif', [DatabaseManagerController::class, 'index'])->name('database-manager.index');
         Route::get('/pengaturan/database-aktif/tabel/{table}', [DatabaseManagerController::class, 'tableSummary'])->name('database-manager.table-summary');
         Route::get('/pengaturan/database-reset', [DatabaseManagerController::class, 'resetForm'])->name('database-manager.reset-form');

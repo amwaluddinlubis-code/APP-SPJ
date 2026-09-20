@@ -21,7 +21,7 @@
             finance: {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'true' : 'false' }},
             reference: {{ request()->routeIs('employees.*', 'students.*') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
-            data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.importer*', 'dapodik.*') ? 'true' : 'false' }},
+            data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
         },
         init() {
@@ -183,11 +183,6 @@
                             <a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('arkas.settings') }}"><x-ui.icon name="settings" /><span
                                     class="nav-label">Integrasi ARKAS</span></a>
-                        @endif
-                        @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}"
-                                href="{{ route('arkas.importer') }}"><x-ui.icon name="database" /><span
-                                    class="nav-label">Importer ARKAS</span></a>
                         @endif
                     </div>
                 </div>

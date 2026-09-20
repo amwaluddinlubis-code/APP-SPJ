@@ -14,7 +14,7 @@ const SYNC_PROFILES = {
     arkasRawMirror: {
         title: 'Mirror Database ARKAS',
         subtitle: 'Seluruh tabel ARKAS dan indeks fresh SPJ sedang diantrikan.',
-        match: (url) => url.pathname.endsWith('/pengaturan/arkas/importer/raw-mirror'),
+        match: (url) => url.pathname.endsWith('/pengaturan/arkas/raw-mirror'),
         queued: true,
         stages: [
             { percent: 8, label: 'Menyiapkan konteks sekolah dan tahun' },

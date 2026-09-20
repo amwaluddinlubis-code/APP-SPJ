@@ -15,7 +15,6 @@
         <section class="grid gap-6 lg:grid-cols-[1.25fr_.75fr] lg:items-start">
             <x-ui.form-section title="Sumber ARKAS per Sekolah" description="Path hanya digunakan pada komputer ini. Kata sandi tidak pernah ditampilkan kembali.">
                 <x-slot:actions>
-                    <x-ui.button variant="secondary" :href="route('arkas.importer')">Database Explorer</x-ui.button>
                     <x-ui.button variant="secondary" :href="route('schools.settings')">Profil Sekolah</x-ui.button>
                 </x-slot:actions>
 
@@ -48,6 +47,15 @@
                     </div>
                 </form>
             </x-ui.form-section>
+
+            @if($selectedSource && (int) $selectedSchoolId === (int) session('active_school_id') && session('active_fiscal_year_id'))
+                <x-ui.form-section title="Raw Mirror ARKAS" description="Impor seluruh tabel melalui manifest dan explicit bridge. Tidak ada mapping tabel atau kolom manual.">
+                    <form method="POST" action="{{ route('arkas.raw-mirror') }}" data-confirm="Seluruh tabel ARKAS akan dibaca ulang dan projection fresh SPJ diperbarui. Data manual SPJ tetap dipertahankan. Lanjutkan?">
+                        @csrf
+                        <x-ui.button type="submit" icon="refresh">Sinkronkan Semua ARKAS</x-ui.button>
+                    </form>
+                </x-ui.form-section>
+            @endif
 
             <aside class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm lg:sticky lg:top-24">
                 <h2 class="font-bold text-slate-800">Status Sinkronisasi</h2>

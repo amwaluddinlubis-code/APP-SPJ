@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SynchronizeArkas;
+use App\Jobs\SynchronizeArkasRawMirror;
 use App\Models\ArkasSource;
 use App\Models\BackgroundOperation;
 use App\Models\FiscalYear;
@@ -39,12 +39,12 @@ class ArkasSyncController extends Controller
             ]);
 
             if ($runAsync) {
-                SynchronizeArkas::dispatch($operation->id, $school->id, $year->id, $source->id)->onQueue('operations');
+                SynchronizeArkasRawMirror::dispatch($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id)->onQueue('operations');
 
                 return back()->with('success', 'Sinkronisasi ARKAS masuk antrean. Proses tetap berjalan di latar belakang. ID proses: '.$operation->id.'.');
             }
 
-            SynchronizeArkas::dispatchSync($operation->id, $school->id, $year->id, $source->id);
+            SynchronizeArkasRawMirror::dispatchSync($operation->id, $school->id, $year->id, (int) $year->fund_source_id, $source->id);
             $operation->refresh();
 
             if ($operation->status === 'FAILED') {
