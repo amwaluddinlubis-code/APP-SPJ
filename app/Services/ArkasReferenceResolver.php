@@ -32,6 +32,16 @@ final class ArkasReferenceResolver
         return ['equal' => $legacy === $central, 'legacy' => $legacy, 'central' => $central];
     }
 
+    /** @param array<int, array<string, mixed>> $legacyRows */
+    public function readPersistent(string $mode, ArkasPersistentReferenceAuthority $authority, string $table, array $legacyRows, ?string $tenantKey = null): array
+    {
+        $centralRows = $tenantKey !== null && in_array($table, ['ref_kode', 'ref_sumber_dana'], true)
+            ? $authority->readForTenant($table, $tenantKey)
+            : $authority->read($table);
+
+        return $this->read($mode, $legacyRows, $centralRows);
+    }
+
     /** @param array<int, array<string, mixed>> $legacyRows @param array<int, array<string, mixed>> $centralRows @return array<int, array<string, mixed>> */
     private function compatibilityRead(array $legacyRows, array $centralRows): array
     {
