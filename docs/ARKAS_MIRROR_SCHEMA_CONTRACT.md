@@ -1,7 +1,7 @@
 # ARKAS Mirror Schema Contract
 
 Status: **PARTIAL FREEZE**
-Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-19.v2`)
+Manifest: `ArkasMirrorManifest::VERSION` (`2026-09-20.v3`)
 
 ## Tujuan
 
@@ -30,13 +30,13 @@ absence of school override sudah dibuktikan. `TENANT` berarti source fact
 memiliki konteks sekolah, transaksi, fiscal year, fund source, pegawai, atau
 provenance sekolah dan harus tetap di database sekolah.
 
-Pada checkpoint ini central reference tetap deferred. `ref_periode` dan
-`ref_sumber_dana` adalah `CENTRAL_CANDIDATE`, sedangkan `ref_kode`,
-`ref_rekening`, dan `ref_acuan_barang` tetap `UNKNOWN/HYBRID_CANDIDATE` karena
-dump memiliki dimensi tahun, sumber dana, atau bentuk pendidikan. Pada
-checkpoint awal belum ada bukti lintas sekolah; audit tiga dump terbaru pada
-bagian akhir dokumen mengonfirmasi hanya subset reference yang aman sebagai
-candidate central.
+Central promotion tetap deferred, tetapi ownership keenam tabel drift/hybrid
+sekarang sudah eksplisit. `ref_rekening`, `ref_acuan_barang`, dan `ref_bku`
+adalah `VERSIONED_GLOBAL_REFERENCE`; `ref_sumber_dana` dan `ref_kode` adalah
+`HYBRID_CENTRAL_BASE_TENANT_EXTENSION`; `ref_sumber_dana_sekolah` adalah
+`OPTIONAL_TENANT_REFERENCE`. Classification ini menetapkan source authority,
+version dimensions, dan drift policy, tetapi tidak mengaktifkan central
+cutover atau menghapus raw tenant snapshot.
 
 ## Manifest resmi
 
@@ -54,8 +54,10 @@ Tabel tenant berikut enabled untuk raw mirror:
 | `mst_sekolah` | TENANT_DATA | `ArkasTenantDataBridge` | primary key | school |
 | `pegawai` | TENANT_DATA | `ArkasTenantDataBridge` | optional source key | school |
 
-Reference candidates remain disabled: `ref_kode`, `ref_level_kode`,
-`ref_periode`, `ref_rekening`, `ref_sumber_dana`, `ref_acuan_barang`.
+Reference candidates remain disabled for central promotion: `ref_kode`,
+`ref_level_kode`, `ref_periode`, `ref_rekening`, `ref_sumber_dana`,
+`ref_acuan_barang`, and `ref_bku`. `ref_sumber_dana_sekolah` is enabled as an
+optional tenant raw reference because its ownership is already tenant-scoped.
 
 Tabel source lain yang tidak tercantum di manifest tidak diimpor. Enumerasi
 `tables` hanya digunakan untuk menemukan apakah entry eksplisit tersedia dan
@@ -131,7 +133,7 @@ tables belum ditambahkan karena belum ada evidence parity lintas sekolah.
 
 Dump `datasmp.db.sql` dibaca melalui adapter read-only ke SQLite in-memory dan
 ditulis hanya ke school database in-memory. Rehearsal aktual menemukan 56
-source tables, mengimpor 13 tabel tenant dengan 7.771 rows, dan melewati
+source tables, mengimpor 14 tabel tenant dengan 7.771 rows, dan melewati
 `pegawai` sebagai optional source yang tidak tersedia. Dry-run tidak menulis
 metadata/rows; real-write rehearsal kemudian berhasil dan rerun tidak
 menghasilkan row atau table tambahan. Composite identity pajak dan seluruh
@@ -188,7 +190,51 @@ common rows, zero only-in-source rows, dan zero duplicate keys.
 - `ref_kode`: 5.349 / 5.406 / 5.521 rows; stable composite identity dan
   membership berbeda luas lintas dump.
 
+### Final ownership contract for the six drifted references
+
+| Table | Final classification | Canonical/natural identity | Version dimensions | Scope | Drift policy |
+|---|---|---|---|---|---|
+| `ref_sumber_dana` | `HYBRID_CENTRAL_BASE_TENANT_EXTENSION` | central candidate `kode`; source PK remains raw provenance | `arkas_release`, fiscal-year applicability | common base + tenant membership/local source | common semantic definitions only; tenant-only rows and conflicts never overwrite central |
+| `ref_rekening` | `VERSIONED_GLOBAL_REFERENCE` | `kode_rekening` | `tahun`, `arkas_release` | central versioned catalogue | ignore volatile create/last-update drift; semantic conflict fails closed |
+| `ref_acuan_barang` | `VERSIONED_GLOBAL_REFERENCE` | `id_barang` | `tahun`, `arkas_release` | central versioned catalogue | ignore timestamp-format drift; same key/version conflict fails closed |
+| `ref_kode` | `HYBRID_CENTRAL_BASE_TENANT_EXTENSION` | base candidate `id_kode`; raw PK is not portable | `arkas_release`, `tahun`, `sumber_dana_id`, `bentuk_pendidikan_id` | central definitions only after semantic match + tenant applicability | membership remains tenant-scoped; source-specific semantic definitions never silently globalize |
+| `ref_bku` | `VERSIONED_GLOBAL_REFERENCE` | `id_ref_bku` | `arkas_release` | central versioned lookup | ignore volatile last-update drift; conflicting `bku`/`kode_bku` fails closed |
+| `ref_sumber_dana_sekolah` | `OPTIONAL_TENANT_REFERENCE` | `(id_ref_sumber_dana, tahun)` | `tahun` | tenant extension | empty is valid; no membership row is synthesized or promoted centrally |
+
+`arkas_release` adalah source-release context yang diberikan bridge/import run,
+bukan versi opaque yang ditebak dari row. `tahun` adalah fiscal-year dimension;
+`sumber_dana_id` dan `bentuk_pendidikan_id` adalah applicability dimensions
+untuk `ref_kode`. A versioned identity terdiri dari natural key plus seluruh
+declared dimensions. Natural key yang sama boleh hidup pada release/tahun yang
+berbeda; natural key dan version dimensions yang sama dengan semantic conflict
+wajib fail-closed.
+
+Central base dan tenant extension adalah konsep terpisah: central hanya boleh
+menyimpan definisi yang terbukti sama, sedangkan tenant menyimpan applicability,
+local enablement, overrides, dan source-only rows. `ref_sumber_dana` memakai
+`ref_sumber_dana_sekolah` sebagai membership extension; `ref_kode` memakai
+applicability dimensions sebagai extension contract. Unsupported release atau
+unknown semantic row tidak boleh dipromosikan.
+
+### Consumer compatibility audit
+
+- `RkasBudgetController` dan `RkasBudgetFilter` membaca `ref_kode` melalui raw
+  payload dan memfilter tahun/sumber dana aktif; consumer tetap tenant-scoped.
+- `ArkasReferenceController` membaca `ref_rekening`, `ref_acuan_barang`, dan
+  `ref_kode` dari snapshot raw tenant; tidak ada asumsi ID central portable.
+- `SpjV2CanonicalReadService` menelusuri
+  `rapbs_periode -> rapbs -> ref_kode`, sehingga composite context boundary
+  harus tetap aktif sampai adapter hybrid tersedia.
+- `SpjFreshProjectionService` memakai `id_ref_bku` dari payload `kas_umum`
+  untuk klasifikasi item/pajak; itu bukan pemindahan ownership lookup ke
+  transaksi tenant.
+- `ref_sumber_dana_sekolah` belum memiliki consumer central; mirror optional
+  disiapkan untuk membership-aware resolution di masa depan.
+
 Comparator `ArkasReferenceParityService` dan rehearsal test membuktikan
 comparison serta import order `A→B→C` dan `C→A→B` deterministic untuk sembilan
-tabel confirmed. Status central promotion tetap **DEFERRED**: belum ada central
-migration, central write-path, cutover read, atau penghapusan raw tenant copy.
+tabel confirmed. Manifest regression mengunci classification, natural key,
+version dimensions, bridge, availability, dan central-disabled status keenam
+tabel drift/hybrid. Status central promotion tetap **DEFERRED**: belum ada
+central migration, central write-path, cutover read, atau penghapusan raw
+tenant copy.

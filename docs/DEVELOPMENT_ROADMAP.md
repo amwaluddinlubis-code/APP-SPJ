@@ -595,8 +595,10 @@ promotion and schema status **PARTIAL FREEZE**.
 ### Cross-school central-reference parity — 2026-09-20
 
 Three-dump read-only audit completed. Nine references have exact schema, key,
-row-count, and content parity across three distinct schools and are eligible
-for a future central contract rehearsal. `ref_sumber_dana`, `ref_rekening`,
-`ref_acuan_barang`, and `ref_kode` remain versioned/hybrid candidates due
-content or membership drift. Empty references remain unused. No central
-promotion or destructive migration is authorized by this checkpoint.
+row-count, and content parity across three distinct schools. The six requested
+drift/hybrid tables now have explicit ownership/version contracts in manifest
+`2026-09-20.v3`: `ref_sumber_dana` and `ref_kode` are hybrid central-base plus
+tenant-extension; `ref_rekening`, `ref_acuan_barang`, and `ref_bku` are
+versioned global; `ref_sumber_dana_sekolah` is an optional tenant reference.
+Empty references remain unused. No central promotion or destructive migration
+is authorized by this checkpoint.

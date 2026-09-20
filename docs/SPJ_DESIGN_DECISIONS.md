@@ -693,6 +693,9 @@ Audit 2026-09-20 memperluas evidence menjadi tiga sekolah. Sembilan reference
 `ref_jenis_instansi`, `ref_satuan`, `ref_periode`, `ref_level_kode`, dan
 `ref_indikator`) memiliki rowset identik berdasarkan stable key. Ini adalah
 eligibility evidence, bukan instruksi untuk langsung memindahkan atau menghapus
-copy tenant. `ref_sumber_dana`, `ref_rekening`, `ref_acuan_barang`, dan
-`ref_kode` tetap non-central karena drift/membership difference dan harus
-memiliki versioned/hybrid contract lebih dahulu.
+copy tenant. Contract audit 2026-09-20 kini menetapkan `ref_rekening`,
+`ref_acuan_barang`, dan `ref_bku` sebagai `VERSIONED_GLOBAL_REFERENCE`,
+`ref_sumber_dana` dan `ref_kode` sebagai
+`HYBRID_CENTRAL_BASE_TENANT_EXTENSION`, serta `ref_sumber_dana_sekolah`
+sebagai `OPTIONAL_TENANT_REFERENCE`. Classification ini belum mengizinkan
+central promotion, read-path cutover, atau destructive cleanup.

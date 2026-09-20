@@ -1174,7 +1174,7 @@ relation fail-closed.
 
 Dump `D:\PC Data\Documents\datasmp.db.sql` direhearsal melalui adapter
 SQLite in-memory. Dry-run tidak menulis target. Isolated real-write rehearsal
-memproses **13 tabel / 7.771 rows**, lalu rerun menghasilkan jumlah tabel dan
+memproses **14 tabel / 7.771 rows**, lalu rerun menghasilkan jumlah tabel dan
 rows yang sama tanpa duplicate identity. Focused validator regression lulus
 **4 tests / 7 assertions**; raw mirror atomicity + isolated rehearsal lulus
 **3 tests / 31 assertions**. Manifest contract coverage juga lulus.
@@ -1192,9 +1192,17 @@ Content parity mengonfirmasi sembilan reference: `mst_wilayah`,
 `ref_level_wilayah`, `ref_negara`, `ref_jabatan`, `ref_jenis_instansi`,
 `ref_satuan`, `ref_periode`, `ref_level_kode`, dan `ref_indikator`.
 
-`ref_sumber_dana`, `ref_rekening`, `ref_acuan_barang`, dan `ref_kode` memiliki
-drift content/membership dan tetap non-central sampai desain versioned/hybrid
-disetujui. Enam reference table lain kosong pada ketiga dump dan diklasifikasi
+Audit enam tabel drift/hybrid kini memiliki ownership contract eksplisit:
+
+- `ref_sumber_dana` dan `ref_kode` = `HYBRID_CENTRAL_BASE_TENANT_EXTENSION`;
+- `ref_rekening`, `ref_acuan_barang`, dan `ref_bku` =
+  `VERSIONED_GLOBAL_REFERENCE`;
+- `ref_sumber_dana_sekolah` = `OPTIONAL_TENANT_REFERENCE`.
+
+Manifest `2026-09-20.v3` mengunci natural key, version dimensions, bridge,
+availability, target scope, school-scope rule, dan drift policy. Central
+promotion tetap disabled/deferred; raw tenant snapshots tidak dipindah atau
+dihapus. Enam reference lain kosong pada ketiga dump dan tetap diklasifikasi
 `UNUSED_EMPTY`.
 
 `ArkasReferenceParityService` dan rehearsal test membuktikan comparison
