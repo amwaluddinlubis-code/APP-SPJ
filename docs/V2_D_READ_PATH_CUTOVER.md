@@ -1055,3 +1055,25 @@ Belum ada consumer yang di-switch. `ArkasReferenceController`,
 tetap membaca tenant raw/canonical path existing. Production read cutover
 **NOT READY** karena invalid `ref_acuan_barang` source row, semantic variant
 `ref_kode`, dan consumer-wide parity evidence masih tersisa.
+### Updated blocker state
+
+Invalid `ref_acuan_barang` dan flat semantic conflict `ref_kode` sudah memiliki
+explicit quarantine/variant contracts dan fail-closed regression. Namun
+`ArkasReferenceController`, `RkasBudgetController`, `RkasBudgetFilter`,
+`ArkasDomainAdapter`, dan `SpjV2CanonicalReadService` belum membaca melalui
+central resolver. Consumer shadow matrix belum seluruhnya PASS, sehingga mode
+production tetap `LEGACY_RAW` dan read cutover **NOT READY**.
+Full-dump `ref_kode` masih memiliki contradictory semantic definition pada
+context yang sama, sehingga status consumer shadow tetap
+`BLOCKED_DATA_CONTRACT`; tidak ada read authority yang diubah.
+
+| Consumer | Current authority | Required context | Candidate central path | Status |
+|---|---|---|---|---|
+| `ArkasReferenceController` | tenant raw mirror | fiscal year; account/catalog context | resolver for `ref_rekening`/`ref_acuan_barang` | `BLOCKED_DATA_CONTRACT` |
+| `RkasBudgetController` | staged/raw `ref_kode` plus activity projection | year, fund, education, tenant | code variant + applicability resolver | `BLOCKED_DATA_CONTRACT` |
+| `RkasBudgetFilter` | tenant raw `ref_kode` | year, fund, tenant | code applicability resolver | `NOT_TESTED` |
+| `ArkasDomainAdapter` | tenant snapshot/import rows | fiscal year and source mapping | central lookup adapter only for confirmed/versioned refs | `BLOCKED_CONSUMER_ASSUMPTION` |
+| `SpjV2CanonicalReadService` | tenant raw facts with reference IDs | source tenant, year, fund | compatibility resolver for lookup labels only | `BLOCKED_CONTEXT` |
+
+Critical consumer parity PASS count: **0/5** at this checkpoint. The matrix is
+explicit rather than inferred; `CENTRAL_COMPAT` remains a rehearsal mode.

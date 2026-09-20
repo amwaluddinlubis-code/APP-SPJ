@@ -1226,3 +1226,32 @@ dinormalisasi secara diam-diam.
 Consumer existing masih tenant raw-authoritative; belum ada central read
 cutover. FINAL, settlement, bulk-final, period close/open, destructive schema
 cleanup, dan browser QA tetap tertutup.
+### Central-readiness blocker repair — data contract stabilized, cutover still blocked
+
+`ref_acuan_barang` memiliki explicit quarantine report: invalid identity
+(`NULL`, empty, whitespace-only, atau control-character) berstatus
+`QUARANTINED_INVALID_ID`, tidak masuk canonical central rowset, dan row/reason
+tetap tersedia sebagai diagnostic. Valid rows tetap dapat dipromosikan.
+
+`ref_kode` memakai deterministic semantic variant key dan applicability split
+(`tenant_id`, `tahun`, `sumber_dana_id`, `bentuk_pendidikan_id`,
+`arkas_release`, serta source `id_kode`). Same semantic deduplicates; distinct
+semantic variants coexist hanya pada applicability berbeda; same-context
+contradiction dan orphan applicability fail closed.
+
+SPJ Critical serial gate lulus **16 tests / 2.558 assertions / 0 failures**;
+tiga file yang sebelumnya memicu lock juga lulus terpisah. Tidak ada perubahan
+production transaction logic atau test-wide concurrency patch.
+
+Consumer inventory masih menunjukkan raw-authoritative reads pada
+`ArkasReferenceController`, `RkasBudgetController`, `RkasBudgetFilter`,
+`ArkasDomainAdapter`, dan `SpjV2CanonicalReadService`. Full consumer shadow
+parity belum PASS, sehingga read cutover tetap **NOT READY**.
+Full-dump ref_kode rehearsal menemukan conflict yang belum terjelaskan pada
+context tenant A / release `2026.09` / `id_kode=05.02.05.` / tahun 2025 / fund 1 /
+jenjang 6. Batch ditolak atomic oleh variant contract. Karena itu blocker data
+`ref_kode` belum ditutup; consumer wiring belum boleh menjadi production cutover.
+Full-dump ref_kode rehearsal menemukan conflict yang belum terjelaskan pada
+context tenant A / release `2026.09` / `id_kode=05.02.05.` / tahun 2025 / fund 1 /
+jenjang 6. Batch ditolak atomic oleh variant contract. Karena itu blocker data
+`ref_kode` belum ditutup; consumer wiring belum boleh menjadi production cutover.

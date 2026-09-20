@@ -711,3 +711,19 @@ Rehearsal terbaru menahan `ref_acuan_barang` karena `id_barang` kosong dan
 menahan `ref_kode` karena semantic variant pada `id_kode` yang sama. Ini bukan
 alasan untuk menghapus row atau mengubah tenant source; kontrak variant dan
 source-data correction harus dibuktikan terlebih dahulu.
+### Quarantine and semantic-variant decision
+
+Invalid `ref_acuan_barang` identity tidak dihapus dan tidak dipromosikan secara
+diam-diam. Promotion menghasilkan diagnostic quarantine yang immutable terhadap
+source dump. `ref_kode` menggunakan semantic variant key deterministic dan
+tenant applicability dimensions; `id_kode` adalah source identifier yang dapat
+menunjuk lebih dari satu semantic variant ketika context berbeda. Same-context
+contradiction dan orphan applicability wajib fail-closed.
+
+SPJ Critical lock evidence diselesaikan melalui serial/isolated execution,
+bukan perubahan speculative pada transaction production. Production reference
+read tetap raw-authoritative sampai shadow parity consumer selesai.
+Full-dump evidence menahan satu context `ref_kode` yang memiliki dua semantic
+definition pada applicability yang sama. Sistem wajib menolak batch tersebut
+secara atomic sampai source provenance atau applicability dimension tambahan
+memberi penjelasan yang dapat dibuktikan.

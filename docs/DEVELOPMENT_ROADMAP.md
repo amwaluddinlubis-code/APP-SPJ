@@ -615,3 +615,23 @@ Promotion-ready pada checkpoint ini: 9 confirmed global, `ref_rekening`,
 `ref_acuan_barang.id_barang` source row dan semantic conflict `ref_kode` untuk
 natural key yang sama. Consumer masih raw-authoritative; resolver baru dipakai
 untuk shadow/compatibility rehearsal. Production read cutover **NOT READY**.
+### Blocker repair checkpoint
+
+Quarantine `ref_acuan_barang` dan semantic variant/applicability `ref_kode`
+sekarang memiliki implementation dan regression contract. Invalid identity rows
+tidak silently dropped; code conflicts tidak dipaksa menjadi satu flat global
+key. SPJ Critical serial gate lulus **16 tests / 2.558 assertions** tanpa
+database lock.
+
+Tahap berikutnya adalah full consumer shadow parity. Consumer inventory masih
+menandai raw-authoritative readers sebagai belum cutover; production read
+authority belum boleh diubah sampai setiap consumer critical memiliki context
+lengkap dan parity evidence.
+Full-dump `ref_kode` masih menghasilkan contradictory semantic definition pada
+context yang sama dan tetap menjadi `BLOCKED_DATA_CONTRACT`. Applicability
+variant contract sudah deterministik, tetapi source provenance/dimensi tambahan
+belum cukup untuk menjelaskan conflict tersebut.
+Full-dump `ref_kode` masih menghasilkan contradictory semantic definition pada
+context yang sama dan tetap menjadi `BLOCKED_DATA_CONTRACT`. Applicability
+variant contract sudah deterministik, tetapi source provenance/dimensi tambahan
+belum cukup untuk menjelaskan conflict tersebut.

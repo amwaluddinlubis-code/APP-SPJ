@@ -74,6 +74,20 @@ duplicate identity, dan malformed rows sebelum metadata atau rows ditulis.
 `kas_umum` wajib memiliki relasi `id_anggaran` ke `anggaran`; orphan relation
 fail-closed.
 
+Full-dump audit menemukan satu context `ref_kode` yang masih tidak dapat
+dibuktikan aman: tenant A, release `2026.09`, `id_kode=05.02.05.`, tahun 2025,
+fund 1, jenjang 6 memiliki semantic variant contradictory. Rehearsal menolak
+seluruh batch secara atomic; variant model tidak menghapus atau memilih salah
+satu definisi. Contract ini tetap `BLOCKED_DATA_CONTRACT` sampai provenance
+atau dimensi applicability tambahan menjelaskan conflict tersebut.
+
+Full-dump audit menemukan satu context `ref_kode` yang masih tidak dapat
+dibuktikan aman: tenant A, release `2026.09`, `id_kode=05.02.05.`, tahun 2025,
+fund 1, jenjang 6 memiliki semantic variant contradictory. Rehearsal menolak
+seluruh batch secara atomic; variant model tidak menghapus atau memilih salah
+satu definisi. Contract ini tetap `BLOCKED_DATA_CONTRACT` sampai provenance
+atau dimensi applicability tambahan menjelaskan conflict tersebut.
+
 Raw mirror menyimpan capture/provenance readonly. Ia bukan canonical mutation
 table. `spj_transactions`, overlays, Paket, dokumen, numbering, audit, dan
 reconciliation tetap menjadi authority operasional APP-SPJ.
@@ -274,3 +288,21 @@ cutover.
 Central promotion gate karena itu **PARTIAL / BLOCKED FOR TWO REFERENCES**;
 read cutover tetap belum READY sampai invalid `ref_acuan_barang`, semantic
 variant `ref_kode`, dan parity seluruh consumer diselesaikan.
+
+## Blocker repair checkpoint — quarantine and code variants
+
+`ref_acuan_barang` memakai report contract tanpa persistent quarantine table.
+Setiap row menghasilkan status `ACCEPTED` atau `QUARANTINED_INVALID_ID`; null,
+empty, whitespace-only, dan control-character identity tidak pernah ditulis ke
+central canonical rowset. Report menyimpan row asli dan alasan sehingga
+quarantine deterministic, idempotent, dan tidak silent-drop. Source dump tetap
+immutable.
+
+`ref_kode` tidak lagi diperlakukan sebagai flat `id_kode` base. Central base
+menyimpan semantic variant dengan key deterministik SHA-256 atas tuple canonical
+`parent_kode`, `uraian_kode`, `id_level_kode`, dan `tipe`, bersama `id_kode` dan
+release. Tenant applicability menyimpan `tenant_id`, `tahun`, `sumber_dana_id`,
+`bentuk_pendidikan_id`, release, dan source `id_kode`. Semantic variant yang
+sama dideduplicate; variant berbeda dapat coexist hanya di context applicability
+berbeda. Contradictory same-context, orphan applicability, dan dimension kosong
+fail-closed.
