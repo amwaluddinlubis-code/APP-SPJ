@@ -771,3 +771,14 @@ storage, financial mismatch, closed period, invalid provenance, and invalid
 FINAL state fail closed without changing the FINAL package or legacy fiscal
 year. Legacy staged payment/receipt writes remain available for editable
 packages only.
+
+### Effective bulk FINAL authority
+
+Bulk FINAL is not a loop of legacy mutations. `SpjV2BulkFinalizationService`
+selects the effective fund/quarter candidate set, orders it through the
+authoritative numbering order service, preflights every member, locks the set,
+and delegates each mutation to `SpjV2FinalizationService` inside one outer
+tenant transaction. Any poison member rolls back all package/document state;
+the batch audit is written only after every member succeeds and is keyed by
+effective context for idempotent retry. No fiscal period mutation or legacy
+fiscal-year rewrite is part of this gate.

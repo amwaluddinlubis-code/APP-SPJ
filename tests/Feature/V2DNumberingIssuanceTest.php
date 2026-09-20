@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Services\SpjNumberingOrderService;
 use App\Services\SpjPackageValidationService;
+use App\Services\SpjV2BulkFinalizationService;
 use App\Services\SpjV2FinalizationService;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2NumberingAuthorizationService;
@@ -220,6 +221,85 @@ final class V2DNumberingIssuanceTest extends TestCase
             $auditBlocked = app(SpjV2SettlementService::class)->settle($package->fresh());
             $this->assertSame('AUDIT_UNAVAILABLE', $auditBlocked['error_code']);
             $this->assertSame(0, $db->table('spj_v2_settlements')->where('spj_package_id', $package->id)->count());
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_bulk_finalization_is_deterministic_and_idempotent(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-bulk-final.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $members = $this->batchMembers($db, 2);
+            $this->assertCount(2, $members);
+            $effectiveYearId = $this->openContexts[(int) $members[0]->id][0];
+            $this->activateIds($effectiveYearId, $this->openContexts[(int) $members[0]->id][1]);
+            $db->table('document_number_formats')->updateOrInsert(
+                ['fiscal_year_id' => $effectiveYearId, 'document_type' => 'PESANAN'],
+                ['format_pattern' => '{SEQ}/PESANAN/{SCHOOL}/{TW}/{YEAR}', 'reset_period' => 'YEAR', 'padding' => 4, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()],
+            );
+            foreach ($members as $member) {
+                $this->assertSame('ISSUED', app(SpjV2NumberingIssuanceService::class)->issue($member, 'PESANAN', 'MAIN', 'v2-bulk-order-'.$member->id)['status']);
+                $this->assertSame('ISSUED', app(SpjV2NumberingIssuanceService::class)->issue($member->fresh(['transaction.items', 'documents']), 'SPJ', 'MAIN', 'v2-bulk-spj-'.$member->id)['status']);
+            }
+            $quarter = (int) ceil((int) date('n', strtotime((string) $members[0]->transaction->transaction_date)) / 3);
+            $result = app(SpjV2BulkFinalizationService::class)->finalize($quarter);
+            $this->assertSame('FINALIZED', $result['status'], json_encode($result, JSON_THROW_ON_ERROR));
+            $this->assertGreaterThan(1, $result['count']);
+            $this->assertContains((int) $members[0]->id, $result['package_ids']);
+            $this->assertContains((int) $members[1]->id, $result['package_ids']);
+            $this->assertSame($result['count'], $db->table('spj_packages')->whereIn('id', $result['package_ids'])->where('status', 'FINAL')->count());
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'FINALISASI_BATCH_V2')->count());
+
+            $retry = app(SpjV2BulkFinalizationService::class)->finalize($quarter);
+            $this->assertSame('FINALIZED', $retry['status']);
+            $this->assertTrue($retry['idempotent']);
+            $this->assertSame($result['audit_id'], $retry['audit_id']);
+            $this->assertSame(1, $db->table('operational_audit_logs')->where('action', 'FINALISASI_BATCH_V2')->count());
+
+            $response = $this->withoutMiddleware()
+                ->from(route('spj.index', ['tab' => 'monitoring']))
+                ->post(route('spj.bulk-finalize'), ['quarter' => $quarter]);
+            $response->assertSessionHas('success');
+        } finally {
+            File::delete($target);
+        }
+    }
+
+    public function test_effective_bulk_finalization_preflight_poison_member_rolls_back_all(): void
+    {
+        $target = storage_path('app/v2-c-rehearsal/test-v2d-bulk-final-poison.sqlite');
+        $source = $this->prepareClone($target);
+
+        try {
+            $this->connect($target, $source);
+            $this->migrateAndProject();
+            $db = DB::connection('school');
+            $members = $this->batchMembers($db, 2);
+            $this->assertCount(2, $members);
+            $effectiveYearId = $this->openContexts[(int) $members[0]->id][0];
+            $this->activateIds($effectiveYearId, $this->openContexts[(int) $members[0]->id][1]);
+            $db->table('document_number_formats')->updateOrInsert(
+                ['fiscal_year_id' => $effectiveYearId, 'document_type' => 'PESANAN'],
+                ['format_pattern' => '{SEQ}/PESANAN/{SCHOOL}/{TW}/{YEAR}', 'reset_period' => 'YEAR', 'padding' => 4, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()],
+            );
+            foreach ($members as $member) {
+                $this->assertSame('ISSUED', app(SpjV2NumberingIssuanceService::class)->issue($member, 'PESANAN', 'MAIN', 'v2-poison-order-'.$member->id)['status']);
+                $this->assertSame('ISSUED', app(SpjV2NumberingIssuanceService::class)->issue($member->fresh(['transaction.items', 'documents']), 'SPJ', 'MAIN', 'v2-poison-spj-'.$member->id)['status']);
+            }
+            $db->table('transactions')->where('id', $members[1]->transaction_id)->update(['requires_reconciliation' => true]);
+            $quarter = (int) ceil((int) date('n', strtotime((string) $members[0]->transaction->transaction_date)) / 3);
+            $result = app(SpjV2BulkFinalizationService::class)->finalize($quarter);
+            $this->assertSame('BLOCKED', $result['status']);
+            $this->assertSame('RECONCILIATION_BLOCKED', $result['error_code']);
+            $this->assertSame(0, $db->table('spj_packages')->whereIn('id', collect($members)->pluck('id'))->where('status', 'FINAL')->count());
+            $this->assertSame(0, $db->table('operational_audit_logs')->where('action', 'FINALISASI_BATCH_V2')->count());
+            $this->assertSame(0, $db->table('operational_audit_logs')->where('action', 'FINALISASI_PAKET_V2')->count());
         } finally {
             File::delete($target);
         }

@@ -1111,3 +1111,15 @@ settlement without duplicate state or audit. Existing staged payment and goods
 receipt actions remain legacy for editable packages, while a FINAL package
 invokes the V2 settlement authority. Bulk-final and period mutation remain
 outside this gate.
+
+### Effective bulk FINAL mutation checkpoint — 2026-09-20
+
+The administrator bulk-final action delegates to
+`SpjV2BulkFinalizationService` only when the requested path is explicitly V2.
+The service selects candidates by effective fund and quarter, applies the
+authoritative package ordering, preflights all candidates, locks them, and
+invokes the effective single-package FINAL authority atomically. The batch
+`FINALISASI_BATCH_V2` audit is written after verified package post-conditions;
+retry returns the existing batch audit without duplicate lifecycle events.
+Failure of any member leaves every package unchanged. Period close/open,
+destructive cleanup, and browser QA remain outside the gate.

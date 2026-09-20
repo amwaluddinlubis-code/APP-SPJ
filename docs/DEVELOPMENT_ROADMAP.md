@@ -675,3 +675,13 @@ idempotent; the existing payment action delegates to this service only for
 FINAL packages selected through V2. Legacy staged payment/receipt behavior is
 unchanged for editable packages. Bulk-final and period close/open remain
 separate blocked gates.
+
+### Effective bulk FINAL checkpoint — 2026-09-20
+
+Bulk FINAL has a dedicated `SpjV2BulkFinalizationService`. The complete
+candidate set is selected by effective context and `SpjNumberingOrderService`,
+preflighted before mutation, then processed through the atomic single-package
+FINAL authority. One invalid member rolls back all package/document changes and
+audits. A deterministic `FINALISASI_BATCH_V2` audit makes identical retries
+canonical and idempotent. The existing administrator action delegates to this
+service only for V2; period close/open remains a separate blocked gate.

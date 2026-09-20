@@ -5,6 +5,8 @@ namespace App\UseCases\Spj;
 use App\Models\SpjPackage;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentLifecycleService;
+use App\Services\SpjReadPathSelector;
+use App\Services\SpjV2BulkFinalizationService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,12 +19,31 @@ class SpjBulkFinalizeUseCase
         private readonly SpjDocumentLifecycleService $lifecycle,
         private readonly OperationalAuditService $audit,
         private readonly ActiveSpjContext $context,
+        private readonly SpjReadPathSelector $readPaths,
+        private readonly SpjV2BulkFinalizationService $v2BulkFinalization,
     ) {}
 
     public function handle(Request $request): RedirectResponse
     {
         $data = $request->validate(['quarter' => ['required', 'integer', 'between:1,4']]);
         $quarter = (int) $data['quarter'];
+
+        $selection = $this->readPaths->select(
+            DB::connection('school'),
+            $this->context->fiscalYearId(),
+            (int) ($this->context->fundSourceId() ?? 0),
+        );
+        if ($selection['requested'] === SpjReadPathSelector::V2) {
+            $result = $this->v2BulkFinalization->finalize($quarter);
+            if ($result['status'] === 'FINALIZED') {
+                return back()->with('success', $result['reason']);
+            }
+            if ($result['status'] === 'NOOP') {
+                return back()->with('warning', $result['reason']);
+            }
+
+            return back()->with('error', $result['reason']);
+        }
 
         try {
             $finalized = DB::connection('school')->transaction(function () use ($quarter): int {

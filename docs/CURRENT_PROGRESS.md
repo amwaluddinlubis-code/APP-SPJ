@@ -1308,3 +1308,15 @@ financial mismatch, closed period, missing audit storage, and other failures
 leave the package FINAL without a settlement row or false audit. Editable
 packages continue using the legacy staged payment/receipt path. Settlement is
 PASS; bulk-final, period close/open, and browser QA remain closed/deferred.
+
+### Effective-context bulk FINAL gate — 2026-09-20
+
+`SpjV2BulkFinalizationService` now owns bulk FINAL for an explicit V2
+selector. Candidates are selected by effective fund/quarter and authoritative
+SPJ ordering, preflighted as a complete set, locked, and finalized through the
+single-package V2 authority inside one outer transaction. A poison member,
+invalid context, reconciliation issue, or audit/post-condition failure rolls
+back every package and audit. `FINALISASI_BATCH_V2` is keyed by effective
+context and retry is idempotent. The existing administrator bulk action now
+delegates to V2 when requested; period close/open and browser QA remain
+closed/deferred.
