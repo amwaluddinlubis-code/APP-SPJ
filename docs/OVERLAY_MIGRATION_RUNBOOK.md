@@ -75,8 +75,9 @@ tetap berada di report untuk rekonsiliasi manual dan tidak dipaksa masuk.
 ## Aturan pencocokan
 
 Prioritas identity adalah `id_kas_umum`, `source_key`, `no_bukti + tanggal`,
-lalu `no_bukti` jika hanya ada satu kandidat. Kandidat ganda tidak dipaksa
-masuk. Yang dipindahkan hanya overlay operator: uraian pembayaran, metode dan
+lalu `no_bukti` jika hanya ada satu kandidat pada konteks tahun anggaran dan
+sumber dana yang sama. Kandidat ganda tidak dipaksa masuk. Yang dipindahkan
+hanya overlay operator: uraian pembayaran, metode dan
 referensi pembayaran, penerima kuitansi, kategori, rekonsiliasi, uraian item,
 serta lifecycle Paket SPJ dan nomor dokumen.
 
@@ -115,7 +116,17 @@ tidak ada ranking, fuzzy similarity, atau nearest-date heuristic. Hasil report:
 - delta mapping: **tidak dibuat**;
 - `87 unmatched` tetap tidak disentuh.
 
+Pemeriksaan primer tenant/raw pada run terbaru juga membandingkan source ID,
+tanggal transaksi, nominal, uraian/penerima, dan signature item untuk seluruh
+44 baris. Semua baris tetap memiliki dua kandidat dengan `no_bukti` yang sama,
+tetapi source ID dan tanggal tidak cocok exact; uraian, nominal, atau item juga
+tidak menghasilkan tepat satu kandidat. Karena itu tidak ada delta mapping yang
+aman untuk disiapkan dan tidak ada pencarian fuzzy yang dilakukan.
+
 Report JSON/CSV terbaru disimpan pada output decision-support run. Karena tidak
 ada mapping yang lolos rule exact-unique, validator mapping dan `--execute` tidak
-dijalankan. Tenant write tetap deferred sampai evidence baru menghasilkan delta
-yang seluruhnya lolos preflight.
+dijalankan pada checkpoint ini. Tenant write tetap deferred sampai evidence baru
+menghasilkan delta yang seluruhnya lolos preflight. Dengan demikian, status
+operasional saat ini adalah **198 matched**, **44 `STILL_AMBIGUOUS`**, **87
+truly missing/unverified**, dan **0 invalid source conflict**; langkah berikutnya
+adalah USER/OPERATOR QA, sedangkan destructive cleanup tetap deferred.

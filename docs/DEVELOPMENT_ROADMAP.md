@@ -274,6 +274,13 @@ Rule untuk migrasi berikutnya: route visibility/middleware GET tidak cukup sebag
 
 **Status: FUNCTIONAL PASS / REAL-DATA RECONCILIATION ACTIVE.**
 
+Checkpoint 2026-09-21: **198 matched**, **44 `STILL_AMBIGUOUS`**, **87
+unmatched/truly missing-unverified**, dan **0 invalid source conflict**. Manual
+read-only review atas seluruh 44 ambiguous tidak menemukan kandidat exact yang
+unik; mapping delta tidak dibuat, validator mapping dan migration execute tidak
+dijalankan, serta tenant data tidak berubah. Reconciliation otomatis berada pada
+batas aman dan unresolved records memerlukan bukti eksternal/operator.
+
 Kerjakan hanya ketika ditemukan mismatch source/overlay nyata:
 
 - [ ] source missing/returning identity;
@@ -430,13 +437,18 @@ Core procurement policy functional PASS. Tersisa:
 
 ### Operator QA handoff — 2026-09-21
 
-HEAD `965a40dde771de39274e052a94daa286a876ac9b` telah melewati focused route,
+Evidence checkpoint pada HEAD `965a40dde771de39274e052a94daa286a876ac9b` telah melewati focused route,
 context, package/workspace, numbering, lifecycle, report/monitoring, dan
 reconciliation regression; Feature deterministic **532/3.600**, Unit
 **38/363**, dan SPJ Critical **311/2.405** semuanya lulus tanpa failure.
 Repository sekarang berada pada tahap **USER/OPERATOR QA NEXT**. Gunakan urutan
 manual canonical di `docs/GUI_RUNTIME_QA.md`; jangan menganggap source readiness
 atau deterministic test sebagai bukti browser PASS.
+
+Handoff reconciliation terbaru tetap konsisten dengan tahap ini: 198 matched
+siap menjadi basis QA, sedangkan 44 ambiguous dan 87 unmatched tetap unresolved
+hingga ada bukti operator/external. Browser QA berikutnya dilakukan oleh
+user/operator; destructive cleanup tetap **DEFERRED**.
 
 External V2-C/V2-D tetap **RVR / NOT RUN** karena fixture real-data tidak
 tersedia. Destructive cleanup tetap **DEFERRED**. Composer tidak diverifikasi

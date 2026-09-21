@@ -2,6 +2,39 @@
 
 Terakhir diperbarui: **2026-09-21**
 
+### Fresh package compatibility - validation phase
+
+Jalur `SpjFreshPackage` sekarang memiliki adapter validasi dasar dan checklist
+UI sendiri. Validasi ini memeriksa kategori, uraian pembayaran, penerima, cara
+bayar, nilai bruto, serta uraian item tanpa memanggil validator legacy. Penomoran,
+preview, dan download fresh masih harus dilanjutkan dengan service fresh khusus.
+
+### Overlay migration execution checkpoint - NPSN 10208246 - 2026-09-21
+
+Sumber lama `D:\lrvProject\spj-bosp-data\school-databases-arkas-mirror\10208246\spj.sqlite`
+berhasil dipetakan ke tenant fresh aplikasi. Preflight dan execute menghasilkan
+**52 matched** unik, **113 item**, **52 paket**, **0 ambiguous**, dan **219
+unmatched** yang tidak disentuh. Sebanyak **350 field overlay** diisi tanpa
+menimpa nilai target. Post-check menunjukkan 52 paket (`24 FINAL`, `28
+NUMBERED`), 615 item fresh, dan integrity audit TW1 2026 **PASS** tanpa anomaly.
+Backup tenant tersimpan pada report execute command.
+
+### Overlay migration execution checkpoint - NPSN 10208183 - 2026-09-21
+
+Database lama yang benar diverifikasi pada
+`D:\lrvProject\spj-bosp-data\school-databases-raw\10208183\spj.sqlite`:
+46 transaksi, 46 paket, 90 item, dan 71 dokumen. Preflight awal menemukan
+fallback `no_bukti` dapat memakai satu transaksi lama untuk beberapa tahun
+target. Guard migrasi diperketat agar fallback wajib sama pada
+`fiscal_year_id` dan `fund_source_id`; test deterministik menutup regresi ini.
+
+Migrasi kemudian dieksekusi hanya untuk **46 matched** yang unik: 90 item, 46
+paket, dan 311 field overlay diisi. Sebanyak **177 transaksi unmatched** tidak
+disentuh, tanpa ambiguous. Backup tenant dibuat sebelum execute pada path yang
+ditampilkan oleh command. Post-check tenant menunjukkan 46 paket berstatus
+`FINAL`, 514 item fresh, seluruh lima field overlay terisi pada 46 transaksi,
+dan audit read-only TW1/TW2 2026 lulus tanpa anomaly.
+
 ### Overlay reconciliation decision-support checkpoint - 2026-09-21
 
 Audit deterministik lanjutan menilai seluruh 44 ambiguous dengan exact evidence
@@ -48,7 +81,7 @@ memiliki izin membuat file baru di direktori tersebut; tenant existing tetap
 terbuka. `SpjOverlayMigrationService` kini membaca dump melalui `sqlite::memory:`
 dan tidak lagi melakukan `ATTACH` database sementara yang tidak dipakai.
 
-Evidence dry-run `storage/app/overlay-migration-reports/10260756/20260921_073916_AYev94vP.json`:
+Evidence dry-run `storage/app/overlay-migration-reports/10260756/20260921_094751_decision_support.json`:
 
 - **198 matched**, **493 items**, **67 packages**;
 - **87 unmatched**: tidak ada kandidat deterministik;
