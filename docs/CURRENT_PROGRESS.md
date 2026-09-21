@@ -2,12 +2,37 @@
 
 Terakhir diperbarui: **2026-09-21**
 
+### Persiapan SPJ - tautan Paket fresh
+
+Tombol **Buka paket** pada antrean `Persiapan` sekarang memilih parameter
+`fresh_package_id` untuk `SpjFreshPackage` dan `package_id` untuk paket legacy.
+Sebelumnya semua baris memakai `package_id`, sehingga paket fresh dicari ke
+tabel legacy dan operator menerima pesan paket tidak ditemukan pada konteks
+tahun anggaran aktif. Regression test UI dan filter Livewire lulus; verifikasi
+browser nyata tetap berstatus RVR.
+
 ### Fresh package compatibility - validation phase
 
 Jalur `SpjFreshPackage` sekarang memiliki adapter validasi dasar dan checklist
 UI sendiri. Validasi ini memeriksa kategori, uraian pembayaran, penerima, cara
-bayar, nilai bruto, serta uraian item tanpa memanggil validator legacy. Penomoran,
-preview, dan download fresh masih harus dilanjutkan dengan service fresh khusus.
+bayar, nilai bruto, serta uraian item tanpa memanggil validator legacy. Jika
+seluruh pemeriksaan lulus, halaman Paket menampilkan status **PASS**. Penomoran
+dianggap selesai/dilewati karena seluruh transaksi target sudah memiliki nomor.
+
+Preview paket fresh, download Excel paket, dan download PDF paket sekarang
+memakai route fresh khusus dengan adapter read-only ke renderer template
+existing. Tombol **Preview** memakai HTML preview agar tidak memaksa fallback
+Dompdf yang dapat timeout pada workbook besar; tombol PDF tetap tersedia sebagai
+aksi arsip terpisah. Jalur ini tidak menulis tabel legacy dan tidak menerbitkan
+nomor. Contract test dan view cache lulus; verifikasi output dengan
+tenant/template produksi masih berstatus **RVR** sampai diuji operator.
+
+Rincian item fresh sekarang membaca volume, satuan, harga satuan, nilai, dan
+rekening dari payload raw mirror secara case-insensitive, sehingga kontrak
+tampilan Paket dan adapter dokumen memakai nilai yang sama.
+
+Daftar Dokumen & Template Fresh kini menampilkan tiga aksi ikon per baris:
+preview, unduh Excel, dan unduh PDF.
 
 ### Overlay migration execution checkpoint - NPSN 10208246 - 2026-09-21
 

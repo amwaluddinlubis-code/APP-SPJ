@@ -24,7 +24,10 @@
             }
             const url = new URL(window.location.href);
             url.searchParams.set('tab', name);
-            if (name !== 'paket') url.searchParams.delete('package_id');
+            if (name !== 'paket') {
+                url.searchParams.delete('package_id');
+                url.searchParams.delete('fresh_package_id');
+            }
             if (window.Livewire && typeof window.Livewire.navigate === 'function') {
                 window.Livewire.navigate(url.toString());
                 return;
@@ -125,6 +128,7 @@
                             <div class="mt-5 border-t border-[var(--ui-line)] pt-1">
                                 @if($isFreshPackage)
                                     @include('spj.partials.package.fresh-validation')
+                                    @include('spj.partials.package.fresh-documents')
                                 @else
                                     @include('spj.partials.package.validation')
                                     @include('spj.partials.package.documents')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\UseCases\Spj\FreshPackageDocumentUseCase;
 use App\UseCases\Spj\FreshPackageWorkspaceUseCase;
 use App\UseCases\Spj\SpjBulkFinalizeUseCase;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
@@ -141,6 +142,26 @@ class SpjController extends Controller
     public function previewPackagePdf(string $packageId, SpjDocumentUseCase $useCase)
     {
         return $useCase->previewPackagePdf($packageId);
+    }
+
+    public function freshPreviewPackage(string $packageId, FreshPackageDocumentUseCase $useCase)
+    {
+        return $useCase->preview($packageId);
+    }
+
+    public function freshPreviewPackagePdf(string $packageId, FreshPackageDocumentUseCase $useCase)
+    {
+        return $useCase->previewPdf($packageId);
+    }
+
+    public function freshDownloadPackageExcel(string $packageId, FreshPackageDocumentUseCase $useCase)
+    {
+        return $useCase->downloadExcel($packageId);
+    }
+
+    public function freshDownloadPackagePdf(string $packageId, FreshPackageDocumentUseCase $useCase)
+    {
+        return $useCase->downloadPdf($packageId);
     }
 
     public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)

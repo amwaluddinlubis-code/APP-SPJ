@@ -210,9 +210,7 @@ class SpjFreshTransaction extends Model
         }
 
         return (float) $items->sum(function (SpjFreshTransactionItem $item): float {
-            $payload = $item->rawMirrorRow?->payload ?? [];
-
-            return (float) ($payload['saldo'] ?? $payload['jumlah'] ?? $payload['nilai'] ?? $payload['nominal'] ?? 0);
+            return $item->amount;
         });
     }
 

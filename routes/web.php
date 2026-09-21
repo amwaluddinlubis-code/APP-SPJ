@@ -144,6 +144,10 @@ Route::middleware('auth')->group(function () {
         Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
         Route::get('/spj/paket/{packageId}/pratinjau-pdf', [SpjController::class, 'previewPackagePdf'])->name('spj.preview-package-pdf');
+        Route::get('/spj/fresh-paket/{packageId}/pratinjau', [SpjController::class, 'freshPreviewPackage'])->name('spj.fresh-preview-package');
+        Route::get('/spj/fresh-paket/{packageId}/pratinjau-pdf', [SpjController::class, 'freshPreviewPackagePdf'])->name('spj.fresh-preview-package-pdf');
+        Route::post('/spj/fresh-paket/{packageId}/unduh-excel', [SpjController::class, 'freshDownloadPackageExcel'])->name('spj.fresh-download-package-excel');
+        Route::match(['GET', 'POST'], '/spj/fresh-paket/{packageId}/unduh', [SpjController::class, 'freshDownloadPackagePdf'])->name('spj.fresh-download');
         Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau-pdf', [SpjController::class, 'previewTemplatePdf'])->name('spj.preview-template-pdf');

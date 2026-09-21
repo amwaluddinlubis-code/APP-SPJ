@@ -44,7 +44,13 @@ final class SpjFreshPackageValidationServiceTest extends TestCase
         ]);
 
         $rawMirrorRow = new ArkasRawMirrorRow;
-        $rawMirrorRow->setRawAttributes(['payload' => json_encode(['saldo' => 100000], JSON_THROW_ON_ERROR)]);
+        $rawMirrorRow->setRawAttributes(['payload' => json_encode([
+            'VOLUME' => 2,
+            'SATUAN' => 'rim',
+            'HARGA_SATUAN' => 50000,
+            'JUMLAH' => 100000,
+            'KODE_REKENING' => '5.1.02.01',
+        ], JSON_THROW_ON_ERROR)]);
         $item->setRelation('rawMirrorRow', $rawMirrorRow);
         $transaction->setRelation('items', new Collection([$item]));
 
@@ -52,5 +58,9 @@ final class SpjFreshPackageValidationServiceTest extends TestCase
         $package->setRelation('transaction', $transaction);
 
         self::assertSame([], new SpjFreshPackageValidationService()->validate($package));
+        self::assertSame(2.0, $item->quantity);
+        self::assertSame('rim', $item->unit);
+        self::assertSame(50000.0, $item->unit_price);
+        self::assertSame(100000.0, $item->amount);
     }
 }

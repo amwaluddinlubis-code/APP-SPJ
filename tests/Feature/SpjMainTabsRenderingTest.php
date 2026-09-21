@@ -61,6 +61,14 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringNotContainsString("querySelectorAll('[data-close-template-preview]')", $index);
     }
 
+    public function test_preparation_links_use_the_correct_package_identifier_for_fresh_packages(): void
+    {
+        $preparation = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
+
+        $this->assertIsString($preparation);
+        $this->assertStringContainsString("instanceof \\App\\Models\\SpjFreshPackage ? 'fresh_package_id' : 'package_id'", $preparation);
+    }
+
     public function test_preview_modal_uses_direct_pdf_frame_when_available(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
@@ -118,6 +126,29 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringContainsString('class="overflow-hidden pt-1"', $documents);
         $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $validation);
         $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $documents);
+    }
+
+    public function test_fresh_package_validation_exposes_pass_status_without_claiming_document_workflow(): void
+    {
+        $freshValidation = file_get_contents(resource_path('views/spj/partials/package/fresh-validation.blade.php'));
+
+        $this->assertIsString($freshValidation);
+        $this->assertStringContainsString("'PASS'", $freshValidation);
+        $this->assertStringContainsString('Penomoran dilewati karena transaksi sudah memiliki nomor.', $freshValidation);
+        $this->assertStringContainsString('Preview HTML serta unduh Excel dan PDF tersedia.', $freshValidation);
+    }
+
+    public function test_fresh_package_document_actions_use_dedicated_routes(): void
+    {
+        $freshDocuments = file_get_contents(resource_path('views/spj/partials/package/fresh-documents.blade.php'));
+
+        $this->assertIsString($freshDocuments);
+        $this->assertStringContainsString("route('spj.fresh-preview-package'", $freshDocuments);
+        $this->assertStringContainsString("route('spj.fresh-download-package-excel'", $freshDocuments);
+        $this->assertStringContainsString("route('spj.fresh-download'", $freshDocuments);
+        $this->assertStringNotContainsString('data-template-preview-pdf="{{ route(\'spj.fresh-preview-package-pdf\'', $freshDocuments);
+        $this->assertStringContainsString('grid gap-px bg-[var(--ui-line)] md:grid-cols-2', $freshDocuments);
+        $this->assertStringContainsString('ui-btn ui-btn-secondary min-h-10 min-w-10', $freshDocuments);
     }
 
     public function test_package_summary_uses_one_neutral_surface_with_theme_accent_for_key_value(): void

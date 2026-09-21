@@ -3,11 +3,11 @@
         <div>
             <h2 class="text-base font-bold" style="color: var(--ui-fg)">Validasi Paket Fresh</h2>
             <p class="mt-0.5 text-base {{ $validationIssues ? 'text-amber-700' : 'text-emerald-700' }}">
-                {{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi.' : 'Data dasar paket fresh sudah lengkap.' }}
+                {{ $validationIssues ? count($validationIssues).' data wajib perlu dilengkapi.' : 'Validasi dasar paket fresh: PASS.' }}
             </p>
-            <p class="mt-1 text-sm" style="color: var(--ui-muted)">Penomoran, preview, dan download dokumen fresh masih menunggu workflow fresh khusus.</p>
+            <p class="mt-1 text-sm" style="color: var(--ui-muted)">Penomoran dilewati karena transaksi sudah memiliki nomor. Preview HTML serta unduh Excel dan PDF tersedia.</p>
         </div>
-        <x-ui.status-badge :status="$validationIssues ? 'BELUM_LENGKAP' : 'READY'" :label="$validationIssues ? 'Belum siap' : 'Siap diproses'" />
+        <x-ui.status-badge :status="$validationIssues ? 'BELUM_LENGKAP' : 'PASS'" :label="$validationIssues ? 'Belum siap' : 'PASS'" />
     </div>
     @if($validationIssues)
         <div class="divide-y divide-amber-100 border-t border-amber-100 bg-amber-50/40">

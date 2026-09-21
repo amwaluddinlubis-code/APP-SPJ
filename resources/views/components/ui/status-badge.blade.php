@@ -45,6 +45,10 @@
             'label' => 'Selesai',
             'class' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
         ],
+        'PASS' => [
+            'label' => 'PASS',
+            'class' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        ],
         'FAILED', 'ERROR' => ['label' => 'Gagal', 'class' => 'border-rose-200 bg-rose-50 text-rose-800'],
         'LOCKED' => [
             'label' => 'Terkunci',

@@ -508,6 +508,7 @@ class SpjWorkspaceUseCase
     private function freshPackageView(SpjFreshPackage $package): View
     {
         $validationIssues = app(SpjFreshPackageValidationService::class)->validate($package);
+        $templates = $validationIssues === [] ? app(FreshPackageDocumentUseCase::class)->templates($package) : collect();
         $transaction = $package->transaction;
         foreach (['goods', 'workers', 'participants', 'travels', 'honors', 'serviceRecipients', 'payments', 'goodsReceipts'] as $relation) {
             $transaction->setRelation($relation, collect());
@@ -519,7 +520,7 @@ class SpjWorkspaceUseCase
             'package' => $package,
             'packageList' => null,
             'validationIssues' => $validationIssues,
-            'templates' => collect(),
+            'templates' => $templates,
             'transactions' => null,
             ...$this->overviewMetrics(),
             'spjTypes' => [],
