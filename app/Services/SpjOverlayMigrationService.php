@@ -14,7 +14,7 @@ final class SpjOverlayMigrationService
     /**
      * Build read-only decision-support artifacts for unresolved overlay links.
      *
-     * @return array{json:string,csv:string,ambiguous:int,unmatched:int,possible_manual_lookup:int,truly_missing_or_unverified:int}
+     * @return array{json:string,csv:string,ambiguous:int,unmatched:int,auto_resolved_deterministic:int,still_ambiguous:int,invalid_source_conflict:int,possible_manual_lookup:int,truly_missing_or_unverified:int,mapping_delta:?string}
      */
     public function decisionSupport(School $school, string $sourceSql, ?string $outputDirectory = null): array
     {
@@ -34,10 +34,14 @@ final class SpjOverlayMigrationService
 
         $oldTransactions = array_values($this->oldTransactionRows($source));
         $oldMaps = $this->oldTransactions($source);
+        $oldItems = $this->oldItems($source);
+        $oldPackages = $this->oldPackages($source);
         $db = DB::connection('school');
         $rawRows = $db->table('arkas_raw_mirror_rows')->get()->keyBy('id');
         $freshTransactions = $db->table('spj_fresh_transactions')->orderBy('id')->get();
+        $freshItems = $db->table('spj_fresh_transaction_items')->get()->groupBy('spj_fresh_transaction_id');
         $ambiguous = [];
+        $mappingDelta = [];
         $unmatched = [];
 
         foreach ($freshTransactions as $fresh) {
@@ -45,7 +49,21 @@ final class SpjOverlayMigrationService
             $payload = $raw ? (json_decode((string) $raw->payload, true) ?: []) : [];
             $match = $this->resolveTransaction($fresh, $payload, $oldMaps);
             if ($match['status'] === 'ambiguous') {
-                $ambiguous[] = $this->decisionRecord($fresh, $payload, $match);
+                $audit = $this->auditAmbiguousCandidates($fresh, $payload, $match, $freshItems->get($fresh->id, collect())->all(), $oldItems, $oldPackages);
+                $row = $this->decisionRecord($fresh, $payload, $match);
+                $row['classification'] = $audit['classification'];
+                $row['evidence_rule'] = $audit['evidence_rule'];
+                $row['candidate_evidence'] = $audit['candidate_evidence'];
+                $row['winner'] = $audit['winner'];
+                $ambiguous[] = $row;
+                if ($audit['winner'] !== null) {
+                    $mappingDelta[] = [
+                        'old_transaction_id' => $audit['winner']['old_transaction_id'],
+                        'fresh_transaction_id' => $fresh->id,
+                        'decision' => 'APPROVE',
+                        'reason' => $audit['evidence_rule'],
+                    ];
+                }
             } elseif ($match['status'] === 'unmatched') {
                 $unmatched[] = $this->unmatchedDecisionRecord($fresh, $payload, $oldTransactions);
             }
@@ -59,8 +77,16 @@ final class SpjOverlayMigrationService
         $csvPath = $base.'.csv';
         $possibleManualLookup = count(array_filter($unmatched, static fn (array $row): bool => $row['classification'] === 'possible_manual_lookup'));
         $trulyMissing = count($unmatched) - $possibleManualLookup;
+        $autoResolved = count(array_filter($ambiguous, static fn (array $row): bool => $row['classification'] === 'AUTO_RESOLVED_DETERMINISTIC'));
+        $stillAmbiguous = count(array_filter($ambiguous, static fn (array $row): bool => $row['classification'] === 'STILL_AMBIGUOUS'));
+        $invalidSourceConflict = count(array_filter($ambiguous, static fn (array $row): bool => $row['classification'] === 'INVALID_SOURCE_CONFLICT'));
+        $mappingPath = null;
+        if ($mappingDelta !== []) {
+            $mappingPath = $base.'_mapping_delta.json';
+            File::put($mappingPath, json_encode(['mappings' => $mappingDelta], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
         $artifact = [
-            'schema_version' => 1,
+            'schema_version' => 2,
             'mode' => 'read-only',
             'school_id' => $school->id,
             'school_npsn' => $school->npsn,
@@ -71,7 +97,10 @@ final class SpjOverlayMigrationService
                 'unmatched' => count($unmatched),
                 'possible_manual_lookup' => $possibleManualLookup,
                 'truly_missing_or_unverified' => $trulyMissing,
-                'winner_selection' => 'none',
+                'winner_selection' => 'deterministic_evidence_only',
+                'auto_resolved_deterministic' => $autoResolved,
+                'still_ambiguous' => $stillAmbiguous,
+                'invalid_source_conflict' => $invalidSourceConflict,
             ],
             'ambiguous' => $ambiguous,
             'unmatched' => $unmatched,
@@ -81,13 +110,15 @@ final class SpjOverlayMigrationService
                 'decision' => 'PENDING',
                 'reason' => null,
             ],
+            'mapping_delta' => $mappingPath,
         ];
         File::put($jsonPath, json_encode($artifact, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         $handle = fopen($csvPath, 'wb');
-        fputcsv($handle, ['status', 'fresh_transaction_id', 'old_transaction_id', 'fresh_no_bukti', 'old_no_bukti', 'fresh_date', 'old_date', 'fresh_amount', 'old_amount', 'classification', 'reason']);
+        fputcsv($handle, ['status', 'fresh_transaction_id', 'old_transaction_id', 'fresh_no_bukti', 'old_no_bukti', 'fresh_date', 'old_date', 'fresh_amount', 'old_amount', 'classification', 'evidence_rule', 'reason']);
         foreach ($ambiguous as $row) {
             foreach ($row['old_candidates'] as $candidate) {
-                fputcsv($handle, ['ambiguous', $row['fresh_transaction']['id'], $candidate['id'], $row['fresh_transaction']['no_bukti'], $candidate['no_bukti'], $row['fresh_transaction']['date'], $candidate['date'], $row['fresh_transaction']['amount'], $candidate['amount'], 'manual_decision', $row['reason']]);
+                $candidateEvidence = collect($row['candidate_evidence'])->firstWhere('old_transaction_id', (int) $candidate['id']);
+                fputcsv($handle, ['ambiguous', $row['fresh_transaction']['id'], $candidate['id'], $row['fresh_transaction']['no_bukti'], $candidate['no_bukti'], $row['fresh_transaction']['date'], $candidate['date'], $row['fresh_transaction']['amount'], $candidate['amount'], $row['classification'], $candidateEvidence['evidence_rule'] ?? null, $row['reason']]);
             }
         }
         foreach ($unmatched as $row) {
@@ -95,7 +126,7 @@ final class SpjOverlayMigrationService
         }
         fclose($handle);
 
-        return ['json' => $jsonPath, 'csv' => $csvPath, 'ambiguous' => count($ambiguous), 'unmatched' => count($unmatched), 'possible_manual_lookup' => $possibleManualLookup, 'truly_missing_or_unverified' => $trulyMissing];
+        return ['json' => $jsonPath, 'csv' => $csvPath, 'ambiguous' => count($ambiguous), 'unmatched' => count($unmatched), 'auto_resolved_deterministic' => $autoResolved, 'still_ambiguous' => $stillAmbiguous, 'invalid_source_conflict' => $invalidSourceConflict, 'possible_manual_lookup' => $possibleManualLookup, 'truly_missing_or_unverified' => $trulyMissing, 'mapping_delta' => $mappingPath];
     }
 
     /**
@@ -442,6 +473,130 @@ final class SpjOverlayMigrationService
         ];
     }
 
+    /**
+     * Compare every available exact identity/detail field and never rank candidates.
+     * A winner is allowed only when exactly one candidate satisfies the same rule.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array{candidate_old_transactions:array<int,array<string,mixed>>}  $match
+     * @param  array<int, object>  $freshItems
+     * @param  array<int, array<int, array<string,mixed>>>  $oldItems
+     * @param  array<int, array<string,mixed>>  $oldPackages
+     * @return array{classification:string,evidence_rule:string,candidate_evidence:array<int,array<string,mixed>>,winner:?array{old_transaction_id:int}}
+     */
+    private function auditAmbiguousCandidates(object $fresh, array $payload, array $match, array $freshItems, array $oldItems, array $oldPackages): array
+    {
+        $freshFields = $this->freshDecisionFields($fresh, $payload);
+        $audits = [];
+        $qualifying = [];
+        foreach ($match['candidate_old_transactions'] as $candidate) {
+            $matches = [];
+            $conflicts = [];
+            $this->compareExactField($matches, $conflicts, 'id_kas_umum', $freshFields['raw_id_kas_umum'], $candidate['id_kas_umum'] ?? null);
+            $this->compareExactField($matches, $conflicts, 'source_key', $fresh->source_key, $candidate['source_key'] ?? null);
+            $this->compareExactField($matches, $conflicts, 'date', $freshFields['date'], $candidate['transaction_date'] ?? null, false);
+            $this->compareExactField($matches, $conflicts, 'gross_amount', $freshFields['amount'], $candidate['gross_amount'] ?? null, true);
+            $this->compareExactField($matches, $conflicts, 'tax_amount', $payload['tax_total'] ?? $payload['tax'] ?? null, $candidate['tax_total'] ?? null, true);
+            $this->compareExactField($matches, $conflicts, 'net_amount', $payload['net_amount'] ?? null, $candidate['net_amount'] ?? null, true);
+            $this->compareExactField($matches, $conflicts, 'description', $freshFields['description'], $candidate['payment_description'] ?? $candidate['description'] ?? null, false, true);
+            $this->compareExactField($matches, $conflicts, 'recipient', $payload['nama_penerima'] ?? $payload['penerima'] ?? $payload['recipient_name'] ?? null, $candidate['receipt_recipient_name'] ?? $candidate['recipient_name'] ?? null, false, true);
+            $this->compareExactField($matches, $conflicts, 'account_code', $payload['kode_rekening'] ?? $payload['account_code'] ?? null, $candidate['account_code'] ?? null);
+            $this->compareExactField($matches, $conflicts, 'activity_code', $payload['kode_kegiatan'] ?? $payload['activity_code'] ?? null, $candidate['activity_code'] ?? null);
+
+            $oldItemRows = $oldItems[(int) ($candidate['id'] ?? 0)] ?? [];
+            $freshItemSignature = $this->freshItemSignature($freshItems);
+            $oldItemSignature = $this->oldItemSignature($oldItemRows);
+            if ($freshItemSignature !== [] && $oldItemSignature !== []) {
+                if ($freshItemSignature === $oldItemSignature) {
+                    $matches[] = 'exact_item_count_source_ids_descriptions';
+                } else {
+                    $conflicts[] = 'item_signature';
+                }
+            }
+
+            if (isset($oldPackages[(int) ($candidate['id'] ?? 0)])) {
+                $package = $oldPackages[(int) $candidate['id']];
+                $freshPackage = DB::connection('school')->table('spj_fresh_packages')->where('spj_fresh_transaction_id', $fresh->id)->first();
+                if ($freshPackage !== null) {
+                    foreach (['quarter_code', 'semester_code', 'phase_code', 'status', 'document_number'] as $field) {
+                        $this->compareExactField($matches, $conflicts, 'package_'.$field, $freshPackage->{$field} ?? null, $package[$field] ?? null);
+                    }
+                }
+            }
+
+            $hasStrongIdentity = count($matches) >= 2 || in_array('exact_item_count_source_ids_descriptions', $matches, true);
+            if ($hasStrongIdentity && $conflicts === []) {
+                $qualifying[] = (int) $candidate['id'];
+            }
+            $audits[] = [
+                'old_transaction_id' => (int) $candidate['id'],
+                'matches' => $matches,
+                'conflicts' => $conflicts,
+                'evidence_rule' => $hasStrongIdentity && $conflicts === [] ? 'all_available_exact_evidence_matches' : 'no_unique_exact_evidence',
+            ];
+        }
+
+        if (count($qualifying) === 1) {
+            return ['classification' => 'AUTO_RESOLVED_DETERMINISTIC', 'evidence_rule' => 'exact_evidence_unique_candidate', 'candidate_evidence' => $audits, 'winner' => ['old_transaction_id' => $qualifying[0]]];
+        }
+
+        $exactIdentityOwners = collect($audits)->filter(static fn (array $audit): bool => collect($audit['matches'])->contains(static fn (string $match): bool => str_starts_with($match, 'exact_')))->pluck('old_transaction_id')->unique();
+        $classification = $exactIdentityOwners->count() > 1 && $exactIdentityOwners->count() < count($audits)
+            ? 'INVALID_SOURCE_CONFLICT'
+            : 'STILL_AMBIGUOUS';
+
+        return ['classification' => $classification, 'evidence_rule' => 'no_unique_exact_evidence', 'candidate_evidence' => $audits, 'winner' => null];
+    }
+
+    /** @param array<int,string> $matches @param array<int,string> $conflicts */
+    private function compareExactField(array &$matches, array &$conflicts, string $name, mixed $freshValue, mixed $oldValue, bool $amount = false, bool $description = false): void
+    {
+        if ($freshValue === null || $freshValue === '' || $oldValue === null || $oldValue === '') {
+            return;
+        }
+        $left = $amount ? $this->amountComparable($freshValue) : ($description ? $this->normalizedText($freshValue) : trim((string) $freshValue));
+        $right = $amount ? $this->amountComparable($oldValue) : ($description ? $this->normalizedText($oldValue) : trim((string) $oldValue));
+        if ($left === $right) {
+            $matches[] = 'exact_'.$name;
+        } else {
+            $conflicts[] = $name;
+        }
+    }
+
+    private function amountComparable(mixed $value): string
+    {
+        return number_format((float) str_replace(',', '.', (string) $value), 2, '.', '');
+    }
+
+    private function normalizedText(mixed $value): string
+    {
+        return preg_replace('/\s+/u', ' ', mb_strtolower(trim((string) $value))) ?? trim((string) $value);
+    }
+
+    /** @param array<int, object> $items @return array<int, array{source_key:string,description:string}> */
+    private function freshItemSignature(array $items): array
+    {
+        $signature = [];
+        foreach ($items as $item) {
+            $signature[] = ['source_key' => (string) $item->source_key, 'description' => $this->normalizedText($item->item_description)];
+        }
+        usort($signature, static fn (array $left, array $right): int => [$left['source_key'], $left['description']] <=> [$right['source_key'], $right['description']]);
+
+        return $signature;
+    }
+
+    /** @param array<int, array<string,mixed>> $items @return array<int, array{source_key:string,description:string}> */
+    private function oldItemSignature(array $items): array
+    {
+        $signature = [];
+        foreach ($items as $item) {
+            $signature[] = ['source_key' => (string) ($item['source_item_id'] ?? ''), 'description' => $this->normalizedText($item['item_description'] ?? $item['description'] ?? '')];
+        }
+        usort($signature, static fn (array $left, array $right): int => [$left['source_key'], $left['description']] <=> [$right['source_key'], $right['description']]);
+
+        return $signature;
+    }
+
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function freshDecisionFields(object $fresh, array $payload): array
     {
@@ -464,7 +619,7 @@ final class SpjOverlayMigrationService
             'id' => (int) ($old['id'] ?? 0),
             'no_bukti' => $old['no_bukti'] ?? null,
             'date' => $old['transaction_date'] ?? null,
-            'amount' => $old['amount'] ?? null,
+            'amount' => $old['gross_amount'] ?? $old['amount'] ?? null,
             'description' => $old['payment_description'] ?? $old['description'] ?? null,
             'source_key' => $old['source_key'] ?? null,
             'raw_identifiers' => array_filter(['id_kas_umum' => $old['id_kas_umum'] ?? null, 'source_key' => $old['source_key'] ?? null]),

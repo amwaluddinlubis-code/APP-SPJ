@@ -32,11 +32,15 @@ class GenerateSpjOverlayDecisionSupport extends Command
             $result = $this->migration->decisionSupport($school, (string) $this->option('source-sql'), $this->option('output-dir') ?: null);
             $this->table(['Keterangan', 'Nilai'], [
                 ['Ambiguous', $result['ambiguous']],
+                ['Auto-resolved deterministic', $result['auto_resolved_deterministic']],
+                ['Still ambiguous', $result['still_ambiguous']],
+                ['Invalid source conflict', $result['invalid_source_conflict']],
                 ['Unmatched', $result['unmatched']],
                 ['Possible manual lookup', $result['possible_manual_lookup']],
                 ['Truly missing/unverified', $result['truly_missing_or_unverified']],
                 ['JSON', $result['json']],
                 ['CSV', $result['csv']],
+                ['Mapping delta', $result['mapping_delta'] ?? 'none'],
             ]);
 
             return self::SUCCESS;

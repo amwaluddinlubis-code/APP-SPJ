@@ -101,3 +101,21 @@ Dry-run rekonsiliasi 2026-09-21 pada tenant `10260756` kembali menghasilkan
 `no_bukti` tanpa kecocokan tanggal unik; ke-87 unmatched tidak memiliki kandidat
 deterministik pada `id_kas_umum`, `source_key`, `no_bukti+tanggal`, maupun
 `no_bukti`. Keduanya tetap manual/source-audit dan belum boleh dieksekusi.
+
+Audit deterministik lanjutan pada 2026-09-21 menilai setiap kandidat ambiguous
+dengan kombinasi exact `source_key/id_kas_umum`, tanggal, gross/net/tax,
+deskripsi ternormalisasi, penerima, kode rekening/kegiatan, signature item
+(jumlah, source id, uraian), dan metadata Paket yang tersedia. Kandidat hanya
+boleh dipilih bila tepat satu kandidat memenuhi seluruh evidence yang tersedia;
+tidak ada ranking, fuzzy similarity, atau nearest-date heuristic. Hasil report:
+
+- `AUTO_RESOLVED_DETERMINISTIC`: **0**;
+- `STILL_AMBIGUOUS`: **44**;
+- `INVALID_SOURCE_CONFLICT`: **0**;
+- delta mapping: **tidak dibuat**;
+- `87 unmatched` tetap tidak disentuh.
+
+Report JSON/CSV terbaru disimpan pada output decision-support run. Karena tidak
+ada mapping yang lolos rule exact-unique, validator mapping dan `--execute` tidak
+dijalankan. Tenant write tetap deferred sampai evidence baru menghasilkan delta
+yang seluruhnya lolos preflight.

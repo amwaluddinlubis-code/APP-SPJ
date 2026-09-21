@@ -4,6 +4,15 @@ Terakhir diperbarui: **2026-09-21**
 
 ### Overlay reconciliation decision-support checkpoint - 2026-09-21
 
+Audit deterministik lanjutan menilai seluruh 44 ambiguous dengan exact evidence
+yang tersedia: identity source, tanggal, gross/net/tax, deskripsi ternormalisasi,
+penerima, kode rekening/kegiatan, signature item, dan metadata Paket bila ada.
+Rule hanya memilih tepat satu kandidat yang memenuhi seluruh evidence; tidak ada
+fuzzy matching, nearest-date heuristic, atau probabilistic scoring. Hasil run
+terbaru adalah **0 AUTO_RESOLVED_DETERMINISTIC, 44 STILL_AMBIGUOUS, dan 0
+INVALID_SOURCE_CONFLICT**. Tidak ada mapping delta yang dibuat dan tidak ada
+tenant/raw-mirror write.
+
 Read-only decision support telah ditambahkan setelah `e2fd748`. Command
 `spj:overlay-decision-support` menghasilkan JSON detail dan CSV ringkas untuk
 unresolved overlay; command tidak menulis tenant. Pada school `10260756`,
