@@ -49,7 +49,7 @@
                 Buka Paket SPJ
             </a>
         @elseif($transaction->items->isNotEmpty())
-            <a href="{{ route('transactions.prepare-spj', $transaction->id) }}"
+            <a href="{{ route('transactions.prepare-spj', $transaction->source_key ?: $transaction->id) }}"
                 class="ui-btn ui-btn-primary !min-h-0 !px-3 !py-1.5 !text-xs">
                 Siapkan Paket SPJ
             </a>
@@ -92,7 +92,11 @@
             </div>
         </x-slot:title>
 
-        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
+        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-5">
+            <div class="px-5 py-4">
+                <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Tanggal transaksi</p>
+                <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?: 'Tanggal belum tersedia' }}</p>
+            </div>
             <div class="px-5 py-4">
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima / Penyedia</p>
                 <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p>

@@ -72,6 +72,11 @@ Header kanan authenticated memakai menu **Profil User**, bukan badge teknis runt
 
 ## 3. Sistem tema
 
+Halaman error HTTP (403, 404, 419, 429, 500, dan 503) memakai shell mandiri
+ARKAS Dark V2 agar tetap terbaca ketika layout utama atau asset aplikasi gagal
+dimuat. Shell tersebut mempertahankan aksi **Coba lagi** dan kembali ke beranda,
+serta tidak menampilkan detail exception internal kepada operator.
+
 Gunakan token utama:
 
 ```text

@@ -40,6 +40,13 @@ class SpjFreshTransaction extends Model
         return $this->package();
     }
 
+    public function getItemsCountAttribute(): int
+    {
+        return $this->relationLoaded('items')
+            ? $this->items->count()
+            : (int) $this->items()->count();
+    }
+
     public function scopeForSpjContext(Builder $query, ActiveSpjContext $context): Builder
     {
         return $query
@@ -77,12 +84,24 @@ class SpjFreshTransaction extends Model
 
     public function getActivityCodeAttribute(): ?string
     {
-        $activityCode = $this->sourceValue(['kode_kegiatan', 'activity_code']);
+        $activityCode = $this->sourceValue(['kode_kegiatan', 'activity_code'])
+            ?: $this->itemSourceValue(['kode_kegiatan', 'activity_code']);
         if (filled($activityCode)) {
             return $activityCode;
         }
 
         return $this->rkasValue('activity_code');
+    }
+
+    public function getActivityNameAttribute(): ?string
+    {
+        $activityName = $this->sourceValue(['nama_kegiatan', 'activity_name'])
+            ?: $this->itemSourceValue(['nama_kegiatan', 'activity_name']);
+        if (filled($activityName)) {
+            return $activityName;
+        }
+
+        return $this->rkasValue('activity_name');
     }
 
     public function getRecipientNameAttribute(): ?string
@@ -116,7 +135,8 @@ class SpjFreshTransaction extends Model
 
     private function rkasValue(string $column): ?string
     {
-        $periodSourceKey = $this->sourceValue(['id_rapbs_periode']);
+        $periodSourceKey = $this->sourceValue(['id_rapbs_periode'])
+            ?: $this->itemSourceValue(['id_rapbs_periode']);
         if (blank($periodSourceKey)) {
             return null;
         }
@@ -231,6 +251,21 @@ class SpjFreshTransaction extends Model
         foreach ($keys as $key) {
             if (filled($payload[$key] ?? null)) {
                 return (string) $payload[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /** @param array<int, string> $keys */
+    private function itemSourceValue(array $keys): ?string
+    {
+        foreach ($this->sourceItems() as $item) {
+            $payload = $item->rawMirrorRow?->payload ?? [];
+            foreach ($keys as $key) {
+                if (filled($payload[$key] ?? null)) {
+                    return (string) $payload[$key];
+                }
             }
         }
 

@@ -8,6 +8,7 @@ use App\Models\FundSource;
 use App\Models\SpjFreshPackage;
 use App\Models\SpjFreshTransaction;
 use App\Models\SpjFreshTransactionItem;
+use App\UseCases\Spj\SpjWorkspaceUseCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -102,6 +103,39 @@ class TransactionsWorkflowFilterTest extends TestCase
                 && (float) $stats->gross === 200000.0
                 && (float) $stats->tax === 20000.0
                 && (float) $stats->net === 180000.0);
+    }
+
+    public function test_spj_preparation_reads_fresh_projection_when_legacy_transactions_are_empty(): void
+    {
+        $transaction = $this->transaction('BPU-FRESH-001', '2026-02-10');
+
+        $data = app(SpjWorkspaceUseCase::class)->preparationData([
+            'month' => null,
+            'quarter' => null,
+            'spj_category' => null,
+            'state' => 'all',
+        ], 15);
+
+        $this->assertSame([$transaction->id], $data['transactions']->getCollection()->pluck('id')->all());
+        $this->assertSame(1, $data['workQueueCounts']['all']);
+        $this->assertSame('BPU-FRESH-001', $data['transactions']->first()->no_bukti);
+    }
+
+    public function test_spj_preparation_fresh_fallback_honors_livewire_page_state(): void
+    {
+        foreach (range(1, 16) as $number) {
+            $this->transaction(sprintf('BPU-PAGE-%02d', $number), '2026-02-10');
+        }
+
+        $data = app(SpjWorkspaceUseCase::class)->preparationData([
+            'month' => null,
+            'quarter' => null,
+            'spj_category' => null,
+            'state' => 'all',
+        ], 15, 2);
+
+        $this->assertSame(['BPU-PAGE-16'], $data['transactions']->getCollection()->pluck('no_bukti')->all());
+        $this->assertSame(2, $data['transactions']->currentPage());
     }
 
     private function assertFilteredIds(string $status, array $expectedIds): void

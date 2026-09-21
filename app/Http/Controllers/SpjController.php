@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\UseCases\Spj\FreshPackageWorkspaceUseCase;
 use App\UseCases\Spj\SpjBulkFinalizeUseCase;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use App\UseCases\Spj\SpjDocumentUseCase;
@@ -107,7 +108,12 @@ class SpjController extends Controller
         Request $request,
         UpdateSpjPackageDetailsUseCase $useCase,
         SpjPackageCategoryUseCase $categoryUseCase,
+        FreshPackageWorkspaceUseCase $freshPackageUseCase,
     ): RedirectResponse|JsonResponse {
+        if ($request->boolean('fresh_package')) {
+            return $freshPackageUseCase->update($packageId, $request);
+        }
+
         if ($request->boolean('category_switch')) {
             return $categoryUseCase->switchCategory($packageId, $request);
         }

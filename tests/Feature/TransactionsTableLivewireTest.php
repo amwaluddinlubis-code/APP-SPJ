@@ -74,6 +74,7 @@ class TransactionsTableLivewireTest extends TestCase
 
         Livewire::test(TransactionsTable::class)
             ->assertSee('BPU-001')
+            ->assertDontSee('#1')
             ->assertSee('Paket SPJ')
             ->assertSee('Detail');
 

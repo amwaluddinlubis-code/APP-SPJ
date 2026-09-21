@@ -70,17 +70,17 @@
             @forelse($packages ?? [] as $package)
                 @php
                     $isCancelled = $package->report_status === 'CANCELLED';
-                    $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
+                    $isFreshPackage = $package instanceof \App\Models\SpjFreshPackage;
+                    $packageUrl = route('spj.index', $isFreshPackage
+                        ? ['tab' => 'paket', 'fresh_package_id' => $package->id]
+                        : ['tab' => 'paket', 'package_id' => $package->id]);
                 @endphp
                 <tr wire:key="spj-report-{{ $package->id }}" class="transition {{ $isCancelled ? 'bg-rose-50/70 text-slate-500' : 'hover:bg-indigo-50/40' }}">
                     <td class="px-4 py-3 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}">
                         <a href="{{ $packageUrl }}" class="hover:underline">{{ $package->report_document_number }}</a>
                     </td>
                     <td class="px-4 py-3">
-                        <div class="flex flex-wrap items-center gap-1">
-                            <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
-                            @if($package->getAttribute('read_context_path') === 'v2_compat')<x-ui.status-badge status="READY" label="Baca saja" size="xs" />@endif
-                        </div>
+                        <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
                         @if ($isCancelled && $package->report_cancellation_reason)
                             <p class="mt-1 max-w-48 text-xs text-rose-700">{{ $package->report_cancellation_reason }}</p>
                         @endif
@@ -95,12 +95,16 @@
                     <td class="px-4 py-3 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->net_amount) }}</td>
                     <td class="px-4 py-3 text-right">
                         <x-ui.action-menu label="Tindakan">
-                            <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
-                            @if (! $isCancelled)
-                                <form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form>
-                                <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>
+                            @if (! $isFreshPackage)
+                                <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
+                                @if (! $isCancelled)
+                                    <form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form>
+                                    <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>
+                                @endif
+                            @else
+                                <span class="ui-action-menu-item text-[var(--ui-fg-muted)]">Dokumen fresh belum tersedia</span>
                             @endif
-                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">{{ $package->getAttribute('read_context_path') === 'v2_compat' ? 'Buka Paket (baca saja)' : 'Buka Paket' }}</a>
+                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">Buka Paket</a>
                         </x-ui.action-menu>
                     </td>
                 </tr>

@@ -50,7 +50,7 @@ class SpjReportFilter extends Component
     public function render(): View
     {
         [$packages, $summary] = app(SpjReportUseCase::class)
-            ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15);
+            ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15, $this->getPage(), $this->getPage('pending_page'));
 
         return view('livewire.spj-report-filter', [
             'packages' => $packages,

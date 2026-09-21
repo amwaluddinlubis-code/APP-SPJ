@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-19**
+Terakhir diperbarui: **2026-09-21**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `arkas-raw-mirror`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
@@ -58,7 +58,7 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 
 | Dokumen | Peran / status |
 |---|---|
-| `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer, source key, profile-driven import, hardening, dan operator-data verification. |
+| `ARKAS_IMPORTER.md` | **HISTORICAL / SUPERSEDED** — catatan implementation history Generic ARKAS Importer; runtime aktif memakai explicit manifest/bridge raw mirror. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder registry/usage dan template contract. |
 | `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
 | `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command dan successful canonical release-safety gate. |

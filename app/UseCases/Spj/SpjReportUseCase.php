@@ -4,6 +4,8 @@ namespace App\UseCases\Spj;
 
 use App\Models\FiscalPeriodClosure;
 use App\Models\FiscalYear;
+use App\Models\SpjFreshPackage;
+use App\Models\SpjFreshTransaction;
 use App\Models\SpjHonor;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
@@ -14,6 +16,8 @@ use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -107,9 +111,9 @@ class SpjReportUseCase
      * Jalankan query laporan dari parameter eksplisit memakai implementasi
      * yang sama dengan jalur HTTP, untuk dipakai komponen Livewire.
      */
-    public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15): array
+    public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15, ?int $page = null, ?int $pendingPage = null): array
     {
-        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage, true);
+        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage, true, $page, $pendingPage);
     }
 
     public function export(Request $request, string $format)
@@ -221,9 +225,14 @@ class SpjReportUseCase
         ?int $perPage = null,
         ?int $pendingPerPage = null,
         bool $allowV2FinancialSummary = false,
-    ): array
-    {
+        ?int $page = null,
+        ?int $pendingPage = null,
+    ): array {
         $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
+        if (! Transaction::query()->forSpjContext($this->context)->exists()) {
+            return $this->freshReport($request, $year, $perPage, $pendingPerPage, $page, $pendingPage);
+        }
+
         $transactionFilter = fn ($query) => $this->applyReportTransactionFilters($query->forSpjContext($this->context), $request, $year);
         $effectiveTransactionFilter = fn ($query) => $this->applyReportTransactionFilters($query, $request, $year);
 
@@ -332,6 +341,93 @@ class SpjReportUseCase
             'activities' => $activities,
             'accounts' => $accounts,
         ]];
+    }
+
+    /**
+     * Read-only report compatibility for a reset tenant whose fresh projection
+     * exists while the legacy transaction table is empty.
+     */
+    private function freshReport(Request $request, FiscalYear $year, ?int $perPage, ?int $pendingPerPage, ?int $page = null, ?int $pendingPage = null): array
+    {
+        $transactions = SpjFreshTransaction::query()
+            ->forSpjContext($this->context)
+            ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
+            ->with(['rawMirrorRow', 'items.rawMirrorRow', 'spjPackage.transaction.rawMirrorRow', 'spjPackage.documents'])
+            ->get()
+            ->filter(fn (SpjFreshTransaction $transaction): bool => $this->freshMatchesReportPeriod($transaction, $request, $year))
+            ->values();
+        $packages = $transactions
+            ->flatMap(fn (SpjFreshTransaction $transaction) => $transaction->spjPackage ? [$transaction->spjPackage] : [])
+            ->filter(fn (SpjFreshPackage $package): bool => filled($package->document_number) || $package->documents->contains(fn ($document): bool => $document->status === 'CANCELLED'))
+            ->values();
+        $packages->each(function (SpjFreshPackage $package): void {
+            $package->load(['transaction.rawMirrorRow', 'transaction.items.rawMirrorRow']);
+        });
+
+        $packages->each(function (SpjFreshPackage $package): void {
+            $cancelled = $package->documents->where('status', 'CANCELLED')->sortByDesc('id')->first();
+            $package->setAttribute('report_document_number', $package->document_number ?: $cancelled?->document_number);
+            $package->setAttribute('report_status', $package->document_number ? $package->status : 'CANCELLED');
+            $package->setAttribute('report_cancellation_reason', $package->document_number ? null : $cancelled?->cancellation_reason);
+            $package->setAttribute('read_context_path', 'fresh_compat');
+        });
+
+        $successful = $packages->filter(fn (SpjFreshPackage $package): bool => $package->report_status !== 'CANCELLED');
+        $summary = [
+            'year' => $year->year,
+            'count' => $successful->count(),
+            'cancelled_count' => $packages->where('report_status', 'CANCELLED')->count(),
+            'gross' => $successful->sum(fn (SpjFreshPackage $package): float => (float) $package->transaction->gross_amount),
+            'tax' => $successful->sum(fn (SpjFreshPackage $package): float => (float) $package->transaction->tax_total),
+            'net' => $successful->sum(fn (SpjFreshPackage $package): float => (float) $package->transaction->net_amount),
+            'ppn' => 0.0, 'pph21' => 0.0, 'pph22' => 0.0, 'pph23' => 0.0, 'pph4' => 0.0, 'sspd' => 0.0,
+            'read_path' => 'fresh_compat',
+            'activities' => collect(),
+            'accounts' => collect(),
+        ];
+
+        $pending = $transactions->filter(fn (SpjFreshTransaction $transaction): bool => $transaction->items->isNotEmpty()
+            && ($transaction->spjPackage === null || blank($transaction->spjPackage->document_number)))->values();
+        $pendingPaginator = $this->paginateCollection($pending, $pendingPerPage ?? 15, 'pending_page', $pendingPage);
+
+        if ($perPage === null) {
+            $listedPackages = $packages;
+        } else {
+            $listedPackages = $this->paginateCollection($packages, $perPage, 'page', $page);
+        }
+
+        $summary['pending_transactions'] = $pendingPaginator;
+
+        return [$listedPackages, $summary];
+    }
+
+    private function freshMatchesReportPeriod(SpjFreshTransaction $transaction, Request $request, FiscalYear $year): bool
+    {
+        $date = $transaction->transaction_date;
+        if ($date === null) {
+            return true;
+        }
+        [$mode, $periode] = self::resolveModePeriode($request->all());
+
+        return match ($mode) {
+            'bulan' => $periode === null || $date->year === $year->year && $date->month === $periode,
+            'triwulan' => $periode === null || $date->year === $year->year && (int) ceil($date->month / 3) === $periode,
+            'semester' => $periode === null || $date->year === $year->year && (($date->month <= 6 ? 1 : 2) === $periode),
+            default => true,
+        };
+    }
+
+    private function paginateCollection(Collection $items, int $perPage, string $pageName, ?int $explicitPage = null): LengthAwarePaginator
+    {
+        $page = max(1, $explicitPage ?? (int) request()->query($pageName, 1));
+
+        return new LengthAwarePaginator(
+            $items->slice(($page - 1) * $perPage, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()],
+        );
     }
 
     private function reportPackageQuery(callable $transactionFilter, ?array $packageIds = null): Builder

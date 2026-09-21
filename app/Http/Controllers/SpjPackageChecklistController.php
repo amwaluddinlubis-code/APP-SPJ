@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SpjFreshPackage;
 use App\Models\SpjPackage;
 use App\Models\User;
 use App\Services\SpjDocumentRequirementService;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2MutationContextService;
+use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -17,6 +19,7 @@ class SpjPackageChecklistController extends Controller
         SpjPackageValidationService $validator,
         SpjDocumentRequirementService $requirements,
         SpjV2MutationContextService $mutationContext,
+        ActiveSpjContext $context,
     ): View|RedirectResponse {
         $package = SpjPackage::query()
             ->with([
@@ -32,7 +35,24 @@ class SpjPackageChecklistController extends Controller
             ])
             ->find($packageId);
 
-        if (! $package || ! $package->transaction || ! $mutationContext->preparePackage($package)) {
+        if (! $package) {
+            $freshPackage = SpjFreshPackage::query()
+                ->whereKey($packageId)
+                ->whereHas('transaction', fn ($query) => $query->forSpjContext($context))
+                ->exists();
+
+            if ($freshPackage) {
+                return redirect()
+                    ->route('spj.index', ['tab' => 'paket', 'fresh_package_id' => $packageId])
+                    ->with('info', 'Checklist legacy belum tersedia untuk paket fresh. Paket dibuka pada workspace kompatibilitas fresh.');
+            }
+
+            return redirect()
+                ->route('spj.index', ['tab' => 'persiapan'])
+                ->with('error', 'Paket SPJ tidak ditemukan pada konteks aktif.');
+        }
+
+        if (! $package->transaction || ! $mutationContext->preparePackage($package)) {
             return redirect()
                 ->route('spj.index', ['tab' => 'persiapan'])
                 ->with('error', 'Paket SPJ tidak ditemukan pada konteks aktif.');

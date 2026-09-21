@@ -13,6 +13,7 @@
         $spjProgress = ($totalPackages ?? 0) > 0 ? min(100, (int) round((($numberedPackages ?? 0) / $totalPackages) * 100)) : 0;
         $packagesAwaitingNumber = max(0, ($totalPackages ?? 0) - ($numberedPackages ?? 0));
         $transactionsWithoutPackage = max(0, ($readyTransactions ?? 0) - ($totalPackages ?? 0));
+        $isFreshPackage = isset($package) && $package instanceof \App\Models\SpjFreshPackage;
     @endphp
     <div class="spj-semantic-workspace space-y-6" x-data="{
         tab: '{{ $tab ?? 'persiapan' }}',
@@ -122,8 +123,14 @@
                         <div x-show="packageTab === 'rincian'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-rincian" role="tabpanel" aria-labelledby="package-tab-rincian" data-panel="rincian" class="tab-panel">
                             @include('spj.partials.package.items-readonly')
                             <div class="mt-5 border-t border-[var(--ui-line)] pt-1">
-                                @include('spj.partials.package.validation')
-                                @include('spj.partials.package.documents')
+                                @if($isFreshPackage)
+                                    <div class="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+                                        Paket ini berasal dari proyeksi fresh. Validasi, penomoran, preview, dan download dokumen legacy belum tersedia pada jalur kompatibilitas ini.
+                                    </div>
+                                @else
+                                    @include('spj.partials.package.validation')
+                                    @include('spj.partials.package.documents')
+                                @endif
                             </div>
                         </div>
 
@@ -146,6 +153,7 @@
                                 $selectedSpjType = strtoupper((string) old('spj_category', $transaction->spj_category ?: $transaction->spj_category));
                             @endphp
                             <form id="spj-manual-form" method="POST" action="{{ route('spj.update', $package->id) }}" data-source-siplah="{{ $transaction->is_siplah ? '1' : '0' }}" class="space-y-4 p-4" @submit="if (!$event.defaultPrevented) saving=true">@csrf @method('PUT')
+                    @if($isFreshPackage)<input type="hidden" name="fresh_package" value="1">@endif
                     @unless($package->isEditable())<div class="flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-3 py-2 text-sm text-[var(--ui-fg)]"><span aria-hidden="true">🔒</span><p><strong>Isian terkunci.</strong> Batalkan nomor dan buka paket untuk koreksi agar field dapat diedit kembali.</p></div>@endunless
                     <fieldset @disabled(!$package->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
                     <div x-show="saving" class="flex items-center justify-center py-4"><x-loading-spinner /></div>
@@ -194,7 +202,13 @@
                         </div>
 
                         <div x-show="packageTab === 'penomoran'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-penomoran" role="tabpanel" aria-labelledby="package-tab-penomoran" data-panel="penomoran" class="tab-panel p-4">
-                            @include('spj.partials.package.numbering')
+                            @if($isFreshPackage)
+                                <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-900">
+                                    Penomoran dan perubahan lifecycle fresh package dilakukan melalui workflow migrasi fresh yang terpisah.
+                                </div>
+                            @else
+                                @include('spj.partials.package.numbering')
+                            @endif
                         </div>
                     </section>
                 @php

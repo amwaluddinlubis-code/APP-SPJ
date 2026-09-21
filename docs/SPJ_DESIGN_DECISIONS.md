@@ -116,6 +116,10 @@ Overlay operator mencakup data yang memang menjadi tanggung jawab penyusunan SPJ
 
 Kontrak sinkronisasi:
 
+Migrasi overlay dari database lama memakai aturan fill-blank-only: nilai operator
+yang sudah ada pada target fresh tidak ditimpa, kandidat identity yang ambiguous
+atau unmatched tidak dipaksa masuk, dan fakta ARKAS/BKU tetap readonly.
+
 ```text
 source ada     -> update source, pertahankan overlay
 source hilang  -> tandai SOURCE_MISSING, jangan hapus pekerjaan operator

@@ -5,13 +5,13 @@
 <div data-package-navigation hidden class="mx-5 flex flex-wrap items-center justify-between gap-2 py-4">
     <div class="flex flex-wrap items-center gap-2">
         <a href="{{ route('spj.index', ['tab' => 'paket']) }}" title="Kembali ke semua Paket SPJ" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
-            <span aria-hidden="true">☷</span><span>Semua Paket</span>
+            <span aria-hidden="true">â˜·</span><span>Semua Paket</span>
         </a>
 
     </div>
 
-    <a href="{{ route('transactions.show', $transactionDetailIdentifier ?? $transaction->id) }}" title="Buka Detail Transaksi" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
-        <span aria-hidden="true">↗</span><span>Lihat Transaksi</span>
+    <a href="{{ route('transactions.show', $transaction->id) }}" title="Buka Detail Transaksi" class="ui-btn ui-btn-secondary inline-flex items-center gap-2 transition hover:-translate-y-0.5 hover:shadow-sm">
+        <span aria-hidden="true">â†—</span><span>Lihat Transaksi</span>
     </a>
 </div>
 
@@ -30,7 +30,7 @@
         </div>
     </div>
     <div class="grid divide-y sm:grid-cols-2 lg:grid-cols-5 lg:divide-x lg:divide-y-0" style="border-color: var(--ui-line)">
-        <div class="px-3 py-2.5"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Periode</p><p class="mt-0.5 text-sm font-semibold" style="color: var(--ui-fg)">{{ $package->quarter_code }} · {{ $package->semester_code }}</p></div>
+        <div class="px-3 py-2.5"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Periode</p><p class="mt-0.5 text-sm font-semibold" style="color: var(--ui-fg)">{{ $package->quarter_code }} Â· {{ $package->semester_code }}</p></div>
         <div class="px-3 py-2.5"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Penerima</p><p class="mt-0.5 truncate text-sm font-semibold" style="color: var(--ui-fg)" title="{{ $transaction->recipient_name ?: 'Belum diisi' }}">{{ $transaction->recipient_name ?: 'Belum diisi' }}</p></div>
         <div class="px-3 py-2.5 text-right"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Bruto</p><p class="mt-0.5 font-mono text-sm font-bold" style="color: var(--ui-fg)">{{ $accounting($transaction->gross_amount) }}</p></div>
         <div class="px-3 py-2.5 text-right"><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Pajak</p><p class="mt-0.5 font-mono text-sm font-bold" style="color: var(--ui-fg)">{{ $accounting($transaction->tax_total) }}</p></div>

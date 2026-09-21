@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir diverifikasi: **2026-09-19** terhadap branch `arkas-raw-mirror`.
+Terakhir diverifikasi: **2026-09-21** terhadap branch `arkas-raw-mirror`.
 
 The generic profile/staging synchronization graph documented below is
 historical/superseded as of 2026-09-20. Active synchronization uses the
@@ -15,7 +15,8 @@ Dokumen ini bukan sumber status release. Gunakan:
 - `CURRENT_PROGRESS.md` untuk status/evidence terbaru;
 - `DEVELOPMENT_ROADMAP.md` untuk prioritas pekerjaan;
 - `SPJ_DESIGN_DECISIONS.md` untuk kontrak domain permanen;
-- `ARKAS_IMPORTER.md` untuk Generic ARKAS Importer yang bersifat profile-driven.
+- `ARKAS_IMPORTER.md` hanya untuk implementation history Generic ARKAS Importer;
+  jalur runtime aktif dijelaskan pada bagian explicit raw mirror di dokumen ini.
 
 ---
 
@@ -58,7 +59,7 @@ Tujuan:
 - membuat reconciliation jika source berubah;
 - membangun derived references seperti kegiatan dan rekanan.
 
-### 2.2 Generic ARKAS Importer
+### 2.2 Explicit ARKAS raw mirror
 
 Entry point terpisah yang profile-driven:
 
@@ -664,9 +665,12 @@ Jika metadata SiPLah berasal dari source:
 
 ---
 
-## 18. Sync mode Generic Importer
+## 18. Historical sync modes — Generic Importer
 
-Generic ARKAS Importer mendukung mode yang berbeda dari canonical sync, termasuk:
+Bagian ini adalah catatan historis untuk Generic ARKAS Importer yang sudah
+superseded dan tidak lagi menjadi opsi runtime. Dokumentasi ini dipertahankan
+untuk menjelaskan semantics lama yang pernah diuji, bukan sebagai instruksi
+operasional aktif.
 
 ```text
 Upsert

@@ -41,6 +41,8 @@ class MigrateSpjOverlay extends Command
                 ['Ambiguous', $result['ambiguous']],
                 ['Item diproses', $result['items']],
                 ['Paket diproses', $result['packages']],
+                ['Field diisi dari database lama', $result['fields_migrated']],
+                ['Field lama dipertahankan', $result['fields_preserved']],
                 ['Backup', $result['backup'] ?? 'Tidak dibuat (dry-run)'],
                 ['Report', $result['report']],
             ]);

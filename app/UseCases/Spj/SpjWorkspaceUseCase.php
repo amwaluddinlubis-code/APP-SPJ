@@ -4,6 +4,8 @@ namespace App\UseCases\Spj;
 
 use App\Models\Employee;
 use App\Models\FiscalPeriodClosure;
+use App\Models\SpjFreshPackage;
+use App\Models\SpjFreshTransaction;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\SpjPackageTemplateSelector;
@@ -18,6 +20,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator as ConcretePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -50,6 +53,20 @@ class SpjWorkspaceUseCase
     public function overviewMetrics(): array
     {
         $packages = $this->packageMembershipQuery();
+
+        if (! Transaction::query()->forSpjContext($this->context)->exists()) {
+            $freshTransactions = SpjFreshTransaction::query()->forSpjContext($this->context);
+            $freshPackages = DB::connection('school')->table('spj_fresh_packages')
+                ->join('spj_fresh_transactions', 'spj_fresh_transactions.id', '=', 'spj_fresh_packages.spj_fresh_transaction_id')
+                ->where('spj_fresh_transactions.fiscal_year_id', $this->context->fiscalYearId())
+                ->where('spj_fresh_transactions.fund_source_id', $this->context->fundSourceId());
+
+            return [
+                'totalPackages' => (clone $freshPackages)->count(),
+                'numberedPackages' => (clone $freshPackages)->whereNotNull('document_number')->count(),
+                'readyTransactions' => (clone $freshTransactions)->has('items')->count(),
+            ];
+        }
 
         return [
             'totalPackages' => (clone $packages)->count(),
@@ -91,8 +108,12 @@ class SpjWorkspaceUseCase
      *
      * @return array{transactions: LengthAwarePaginator, workQueueCounts: array<string, int>, spjTypes: Collection}
      */
-    public function preparationData(array $filters, int $perPage): array
+    public function preparationData(array $filters, int $perPage, ?int $page = null): array
     {
+        if (! Transaction::query()->forSpjContext($this->context)->exists()) {
+            return $this->freshPreparationData($filters, $perPage, $page);
+        }
+
         $month = isset($filters['month']) && $filters['month'] !== null ? (int) $filters['month'] : null;
         $quarter = isset($filters['quarter']) && $filters['quarter'] !== null ? (int) $filters['quarter'] : null;
 
@@ -127,10 +148,142 @@ class SpjWorkspaceUseCase
         ];
     }
 
-    public function packageListData(int $perPage): LengthAwarePaginator
+    /**
+     * Read-only compatibility queue used after a database reset when the
+     * explicit fresh projection exists but the legacy transaction table does
+     * not. This path never creates a legacy transaction or package.
+     *
+     * @param  array{month:int|null,quarter:int|null,spj_category:string|null,state:string}  $filters
+     * @return array{transactions: LengthAwarePaginator, workQueueCounts: array<string, int>, spjTypes: Collection}
+     */
+    private function freshPreparationData(array $filters, int $perPage, ?int $page = null): array
     {
+        $allRows = SpjFreshTransaction::query()
+            ->forSpjContext($this->context)
+            ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
+            ->with(['rawMirrorRow', 'items.rawMirrorRow', 'spjPackage'])
+            ->withCount('items')
+            ->get();
+
+        $filteredRows = $allRows
+            ->filter(function (SpjFreshTransaction $transaction) use ($filters): bool {
+                $month = $transaction->transaction_date?->month;
+                if ($filters['month'] !== null && $month !== $filters['month']) {
+                    return false;
+                }
+                if ($filters['quarter'] !== null && (int) ceil(($month ?: 1) / 3) !== $filters['quarter']) {
+                    return false;
+                }
+                if ($filters['spj_category'] !== null && (string) $transaction->spj_category !== $filters['spj_category']) {
+                    return false;
+                }
+
+                return $this->freshTransactionMatchesState($transaction, (string) $filters['state']);
+            })
+            ->sortBy(fn (SpjFreshTransaction $transaction): string => sprintf(
+                '%d-%s-%010d',
+                $transaction->source_status === 'SOURCE_MISSING' || $transaction->requires_reconciliation ? 0 : 1,
+                (string) ($transaction->transaction_date?->toDateString() ?? ''),
+                (int) $transaction->id,
+            ))
+            ->values();
+
+        $counts = ['all' => $allRows->count(), 'attention' => 0, 'unprepared' => 0, 'draft' => 0, 'ready' => 0, 'numbered' => 0];
+        foreach ($allRows as $transaction) {
+            foreach (array_keys($this->workflowFilters->options()) as $state) {
+                if ($this->freshTransactionMatchesState($transaction, $state)) {
+                    $counts[$state]++;
+                }
+            }
+        }
+        $counts['needs_details'] = $counts['attention'];
+        $page = max(1, $page ?? (int) request()->query('page', 1));
+
+        return [
+            'transactions' => new ConcretePaginator(
+                $filteredRows->slice(($page - 1) * $perPage, $perPage)->values(),
+                $filteredRows->count(),
+                $perPage,
+                $page,
+                ['path' => request()->url(), 'query' => request()->query()],
+            ),
+            'workQueueCounts' => $counts,
+            'spjTypes' => $allRows->pluck('spj_category')->filter()->unique()->sort()->values(),
+        ];
+    }
+
+    private function freshTransactionMatchesState(SpjFreshTransaction $transaction, string $state): bool
+    {
+        if ($state === 'all') {
+            return true;
+        }
+        if (in_array($state, ['attention', 'needs_details'], true)) {
+            return (bool) $transaction->requires_reconciliation || $transaction->source_status === 'SOURCE_MISSING';
+        }
+
+        $status = strtoupper((string) ($transaction->spjPackage?->status ?? ''));
+
+        return match ($state) {
+            'unprepared' => $transaction->spjPackage === null,
+            'draft' => $status === 'DRAFT',
+            'ready' => $status === 'READY',
+            'numbered' => in_array($status, ['NUMBERED', 'FINAL'], true),
+            default => true,
+        };
+    }
+
+    /**
+     * @param  array{search?:string,status?:string,category?:string}  $filters
+     */
+    public function packageListData(int $perPage, array $filters = []): LengthAwarePaginator
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = strtoupper(trim((string) ($filters['status'] ?? '')));
+        $category = strtoupper(trim((string) ($filters['category'] ?? '')));
+
+        if (! SpjPackage::query()->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))->exists()) {
+            $fresh = SpjFreshPackage::query()
+                ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
+                ->with(['transaction.rawMirrorRow', 'transaction.items.rawMirrorRow'])
+                ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+                ->when($category !== '' || $search !== '', function ($query) use ($category, $search): void {
+                    $query->whereHas('transaction', function ($transactionQuery) use ($category, $search): void {
+                        $transactionQuery
+                            ->when($category !== '', fn ($q) => $q->where('spj_category', $category))
+                            ->when($search !== '', function ($q) use ($search): void {
+                                $q->where(function ($searchQuery) use ($search): void {
+                                    $searchQuery->where('no_bukti', 'like', '%'.$search.'%')
+                                        ->orWhere('payment_description', 'like', '%'.$search.'%')
+                                        ->orWhere('description', 'like', '%'.$search.'%')
+                                        ->orWhere('recipient_name', 'like', '%'.$search.'%');
+                                });
+                            });
+                    });
+                })
+                ->orderByDesc('id')
+                ->paginate($perPage, ['*'], 'package_page')
+                ->withQueryString();
+            $fresh->getCollection()->load(['transaction.rawMirrorRow', 'transaction.items.rawMirrorRow']);
+            $fresh->getCollection()->each(fn (SpjFreshPackage $package): SpjFreshPackage => $package->setAttribute('read_context_path', 'fresh_compat'));
+
+            return $fresh;
+        }
+
         $paginator = $this->packageMembershipQuery()
             ->with(['transaction:id,no_bukti,transaction_date,payment_description,description,recipient_name,spj_category,gross_amount,fiscal_year_id,fund_source_id'])
+            ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+            ->whereHas('transaction', function ($query) use ($search, $category): void {
+                $query
+                    ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('spj_category', $category))
+                    ->when($search !== '', function ($transactionQuery) use ($search): void {
+                        $transactionQuery->where(function ($searchQuery) use ($search): void {
+                            $searchQuery->where('no_bukti', 'like', '%'.$search.'%')
+                                ->orWhere('payment_description', 'like', '%'.$search.'%')
+                                ->orWhere('description', 'like', '%'.$search.'%')
+                                ->orWhere('recipient_name', 'like', '%'.$search.'%');
+                        });
+                    });
+            })
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')
@@ -186,8 +339,9 @@ class SpjWorkspaceUseCase
     private function tabPaket(Request $request): View|RedirectResponse
     {
         $packageId = $request->query('package_id');
+        $freshPackageId = $request->query('fresh_package_id');
 
-        if (! $packageId) {
+        if (! $packageId && ! $freshPackageId) {
             // Daftar paket dirender oleh <livewire:spj-package-list /> dengan
             // paginasinya sendiri; tidak dihitung di sini agar tidak ganda.
             return view('spj.index', [
@@ -206,6 +360,21 @@ class SpjWorkspaceUseCase
             ]);
         }
 
+        if ($freshPackageId) {
+            $freshPackage = SpjFreshPackage::query()
+                ->with(['transaction.items.rawMirrorRow', 'transaction.rawMirrorRow', 'documents'])
+                ->whereKey($freshPackageId)
+                ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
+                ->first();
+
+            if ($freshPackage) {
+                return $this->freshPackageView($freshPackage);
+            }
+
+            return redirect()->route('spj.index', ['tab' => 'persiapan'])
+                ->with('error', 'Paket fresh tidak ditemukan pada tahun anggaran aktif.');
+        }
+
         $package = SpjPackage::query()->with([
             'documents.template',
             'transaction.items',
@@ -220,6 +389,16 @@ class SpjWorkspaceUseCase
             'transaction.goodsReceipts.items',
         ])->find($packageId);
         if (! $package) {
+            $freshPackage = SpjFreshPackage::query()
+                ->with(['transaction.items.rawMirrorRow', 'transaction.rawMirrorRow', 'documents'])
+                ->whereKey($packageId)
+                ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
+                ->first();
+
+            if ($freshPackage) {
+                return $this->freshPackageView($freshPackage);
+            }
+
             return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 
@@ -332,6 +511,30 @@ class SpjWorkspaceUseCase
             'transaction' => $transaction,
             'participantRoster' => $participantRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
+        ]);
+    }
+
+    private function freshPackageView(SpjFreshPackage $package): View
+    {
+        $transaction = $package->transaction;
+        foreach (['goods', 'workers', 'participants', 'travels', 'honors', 'serviceRecipients', 'payments', 'goodsReceipts'] as $relation) {
+            $transaction->setRelation($relation, collect());
+        }
+        $transaction->setRelation('workOrder', null);
+
+        return view('spj.index', [
+            'tab' => 'paket',
+            'package' => $package,
+            'packageList' => null,
+            'validationIssues' => [],
+            'templates' => collect(),
+            'transactions' => null,
+            ...$this->overviewMetrics(),
+            'spjTypes' => [],
+            'filters' => [],
+            'periodClosures' => collect(),
+            'participantRoster' => collect(),
+            'consumptionOrderSources' => [],
         ]);
     }
 

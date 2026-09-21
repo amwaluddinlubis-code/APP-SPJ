@@ -125,7 +125,7 @@
                     <article class="border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-3" wire:key="transaction-card-{{ $transaction->id }}">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
-                                <span class="font-mono text-[13px] font-bold text-slate-500">#{{ $transaction->id }}</span>
+                                <span class="font-mono text-[13px] font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti ?: 'Nomor bukti belum tersedia' }}</span>
                                 <x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" />
                             </div>
                             <span class="text-[13px]" style="color: var(--ui-fg-muted)">{{ $transaction->transaction_date?->format('d/m/Y') ?? '—' }}</span>
@@ -182,7 +182,7 @@
                 </colgroup>
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr class="border-b border-[var(--ui-line)]">
-                        <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">ID / Status</th>
+                        <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Nomor Bukti / Status</th>
                         <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">Uraian / Referensi</th>
                         <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">Nilai</th>
                         <th class="transaction-action-column px-4 py-3 text-center text-[13px] font-bold uppercase tracking-wide">Aksi</th>
@@ -195,7 +195,7 @@
                             <tr class="transition hover:bg-indigo-50/40" wire:key="transaction-row-{{ $transaction->id }}">
                                 <td class="px-4 py-3 align-middle">
                                     <div class="flex min-w-0 items-center gap-2">
-                                        <span class="shrink-0 font-mono text-[13px] font-bold text-slate-500">#{{ $transaction->id }}</span>
+                                        <span class="shrink-0 font-mono text-[13px] font-bold" style="color: var(--theme-content-accent)">{{ $transaction->no_bukti ?: 'Nomor bukti belum tersedia' }}</span>
                                         <div class="min-w-0"><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" /></div>
                                     </div>
                                     <p class="mt-1 truncate text-[13px]" style="color: var(--ui-fg-muted)">

@@ -52,19 +52,17 @@
     }"
     class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"
 >
-    @unless($compatibilityOverlayEdit ?? false)
-        <div
-            data-spj-maintenance-links
-            data-show-url="{{ route('transactions.maintenance-links.show', $transaction->id) }}"
-            data-update-url="{{ route('transactions.maintenance-links.update', $transaction->id) }}"
-            data-editable="{{ $package->isEditable() ? '1' : '0' }}"
-            hidden
-        ></div>
-    @endunless
+    <div
+        data-spj-maintenance-links
+        data-show-url="{{ route('transactions.maintenance-links.show', $transaction->id) }}"
+        data-update-url="{{ route('transactions.maintenance-links.update', $transaction->id) }}"
+        data-editable="{{ $package->isEditable() ? '1' : '0' }}"
+        hidden
+    ></div>
 
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Work Order Pemeliharaan</h3>
-        <button type="button" @click="addWorker()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold"><span aria-hidden="true">＋</span> Pekerja</button>
+        <button type="button" @click="addWorker()" class="ui-btn ui-btn-secondary !min-h-8 px-2.5 py-1 text-xs font-bold"><span aria-hidden="true">ï¼‹</span> Pekerja</button>
     </div>
 
     <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -120,7 +118,7 @@
                         </td>
                         <td class="px-2 py-1 text-right font-mono text-xs font-bold" x-text="accounting((parseInt(row.work_days) || 0) * (Number(row.daily_rate) || 0))"></td>
                         <td class="px-1.5 py-1 text-center"><input type="radio" :checked="primaryIndex === index" @change="primaryIndex = index" title="Jadikan pekerja ini sebagai Penerima Utama" class="h-4 w-4 border-[var(--ui-line-strong)] text-indigo-600 focus:ring-indigo-500"></td>
-                        <td class="px-1.5 py-1 text-center"><button type="button" @click="removeWorker(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">×</button></td>
+                        <td class="px-1.5 py-1 text-center"><button type="button" @click="removeWorker(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">Ã—</button></td>
                     </tr>
                 </template>
             </tbody>
@@ -136,8 +134,8 @@
             <label class="inline-flex items-center gap-1.5"><span class="text-[var(--ui-fg-muted)]">Tampil</span><select x-model.number="perPage" @change="page=1" class="h-8 rounded border border-[var(--ui-line-strong)] px-2 py-0 text-xs"><option :value="10">10</option><option :value="25">25</option><option :value="50">50</option><option :value="100">100</option></select></label>
         </div>
         <div class="flex items-center justify-between gap-3 sm:justify-end">
-            <span class="text-[var(--ui-fg-muted)]"><span x-text="rangeStart()"></span>–<span x-text="rangeEnd()"></span> dari <span x-text="matchingIndexes().length"></span></span>
-            <div class="inline-flex items-center gap-1"><button type="button" @click="page=Math.max(1,page-1)" :disabled="page<=1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">‹</button><span class="min-w-12 text-center font-mono"><span x-text="page"></span>/<span x-text="pageCount()"></span></span><button type="button" @click="page=Math.min(pageCount(),page+1)" :disabled="page>=pageCount()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">›</button></div>
+            <span class="text-[var(--ui-fg-muted)]"><span x-text="rangeStart()"></span>â€“<span x-text="rangeEnd()"></span> dari <span x-text="matchingIndexes().length"></span></span>
+            <div class="inline-flex items-center gap-1"><button type="button" @click="page=Math.max(1,page-1)" :disabled="page<=1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€¹</button><span class="min-w-12 text-center font-mono"><span x-text="page"></span>/<span x-text="pageCount()"></span></span><button type="button" @click="page=Math.min(pageCount(),page+1)" :disabled="page>=pageCount()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€º</button></div>
         </div>
     </div>
 </fieldset>

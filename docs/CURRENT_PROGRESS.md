@@ -1,10 +1,45 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-20**
+Terakhir diperbarui: **2026-09-21**
 
 Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:
+
+### SPJ route compatibility repair checkpoint — 2026-09-21
+
+Perbaikan kompatibilitas route untuk paket fresh pada tab Paket, Laporan, dan
+Monitoring sudah diterapkan. Link Monitoring sekarang mempertahankan
+`fresh_package_id`, termasuk untuk paket fresh yang dibatalkan, sehingga tidak
+lagi mengarahkan operator ke URL paket legacy atau checklist legacy.
+
+Evidence lokal yang benar-benar dijalankan:
+
+- Blade cache: **PASS**.
+- `git diff --check`: **PASS**.
+- Test terarah tab SPJ, laporan, monitoring, dan workflow transaksi:
+  **97 assertions PASS**.
+- Test authority/resolver ARKAS dan hardening database sekolah:
+  **59 assertions PASS**.
+- Kontrak UI penomoran diselaraskan dengan perubahan pengguna: test tidak lagi
+  mewajibkan `$effectiveNumberingBlocked` atau selector `spj.v2_read_path` pada
+  Blade, tetapi tetap mengunci validasi server, route penomoran, dan batch
+  atomic pada use case. Test UI penomoran: **25 assertions PASS**.
+- Rerun gabungan regression SPJ/ARKAS/database terkait: **165 assertions PASS**;
+  `npm run build`: **PASS**; Blade cache: **PASS**; `git diff --check`:
+  **PASS**.
+- Smoke HTTP terminal tanpa browser pada server lokal: `/masuk` **200**;
+  route authenticated `/spj/*`, `/penganggaran-rkas`, dan `/referensi-arkas`
+  **302 ke `/masuk`**, bukan 500. `/setup` mengembalikan **404** sesuai guard
+  setup yang sudah selesai.
+
+Status checkpoint ini tetap **RVR** untuk HTTP/browser karena server lokal
+belum diuji dengan sesi operator aktif dan browser visual. Error
+`Collection::load` pada log terakhir berasal dari request sebelum perbaikan
+eager-loading dan tidak muncul pada smoke HTTP setelah source diperbaiki.
+Pembuatan ulang database dummy melalui Tinker belum mendapat evidence runtime
+karena PsySH gagal menulis history pada environment ini; tidak ada klaim bahwa
+file dummy sudah berhasil dibuat.
 
 ### Reference catalog search checkpoint — 2026-09-21
 
@@ -552,7 +587,7 @@ Livewire Phase 2 hanya menambah role enforcement dan tidak memindahkan scope log
 
 ---
 
-## P0-08 — Generic ARKAS Importer
+## P0-08 — Explicit ARKAS raw mirror
 
 Raw mirror generik mulai diimplementasikan pada branch `arkas-raw-mirror`:
 
@@ -587,6 +622,8 @@ pembentukan paket fresh sudah tersedia untuk tenant yang telah diproyeksikan.
 Migrasi overlay operator reusable kini tersedia melalui `spj:migrate-overlay`.
 Perintah memiliki mode dry-run, membuat backup tenant sebelum execute, menyimpan
 report unmatched/ambiguous, dan tidak menulis database ARKAS/raw mirror.
+Migrasi hanya mengisi field overlay fresh yang masih kosong dan mempertahankan
+isian operator yang sudah ada; kandidat ambiguous/unmatched tidak dipaksa masuk.
 
 Audit read-only terhadap database ARKAS asli dan APP-SPJ lama mengonfirmasi kontrak:
 2025 Reguler memiliki 104 transaksi dari 268 item BELANJA, 2025 fund 12 memiliki

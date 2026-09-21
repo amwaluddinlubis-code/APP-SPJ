@@ -39,7 +39,7 @@ class SpjMonitoringList extends Component
 
     public function render(): View
     {
-        [, $summary] = app(SpjReportUseCase::class)->reportData($this->mode, $this->periode, 15, $this->pendingPerPage);
+        [, $summary] = app(SpjReportUseCase::class)->reportData($this->mode, $this->periode, 15, $this->pendingPerPage, 1, $this->getPage('pending_page'));
 
         return view('livewire.spj-monitoring-list', [
             'pendingPaginator' => $summary['pending_transactions'],

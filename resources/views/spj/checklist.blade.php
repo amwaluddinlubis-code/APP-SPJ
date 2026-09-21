@@ -2,8 +2,7 @@
     @php
         $transaction = $package->transaction;
         $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
-        $transactionIdentifier = $isEffectiveContextMutation ? ($transaction->source_key ?: $transaction->id) : $transaction->id;
-        $transactionUrl = route('transactions.show', $transactionIdentifier);
+        $transactionUrl = route('transactions.show', $transaction->id);
         $failedChecks = $checklist->where('passed', false)->values();
         $blockingRequirements = $documentRequirements->filter(fn ($item) => $item['applicable'] && $item['required'] && ! $item['available'])->values();
         $blockingCount = $failedChecks->count() + $blockingRequirements->count();
@@ -25,23 +24,12 @@
     @endphp
     <div class="spj-semantic-workspace space-y-6">
         <x-page-header
-            :title="'Checklist — '.($transaction->no_bukti ?: 'Tanpa nomor bukti')"
-            :subtitle="($transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia').' · Rp '.number_format((float) $transaction->gross_amount, 0, ',', '.')"
+            :title="'Checklist â€” '.($transaction->no_bukti ?: 'Tanpa nomor bukti')"
+            :subtitle="($transaction->payment_description ?: $transaction->description ?: 'Uraian belum tersedia').' Â· Rp '.number_format((float) $transaction->gross_amount, 0, ',', '.')"
             kicker="Checklist Paket SPJ"
         >
             <x-slot:actions>
-                <div class="flex flex-wrap items-center gap-2">
-                    @if($isEffectiveContextMutation)
-                        <x-ui.status-badge status="READY" label="Effective context" size="xs" />
-                    @endif
-                    <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
-                    @if($canMarkReady)
-                        <form method="POST" action="{{ route('spj.ready', $package->id) }}">
-                            @csrf
-                            <x-ui.button type="submit">Tandai siap diproses</x-ui.button>
-                        </form>
-                    @endif
-                </div>
+                <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
@@ -54,7 +42,7 @@
 
         @if($blockingCount > 0)
             <section class="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
-                <p class="font-bold">Belum siap diberi nomor — {{ $blockingCount }} hal perlu dilengkapi.</p>
+                <p class="font-bold">Belum siap diberi nomor â€” {{ $blockingCount }} hal perlu dilengkapi.</p>
                 <p class="mt-0.5">Kerjakan berurutan dari nomor 1. Setiap baris menunjukkan di mana memperbaikinya (Paket atau Transaksi).</p>
             </section>
 
@@ -72,7 +60,7 @@
                                     <p class="mt-0.5 text-sm leading-6 text-amber-800">{{ $check['message'] }}</p>
                                 </div>
                             </div>
-                            <x-ui.button variant="secondary" :href="$check['url']" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                            <x-ui.button variant="secondary" :href="$check['url']" class="shrink-0 text-xs">Perbaiki â†’</x-ui.button>
                         </li>
                     @endforeach
                     @foreach($blockingRequirements as $index => $item)
@@ -83,19 +71,19 @@
                                 <div class="min-w-0">
                                     <p class="font-bold text-[var(--ui-fg-strong)]">{{ $item['label'] }} <x-ui.badge variant="neutral">{{ $item['key'] === 'transaction_details' ? 'Transaksi' : 'Paket' }}</x-ui.badge></p>
                                     <p class="mt-0.5 text-sm leading-6 text-amber-800">{{ $item['message'] }}</p>
-                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }} · {{ $item['source'] }}</p>
+                                    <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }} Â· {{ $item['source'] }}</p>
                                 </div>
                             </div>
-                            <x-ui.button variant="secondary" :href="$fixUrl" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                            <x-ui.button variant="secondary" :href="$fixUrl" class="shrink-0 text-xs">Perbaiki â†’</x-ui.button>
                         </li>
                     @endforeach
                 </ol>
             </section>
         @else
             <section class="rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">
-                <p class="font-bold">Semua kebutuhan wajib lengkap — paket siap dilanjutkan.</p>
+                <p class="font-bold">Semua kebutuhan wajib lengkap â€” paket siap dilanjutkan.</p>
                 @if($canMarkReady)
-                    <p class="mt-0.5">Gunakan tombol “Tandai siap diproses” di atas untuk melanjutkan ke penomoran.</p>
+                    <p class="mt-0.5">Gunakan tombol â€œTandai siap diprosesâ€ di atas untuk melanjutkan ke penomoran.</p>
                 @elseif($package->status !== 'DRAFT')
                     <p class="mt-2"><x-ui.status-badge :status="$package->status" /></p>
                 @elseif(!$canEdit)
@@ -105,20 +93,20 @@
         @endif
 
         <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Sudah lengkap ({{ $doneCount }}) — klik untuk melihat</summary>
+            <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Sudah lengkap ({{ $doneCount }}) â€” klik untuk melihat</summary>
             <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
                 @foreach($passedChecks as $check)
-                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">✓</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $check['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $check['group'] }}</span></li>
+                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">âœ“</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $check['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $check['group'] }}</span></li>
                 @endforeach
                 @foreach($readyRequirements as $item)
-                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">✓</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }}</span></li>
+                    <li class="flex items-center gap-2.5 px-5 py-2 text-sm"><span class="font-black text-emerald-600">âœ“</span><span class="font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</span><span class="text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }}</span></li>
                 @endforeach
             </ul>
         </details>
 
         @if($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty())
             <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-                <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-muted)]">Opsional / tidak berlaku ({{ $optionalMissing->count() + $notApplicable->count() }}) — tidak memblokir</summary>
+                <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-muted)]">Opsional / tidak berlaku ({{ $optionalMissing->count() + $notApplicable->count() }}) â€” tidak memblokir</summary>
                 <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
                     @foreach($optionalMissing as $item)
                         <li class="px-5 py-2 text-sm"><span class="font-semibold text-[var(--ui-fg-muted)]">{{ $item['label'] }}</span> <x-ui.badge variant="neutral">Opsional</x-ui.badge><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['message'] }}</p></li>

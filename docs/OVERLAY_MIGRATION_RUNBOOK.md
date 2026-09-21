@@ -16,6 +16,11 @@ Perintah pertama hanya dry-run. Perintah kedua membuat backup tenant sebelum
 menulis. Hasil pemetaan dan jumlah unmatched/ambiguous disimpan di
 `storage/app/overlay-migration-reports/{npsn}`.
 
+Migrasi bersifat additive pada overlay fresh. Kolom operator yang sudah terisi
+di target tidak ditimpa; hanya nilai target yang kosong yang diisi dari ekspor
+lama. Fakta ARKAS/BKU tidak ikut ditulis. Kandidat ambiguous dan unmatched
+tetap berada di report untuk rekonsiliasi manual dan tidak dipaksa masuk.
+
 ## Aturan pencocokan
 
 Prioritas identity adalah `id_kas_umum`, `source_key`, `no_bukti + tanggal`,
@@ -34,3 +39,8 @@ baris tidak cocok, dan 0 ambiguous. Backup dibuat sebelum penulisan di tenant
 Database sumber lama dan file ekspor tidak diubah. Untuk dua sekolah berikutnya,
 ulang dry-run dengan `--school-id` dan file ekspor sekolah masing-masing; jangan
 menyalin database tenant sekolah lain.
+
+Eksekusi setelah reset database pada 2026-09-20 menghasilkan 198 transaksi
+deterministik, 493 item, dan 67 paket; 87 transaksi unmatched dan 44 ambiguous
+ditahan. Sebanyak 682 field overlay kosong diisi tanpa menimpa field target yang
+sudah terisi. Backup tenant dan report eksekusi tersimpan sebelum hasil selesai.

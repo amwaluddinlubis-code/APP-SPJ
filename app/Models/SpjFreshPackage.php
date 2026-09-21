@@ -28,6 +28,11 @@ class SpjFreshPackage extends Model
         return $this->hasMany(SpjFreshDocument::class, 'spj_fresh_package_id');
     }
 
+    public function isEditable(): bool
+    {
+        return in_array($this->status, ['DRAFT', 'READY'], true);
+    }
+
     protected function casts(): array
     {
         return [

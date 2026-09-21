@@ -62,7 +62,7 @@ class SpjPreparationFilter extends Component
 
     public function render(): View
     {
-        $data = app(SpjWorkspaceUseCase::class)->preparationData($this->filters(), $this->resolvedPerPage());
+        $data = app(SpjWorkspaceUseCase::class)->preparationData($this->filters(), $this->resolvedPerPage(), $this->getPage());
 
         return view('livewire.spj-preparation-filter', [
             'transactions' => $data['transactions'],

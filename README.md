@@ -1,8 +1,8 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `arkas-raw-mirror`.
 
-Terakhir diverifikasi terhadap kode: **2026-09-14**.
+Terakhir diverifikasi terhadap kode: **2026-09-21**.
 
 ## Status branch saat ini
 
@@ -183,7 +183,7 @@ Login
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen
 - `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan boundary tenant (detail)
 - `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` — kontrak numbering/registry/cancel/rollback
-- `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer
+- `docs/ARKAS_IMPORTER.md` — catatan historis Generic ARKAS Importer (runtime aktif memakai explicit raw mirror)
 - `docs/SYNCHRONIZATION.md` — sinkronisasi, reconciliation, identity
 - `docs/GUI_STANDARDIZATION.md` + `docs/CSS_USAGE_GUIDE.md` — kontrak GUI/theme
 - `AGENTS.md` — aturan kerja agen AI di repositori ini

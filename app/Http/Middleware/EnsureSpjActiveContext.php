@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\SpjDocument;
+use App\Models\SpjFreshPackage;
 use App\Models\SpjFreshTransaction;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
@@ -44,15 +45,26 @@ class EnsureSpjActiveContext
 
         $packageId = $request->route('packageId');
         if ($packageId !== null) {
-            abort_unless(
-                SpjPackage::query()
-                    ->whereKey($packageId)
-                    ->whereHas('transaction', fn (Builder $transaction): Builder => $transaction
-                        ->where('fiscal_year_id', $yearId)
-                        ->where('fund_source_id', $fundSourceId))
-                    ->exists(),
-                404
-            );
+            $legacyPackageExists = SpjPackage::query()
+                ->whereKey($packageId)
+                ->whereHas('transaction', fn (Builder $transaction): Builder => $transaction
+                    ->where('fiscal_year_id', $yearId)
+                    ->where('fund_source_id', $fundSourceId))
+                ->exists();
+            $freshPackageExists = SpjFreshPackage::query()
+                ->whereKey($packageId)
+                ->whereHas('transaction', fn (Builder $transaction): Builder => $transaction
+                    ->where('fiscal_year_id', $yearId)
+                    ->where('fund_source_id', $fundSourceId))
+                ->exists();
+            $freshTransactionExists = SpjFreshTransaction::query()
+                ->whereKey($packageId)
+                ->where('fiscal_year_id', $yearId)
+                ->where('fund_source_id', $fundSourceId)
+                ->whereHas('spjPackage')
+                ->exists();
+
+            abort_unless($legacyPackageExists || $freshPackageExists || $freshTransactionExists, 404);
         }
 
         $documentId = $request->route('documentId');

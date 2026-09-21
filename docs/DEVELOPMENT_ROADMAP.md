@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-20**
+Terakhir diperbarui: **2026-09-21**
 
 Roadmap ini memuat urutan pekerjaan aktif pada branch `arkas-raw-mirror`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
@@ -307,7 +307,7 @@ test tambahan aktif tanpa bug/boundary baru.
 
 ---
 
-## P0-08 — Generic ARKAS Importer
+## P0-08 — Explicit ARKAS raw mirror
 
 **Status: MULTI-YEAR CATCH-UP IMPLEMENTED / REAL-DATA CONTRACT VERIFIED / OVERLAY-PACKAGE CONTINUITY REGRESSION PASS / SAFE-SYNC ATOMICITY NEXT.**
 

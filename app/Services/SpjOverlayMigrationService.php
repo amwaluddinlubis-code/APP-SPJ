@@ -12,7 +12,7 @@ use RuntimeException;
 final class SpjOverlayMigrationService
 {
     /**
-     * @return array{mode:string,matched:int,unmatched:int,ambiguous:int,items:int,packages:int,backup:?string,report:string}
+     * @return array{mode:string,matched:int,unmatched:int,ambiguous:int,items:int,packages:int,fields_migrated:int,fields_preserved:int,backup:?string,report:string}
      */
     public function migrate(School $school, string $sourceSql, bool $execute = false): array
     {
@@ -37,6 +37,8 @@ final class SpjOverlayMigrationService
             'ambiguous' => 0,
             'items' => 0,
             'packages' => 0,
+            'fields_migrated' => 0,
+            'fields_preserved' => 0,
             'backup' => null,
         ];
 
@@ -74,8 +76,8 @@ final class SpjOverlayMigrationService
                 }
                 $summary['matched']++;
                 $old = $match['transaction'];
-                $updates[] = [$transaction->id, $old];
-                foreach ($oldItems[(int) $old['id'] ?? 0] ?? [] as $item) {
+                $updates[] = [$transaction, $old];
+                foreach ($oldItems[(int) ($old['id'] ?? 0)] ?? [] as $item) {
                     $itemUpdates[] = [$transaction->id, $item];
                 }
                 if (isset($oldPackages[(int) $old['id']])) {
@@ -89,17 +91,28 @@ final class SpjOverlayMigrationService
                 $backup = $targetPath.'.before-overlay-migration-'.now()->format('Ymd_His').'.sqlite';
                 File::copy($targetPath, $backup);
                 $summary['backup'] = $backup;
-                $db->transaction(function () use ($db, $updates, $itemUpdates, $packageUpdates): void {
-                    foreach ($updates as [$id, $old]) {
-                        $db->table('spj_fresh_transactions')->where('id', $id)->update([
-                            'spj_category' => $old['spj_category'],
-                            'payment_description' => $old['payment_description'],
-                            'payment_method' => $old['payment_method'],
-                            'payment_reference' => $old['payment_reference'],
-                            'receipt_recipient_name' => $old['receipt_recipient_name'],
-                            'requires_reconciliation' => $old['requires_reconciliation'],
-                            'updated_at' => now(),
-                        ]);
+                $db->transaction(function () use ($db, $updates, $itemUpdates, $packageUpdates, &$summary): void {
+                    foreach ($updates as [$transaction, $old]) {
+                        $attributes = [];
+                        foreach ([
+                            'spj_category', 'payment_description', 'payment_method',
+                            'payment_reference', 'receipt_recipient_name',
+                        ] as $field) {
+                            $oldValue = $old[$field] ?? null;
+                            if (blank($transaction->{$field}) && filled($oldValue)) {
+                                $attributes[$field] = $oldValue;
+                                $summary['fields_migrated']++;
+                            } elseif (filled($transaction->{$field}) && filled($oldValue)) {
+                                $summary['fields_preserved']++;
+                            }
+                        }
+                        if ((bool) ($old['requires_reconciliation'] ?? false) && ! $transaction->requires_reconciliation) {
+                            $attributes['requires_reconciliation'] = true;
+                            $summary['fields_migrated']++;
+                        }
+                        if ($attributes !== []) {
+                            $db->table('spj_fresh_transactions')->where('id', $transaction->id)->update($attributes + ['updated_at' => now()]);
+                        }
                     }
                     foreach ($itemUpdates as [$transactionId, $item]) {
                         $targetItem = $db->table('spj_fresh_transaction_items')
@@ -111,27 +124,55 @@ final class SpjOverlayMigrationService
                                 ->orderBy('sort_order')
                                 ->first();
                         if ($targetItem !== null) {
-                            $db->table('spj_fresh_transaction_items')->where('id', $targetItem->id)->update([
-                                'item_description' => $item['item_description'],
-                                'updated_at' => now(),
-                            ]);
+                            if (blank($targetItem->item_description) && filled($item['item_description'] ?? null)) {
+                                $db->table('spj_fresh_transaction_items')->where('id', $targetItem->id)->update([
+                                    'item_description' => $item['item_description'],
+                                    'updated_at' => now(),
+                                ]);
+                                $summary['fields_migrated']++;
+                            } elseif (filled($targetItem->item_description) && filled($item['item_description'] ?? null)) {
+                                $summary['fields_preserved']++;
+                            }
                         }
                     }
                     foreach ($packageUpdates as [$transactionId, $package]) {
-                        $attributes = [
-                            'quarter_code' => $package['quarter_code'], 'semester_code' => $package['semester_code'],
-                            'phase_code' => $package['phase_code'], 'status' => $package['status'],
-                            'document_number' => $package['document_number'], 'numbered_at' => $package['numbered_at'],
-                            'generated_at' => $package['generated_at'], 'finalized_at' => $package['finalized_at'],
-                            'finalized_by' => $package['finalized_by'], 'cancelled_at' => $package['cancelled_at'],
-                            'cancelled_by' => $package['cancelled_by'], 'cancellation_reason' => $package['cancellation_reason'],
-                            'snapshot' => $package['snapshot'], 'updated_at' => now(),
-                        ];
                         $existing = $db->table('spj_fresh_packages')->where('spj_fresh_transaction_id', $transactionId)->first();
                         if ($existing) {
-                            $db->table('spj_fresh_packages')->where('id', $existing->id)->update($attributes);
+                            $attributes = [];
+                            foreach ([
+                                'quarter_code', 'semester_code', 'phase_code', 'document_number',
+                                'numbered_at', 'generated_at', 'finalized_at', 'finalized_by',
+                                'cancelled_at', 'cancelled_by', 'cancellation_reason', 'snapshot',
+                            ] as $field) {
+                                if (blank($existing->{$field}) && filled($package[$field] ?? null)) {
+                                    $attributes[$field] = $package[$field];
+                                }
+                            }
+                            if (($existing->status ?? 'DRAFT') === 'DRAFT' && ($package['status'] ?? 'DRAFT') !== 'DRAFT') {
+                                $attributes['status'] = $package['status'];
+                            }
+                            if ($attributes !== []) {
+                                $db->table('spj_fresh_packages')->where('id', $existing->id)->update($attributes + ['updated_at' => now()]);
+                            }
                         } else {
-                            $db->table('spj_fresh_packages')->insert($attributes + ['spj_fresh_transaction_id' => $transactionId, 'created_at' => now()]);
+                            $db->table('spj_fresh_packages')->insert([
+                                'quarter_code' => $package['quarter_code'] ?? null,
+                                'semester_code' => $package['semester_code'] ?? null,
+                                'phase_code' => $package['phase_code'] ?? null,
+                                'status' => $package['status'] ?? 'DRAFT',
+                                'document_number' => $package['document_number'] ?? null,
+                                'numbered_at' => $package['numbered_at'] ?? null,
+                                'generated_at' => $package['generated_at'] ?? null,
+                                'finalized_at' => $package['finalized_at'] ?? null,
+                                'finalized_by' => $package['finalized_by'] ?? null,
+                                'cancelled_at' => $package['cancelled_at'] ?? null,
+                                'cancelled_by' => $package['cancelled_by'] ?? null,
+                                'cancellation_reason' => $package['cancellation_reason'] ?? null,
+                                'snapshot' => $package['snapshot'] ?? null,
+                                'spj_fresh_transaction_id' => $transactionId,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
                         }
                     }
                 });
