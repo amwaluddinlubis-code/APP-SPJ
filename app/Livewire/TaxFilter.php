@@ -22,6 +22,12 @@ class TaxFilter extends Component
     #[Url(except: null)]
     public ?int $periode = null;
 
+    #[Url(except: '')]
+    public string $jenisPajak = '';
+
+    #[Url(except: '')]
+    public string $siplah = '';
+
     #[Url(except: 15)]
     public int|string $perPage = 15;
 
@@ -31,12 +37,14 @@ class TaxFilter extends Component
         [$mode, $periode] = SpjReportUseCase::resolveModePeriode(request()->all());
         $this->mode = in_array($mode, $this->allowedModes(), true) ? $mode : 'semua';
         $this->periode = $periode;
+        $this->jenisPajak = $this->normalizeJenisPajak(request('jenis_pajak', request('jenisPajak', '')));
+        $this->siplah = $this->normalizeSiplah(request('siplah', ''));
         $this->perPage = $this->normalizePerPage(request('perPage', 15));
     }
 
     public function updating($property): void
     {
-        if (in_array($property, ['q', 'mode', 'periode', 'perPage'], true)) {
+        if (in_array($property, ['q', 'mode', 'periode', 'jenisPajak', 'siplah', 'perPage'], true)) {
             $this->resetPage();
         }
     }
@@ -54,7 +62,7 @@ class TaxFilter extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['q', 'mode', 'periode', 'perPage']);
+        $this->reset(['q', 'mode', 'periode', 'jenisPajak', 'siplah', 'perPage']);
         $this->resetPage();
     }
 
@@ -65,7 +73,9 @@ class TaxFilter extends Component
             $this->mode === 'bulan' ? $this->periode : null,
             $this->mode === 'triwulan' ? $this->periode : null,
             $this->mode === 'semester' ? $this->periode : null,
-            $this->resolvedPerPage()
+            $this->resolvedPerPage(),
+            $this->jenisPajak ?: null,
+            $this->siplah ?: null,
         );
 
         return view('livewire.tax-filter', [
@@ -93,6 +103,30 @@ class TaxFilter extends Component
         ];
     }
 
+    /** @return list<array{0: string, 1: string}> */
+    public function taxTypes(): array
+    {
+        return [
+            ['', 'Semua jenis pajak'],
+            ['ppn', 'PPN'],
+            ['pph21', 'PPh 21'],
+            ['pph22', 'PPh 22'],
+            ['pph23', 'PPh 23'],
+            ['pph4', 'PPh 4(2)'],
+            ['sspd', 'SSPD / Pajak Daerah'],
+        ];
+    }
+
+    /** @return list<array{0: string, 1: string}> */
+    public function siplahOptions(): array
+    {
+        return [
+            ['', 'Semua transaksi'],
+            ['siplah', 'Siplah'],
+            ['non_siplah', 'Bukan Siplah'],
+        ];
+    }
+
     private function resolvedPerPage(): int
     {
         $perPage = $this->perPage === 'all' ? 10000 : (int) $this->perPage;
@@ -109,5 +143,19 @@ class TaxFilter extends Component
         $perPage = (int) $raw;
 
         return in_array($perPage, [15, 25, 50, 100], true) ? $perPage : 15;
+    }
+
+    private function normalizeJenisPajak(mixed $raw): string
+    {
+        $value = strtolower(trim((string) $raw));
+
+        return in_array($value, ['ppn', 'pph21', 'pph22', 'pph23', 'pph4', 'sspd'], true) ? $value : '';
+    }
+
+    private function normalizeSiplah(mixed $raw): string
+    {
+        $value = strtolower(trim((string) $raw));
+
+        return in_array($value, ['siplah', 'non_siplah'], true) ? $value : '';
     }
 }

@@ -138,6 +138,34 @@ class SpjFreshTransaction extends Model
         return $this->receipt_recipient_name ?: $this->recipient_name;
     }
 
+    public function getIsSiplahAttribute(): bool
+    {
+        $notaSourceKeys = $this->sourceItems()
+            ->map(function (SpjFreshTransactionItem $item): ?string {
+                $payload = $item->rawMirrorRow?->payload ?? [];
+                $sourceKey = trim((string) ($payload['id_kas_nota'] ?? ''));
+
+                return $sourceKey === '' ? null : $sourceKey;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        if ($notaSourceKeys === []) {
+            return false;
+        }
+
+        return DB::connection('school')
+            ->table('arkas_raw_mirror_rows as nota_raw')
+            ->join('arkas_raw_mirror_tables as nota_table', 'nota_table.id', '=', 'nota_raw.mirror_table_id')
+            ->where('nota_table.source_id', $this->source_id)
+            ->where('nota_table.source_table', 'kas_umum_nota')
+            ->where('nota_table.status', 'ACTIVE')
+            ->whereRaw("json_extract(nota_raw.payload, '$.id_kas_nota') IN (".implode(',', array_fill(0, count($notaSourceKeys), '?')).')', $notaSourceKeys)
+            ->whereRaw("CAST(COALESCE(json_extract(nota_raw.payload, '$.is_beli_di_siplah'), 0) AS INTEGER) = 1")
+            ->exists();
+    }
+
     private function rkasValue(string $column): ?string
     {
         $periodSourceKey = $this->sourceValue(['id_rapbs_periode'])
@@ -190,12 +218,26 @@ class SpjFreshTransaction extends Model
 
     public function getTaxTotalAttribute(): float
     {
+        return array_sum($this->tax_breakdown);
+    }
+
+    /** @return array{ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float} */
+    public function getTaxBreakdownAttribute(): array
+    {
+        $breakdown = [
+            'ppn' => 0.0,
+            'pph21' => 0.0,
+            'pph22' => 0.0,
+            'pph23' => 0.0,
+            'pph4' => 0.0,
+            'sspd' => 0.0,
+        ];
         $parentIds = $this->sourceItemIds();
         if ($parentIds === [] || blank($this->source_id)) {
-            return 0.0;
+            return $breakdown;
         }
 
-        return (float) DB::connection('school')
+        $rows = DB::connection('school')
             ->table('arkas_raw_mirror_rows as tax_raw')
             ->join('arkas_raw_mirror_tables as tax_table', 'tax_table.id', '=', 'tax_raw.mirror_table_id')
             ->where('tax_table.source_id', $this->source_id)
@@ -203,9 +245,24 @@ class SpjFreshTransaction extends Model
             ->where('tax_table.status', 'ACTIVE')
             ->whereRaw("COALESCE(json_extract(tax_raw.payload, '$.soft_delete'), '0') != '1'")
             ->whereRaw("CAST(COALESCE(json_extract(tax_raw.payload, '$.id_ref_bku'), 0) AS INTEGER) IN (10, 30)")
-            ->whereRaw("(CAST(COALESCE(json_extract(tax_raw.payload, '$.is_ppn'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_21'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_22'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_23'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_pph_4'), 0) AS INTEGER) = 1 OR CAST(COALESCE(json_extract(tax_raw.payload, '$.is_sspd'), 0) AS INTEGER) = 1)")
-            ->whereIn(DB::raw("json_extract(tax_raw.payload, '$.parent_id_kas_umum')"), $parentIds)
-            ->sum(DB::raw("CAST(COALESCE(json_extract(tax_raw.payload, '$.saldo'), 0) AS REAL)"));
+            ->whereRaw("json_extract(tax_raw.payload, '$.parent_id_kas_umum') IN (".implode(',', array_fill(0, count($parentIds), '?')).')', $parentIds)
+            ->get(['tax_raw.payload']);
+
+        foreach ($rows as $row) {
+            $payload = json_decode((string) $row->payload, true);
+            if (! is_array($payload)) {
+                continue;
+            }
+
+            $field = $this->taxField($payload);
+            if ($field === null) {
+                continue;
+            }
+
+            $breakdown[$field] += (float) ($payload['saldo'] ?? $payload['jumlah'] ?? $payload['nilai'] ?? $payload['nominal'] ?? 0);
+        }
+
+        return $breakdown;
     }
 
     public function getNetAmountAttribute(): float
@@ -226,6 +283,27 @@ class SpjFreshTransaction extends Model
             ->unique()
             ->values()
             ->all();
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function taxField(array $payload): ?string
+    {
+        foreach ([
+            'ppn' => ['is_ppn'],
+            'pph21' => ['is_pph_21', 'is_pph21'],
+            'pph22' => ['is_pph_22', 'is_pph22'],
+            'pph23' => ['is_pph_23', 'is_pph23'],
+            'pph4' => ['is_pph_4', 'is_pph4'],
+            'sspd' => ['is_sspd'],
+        ] as $field => $keys) {
+            foreach ($keys as $key) {
+                if ((int) ($payload[$key] ?? 0) === 1) {
+                    return $field;
+                }
+            }
+        }
+
+        return null;
     }
 
     /** @return EloquentCollection<int, SpjFreshTransactionItem> */

@@ -67,6 +67,20 @@ class TaxFilterLivewireTest extends TestCase
             ->assertSee('BKU-PJK-002');
     }
 
+    public function test_tax_type_and_siplah_filters_narrow_the_table(): void
+    {
+        $this->seedTaxes();
+
+        Livewire::test(TaxFilter::class)
+            ->set('jenisPajak', 'ppn')
+            ->set('siplah', 'siplah')
+            ->assertSee('BKU-PJK-002')
+            ->assertDontSee('BKU-PJK-001')
+            ->set('siplah', 'non_siplah')
+            ->assertSee('BKU-PJK-001')
+            ->assertDontSee('BKU-PJK-002');
+    }
+
     public function test_taxes_page_renders_header_and_livewire_component(): void
     {
         $this->seedTaxes();
@@ -107,7 +121,10 @@ class TaxFilterLivewireTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/tax-filter.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto]', $blade);
+        $this->assertStringContainsString('lg:grid-cols-[auto_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(0,1fr)_auto]', $blade);
+        $this->assertStringContainsString('tax-filter-jenis-pajak', $blade);
+        $this->assertStringContainsString('tax-filter-siplah', $blade);
+        $this->assertStringContainsString('>Siplah</th>', $blade);
         $this->assertStringNotContainsString('ui-filter-grid', $blade);
     }
 
@@ -182,6 +199,7 @@ class TaxFilterLivewireTest extends TestCase
             $table->decimal('pph23', 18, 2)->default(0);
             $table->decimal('pph4', 18, 2)->default(0);
             $table->decimal('sspd', 18, 2)->default(0);
+            $table->boolean('is_siplah')->default(false);
             $table->string('status')->nullable();
             $table->string('spj_category')->nullable();
             $table->timestamps();
@@ -214,6 +232,7 @@ class TaxFilterLivewireTest extends TestCase
                 'tax_total' => $tax,
                 'net_amount' => 100000 - $tax,
                 'ppn' => $tax,
+                'is_siplah' => $noBukti === 'BKU-PJK-002',
                 'status' => 'DITETAPKAN',
             ]);
         }

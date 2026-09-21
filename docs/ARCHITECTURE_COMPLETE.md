@@ -640,9 +640,13 @@ Pajak uses a dedicated fail-closed read boundary. `SpjV2TaxReadContextService`
 collapses many-to-one provenance to one deterministic legacy representative per
 canonical transaction, requires source-key and visible tax facts to match
 canonical raw data, and only then allows `TaxFilterService` to scope legacy
-models by effective-context IDs. V2 tax rows navigate to Detail Transaksi by
-source key so stale legacy IDs do not cross the active context boundary; the
-fresh detail model remains read-only unless an authoritative legacy overlay exists.
+models by effective-context IDs. If the legacy projection is empty while the
+fresh projection is already available, `TaxFilterService` reads
+`SpjFreshTransaction` and derives the tax breakdown from the same PBT raw rows;
+this read-only fallback prevents an empty Pajak page during projection
+transition. V2/fresh tax rows navigate to Detail Transaksi by source key so
+stale legacy IDs do not cross the active context boundary; the fresh detail
+model remains read-only unless an authoritative legacy overlay exists.
 
 Monitoring is deliberately excluded from the current read-only V2 cutover even
 though its pending queue is display-oriented. The tab shares one operator surface

@@ -939,6 +939,22 @@ menjadi compatibility/action-boundary regression. Focused runtime gate Step 10 P
 33 deprecations**; Pint PASS dan `git diff --check` bersih. D4 step 10 sekarang
 **RUNTIME PASS**.
 
+Follow-up compatibility fix 2026-09-21: pada tenant yang sudah memiliki raw
+mirror dan `spj_fresh_*` tetapi tabel legacy `transactions` belum terproyeksi,
+halaman Pajak tidak lagi kosong. `TaxFilterService` memakai fresh projection
+sebagai fallback read-only ketika jalur legacy tidak menghasilkan transaksi
+pajak; breakdown PPN/PPh/SSPD dihitung dari row PBT source `kas_umum` dan
+detail diarahkan melalui `source_key`. Regression khusus lulus **1 test / 7
+assertions**. Direct read-only check pada database lokal aktif menemukan **33
+transaksi pajak** dengan total **Rp7.677.946**. Browser/mobile verification
+belum dilakukan; tetap gunakan RVR untuk pemeriksaan operator pada URL aplikasi.
+
+Follow-up UI Pajak 2026-09-21: rekap kini menyediakan filter **Jenis Pajak**
+(PPN, PPh 21/22/23, PPh 4(2), dan SSPD/Pajak Daerah) serta filter **Siplah /
+Bukan Siplah**. Tabel juga menampilkan kolom Siplah. Filter memakai komponen
+pajak dan flag `is_siplah` dari read model aktif; verifikasi checkout server
+lulus **13 test / 70 assertions**.
+
 Audit consumer berikutnya menetapkan tab **Monitoring** tetap legacy-authoritative
 untuk saat ini. Walaupun antrean pending read-only secara visual, tab yang sama
 memuat Bulk Final, Penomoran Triwulan, Tutup/Buka Periode, dan row action menuju

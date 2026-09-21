@@ -209,6 +209,10 @@ Pada Paket SPJ:
 - operator tidak dapat mengubah source tax dari Paket;
 - request forged yang mencoba menulis ulang pajak harus diabaikan/ditolak oleh backend.
 
+Pada halaman rekap Pajak, operator dapat memfilter berdasarkan jenis pajak
+(PPN, PPh 21/22/23, PPh 4(2), atau SSPD/Pajak Daerah) dan membatasi transaksi
+Siplah atau Bukan Siplah. Tabel menampilkan status Siplah pada setiap transaksi.
+
 ---
 
 ## 8. Membuka Paket SPJ

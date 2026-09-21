@@ -649,6 +649,13 @@ Follow-up navigation is also guarded:
   description/reconciliation mutation remains unavailable there;
 - ordinary legacy tax rows keep the existing numeric/model navigation.
 
+Sebagai compatibility boundary untuk deployment yang sudah memiliki raw mirror
+dan `spj_fresh_*` tetapi belum membentuk projection legacy `transactions`,
+`TaxFilterService` juga membaca `SpjFreshTransaction` ketika query legacy pada
+konteks aktif tidak menghasilkan baris pajak. Breakdown PPN/PPh/SSPD tetap
+diturunkan dari row PBT source `kas_umum` yang sama, dan navigasi memakai
+`source_key`; jalur ini ditandai `read_path=fresh` dan tidak menulis data.
+
 Regression `V2DTaxReadContextCutoverTest` is staged to prove:
 
 - deterministic representative membership equals the tax table output;

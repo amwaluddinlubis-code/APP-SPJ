@@ -433,6 +433,12 @@ dan pajak statistik memakai accessor grouped transaction, sehingga satu bukti
 multi-item tetap dihitung sebagai satu transaksi dan row pajak/setoran tidak
 menambah transaction count.
 
+Halaman Pajak memakai boundary yang sama. Jika projection legacy `transactions`
+belum tersedia pada konteks aktif tetapi `spj_fresh_transactions` sudah ada,
+rekap Pajak membaca fresh projection secara read-only dan mengambil breakdown
+PPN/PPh/SSPD dari row PBT `kas_umum` pada source yang sama. Ini menjaga halaman
+tidak kosong selama transisi projection; data tetap tidak ditulis ulang.
+
 Kontrak utama:
 
 ```text

@@ -3,10 +3,14 @@
 namespace App\Services;
 
 use App\Models\FiscalYear;
+use App\Models\SpjFreshTransaction;
 use App\Models\Transaction;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class TaxFilterService
 {
@@ -21,9 +25,11 @@ class TaxFilterService
      *
      * @return array{summary: object, filteredSummary: object, transactions: LengthAwarePaginator, year: FiscalYear, read_path: string}
      */
-    public function taxData(string $search, ?int $month, ?int $quarter, ?int $semester, int $perPage): array
+    public function taxData(string $search, ?int $month, ?int $quarter, ?int $semester, int $perPage, ?string $taxType = null, ?string $siplah = null): array
     {
         $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());
+        $taxType = $this->normalizeTaxType($taxType);
+        $siplah = $this->normalizeSiplah($siplah);
         $membership = null;
         $fundSourceId = $this->context->fundSourceId();
         if ($fundSourceId !== null) {
@@ -43,6 +49,13 @@ class TaxFilterService
             ->where('tax_total', '>', 0);
         $readPath = $membership !== null ? 'v2' : 'legacy';
 
+        if ($baseQuery->count() === 0) {
+            $freshData = $this->freshTaxData($year, $search, $month, $quarter, $semester, $perPage, $taxType, $siplah);
+            if ($freshData !== null) {
+                return $freshData;
+            }
+        }
+
         $summary = (clone $baseQuery)->selectRaw(
             'COUNT(*) as count, COALESCE(SUM(ppn), 0) as ppn, COALESCE(SUM(pph21), 0) as pph21,
             COALESCE(SUM(pph22), 0) as pph22, COALESCE(SUM(pph23), 0) as pph23,
@@ -51,6 +64,8 @@ class TaxFilterService
         )->first();
 
         $query = (clone $baseQuery)
+            ->when($taxType !== null, fn ($query) => $query->where($taxType, '>', 0))
+            ->when($siplah !== null, fn ($query) => $query->where('is_siplah', $siplah === 'siplah'))
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('no_bukti', 'like', "%{$search}%")
@@ -82,5 +97,137 @@ class TaxFilterService
             'year' => $year,
             'read_path' => $readPath,
         ];
+    }
+
+    /**
+     * Read tax data from the fresh transaction projection when the legacy
+     * transaction projection has not been built for the active context.
+     *
+     * @return array{summary: object, filteredSummary: object, transactions: LengthAwarePaginator, year: FiscalYear, read_path: string}|null
+     */
+    private function freshTaxData(FiscalYear $year, string $search, ?int $month, ?int $quarter, ?int $semester, int $perPage, ?string $taxType, ?string $siplah): ?array
+    {
+        if (! Schema::connection('school')->hasTable('spj_fresh_transactions')) {
+            return null;
+        }
+
+        $transactions = SpjFreshTransaction::query()
+            ->with(['rawMirrorRow', 'items.rawMirrorRow'])
+            ->forSpjContext($this->context)
+            ->whereIn('source_status', ['ACTIVE', 'SOURCE_MISSING'])
+            ->get()
+            ->map(function (SpjFreshTransaction $transaction): SpjFreshTransaction {
+                $breakdown = $transaction->tax_breakdown;
+                foreach ($breakdown as $field => $amount) {
+                    $transaction->setAttribute($field, $amount);
+                }
+                $transaction->setAttribute('tax_total', array_sum($breakdown));
+                $transaction->setAttribute('is_siplah', $transaction->is_siplah);
+                $transaction->setAttribute('read_context_path', 'fresh');
+
+                return $transaction;
+            })
+            ->filter(fn (SpjFreshTransaction $transaction): bool => (float) $transaction->tax_total > 0)
+            ->values();
+
+        if ($transactions->isEmpty()) {
+            return null;
+        }
+
+        $filtered = $transactions
+            ->filter(fn (SpjFreshTransaction $transaction): bool => $this->matchesFreshFilters($transaction, $search, $month, $quarter, $semester, $year, $taxType, $siplah))
+            ->sort(function (SpjFreshTransaction $left, SpjFreshTransaction $right): int {
+                $leftDate = $left->transaction_date?->timestamp ?? PHP_INT_MIN;
+                $rightDate = $right->transaction_date?->timestamp ?? PHP_INT_MIN;
+
+                return $rightDate <=> $leftDate ?: ((int) $right->id <=> (int) $left->id);
+            })
+            ->values();
+
+        return [
+            'summary' => $this->summaryFor($transactions),
+            'filteredSummary' => $this->summaryFor($filtered),
+            'transactions' => $this->freshPaginator($filtered, $perPage),
+            'year' => $year,
+            'read_path' => 'fresh',
+        ];
+    }
+
+    private function matchesFreshFilters(SpjFreshTransaction $transaction, string $search, ?int $month, ?int $quarter, ?int $semester, FiscalYear $year, ?string $taxType, ?string $siplah): bool
+    {
+        if ($taxType !== null && (float) $transaction->{$taxType} <= 0) {
+            return false;
+        }
+        if ($siplah !== null && (bool) $transaction->is_siplah !== ($siplah === 'siplah')) {
+            return false;
+        }
+        if ($search !== '') {
+            $haystack = mb_strtolower(implode(' ', [
+                $transaction->no_bukti,
+                $transaction->description,
+                $transaction->effective_receipt_recipient_name,
+            ]));
+            if (! str_contains($haystack, mb_strtolower($search))) {
+                return false;
+            }
+        }
+
+        $date = $transaction->transaction_date;
+        if ($date === null) {
+            return ! ($month || $quarter || $semester);
+        }
+
+        if ($month !== null) {
+            return $date->year === $year->year && $date->month === $month;
+        }
+        if ($quarter !== null) {
+            return $date->year === $year->year && $date->quarter === $quarter;
+        }
+        if ($semester !== null) {
+            return $date->year === $year->year && (($semester === 1 && $date->month <= 6) || ($semester === 2 && $date->month >= 7));
+        }
+
+        return true;
+    }
+
+    private function normalizeTaxType(?string $taxType): ?string
+    {
+        $taxType = strtolower(trim((string) $taxType));
+
+        return in_array($taxType, ['ppn', 'pph21', 'pph22', 'pph23', 'pph4', 'sspd'], true) ? $taxType : null;
+    }
+
+    private function normalizeSiplah(?string $siplah): ?string
+    {
+        $siplah = strtolower(trim((string) $siplah));
+
+        return in_array($siplah, ['siplah', 'non_siplah'], true) ? $siplah : null;
+    }
+
+    /** @param Collection<int, SpjFreshTransaction> $transactions */
+    private function summaryFor(Collection $transactions): object
+    {
+        return (object) [
+            'count' => $transactions->count(),
+            'ppn' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->ppn),
+            'pph21' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->pph21),
+            'pph22' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->pph22),
+            'pph23' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->pph23),
+            'pph4' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->pph4),
+            'sspd' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->sspd),
+            'total' => $transactions->sum(fn (SpjFreshTransaction $transaction): float => (float) $transaction->tax_total),
+        ];
+    }
+
+    /** @param Collection<int, SpjFreshTransaction> $transactions */
+    private function freshPaginator(Collection $transactions, int $perPage): Paginator
+    {
+        $page = Paginator::resolveCurrentPage('page');
+        $items = $transactions->forPage($page, $perPage)->values();
+
+        return new Paginator($items, $transactions->count(), $perPage, $page, [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => 'page',
+        ]);
     }
 }

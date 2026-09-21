@@ -1,6 +1,6 @@
 @php
     $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-    $isFiltered = $q !== '' || $mode !== 'semua' || $periode;
+    $isFiltered = $q !== '' || $mode !== 'semua' || $periode || $jenisPajak !== '' || $siplah !== '';
     $display = $isFiltered ? $filteredSummary : $summary;
 @endphp
 <div class="space-y-6">
@@ -19,7 +19,7 @@
     </x-page-header>
 
     <section class="ui-filter-panel">
-        <div class="grid items-end gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-2 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <div class="grid items-end gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-2 lg:grid-cols-[auto_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(0,1fr)_auto]">
             <div class="sm:col-span-2 lg:col-span-1">
                 <span id="tax-filter-mode-label" class="ui-filter-label">Periode</span>
                 <div class="flex w-fit max-w-full overflow-x-auto rounded-lg border border-[var(--ui-line)] text-sm" role="group" aria-labelledby="tax-filter-mode-label">
@@ -47,10 +47,26 @@
                 </x-ui.select>
             </div>
             <div>
+                <label class="ui-filter-label" for="tax-filter-jenis-pajak">Jenis pajak</label>
+                <x-ui.select id="tax-filter-jenis-pajak" wire:model.live="jenisPajak">
+                    @foreach ($this->taxTypes() as [$taxType, $label])
+                        <option value="{{ $taxType }}">{{ $label }}</option>
+                    @endforeach
+                </x-ui.select>
+            </div>
+            <div>
+                <label class="ui-filter-label" for="tax-filter-siplah">Siplah</label>
+                <x-ui.select id="tax-filter-siplah" wire:model.live="siplah">
+                    @foreach ($this->siplahOptions() as [$siplahOption, $label])
+                        <option value="{{ $siplahOption }}">{{ $label }}</option>
+                    @endforeach
+                </x-ui.select>
+            </div>
+            <div>
                 <label class="ui-filter-label" for="tax-filter-search">Cari</label>
                 <x-ui.input id="tax-filter-search" wire:model.live.debounce.500ms="q" placeholder="Cari bukti atau penerima" />
             </div>
-            @if($q !== '' || $mode !== 'semua' || $periode)
+            @if($q !== '' || $mode !== 'semua' || $periode || $jenisPajak !== '' || $siplah !== '')
                 <div class="sm:col-span-2 lg:col-span-1">
                     <x-ui.button type="button" variant="secondary" wire:click="resetFilters" icon="close">Hapus Saringan</x-ui.button>
                 </div>
@@ -84,6 +100,7 @@
                 <thead class="bg-[var(--ui-surface-soft)]"><tr>
                     <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti / Tanggal</th>
                     <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Penerima</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Siplah</th>
                     <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPN</th>
                     <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh 21</th>
                     <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh 22</th>
@@ -95,7 +112,7 @@
                     @forelse($transactions as $transaction)
                         <tr wire:key="tax-row-{{ $transaction->id }}" class="transition hover:bg-amber-50/50">
                             <td class="px-5 py-4">
-                                @php($taxDetailIdentifier = $transaction->getAttribute('read_context_path') === 'v2_compat' ? $transaction->source_key : $transaction)
+                                @php($taxDetailIdentifier = in_array($transaction->getAttribute('read_context_path'), ['v2_compat', 'fresh'], true) ? $transaction->source_key : $transaction)
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <a href="{{ route('transactions.show', $taxDetailIdentifier) }}" class="font-mono font-bold text-indigo-700">{{ $transaction->no_bukti }}</a>
                                     @if($transaction->getAttribute('read_context_path') === 'v2_compat')<x-ui.status-badge status="READY" label="Baca saja" size="xs" />@endif
@@ -103,6 +120,7 @@
                                 <p class="mt-1 text-xs text-slate-500">{{ $transaction->transaction_date?->translatedFormat('d F Y') ?? '-' }}</p>
                             </td>
                             <td class="max-w-xs px-4 py-4"><p class="truncate font-semibold text-slate-800">{{ $transaction->recipient_name ?: 'Penerima belum diisi' }}</p><p class="mt-1 truncate text-xs text-slate-500">{{ $transaction->description ?: 'Tanpa uraian' }}</p></td>
+                            <td class="whitespace-nowrap px-4 py-4">{{ $transaction->is_siplah ? 'Siplah' : 'Tidak' }}</td>
                             <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($transaction->ppn) }}</td>
                             <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($transaction->pph21) }}</td>
                             <td class="whitespace-nowrap px-4 py-4 text-right">{{ $rupiah($transaction->pph22) }}</td>
@@ -111,7 +129,7 @@
                             <td class="whitespace-nowrap px-5 py-4 text-right font-bold text-amber-700">{{ $rupiah($transaction->tax_total) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="px-5 py-14"><x-ui.empty-state title="Belum ada pajak tersinkron." description="Data akan muncul setelah sinkronisasi BKU yang memiliki pajak." icon="inbox" /></td></tr>
+                        <tr><td colspan="9" class="px-5 py-14"><x-ui.empty-state title="Belum ada pajak tersinkron." description="Data akan muncul setelah sinkronisasi BKU yang memiliki pajak." icon="inbox" /></td></tr>
                     @endforelse
                 </tbody>
             </table>
