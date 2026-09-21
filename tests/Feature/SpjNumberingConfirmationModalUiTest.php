@@ -47,20 +47,20 @@ class SpjNumberingConfirmationModalUiTest extends TestCase
         $readonly = file_get_contents(resource_path('views/spj/package-readonly.blade.php'));
 
         $this->assertStringContainsString('Penomoran tetap divalidasi oleh server.', $modal);
-        $this->assertStringNotContainsString('$effectiveNumberingBlocked', $modal);
-        $this->assertStringNotContainsString('@disabled($effectiveNumberingBlocked)', $modal);
+        $this->assertStringContainsString('$effectiveNumberingBlocked', $modal);
+        $this->assertStringContainsString('@disabled($effectiveNumberingBlocked)', $modal);
         $this->assertStringContainsString("route('spj.assign-number'", $modal);
         $this->assertStringContainsString('$effectiveNumberingPreflight[\'active\']', $readonly);
         $this->assertStringNotContainsString("route('spj.quarter-numbering'", $readonly);
     }
 
-    public function test_quarter_numbering_ui_keeps_document_selection_unrestricted(): void
+    public function test_quarter_numbering_ui_limits_v2_to_spj_and_keeps_legacy_selection(): void
     {
         $view = file_get_contents(resource_path('views/spj/numbering.blade.php'));
         $useCase = file_get_contents(app_path('UseCases/Spj/SpjQuarterNumberingUseCase.php'));
 
-        $this->assertStringNotContainsString("config('spj.v2_read_path', 'legacy') === 'v2'", $view);
-        $this->assertStringNotContainsString('$documentType !== \'SPJ\'', $view);
+        $this->assertStringContainsString("config('spj.v2_read_path', 'legacy') === 'v2'", $view);
+        $this->assertStringContainsString('$isV2Numbering ? [\'SPJ\'] : $documentTypes', $view);
         $this->assertStringContainsString('SpjV2NumberingBatchService', $useCase);
         $this->assertStringContainsString('assignEffectiveBatchNumbers', $useCase);
         $this->assertStringContainsString("\$this->v2Batch->issueBatch(\$authorizedCandidates, 'SPJ')", $useCase);

@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureSpjActiveContext;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\SpjDocument;
+use App\Models\SpjFreshTransaction;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -155,6 +156,23 @@ class SpjAuthorizationContextHardeningTest extends TestCase
         $this->assertSame(204, $this->runMiddleware(['transactionId' => $transaction->id])->getStatusCode());
         $this->assertSame(204, $this->runMiddleware(['packageId' => $package->id])->getStatusCode());
         $this->assertSame(204, $this->runMiddleware(['documentId' => $document->id])->getStatusCode());
+    }
+
+    public function test_package_route_does_not_accept_a_fresh_transaction_primary_key(): void
+    {
+        [$activeYear, $activeFund] = $this->contextFixtures();
+        $freshTransaction = SpjFreshTransaction::query()->create([
+            'fiscal_year_id' => $activeYear->id,
+            'fund_source_id' => $activeFund->id,
+            'source_id' => 901,
+            'source_table' => 'kas_umum',
+            'source_key' => 'FRESH-PACKAGE-COLLISION',
+            'source_status' => 'ACTIVE',
+        ]);
+        $this->activate($activeYear, $activeFund);
+
+        $this->expectException(NotFoundHttpException::class);
+        $this->runMiddleware(['packageId' => $freshTransaction->id]);
     }
 
     /** @return array{FiscalYear, FundSource, FiscalYear} */

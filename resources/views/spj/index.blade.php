@@ -89,7 +89,7 @@
                     @endphp
                     <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
                         <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'persiapan'])">← Semua paket</x-ui.button>
-                        <x-ui.button variant="secondary" :href="route('transactions.show', $transaction->id)">Lihat transaksi</x-ui.button>
+                        <x-ui.button variant="secondary" :href="route('transactions.show', $transaction->route_identifier)">Lihat transaksi</x-ui.button>
                     </div>
 
                     @include('spj.partials.package.transaction-summary')

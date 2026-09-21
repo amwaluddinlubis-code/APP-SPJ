@@ -118,7 +118,7 @@
                         </td>
                         <td class="px-2 py-1 text-right font-mono text-xs font-bold" x-text="accounting((parseInt(row.work_days) || 0) * (Number(row.daily_rate) || 0))"></td>
                         <td class="px-1.5 py-1 text-center"><input type="radio" :checked="primaryIndex === index" @change="primaryIndex = index" title="Jadikan pekerja ini sebagai Penerima Utama" class="h-4 w-4 border-[var(--ui-line-strong)] text-indigo-600 focus:ring-indigo-500"></td>
-                        <td class="px-1.5 py-1 text-center"><button type="button" @click="removeWorker(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">Ã—</button></td>
+                        <td class="px-1.5 py-1 text-center"><button type="button" @click="removeWorker(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">×</button></td>
                     </tr>
                 </template>
             </tbody>
@@ -134,8 +134,8 @@
             <label class="inline-flex items-center gap-1.5"><span class="text-[var(--ui-fg-muted)]">Tampil</span><select x-model.number="perPage" @change="page=1" class="h-8 rounded border border-[var(--ui-line-strong)] px-2 py-0 text-xs"><option :value="10">10</option><option :value="25">25</option><option :value="50">50</option><option :value="100">100</option></select></label>
         </div>
         <div class="flex items-center justify-between gap-3 sm:justify-end">
-            <span class="text-[var(--ui-fg-muted)]"><span x-text="rangeStart()"></span>â€“<span x-text="rangeEnd()"></span> dari <span x-text="matchingIndexes().length"></span></span>
-            <div class="inline-flex items-center gap-1"><button type="button" @click="page=Math.max(1,page-1)" :disabled="page<=1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€¹</button><span class="min-w-12 text-center font-mono"><span x-text="page"></span>/<span x-text="pageCount()"></span></span><button type="button" @click="page=Math.min(pageCount(),page+1)" :disabled="page>=pageCount()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€º</button></div>
+            <span class="text-[var(--ui-fg-muted)]"><span x-text="rangeStart()"></span>–<span x-text="rangeEnd()"></span> dari <span x-text="matchingIndexes().length"></span></span>
+            <div class="inline-flex items-center gap-1"><button type="button" @click="page=Math.max(1,page-1)" :disabled="page<=1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">‹</button><span class="min-w-12 text-center font-mono"><span x-text="page"></span>/<span x-text="pageCount()"></span></span><button type="button" @click="page=Math.min(pageCount(),page+1)" :disabled="page>=pageCount()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">›</button></div>
         </div>
     </div>
 </fieldset>

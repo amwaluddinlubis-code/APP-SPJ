@@ -92,7 +92,7 @@ class CreateSpjDraftUseCase
         }
 
         return redirect()
-            ->route('spj.index', ['tab' => 'paket', 'package_id' => $package->id])
+            ->route('spj.index', ['tab' => 'paket', 'fresh_package_id' => $package->id])
             ->with('success', $package->wasRecentlyCreated
                 ? 'Draft paket SPJ dibuat. Lengkapi seluruh data dokumen di halaman Paket SPJ.'
                 : 'Paket SPJ yang sudah ada dibuka kembali.');

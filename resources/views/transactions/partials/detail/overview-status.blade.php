@@ -47,12 +47,12 @@
 
                 <div x-show="!spjDescriptionsDirty" class="flex flex-col items-start gap-2 lg:items-end">
                     @if ($transaction->spjPackage)
-                        <a href="{{ route('transactions.prepare-spj', $transaction->source_key ?: $transaction->id) }}"
+                        <a href="{{ route('transactions.prepare-spj', $transaction->route_identifier) }}"
                             class="ui-btn ui-btn-primary px-4 py-2 text-sm">
                             Lihat Paket SPJ
                         </a>
                     @elseif($transaction->items->isNotEmpty())
-                        <a href="{{ route('transactions.prepare-spj', $transaction->source_key ?: $transaction->id) }}"
+                        <a href="{{ route('transactions.prepare-spj', $transaction->route_identifier) }}"
                             class="ui-btn ui-btn-primary px-4 py-2 text-sm">
                             Siapkan Paket SPJ
                         </a>

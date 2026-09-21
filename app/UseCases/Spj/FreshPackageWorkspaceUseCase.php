@@ -3,7 +3,6 @@
 namespace App\UseCases\Spj;
 
 use App\Models\SpjFreshPackage;
-use App\Models\SpjFreshTransaction;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,16 +70,6 @@ class FreshPackageWorkspaceUseCase
 
     private function packageForIdentifier(string $identifier): ?SpjFreshPackage
     {
-        $package = $this->package($identifier);
-
-        if ($package) {
-            return $package;
-        }
-
-        return SpjFreshTransaction::query()
-            ->forSpjContext($this->context)
-            ->with(['items.rawMirrorRow', 'rawMirrorRow', 'spjPackage.transaction.rawMirrorRow'])
-            ->whereKey($identifier)
-            ->first()?->spjPackage;
+        return $this->package($identifier);
     }
 }

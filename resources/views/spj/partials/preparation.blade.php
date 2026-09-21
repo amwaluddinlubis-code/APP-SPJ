@@ -120,10 +120,10 @@
                             @if ($transaction->spjPackage)
                                 <x-ui.button variant="secondary" :href="route('spj.index', [
                                     'tab' => 'paket',
-                                    'package_id' => $transaction->spjPackage->id,
+                                    $transaction->spjPackage instanceof \App\Models\SpjFreshPackage ? 'fresh_package_id' : 'package_id' => $transaction->spjPackage->id,
                                 ])">Buka paket →</x-ui.button>
                             @elseif($transaction->items_count)
-                            <x-ui.button :href="route('transactions.show', $transaction->id) . '#modul-buat-spj'">Lengkapi &amp; siapkan →</x-ui.button>@else<span
+                            <x-ui.button :href="route('transactions.show', $transaction->route_identifier) . '#modul-buat-spj'">Lengkapi &amp; siapkan →</x-ui.button>@else<span
                                     class="text-xs text-[var(--ui-fg-muted)]">Perlu perhatian: rincian belum ada</span>
                             @endif
                         </td>

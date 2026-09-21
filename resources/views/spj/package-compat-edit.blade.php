@@ -12,7 +12,7 @@
             ->sortByDesc('id')
             ->first();
         $hasActiveSpjNumber = $activeSpjDocument !== null && $package->status !== 'CANCELLED';
-        $transactionDetailIdentifier = $transaction->source_key ?: $transaction->id;
+        $transactionDetailIdentifier = $transaction->route_identifier;
 
         $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
             'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',

@@ -11,7 +11,7 @@
             default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
         };
         $packageCategory = strtoupper((string) $transaction->spj_category);
-        $transactionDetailIdentifier = $transaction->source_key ?: $transaction->id;
+        $transactionDetailIdentifier = $transaction->route_identifier;
     @endphp
 
     <div class="space-y-5">

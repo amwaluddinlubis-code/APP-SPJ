@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-center gap-2">
         <nav class="flex items-center gap-1" aria-label="Navigasi transaksi">
             @if ($previousTransaction)
-                <a href="{{ route('transactions.show', $previousTransaction->id) }}"
+                <a href="{{ route('transactions.show', $previousTransaction->route_identifier) }}"
                     title="Transaksi sebelumnya: {{ $previousTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
                     aria-label="Transaksi sebelumnya: {{ $previousTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
                     class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]">
@@ -17,7 +17,7 @@
             @endif
 
             @if ($nextTransaction)
-                <a href="{{ route('transactions.show', $nextTransaction->id) }}"
+                <a href="{{ route('transactions.show', $nextTransaction->route_identifier) }}"
                     title="Transaksi selanjutnya: {{ $nextTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
                     aria-label="Transaksi selanjutnya: {{ $nextTransaction->no_bukti ?: 'Tanpa nomor bukti' }}"
                     class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] text-[var(--ui-fg-muted)] transition hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]">
@@ -49,7 +49,7 @@
                 Buka Paket SPJ
             </a>
         @elseif($transaction->items->isNotEmpty())
-            <a href="{{ route('transactions.prepare-spj', $transaction->source_key ?: $transaction->id) }}"
+            <a href="{{ route('transactions.prepare-spj', $transaction->route_identifier) }}"
                 class="ui-btn ui-btn-primary !min-h-0 !px-3 !py-1.5 !text-xs">
                 Siapkan Paket SPJ
             </a>

@@ -57,14 +57,7 @@ class EnsureSpjActiveContext
                     ->where('fiscal_year_id', $yearId)
                     ->where('fund_source_id', $fundSourceId))
                 ->exists();
-            $freshTransactionExists = SpjFreshTransaction::query()
-                ->whereKey($packageId)
-                ->where('fiscal_year_id', $yearId)
-                ->where('fund_source_id', $fundSourceId)
-                ->whereHas('spjPackage')
-                ->exists();
-
-            abort_unless($legacyPackageExists || $freshPackageExists || $freshTransactionExists, 404);
+            abort_unless($legacyPackageExists || $freshPackageExists, 404);
         }
 
         $documentId = $request->route('documentId');

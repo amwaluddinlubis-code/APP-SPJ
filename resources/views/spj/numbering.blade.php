@@ -10,6 +10,7 @@
         default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
     })
     @php($selectedClosure = $selectedSummary['closure'] ?? null)
+    @php($isV2Numbering = config('spj.v2_read_path', 'legacy') === 'v2')
 
     <div class="spj-semantic-workspace space-y-6">
         <x-page-header
@@ -98,7 +99,7 @@
                                 <td class="px-4 py-3"><x-ui.status-badge :status="$package->status" /></td>
                                 <td class="px-4 py-3"><p class="font-mono text-xs font-bold {{ $package->document_number ? 'text-emerald-700' : 'text-[var(--ui-fg-muted)]' }}">{{ $package->document_number ?: 'Belum diberi nomor' }}</p></td>
                                 <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->gross_amount) }}</td>
-                                <td class="px-4 py-3 text-right"><a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="text-xs font-bold text-[var(--theme-content-accent)] hover:underline">Lihat paket â†’</a></td>
+                                <td class="px-4 py-3 text-right"><a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="text-xs font-bold text-[var(--theme-content-accent)] hover:underline">Lihat paket →</a></td>
                             </tr>
                         @empty
                             <tr><td colspan="6" class="px-5 py-12 text-center"><p class="font-semibold text-[var(--ui-fg)]">Belum ada paket yang siap diberi nomor pada triwulan ini.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Lengkapi transaksi, buat paket SPJ, lalu tandai paket sebagai siap diproses.</p></td></tr>
@@ -119,7 +120,7 @@
                             <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Pilih dokumen yang akan diberi nomor</p>
                             <p class="mt-1 text-xs text-[var(--theme-content-accent)]">Nomor dibuat sesuai tanggal dokumen dan format penomoran yang sedang aktif.</p>
                             <div class="mt-3 flex flex-wrap gap-2">
-                                @foreach($documentTypes as $documentType)
+                                @foreach($isV2Numbering ? ['SPJ'] : $documentTypes as $documentType)
                                     <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--ui-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--theme-content-accent)]">
                                         <input type="checkbox" name="document_types[]" value="{{ $documentType }}" checked class="rounded border-[var(--ui-line-strong)] text-[var(--theme-accent)] focus:ring-[var(--theme-accent)]">
                                         <span>{{ $documentLabels[$documentType] ?? $documentType }}</span>
@@ -138,9 +139,9 @@
                                 <div>
                                     <p class="text-xs font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Review sebelum penomoran triwulan {{ $selectedQuarter }}</p>
                                     <h3 class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Periksa isian {{ count($previewPackages) }} paket</h3>
-                                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Siap {{ $selectedSummary['ready'] ?? 0 }} Â· Bernomor {{ $selectedSummary['numbered'] ?? 0 }} Â· Terhambat {{ $selectedSummary['blocked'] ?? 0 }}. Nomor hanya dibuat untuk paket yang lolos validasi server.</p>
+                                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Siap {{ $selectedSummary['ready'] ?? 0 }} · Bernomor {{ $selectedSummary['numbered'] ?? 0 }} · Terhambat {{ $selectedSummary['blocked'] ?? 0 }}. Nomor hanya dibuat untuk paket yang lolos validasi server.</p>
                                 </div>
-                                <button type="button" @click="reviewOpen = false" class="rounded-md px-2 py-1 text-xl text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]" aria-label="Tutup">Ã—</button>
+                                <button type="button" @click="reviewOpen = false" class="rounded-md px-2 py-1 text-xl text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]" aria-label="Tutup">×</button>
                             </div>
                             <div class="min-h-0 flex-1 overflow-y-auto">
                                 <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
@@ -157,10 +158,10 @@
                                     @forelse($previewPackages as $index => $package)
                                         <tbody x-show="Math.floor({{ $index }} / 5) + 1 === reviewPage" class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                                             <tr class="border-t border-[var(--ui-line)]">
-                                                <td class="px-2 py-2 text-center"><button type="button" @click="toggleReview({{ $package->id }})" :aria-expanded="expandedReviews.includes({{ $package->id }}).toString()" :title="expandedReviews.includes({{ $package->id }}) ? 'Sembunyikan isian' : 'Lihat semua isian'" class="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--ui-line)] text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)]"><span x-text="expandedReviews.includes({{ $package->id }}) ? 'â–¾' : 'â–¸'"></span></button></td>
+                                                <td class="px-2 py-2 text-center"><button type="button" @click="toggleReview({{ $package->id }})" :aria-expanded="expandedReviews.includes({{ $package->id }}).toString()" :title="expandedReviews.includes({{ $package->id }}) ? 'Sembunyikan isian' : 'Lihat semua isian'" class="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--ui-line)] text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)]"><span x-text="expandedReviews.includes({{ $package->id }}) ? '▾' : '▸'"></span></button></td>
                                                 <td class="whitespace-nowrap px-4 py-2"><p class="font-mono text-xs font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->no_bukti }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->transaction_date?->translatedFormat('d M Y') }}</p></td>
                                                 <td class="min-w-56 px-4 py-2"><p class="text-xs font-semibold leading-5 text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->description ?: 'Uraian belum tersedia' }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->effective_receipt_recipient_name ?: 'Penerima belum diisi' }}</p></td>
-                                                <td class="whitespace-nowrap px-4 py-2 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ? $spjTypeLabel($package->transaction->spj_category) : 'â€”' }} Â· {{ $package->transaction->payment_method ?: 'â€”' }}</td>
+                                                <td class="whitespace-nowrap px-4 py-2 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ? $spjTypeLabel($package->transaction->spj_category) : '—' }} · {{ $package->transaction->payment_method ?: '—' }}</td>
                                                 <td class="px-4 py-2"><x-ui.status-badge :status="$package->status" size="xs" /></td>
                                                 <td class="whitespace-nowrap px-4 py-2 text-right text-xs font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->gross_amount) }}</td>
                                             </tr>
@@ -175,17 +176,17 @@
                                 </table>
                             </div>
                             <div x-show="reviewTotalPages() > 1" class="flex items-center justify-between gap-3 border-t border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-5 py-2 text-xs">
-                                <span class="font-semibold text-[var(--ui-fg-muted)]">Halaman <span x-text="reviewPage"></span> dari <span x-text="reviewTotalPages()"></span> Â· {{ $previewPackages->count() }} paket Â· 5 per halaman</span>
+                                <span class="font-semibold text-[var(--ui-fg-muted)]">Halaman <span x-text="reviewPage"></span> dari <span x-text="reviewTotalPages()"></span> · {{ $previewPackages->count() }} paket · 5 per halaman</span>
                                 <div class="inline-flex items-center gap-1">
-                                    <button type="button" @click="reviewPage = Math.max(1, reviewPage - 1)" :disabled="reviewPage <= 1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€¹</button>
-                                    <button type="button" @click="reviewPage = Math.min(reviewTotalPages(), reviewPage + 1)" :disabled="reviewPage >= reviewTotalPages()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">â€º</button>
+                                    <button type="button" @click="reviewPage = Math.max(1, reviewPage - 1)" :disabled="reviewPage <= 1" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">‹</button>
+                                    <button type="button" @click="reviewPage = Math.min(reviewTotalPages(), reviewPage + 1)" :disabled="reviewPage >= reviewTotalPages()" class="h-8 rounded border border-[var(--ui-line)] px-2 font-bold disabled:opacity-35">›</button>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4">
                                 <p class="text-xs text-[var(--ui-fg-muted)]">Dokumen yang sudah bernomor dilewati otomatis. Batal bila masih ada yang terhambat.</p>
                                 <div class="flex gap-2">
                                     <button type="button" @click="reviewOpen = false" class="rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-[var(--ui-fg)]">Kembali periksa</button>
-                                    <button type="submit" class="rounded-lg bg-[var(--theme-action-bg)] px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-[var(--theme-action-hover-bg)]">Konfirmasi &amp; Buat Nomor</button>
+                                    <button type="submit" @disabled(($selectedSummary['blocked'] ?? 0) > 0 || ($selectedClosure && strtoupper((string) $selectedClosure->status) === 'CLOSED')) class="rounded-lg bg-[var(--theme-action-bg)] px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-[var(--theme-action-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50">Konfirmasi &amp; Buat Nomor</button>
                                 </div>
                             </div>
                         </div>
@@ -202,7 +203,7 @@
                     <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Waktu</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Triwulan</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor dibuat</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Dilewati</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Catatan</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($recentRuns as $run)
-                            <tr><td class="px-4 py-3 text-[var(--ui-fg)]">{{ $run->started_at?->translatedFormat('d M Y H:i') ?: 'â€”' }}</td><td class="px-4 py-3 font-semibold">Triwulan {{ $run->quarter }}</td><td class="px-4 py-3"><x-ui.status-badge :status="$run->status" size="xs" /></td><td class="px-4 py-3 text-right font-bold text-emerald-700">{{ $run->numbered_count ?? 0 }}</td><td class="px-4 py-3 text-right font-semibold text-[var(--ui-fg)]">{{ $run->skipped_count ?? 0 }}</td><td class="max-w-sm px-4 py-3 text-xs text-[var(--ui-fg-muted)]">{{ $run->error_message ?: 'Proses selesai tanpa kendala.' }}</td></tr>
+                            <tr><td class="px-4 py-3 text-[var(--ui-fg)]">{{ $run->started_at?->translatedFormat('d M Y H:i') ?: '—' }}</td><td class="px-4 py-3 font-semibold">Triwulan {{ $run->quarter }}</td><td class="px-4 py-3"><x-ui.status-badge :status="$run->status" size="xs" /></td><td class="px-4 py-3 text-right font-bold text-emerald-700">{{ $run->numbered_count ?? 0 }}</td><td class="px-4 py-3 text-right font-semibold text-[var(--ui-fg)]">{{ $run->skipped_count ?? 0 }}</td><td class="max-w-sm px-4 py-3 text-xs text-[var(--ui-fg-muted)]">{{ $run->error_message ?: 'Proses selesai tanpa kendala.' }}</td></tr>
                         @empty
                             <tr><td colspan="6" class="px-5 py-10 text-center text-[var(--ui-fg-muted)]">Belum ada riwayat penomoran untuk triwulan.</td></tr>
                         @endforelse

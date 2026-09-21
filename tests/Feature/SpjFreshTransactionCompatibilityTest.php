@@ -57,6 +57,7 @@ class SpjFreshTransactionCompatibilityTest extends TestCase
         $this->assertSame('Uraian item operator lama', $transaction->items->sole()->item_description);
         $this->assertSame('NUMBERED', $transaction->spjPackage?->status);
         $this->assertSame('001/SPJ/2026', $transaction->spjPackage?->document_number);
+        $this->assertSame($sourceKey, $transaction->route_identifier);
     }
 
     public function test_grouped_fresh_totals_sum_all_items_and_only_tax_receipts_from_same_source(): void

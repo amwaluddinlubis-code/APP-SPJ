@@ -389,16 +389,6 @@ class SpjWorkspaceUseCase
             'transaction.goodsReceipts.items',
         ])->find($packageId);
         if (! $package) {
-            $freshPackage = SpjFreshPackage::query()
-                ->with(['transaction.items.rawMirrorRow', 'transaction.rawMirrorRow', 'documents'])
-                ->whereKey($packageId)
-                ->whereHas('transaction', fn ($query) => $query->forSpjContext($this->context))
-                ->first();
-
-            if ($freshPackage) {
-                return $this->freshPackageView($freshPackage);
-            }
-
             return redirect()->route('spj.index', ['tab' => 'persiapan'])->with('error', 'Paket dokumen tidak ditemukan pada tahun anggaran aktif.');
         }
 

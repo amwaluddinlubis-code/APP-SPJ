@@ -54,6 +54,11 @@ class SpjFreshTransaction extends Model
             ->where('fund_source_id', $context->fundSourceId());
     }
 
+    public function getRouteIdentifierAttribute(): string
+    {
+        return (string) ($this->source_key ?: $this->id);
+    }
+
     public function rawMirrorRow(): BelongsTo
     {
         return $this->belongsTo(ArkasRawMirrorRow::class, 'raw_mirror_row_id');

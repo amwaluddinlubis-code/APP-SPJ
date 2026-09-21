@@ -3,9 +3,11 @@
     $preflightBapDate = $purchaseDetails?->bap_date ?: $transaction->bap_date;
     $preflightBastDate = $purchaseDetails?->bast_date ?: $transaction->bast_date;
     $preflightIssues = $validationIssues ?? [];
+    $effectiveNumberingBlocked = ($effectiveNumberingPreflight['active'] ?? false)
+        && ! ($effectiveNumberingPreflight['authorized'] ?? false);
     $preflightCategory = strtoupper((string) ($transaction->spj_category ?? ''));
     $preflightDetailSummary = match ($preflightCategory) {
-        'KONSUMSI' => $transaction->participants->count().' peserta' . ($transaction->event_name ? ' Â· '.$transaction->event_name : ''),
+        'KONSUMSI' => $transaction->participants->count().' peserta' . ($transaction->event_name ? ' · '.$transaction->event_name : ''),
         'HONOR_PEGAWAI' => $transaction->honors->count().' penerima honor',
         'SPPD' => $transaction->travels->count().' rincian perjalanan',
         'PEMELIHARAAN' => $transaction->workers->count().' pekerja',
@@ -15,7 +17,7 @@
 @endphp
 
 <div x-data="{ open: false }" class="mt-4">
-    <button type="button" @click="open = true" class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700">
+    <button type="button" @click="open = true" @disabled($effectiveNumberingBlocked) class="rounded-md bg-violet-600 px-4 py-2 text-base font-bold text-white shadow hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50">
         Periksa &amp; Terbitkan nomor SPJ
     </button>
     <p class="mt-2 text-xs text-slate-500">Sistem menampilkan status validasi, data sumber, dan isian operator terakhir sebelum nomor diterbitkan.</p>
@@ -28,7 +30,7 @@
                     <h3 class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Pastikan data dokumen sudah benar</h3>
                     <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Setelah dikonfirmasi, nomor mengikuti format aktif dan tanggal peristiwa dokumen.</p>
                 </div>
-                <button type="button" @click="open = false" class="rounded-md px-2 py-1 text-xl text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]" aria-label="Tutup">Ã—</button>
+                <button type="button" @click="open = false" class="rounded-md px-2 py-1 text-xl text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] hover:text-[var(--ui-fg-strong)]" aria-label="Tutup">×</button>
             </div>
 
             @if(empty($preflightIssues))
@@ -59,22 +61,22 @@
                 ] as $label => $value)
                     <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $label }}</p>
-                        <p class="mt-1 break-words text-sm font-bold text-[var(--ui-fg-strong)]">{{ filled($value) ? $value : 'â€”' }}</p>
+                        <p class="mt-1 break-words text-sm font-bold text-[var(--ui-fg-strong)]">{{ filled($value) ? $value : '—' }}</p>
                     </div>
                 @endforeach
                 <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3 sm:col-span-2 lg:col-span-4">
                     <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PAYMENT_DESCRIPTION</p>
-                    <p class="mt-1 whitespace-pre-line text-sm font-semibold text-[var(--ui-fg-strong)]">{{ filled($transaction->payment_description) ? $transaction->payment_description : 'â€” BELUM DIISI â€”' }}</p>
+                    <p class="mt-1 whitespace-pre-line text-sm font-semibold text-[var(--ui-fg-strong)]">{{ filled($transaction->payment_description) ? $transaction->payment_description : '— BELUM DIISI —' }}</p>
                 </div>
             </div>
 
             <p class="px-5 text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Isian operator (Data Umum SPJ)</p>
             <div class="grid gap-3 p-5 pt-2 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach([
-                    'KATEGORI' => $preflightCategory ?: 'â€” BELUM DIPILIH â€”',
-                    'PENERIMA' => $transaction->effective_receipt_recipient_name ?: 'â€” BELUM DIISI â€”',
-                    'CARA_BAYAR' => $transaction->payment_method ?: 'â€” BELUM DIPILIH â€”',
-                    'PENYEDIA' => $transaction->vendor_name ?: ($transaction->recipient_name ?: 'â€” BELUM DIISI â€”'),
+                    'KATEGORI' => $preflightCategory ?: '— BELUM DIPILIH —',
+                    'PENERIMA' => $transaction->effective_receipt_recipient_name ?: '— BELUM DIISI —',
+                    'CARA_BAYAR' => $transaction->payment_method ?: '— BELUM DIPILIH —',
+                    'PENYEDIA' => $transaction->vendor_name ?: ($transaction->recipient_name ?: '— BELUM DIISI —'),
                 ] as $label => $value)
                     <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $label }}</p>
@@ -95,7 +97,7 @@
                     <button type="button" @click="open = false" class="rounded-md border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-4 py-2 text-sm font-bold text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]">Kembali periksa</button>
                     <form method="POST" action="{{ route('spj.assign-number', $package->id) }}">
                         @csrf
-                        <button class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-violet-700">Konfirmasi &amp; Terbitkan Nomor</button>
+                        <button @disabled($effectiveNumberingBlocked) class="rounded-md bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50">Konfirmasi &amp; Terbitkan Nomor</button>
                     </form>
                 </div>
             </div>

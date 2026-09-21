@@ -102,6 +102,11 @@ class Transaction extends Model
             ->where('fund_source_id', $context->fundSourceId());
     }
 
+    public function getRouteIdentifierAttribute(): string
+    {
+        return (string) ($this->source_key ?: $this->id);
+    }
+
     /**
      * Compatibility scope for callers outside the SPJ use-case layer.
      * New SPJ code should pass ActiveSpjContext explicitly via forSpjContext().
