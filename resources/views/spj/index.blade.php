@@ -124,9 +124,7 @@
                             @include('spj.partials.package.items-readonly')
                             <div class="mt-5 border-t border-[var(--ui-line)] pt-1">
                                 @if($isFreshPackage)
-                                    <div class="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
-                                        Paket ini berasal dari proyeksi fresh. Validasi, penomoran, preview, dan download dokumen legacy belum tersedia pada jalur kompatibilitas ini.
-                                    </div>
+                                    @include('spj.partials.package.fresh-validation')
                                 @else
                                     @include('spj.partials.package.validation')
                                     @include('spj.partials.package.documents')

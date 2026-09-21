@@ -658,18 +658,32 @@ final class SpjOverlayMigrationService
         }
         $proof = trim((string) ($payload['no_bukti'] ?? ''));
         $date = (string) ($payload['tanggal_transaksi'] ?? '');
-        $candidates = $maps['proof-date:'.$proof.':'.$date] ?? [];
+        $candidates = $this->sameAccountingContext(
+            $maps['proof-date:'.$proof.':'.$date] ?? [],
+            $transaction,
+        );
         if (count($candidates) === 1) {
             return ['status' => 'matched', 'transaction' => $candidates[0], 'reason' => 'unique no_bukti+tanggal', 'candidate_old_transaction_ids' => [(int) $candidates[0]['id']], 'candidate_old_transactions' => [$candidates[0]]];
         }
         if (count($candidates) > 1) {
             return ['status' => 'ambiguous', 'transaction' => null, 'reason' => 'duplicate no_bukti+tanggal', 'candidate_old_transaction_ids' => array_map(fn (array $candidate): int => (int) $candidate['id'], $candidates), 'candidate_old_transactions' => $candidates];
         }
-        $candidates = $maps['proof:'.$proof] ?? [];
+        $candidates = $this->sameAccountingContext(
+            $maps['proof:'.$proof] ?? [],
+            $transaction,
+        );
 
         return count($candidates) === 1
             ? ['status' => 'matched', 'transaction' => $candidates[0], 'reason' => 'unique no_bukti', 'candidate_old_transaction_ids' => [(int) $candidates[0]['id']], 'candidate_old_transactions' => [$candidates[0]]]
             : ['status' => count($candidates) > 1 ? 'ambiguous' : 'unmatched', 'transaction' => null, 'reason' => count($candidates) > 1 ? 'duplicate no_bukti' : 'no deterministic candidate', 'candidate_old_transaction_ids' => array_map(fn (array $candidate): int => (int) $candidate['id'], $candidates), 'candidate_old_transactions' => $candidates];
+    }
+
+    /** @param array<int, array<string, mixed>> $candidates @return array<int, array<string, mixed>> */
+    private function sameAccountingContext(array $candidates, object $transaction): array
+    {
+        return array_values(array_filter($candidates, static fn (array $candidate): bool => (int) ($candidate['fiscal_year_id'] ?? 0) === (int) ($transaction->fiscal_year_id ?? 0)
+            && (int) ($candidate['fund_source_id'] ?? 0) === (int) ($transaction->fund_source_id ?? 0)
+        ));
     }
 
     /** @param array<string, mixed> $payload @param array{status:string,transaction:?array<string,mixed>,reason:string,candidate_old_transaction_ids:array<int,int>,candidate_old_transactions:array<int,array<string,mixed>>} $match @return array<string,mixed> */

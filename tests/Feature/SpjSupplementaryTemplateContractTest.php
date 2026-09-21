@@ -76,6 +76,14 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertInstanceOf(ExtendedSpjReportUseCase::class, app(SpjReportUseCase::class));
     }
 
+    public function test_surat_pesanan_does_not_require_delivery_location_placeholder(): void
+    {
+        $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::SURAT_PESANAN);
+
+        $this->assertNotContains('TEMPAT_PENYERAHAN', $definition['required']);
+        $this->assertContains('TEMPAT_PENYERAHAN', $definition['optional']);
+    }
+
     public function test_bap_points_to_revised_inspection_and_acceptance_sheet(): void
     {
         $definition = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::BAP);

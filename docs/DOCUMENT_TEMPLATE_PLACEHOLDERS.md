@@ -216,6 +216,10 @@ Untuk template BAP, gunakan `NOMOR_BAP` dan `TANGGAL_BAP` sebagai nomor dan tang
 
 Untuk template BAST, gunakan `NOMOR_BAST` sebagai nomor berita acara serah terima, `KECAMATAN` sebagai lokasi administratif, serta `NAMA_PENGURUS_BARANG` dan `NIP_PENGURUS_BARANG` untuk penandatangan pengurus barang. Nilai nomor BAST diambil dari data BAST barang; validator BAST tidak mewajibkan `TEMPAT_PENYERAHAN` atau data bendahara BOSP.
 
+Untuk template Surat Pesanan, `TEMPAT_PENYERAHAN` tetap tersedia sebagai
+placeholder opsional. Validator tidak menolak template Surat Pesanan yang tidak
+menyediakan placeholder tersebut.
+
 ### `NOMOR_PESANAN`
 
 `NOMOR_PESANAN` adalah **Nomor Surat Pesanan SPJ internal**.

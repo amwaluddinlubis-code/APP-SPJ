@@ -8,6 +8,7 @@ use App\Models\SpjFreshPackage;
 use App\Models\SpjFreshTransaction;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\SpjFreshPackageValidationService;
 use App\Services\SpjPackageTemplateSelector;
 use App\Services\SpjPackageValidationService;
 use App\Services\SpjV2MutationContextService;
@@ -506,6 +507,7 @@ class SpjWorkspaceUseCase
 
     private function freshPackageView(SpjFreshPackage $package): View
     {
+        $validationIssues = app(SpjFreshPackageValidationService::class)->validate($package);
         $transaction = $package->transaction;
         foreach (['goods', 'workers', 'participants', 'travels', 'honors', 'serviceRecipients', 'payments', 'goodsReceipts'] as $relation) {
             $transaction->setRelation($relation, collect());
@@ -516,7 +518,7 @@ class SpjWorkspaceUseCase
             'tab' => 'paket',
             'package' => $package,
             'packageList' => null,
-            'validationIssues' => [],
+            'validationIssues' => $validationIssues,
             'templates' => collect(),
             'transactions' => null,
             ...$this->overviewMetrics(),

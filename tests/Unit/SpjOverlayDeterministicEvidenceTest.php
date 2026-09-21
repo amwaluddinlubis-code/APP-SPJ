@@ -50,6 +50,26 @@ final class SpjOverlayDeterministicEvidenceTest extends TestCase
         self::assertNull($result['winner']);
     }
 
+    public function test_no_bukti_fallback_cannot_cross_fiscal_year_or_fund_source(): void
+    {
+        $method = new ReflectionMethod(SpjOverlayMigrationService::class, 'resolveTransaction');
+        $method->setAccessible(true);
+        $result = $method->invoke(
+            new SpjOverlayMigrationService,
+            (object) ['fiscal_year_id' => 3, 'fund_source_id' => 1, 'source_key' => 'missing-source-key'],
+            ['no_bukti' => 'BPU-1', 'tanggal_transaksi' => '2026-01-10'],
+            [
+                'proof-date:BPU-1:2026-01-10' => [
+                    ['id' => 1, 'fiscal_year_id' => 2, 'fund_source_id' => 1],
+                    ['id' => 2, 'fiscal_year_id' => 3, 'fund_source_id' => 1],
+                ],
+            ],
+        );
+
+        self::assertSame('matched', $result['status']);
+        self::assertSame(2, $result['transaction']['id']);
+    }
+
     /** @param array<int, array<string,mixed>> $candidates @param array<int, object> $freshItems @param array<int, array<int, array<string,mixed>>> $oldItems */
     private function audit(array $candidates, array $freshItems = [], array $oldItems = []): array
     {
