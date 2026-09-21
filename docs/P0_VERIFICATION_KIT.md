@@ -1,6 +1,6 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-21**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release authoritative berada di `CURRENT_PROGRESS.md`.
 
@@ -139,6 +139,30 @@ Repository Pint --test
 ```
 
 GitHub Actions menambahkan Composer metadata/platform-lock checks, deterministic `composer install`, full Unit, dan full Feature suite sebagai blocking coverage.
+
+### Feature canonical deterministik dan external rehearsal
+
+Feature canonical tidak boleh bergantung pada database ARKAS real-data. Jalankan:
+
+```powershell
+php artisan test --testsuite="Unit" --compact
+php artisan test --testsuite="Feature" --compact
+```
+
+V2-B/V2-C/V2-D yang melakukan rehearsal terhadap clone dan source ARKAS real-data berada pada suite terpisah:
+
+```powershell
+php artisan test --testsuite="External Rehearsal" --compact
+```
+
+Prerequisite external:
+
+```text
+V2-B: SPJ_V2_B_SOURCE_PATH atau storage/app/v2-b-isolated/tenant-10260756-v2b.sqlite
+V2-C/V2-D: storage/app/school-databases/10260786/spj.sqlite dan source ARKAS yang readable
+```
+
+Jika prerequisite tidak tersedia, suite external tidak dianggap lulus rehearsal: test dilaporkan sebagai `RVR / NOT RUN` dan `skipped`. Itu tidak mengubah hasil Feature canonical deterministik dan tidak boleh diganti dengan fixture sintetis yang menyamarkan absennya real-data evidence.
 
 Opsi iterasi developer tersedia, tetapi `--skip-*` bukan evidence release final:
 

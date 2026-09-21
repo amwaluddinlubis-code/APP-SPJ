@@ -81,6 +81,9 @@
                     </td>
                     <td class="px-4 py-3">
                         <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
+                        @if ($package->getAttribute('read_context_path') === 'v2_compat')
+                            <x-ui.status-badge status="READY" label="Baca saja" size="xs" />
+                        @endif
                         @if ($isCancelled && $package->report_cancellation_reason)
                             <p class="mt-1 max-w-48 text-xs text-rose-700">{{ $package->report_cancellation_reason }}</p>
                         @endif
@@ -104,7 +107,13 @@
                             @else
                                 <span class="ui-action-menu-item text-[var(--ui-fg-muted)]">Dokumen fresh belum tersedia</span>
                             @endif
-                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">Buka Paket</a>
+                            <a class="ui-action-menu-item" href="{{ $packageUrl }}">
+                                @if ($package->getAttribute('read_context_path') === 'v2_compat')
+                                    Buka Paket (baca saja)
+                                @else
+                                    Buka Paket
+                                @endif
+                            </a>
                         </x-ui.action-menu>
                     </td>
                 </tr>

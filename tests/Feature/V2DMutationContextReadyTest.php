@@ -348,11 +348,12 @@ final class V2DMutationContextReadyTest extends TestCase
     {
         $checklist = (string) file_get_contents(resource_path('views/spj/checklist.blade.php'));
         $readOnlyPackage = (string) file_get_contents(resource_path('views/spj/package-readonly.blade.php'));
+        $validationView = (string) file_get_contents(resource_path('views/spj/partials/package/validation.blade.php'));
         $validation = (string) file_get_contents(app_path('Services/SpjPackageValidationService.php'));
 
-        $this->assertStringContainsString("route('spj.ready', \$package->id)", $checklist);
+        $this->assertStringContainsString("route('spj.ready', \$package->id)", $validationView);
         $this->assertStringContainsString('@if($canMarkReady)', $checklist);
-        $this->assertStringContainsString('Effective context', $checklist);
+        $this->assertStringContainsString('effective-context', $readOnlyPackage);
         $this->assertStringContainsString("route('spj.checklist', \$package->id)", $readOnlyPackage);
         $this->assertStringNotContainsString("route('spj.ready'", $readOnlyPackage);
         $this->assertStringContainsString("relationLoaded('v2MutationContext')", $validation);

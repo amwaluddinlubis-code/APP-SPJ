@@ -10,6 +10,44 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+            <exclude>tests/Feature/V2BIsolatedSchemaTest.php</exclude>
+            <exclude>tests/Feature/V2CLegacyMigrationTest.php</exclude>
+            <exclude>tests/Feature/V2DCanonicalReadAdapterTest.php</exclude>
+            <exclude>tests/Feature/V2DEffectiveContextCompatibilityTest.php</exclude>
+            <exclude>tests/Feature/V2DExtendedReportContextCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DMutationContextReadyTest.php</exclude>
+            <exclude>tests/Feature/V2DNumberingIssuanceTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageDocumentParityTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageListCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageOverlayWriteCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageReadContextTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageReadMembershipTest.php</exclude>
+            <exclude>tests/Feature/V2DPackageWorkspaceReadOnlyTest.php</exclude>
+            <exclude>tests/Feature/V2DReadParityTest.php</exclude>
+            <exclude>tests/Feature/V2DReportPackageListCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DReportSummaryCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DTaxReadContextCutoverTest.php</exclude>
+            <exclude>tests/Feature/V2DWorkflowParityTest.php</exclude>
+        </testsuite>
+        <testsuite name="External Rehearsal">
+            <file>tests/Feature/V2BIsolatedSchemaTest.php</file>
+            <file>tests/Feature/V2CLegacyMigrationTest.php</file>
+            <file>tests/Feature/V2DCanonicalReadAdapterTest.php</file>
+            <file>tests/Feature/V2DEffectiveContextCompatibilityTest.php</file>
+            <file>tests/Feature/V2DExtendedReportContextCutoverTest.php</file>
+            <file>tests/Feature/V2DMutationContextReadyTest.php</file>
+            <file>tests/Feature/V2DNumberingIssuanceTest.php</file>
+            <file>tests/Feature/V2DPackageDocumentParityTest.php</file>
+            <file>tests/Feature/V2DPackageListCutoverTest.php</file>
+            <file>tests/Feature/V2DPackageOverlayWriteCutoverTest.php</file>
+            <file>tests/Feature/V2DPackageReadContextTest.php</file>
+            <file>tests/Feature/V2DPackageReadMembershipTest.php</file>
+            <file>tests/Feature/V2DPackageWorkspaceReadOnlyTest.php</file>
+            <file>tests/Feature/V2DReadParityTest.php</file>
+            <file>tests/Feature/V2DReportPackageListCutoverTest.php</file>
+            <file>tests/Feature/V2DReportSummaryCutoverTest.php</file>
+            <file>tests/Feature/V2DTaxReadContextCutoverTest.php</file>
+            <file>tests/Feature/V2DWorkflowParityTest.php</file>
         </testsuite>
         <testsuite name="SPJ Critical">
             <file>tests/Unit/SpjScenarioFactoryTest.php</file>
@@ -88,7 +126,6 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="ARKAS_REFERENCE_READ_MODE" value="LEGACY_RAW"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>

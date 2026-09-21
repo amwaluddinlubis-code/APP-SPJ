@@ -18,7 +18,7 @@ class SidebarRoleVisibilityTest extends TestCase
         $response = $this->get('/asisten')->assertOk();
         $response->assertSee('data-sinkron', false);
         $response->assertSee('pilih-sekolah', false);
-        $response->assertDontSee('sinkronisasi/arkas', false);
+        $response->assertDontSee('pengaturan/arkas/raw-mirror', false);
         $response->assertDontSee('pengaturan/user', false);
         $response->assertDontSee('pengaturan/format-penomoran', false);
         $response->assertDontSee('pengaturan/impersonate', false);
@@ -29,7 +29,7 @@ class SidebarRoleVisibilityTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => User::ROLE_OPERATOR]));
 
         $response = $this->get('/asisten')->assertOk();
-        $response->assertSee('sinkronisasi/arkas', false);
+        $response->assertSee('pengaturan/arkas/raw-mirror', false);
         $response->assertSee('pengaturan/format-penomoran', false);
         $response->assertSee('pilih-sekolah', false);
         $response->assertDontSee('pengaturan/user', false);
@@ -42,7 +42,7 @@ class SidebarRoleVisibilityTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => User::ROLE_ADMIN]));
 
         $response = $this->get('/asisten')->assertOk();
-        $response->assertSee('sinkronisasi/arkas', false);
+        $response->assertSee('pengaturan/arkas/raw-mirror', false);
         $response->assertSee('pengaturan/user', false);
         $response->assertSee('pengaturan/format-penomoran', false);
         $response->assertSee('pilih-sekolah', false);
