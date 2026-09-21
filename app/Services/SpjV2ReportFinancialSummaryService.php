@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Database\Connection;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class SpjV2ReportFinancialSummaryService
 {
@@ -17,7 +17,7 @@ final class SpjV2ReportFinancialSummaryService
      * Return a V2 financial summary only when the selector and required bridge
      * relations are fully eligible. Null means the consumer must use legacy.
      *
-     * @param array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float} $consumerSummary
+     * @param  array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float}  $consumerSummary
      * @return array{count:int,cancelled_count:int,gross:float,tax:float,net:float,ppn:float,pph21:float,pph22:float,pph23:float,pph4:float,sspd:float,source_id:int}|null
      */
     public function forContext(
@@ -100,8 +100,8 @@ final class SpjV2ReportFinancialSummaryService
     }
 
     /**
-     * @param array<string, mixed> $canonical
-     * @param array<string, mixed> $consumer
+     * @param  array<string, mixed>  $canonical
+     * @param  array<string, mixed>  $consumer
      */
     private function matchesConsumerSummary(array $canonical, array $consumer): bool
     {

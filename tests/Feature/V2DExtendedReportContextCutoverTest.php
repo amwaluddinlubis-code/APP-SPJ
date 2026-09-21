@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\SpjV2LegacyMigrationService;
+use App\Services\SpjV2PackageReadMembershipService;
 use App\UseCases\Spj\ExtendedSpjReportUseCase;
 use Illuminate\Database\Connection;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 final class V2DExtendedReportContextCutoverTest extends TestCase
@@ -83,7 +85,7 @@ final class V2DExtendedReportContextCutoverTest extends TestCase
             $this->activateContext($context);
             config()->set('spj.v2_read_path', 'v2');
 
-            $membershipIds = app(\App\Services\SpjV2PackageReadMembershipService::class)
+            $membershipIds = app(SpjV2PackageReadMembershipService::class)
                 ->forContext(
                     $db,
                     (int) $context->fiscal_year_id,
@@ -127,7 +129,7 @@ final class V2DExtendedReportContextCutoverTest extends TestCase
             $this->assertContains($honorTransactionId, $useCase->selectionTransactions('HONOR_PEGAWAI')->modelKeys());
             $this->assertNotContains($outsideId, $serviceIds);
 
-            $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+            $this->expectException(HttpException::class);
             $useCase->composeServiceRecipients(Request::create('/spj/laporan/jasa/susun', 'POST', [
                 'transaction_ids' => [$outsideId],
             ]));

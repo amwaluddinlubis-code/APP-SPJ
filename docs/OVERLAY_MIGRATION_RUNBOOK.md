@@ -16,6 +16,50 @@ Perintah pertama hanya dry-run. Perintah kedua membuat backup tenant sebelum
 menulis. Hasil pemetaan dan jumlah unmatched/ambiguous disimpan di
 `storage/app/overlay-migration-reports/{npsn}`.
 
+Untuk keputusan manual unresolved, buat artefak read-only yang reproducible:
+
+```powershell
+php artisan spj:overlay-decision-support --school-id=1 --source-sql="D:\PC Data\Documents\spj.sqlite.sql"
+```
+
+Jika permission `storage` belum tersedia, gunakan `--output-dir` ke direktori
+writable; input dump dan database tenant tetap hanya dibaca.
+
+Command ini menghasilkan JSON detail dan CSV ringkas. Setiap ambiguous memuat
+detail transaksi fresh, seluruh kandidat transaksi lama, alasan, dan `winner:
+null`. Setiap unmatched memuat raw search context, kandidat manual yang hanya
+berfungsi sebagai bahan pencarian, serta klasifikasi `possible_manual_lookup`
+atau `truly_missing_or_unverified`. Command tidak menulis database tenant.
+
+Jika keputusan sudah diberikan, mapping disimpan sebagai file eksplisit dengan
+kolom `old_transaction_id`, `fresh_transaction_id`, `decision`, dan `reason`.
+Validator wajib menolak old/fresh yang tidak ada, target duplikat, target yang
+sudah matched deterministik, tenant berbeda, collision, serta mapping yang
+tidak idempotent. Mapping belum boleh dieksekusi tanpa persetujuan eksplisit.
+
+Input dapat berupa JSON seperti contoh di bawah atau CSV dengan header yang sama.
+
+Format mapping JSON:
+
+```json
+{
+  "mappings": [
+    {
+      "old_transaction_id": 123,
+      "fresh_transaction_id": 456,
+      "decision": "APPROVE",
+      "reason": "manual review: ..."
+    }
+  ]
+}
+```
+
+Validasi read-only dijalankan dengan:
+
+```powershell
+php artisan spj:validate-overlay-mapping --school-id=1 --source-sql="D:\PC Data\Documents\spj.sqlite.sql" --mapping="D:\path\mapping.json"
+```
+
 Database SQLite sementara untuk membaca SQL dump dibuat dengan `sqlite::memory:`;
 perintah tidak memerlukan izin membuat file sementara di `storage`. Report juga
 menyimpan `matched_mappings` (ID lama → ID fresh, alasan, confidence

@@ -5,10 +5,10 @@ namespace Tests\Feature;
 use App\Services\SpjV2LegacyMigrationService;
 use App\Services\SpjV2PackageReadMembershipService;
 use Illuminate\Database\Connection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 final class V2DPackageReadMembershipTest extends TestCase

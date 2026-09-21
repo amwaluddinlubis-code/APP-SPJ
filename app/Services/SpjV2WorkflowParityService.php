@@ -273,9 +273,9 @@ final class SpjV2WorkflowParityService
     }
 
     /**
-     * @param Collection<int|string, mixed> $rows
-     * @param callable(mixed): ?object $packageResolver
-     * @param callable(mixed): int $itemCount
+     * @param  Collection<int|string, mixed>  $rows
+     * @param  callable(mixed): ?object  $packageResolver
+     * @param  callable(mixed): int  $itemCount
      * @return array<string, float|int>
      */
     private function reportSummary(Collection $rows, callable $packageResolver, Collection $documentsByPackage, callable $itemCount): array
@@ -350,11 +350,11 @@ final class SpjV2WorkflowParityService
     }
 
     /**
-     * @param Collection<int|string, mixed> $rows
-     * @param callable(mixed): ?object $packageResolver
-     * @param callable(mixed): int $itemCount
-     * @param callable(mixed): bool $requiresReconciliation
-     * @param callable(mixed): string $sourceStatus
+     * @param  Collection<int|string, mixed>  $rows
+     * @param  callable(mixed): ?object  $packageResolver
+     * @param  callable(mixed): int  $itemCount
+     * @param  callable(mixed): bool  $requiresReconciliation
+     * @param  callable(mixed): string  $sourceStatus
      * @return array<string, int>
      */
     private function periodSummary(

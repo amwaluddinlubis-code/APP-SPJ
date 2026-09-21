@@ -2,6 +2,30 @@
 
 Terakhir diperbarui: **2026-09-21**
 
+### Overlay reconciliation decision-support checkpoint - 2026-09-21
+
+Read-only decision support telah ditambahkan setelah `e2fd748`. Command
+`spj:overlay-decision-support` menghasilkan JSON detail dan CSV ringkas untuk
+unresolved overlay; command tidak menulis tenant. Pada school `10260756`,
+hasil reproducible tetap **44 ambiguous + 87 unmatched**. Seluruh 44 ambiguous
+memuat detail fresh transaction, kandidat old transaction lengkap, raw
+identifiers, alasan, dan `winner: null`. Ke-87 unmatched diklasifikasikan
+**truly_missing_or_unverified** karena tidak ada exact date+amount context untuk
+candidate manual lookup; tidak ada pemenang yang dipilih otomatis.
+
+`spj:validate-overlay-mapping` menerima explicit JSON mapping dengan
+`old_transaction_id`, `fresh_transaction_id`, `decision: APPROVE`, dan `reason`.
+Validator read-only memeriksa existence, duplicate old/target, serta collision
+dengan deterministic matches. Tidak ada mapping yang dieksekusi dan data tenant
+tidak berubah.
+
+Focused gate setelah perubahan: Unit **38 tests / 363 assertions PASS**;
+Feature deterministic **534 deprecated / 3.617 assertions PASS**; SPJ Critical
+**16 tests / 2.405 assertions PASS**; Blade cache, strict Pint, frontend build,
+dan `git diff --check` PASS. Lima file baseline yang sebelumnya menghambat
+`spj:verify --strict-style` telah diperbaiki dengan perubahan format/import/
+phpdoc saja. Browser QA dan destructive cleanup tetap deferred.
+
 Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:

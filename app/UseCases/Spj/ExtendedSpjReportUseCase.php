@@ -324,5 +324,4 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
 
         return $query->forSpjContext($this->activeContext);
     }
-
 }
