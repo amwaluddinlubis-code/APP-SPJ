@@ -16,6 +16,13 @@ Perintah pertama hanya dry-run. Perintah kedua membuat backup tenant sebelum
 menulis. Hasil pemetaan dan jumlah unmatched/ambiguous disimpan di
 `storage/app/overlay-migration-reports/{npsn}`.
 
+Database SQLite sementara untuk membaca SQL dump dibuat dengan `sqlite::memory:`;
+perintah tidak memerlukan izin membuat file sementara di `storage`. Report juga
+menyimpan `matched_mappings` (ID lama → ID fresh, alasan, confidence
+`deterministic`) dan `unresolved` lengkap dengan candidate IDs, key, tanggal,
+alasan, serta klasifikasi. Jika report masih memiliki `ambiguous` atau
+`unmatched`, jangan jalankan `--execute`.
+
 Migrasi bersifat additive pada overlay fresh. Kolom operator yang sudah terisi
 di target tidak ditimpa; hanya nilai target yang kosong yang diisi dari ekspor
 lama. Fakta ARKAS/BKU tidak ikut ditulis. Kandidat ambiguous dan unmatched
@@ -44,3 +51,9 @@ Eksekusi setelah reset database pada 2026-09-20 menghasilkan 198 transaksi
 deterministik, 493 item, dan 67 paket; 87 transaksi unmatched dan 44 ambiguous
 ditahan. Sebanyak 682 field overlay kosong diisi tanpa menimpa field target yang
 sudah terisi. Backup tenant dan report eksekusi tersimpan sebelum hasil selesai.
+
+Dry-run rekonsiliasi 2026-09-21 pada tenant `10260756` kembali menghasilkan
+198 matched, 87 unmatched, dan 44 ambiguous. Ke-44 ambiguous memiliki duplicate
+`no_bukti` tanpa kecocokan tanggal unik; ke-87 unmatched tidak memiliki kandidat
+deterministik pada `id_kas_umum`, `source_key`, `no_bukti+tanggal`, maupun
+`no_bukti`. Keduanya tetap manual/source-audit dan belum boleh dieksekusi.

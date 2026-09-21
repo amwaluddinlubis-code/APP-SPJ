@@ -6,6 +6,29 @@ Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. 
 
 Definisi status:
 
+### Overlay reconciliation audit checkpoint — 2026-09-21
+
+Dry-run read-only untuk school `1` / NPSN `10260756` berjalan setelah penyebab
+`SQLSTATE[HY000] [14] unable to open database file` diperbaiki. Penyebabnya
+adalah service membuat SQLite sementara di `storage`, sementara proses tidak
+memiliki izin membuat file baru di direktori tersebut; tenant existing tetap
+terbuka. `SpjOverlayMigrationService` kini membaca dump melalui `sqlite::memory:`
+dan tidak lagi melakukan `ATTACH` database sementara yang tidak dipakai.
+
+Evidence dry-run `storage/app/overlay-migration-reports/10260756/20260921_073916_AYev94vP.json`:
+
+- **198 matched**, **493 items**, **67 packages**;
+- **87 unmatched**: tidak ada kandidat deterministik;
+- **44 ambiguous**: duplicate `no_bukti` tanpa tanggal unik;
+- matched mappings dan unresolved candidates sekarang dicatat lengkap dengan
+  alasan serta `confidence=deterministic`;
+- tidak ada `--execute`, backup baru, perubahan tenant, atau perubahan raw
+  mirror pada checkpoint ini.
+
+Status reconciliation delta: **BLOCKED / MANUAL DECISION REQUIRED**. Tidak ada
+aturan fuzzy atau heuristic yang ditambahkan; 131 unresolved record tetap
+ditahan sampai identity lama dapat dibuktikan.
+
 ### Operator QA readiness checkpoint — 2026-09-21
 
 HEAD `965a40dde771de39274e052a94daa286a876ac9b` pada branch
