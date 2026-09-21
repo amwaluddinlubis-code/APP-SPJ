@@ -43,6 +43,69 @@ Screenshot/reference bila ada:
 
 Jangan memberi status PASS berdasarkan inspeksi Blade saja.
 
+## Manual operator QA — canonical flow
+
+Checklist ini adalah handoff manual untuk user/operator. Catat evidence sesuai
+template runtime di atas; browser QA tidak dijalankan oleh Work.
+
+### A. Context
+
+- [ ] Login sebagai role yang ditentukan.
+- [ ] Pilih sekolah aktif.
+- [ ] Pilih tahun anggaran.
+- [ ] Pilih sumber dana dan pastikan label context terlihat konsisten.
+
+### B. Transaction
+
+- [ ] Buka daftar transaksi lalu satu Detail Transaksi.
+- [ ] Bedakan Data ARKAS/BKU sebagai source/read-only dari Data SPJ Operator.
+- [ ] Ubah field operator yang diizinkan dan simpan.
+- [ ] Pastikan source field tidak tertimpa dan URL tetap memakai `transactionId`.
+
+### C. SPJ preparation
+
+- [ ] Dari transaksi, buat draft melalui Persiapan SPJ.
+- [ ] Buka Paket SPJ melalui `packageId`, edit field fresh yang diizinkan.
+- [ ] Periksa tab Rincian, Isian Manual, Rincian Pajak, dan Penomoran.
+- [ ] Jalankan checklist; perbaiki blocker yang ditampilkan.
+- [ ] Mark READY dan pastikan status/context tetap konsisten.
+
+### D. Numbering
+
+- [ ] Jalankan numbering single pada Paket READY.
+- [ ] Jalankan numbering triwulan/batch pada scope yang tersedia.
+- [ ] Uji blocked case: data belum lengkap, urutan tidak valid, atau scope stale.
+- [ ] Pastikan preview/download tidak menerbitkan nomor diam-diam.
+
+### E. Lifecycle
+
+- [ ] FINAL pada dokumen yang siap.
+- [ ] Settlement/payment dan goods receipt bila alur tersedia.
+- [ ] Bulk-final hanya dengan role administrator dan selection valid.
+- [ ] Tutup periode lalu pastikan mutation ditolak dengan pesan jelas.
+- [ ] Buka kembali periode melalui action administrator yang sah.
+
+### F. Reports and monitoring
+
+- [ ] Buka laporan SPJ dan Laporan Periode.
+- [ ] Buka Monitoring dan cocokkan status dengan Paket/transaction context.
+- [ ] Uji preview, print/PDF, dan export bila action tersedia.
+- [ ] Pastikan label source/read-only, operator editable, dan canonical/effective
+      state tidak tercampur.
+
+### G. Negative QA
+
+- [ ] Wrong school/year/fund context.
+- [ ] Stale package URL atau transaction URL.
+- [ ] Closed period.
+- [ ] Incomplete package/checklist.
+- [ ] Reconciliation required atau source missing.
+- [ ] Invalid numbering/duplicate numbering.
+- [ ] Verifikasi pesan untuk 403, 404, 419, 429, 500, dan 503 tidak ambigu.
+
+Negative case wajib berakhir sebagai penolakan yang aman (atau halaman error
+terstruktur), tanpa mutasi parsial dan tanpa fallback ke route legacy.
+
 ## 2. Matrix viewport desktop/laptop — GUI-AUDIT-12
 
 Wajib diuji minimal:

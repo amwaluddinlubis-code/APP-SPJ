@@ -6,6 +6,36 @@ Dokumen ini adalah sumber status release utama untuk branch `arkas-raw-mirror`. 
 
 Definisi status:
 
+### Operator QA readiness checkpoint — 2026-09-21
+
+HEAD `965a40dde771de39274e052a94daa286a876ac9b` pada branch
+`arkas-raw-mirror` siap dialihkan ke **USER/OPERATOR QA**. Audit source route
+dan context memastikan route utama memakai named route dengan identitas terpisah
+(`transactionId`, `packageId`, `documentId`, `periodId`), dan core operator
+berada di boundary `auth + active-school + active-year + spj-active-context`.
+Role mutation, wrong-year/wrong-fund rejection, stale package, reconciliation,
+numbering, lifecycle, laporan, monitoring, dan raw-mirror action tercakup oleh
+focused regression.
+
+Evidence aktual pada HEAD ini:
+
+- focused route/context, package/workspace, numbering, lifecycle, reports,
+  reconciliation, dan role audit: **90 tests / 844 assertions / 0 failure**;
+- Unit: **38 tests / 363 assertions / 0 failure**;
+- Feature deterministic: **532 tests / 3.600 assertions / 0 failure**,
+  **7 skipped** karena guard/fixture;
+- SPJ Critical: **311 tests / 2.405 assertions / 0 failure**;
+- Blade view cache, frontend build, dan `git diff --check`: **PASS**;
+- Composer CLI tidak tersedia pada environment ini;
+- repository-wide Pint yang dipanggil oleh `spj:verify`: **WARN** pada lima
+  file style debt pre-existing; tidak ada perubahan source yang dipertahankan;
+- external V2-C/V2-D rehearsal: **RVR / NOT RUN** tanpa fixture real-data;
+- browser/operator QA: **NEXT / RVR**, belum dijalankan sesuai scope;
+- destructive cleanup: **DEFERRED**.
+
+Checklist manual operator tersedia di `docs/GUI_RUNTIME_QA.md` pada bagian
+“Manual operator QA — canonical flow”.
+
 ### SPJ route compatibility repair checkpoint — 2026-09-21
 
 Perbaikan kompatibilitas route untuk paket fresh pada tab Paket, Laporan, dan

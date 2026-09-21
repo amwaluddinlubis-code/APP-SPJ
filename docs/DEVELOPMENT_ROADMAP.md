@@ -428,6 +428,21 @@ Core procurement policy functional PASS. Tersisa:
 
 **Status: SOURCE READINESS / RUNTIME RVR.** Checklist: `GUI_RUNTIME_QA.md`.
 
+### Operator QA handoff — 2026-09-21
+
+HEAD `965a40dde771de39274e052a94daa286a876ac9b` telah melewati focused route,
+context, package/workspace, numbering, lifecycle, report/monitoring, dan
+reconciliation regression; Feature deterministic **532/3.600**, Unit
+**38/363**, dan SPJ Critical **311/2.405** semuanya lulus tanpa failure.
+Repository sekarang berada pada tahap **USER/OPERATOR QA NEXT**. Gunakan urutan
+manual canonical di `docs/GUI_RUNTIME_QA.md`; jangan menganggap source readiness
+atau deterministic test sebagai bukti browser PASS.
+
+External V2-C/V2-D tetap **RVR / NOT RUN** karena fixture real-data tidak
+tersedia. Destructive cleanup tetap **DEFERRED**. Composer tidak diverifikasi
+karena executable tidak tersedia; repository-wide Pint masih memiliki WARN
+style debt pada lima file pre-existing.
+
 Targeted exception: halaman `/pengaturan/database-aktif` telah dikonfirmasi operator
 **PASS** untuk tab Database Sekolah/Database Pusat, modal detail, toggle section,
 dan scroll Struktur Kolom. Checklist browser repository-wide serta halaman lain
